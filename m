@@ -1,67 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab2BVQoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:44:14 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:53621 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752639Ab2BVQoM (ORCPT
+	id S1754101Ab2BVQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:45:16 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59528 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab2BVQpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:44:12 -0500
-Date: Wed, 22 Feb 2012 11:44:02 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
-Message-ID: <20120222164402.GA13354@elliptictech.com>
-References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 22 Feb 2012 11:45:09 -0500
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>
+Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x regulators
+Date: Wed, 22 Feb 2012 11:45:03 -0500
+Message-Id: <1329929103-28486-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-22 14:00 +0000, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> We need to read from and write to 'buf' a byte at a time otherwise
-> it's possible we'll perform an unaligned access, which can lead to a
-> segfault when cross-building an x86 kernel on risc architectures.
-> 
-> Also, we may need to convert the endianness of the data we read
-> from/write to buf, so let's add some helper functions to do that.
-[...]
-> +static inline u32 read32_le(u8 *src)
-> +{
-> +	u32 data;
-> +
-> +	data = *src++;
-> +	data |= *src++ << 8;
-> +	data |= *src++ << 16;
-> +	data |= *src++ << 24;
-> +
-> +	return data;
-> +}
+This fixes smsc911x support on platforms using gpmc_smsc911x_init().
 
-We already have get_unaligned_le32 in <asm/unaligned.h> for this.
+Commit c7e963f6888816 (net/smsc911x: Add regulator support) added
+the requirement that platforms provide vdd33a and vddvario supplies.
 
-> +
-> +static inline void write32_le(u8 *dst, u32 data)
-> +{
-> +	*dst++ = data;
-> +	*dst++ = data >> 8;
-> +	*dst++ = data >> 16;
-> +	*dst++ = data >> 24;
-> +}
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+Changes for v2:
+   - temporary fix to avoid platform device id conflicts
+   - add commit summary from the smsc911x regulator support commit
+   - incorporate platform device registration error cause reporting 
 
-Similarly, put_unaligned_le32.
+ arch/arm/mach-omap2/gpmc-smsc911x.c |   54 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 53 insertions(+), 1 deletions(-)
 
-Cheers,
+diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gpmc-smsc911x.c
+index 9970331..a7388ed 100644
+--- a/arch/arm/mach-omap2/gpmc-smsc911x.c
++++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
+@@ -19,6 +19,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/smsc911x.h>
++#include <linux/regulator/fixed.h>
++#include <linux/regulator/machine.h>
+ 
+ #include <plat/board.h>
+ #include <plat/gpmc.h>
+@@ -42,6 +44,50 @@ static struct smsc911x_platform_config gpmc_smsc911x_config = {
+ 	.flags		= SMSC911X_USE_16BIT,
+ };
+ 
++static struct regulator_consumer_supply gpmc_smsc911x_supply[] = {
++	REGULATOR_SUPPLY("vddvario", "smsc911x.0"),
++	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
++};
++
++/* Generic regulator definition to satisfy smsc911x */
++static struct regulator_init_data gpmc_smsc911x_reg_init_data = {
++	.constraints = {
++		.min_uV			= 3300000,
++		.max_uV			= 3300000,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL
++					| REGULATOR_MODE_STANDBY,
++		.valid_ops_mask		= REGULATOR_CHANGE_MODE
++					| REGULATOR_CHANGE_STATUS,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(gpmc_smsc911x_supply),
++	.consumer_supplies	= gpmc_smsc911x_supply,
++};
++
++static struct fixed_voltage_config gpmc_smsc911x_fixed_reg_data = {
++	.supply_name		= "gpmc_smsc911x",
++	.microvolts		= 3300000,
++	.gpio			= -EINVAL,
++	.startup_delay		= 0,
++	.enable_high		= 0,
++	.enabled_at_boot	= 1,
++	.init_data		= &gpmc_smsc911x_reg_init_data,
++};
++
++/*
++ * Platform device id of 42 is a temporary fix to avoid conflicts
++ * with other reg-fixed-voltage devices. The real fix should
++ * involve the driver core providing a way of dynamically
++ * assigning a unique id on registration for platform devices
++ * in the same name space.
++ */
++static struct platform_device gpmc_smsc911x_regulator = {
++	.name		= "reg-fixed-voltage",
++	.id		= 42,
++	.dev = {
++		.platform_data	= &gpmc_smsc911x_fixed_reg_data,
++	},
++};
++
+ /*
+  * Initialize smsc911x device connected to the GPMC. Note that we
+  * assume that pin multiplexing is done in the board-*.c file,
+@@ -51,10 +97,16 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *board_data)
+ {
+ 	struct platform_device *pdev;
+ 	unsigned long cs_mem_base;
+-	int ret;
++	int ret, err;
+ 
+ 	gpmc_cfg = board_data;
+ 
++	err = platform_device_register(&gpmc_smsc911x_regulator);
++	if (err < 0) {
++		pr_err("Unable to register smsc911x regulators: %d\n", err);
++		return;
++	}
++
+ 	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
+ 		pr_err("Failed to request GPMC mem region\n");
+ 		return;
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.5.4
 
