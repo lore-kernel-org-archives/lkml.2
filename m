@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2BVWuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:50:22 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59080 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2BVWuV (ORCPT
+	id S1752492Ab2BVWzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:55:33 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38310 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab2BVWzc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:50:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.208.196 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F457128.6060407@gmail.com>
-Date: Thu, 23 Feb 2012 09:50:16 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+	Wed, 22 Feb 2012 17:55:32 -0500
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH v2 11/19] ARM: at91/PMC: make register base soc independent
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <bdea371b518c7b6d04ae1cfacacca2f75b191984.1329903206.git.nicolas.ferre@atmel.com>
-In-Reply-To: <bdea371b518c7b6d04ae1cfacacca2f75b191984.1329903206.git.nicolas.ferre@atmel.com>
+In-Reply-To: <1329944133-28433-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1329944133-28433-1-git-send-email-Julia.Lawall@lip6.fr>
+Date: Wed, 22 Feb 2012 14:55:31 -0800
+X-Google-Sender-Auth: 1SD-EtOh2KE2sA7ohkhXm9s40DI
+Message-ID: <CAA9_cmc6w_Tn+GbSubCcGxvE2w6yyDyWP_WgY3H5d6iasyqvRQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/scsi/pm8001/pm8001_sas.c: move timer start
+From: Dan Williams <dan.j.williams@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: jack_wang@usish.com, kernel-janitors@vger.kernel.org, lindar_liu@usish.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/02/12 20:39, Nicolas Ferre wrote:
-
-> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+On Wed, Feb 22, 2012 at 12:55 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Move the add_timer below some instructions that do not seem to require a
+> timer and that in one case can fail, thus avoiding the need for a
+> corresponding del_timer.
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
 > ---
+> I don't fully understand the code, and have not tested the change.  Think
+> of this patch as more of a question as to whether this is the right thing
+> to do.
 
-<snip>
+This patch makes sense to me... don't start the timer until we're sure
+that the task is going to be submitted, or at least remember to
+del_timer() before returning.
 
-> -	seq_printf(s, "SCSR = %8x\n", scsr = at91_sys_read(AT91_PMC_SCSR));
-> -	seq_printf(s, "PCSR = %8x\n", pcsr = at91_sys_read(AT91_PMC_PCSR));
-> -	seq_printf(s, "MOR  = %8x\n", at91_sys_read(AT91_CKGR_MOR));
-> -	seq_printf(s, "MCFR = %8x\n", at91_sys_read(AT91_CKGR_MCFR));
-> -	seq_printf(s, "PLLA = %8x\n", at91_sys_read(AT91_CKGR_PLLAR));
-> +	seq_printf(s, "SCSR = %8x\n", scsr = at91_pmc_read(AT91_PMC_SCSR));
-> +	seq_printf(s, "PCSR = %8x\n", pcsr = at91_pmc_read(AT91_PMC_PCSR));
+Looks like pm8001_exec_internal_tmf_task() gets this right.
 
-
-I realise the original code is wrong, so doesn't need to be fixed in
-this patch, but can we please move the assignments out of the seq_printf
-calls.
-
-<snip>
-
->  void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
-> @@ -208,7 +207,7 @@ void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
->  	}
->  	at91_ramc_base[id] = ioremap(addr, size);
->  	if (!at91_ramc_base[id])
-> -		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
-> +		panic("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
-
-
-This is in the wrong patch, and should be folded into the correct patch.
-
-~Ryan
+--
+Dan
