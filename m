@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab2BVCJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 21:09:54 -0500
-Received: from tundra.namei.org ([65.99.196.166]:59476 "EHLO tundra.namei.org"
+	id S1755366Ab2BVCRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 21:17:50 -0500
+Received: from mga14.intel.com ([143.182.124.37]:3904 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753162Ab2BVCJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 21:09:53 -0500
-Date: Wed, 22 Feb 2012 13:09:49 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] update my MAINTAINERS entry
-Message-ID: <alpine.LRH.2.02.1202221308190.12415@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751719Ab2BVCRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 21:17:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="109252986"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andrei.emeltchenko.news@gmail.com" 
+	<andrei.emeltchenko.news@gmail.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQAgADIE4D//30WsIAAiTiA//98R1A=
+Date: Wed, 22 Feb 2012 02:17:46 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	 <20120221.144417.1445117001833888214.davem@davemloft.net>
+	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+	 <20120221.154053.2103818562080068513.davem@davemloft.net>
+	 <1329857959.5143.11.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+	 <1329874581.5143.22.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>
+ <1329875935.5143.24.camel@joe2Laptop>
+In-Reply-To: <1329875935.5143.24.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1M2I24x022187
 
-Please pull.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, February 21, 2012 5:59 PM
+> To: Allan, Bruce W
+> Cc: David Miller; Andy Whitcroft; Andrew Morton;
+> andrei.emeltchenko.news@gmail.com; linville@tuxdriver.com; linux-
+> wireless@vger.kernel.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+> 
+> On Wed, 2012-02-22 at 01:56 +0000, Allan, Bruce W wrote:
+> > > On Tue, 2012-02-21 at 22:09 +0000, Allan, Bruce W wrote:
+> > > > This appears to falsely complain about parenthesis alignment in
+> > > > conditional statements with multiple opening parentheses.
+> > > Can you try this one please?
+> []
+> > It's better, but there are still instances of false hits AFAICT.
+> 
+> Do you have any examples?
+> The only one I noticed was spaces for alignment instead of tabs.
+> I think that's not a false hit myself.
+> 
 
-The following changes since commit 27e74da9800289e69ba907777df1e2085231eff7:
-  Linus Torvalds (1):
-        i387: export 'fpu_owner_task' per-cpu variable
+Example 1:
+	if (((a == b) ||
+	     (c == d) ||
+	     (e == f)) &&
+	    (bool_var))
+		baz();
 
-are available in the git repository at:
+Example 2:
+	if ((!(var & FOO_MASK) &&
+	     (a == b)) ||
+	    (c == d))
+		baz();
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+Example 3:
+	if (!((foo & FOO_MASK) &&
+	      (bar & BAR_MASK)))
+		baz();
 
-James Morris (1):
-      maintainers: update my email address
-
- MAINTAINERS |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-
-commit 9b45c0d2c50e19bd73d2f5e18dd6912a6991306e
-Author: James Morris <james.l.morris@oracle.com>
-Date:   Wed Feb 22 12:45:07 2012 +1100
-
-    maintainers: update my email address
-    
-    Update my email address.
-    
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9a648eb..924fb0b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5861,7 +5861,7 @@ S:	Maintained
- F:	drivers/mmc/host/sdhci-spear.c
- 
- SECURITY SUBSYSTEM
--M:	James Morris <jmorris@namei.org>
-+M:	James Morris <james.l.morris@oracle.com>
- L:	linux-security-module@vger.kernel.org (suggested Cc:)
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
- W:	http://security.wiki.kernel.org/
-@@ -5874,7 +5874,7 @@ S:	Supported
- 
- SELINUX SECURITY MODULE
- M:	Stephen Smalley <sds@tycho.nsa.gov>
--M:	James Morris <jmorris@namei.org>
-+M:	James Morris <james.l.morris@oracle.com>
- M:	Eric Paris <eparis@parisplace.org>
- L:	selinux@tycho.nsa.gov (subscribers-only, general discussion)
- W:	http://selinuxproject.org
+HTH,
+Bruce.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
