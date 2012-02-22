@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab2BVWYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:24:35 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36666 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab2BVWYe (ORCPT
+	id S1754300Ab2BVW2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:28:21 -0500
+Received: from 124-248-200-58.sunnyvision.com ([124.248.200.58]:34333 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751134Ab2BVW2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:24:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.218.5 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F456B1E.1080700@gmail.com>
-Date: Thu, 23 Feb 2012 09:24:30 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH v2 05/19] ARM: at91/ST: remove not needed casts
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <7fc3c7e0093a675e205fe1763de7dfccdda8e692.1329903206.git.nicolas.ferre@atmel.com>
-In-Reply-To: <7fc3c7e0093a675e205fe1763de7dfccdda8e692.1329903206.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Feb 2012 17:28:20 -0500
+X-Greylist: delayed 14358 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 17:28:19 EST
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 6DAC710F00D
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 28EFE4FB12
+Message-ID: <P2go4asW2yk8n@tpts6.seed.net.tw>
+From: design@dedicatedserver.com.hk
+Subject: Cloud server Promotion!!
+X-Mailer: AeDBigMrFViCMduoYwgv74SwB
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Thu, 23 Feb 2012 01:53:27 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1MMSc4D027417
 
-On 22/02/12 20:39, Nicolas Ferre wrote:
+Dear all, 
 
-> Remove the unnecessary (void) cast on at91_st_read()
-> return value.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Please see below price list for cloud server package.
 
+SuperCloud 512
+¡E Dedicated CPU: 1.8GHZ
+¡E Dedicated RAM: 512MB
+¡E Disk Space: 20GB
+¡E Bandwidth: 200GB
+HK$199/month
 
-Thanks Nicolas.
+SuperCloud 768
+¡E Dedicated CPU: 2.4GHZ
+¡E Dedicated RAM: 768MB
+¡E Disk Space: 40GB
+¡E Bandwidth: 300GB
+HK$399/month
 
-Acked-by: Ryan Mallon <rmallon@gmail.com>
+SuperCloud 1024
+¡E Dedicated CPU: 3.0GHZ
+¡E Dedicated RAM: 1024MB
+¡E Disk Space: 60GB
+¡E Bandwidth: 400GB
+HK$599/month
 
-> ---
->  arch/arm/mach-at91/at91rm9200_time.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/arch/arm/mach-at91/at91rm9200_time.c
-> index 0c1980c..dd7f782 100644
-> --- a/arch/arm/mach-at91/at91rm9200_time.c
-> +++ b/arch/arm/mach-at91/at91rm9200_time.c
-> @@ -111,7 +111,7 @@ clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
->  {
->  	/* Disable and flush pending timer interrupts */
->  	at91_st_write(AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
-> -	(void) at91_st_read(AT91_ST_SR);
-> +	at91_st_read(AT91_ST_SR);
->  
->  	last_crtr = read_CRTR();
->  	switch (mode) {
-> @@ -157,7 +157,7 @@ clkevt32k_next_event(unsigned long delta, struct clock_event_device *dev)
->  
->  	/* Cancel any pending alarm; flush any pending IRQ */
->  	at91_st_write(AT91_ST_RTAR, alm);
-> -	(void) at91_st_read(AT91_ST_SR);
-> +	at91_st_read(AT91_ST_SR);
->  
->  	/* Schedule alarm by writing RTAR. */
->  	alm += delta;
-> @@ -192,7 +192,7 @@ void __init at91rm9200_timer_init(void)
->  	/* Disable all timer interrupts, and clear any pending ones */
->  	at91_st_write(AT91_ST_IDR,
->  		AT91_ST_PITS | AT91_ST_WDOVF | AT91_ST_RTTINC | AT91_ST_ALMS);
-> -	(void) at91_st_read(AT91_ST_SR);
-> +	at91_st_read(AT91_ST_SR);
->  
->  	/* Make IRQs happen for the system timer */
->  	setup_irq(AT91_ID_SYS, &at91rm9200_timer_irq);
+SuperCloud 1536
+¡E Dedicated CPU: 3.6GHZ
+¡E Dedicated RAM: 1536MB
+¡E Disk Space: 80GB
+¡E Bandwidth: 600GB
+HK$699/month
+
+SuperCloud 2048
+¡E Dedicated CPU: 4.2GHZ
+¡E Dedicated RAM: 2048MB
+¡E Disk Space: 100GB
+¡E Bandwidth: 800GB
+HK$799/month
+
+SuperCoud 4096
+¡E Dedicated CPU: 5.4GHZ
+¡E Dedicated RAM: 4096MB
+¡E Disk Space: 150GB
+¡E Bandwidth: 1600GB
+HK$999/month
+
+SuperCloud 8G
+¡E Dedicated CPU: 9.6GHZ
+¡E Dedicated RAM: 8GB
+¡E Disk Space: 300GB
+¡E Bandwidth: 3000GB
+HK$1,299/month
+
+SuperCloud 12G
+¡E Dedicated CPU: 12GHZ
+¡E Dedicated RAM: 12GB
+¡E Disk Space: 500GB
+¡E Bandwidth: 5000GB
+HK$1,499/month
+
+Should you have any need. Please feel free to contact me, Thanks.
+
+Best Regards,
+Eric Chan
+Senior Sales Executive
+
+If you do not wish to further receive this event message, email subscriber@dedicatedserver.com.hk to unsubscribe this message or remove your email from the list.
 
 
