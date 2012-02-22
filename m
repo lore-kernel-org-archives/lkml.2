@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2BVVeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:34:22 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56523 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2BVVeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:34:21 -0500
-Date: Wed, 22 Feb 2012 13:32:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: stable@vger.kernel.org, Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-Message-ID: <20120222213253.GA25150@kroah.com>
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
- <20120222211928.GA4448@kroah.com>
- <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
+	id S1755276Ab2BVVe0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:34:26 -0500
+Received: from ozlabs.org ([203.10.76.45]:54660 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755095Ab2BVVeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 16:34:23 -0500
+Date: Thu, 23 Feb 2012 08:33:44 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
+        mathieu.desnoyers@efficios.com, davem@davemloft.net,
+        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+References: <cover.1329851692.git.jbaron@redhat.com>
+ <4F43F9F0.4000605@zytor.com>
+ <20120221202019.GB2381@redhat.com>
+ <1329856745.25686.72.camel@gandalf.stny.rr.com>
+ <20120222073251.GB17291@elte.hu>
+ <20120222075334.GA25053@elte.hu>
+ <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+ <20120222081855.GB25318@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
+In-Reply-To: <20120222081855.GB25318@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 01:29:11PM -0800, Linus Torvalds wrote:
-> On Wed, Feb 22, 2012 at 1:19 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> >
-> > Thanks for doing the backport.  Any ideas on how far back this problem
-> > goes?
-> 
-> The fundamental bug goes back forever, but happily afaik you can only
-> *trigger* it by doing FPU accesses from interrupts, and nobody did
-> that until the AES-NI instructions came about.
-> 
-> So practically speaking it goes back to the introduction of
-> CRYPTO_AES_NI_INTEL, in commit 54b6a1bd5364 ("crypto: aes-ni - Add
-> support to Intel AES-NI instructions for x86_64 platform").
-> 
-> Which was merged into 2.6.30. So it still goes back pretty far.
-> 
-> The good news is that I *think* the whole i387 handling code hasn't
-> been touched much. But I didn't really check deeply.
+On Wed, Feb 22, 2012 at 09:18:55AM +0100, Ingo Molnar wrote:
 
-Ok, I'll see how far back I can backport it easily, after Peter verifies
-that this series works for him on his box.
+> The problem with static_branch_def_false/def_true was that the 
+> very intuitively visible bias that we see with 
+> likely()/unlikely() is confused in jump label constructs through 
+> two layers of modifiers. And the fix is so easy, a simple rename 
+> in most cases ;-)
+> 
+> So instead of that, in this series we have:
+> 
+> +       if (very_unlikely(&perf_sched_events.key))
+> 
+> which is a heck of an improvement IMO. I'd still up its 
+> readability a notch, by also signalling the overhead of the 
+> update path by making it:
+> 
+> +       if (very_unlikely(&perf_sched_events.slow_flag))
+> 
+> ... but I don't want to be that much of a readability nazi ;-)
 
-thanks,
+I have to say I don't like the "very_unlikely" name.  It's confusing
+because the condition being evaluated appears to be the address of
+something, i.e. &perf_sched_events.key in your example, and that looks
+to me to be very very likely to be true, i.e. non-zero.  But the code
+is telling me that's very *un*likely, which is confusing.
 
-greg k-h
+In other words I can't think about "very_unlikely" as being similar to
+"unlikely".  Clearly very_unlikely isn't just passing through the
+true/falseness of its argument to the surrounding if, the way that
+unlikely does; it (very_unlikely) is a real function that is doing
+something more complicated with its argument -- dereferencing it,
+conceptually at least, for a start.
+
+Just from a readability perspective, I like the static_branch name,
+and if we want to add information about the execution bias, I'd
+suggest we do:
+
+	if (likely(static_branch(&x))) ...
+
+	if (unlikely(static_branch(&x))) ...
+
+if that can be made to work, or else have variants like this:
+
+   	if (likely_static_branch(&x)) ...
+
+	if (unlikely_static_branch(&x)) ...
+
+Paul.
