@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2BVUgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 15:36:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52402 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab2BVUgN (ORCPT
+	id S1753950Ab2BVUlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:41:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37253 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab2BVUlO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 15:36:13 -0500
-Date: Wed, 22 Feb 2012 12:34:28 -0800
-From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
-Message-ID: <tip-55bc423c1274ba474b74155167d33a56ddf77558@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tony.luck@intel.com, tglx@linutronix.de, bp@amd64.org, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tony.luck@intel.com, bp@amd64.org, mingo@elte.hu
-In-Reply-To: <4f452eb42507460426@agluck-desktop.sc.intel.com>
-References: <4f452eb42507460426@agluck-desktop.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86/debug:
-  Remove ancient debugging noise from boot log when starting cpus
-Git-Commit-ID: 55bc423c1274ba474b74155167d33a56ddf77558
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Feb 2012 15:41:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.216.138.7 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 12:34:54 -0800 (PST)
+In-Reply-To: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
+References: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 22 Feb 2012 12:40:53 -0800
+Message-ID: <CAErSpo7T0NuY-O58rB81x7j+7j6tzaZqhHLGLXPJbjhrdGunxA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: fix memleak when ACPI _CRS is not used.
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55bc423c1274ba474b74155167d33a56ddf77558
-Gitweb:     http://git.kernel.org/tip/55bc423c1274ba474b74155167d33a56ddf77558
-Author:     Luck, Tony <tony.luck@intel.com>
-AuthorDate: Wed, 22 Feb 2012 10:06:44 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 21:26:18 +0100
+On Mon, Feb 20, 2012 at 5:23 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> got warning:
+> unreferenced object 0xffff8801f6914200 (size 512):
+>  comm "swapper/0", pid 1, jiffies 4294893643 (age 2664.644s)
+>  hex dump (first 32 bytes):
+>    00 00 c0 fe 00 00 00 00 ff ff ff ff 00 00 00 00  ................
+>    60 58 2f f6 03 88 ff ff 00 02 00 00 00 00 00 00  `X/.............
+>  backtrace:
+>    [<ffffffff81c2408c>] kmemleak_alloc+0x26/0x43
+>    [<ffffffff8113764f>] __kmalloc+0x121/0x183
+>    [<ffffffff81ca8d93>] get_current_resources+0x5a/0xc6
+>    [<ffffffff81c5bedd>] pci_acpi_scan_root+0x13c/0x21c
+>    [<ffffffff81c2a745>] acpi_pci_root_add+0x1e1/0x421
+>    [<ffffffff81408f50>] acpi_device_probe+0x50/0x190
+>    [<ffffffff8149edc7>] really_probe+0x99/0x126
+>    [<ffffffff8149ef83>] driver_probe_device+0x3b/0x56
+>    [<ffffffff8149effd>] __driver_attach+0x5f/0x82
+>    [<ffffffff8149d860>] bus_for_each_dev+0x5c/0x88
+>    [<ffffffff8149eb87>] driver_attach+0x1e/0x20
+>    [<ffffffff8149e7cc>] bus_add_driver+0xca/0x21d
+>    [<ffffffff8149f47b>] driver_register+0x91/0xfe
+>    [<ffffffff81409d09>] acpi_bus_register_driver+0x43/0x45
+>    [<ffffffff8278bdc9>] acpi_pci_root_init+0x20/0x28
+>    [<ffffffff810001e7>] do_one_initcall+0x57/0x134
+>
+> The system have _CRS for root buses, but they are not used because is old...
+>
+> Try free those not used resource array and name.
 
-x86/debug: Remove ancient debugging noise from boot log when starting cpus
+Thanks for fixing this.
 
-Printing the "start_ip" for every secondary cpu is very noisy on
-a large system - and doesn't add any value. Drop this message.
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Console log before:
-
- Booting Node   0, Processors  #1
- smpboot cpu 1: start_ip = 96000
-  #2
- smpboot cpu 2: start_ip = 96000
-  #3
- smpboot cpu 3: start_ip = 96000
-  #4
- smpboot cpu 4: start_ip = 96000
-        ...
-  #31
- smpboot cpu 31: start_ip = 96000
- Brought up 32 CPUs
-
-Console log after:
-
- Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
- Booting Node   1, Processors  #8 #9 #10 #11 #12 #13 #14 #15 Ok.
- Booting Node   0, Processors  #16 #17 #18 #19 #20 #21 #22 #23 Ok.
- Booting Node   1, Processors  #24 #25 #26 #27 #28 #29 #30
- #31 Brought up 32 CPUs
-
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Borislav Petkov <bp@amd64.org>
-Cc: castet.matthieu@free.fr
-Cc: sfr@canb.auug.org.au
-Cc: hpa@linux.intel.com
-Cc: rjw@sisk.pl
-Link: http://lkml.kernel.org/r/4f452eb42507460426@agluck-desktop.sc.intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/smpboot.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 257049d..f34f8b2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -740,8 +740,6 @@ do_rest:
- 	 * the targeted processor.
- 	 */
- 
--	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
--
- 	atomic_set(&init_deasserted, 0);
- 
- 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>
+> ---
+>  arch/x86/pci/acpi.c |   12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
+>
+> Index: linux-2.6/arch/x86/pci/acpi.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/pci/acpi.c
+> +++ linux-2.6/arch/x86/pci/acpi.c
+> @@ -282,9 +282,6 @@ static void add_resources(struct pci_roo
+>        int i;
+>        struct resource *res, *root, *conflict;
+>
+> -       if (!pci_use_crs)
+> -               return;
+> -
+>        coalesce_windows(info, IORESOURCE_MEM);
+>        coalesce_windows(info, IORESOURCE_IO);
+>
+> @@ -336,8 +333,13 @@ get_current_resources(struct acpi_device
+>        acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+>                                &info);
+>
+> -       add_resources(&info);
+> -       return;
+> +       if (pci_use_crs) {
+> +               add_resources(&info);
+> +
+> +               return;
+> +       }
+> +
+> +       kfree(info.name);
+>
+>  name_alloc_fail:
+>        kfree(info.res);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
