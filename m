@@ -1,179 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2BVQ77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:59:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23570 "EHLO mx1.redhat.com"
+	id S1754142Ab2BVRDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:03:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49921 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab2BVQ76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:59:58 -0500
-Date: Wed, 22 Feb 2012 17:59:49 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: [PATCH] block: fix __blkdev_get and add_disk race condition
-Message-ID: <20120222165948.GA12961@redhat.com>
+	id S1752608Ab2BVRDF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 12:03:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="69136193"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Thread-Topic: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Thread-Index: AQHM8KTtqETlTTaR00eoPTQ1GukvM5ZJIhXg
+Date: Wed, 22 Feb 2012 17:02:59 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350AA0BE@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120217142909.GA29110@phenom.dumpdata.com>
+ <20120217144742.GA29454@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
+ <20120219182339.GA11882@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
+ <20120221142724.GB5652@phenom.dumpdata.com>
+In-Reply-To: <20120221142724.GB5652@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following situation might occur:
+Konrad Rzeszutek Wilk wrote:
+> On Tue, Feb 21, 2012 at 05:49:58AM +0000, Liu, Jinsong wrote:
+>> Konrad Rzeszutek Wilk wrote:
+>>>>>>> +struct pv_pad_ops {
+>>>>>>> +	int (*acpi_pad_init)(void);
+>>>>>>> +	void (*acpi_pad_exit)(void);
+>>>>>>> +};
+>>>>>>> +
+>>>>> 
+>>>>> Looking at this a bit closer I am not sure why you choose the
+>>>>> paravirt interface for this? There is another one - the x86 that
+>>>>> could have been choosen. Or introduce a new one that is specific
+>>>>> to ACPI. 
+>>>>> 
+>>>>> I am curious - what was the reason for using the paravirt
+>>>>> interface? I understand it does get the job done, but it seems a
+>>>>> bit overkill when something simple could have been used?
+>>>>> 
+>>>> 
+>>>> It uses paravirt interface to avoid some code like 'xen_...' in
+>>>> native code path (acpi_pad.c).
+>>>> I'm not quite sure what does 'x86' here mean? Adding 2 fields
+>>>> (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops?
+>>>> seems it's much simpler.
+>>> 
+>>> arch/x86/include/asm/x86_init.h
+>>> 
+>>> But before you go that way let me ask you another question - can
+>>> ACPI PAD be used on ARM or IA64? If so, wouldn't this fail
+>>> compilation as this pvops structure is not defined on IA64?
+>> 
+>> Ideally ACPI PAD is not bound to some arch, so IMO it could be used
+>> at least on IA64 (through currently no real PAD on IA64 platform as
+>> far as I know). However, in native acpi_pad implementation, it
+>> indeed depends on X86 for reason like mwait.  
+>> So for xen acpi_pad, I think it's OK to choose x86, defining an
+>> acpi_pad_ops at x86_init.c which would be overwritten when xen init. 
+> 
+> OK, or in osl.c. We need Len to chime in here as I can see this
+> expanding in the future. 
+>> 
+>> Another choice is to define config ACPI_PROCESSOR_AGGREGATOR as
+>> 'bool', which would disable native acpi_pad module. 
+> 
+> Ewww. No.
 
-__blkdev_get:			add_disk:
+I'm OK with x86_init approach, but advantage of 'config ACPI_PROCESSOR_AGGREGATOR as bool' would get rid of X86/IA64/... arch issue for xen (at least from coding view), through it need disable native acpi_pad module (IMO acpi_pad module has not strong reason to must be so).
+Have a re-consider of this approach? :-)
 
-				register_disk()
-get_gendisk()
+Thanks,
+Jinsong
 
-disk_block_events()
-	disk->ev == NULL
-
-				disk_add_events()
-
-__disk_unblock_events()
-	disk->ev != NULL
-	--ev->block
-
-Then we unblock events, when they are suppose to be blocked. This can
-trigger events related block/genhd.c warnings, but also can crash in
-sd_check_events() or other places.
-
-I'm able to reproduce crashes with the following scripts (with
-connected usb dongle as sdb disk).
-
-<snip>
-DEV=/dev/sdb
-ENABLE=/sys/bus/usb/devices/1-2/bConfigurationValue
-
-function stop_me()
-{
-	for i in `jobs -p` ; do kill $i 2> /dev/null ; done
-	exit
-}
-
-trap stop_me SIGHUP SIGINT SIGTERM
-
-for ((i = 0; i < 10; i++)) ; do
-	while true; do fdisk -l $DEV  2>&1 > /dev/null ; done &
-done
-
-while true ; do
-echo 1 > $ENABLE
-sleep 1
-echo 0 > $ENABLE
-done
-</snip>
-
-I use the script to verify patch fixing oops in sd_revalidate_disk
-http://marc.info/?l=linux-scsi&m=132935572512352&w=2
-Without Jun'ichi Nomura patch titled "Fix NULL pointer dereference in
-sd_revalidate_disk" or this one, script easily crash kernel within
-a few seconds. With both patches applied I do not observe crash.
-Unfortunately after some time (dozen of minutes), script will hung in:
-
-[ 1563.906432]  [<c08354f5>] schedule_timeout_uninterruptible+0x15/0x20
-[ 1563.906437]  [<c04532d5>] msleep+0x15/0x20
-[ 1563.906443]  [<c05d60b2>] blk_drain_queue+0x32/0xd0
-[ 1563.906447]  [<c05d6e00>] blk_cleanup_queue+0xd0/0x170
-[ 1563.906454]  [<c06d278f>] scsi_free_queue+0x3f/0x60
-[ 1563.906459]  [<c06d7e6e>] __scsi_remove_device+0x6e/0xb0
-[ 1563.906463]  [<c06d4aff>] scsi_forget_host+0x4f/0x60
-[ 1563.906468]  [<c06cd84a>] scsi_remove_host+0x5a/0xf0
-[ 1563.906482]  [<f7f030fb>] quiesce_and_remove_host+0x5b/0xa0 [usb_storage]
-[ 1563.906490]  [<f7f03203>] usb_stor_disconnect+0x13/0x20 [usb_storage]
-
-Anyway I think this patch is some step forward.
-
-As drawback, I do not teardown on sysfs file create error, because I do
-not know how to nullify disk->ev (since it can be used). However add_disk
-error handling practically does not exist too, and things will work
-without this sysfs file, except events will not be exported to user
-space.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
-RFC -> PATCH: some changelog tweaks and Tejun ack added
-
- block/genhd.c |   32 +++++++++++++++++++-------------
- 1 files changed, 19 insertions(+), 13 deletions(-)
-
-diff --git a/block/genhd.c b/block/genhd.c
-index 23b4f70..b26c408 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -35,6 +35,7 @@ static DEFINE_IDR(ext_devt_idr);
- 
- static struct device_type disk_type;
- 
-+static void disk_alloc_events(struct gendisk *disk);
- static void disk_add_events(struct gendisk *disk);
- static void disk_del_events(struct gendisk *disk);
- static void disk_release_events(struct gendisk *disk);
-@@ -601,6 +602,8 @@ void add_disk(struct gendisk *disk)
- 	disk->major = MAJOR(devt);
- 	disk->first_minor = MINOR(devt);
- 
-+	disk_alloc_events(disk);
-+
- 	/* Register BDI before referencing it from bdev */
- 	bdi = &disk->queue->backing_dev_info;
- 	bdi_register_dev(bdi, disk_devt(disk));
-@@ -1733,9 +1736,9 @@ module_param_cb(events_dfl_poll_msecs, &disk_events_dfl_poll_msecs_param_ops,
- 		&disk_events_dfl_poll_msecs, 0644);
- 
- /*
-- * disk_{add|del|release}_events - initialize and destroy disk_events.
-+ * disk_{alloc|add|del|release}_events - initialize and destroy disk_events.
-  */
--static void disk_add_events(struct gendisk *disk)
-+static void disk_alloc_events(struct gendisk *disk)
- {
- 	struct disk_events *ev;
- 
-@@ -1748,16 +1751,6 @@ static void disk_add_events(struct gendisk *disk)
- 		return;
- 	}
- 
--	if (sysfs_create_files(&disk_to_dev(disk)->kobj,
--			       disk_events_attrs) < 0) {
--		pr_warn("%s: failed to create sysfs files for events\n",
--			disk->disk_name);
--		kfree(ev);
--		return;
--	}
--
--	disk->ev = ev;
--
- 	INIT_LIST_HEAD(&ev->node);
- 	ev->disk = disk;
- 	spin_lock_init(&ev->lock);
-@@ -1766,8 +1759,21 @@ static void disk_add_events(struct gendisk *disk)
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
- 
-+	disk->ev = ev;
-+}
-+
-+static void disk_add_events(struct gendisk *disk)
-+{
-+	if (!disk->ev)
-+		return;
-+
-+	/* FIXME: error handling */
-+	if (sysfs_create_files(&disk_to_dev(disk)->kobj, disk_events_attrs) < 0)
-+		pr_warn("%s: failed to create sysfs files for events\n",
-+			disk->disk_name);
-+
- 	mutex_lock(&disk_events_mutex);
--	list_add_tail(&ev->node, &disk_events);
-+	list_add_tail(&disk->ev->node, &disk_events);
- 	mutex_unlock(&disk_events_mutex);
- 
- 	/*
--- 
-1.7.1
+>> 
+>> Your opinion?
+>> 
+>> Thanks,
+>> Jinsong
+>> 
+>>> 
+>>> The other thing I am not comfortable about is that the pvops
+>>> structure are used for low-level code. Not for higher up, like
+>>> ACPI. For that another structure seems more prudent. Perhaps
+>>> something like the x86 one, but specific to ACPI?
 
