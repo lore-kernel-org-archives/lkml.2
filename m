@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab2BVKNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 05:13:19 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:43964 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab2BVKNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 05:13:17 -0500
-X-IronPort-AV: E=Sophos;i="4.73,463,1325491200"; 
-   d="asc'?scan'208";a="627565856"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull 4 bugfixes for the NFS client
-Thread-Topic: [GIT PULL] Please pull 4 bugfixes for the NFS client
-Thread-Index: AQHM8UqUsauWhmZaQEycjlxPrurqwQ==
-Date: Wed, 22 Feb 2012 10:13:10 +0000
-Message-ID: <1329905589.3043.10.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-kJE3mws0/5SmWWp9H1Qr"
-MIME-Version: 1.0
-X-OriginalArrivalTime: 22 Feb 2012 10:13:11.0014 (UTC) FILETIME=[949DB860:01CCF14A]
+	id S1755507Ab2BVKQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 05:16:07 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34833 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab2BVKQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 05:16:05 -0500
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, amit.kachhap@linaro.org,
+        durgadoss.r@intel.com, rob.lee@linaro.org, patches@linaro.org
+Subject: [PATCH 0/4] thermal: Adding generic cpu cooling devices
+Date: Wed, 22 Feb 2012 15:44:06 +0530
+Message-Id: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-kJE3mws0/5SmWWp9H1Qr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Changes since RFC:
+ *Changed the cpu cooling registration/unregistration API's to instance based
+ *Changed the STATE_ACTIVE trip type to pass correct instance id
+ *Adding support to restore back the policy->max_freq after doing frequency 
+  clipping.
+ *Moved the trip cooling stats from sysfs node to debugfs node as suggested
+  by Greg KH greg@kroah.com 
+ *Incorporated several review comments from eduardo.valentin@ti.com
 
-Hi Linus,
+Todo:
+ *Report time spent in each trip point along with the cooling statistics
+ *Add opp library support in cpufreq cooling api's
 
-Please pull from the signed tag "nfs-for-3.3-4" in the repository at
+Brief Description:
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tag nfs-=
-for-3.3-4
+1) The generic cooling devices code is placed inside driver/thermal/* as 
+placing inside acpi folder will need un-necessary enabling of acpi code.
 
-This will update the following files through the appended changesets.
+2) This patchset adds a new trip type THERMAL_TRIP_STATE_ACTIVE which passes
+cooling device instance number and may be helpful for cpufreq cooling devices
+to take the correct cooling action.
 
-  Cheers,
-    Trond
+3) This patchset adds generic cpu cooling low level implementation through
+frequency clipping and cpu hotplug. In future, other cpu related cooling
+devices may be added here. An ACPI version of this already exists
+(drivers/acpi/processor_thermal.c). But this will be useful for platforms
+like ARM using the generic thermal interface along with the generic cpu
+cooling devices. The cooling device registration API's return cooling device
+pointers which can be easily binded with the thermal zone trip points.
 
-----
- fs/nfs/nfs4proc.c       |  130 ++++++++++++++++++++-----------------------=
-----
- fs/nfs/nfs4state.c      |    2 +
- fs/nfs/nfs4xdr.c        |    5 ++-
- include/linux/nfs_xdr.h |    2 +-
- 4 files changed, 62 insertions(+), 77 deletions(-)
+4)This patchset provides a simple way of reporting cooling achieved in a
+trip type. This will help in fine cooling the cooling devices attached.
 
-commit abe9a6d57b4544ac208401f9c0a4262814db2be4
-Author: Weston Andros Adamson <dros@netapp.com>
-Date:   Thu Feb 16 11:17:05 2012 -0500
+Amit Daniel Kachhap (4):
+  thermal: Add a new trip type to use cooling device instance number
+  thermal: Add generic cpufreq cooling implementation
+  thermal: Add generic cpuhotplug cooling implementation
+  thermal: Add support to report cooling statistics achieved by cooling
+    devices
 
-    NFSv4: fix server_scope memory leak
-   =20
-    server_scope would never be freed if nfs4_check_cl_exchange_flags() ret=
-urned
-    non-zero
-   =20
-    Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+ Documentation/thermal/cpu-cooling-api.txt |   57 ++++
+ Documentation/thermal/sysfs-api.txt       |    4 +-
+ drivers/thermal/Kconfig                   |   11 +
+ drivers/thermal/Makefile                  |    1 +
+ drivers/thermal/cpu_cooling.c             |  484 +++++++++++++++++++++++++++++
+ drivers/thermal/thermal_sys.c             |  165 ++++++++++-
+ include/linux/cpu_cooling.h               |   71 +++++
+ include/linux/thermal.h                   |   14 +
+ 8 files changed, 802 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+ create mode 100644 drivers/thermal/cpu_cooling.c
+ create mode 100644 include/linux/cpu_cooling.h
 
-commit f86f36a6ae625eda87a13e1ea102a908e08f491b
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Tue Feb 14 20:33:19 2012 -0500
-
-    NFSv4.1: Fix a NFSv4.1 session initialisation regression
-   =20
-    Commit aacd553 (NFSv4.1: cleanup init and reset of session slot tables)
-    introduces a regression in the session initialisation code. New tables
-    now find their sequence ids initialised to 0, rather than the mandated
-    value of 1 (see RFC5661).
-   =20
-    Fix the problem by merging nfs4_reset_slot_table() and nfs4_init_slot_t=
-able().
-    Since the tbl->max_slots is initialised to 0, the test in
-    nfs4_reset_slot_table for max_reqs !=3D tbl->max_slots will automatical=
-ly
-    pass for an empty table.
-   =20
-    Reported-by: Vitaliy Gusev <gusev.vitaliy@nexenta.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit b9f9a03150969e4bd9967c20bce67c4de769058f
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Feb 9 15:31:36 2012 -0500
-
-    NFSv4: Ensure we throw out bad delegation stateids on NFS4ERR_BAD_STATE=
-ID
-   =20
-    To ensure that we don't just reuse the bad delegation when we attempt t=
-o
-    recover the nfs4_state that received the bad stateid error.
-   =20
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@vger.kernel.org
-
-commit 331818f1c468a24e581aedcbe52af799366a9dfe
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Feb 3 18:30:53 2012 -0500
-
-    NFSv4: Fix an Oops in the NFSv4 getacl code
-   =20
-    Commit bf118a342f10dafe44b14451a1392c3254629a1f (NFSv4: include bitmap
-    in nfsv4 get acl data) introduces the 'acl_scratch' page for the case
-    where we may need to decode multi-page data. However it fails to take
-    into account the fact that the variable may be NULL (for the case where
-    we're not doing multi-page decode), and it also attaches it to the
-    encoding xdr_stream rather than the decoding one.
-   =20
-    The immediate result is an Oops in nfs4_xdr_enc_getacl due to the
-    call to page_address() with a NULL page pointer.
-   =20
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: Andy Adamson <andros@netapp.com>
-    Cc: stable@vger.kernel.org
-
-
---=20
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-
---=-kJE3mws0/5SmWWp9H1Qr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPRL+1AAoJEGcL54qWCgDyW0AP/34kcBzJPVEn5QGucYUwYb1J
-EJKXF0SG32jdayRQjnGr+eFt2tCDotxRn8yJGyMLbcGimcgVEbfchpFzas5cKm8F
-TM4n4EjCRUqLq0BL7dD3QbCSbcUqP+OZ20DfHJlHVC1inZyfdLwoJCHU0PfHJ/ld
-YVuUfgZzwyoYIxnybk9j/zQpLOYABMwLKQ+F/m0CxNNY15id1ThRN+nmCnQM0YR3
-e+y8XIn9TZnkJ8YLBRhmXZOm+S1Kh/LWBuUZCFkiQohkFdHR61eXwok47B5Ikyfu
-BBOkf86mDWnIz8qVb3YXS+pfVTF8tv2gElGEITYDjZUjrAtPTXZKNlqVI34U/CeA
-YNlwTcT+/pfRIxwrPTe0Xs2S4GCkRo81M9HER5ozzJar0D2zJOFD/EEG1ATIkY+l
-CywnjblRhE+k0ZSxSQXeUOISit7cbRqU/H0QMx9iOTHvw5ZZQiWxRkNztqdoC58p
-Lds6PABiBZUd1qH4L7VCSUQwqmTeLFYey6L062fdy53QcXuhBM2vW7V3+t+dbj78
-MG8vpwHDoQj5qpYtKdnjySCb6a+ZKAEaAhBjRlAkqjwFPMoRTfBzvepVGCGxpJVo
-TpABeAKZy341qBcZJW6QrhVyhb5L2bXdU9r5Bd+4W4+IqIo1q3Q9wcovqVk/mo44
-NnxVixxFPkV3x7J7NoU3
-=ub8E
------END PGP SIGNATURE-----
-
---=-kJE3mws0/5SmWWp9H1Qr--
