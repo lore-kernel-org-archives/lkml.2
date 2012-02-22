@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2BVRVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:21:55 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8241 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab2BVRVx convert rfc822-to-8bit (ORCPT
+	id S1754708Ab2BVRWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:22:01 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:36745 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab2BVRV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:21:53 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 22 Feb 2012 09:21:27 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Dong Aisheng <aisheng.dong@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 22 Feb 2012 09:21:25 -0800
-Subject: RE: [PATCH 11/20] pinctrl: Downgrade pinctrl_get warning when no
- maps are found
-Thread-Topic: [PATCH 11/20] pinctrl: Downgrade pinctrl_get warning when no
- maps are found
-Thread-Index: AczxLgjtjbx6E38BS06w5KCUrkpBWQAV9h2A
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC66B@HQMAIL01.nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
- <1329720360-23227-12-git-send-email-swarren@nvidia.com>
- <CACRpkdbpBZqUUwxwF8o8P1P9yknY7SRSzGmYsa3kQ1JH=QNJ7A@mail.gmail.com>
- <20120222065647.GE11087@shlinux2.ap.freescale.net>
-In-Reply-To: <20120222065647.GE11087@shlinux2.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Feb 2012 12:21:56 -0500
+Date: Wed, 22 Feb 2012 18:21:54 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Tejun Heo <tj@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+Message-ID: <20120222172154.GA29641@merkur.ravnborg.org>
+References: <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <20120222170330.GA29521@merkur.ravnborg.org> <alpine.SOC.1.00.1202221910420.17363@math.ut.ee>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.SOC.1.00.1202221910420.17363@math.ut.ee>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dong Aisheng wrote at Tuesday, February 21, 2012 11:57 PM:
-> On Tue, Feb 21, 2012 at 02:51:55PM +0100, Linus Walleij wrote:
-> > On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> >
-> > > This may be perfectly legitimate. An IP block may get re-used
-> > > across SoCs. Not all of those SoCs may need pinmux settings for the
-> > > IP block, e.g. if one SoC dedicates pins to that function but
-> > > another doesn't. The driver won't know this, and will always
-> > > attempt to set up the pinmux. The mapping table defines whether any
-> > > HW programming is actually needed.
-> > >
-> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> >
-> > This is equivalent to providing dummy pincontrollers as was on my
-> > TODO for a while admittedly.
-> >
-> > For consistency with regulators it would maybe be better to have
-> > optional dummy pin controllers but after thinking a bit about it
-> > I think this is more helpful, so I applied it anyway.
-> >
-> > However I would invite more opinions...
->
-> I'm afraid this is a little error-prone, that means even we specifed
-> the wrong map name or state name, the pinctrl_get still does not get
-> failed and it is a little different as what we want in this patch.
+On Wed, Feb 22, 2012 at 07:12:06PM +0200, Meelis Roos wrote:
+> > Meelis - do the affected boxes have any special memory configurations?
+> 
+> Nothin special to me. E3500 has 2G, V100 has 1G, V210 and V240 have 2G 
+> and 1.5G.
+> 
+> > Could you try to boot with a sensible mem=xxx value to see if limiting the memory
+> > helps.
+> 
+> Like mem=256M? Will try.
+Think just a little more - I do not think this will help.
+I confused myself with some of the sparc32 issues I have hit.
 
-Yes, this does open up a small opportunity for an undetected error at
-this stage in the patch series.
+I have looked a little at the log files you included.
+The only thing that looked different was that the faulty version
+had a number after "@" which is higher than 1 - where the OK always have 1.
 
-However, this is closed later by the final patch that enhances the mapping
-table to represent pin config data, and "dummy" states.
+This is "idx" in memblock_insert_region() - but I did not look closer.
 
-I wrote/posted this patch to highlight that this code should be checking
-for non-existent states, rather than states which match no mapping table
-entries. Admittedly, there's no way to represent the difference at this
-point in the patch series. Once the final patch is applied, there's an
-explicit way to represent a state that exists, but has no mapping table
-entries, so the opportunity for error then no longer exists.
-
--- 
-nvpublic
-
+	Sam
