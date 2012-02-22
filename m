@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab2BVDPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 22:15:45 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33299 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab2BVDPn (ORCPT
+	id S1755105Ab2BVDQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 22:16:41 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:35442 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab2BVDQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 22:15:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bleung@chromium.org designates 10.68.204.7 as permitted sender) smtp.mail=bleung@chromium.org; dkim=pass header.i=bleung@chromium.org
-MIME-Version: 1.0
-From: Benson Leung <bleung@chromium.org>
-To: len.brown@intel.com, lucas.demarchi@profusion.mobi
-Cc: linux-kernel@vger.kernel.org, vapier@chromium.org, bleung@chromium.org
-Subject: [PATCH] tools/power x86_energy_perf_policy: fix cpuid for i686
-Date: Tue, 21 Feb 2012 19:15:21 -0800
-Message-Id: <1329880521-20868-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.7.1
+	Tue, 21 Feb 2012 22:16:40 -0500
+Date: Tue, 21 Feb 2012 22:16:09 -0500 (EST)
+Message-Id: <20120221.221609.218135609185671883.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, autofs@linux.kernel.org,
+        thomas@m3y3r.de, viro@zeniv.linux.org.uk
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Feb 2012 19:16:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_energy_perf_policy reads cpuid using the cpuid instruction.
-On i686, when building with PIC, this clobbers ebx, the PIC register.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 21 Feb 2012 18:24:10 -0800
 
-Fixed using the same cpuid accessor function that vapier@chromium.org
-created for i7z:
-http://code.google.com/p/i7z/issues/detail?id=31
+> No, the problem is that "is_compat_task()" is not the right check.
+> It's not the task that *waits* for autofs that matters, it's that damn
+> autofs daemon task.
+> 
+> IOW, what we actually want to test is whether the other end of that
+> autofs sbi->pipe is a compat task or not.
+> 
+> And I have no idea how to do that.
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- .../x86_energy_perf_policy.c                       |   25 ++++++++++++++++----
- 1 files changed, 20 insertions(+), 5 deletions(-)
+It's just a real fd, and there is no way to tell the compat'ness for
+that.  The mount operation literally passes in an integer attribute as
+the pipefd mount option, and that's what it seems to use to send these
+events.
 
-diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-index 33c5c7e..576fbf4 100644
---- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-+++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-@@ -130,6 +130,23 @@ void cmdline(int argc, char **argv)
- 	}
- }
- 
-+void cpuid (unsigned int info, unsigned int *eax, unsigned int *ebx,
-+	    unsigned int *ecx, unsigned int *edx)
-+{
-+	unsigned int _eax = info, _ebx, _ecx, _edx;
-+	asm volatile ("mov %%ebx, %%edi;" /* save ebx (for PIC) */
-+		      "cpuid;"
-+		      "mov %%ebx, %%esi;" /* pass to caller */
-+		      "mov %%edi, %%ebx;" /* restore ebx */
-+		      :"+a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx)
-+		      :      /* inputs: eax is handled above */
-+		      :"edi" /* clobbers: we hit edi directly */);
-+	if (eax) *eax = _eax;
-+	if (ebx) *ebx = _ebx;
-+	if (ecx) *ecx = _ecx;
-+	if (edx) *edx = _edx;
-+}
-+
- /*
-  * validate_cpuid()
-  * returns on success, quietly exits on failure (make verbose with -v)
-@@ -141,9 +158,7 @@ void validate_cpuid(void)
- 
- 	eax = ebx = ecx = edx = 0;
- 
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
--		"=d" (edx) : "a" (0));
--
-+	cpuid(0, &max_level, &ebx, &ecx, &edx);
- 	if (ebx != 0x756e6547 || edx != 0x49656e69 || ecx != 0x6c65746e) {
- 		if (verbose)
- 			fprintf(stderr, "%.4s%.4s%.4s != GenuineIntel",
-@@ -151,7 +166,7 @@ void validate_cpuid(void)
- 		exit(1);
- 	}
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	cpuid(1, &fms, NULL, &ecx, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -173,7 +188,7 @@ void validate_cpuid(void)
- 	 * Support for MSR_IA32_ENERGY_PERF_BIAS
- 	 * is indicated by CPUID.06H.ECX.bit3
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (6));
-+	cpuid(6, &eax, &ebx, &ecx, &edx);
- 	if (verbose)
- 		printf("CPUID.06H.ECX: 0x%x\n", ecx);
- 	if (!(ecx & (1 << 3))) {
--- 
-1.7.1
+And that fd can be dup()'d, exec()'d into compat and non-compat tasks,
+passed around as SCM credentials between arbitrary processes, etc.
 
+It's a real mess.
+
+The only way to fix this cess pool completely is to override the
+read() fop on that pipe, and translate the event stream in-situ.
+
+What we could do is just manage the autofs messages as a linked list
+of events, f.e. the packets in native format, then in the overridden
+read() handler we either pass it along as is (for non-compat tasks) or
+translate to compat format and copy that to userspace instead.
