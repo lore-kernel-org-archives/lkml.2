@@ -1,175 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab2BVHsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:48:30 -0500
-Received: from mga05.intel.com ([192.55.52.89]:36656 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751153Ab2BVHs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:48:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.152.108.49 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
+	id S1753002Ab2BVHsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 02:48:50 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51877 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752225Ab2BVHst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 02:48:49 -0500
+Date: Wed, 22 Feb 2012 08:48:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120222074839.GA24890@elte.hu>
+References: <cover.1329851692.git.jbaron@redhat.com>
+ <4F43F9F0.4000605@zytor.com>
+ <20120222065016.GA16923@elte.hu>
+ <4F44934B.2000808@zytor.com>
+ <20120222072538.GA17291@elte.hu>
+ <4F449ACF.3040807@zytor.com>
 MIME-Version: 1.0
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: [PATCH] tmpfs: security xattr setting on inode creation
-Date: Wed, 22 Feb 2012 09:48:14 +0200
-Message-Id: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F449ACF.3040807@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds to generic xattr support introduced in Linux 3.0 by
-implementing initxattrs callback. This enables consulting
-of security attributes from LSM and EVM when inode originally
-created.
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
----
- mm/shmem.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 61 insertions(+), 16 deletions(-)
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 7a45ad0..72addf1 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1480,6 +1480,59 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- /*
-  * File creation. Allocate an inode, and we're done..
-  */
-+
-+static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
-+{
-+	/* wrap around? */
-+	size_t len = sizeof(**new_xattr) + size;
-+	if (len <= sizeof(**new_xattr))
-+		return -ENOMEM;
-+
-+	*new_xattr = kmalloc(len, GFP_KERNEL);
-+	if (*new_xattr == NULL)
-+		return -ENOMEM;
-+
-+	(*new_xattr)->size = size;
-+	return 0;
-+}
-+
-+static int shmem_initxattrs(struct inode *inode,
-+			    const struct xattr *xattr_array,
-+			    void *fs_info)
-+{
-+	const struct xattr *xattr;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
-+	struct shmem_xattr *new_xattr = NULL;
-+	size_t len;
-+	int err = 0;
-+
-+	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-+		err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
-+		if (err < 0)
-+			break;
-+
-+		len = strlen(xattr->name) + 1;
-+		new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
-+					  GFP_KERNEL);
-+		if (new_xattr->name == NULL) {
-+			kfree(new_xattr);
-+			return -ENOMEM;
-+		}
-+
-+		memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
-+		       XATTR_SECURITY_PREFIX_LEN);
-+		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
-+		       xattr->name, len);
-+		memcpy(new_xattr->value, xattr->value, xattr->value_len);
-+
-+		spin_lock(&info->lock);
-+		list_add(&new_xattr->list, &info->xattr_list);
-+		spin_unlock(&info->lock);
-+	}
-+
-+	return err;
-+}
-+
- static int
- shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
- {
-@@ -1490,7 +1543,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
- 	if (inode) {
- 		error = security_inode_init_security(inode, dir,
- 						     &dentry->d_name,
--						     NULL, NULL);
-+						     &shmem_initxattrs, NULL);
- 		if (error) {
- 			if (error != -EOPNOTSUPP) {
- 				iput(inode);
-@@ -1630,7 +1683,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
- 		return -ENOSPC;
- 
- 	error = security_inode_init_security(inode, dir, &dentry->d_name,
--					     NULL, NULL);
-+					     &shmem_initxattrs, NULL);
- 	if (error) {
- 		if (error != -EOPNOTSUPP) {
- 			iput(inode);
-@@ -1731,26 +1784,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
- 	return ret;
- }
- 
--static int shmem_xattr_set(struct dentry *dentry, const char *name,
-+static int shmem_xattr_set(struct inode *inode, const char *name,
- 			   const void *value, size_t size, int flags)
- {
--	struct inode *inode = dentry->d_inode;
- 	struct shmem_inode_info *info = SHMEM_I(inode);
- 	struct shmem_xattr *xattr;
- 	struct shmem_xattr *new_xattr = NULL;
--	size_t len;
- 	int err = 0;
- 
- 	/* value == NULL means remove */
- 	if (value) {
--		/* wrap around? */
--		len = sizeof(*new_xattr) + size;
--		if (len <= sizeof(*new_xattr))
--			return -ENOMEM;
--
--		new_xattr = kmalloc(len, GFP_KERNEL);
--		if (!new_xattr)
--			return -ENOMEM;
-+		err = shmem_xattr_alloc(size, &new_xattr);
-+		if (err < 0)
-+			return err;
- 
- 		new_xattr->name = kstrdup(name, GFP_KERNEL);
- 		if (!new_xattr->name) {
-@@ -1758,7 +1804,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
- 			return -ENOMEM;
- 		}
- 
--		new_xattr->size = size;
- 		memcpy(new_xattr->value, value, size);
- 	}
- 
-@@ -1858,7 +1903,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
- 	if (size == 0)
- 		value = "";  /* empty EA, do not remove */
- 
--	return shmem_xattr_set(dentry, name, value, size, flags);
-+	return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
- 
- }
- 
-@@ -1878,7 +1923,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
- 	if (err)
- 		return err;
- 
--	return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
-+	return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
- }
- 
- static bool xattr_is_trusted(const char *name)
--- 
-1.7.5.4
+> On 02/21/2012 11:25 PM, Ingo Molnar wrote:
+> > 
+> > There is a fundamental assymetry, and intentionally so. You 
+> > *really* have to think what the common case is, and make 
+> > sure the build defaults to that. It's not the end of the 
+> > world to have it flipped over, but there's costs and those 
+> > costs are higher even in the branch path than a regular 
+> > likely()/unlikely().
+> 
+> No, not really -- it's still an unconditional branch, which 
+> means you will not tax the branch predictor in any way and 
+> which can be followed by the front end without taking a 
+> speculation hit. [...]
 
+You are talking about CPU level costs, I am also talking about 
+costs introduced at build time.
+
+Fact is, jump-label unlikely branches are moved *out of line*: 
+they are often in unlikely portions of the function (near other 
+unlikely branches), with instruction cache granularity costs and 
+potentially higher instruction-cache miss costs attached, etc.
+
+You are missing three important aspects:
+
+Firstly, instead of:
+
+  ins1
+  ins2
+  ins3
+  ins4
+  ins5
+  ins-compare
+  ins-branch
+  ins6
+  ins7
+  ins8
+  ins9
+  ins10
+
+We have:
+
+  ins1
+  ins2
+  ins3
+  ins4
+  ins5
+  ins-jump
+
+  [ hole ]
+
+  ins6
+  ins7
+  ins8
+  ins9
+  ins10
+  ins-jump back
+
+Where the 'hole' fragments the instruction cache layout. Given 
+that most of kernel execution is instruction-cache-cold, the 
+'straightness' of kernel code matters quite a bit.
+
+Secondly, there's build time instruction scheduling costs as 
+well: GCC will prefer the likely branch over the unlikely one, 
+so we might see extra instructions in the out-of-line code:
+
+
+  ins1
+  ins2
+  ins3
+  ins4
+  ins5
+  ins-jump
+
+  [ hole ]
+
+  ins-extra-1
+  ins-extra-2
+  ins6
+  ins7
+  ins8
+  ins9
+  ins10
+  ins-jump back
+
+In that sense jump labels are unlikely() branches combined with 
+a patching mechanism.
+
+Thus *both* aspects are important: if a branch is *truly* 50/50 
+then it's quite possibly *NOT* a correct optimization to use 
+jump-labels as the 'uncommon' code goes through extra hoops and 
+fragments out of the fastpath, which in quite many real life 
+cases can outstrip the advantage of the avoidance of a single 
+branch ...
+
+Thirdly,
+
+even if it's a correct optimization and both branches happen to 
+outperform the pre-jump-label version, regardless of the 
+direction of the jump label flag, it's *STILL* fundamentally 
+assymetric: due to the hole and due to the possible extra 
+instructions the out of line code will be slower by a few 
+instruction and the NOP fall-through will be faster.
+
+This is fundamentally so, and any naming that tries to *hide* 
+that assymetry and the associated micro-costs is confused.
+
+Thanks,
+
+	Ingo
