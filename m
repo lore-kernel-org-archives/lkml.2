@@ -1,155 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab2BVE47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 23:56:59 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38795 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab2BVE46 (ORCPT
+	id S1750847Ab2BVFA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 00:00:57 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:45591 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab2BVFA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 23:56:58 -0500
+	Wed, 22 Feb 2012 00:00:56 -0500
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Tejun Heo'" <tj@kernel.org>,
+        "'Jun'ichi Nomura'" <j-nomura@ce.jp.nec.com>
+Cc: "'Jens Axboe'" <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        "'linux-scsi'" <linux-scsi@vger.kernel.org>,
+        "'Naveen Goswamy'" <naveen.goswamy@polymtl.ca>,
+        "'James Bottomley'" <James.Bottomley@HansenPartnership.com>,
+        "'Stefan Richter'" <stefanr@s5r6.in-berlin.de>,
+        "'Dave Jones'" <davej@redhat.com>, <sgruszka@redhat.com>,
+        "'Huajun Li'" <huajun.li.lee@gmail.com>
+References: <4F443E81.2060402@ce.jp.nec.com> <20120222010435.GI12236@google.com>
+Subject: RE: [PATCH] Fix NULL pointer dereference in sd_revalidate_disk
+Date: Wed, 22 Feb 2012 12:58:08 +0800
+Message-ID: <95E22EAF20104309BF3938E7820F36D6@usish.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
- <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
- <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 21 Feb 2012 20:56:36 -0800
-X-Google-Sender-Auth: 7DKopasO-5vk2Zaly4wXEPRWT58
-Message-ID: <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-To: David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=0016e6d625845a195204b9865baa
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Aczw/dBc/x1ta7RXQkyCWJ+VInORHgAIG6kg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <20120222010435.GI12236@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d625845a195204b9865baa
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Should this need pick up into stable too?
 
-On Tue, Feb 21, 2012 at 7:47 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> And then it does a AUTOFS_IOC_PROTOVER ioctl to see what the protocol
-> version is.
->
-> So we could just decide that
->
-> =A0(a) we add a mount option for the packet size (or just "v6" - which
-> would be "v5 with a fixed packet size")
->
-> =A0(b) in the absence of an explicit mount option, we look at
-> is_compat_task() for the first AUTOFS_IOC_PROTOVER ioctl we get.
+Jack
+Re: [PATCH] Fix NULL pointer dereference in sd_revalidate_disk
+> 
+> On Wed, Feb 22, 2012 at 10:01:53AM +0900, Jun'ichi Nomura wrote:
+> > Since 2.6.39 (1196f8b), when a driver returns -ENOMEDIUM for open(),
+> > __blkdev_get() calls rescan_partitions() to remove
+> > in-kernel partition structures and raise KOBJ_CHANGE uevent.
+> >
+> > However it ends up calling driver's revalidate_disk without open
+> > and could cause oops.
+> >
+> > In the case of SCSI:
+> >
+> >   process A                  process B
+> >   ----------------------------------------------
+> >   sys_open
+> >     __blkdev_get
+> >       sd_open
+> >         returns -ENOMEDIUM
+> >                              scsi_remove_device
+> >                                <scsi_device torn down>
+> >       rescan_partitions
+> >         sd_revalidate_disk
+> >           <oops>
+> >
+> > Oopses are reported here:
+> > http://marc.info/?l=linux-scsi&m=132388619710052
+> >
+> > This patch separates the partition invalidation from rescan_partitions()
+> > and use it for -ENOMEDIUM case.
+> >
+> > Reported-by: Huajun Li <huajun.li.lee@gmail.com>
+> > Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Thank you!
+> 
+> --
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Ok, so here's a patch that does that. Well, it doesn't do that (a)
-part, but it does the auto-detection of whether the daemon is a compat
-process or not.
-
-THIS IS UNTESTED. Thomas - could you test this in your environment? I
-added your "Tested-by:", but that's really for the previous patch that
-tested is_compat_task() in the wrong context.
-
-                        Linus
-
---0016e6d625845a195204b9865baa
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-autofs-work-around-unhappy-compat-problem-on-x86-64.patch"
-Content-Disposition: attachment; 
-	filename="0001-autofs-work-around-unhappy-compat-problem-on-x86-64.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gyxw4bkr0
-
-RnJvbSA0Njk1OWY2MjM3ZjRkMjEzMWVjNThjNDg2ODAyMmUzNGYyMDcxNWI4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRh
-dGlvbi5vcmc+CkRhdGU6IFR1ZSwgMjEgRmViIDIwMTIgMTc6MzY6MDYgLTA4MDAKU3ViamVjdDog
-W1BBVENIXSBhdXRvZnM6IHdvcmsgYXJvdW5kIHVuaGFwcHkgY29tcGF0IHByb2JsZW0gb24geDg2
-LTY0CgpXaGVuIHRoZSBhdXRvZnMgcHJvdG9jb2wgdmVyc2lvbiA1IHBhY2tldCB0eXBlIHdhcyBh
-ZGRlZCBpbiBjb21taXQKNWMwYTMyZmMyY2QwICgiYXV0b2ZzNDogYWRkIG5ldyBwYWNrZXQgdHlw
-ZSBmb3IgdjUgY29tbXVuaWNhdGlvbnMiKSwgaXQKb2J2b3VzbHkgdHJpZWQgcXVpdGUgaGFyZCB0
-byBiZSB3b3JkLXNpemUgYWdub3N0aWMsIGFuZCB1c2VzIGV4cGxpY2l0bHkKc2l6ZWQgZmllbGRz
-IHRoYXQgYXJlIGFsbCBjb3JyZWN0bHkgYWxpZ25lZC4KCkhvd2V2ZXIsIHdpdGggdGhlIGZpbmFs
-ICJjaGFyIG5hbWVbTkFNRV9NQVgrMV0iIGFycmF5IGF0IHRoZSBlbmQsIHRoZQphY3R1YWwgc2l6
-ZSBvZiB0aGUgc3RydWN0dXJlIGVuZHMgdXAgYmVpbmcgbm90IHZlcnkgd2VsbCBkZWZpbmVkOgpi
-ZWNhdXNlIHRoZSBzdHJ1Y3QgaXNuJ3QgbWFya2VkICdwYWNrZWQnLCBkb2luZyBhICJzaXplb2Yo
-KSIgb24gaXQgd2lsbAphbGlnbiB0aGUgc2l6ZSBvZiB0aGUgc3RydWN0IHVwIHRvIHRoZSBiaWdn
-ZXN0IGFsaWdubWVudCBvZiB0aGUgbWVtYmVycwppdCBoYXMuCgpBbmQgZGVzcGl0ZSBhbGwgdGhl
-IG1lbWJlcnMgYmVpbmcgdGhlIHNhbWUsIHRoZSBhbGlnbm1lbnQgb2YgdGhlbSBpcwpkaWZmZXJl
-bnQ6IGEgIl9fdTY0IiBoYXMgNC1ieXRlIGFsaWdubWVudCBvbiB4ODYtMzIsIGJ1dCBuYXRpdmUg
-OC1ieXRlCmFsaWdubWVudCBvbiB4ODYtNjQuICBBbmQgd2hpbGUgJ05BTUVfTUFYKzEnIGVuZHMg
-dXAgYmVpbmcgYSBuaWNlIHJvdW5kCm51bWJlciAoMjU2KSwgdGhlIG5hbWVbXSBhcnJheSBzdGFy
-dHMgb3V0IGEgNC1ieXRlIGFsaWduZWQuCgpFbmQgcmVzdWx0OiB0aGUgInBhY2tlZCIgc2l6ZSBv
-ZiB0aGUgc3RydWN0dXJlIGlzIDMwMCBieXRlczogNC1ieXRlLCBidXQKbm90IDgtYnl0ZSBhbGln
-bmVkLgoKQXMgYSByZXN1bHQsIGRlc3BpdGUgYWxsIHRoZSBmaWVsZHMgYmVpbmcgaW4gdGhlIHNh
-bWUgcGxhY2Ugb24gYWxsCmFyY2hpdGVjdHVyZXMsIHNpemVvZigpIHdpbGwgcm91bmQgdXAgdGhh
-dCBzaXplIHRvIDMwNCBieXRlcyBvbgphcmNoaXRlY3R1cmVzIHRoYXQgaGF2ZSA4LWJ5dGUgYWxp
-Z25tZW50IGZvciB1NjQuCgpOb3RlIHRoYXQgdGhpcyBpcyAqbm90KiBhIHByb2JsZW0gZm9yIDMy
-LWJpdCBjb21wYXQgbW9kZSBvbiBQT1dFUiwgc2luY2UKdGhlcmUgX191NjQgaXMgOC1ieXRlIGFs
-aWduZWQgZXZlbiBpbiAzMi1iaXQgbW9kZS4gIEJ1dCBvbiB4ODYsIDMyLWJpdAphbmQgNjQtYml0
-IGFsaWdubWVudCBpcyBkaWZmZXJlbnQgZm9yIDY0LWJpdCBlbnRpdGllcywgYW5kIGFzIGEgcmVz
-dWx0CnRoZSBzdHJ1Y3R1cmUgdGhhdCBoYXMgZXhhY3RseSB0aGUgc2FtZSBsYXlvdXQgaGFzIGRp
-ZmZlcmVudCBzaXplcy4KClNvIG9uIHg4Ni02NCwgYnV0IG5vIG90aGVyIGFyY2hpdGVjdHVyZSwg
-d2Ugd2lsbCBqdXN0IHN1YnRyYWN0IDQgZnJvbQp0aGUgc2l6ZSBvZiB0aGUgc3RydWN0dXJlIHdo
-ZW4gcnVubmluZyBpbiBhIGNvbXBhdCB0YXNrLiAgVGhhdCB3YXkgd2UKd2lsbCB3cml0ZSB0aGUg
-cHJvcGVybHkgc2l6ZWQgcGFja2V0IHRoYXQgdXNlciBtb2RlIGV4cGVjdHMuCgpOb3QgcHJldHR5
-LiAgU2FkbHksIHRoaXMgdmVyeSBzdWJ0bGUsIGFuZCB1bm5lY2Vzc2FyeSwgc2l6ZSBkaWZmZXJl
-bmNlCmhhcyBiZWVuIGVuY29kZWQgaW4gdXNlciBzcGFjZSB0aGF0IHdhbnRzIHRvIHJlYWQgcGFj
-a2V0cyBvZiAqZXhhY3RseSoKdGhlIHJpZ2h0IHNpemUsIGFuZCB3aWxsIHJlZnVzZSB0byB0b3Vj
-aCBhbnl0aGluZyBlbHNlLgoKUmVwb3J0ZWQtYW5kLXRlc3RlZC1ieTogVGhvbWFzIE1leWVyIDx0
-aG9tYXNAbTN5M3IuZGU+CkNjOiBJYW4gS2VudCA8cmF2ZW5AdGhlbWF3Lm5ldD4KU2lnbmVkLW9m
-Zi1ieTogTGludXMgVG9ydmFsZHMgPHRvcnZhbGRzQGxpbnV4LWZvdW5kYXRpb24ub3JnPgotLS0K
-IGZzL2F1dG9mczQvYXV0b2ZzX2kuaCB8ICAgIDEgKwogZnMvYXV0b2ZzNC9pbm9kZS5jICAgIHwg
-ICAgMSArCiBmcy9hdXRvZnM0L3Jvb3QuYyAgICAgfCAgICAyICsrCiBmcy9hdXRvZnM0L3dhaXRx
-LmMgICAgfCAgIDIxICsrKysrKysrKysrKysrKysrKystLQogNCBmaWxlcyBjaGFuZ2VkLCAyMyBp
-bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2F1dG9mczQvYXV0
-b2ZzX2kuaCBiL2ZzL2F1dG9mczQvYXV0b2ZzX2kuaAppbmRleCBkOGQ4ZTdiYTZhMWUuLmViMWNj
-OTJjZDY3ZCAxMDA2NDQKLS0tIGEvZnMvYXV0b2ZzNC9hdXRvZnNfaS5oCisrKyBiL2ZzL2F1dG9m
-czQvYXV0b2ZzX2kuaApAQCAtMTEwLDYgKzExMCw3IEBAIHN0cnVjdCBhdXRvZnNfc2JfaW5mbyB7
-CiAJaW50IHN1Yl92ZXJzaW9uOwogCWludCBtaW5fcHJvdG87CiAJaW50IG1heF9wcm90bzsKKwlp
-bnQgY29tcGF0X2RhZW1vbjsKIAl1bnNpZ25lZCBsb25nIGV4cF90aW1lb3V0OwogCXVuc2lnbmVk
-IGludCB0eXBlOwogCWludCByZWdob3N0X2VuYWJsZWQ7CmRpZmYgLS1naXQgYS9mcy9hdXRvZnM0
-L2lub2RlLmMgYi9mcy9hdXRvZnM0L2lub2RlLmMKaW5kZXggZTE2OTgwYjAwYjhkLi4yOTIwYmJk
-ZWJkZjMgMTAwNjQ0Ci0tLSBhL2ZzL2F1dG9mczQvaW5vZGUuYworKysgYi9mcy9hdXRvZnM0L2lu
-b2RlLmMKQEAgLTIyNCw2ICsyMjQsNyBAQCBpbnQgYXV0b2ZzNF9maWxsX3N1cGVyKHN0cnVjdCBz
-dXBlcl9ibG9jayAqcywgdm9pZCAqZGF0YSwgaW50IHNpbGVudCkKIAlzZXRfYXV0b2ZzX3R5cGVf
-aW5kaXJlY3QoJnNiaS0+dHlwZSk7CiAJc2JpLT5taW5fcHJvdG8gPSAwOwogCXNiaS0+bWF4X3By
-b3RvID0gMDsKKwlzYmktPmNvbXBhdF9kYWVtb24gPSAtMTsJLyogdW5rbm93biAqLwogCW11dGV4
-X2luaXQoJnNiaS0+d3FfbXV0ZXgpOwogCW11dGV4X2luaXQoJnNiaS0+cGlwZV9tdXRleCk7CiAJ
-c3Bpbl9sb2NrX2luaXQoJnNiaS0+ZnNfbG9jayk7CmRpZmYgLS1naXQgYS9mcy9hdXRvZnM0L3Jv
-b3QuYyBiL2ZzL2F1dG9mczQvcm9vdC5jCmluZGV4IDc1ZTVmMWM4ZTAyOC4uNjk4MzI5ZTZlYTQ2
-IDEwMDY0NAotLS0gYS9mcy9hdXRvZnM0L3Jvb3QuYworKysgYi9mcy9hdXRvZnM0L3Jvb3QuYwpA
-QCAtNzc5LDYgKzc3OSw4IEBAIHN0YXRpYyBpbmxpbmUgaW50IGF1dG9mczRfZ2V0X3NldF90aW1l
-b3V0KHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAqc2JpLAogLyogUmV0dXJuIHByb3RvY29sIHZlcnNp
-b24gKi8KIHN0YXRpYyBpbmxpbmUgaW50IGF1dG9mczRfZ2V0X3Byb3RvdmVyKHN0cnVjdCBhdXRv
-ZnNfc2JfaW5mbyAqc2JpLCBpbnQgX191c2VyICpwKQogeworCWlmIChzYmktPmNvbXBhdF9kYWVt
-b24gPCAwKQorCQlzYmktPmNvbXBhdF9kYWVtb24gPSBpc19jb21wYXRfdGFzaygpOwogCXJldHVy
-biBwdXRfdXNlcihzYmktPnZlcnNpb24sIHApOwogfQogCmRpZmYgLS1naXQgYS9mcy9hdXRvZnM0
-L3dhaXRxLmMgYi9mcy9hdXRvZnM0L3dhaXRxLmMKaW5kZXggZGE4ODc2ZDM4YTdiLi5mOTMyZWIx
-YWFiMDUgMTAwNjQ0Ci0tLSBhL2ZzL2F1dG9mczQvd2FpdHEuYworKysgYi9mcy9hdXRvZnM0L3dh
-aXRxLmMKQEAgLTE1LDYgKzE1LDcgQEAKICNpbmNsdWRlIDxsaW51eC90aW1lLmg+CiAjaW5jbHVk
-ZSA8bGludXgvc2lnbmFsLmg+CiAjaW5jbHVkZSA8bGludXgvZmlsZS5oPgorI2luY2x1ZGUgPGxp
-bnV4L2NvbXBhdC5oPgogI2luY2x1ZGUgImF1dG9mc19pLmgiCiAKIC8qIFdlIG1ha2UgdGhpcyBh
-IHN0YXRpYyB2YXJpYWJsZSByYXRoZXIgdGhhbiBhIHBhcnQgb2YgdGhlIHN1cGVyYmxvY2s7IGl0
-CkBAIC05MSw2ICs5MiwyMyBAQCBzdGF0aWMgaW50IGF1dG9mczRfd3JpdGUoc3RydWN0IGF1dG9m
-c19zYl9pbmZvICpzYmksCiAKIAlyZXR1cm4gKGJ5dGVzID4gMCk7CiB9CisKKy8qCisgKiBUaGUg
-YXV0b2ZzX3Y1IHBhY2tldCB3YXMgbWlzZGVzaWduZWQuCisgKgorICogVGhlIHBhY2tldHMgYXJl
-IGlkZW50aWNhbCBvbiB4ODYtMzIgYW5kIHg4Ni02NCwgYnV0IGhhdmUgZGlmZmVyZW50CisgKiBh
-bGlnbm1lbnQuIFdoaWNoIG1lYW5zIHRoYXQgJ3NpemVvZigpJyB3aWxsIGdpdmUgZGlmZmVyZW50
-IHJlc3VsdHMuCisgKiBGaXggaXQgdXAgZm9yIHRoZSBjYXNlIG9mIHJ1bm5pbmcgMzItYml0IHVz
-ZXIgbW9kZSBvbiBhIDY0LWJpdCBrZXJuZWwuCisgKi8KK3N0YXRpYyBub2lubGluZSBzaXplX3Qg
-YXV0b2ZzX3Y1X3BhY2tldF9zaXplKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAqc2JpKQoreworCXNp
-emVfdCBwa3RzeiA9IHNpemVvZihzdHJ1Y3QgYXV0b2ZzX3Y1X3BhY2tldCk7CisjaWYgZGVmaW5l
-ZChDT05GSUdfWDg2XzY0KSAmJiBkZWZpbmVkKENPTkZJR19DT01QQVQpCisJaWYgKHNiaS0+Y29t
-cGF0X2RhZW1vbiA+IDApCisJCXBrdHN6IC09IDQ7CisjZW5kaWYKKwlyZXR1cm4gcGt0c3o7Cit9
-CiAJCiBzdGF0aWMgdm9pZCBhdXRvZnM0X25vdGlmeV9kYWVtb24oc3RydWN0IGF1dG9mc19zYl9p
-bmZvICpzYmksCiAJCQkJIHN0cnVjdCBhdXRvZnNfd2FpdF9xdWV1ZSAqd3EsCkBAIC0xNTUsOCAr
-MTczLDcgQEAgc3RhdGljIHZvaWQgYXV0b2ZzNF9ub3RpZnlfZGFlbW9uKHN0cnVjdCBhdXRvZnNf
-c2JfaW5mbyAqc2JpLAogCXsKIAkJc3RydWN0IGF1dG9mc192NV9wYWNrZXQgKnBhY2tldCA9ICZw
-a3QudjVfcGt0LnY1X3BhY2tldDsKIAotCQlwa3RzeiA9IHNpemVvZigqcGFja2V0KTsKLQorCQlw
-a3RzeiA9IGF1dG9mc192NV9wYWNrZXRfc2l6ZShzYmkpOwogCQlwYWNrZXQtPndhaXRfcXVldWVf
-dG9rZW4gPSB3cS0+d2FpdF9xdWV1ZV90b2tlbjsKIAkJcGFja2V0LT5sZW4gPSB3cS0+bmFtZS5s
-ZW47CiAJCW1lbWNweShwYWNrZXQtPm5hbWUsIHdxLT5uYW1lLm5hbWUsIHdxLT5uYW1lLmxlbik7
-Ci0tIAoxLjcuOS4xODguZzEyNzY2LmRpcnR5Cgo=
---0016e6d625845a195204b9865baa--
