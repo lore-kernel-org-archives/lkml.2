@@ -1,293 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab2BVNRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:17:36 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:10648
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752348Ab2BVNRW (ORCPT
+	id S1752384Ab2BVNSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:18:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57099 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab2BVNSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:17:22 -0500
-X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bh84d07hz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH] LEDS: LED module for DA9052/53 PMIC v2
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: <rpurdie@rpsys.net>, <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 22 Feb 2012 18:39:09 +0530
-Message-ID: <1329916149.24042.7.camel@dhruva>
+	Wed, 22 Feb 2012 08:18:38 -0500
+Date: Wed, 22 Feb 2012 13:18:16 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com
+Subject: Re: [PATCH v2 07/19] ARM: at91/pm_slowclock: function slow_clock()
+	accepts parameters
+Message-ID: <20120222131816.GB22562@n2100.arm.linux.org.uk>
+References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com> <5b8fbdf669825987a82b3b89b2e7f02239cad816.1329903206.git.nicolas.ferre@atmel.com> <20120222095250.GV22562@n2100.arm.linux.org.uk> <20120222125814.GA9407@game.jcrosoft.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222125814.GA9407@game.jcrosoft.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LED Driver for Dialog Semiconductor DA9052/53 PMICs.
+On Wed, Feb 22, 2012 at 01:58:14PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> Btw I'm looking on a way to switch the assembly funciton to C but I didn,t find a
+> good way to calculate the function size except by touching at the linker
+> script. Which I don;t want to do.
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
----
- drivers/leds/Kconfig       |    8 ++
- drivers/leds/Makefile      |    1 +
- drivers/leds/leds-da9052.c |  214 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 223 insertions(+), 0 deletions(-)
- create mode 100644 drivers/leds/leds-da9052.c
+Forget doing it in C.  C is too complicated, because either you have to
+keep its relocations and fix them up, or you have to compile and link it
+to run at a specific location and then copy it to that location.  You
+also have literal pools to think about.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index e2ac190..b826f88 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -266,6 +266,14 @@ config LEDS_DA903X
- 	  This option enables support for on-chip LED drivers found
- 	  on Dialog Semiconductor DA9030/DA9034 PMICs.
- 
-+config LEDS_DA9052
-+	tristate "Dialog DA9052/DA9053 LEDS"
-+	depends on LEDS_CLASS
-+	depends on PMIC_DA9052
-+	help
-+	  This option enables support for on-chip LED drivers found
-+	  on Dialog Semiconductor DA9052-BC and DA9053-AA/Bx PMICs.
-+
- config LEDS_DAC124S085
- 	tristate "LED Support for DAC124S085 SPI DAC"
- 	depends on LEDS_CLASS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index fa0f428..479048f 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
- obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
- obj-$(CONFIG_LEDS_PCA9633)		+= leds-pca9633.o
- obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
-+obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
- obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
- obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
- obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
-diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
-new file mode 100644
-index 0000000..15281b4
---- /dev/null
-+++ b/drivers/leds/leds-da9052.c
-@@ -0,0 +1,214 @@
-+/*
-+ * LED Driver for Dialog DA9052 PMICs.
-+ *
-+ * Copyright(c) 2012 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/leds.h>
-+#include <linux/workqueue.h>
-+#include <linux/slab.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+
-+#define DA9052_OPENDRAIN_OUTPUT	2
-+#define DA9052_SET_HIGH_LVL_OUTPUT	(1 << 3)
-+#define DA9052_MASK_UPPER_NIBBLE	0xF0
-+#define DA9052_MASK_LOWER_NIBBLE	0x0F
-+#define DA9052_NIBBLE_SHIFT		4
-+#define DA9052_MAX_BRIGHTNESS		0x5f
-+
-+struct da9052_led {
-+	struct led_classdev cdev;
-+	struct work_struct work;
-+	struct da9052 *da9052;
-+	unsigned char led_index;
-+	unsigned char id;
-+	int brightness;
-+};
-+
-+unsigned char led_reg[] = {
-+	DA9052_LED_CONT_4_REG,
-+	DA9052_LED_CONT_5_REG,
-+};
-+
-+static int da9052_set_led_brightness(struct da9052_led *led)
-+{
-+	u8 val;
-+	int error;
-+
-+	val = (led->brightness & 0x7f) | DA9052_LED_CONT_DIM;
-+
-+	error = da9052_reg_write(led->da9052, led_reg[led->led_index], val);
-+	if (error < 0)
-+		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n",
-+			error);
-+	return error;
-+}
-+
-+static void da9052_led_work(struct work_struct *work)
-+{
-+	struct da9052_led *led = container_of(work, struct da9052_led, work);
-+
-+	da9052_set_led_brightness(led);
-+}
-+
-+static void da9052_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
-+{
-+	struct da9052_led *led;
-+
-+	led = container_of(led_cdev, struct da9052_led, cdev);
-+	led->brightness = value;
-+	schedule_work(&led->work);
-+}
-+
-+static int da9052_configure_leds(struct da9052 *da9052)
-+{
-+	int error;
-+	unsigned char register_value = DA9052_OPENDRAIN_OUTPUT
-+				       | DA9052_SET_HIGH_LVL_OUTPUT;
-+
-+	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
-+				  DA9052_MASK_LOWER_NIBBLE,
-+				  register_value);
-+
-+	if (error < 0) {
-+		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
-+			error);
-+		return error;
-+	}
-+
-+	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
-+				  DA9052_MASK_UPPER_NIBBLE,
-+				  register_value << DA9052_NIBBLE_SHIFT);
-+	if (error < 0)
-+		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
-+			error);
-+
-+	return error;
-+}
-+
-+static int __devinit da9052_led_probe(struct platform_device *pdev)
-+{
-+	struct da9052_pdata *pdata;
-+	struct da9052 *da9052;
-+	struct led_platform_data *pled;
-+	struct da9052_led *led = NULL;
-+	int error = -ENODEV;
-+	int i;
-+
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		goto err;
-+	}
-+
-+	pled = pdata->pled;
-+	if (pled == NULL) {
-+		dev_err(&pdev->dev, "No platform data for LED\n");
-+		goto err;
-+	}
-+
-+	led = devm_kzalloc(&pdev->dev,
-+			   sizeof(struct da9052_led) * pled->num_leds,
-+			   GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory\n");
-+		error = -ENOMEM;
-+		goto err;
-+	}
-+
-+	for (i = 0; i < pled->num_leds; i++) {
-+		led[i].cdev.name = pled->leds[i].name;
-+		led[i].cdev.brightness_set = da9052_led_set;
-+		led[i].cdev.brightness = LED_OFF;
-+		led[i].cdev.max_brightness = DA9052_MAX_BRIGHTNESS;
-+		led[i].brightness = LED_OFF;
-+		led[i].led_index = pled->leds[i].flags;
-+		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
-+		INIT_WORK(&led[i].work, da9052_led_work);
-+
-+		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
-+		if (error) {
-+			dev_err(&pdev->dev, "Failed to register led %d\n",
-+				led[i].led_index);
-+			goto err_register;
-+		}
-+
-+		error = da9052_set_led_brightness(&led[i]);
-+		if (error) {
-+			dev_err(&pdev->dev, "Unable to init led %d\n",
-+				led[i].led_index);
-+			continue;
-+		}
-+	}
-+	error = da9052_configure_leds(led->da9052);
-+	if (error) {
-+		dev_err(&pdev->dev, "Failed to configure GPIO LED%d\n", error);
-+		goto err_register;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
-+
-+	return 0;
-+
-+err_register:
-+	for (i = i - 1; i >= 0; i--) {
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+err:
-+	return error;
-+}
-+
-+static int __devexit da9052_led_remove(struct platform_device *pdev)
-+{
-+	struct da9052_led *led = platform_get_drvdata(pdev);
-+	struct da9052_pdata *pdata;
-+	struct da9052 *da9052;
-+	struct led_platform_data *pled;
-+	int i;
-+
-+	da9052 = dev_get_drvdata(pdev->dev.parent);
-+	pdata = da9052->dev->platform_data;
-+	pled = pdata->pled;
-+
-+	for (i = 0; i < pled->num_leds; i++) {
-+		led[i].brightness = 0;
-+		da9052_set_led_brightness(&led[i]);
-+		led_classdev_unregister(&led[i].cdev);
-+		cancel_work_sync(&led[i].work);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_led_driver = {
-+	.driver		= {
-+		.name	= "da9052-leds",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= da9052_led_probe,
-+	.remove		= __devexit_p(da9052_led_remove),
-+};
-+
-+module_platform_driver(da9052_led_driver);
-+
-+MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL");
-
-
+Assembly is much better controlled and you can write it so that you don't
+end up with any of that stuff.  You have absolute control over the code
+and associated data.
