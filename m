@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab2BWTuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:50:15 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44781 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab2BWTuN (ORCPT
+	id S1756746Ab2BWTua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:50:30 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:32224 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756267Ab2BWTu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:50:13 -0500
-Date: Thu, 23 Feb 2012 11:50:07 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: raphael@buro.asia, "H. Peter Anvin" <hpa@zytor.com>,
-        stable@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-Message-ID: <20120223195007.GA5160@kroah.com>
-References: <CA+55aFw4P1qUye5YOJKSQHX+TfxbEDWMF7LPogj128b6gv2Nqg@mail.gmail.com>
- <CA+55aFziJ=Lw0KxxThwfqRPR+K0OWDorKAfkgKMGPXv5O404JA@mail.gmail.com>
- <4F4584EB.9060605@zytor.com>
- <CA+55aFxC6JwWsNcmkQ+DROXtWCzaq52DuX5aMJZfXMLoNCbsWg@mail.gmail.com>
- <20120223003706.GA3246@kroah.com>
- <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
- <CA+55aFxTieMqacU9LN8Xmtb3Os8zkub1P+SKpqFtEBQ11STy7g@mail.gmail.com>
- <e709c3b5c5b2aa6e6a9d049f3af857e3@buro.asia>
- <20120223193620.GA16477@kroah.com>
- <CA+55aFwZqBdvB4HrW_mSzksimrWyRDhphkLbKxE9azmcb305Ow@mail.gmail.com>
+	Thu, 23 Feb 2012 14:50:28 -0500
+Date: Thu, 23 Feb 2012 20:50:26 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Dave Airlie <airlied@linux.ie>
+Cc: Bobby Powers <bobbypowers@gmail.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, davem@davemloft.net
+Subject: Re: [PATCH] linux headers: include linux/types.h where appropriate
+Message-ID: <20120223195026.GA30895@merkur.ravnborg.org>
+References: <1330023731-14043-1-git-send-email-bobbypowers@gmail.com> <alpine.DEB.2.00.1202231927240.24797@skynet.skynet.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwZqBdvB4HrW_mSzksimrWyRDhphkLbKxE9azmcb305Ow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1202231927240.24797@skynet.skynet.ie>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 11:41:50AM -0800, Linus Torvalds wrote:
-> On Thu, Feb 23, 2012 at 11:36 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> >
+On Thu, Feb 23, 2012 at 07:28:10PM +0000, Dave Airlie wrote:
 > 
-> The insane safe_address games go away in the cleanup patch, so it
-> really shouldn't be much of an issue.
+> > This silences the related header check warnings.
 > 
-> In the end, save_address should just be
+> please fix the bug in the correct place, the drm.h header includes 
+> linux/types.h and this is one on purpose.
 > 
->   #define safe_address (tsk->thread.has_fpu)
-> 
-> (and in fact the whole #define got removed entirely in mainline in
-> commit 80ab6f1e8c98, which might be fodder for -stable too)
+> maybe expend some effort fixing the stupid tool to recurse like a normal 
+> preprocessor would.
 
-That's not where the merge caused problems, it was in
-arch/x86/kernel/traps.c and arch/x86/kernel/process_64.c, either I'm
-missing a patch that needs to be added to the series, or something else
-is odd, let me dig...
+Before we fix the tool maybe we should agree on what the tool should check for.
+One obvious thing to check is that we do not start to use user-land
+types in our exported headers like uint32_t etc.
+Another could be that no header file should depend oon the user to include other
+header files.
+Etc.
 
-greg k-h
+The checks we have implmented today are very conservative - but as you resist
+to add a few includes in the drm/drm*.h files prevents us from hitting
+zero warnings even with these conservative checks.
 
-> 
->                  Linus
+If we started to be more strict we would see much more warnings/errors.
+But all this fuzz about a handfull of includes in the drm header files
+sure scare me away from ever starting this.
+I can only image the uproar some other changes may cause then.
+
+	Sam
