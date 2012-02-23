@@ -1,65 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab2BWIhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:37:22 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35046 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab2BWIhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:37:20 -0500
-Date: Thu, 23 Feb 2012 09:37:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: mingo@redhat.com, hpa@zytor.com, ananth@in.ibm.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: Re: [tip:perf/core] x86/kprobes: Fix to recover instructions on
- optimized path
-Message-ID: <20120223083703.GA26781@elte.hu>
-References: <20120221083621.11350.4716.stgit@localhost.localdomain>
- <tip-f5dbbb8e1e055d6f02817a1995993b461910b1b7@git.kernel.org>
- <20120222162224.GA5256@elte.hu>
- <4F459941.1000006@hitachi.com>
- <20120223070747.GA14495@elte.hu>
+	id S1754134Ab2BWIid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:38:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54663 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2BWIic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 03:38:32 -0500
+Date: Thu, 23 Feb 2012 00:37:23 -0800
+From: tip-bot for David Smith <dsmith@redhat.com>
+Message-ID: <tip-4ff16c25e2cc48cbe6956e356c38a25ac063a64d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        viro@zeniv.linux.org.uk, hch@infradead.org, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        dsmith@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de, dsmith@redhat.com,
+        mingo@elte.hu
+In-Reply-To: <4F314D19.7030504@redhat.com>
+References: <4F314D19.7030504@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracepoint, vfs, sched: Add exec() tracepoint
+Git-Commit-ID: 4ff16c25e2cc48cbe6956e356c38a25ac063a64d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120223070747.GA14495@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 23 Feb 2012 00:37:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  4ff16c25e2cc48cbe6956e356c38a25ac063a64d
+Gitweb:     http://git.kernel.org/tip/4ff16c25e2cc48cbe6956e356c38a25ac063a64d
+Author:     David Smith <dsmith@redhat.com>
+AuthorDate: Tue, 7 Feb 2012 10:11:05 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 23 Feb 2012 09:28:06 +0100
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+tracepoint, vfs, sched: Add exec() tracepoint
 
-> > > Does not build on x86 if CONFIG_OPTPROBES is off:
-> > > 
-> > > arch/x86/kernel/kprobes.c:260:8: error: dereferencing pointer to incomplete type
-> > > arch/x86/kernel/kprobes.c:260:8: error: invalid use of undefined type ‘struct optimized_kprobe’
-> > > arch/x86/kernel/kprobes.c:262:22: error: dereferencing pointer to incomplete type
-> > > arch/x86/kernel/kprobes.c:264:18: error: dereferencing pointer to incomplete type
-> > 
-> > Oops, should I update this patch or send new diff?
-> 
-> Please send a delta fix.
+Added a minimal exec tracepoint. Exec is an important major event
+in the life of a task, like fork(), clone() or exit(), all of
+which we already trace.
 
-Hm, it was triggering too often so I removed it from perf:core 
-for now - please send an updated patch.
+[ We also do scheduling re-balancing during exec() - so it's useful
+  from a scheduler instrumentation POV as well. ]
 
-Please also pick up the slightly updated changelog I've created 
-for the commit - you can see it in the -tip notification email.
+If you want to watch a task start up, when it gets exec'ed is a good place
+to start.  With the addition of this tracepoint, exec's can be monitored
+and better picture of general system activity can be obtained. This
+tracepoint will also enable better process life tracking, allowing you to
+answer questions like "what process keeps starting up binary X?".
 
-Btw., why are optprobes limited to !PREEMPT, could we make them 
-preempt safe?
+This tracepoint can also be useful in ftrace filtering and trigger
+conditions: i.e. starting or stopping filtering when exec is called.
 
-Thanks,
+Signed-off-by: David Smith <dsmith@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/4F314D19.7030504@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ fs/exec.c                    |    9 ++++++---
+ include/trace/events/sched.h |   27 +++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 3 deletions(-)
 
-	Ingo
+diff --git a/fs/exec.c b/fs/exec.c
+index aeb135c..d0d2080 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -63,6 +63,8 @@
+ #include <trace/events/task.h>
+ #include "internal.h"
+ 
++#include <trace/events/sched.h>
++
+ int core_uses_pid;
+ char core_pattern[CORENAME_MAX_SIZE] = "core";
+ unsigned int core_pipe_limit;
+@@ -1401,9 +1403,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			 */
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+-				if (depth == 0)
+-					ptrace_event(PTRACE_EVENT_EXEC,
+-							old_pid);
++				if (depth == 0) {
++					trace_sched_process_exec(current, old_pid, bprm);
++					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
++				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+ 				if (bprm->file)
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 6ba596b..e61ddfe 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/tracepoint.h>
++#include <linux/binfmts.h>
+ 
+ /*
+  * Tracepoint for calling kthread_stop, performed to end a kthread:
+@@ -276,6 +277,32 @@ TRACE_EVENT(sched_process_fork,
+ );
+ 
+ /*
++ * Tracepoint for exec:
++ */
++TRACE_EVENT(sched_process_exec,
++
++	TP_PROTO(struct task_struct *p, pid_t old_pid,
++		 struct linux_binprm *bprm),
++
++	TP_ARGS(p, old_pid, bprm),
++
++	TP_STRUCT__entry(
++		__string(	filename,	bprm->filename	)
++		__field(	pid_t,		pid		)
++		__field(	pid_t,		old_pid		)
++	),
++
++	TP_fast_assign(
++		__assign_str(filename, bprm->filename);
++		__entry->pid		= p->pid;
++		__entry->old_pid	= p->pid;
++	),
++
++	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
++		  __entry->pid, __entry->old_pid)
++);
++
++/*
+  * XXX the below sched_stat tracepoints only apply to SCHED_OTHER/BATCH/IDLE
+  *     adding sched_stat support to SCHED_FIFO/RR would be welcome.
+  */
