@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2BWKCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 05:02:20 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41905 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab2BWKCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 05:02:19 -0500
-Date: Thu, 23 Feb 2012 11:02:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Paul Mackerras <paulus@samba.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
-        mathieu.desnoyers@efficios.com, davem@davemloft.net,
-        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120223100205.GD24310@elte.hu>
-References: <cover.1329851692.git.jbaron@redhat.com>
- <4F43F9F0.4000605@zytor.com>
- <20120221202019.GB2381@redhat.com>
- <1329856745.25686.72.camel@gandalf.stny.rr.com>
- <20120222073251.GB17291@elte.hu>
- <20120222075334.GA25053@elte.hu>
- <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
- <20120222081855.GB25318@elte.hu>
- <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+	id S1755449Ab2BWKEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 05:04:34 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:32784 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861Ab2BWKEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 05:04:32 -0500
+Date: Thu, 23 Feb 2012 12:04:27 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Felipe Balbi <balbi@ti.com>, Danny Kukawka <dkukawka@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dwc3: linux/module.h included twice
+Message-ID: <20120223100426.GQ18463@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1329328551-4957-1-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WZLuFERxa6Y0cbOt"
 Content-Disposition: inline
-In-Reply-To: <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+In-Reply-To: <1329328551-4957-1-git-send-email-danny.kukawka@bisect.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul Mackerras <paulus@samba.org> wrote:
+--WZLuFERxa6Y0cbOt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Feb 22, 2012 at 09:18:55AM +0100, Ingo Molnar wrote:
-> 
-> > The problem with static_branch_def_false/def_true was that the 
-> > very intuitively visible bias that we see with 
-> > likely()/unlikely() is confused in jump label constructs through 
-> > two layers of modifiers. And the fix is so easy, a simple rename 
-> > in most cases ;-)
-> > 
-> > So instead of that, in this series we have:
-> > 
-> > +       if (very_unlikely(&perf_sched_events.key))
-> > 
-> > which is a heck of an improvement IMO. I'd still up its 
-> > readability a notch, by also signalling the overhead of the 
-> > update path by making it:
-> > 
-> > +       if (very_unlikely(&perf_sched_events.slow_flag))
-> > 
-> > ... but I don't want to be that much of a readability nazi ;-)
-> 
-> I have to say I don't like the "very_unlikely" name.  It's 
-> confusing because the condition being evaluated appears to be 
-> the address of something, i.e. &perf_sched_events.key in your 
-> example, and that looks to me to be very very likely to be 
-> true, i.e. non-zero.  But the code is telling me that's very 
-> *un*likely, which is confusing.
+Hi,
 
-Having to take the address gives us type safety - i.e. it will 
-not be possible to accidentally pass in a non-jump-label key and 
-get it misinterpreted.
+On Wed, Feb 15, 2012 at 06:55:51PM +0100, Danny Kukawka wrote:
+>=20
+> drivers/usb/dwc3/core.c and drivers/usb/dwc3/dwc3-omap.c
+> included 'linux/module.h' twice, remove the duplicates.
+>=20
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-If some macro magic could be used to remove the address taking 
-I'd be in favor of such a simplification, i.e.:
+applied, thanks
 
-	if (very_unlikely(perf_sched_events.key))
+--=20
+balbi
 
-which should address your observation.
+--WZLuFERxa6Y0cbOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJPRg8qAAoJEIaOsuA1yqREtWIQAKB2gu7sabASrDPxXKoIcxv7
+AVHIdNXa7LVYTR+2YiRX9voGytiq0xlQ62temoRgWjKVx/DN9rezzrUXGPYSGhsa
+tRX3jNpai3j5uCcqqm9x5zOLgZOnOJsxnlUlHYtCNWegrOjqASm0nuquz11nmLKH
+pCXRFBMscr57Ee5HiKiV2XpKK4dykqAGYlP1Gtjvsd25xWr+R7GLjNMaD+oFCzEv
+F8P6ITB/RDMEozZnVbWSO4RBQbrCHzEYmMeKXqEWYmB1s9cxDzKCQXgPZavrHGWO
+rx1+VYBdRcbhSjegufcCBTgkjXnWg0UGulVo8fjpktca5++nqxuXspKbLNf71j5V
+Oi7cTbLUrIbKDQaLT9lE7oC+waihuzfXFUzPNLuPDXjsmG+lJIaSnPuNpwWKUbRN
+XG1WFFUYtcoxRMDAMKbGfcQbd3O+pcNejlU/5aw737myCK+QA0otnHHsOYw9iQfU
+Qq38LJpc2F16FwBE26PS8rSp3JHy3PFCCm2GrDkUMEmmatFx2kSpZiiNgO7oJI/p
+fN7wvHzM+2P/MVGaZDFgPI9XD/8W2UsQgGoC2VIhNL/rhsrPodi5qH5V3N4QClGl
+Qa+74aoe4BDoEL6YG8Zwr5cTCcZ3wdT2QZwzLsxiq1x+uv7mh+EqNwUQJ1k8uJrQ
+WyPSlaQRKuJalsgNxAQ1
+=vAIQ
+-----END PGP SIGNATURE-----
+
+--WZLuFERxa6Y0cbOt--
