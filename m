@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab2BWPEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 10:04:35 -0500
-Received: from mail.palosanto.com ([200.93.199.101]:41023 "EHLO
-	pbx.palosanto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab2BWPEe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 10:04:34 -0500
-Message-ID: <4F46557B.9080901@palosanto.com>
-Date: Thu, 23 Feb 2012 10:04:27 -0500
-From: =?ISO-8859-1?Q?Alex_Villac=ED=ADs_Lasso?= 
-	<a_villacis@palosanto.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1756209Ab2BWPWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 10:22:34 -0500
+Received: from mga03.intel.com ([143.182.124.21]:4449 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756010Ab2BWPWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 10:22:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="109943634"
+Date: Thu, 23 Feb 2012 16:22:09 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/7] MFD: twl-core: regulator configuration for twl6030
+ V1V8, V2V1 SMPS
+Message-ID: <20120223152209.GA24377@sortiz-mobl>
+References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
+ <1328868316-24749-4-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: Fwd: Deadlock warning in 3.3-rc4 in zcache code when running
- transmission-gtk
-References: <4F42F2FE.5090101@palosanto.com> <4F4515EA.2090909@palosanto.com> <4F451B02.8030201@linux.vnet.ibm.com>
-In-Reply-To: <4F451B02.8030201@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328868316-24749-4-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El 22/02/12 11:42, Seth Jennings escribió:
-> On 02/22/2012 10:20 AM, Alex Villací­s Lasso wrote:
->> I am getting (potential?) deadlock warnings in zcache code shortly after
->> running transmission-gtk, the bittorrent client. My / partition is ext4,
->> and /home and /DATA (where some torrents are stored) are ext3 mounted
->> with ext4 subsystem. The warning has triggered twice so far, always
->> after running transmission-gtk.
->>
->> Fedora 16 x86_64, vanilla linux 3.3-rc4.
->> Deadlock warning did not appear in 3.3-rc3.
-> This may have already been identified and fixed by this patch:
-> https://lkml.org/lkml/2012/2/20/155
->
-> Let me know if that doesn't fix it.
->
-> --
-> Seth
->
-The patch indeed fixes the bug.
+Hi Peter,
+
+On Fri, Feb 10, 2012 at 12:05:12PM +0200, Peter Ujfalusi wrote:
+> To be able to attach consumers to these supplies from board
+> files we need to have regulator_init_data for them.
+If I understand correctly, this should also go through Liam's tree. If that's
+so, please add my:
+
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
