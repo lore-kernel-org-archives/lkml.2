@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab2BWTkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:40:18 -0500
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:48661 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753241Ab2BWTkR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:40:17 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: gLsMeIwVM1l3HP88e2lDLXePozL9WLErr7XIazj_v1bPtgq
- y1rOT3S8ew931X8jrgb3EbodH1mExQHbaDxDs55oJDs6vZubegaOE4vN7TOa
- 0xifQJXrKBJRmsLudypj0txfFaZW1kkd6W3YJEk0NlIg97R8SnBssv6ChVI4
- 4mlKBnqh6eh27PZe7fG5m0jpVOY2KBv_4T720LVXqekMlQ87QEGYTZMREzjQ
- C5E6X9p3EbFgFvz_4HQ8VLDIyVbqIqr01O20BblILUXEFRnx140gakgJJHz.
- lDdKyPyEZ3UNSG.oNBoq9d6PTyqyOOskD99bFAl7VZt6tfT.L7dULkOY4M0v
- qLz5w6eo0bLwOZaU_VuOgmXf4z9cJVwSN1_z8tAfX159LBi9snihK12unU2Z
- LZodhCKdKe7_BA7h34SmDANMSOtNTJGokWVbz
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 23 Feb 2012 13:40:14 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-In-Reply-To: <4F468F09.5050200@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1202231334290.10914@router.home>
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756251Ab2BWTlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:41:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab2BWTlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 14:41:35 -0500
+Date: Thu, 23 Feb 2012 14:41:10 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120223194109.GI19691@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222183351.GD32694@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222183351.GD32694@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012, Dave Hansen wrote:
+On Wed, Feb 22, 2012 at 10:33:51AM -0800, Tejun Heo wrote:
 
-> > Hmmm isnt the race still there between the determination of the task and
-> > the get_task_struct()? You would have to verify after the get_task_struct
-> > that this is really the task we wanted to avoid the race.
->
-> It's true that selecting a task by pid is inherently racy.  What that
-> code does is ensure that the task you've got current has 'pid', but not
-> ensure that 'pid' has never represented another task.  But, that's what
-> we do everywhere else in the kernel; there's not much better that we can do.
+[..]
+> 
+> > So for blkio controller we can convert it into fully nested hierarchy
+> > at the expense of more complex code in CFQ. I think memory cgroup
+> > controller provides both flat and hierarchical mode. Keeping it fully
+> > hierarchical also increases the cost as we need to traverse lot more
+> > pointers for simple things like nested stats. On a system having
+> > both systemd and libvirt, every virtual machine is already 3-4 level
+> > deep in cgroup hierarchy.
+> 
+> I don't think every controller should implement full nesting and
+> sharing the same hierarchy doesn't require it.  ie. if a controller
+> only wants to support flat hierarchy, just allow a single subgroup to
+> be active on any path between root and leaf.  We can add a flag or
+> helpers to support such mode of operation and controllers themselves
+> can treat all cgroups equally.
 
-We may at this point be getting a reference to a task struct from another
-process not only from the current process (where the above procedure is
-valid). You rightly pointed out that the slab rcu free mechanism allows a
-free and a reallocation within the RCU period. The effect is that the task
-struct could be pointing to a task with another pid that what we were
-looking for and therefore migrate_pages could subsequently be operating on
-a totally different process.
+I am not sure I understand "allow a single subgroup to be active on any
+path"
 
-The patch does not fix that race so far.
+So if a hierarchy looks as follows.
 
-I think you have to verify that the pid of the task matches after you took
-the refcount in order to be safe. If it does not match then abort.
+				root
+			        / | \
+			      g1  g2 g3
+			          |   |	
+				  g4  g5
 
-> Maybe "race" is the wrong word for what we've got here.  It's a lack of
-> a refcount being taken.
+So you are saying that just either g2 or g4 to be active in path 2 and 
+similiarly allow g3 or g5 to be active. IOW, if a task is in g5 and g3
+is active group, and effectively task will be considered in g3? So in
+above diagram if g1 and g4 and g3 are active groups, controller will
+see them as.
 
-Is that a real difference or are you just playing with words?
+				root
+				/ | \
+			       g1 g4 g3
+
+Did I understand it right or you meant something else. But this is still
+not flat and has 2 level of hierarchy. Tasks in root group and tasks in 
+children group (g1, g2 and g3) are different levels hence controller needs
+to implement hierarchy. For it to be truly flat, it needs to look like
+this.
+			     pivot_point
+				/ | \  \
+			       g1 g4 g3 root
+
+Now the notion that only one group is active in each path from root to
+leaf does not mean much.
+
+Considering everything internally as flat, isn't it simpler. So cgroup 
+tree still might look hierarchical but actually controller treats it
+as.
+				root
+		              / / | \ \
+			    g1 g2 g3 g4 g5
+
+Well, above is not exactly flat as has 2 level of hierarchy. That's blkio
+controller views cgroup hierarhcy as follows, currently.
+
+				pivot_point
+		              / / | \   \  \ 
+			    g1 g2 g3 g4 g5 root
+
+Thanks
+Vivek
