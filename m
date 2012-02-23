@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab2BWSmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:42:31 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:37577 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752819Ab2BWSma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:42:30 -0500
-Message-ID: <4F468888.9090702@fb.com>
-Date: Thu, 23 Feb 2012 10:42:16 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1756539Ab2BWSo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:44:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:44291 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab2BWSo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 13:44:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120626184"
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: cl@linux.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+References: <20120223180740.C4EC4156@kernel>
+Date: Thu, 23 Feb 2012 10:45:00 -0800
+In-Reply-To: <20120223180740.C4EC4156@kernel> (Dave Hansen's message of "Thu,
+	23 Feb 2012 10:07:40 -0800")
+Message-ID: <m2zkc9pexf.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Balbir Singh <bsingharora@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-References: <1326912662-18805-1-git-send-email-asharma@fb.com> <CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com>
-In-Reply-To: <CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-02-23_07:2012-02-23,2012-02-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
+Dave Hansen <dave@linux.vnet.ibm.com> writes:
 
-Thanks for reviewing. Would you change your position if I limit the 
-scope of the patch to a cgroup with a single address space?
+> sys_move_pages() and sys_migrate_pages() are a pretty nice copy
+> and paste job of each other.  They both take a pid, find the task
+> struct, and then grab a ref on the mm.  They both also do an
+> rcu_read_unlock() after they've taken the mm and then proceed to
+> access 'task'.  I think this is a bug in both cases.
 
-The moment the cgroup sees more than one address space (either due to 
-tasks getting created or being added), this optimization would be turned 
-off.
+Can we share code?
 
-More details below:
 
-On 2/22/12 11:45 PM, Balbir Singh wrote:
 >
-> So the assumption is that only apps that have access to each others
-> VMA's will run in this cgroup?
->
+> This patch takes the pid-to-task code along with the credential
+> and security checks in sys_move_pages() and sys_migrate_pages()
+> and consolidates them.  It now takes a task reference in
+> the new function and requires the caller to drop it.  I
+> believe this resolves the race.
 
-In a distributed computing environment, a user submits a job to the 
-cluster job scheduler. The job might involve multiple related 
-executables and might involve multiple address spaces. But they're 
-performing one logical task, have a single resource limit enforced by a 
-cgroup.
+Looks good to me.
 
-They don't have access to each other's VMAs, but if "accidentally" one 
-of them comes across an uninitialized page with data from another task, 
-it's not a violation of the security model.
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 
-> Sorry, I am not convinced we need to do this
->
-> 1. I know that zeroing out memory is expensive, but building a
-> potential loop hole is not a good idea
-> 2. How do we ensure that tasks in a cgroup should be allowed to reuse
-> memory uninitialized, how does the cgroup admin know what she is
-> getting into?
+BTW looks like we really need a better stress test for these
+syscalls.
 
-I was thinking of addressing this via documentation (as in: don't use 
-this if you don't know what you're doing!). But limiting the scope to a 
-single address space cgroup seems cleaner to me.
+-Andi
 
-  -Arun
+-- 
+ak@linux.intel.com -- Speaking for myself only
