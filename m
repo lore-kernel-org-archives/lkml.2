@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab2BWUDB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:03:01 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34476 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab2BWUC7 (ORCPT
+	id S1756763Ab2BWUDu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:03:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61063 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab2BWUDt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:02:59 -0500
-Date: Thu, 23 Feb 2012 12:02:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: raphael@buro.asia, "H. Peter Anvin" <hpa@zytor.com>,
-        stable@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-Message-ID: <20120223200253.GA10840@kroah.com>
-References: <4F4584EB.9060605@zytor.com>
- <CA+55aFxC6JwWsNcmkQ+DROXtWCzaq52DuX5aMJZfXMLoNCbsWg@mail.gmail.com>
- <20120223003706.GA3246@kroah.com>
- <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
- <CA+55aFxTieMqacU9LN8Xmtb3Os8zkub1P+SKpqFtEBQ11STy7g@mail.gmail.com>
- <e709c3b5c5b2aa6e6a9d049f3af857e3@buro.asia>
- <20120223193620.GA16477@kroah.com>
- <CA+55aFwZqBdvB4HrW_mSzksimrWyRDhphkLbKxE9azmcb305Ow@mail.gmail.com>
- <20120223195007.GA5160@kroah.com>
- <20120223195511.GA8146@kroah.com>
+	Thu, 23 Feb 2012 15:03:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of venki@google.com designates 10.50.222.132 as permitted sender) smtp.mail=venki@google.com; dkim=pass header.i=venki@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223195511.GA8146@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120223075027.GB15306@elte.hu>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+	<20120223075027.GB15306@elte.hu>
+Date: Thu, 23 Feb 2012 12:03:48 -0800
+Message-ID: <CABeCy1YnuD_O_aj_unpRGsokPtSpcRLRKRA-PF07rg8Rk-z_cg@mail.gmail.com>
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES interrupts
+ to an idle CPU -v1
+From: Venki Pallipadi <venki@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 11:55:11AM -0800, Greg Kroah-Hartman wrote:
-> On Thu, Feb 23, 2012 at 11:50:07AM -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Feb 23, 2012 at 11:41:50AM -0800, Linus Torvalds wrote:
-> > > On Thu, Feb 23, 2012 at 11:36 AM, Greg Kroah-Hartman
-> > > <gregkh@linuxfoundation.org> wrote:
-> > > >
-> > > 
-> > > The insane safe_address games go away in the cleanup patch, so it
-> > > really shouldn't be much of an issue.
-> > > 
-> > > In the end, save_address should just be
-> > > 
-> > >   #define safe_address (tsk->thread.has_fpu)
-> > > 
-> > > (and in fact the whole #define got removed entirely in mainline in
-> > > commit 80ab6f1e8c98, which might be fodder for -stable too)
-> > 
-> > That's not where the merge caused problems, it was in
-> > arch/x86/kernel/traps.c and arch/x86/kernel/process_64.c, either I'm
-> > missing a patch that needs to be added to the series, or something else
-> > is odd, let me dig...
-> 
-> No, something is messed up in my tree, let me try this again, this patch
-> isn't the merge problem, something else is going on...
+[ Resending without the ugly email client formatting ]
 
-Ok, that was operator error on my side, it should all now be
-straightened out and the patches applied just like was expected.
+On Wed, Feb 22, 2012 at 11:50 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Venkatesh Pallipadi <venki@google.com> wrote:
+>
+>> * Do we need some accounting for these wakeups exported for powertop?
+>
+> If then tracepoints.
+>
+>> * We can also eliminate TS_POLLING flag in favor of this. But, that will have
+>>   a lot more touchpoints and better done as a standlone change.
+>
+> Should most definitely be done for this series to be acceptble -
+> as a preparatory patch in the series, with the feature at the
+> end of the series.
+>
+OK. Will look at TS_POLLING part and likely include it in the next resend.
 
-sorry for the noise.
+>> +DECLARE_PER_CPU(atomic_t *, idle_task_ti_flags);
+>
+> That's ugly, we should access the idle task's ti flags directly.
+>
+> To have efficient percpu access to the idle threads another
+> clean-up is needed: we should turn idle_thread_array into a
+> full-structure PER_CPU area.
+>
+> For that we need a small variant of fork_idle(), which does not
+> dup the init thread - pretty trivial.
+>
+> fork_idle() should also make sure it does not schedule the child
+> thread: thus we'd also be able to further simplify smpboot.c and
+> get rid of all that extremely ugly 'struct create_idle'
+> gymnastics in smpboot.c.
+>
 
-greg k-h
+Hmm. Not being very familiar with that code, I will have to take a closer
+look at this potential cleanup...
+
+Thanks,
+Venki
+
+> Thanks,
+>
+>        Ingo
