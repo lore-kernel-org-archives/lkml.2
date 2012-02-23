@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2BWWzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:55:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57970 "EHLO mail.zytor.com"
+	id S1757216Ab2BWW6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:58:34 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:57113 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755588Ab2BWWzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:55:45 -0500
-Message-ID: <4F46C3CF.40303@zytor.com>
-Date: Thu, 23 Feb 2012 14:55:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-References: <20120223200905.GA5475@kroah.com> <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com> <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com> <20120223215242.GA1306@1wt.eu> <CA+55aFyxB4kmmSOKDSRkAkaRx=G7o7JnuUGBu3_WVr9KbpWWYQ@mail.gmail.com> <20120223222733.GB1306@1wt.eu> <CA+55aFxztx=Cf8i+jZE=X8Zx1BZnNpC6wv-PkWcXDfBFS6qWqg@mail.gmail.com> <4F46C253.106@zytor.com> <20120223225227.GD1306@1wt.eu>
-In-Reply-To: <20120223225227.GD1306@1wt.eu>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1756080Ab2BWW6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 17:58:33 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 17:58:33 EST
+Date: Thu, 23 Feb 2012 23:52:13 +0100
+From: Florian Mickler <florian@mickler.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: David Miller <davem@davemloft.net>, davej@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Regression tracking
+Message-ID: <20120223235213.37735af8@schatten>
+In-Reply-To: <201201230152.25575.rjw@sisk.pl>
+References: <201201222031.51116.maciej.rutecki@gmail.com>
+	<201201222052.02135.maciej.rutecki@gmail.com>
+	<20120122.150707.1411449164435920150.davem@davemloft.net>
+	<201201230152.25575.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 02:52 PM, Willy Tarreau wrote:
-> On Thu, Feb 23, 2012 at 02:48:51PM -0800, H. Peter Anvin wrote:
->> On 02/23/2012 02:38 PM, Linus Torvalds wrote:
->>>
->>> You'd still need an x86-32 machine to test on, because x86-64 was
->>> immune to this issue.
->>>
->>> But yeah, the impact of this seems to be small enough that for older
->>> kernels (which are likely used on older systems for maintenance
->>> anyway) disabling AES-NI on x86-32 really might be the way to go.
->>>
->>
->> That would really suck for users of encrypted hard disks.
-> 
-> Peter, do you really think there are that many ? I think I only saw
-> AES-NI on recent 64-bit capable chips, and it's been a while that
-> users have been installing 64-bit distros on such machines. Note that
-> I'm not advocating for breaking existing setups, just that I'm surprized
-> by this combination (aes-ni + 32-bit).
-> 
+On Mon, 23 Jan 2012 01:52:25 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-There are still people running 32-bit systems because they have some odd
-compatibility constraints but now have to deal with corporate or other
-security constraints; they may also have been using disk encryption
-since before AES-NI was in but doing it on the integer side is way slower.
+> On Sunday, January 22, 2012, David Miller wrote:
+> > From: Maciej Rutecki <maciej.rutecki@gmail.com>
+> > Date: Sun, 22 Jan 2012 20:52:02 +0100
+> > 
+> > > OK. But tracking regressions in two (or more) places is nonsense. And this 
+> > > puts into question all of my current work, such as how to analyze 
+> > > (automatically) the progress of the whole kernel and its quality per each -rc. 
+> > > Problem to discussion, but if everyone will do as you wish, it will all work 
+> > > went to waste.
+> > 
+> > If someone else wants to maintain the state of bugs on some web
+> > site and click buttons all day long, that is their perogative.
+> > 
+> > But it's not something I'm going to do.
+> > 
+> > You can't force people to use tools, and frankly that's the end of
+> > this conversation as far as I'm concerned.
 
-This is not AES-NI in the interrupt path, but I don't think there is a
-knob for that.
+What I would like to ask from you and other developers in order to make
+life easier for all users reporting bugs and people tracking
+regressions is to post a solution for an issue to the mail thread it
+was first reported in. That way we can just read through that mail
+thread and see that it is resolved.
 
-	-hpa
+Also if you are aware, that someone (Maciej!) did open a bug for an
+issue, please(!) stick that number in the commit changelog. Full Url
+would be wonderful for automated processing, but "bug [nr]" is
+sufficient for manual scanning of the commit log. 
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+If you don't do that, I fear that I will annoy you from time to time
+with: "is this issue fixed already?" or "hey, what about that 4 month
+old regression? Is it already fixed?". (And knowing netdev, it is of
+course already fixed in 99.9% of the cases. So I just need the pointer
+to the solution...)
 
+[If I have much time at hand, I will even scan the mail chatter of the
+people involved during the time frame the bug was reported, but that is
+a tedious task... still I do that sometimes in order to avoid annoying
+people with this silly stuff]
+
+Regards,
+Flo
