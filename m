@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2BWVuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:50:50 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63976 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab2BWVus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:50:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.213.232 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F46B4B4.3050707@gmail.com>
-Date: Fri, 24 Feb 2012 08:50:44 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de
-Subject: Re: [PATCH v3 11/21] ARM: at91/PMC: move assignment out of printf
-References: <cover.1330006537.git.nicolas.ferre@atmel.com> <940192e3c651eb6b97b42cb4c28e9e8471675cd2.1330006537.git.nicolas.ferre@atmel.com>
-In-Reply-To: <940192e3c651eb6b97b42cb4c28e9e8471675cd2.1330006537.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754243Ab2BWVw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:52:57 -0500
+Received: from 1wt.eu ([62.212.114.60]:62572 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab2BWVw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:52:56 -0500
+Date: Thu, 23 Feb 2012 22:52:42 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+Message-ID: <20120223215242.GA1306@1wt.eu>
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org> <20120222211928.GA4448@kroah.com> <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com> <20120222213253.GA25150@kroah.com> <20120223200905.GA5475@kroah.com> <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com> <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120223211016.GA16275@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/02/12 01:25, Nicolas Ferre wrote:
+Hi,
 
-> We move the assignment of values of register out of the
-> seq_printf() calls: It is obviously more readable.
+On Thu, Feb 23, 2012 at 01:10:16PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Feb 23, 2012 at 12:51:56PM -0800, H. Peter Anvin wrote:
+> > On 02/23/2012 12:48 PM, Greg Kroah-Hartman wrote:
+> > > On Thu, Feb 23, 2012 at 12:29:56PM -0800, H. Peter Anvin wrote:
+> > >> On 02/23/2012 12:09 PM, Greg Kroah-Hartman wrote:
+> > >>>
+> > >>> I've applied this now to the 3.0 and 3.2-stable trees.  It looks like it
+> > >>> would work on the 2.6.32-stable tree, but it needs some tweaks, and as I
+> > >>> can't really test this, and the .32-stable tree is probably not going to
+> > >>> have problems in this area, I'll let someone else generate those patches
+> > >>> and test them if they feel it is needed there.
+> > >>>
+> > >>
+> > >> It doesn't seem to appear in the stable git tree... anywhere I can get
+> > >> your tree so I can test these out?
+> > > 
+> > > They are in the stable-queue git tree at:
+> > > 	/pub/scm/linux/kernel/git/stable/stable-queue.git
+> > > on git.kernel.org
+> > > 
+> > > Testing them out would be great, if you want, I can knock up a git tree
+> > > with just these patches in it on 3.2.7 or anything else you need to test
+> > > with, if that makes it easier for you.
+> > > 
+> > 
+> > That would be awesome.
 > 
-> Reported-by: Ryan Mallon <rmallon@gmail.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-
-Thanks:
-
-Acked-by: Ryan Mallon <rmallon@gmail.com>
-
-> ---
->  arch/arm/mach-at91/clock.c |   15 ++++++++++-----
->  1 files changed, 10 insertions(+), 5 deletions(-)
+> Ok, the patches are at:
+> 	git.kernel.org/pub/scm/linux/kernel/git/gregkh/stable-test.git linux-3.2.y-i387-test
 > 
-> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-> index d1b4e07..9ab8627 100644
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -432,19 +432,24 @@ static int at91_clk_show(struct seq_file *s, void *unused)
->  	u32		scsr, pcsr, uckr = 0, sr;
->  	struct clk	*clk;
->  
-> -	seq_printf(s, "SCSR = %8x\n", scsr = at91_sys_read(AT91_PMC_SCSR));
-> -	seq_printf(s, "PCSR = %8x\n", pcsr = at91_sys_read(AT91_PMC_PCSR));
-> +	scsr = at91_sys_read(AT91_PMC_SCSR);
-> +	pcsr = at91_sys_read(AT91_PMC_PCSR);
-> +	sr = at91_sys_read(AT91_PMC_SR);
-> +	seq_printf(s, "SCSR = %8x\n", scsr);
-> +	seq_printf(s, "PCSR = %8x\n", pcsr);
->  	seq_printf(s, "MOR  = %8x\n", at91_sys_read(AT91_CKGR_MOR));
->  	seq_printf(s, "MCFR = %8x\n", at91_sys_read(AT91_CKGR_MCFR));
->  	seq_printf(s, "PLLA = %8x\n", at91_sys_read(AT91_CKGR_PLLAR));
->  	if (cpu_has_pllb())
->  		seq_printf(s, "PLLB = %8x\n", at91_sys_read(AT91_CKGR_PLLBR));
-> -	if (cpu_has_utmi())
-> -		seq_printf(s, "UCKR = %8x\n", uckr = at91_sys_read(AT91_CKGR_UCKR));
-> +	if (cpu_has_utmi()) {
-> +		uckr = at91_sys_read(AT91_CKGR_UCKR);
-> +		seq_printf(s, "UCKR = %8x\n", uckr);
-> +	}
->  	seq_printf(s, "MCKR = %8x\n", at91_sys_read(AT91_PMC_MCKR));
->  	if (cpu_has_upll())
->  		seq_printf(s, "USB  = %8x\n", at91_sys_read(AT91_PMC_USB));
-> -	seq_printf(s, "SR   = %8x\n", sr = at91_sys_read(AT91_PMC_SR));
-> +	seq_printf(s, "SR   = %8x\n", sr);
->  
->  	seq_printf(s, "\n");
->  
+> They are on top of the 3.2.7 kernel release.
+> 
+> If that doesn't work for you, please let me know.
 
+I would test this too, but apart from ensuring my kernel still boots,
+how do I ensure the patches do really fix what the ought to fix ? I
+must admit I didn't catch the initial issue they were supposed to fix
+unfortunately :-/
+
+Thanks,
+Willy
 
