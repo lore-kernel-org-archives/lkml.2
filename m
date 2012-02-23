@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab2BWV3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:29:06 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39432 "EHLO ogre.sisk.pl"
+	id S1757078Ab2BWVdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:33:47 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53021 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757101Ab2BWV3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:29:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
-Date: Thu, 23 Feb 2012 22:32:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <4F45DBDB.4010308@linux.vnet.ibm.com> <201202232226.43104.rjw@sisk.pl>
-In-Reply-To: <201202232226.43104.rjw@sisk.pl>
+	id S1752207Ab2BWVdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:33:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110093454"
+Message-ID: <4F46B169.1030307@intel.com>
+Date: Thu, 23 Feb 2012 19:36:41 -0200
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
+        Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [PATCH] drm: Reduce the number of retries whilst reading EDIDs
+References: <CA+55aFxO27oa+WAtDLuWtr-NFNmKb2T0V6pccn=AE+g5PePPUg@mail.gmail.com> <1330026771-19937-1-git-send-email-chris@chris-wilson.co.uk> <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
+In-Reply-To: <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202232232.59114.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 23, 2012, Rafael J. Wysocki wrote:
-> On Thursday, February 23, 2012, Srivatsa S. Bhat wrote:
-> > On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
-> > 
-> > > On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
-> > >> On 02/22/2012 10:19 AM, John Stultz wrote:
-> > >>
-> > >>> On Wed, 2012-02-22 at 00:31 +0100, Rafael J. Wysocki wrote:
-> > >>>> Hi all,
-> > >>>>
-> > >>>> After the feedback so far I've decided to follow up with a refreshed patchset.
-> > >>>> The first two patches from the previous one went to linux-pm/linux-next
-> > >>>> and I included the recent evdev patch from Arve (with some modifications)
-> > >>>> to this patchset for completness.
-> > >>>
-> > >>> Hey Rafael, 
-> > >>> 	Thanks again for posting this! I've started playing around with it in a
-> > >>> kvm environment, and got the following warning after echoing off >
-> > >>> autosleep:
-> > >>> ...
-> > >>> PM: resume of devices complete after 185.615 msecs
-> > >>> PM: Finishing wakeup.
-> > >>> Restarting tasks ... done.
-> > >>> PM: Syncing filesystems ... done.
-> > >>> PM: Preparing system for mem sleep
-> > >>> Freezing user space processes ... 
-> > >>> Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
-> > >>> bash            D ffff880015714010 
-> > >>
-> > >>
-> > >> Ah.. I think I know what is the problem here..
-> > >>
-> > >> The kernel was freezing userspace processes and meanwhile, you wrote "off"
-> > >> to autosleep. So, as a result, this userspace process (bash) just now
-> > >> entered kernel mode. Unfortunately, the autosleep_lock is held for too long,
-> > >> that is, something like:
-> > >>
-> > >> acquire autosleep_lock
-> > >> modify autosleep_state
-> > >>                                <============== "A"
-> > >>  pm_suspend or hibernate()
-> > >>
-> > >> release autosleep_lock
-> > >>
-> > >> At point marked "A", we should have released the autosleep lock and only then
-> > >> entered pm_suspend or hibernate(). Since the current code holds the lock and
-> > >> enters suspend/hibernate, the userspace process that wrote "off" to autosleep
-> > >> (or even userspace process that writes to /sys/power/state will end up waiting
-> > >> on autosleep_lock, thus failing the freezing operation.)
-> > >>
-> > >> So the solution is to always release the autosleep lock before entering
-> > >> suspend/hibernation.
-> > > 
-> > > Well, the autosleep lock is intentionally held around suspend/hibernation in
-> > > try_to_suspend(), because otherwise it would be possible to trigger automatic
-> > > suspend right after user space has disabled it.
-> > >
-> > 
-> > 
-> > Hmm.. I was just wondering if we could avoid holding yet another lock in the
-> > suspend/hibernate path, if possible.. 
-> > 
-> >  
-> > > I think the solution is to make pm_autosleep_lock() do a _trylock() and
-> > > return error code if already locked.
-> > >
-> > 
-> > ... and also do a trylock() in pm_autosleep_set_state() right?.... that is
-> > where John hit the problem..
-> > 
-> > By the way, I am just curious.. how difficult will this make it for userspace
-> > to disable autosleep? I mean, would a trylock mean that the user has to keep
-> > fighting until he finally gets a chance to disable autosleep?
-> 
-> That's a good point, so I think it may be a good idea to do
-> mutex_lock_interruptible() in pm_autosleep_set_state() instead.
+On 02/23/2012 06:15 PM, Linus Torvalds wrote:
+> On Thu, Feb 23, 2012 at 11:52 AM, Chris Wilson<chris@chris-wilson.co.uk>  wrote:
+>>
+>> i2c retries if sees an EGAIN, drm_do_probe_ddc_edid retries until it
+>> gets a result and *then* drm_do_get_edid retries until it gets a result
+>> it is happy with. All in all, that is a lot of processor intensive
+>> looping in cases where we do not expect and cannot get valid data - for
+>> example on Intel with disconnected hardware we will busy-spin until we
+>> hit the i2c timeout. This is then repeated for every connector when
+>> querying the current status of outputs.
+>
+> Sadly, this doesn't seem to make any difference to my case. My xrandr
+> stays at 0.555s even with this patch.
 
-Now that I think of it, perhaps it's a good idea to just make
-pm_autosleep_lock() do mutex_lock_interruptible() _and_ make
-pm_autosleep_set_state() use pm_autosleep_lock().
+Perhaps a stupid question, but does you tree has 
+http://cgit.freedesktop.org/~airlied/linux/commit/?h=drm-next&id=9292f37e1f5c79400254dca46f83313488093825 
+from Dave's drm-next?
 
-What do you think?
+If it has, it would be the 1st time that I see xrandr take longer than 
+.5s with that patch on an Intel GPU. We even added a check for this into 
+intel-gpu-tools to warn us if any machine takes that long, and none had 
+hit it so far. So if this is the case here, there is something Mac 
+Mini-specific indeed to investigate.
 
-Rafael
+-Eugeni
