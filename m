@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2BWIyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:54:22 -0500
-Received: from www17.your-server.de ([213.133.104.17]:42253 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab2BWIyR (ORCPT
+	id S1754613Ab2BWI4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:56:52 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:18545 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2BWI4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:54:17 -0500
-Message-ID: <20120223095407.16803qant5u4yoxb@webmail.your-server.de>
-Date: Thu, 23 Feb 2012 09:54:07 +0100
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Ian Kent <raven@themaw.net>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
- <20120221.221609.218135609185671883.davem@davemloft.net>
- <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
- <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
- <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
- <1329889428.2193.45.camel@perseus.themaw.net>
- <1329890027.2193.48.camel@perseus.themaw.net>
- <1329890251.2193.50.camel@perseus.themaw.net>
- <1329903139.2193.66.camel@perseus.themaw.net>
- <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
- <1329961703.2244.8.camel@perseus.themaw.net>
- <1329962085.2244.10.camel@perseus.themaw.net>
- <1329963683.2244.19.camel@perseus.themaw.net>
-In-Reply-To: <1329963683.2244.19.camel@perseus.themaw.net>
+	Thu, 23 Feb 2012 03:56:51 -0500
+Message-ID: <4F45FF46.3060702@atmel.com>
+Date: Thu, 23 Feb 2012 09:56:38 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Ryan Mallon <rmallon@gmail.com>
+CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH v2 09/19] ARM: at91: make sdram/ddr register base soc
+ independent
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com> <4F456D1E.8070807@gmail.com>
+In-Reply-To: <4F456D1E.8070807@gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.6)
-X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Zitat von Ian Kent <raven@themaw.net>:
-
-> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
->> On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
+On 02/22/2012 11:33 PM, Ryan Mallon :
+> On 22/02/12 20:39, Nicolas Ferre wrote:
+> 
+>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 >>
->> On second thought, I suppose other user space users don't "have" to use
->> mount(2) ....
->
-> Thomas, what does systemd use to mount the autofs mounts that it uses?
->
+>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+> 
+> <snip>
+> 
+>> +void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
+>> +{
+>> +	if (id > 1) {
+>> +		pr_warn("%s: id > 2\n", __func__);
+>> +		return;
+>> +	}
+>> +	at91_ramc_base[id] = ioremap(addr, size);
+>> +	if (!at91_ramc_base[id])
+>> +		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
+>> +}
+> 
+> 
+> If this fails then you will oops if you call either at91_ramc_read or
+> at91_ramc_write since they don't check if at91_ramc_base[id] is a valid
+> pointer. Either this function should panic, like the other at91_ioremap
+> functions, or the at91_ramc_read/write functions should check for a
+> valid pointer.
 
-Judging from  
-http://cgit.freedesktop.org/systemd/systemd/tree/src/automount.c#n515  
-- mount is called via library/system call.
+Yes, as you pointed out, it is done in a not-related following patch.
+I will bring the code here.
 
 
+> Nitpick: The id check should probably also be BUG() or WARN() since it
+> indicates a bug in the core AT91 code. pr_warn is likely to missed and
+> not reported by users. Since the value is int, the check should be:
+> 
+>   if (id < 0 || id > 1)
+> 
+> Obviously the chance of this error happening are slim, but if you are
+> going to check and warn for it, it should be done properly :-).
+
+Yes, I agree and modify it at the very moment.
+
+thanks, best regards,
+-- 
+Nicolas Ferre
