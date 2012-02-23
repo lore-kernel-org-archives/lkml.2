@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab2BWIlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:41:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14756 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab2BWIlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:41:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109806849"
-Subject: Re: [PATCH 2/3] usb: enable pci MSI/MSIX in usb core
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, clemens@ladisch.de, linux-kernel@vger.kernel.org
-In-Reply-To: <20120223034147.GD27250@xanatos>
-References: <1329728733-32419-1-git-send-email-alex.shi@intel.com>
-	 <1329728733-32419-2-git-send-email-alex.shi@intel.com>
-	 <1329728733-32419-3-git-send-email-alex.shi@intel.com>
-	 <20120223034147.GD27250@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Feb 2012 16:39:44 +0800
-Message-ID: <1329986384.21053.165.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754341Ab2BWImx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:42:53 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:60729 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab2BWImw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 03:42:52 -0500
+Message-ID: <4F45FBB7.5090607@ct.jp.nec.com>
+Date: Thu, 23 Feb 2012 17:41:27 +0900
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [PATCH] Pass nice as a value to proc_sched_autogroup_set_nice()
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-> This PCI device and vendor ID is now used in two drivers (xhci and USB
-> core).  Please create a separate patch to add this ID to the pci_ids.h
-> file, and remove the reference here and in the xHCI driver.
+No side effect is expected, and the variable err will be overwritten with
+return value.
 
-Yes, should be. 
-> Why don't you rename hcd_no_msi() to hcd_supports_msi() and remove the
-> negation of the return value?
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+---
+ fs/proc/base.c            |    3 +--
+ include/linux/sched.h     |    2 +-
+ kernel/sched/auto_group.c |   12 ++++++------
+ 3 files changed, 8 insertions(+), 9 deletions(-)
 
-OK. 
-> 
-> > 
-> > +		/* register hc_driver's msix_irq handler */
-> > +		for (i = 0; i < hcd->msix_count; i++) {
-> > +			retval = request_irq(hcd->msix_entries[i].vector,
-> > +					(irq_handler_t)hcd->driver->msix_irq,
-> > +					0, hcd->driver->description, hcd);
-> 
-> I really think you need to allow the host controller driver to set
-> different pointers for the msix data pointer.  It's something that we
-> need to figure out, so that we can have the infrastructure in place for
-> multiple event rings.
-> 
-> I'm not sure whether the new get MSIX count needs to allow the xHCI
-> driver to return an array of pointers, or if the driver can modify the
-> irq pointer later?  I don't think you can modify the irq data pointer
-> after it's been requested (that would lead to all kinds of race
-> conditions, I think).
-> 
-> It's probably better to allow the xHCI driver to pass this function the
-> pointers it needs for each MSI-X vector.  You'll always call
-> usb_hcd_request_msi_msix_irqs() after you call xhci_init(), correct?  At
-> that point, we should have allocated the multiple event rings, so it
-> should be easy to pass the pointers to this function.
-
-What do you mean: there is a relation between event rings
-msix_entries.vectors.  and we need to presents this relationships in the
-msix interrupt handler? 
-
-So does the following mode you like?
-
-request_irq(hcd->msix_entries[i].vector, msix_irq_handler, 0, "",
-hcd->ring_handler[i]);
-
-Or another way to do it if we know which ring will handle the irq, like:
-
-irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
-
-	switch (irq2ring(irq))
-	case ring0: driver_handle_ring(ring0);
-	case ring1: driver_handle_ring(ring1);
-
-In fact, since there is no actual usage of multiple rings now, I have no
-much idea of the relationships. 
-
-BTW, if it is possible do this change to another patch? 
-> 
-> > @@ -888,7 +696,11 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
-> >  		if (retval)
-> >  			return retval;
-> >  		xhci_dbg(xhci, "Start the primary HCD\n");
-> > -		retval = xhci_run(hcd->primary_hcd);
-> > +		if (dev_is_pci(hcd->self.controller))
-> > +			retval = usb_hcd_register_msi_msix_irqs(
-> > +						hcd->primary_hcd);
-> 
-> Why not change this function to take a count of msix vectors and
-> pointers for data?  Then you don't need the new usb_hcd driver method
-> for getting the msix count.
-> 
-
-Uh, the key is msix vector numbers maybe changed after be freed in
-suspend and re-get here. Are there examples to keep the vector number in
-suspending?
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index db6ab4b..d449c02 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1310,8 +1310,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
+ 	if (!p)
+ 		return -ESRCH;
+ 
+-	err = nice;
+-	err = proc_sched_autogroup_set_nice(p, &err);
++	err = proc_sched_autogroup_set_nice(p, nice);
+ 	if (err)
+ 		count = err;
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4fb1d62..ee882cb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2064,7 +2064,7 @@ extern void sched_autogroup_fork(struct signal_struct *sig);
+ extern void sched_autogroup_exit(struct signal_struct *sig);
+ #ifdef CONFIG_PROC_FS
+ extern void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m);
+-extern int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice);
++extern int proc_sched_autogroup_set_nice(struct task_struct *p, int nice);
+ #endif
+ #else
+ static inline void sched_autogroup_create_attach(struct task_struct *p) { }
+diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
+index e8a1f83..0984a21 100644
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -195,20 +195,20 @@ __setup("noautogroup", setup_autogroup);
+ 
+ #ifdef CONFIG_PROC_FS
+ 
+-int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
++int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
+ {
+ 	static unsigned long next = INITIAL_JIFFIES;
+ 	struct autogroup *ag;
+ 	int err;
+ 
+-	if (*nice < -20 || *nice > 19)
++	if (nice < -20 || nice > 19)
+ 		return -EINVAL;
+ 
+-	err = security_task_setnice(current, *nice);
++	err = security_task_setnice(current, nice);
+ 	if (err)
+ 		return err;
+ 
+-	if (*nice < 0 && !can_nice(current, *nice))
++	if (nice < 0 && !can_nice(current, nice))
+ 		return -EPERM;
+ 
+ 	/* this is a heavy operation taking global locks.. */
+@@ -219,9 +219,9 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
+ 	ag = autogroup_task_get(p);
+ 
+ 	down_write(&ag->lock);
+-	err = sched_group_set_shares(ag->tg, prio_to_weight[*nice + 20]);
++	err = sched_group_set_shares(ag->tg, prio_to_weight[nice + 20]);
+ 	if (!err)
+-		ag->nice = *nice;
++		ag->nice = nice;
+ 	up_write(&ag->lock);
+ 
+ 	autogroup_kref_put(ag);
+-- 
+1.7.7.6
 
