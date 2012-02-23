@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2BWTpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:45:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46184 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab2BWTpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:45:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128734249"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] x86/mce recovery cleanup patch
-Date: Thu, 23 Feb 2012 11:45:40 -0800
-Message-Id: <4f46976434651797d@agluck-desktop.sc.intel.com>
+	id S1756729Ab2BWTq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:46:27 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50200 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab2BWTq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 14:46:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.133.219 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F46978E.2090605@openvz.org>
+Date: Thu, 23 Feb 2012 23:46:22 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 02/21] memcg: make mm_match_cgroup() hirarchical
+References: <20120223133728.12988.5432.stgit@zurg> <20120223135146.12988.47611.stgit@zurg> <20120223180352.GA1701@cmpxchg.org>
+In-Reply-To: <20120223180352.GA1701@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Johannes Weiner wrote:
+> On Thu, Feb 23, 2012 at 05:51:46PM +0400, Konstantin Khlebnikov wrote:
+>> Check mm-owner cgroup membership hierarchically.
+>
+> I think this one cat just beat up this other cat in front of my
+> window, yelling something about money and missing product.  Anyway, I
+> already forgot why we want this patch.  Could you describe that in the
+> changelog, please?
 
-This is the patch to replace some hard coded constants that we discussed
-here: https://lkml.org/lkml/2012/1/27/127
+Yeah, sorry for lack of comment.
 
-I'd coded it up four weeks ago, but forgot to send you a pull. This
-goes on top of the previous patchset for mce recovery that is sitting
-in your x86/mce branch of the tip tree waiting for the 3.4 merge window.
+This test is used in rmap walker at checling page referencies in reclaimer.
+Memory cgroup shrinker want to skip all referencies outside of cgroup hierarchy
+which is currently under reclaim.
 
--Tony
+Actually this patch does not important for this set and can be dropped without problems,
+it does not share any context with other patches. Next patch is more important because
+it fixes global reclaimer and required for further cleanups.
 
-The following changes since commit 5f7b88d51e89771f64c15903b96b5933dd0bc6d8:
+>
+>> @@ -821,6 +821,26 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+>>   				struct mem_cgroup, css);
+>>   }
+>>
+>> +/**
+>> + * mm_match_cgroup - cgroup hierarchy mm membership test
+>> + * @mm		mm_struct to test
+>> + * @cgroup	target cgroup
+>> + *
+>> + * Returns true if mm belong this cgroup or any its child in hierarchy
+>> + */
+>> +int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+>> +{
+>> +	struct mem_cgroup *memcg;
+>> +
+>> +	rcu_read_lock();
+>> +	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+>> +	while (memcg != cgroup&&  memcg&&  memcg->use_hierarchy)
+>> +		memcg = parent_mem_cgroup(memcg);
+>> +	rcu_read_unlock();
+>> +
+>> +	return cgroup == memcg;
+>> +}
+>
+> Please don't duplicate mem_cgroup_same_or_subtree()'s functionality in
+> a worse way.  The hierarchy information is kept in a stack such that
+> ancestry can be detected in linear time, check out css_is_ancestor().
 
-  x86/mce: Recognise machine check bank signature for data path error (2012-01-03 12:07:07 -0800)
+Ok, there will be something like that:
 
-are available in the git repository at:
++bool mm_match_cgroup(const struct mm_struct *mm,
++                    const struct mem_cgroup *cgroup)
++{
++       struct mem_cgroup *memcg;
++       bool ret;
++
++       rcu_read_lock();
++       memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
++       ret = memcg && mem_cgroup_same_or_subtree(cgroup, memcg);
++       rcu_read_unlock();
++
++       return ret;
++}
++
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-recovery-for-tip
+>
+> If you don't want to nest rcu_read_lock(), you could push the
+> rcu_read_lock() from css_is_ancestor() into its sole user and provide
+> a __mem_cgroup_is_ancestor() that assumes rcu already read-locked.
+>
+> No?
 
-for you to fetch changes up to 08dda402d60a721ac94e79efd7646b332be3e3b2:
+It is not a problem.
 
-  x86/mce: Replace hard coded hex constants with symbolic defines (2012-01-26 16:02:22 -0800)
+looks like mem_cgroup_same_or_subtree() check something different,
+because it does not check ->use_hierarchy flag on tested cgroup, only on target cgroup.
 
-----------------------------------------------------------------
-Symbolic defines for architectural MCACOD constants
+Or just all this hierarchical stuff is out of sync in different parts of code.
+For example memcg_get_hierarchical_limit() start from deepest cgroup and go upper
+while ->use_hierarchy is set.
 
-----------------------------------------------------------------
-Tony Luck (1):
-      x86/mce: Replace hard coded hex constants with symbolic defines
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
