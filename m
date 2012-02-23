@@ -1,136 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab2BWOTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:19:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59123 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754003Ab2BWOTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:19:07 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <nsekhar@ti.com>, <linux@arm.linux.org.uk>, <dwmw2@infradead.org>,
-        <sameo@linux.intel.com>, "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: [PATCH v5 1/3] arm:davinci: prepare to move aemif driver to drivers/mfd
-Date: Thu, 23 Feb 2012 19:28:22 +0530
-Message-ID: <1330005504-25321-2-git-send-email-prakash.pm@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <y>
-References: <y>
+	id S1755894Ab2BWOVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:21:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52154 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab2BWOVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 09:21:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.126.131 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F464B4D.5080907@openvz.org>
+Date: Thu, 23 Feb 2012 18:21:01 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org> <alpine.LSU.2.00.1202211205280.1858@eggly.anvils> <4F440E1D.7050004@openvz.org> <alpine.LSU.2.00.1202211406030.2012@eggly.anvils> <4F446458.8000107@openvz.org> <alpine.LSU.2.00.1202212148430.3515@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1202212148430.3515@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move platform specific header file to mfd specific location.
-This is done as a prerequisite for moving emif handling code out
-of platform folders.
+Hugh Dickins wrote:
+> On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
+>> Hugh Dickins wrote:
+>>> On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
+>>>> Hugh Dickins wrote:
+>>>>>
+>>>>> I'll have to come back to think about your locking later too;
+>>>>> or maybe that's exactly where I need to look, when investigating
+>>>>> the mm_inline.h:41 BUG.
+>>>>
+>>>> pages_count[] updates looks correct.
+>>>> This really may be bug in locking, and this VM_BUG_ON catch it before
+>>>> list-debug.
+>>>
+>>> I've still not got into looking at it yet.
+>>>
+>>> You're right to mention DEBUG_LIST: I have that on some of the machines,
+>>> and I would expect that to be the first to catch a mislocking issue.
+>>>
+>>> In the past my problems with that BUG (well, the spur to introduce it)
+>>> came from hugepages.
+>>
+>> My patchset hasn't your mem_cgroup_reset_uncharged_to_root protection,
+>> or something to replace it. So, there exist race between cgroup remove and
+>> isolated uncharged page put-back, but it shouldn't corrupt lru lists.
+>> There something different.
+>
+> Yes, I'm not into removing cgroups yet.
 
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
----
-Since v4:
-No change
-Since v3:
-No change. Resending as 3/3 in patch changed.
-Since v2:
-No change.
-Since v1:
-Patch generated using -M option.
+Ok, my v3 patchset can deal with cgroups removing. At least I believe. =)
 
- arch/arm/mach-davinci/aemif.c                      |    2 +-
- arch/arm/mach-davinci/board-da830-evm.c            |    2 +-
- arch/arm/mach-davinci/board-da850-evm.c            |    2 +-
- arch/arm/mach-davinci/board-dm644x-evm.c           |    2 +-
- arch/arm/mach-davinci/board-dm646x-evm.c           |    2 +-
- drivers/mtd/nand/davinci_nand.c                    |    2 +-
- .../aemif.h => include/linux/mfd/davinci_aemif.h   |    0
- 7 files changed, 6 insertions(+), 6 deletions(-)
- rename arch/arm/mach-davinci/include/mach/aemif.h => include/linux/mfd/davinci_aemif.h (100%)
+I was implemented isolated pages counter.
+Seems like overhead isn't fatal and can be reduced.
+Plus these counters can be used not only as reference counters,
+they provides useful statistics for reclaimer.
 
-diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
-index 1ce70a9..b67c115 100644
---- a/arch/arm/mach-davinci/aemif.c
-+++ b/arch/arm/mach-davinci/aemif.c
-@@ -15,7 +15,7 @@
- #include <linux/module.h>
- #include <linux/time.h>
- 
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- /* Timing value configuration */
- 
-diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
-index dc1afe5..0b43554 100644
---- a/arch/arm/mach-davinci/board-da830-evm.c
-+++ b/arch/arm/mach-davinci/board-da830-evm.c
-@@ -31,7 +31,7 @@
- #include <mach/nand.h>
- #include <mach/da8xx.h>
- #include <mach/usb.h>
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- #include <mach/spi.h>
- 
- #define DA830_EVM_PHY_ID		""
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index d508890..9f2a544 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -41,7 +41,7 @@
- #include <mach/da8xx.h>
- #include <mach/nand.h>
- #include <mach/mux.h>
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- #include <mach/spi.h>
- 
- #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index 1247ecd..99a6639 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -38,7 +38,7 @@
- #include <mach/nand.h>
- #include <mach/mmc.h>
- #include <mach/usb.h>
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #define DM644X_EVM_PHY_ID		"davinci_mdio-0:01"
- #define LXT971_PHY_ID	(0x001378e2)
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 872ac69..af55a9d 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -43,7 +43,7 @@
- #include <mach/nand.h>
- #include <mach/clock.h>
- #include <mach/cdce949.h>
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include "clock.h"
- 
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index 6e56615..f19151b 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -35,7 +35,7 @@
- #include <linux/slab.h>
- 
- #include <mach/nand.h>
--#include <mach/aemif.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- /*
-  * This is a device driver for the NAND flash controller found on the
-diff --git a/arch/arm/mach-davinci/include/mach/aemif.h b/include/linux/mfd/davinci_aemif.h
-similarity index 100%
-rename from arch/arm/mach-davinci/include/mach/aemif.h
-rename to include/linux/mfd/davinci_aemif.h
--- 
-1.7.1
+>
+> I've got it: your "can differ only on lumpy reclaim" belief, first
+> commented in 17/22 but then assumed in 20/22, is wrong: those swapin
+> readahead pages, for example, may shift from root_mem_cgroup to another
+> mem_cgroup while the page is isolated by shrink_active or shrink_inactive.
+
+Ok, thanks.
+
+>
+> Patch below against the top of my version of your tree: probably won't
+> quite apply to yours, since we used different bases here; but easy
+> enough to correct yours from it.
+>
+> Bisection was misleading: it appeared to be much easier to reproduce
+> with 22/22 taken off, and led to 16/22, but that's because that one
+> introduced a similar bug, which actually got fixed in 22/22:
+>
+> relock_page_lruvec() and relock_page_lruvec_irq() in 16/22 onwards
+> are wrong, in each case the if block needs an
+> 	} else
+> 		lruvec = page_lruvec(page);
+
+Ok, fixed in v3
+
+>
+> You'll want to fix that in 16/22, but here's the patch for the end state:
+>
+> Signed-off-by: Hugh Dickins<hughd@google.com>
+> but forget that, just quietly fold the fixes into yours!
+
+This actually reverts my "mm: optimize putback for 0-order reclaim",
+so I removed this wrong optimization in v3
+
+> ---
+>   mm/vmscan.c |   20 ++++++--------------
+>   1 file changed, 6 insertions(+), 14 deletions(-)
+>
+> --- 3033K2.orig/mm/vmscan.c	2012-02-21 00:02:13.000000000 -0800
+> +++ 3033K2/mm/vmscan.c	2012-02-21 21:23:25.768381375 -0800
+> @@ -1342,7 +1342,6 @@ static int too_many_isolated(struct zone
+>    */
+>   static noinline_for_stack struct lruvec *
+>   putback_inactive_pages(struct lruvec *lruvec,
+> -		       struct scan_control *sc,
+>   		       struct list_head *page_list)
+>   {
+>   	struct zone_reclaim_stat *reclaim_stat =&lruvec->reclaim_stat;
+> @@ -1364,11 +1363,8 @@ putback_inactive_pages(struct lruvec *lr
+>   			continue;
+>   		}
+>
+> -		/* can differ only on lumpy reclaim */
+> -		if (sc->order) {
+> -			lruvec = __relock_page_lruvec(lruvec, page);
+> -			reclaim_stat =&lruvec->reclaim_stat;
+> -		}
+> +		lruvec = __relock_page_lruvec(lruvec, page);
+> +		reclaim_stat =&lruvec->reclaim_stat;
+>
+>   		SetPageLRU(page);
+>   		lru = page_lru(page);
+> @@ -1566,7 +1562,7 @@ shrink_inactive_list(unsigned long nr_to
+>   		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+>   	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+>
+> -	lruvec = putback_inactive_pages(lruvec, sc,&page_list);
+> +	lruvec = putback_inactive_pages(lruvec,&page_list);
+>
+>   	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+>   	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+> @@ -1631,7 +1627,6 @@ shrink_inactive_list(unsigned long nr_to
+>
+>   static struct lruvec *
+>   move_active_pages_to_lru(struct lruvec *lruvec,
+> -			 struct scan_control *sc,
+>   			 struct list_head *list,
+>   			 struct list_head *pages_to_free,
+>   			 enum lru_list lru)
+> @@ -1643,10 +1638,7 @@ move_active_pages_to_lru(struct lruvec *
+>   		int numpages;
+>
+>   		page = lru_to_page(list);
+> -
+> -		/* can differ only on lumpy reclaim */
+> -		if (sc->order)
+> -			lruvec = __relock_page_lruvec(lruvec, page);
+> +		lruvec = __relock_page_lruvec(lruvec, page);
+>
+>   		VM_BUG_ON(PageLRU(page));
+>   		SetPageLRU(page);
+> @@ -1770,9 +1762,9 @@ static void shrink_active_list(unsigned
+>   	 */
+>   	reclaim_stat->recent_rotated[file] += nr_rotated;
+>
+> -	lruvec = move_active_pages_to_lru(lruvec, sc,&l_active,&l_hold,
+> +	lruvec = move_active_pages_to_lru(lruvec,&l_active,&l_hold,
+>   						LRU_ACTIVE + file * LRU_FILE);
+> -	lruvec = move_active_pages_to_lru(lruvec, sc,&l_inactive,&l_hold,
+> +	lruvec = move_active_pages_to_lru(lruvec,&l_inactive,&l_hold,
+>   						LRU_BASE   + file * LRU_FILE);
+>   	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+>   	unlock_lruvec_irq(lruvec);
 
