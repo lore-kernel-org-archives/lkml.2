@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2BWCbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 21:31:08 -0500
-Received: from sh.osrg.net ([192.16.179.4]:60327 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036Ab2BWCbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 21:31:06 -0500
-Date: Thu, 23 Feb 2012 11:31:01 +0900 (JST)
-Message-Id: <20120223.113101.148425154.ryusuke@osrg.net>
-To: xi.wang@gmail.com
-Cc: haogangchen@gmail.com, linux-nilfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FS: nilfs2: clamps ns_r_segments_percentage to [1, 99]
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <EC48BE45-EA3E-400B-A90D-FF05CE3426D8@gmail.com>
-References: <1329774930-17162-1-git-send-email-haogangchen@gmail.com>
-	<20120223.004650.160012804.ryusuke@osrg.net>
-	<EC48BE45-EA3E-400B-A90D-FF05CE3426D8@gmail.com>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755217Ab2BWCcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 21:32:09 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:35336 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752036Ab2BWCcG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 21:32:06 -0500
+X-Sasl-enc: t4kKY4ao4WsXa7e6+lZ93mPIk4KSt/9hRNpvN7Qj8pLpkdSTdYVUVmV5nQ 1329964325
+Message-ID: <1329964322.2244.22.camel@perseus.themaw.net>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Date: Thu, 23 Feb 2012 10:32:02 +0800
+In-Reply-To: <CA+55aFyRFGrT6uSSCQoX0pZPZ7j2p4oqX-dcfsFUZt4q81qMrg@mail.gmail.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+	 <20120221.221609.218135609185671883.davem@davemloft.net>
+	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+	 <1329889428.2193.45.camel@perseus.themaw.net>
+	 <1329890027.2193.48.camel@perseus.themaw.net>
+	 <1329890251.2193.50.camel@perseus.themaw.net>
+	 <1329903139.2193.66.camel@perseus.themaw.net>
+	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
+	 <1329961703.2244.8.camel@perseus.themaw.net>
+	 <CA+55aFzRQJ8YeZGnbq=OO0YgzkfrcS4r+G1cJbjtDCZe=t6DNQ@mail.gmail.com>
+	 <1329962955.2244.16.camel@perseus.themaw.net>
+	 <CA+55aFyRFGrT6uSSCQoX0pZPZ7j2p4oqX-dcfsFUZt4q81qMrg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.7 (sh.osrg.net [192.16.179.4]); Thu, 23 Feb 2012 11:31:02 +0900 (JST)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Wed, 22 Feb 2012 10:59:25 -0500, Xi Wang wrote:
-> On Feb 22, 2012, at 10:46 AM, Ryusuke Konishi wrote:
-> > But this seems not to cause security issues; it just makes some disk
-> > usage calculations meaningless and causes malfunction for such
-> > out-of-range values.  Right?
+On Wed, 2012-02-22 at 18:25 -0800, Linus Torvalds wrote:
+> On Wed, Feb 22, 2012 at 6:09 PM, Ian Kent <raven@themaw.net> wrote:
+> >
+> > Sure, that's true, and you'll see it uses the mount option maxproto with
+> > the value of AUTOFS_MAX_PROTO_VERSION. But autofs uses it's own copy of
+> > the headers so AUTOFS_MAX_PROTO_VERSION is 4 not 5 so it won't be
+> > affected by this change.
 > 
-> Seems true to me.
+> Ok.
 > 
-> There may be another issue a few lines above: ns_blocks_per_segment
-> doesn't seem to have an upper bound (though it has a lower bound
-> NILFS_SEG_MIN_BLOCKS).  ns_blocks_per_segment is used in several
-> multiplications, such as in nilfs_ioctl_clean_segments:
+> I fetched your git tree, and it seems this changed to use mount()
+> directly in commit a74f68c99d9f ("integrated master map parsing into
+> daemon") back in 2006.
 > 
-> if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment
->         goto out_free;
-> 
-> Will this cause any problem?
+> Which seems to be part of autofs_5_0_0_beta1, so I guess we're safe. I
+> hope no distro ever used any early pre-beta versions of autofs that
+> had the new packet support but still used the external 'mount'
+> command.
 
-Looks similar.  This may cause malfunction, but it seems not to cause
-security issues.
+If there are they have bigger automount problem than the kernel packet
+size, ;)
 
-However, this range check seems no longer make sense.. it looks
-eliminable because the potential overflow issue was corrected by the
-following fix:
+It really didn't become usable until at least the rc releases and the
+actual first non-test release was 5.0.1, we never had a 5.0.0.
 
-                 if (argv[n].v_nmembs >= UINT_MAX / argv[n].v_size)
-                        goto out_free;
-
-Moreover, the upper bound "nsegs * nilfs->ns_blocks_per_segment" looks
-improper for argv[1].v_nmembs.  The argument argv[1] is used to pass
-an array of nilfs_period struct (ranges of deleting checkpoints).  But
-the number of nilfs_period is not relate to the number of GCing
-blocks.
- 
-> Or is there any reasonable upper bound
-> for ns_blocks_per_segment?
-
-Unclear.
-It is not efficient to check overflow in each place.  So, if we can
-define a minimum upper bound which can logically prevent overflow of
-every related multiplication, we should add a pre range check with it.
+Ian
 
 
-Thanks,
-Ryusuke Konishi
- 
-> - xi
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
