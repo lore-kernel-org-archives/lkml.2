@@ -1,169 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab2BWOVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:21:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52154 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab2BWOVH (ORCPT
+	id S1755965Ab2BWOYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:24:54 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:34559
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab2BWOYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:21:07 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.126.131 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F464B4D.5080907@openvz.org>
-Date: Thu, 23 Feb 2012 18:21:01 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org> <alpine.LSU.2.00.1202211205280.1858@eggly.anvils> <4F440E1D.7050004@openvz.org> <alpine.LSU.2.00.1202211406030.2012@eggly.anvils> <4F446458.8000107@openvz.org> <alpine.LSU.2.00.1202212148430.3515@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202212148430.3515@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 09:24:53 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: iwai@suse.de, alsa-devel@alsa-project.org, perex@perex.cz
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] sound: Fix typo in ctvmem.c
+Date: Thu, 23 Feb 2012 23:23:06 +0900
+Message-Id: <1330006986-1696-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
->> Hugh Dickins wrote:
->>> On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
->>>> Hugh Dickins wrote:
->>>>>
->>>>> I'll have to come back to think about your locking later too;
->>>>> or maybe that's exactly where I need to look, when investigating
->>>>> the mm_inline.h:41 BUG.
->>>>
->>>> pages_count[] updates looks correct.
->>>> This really may be bug in locking, and this VM_BUG_ON catch it before
->>>> list-debug.
->>>
->>> I've still not got into looking at it yet.
->>>
->>> You're right to mention DEBUG_LIST: I have that on some of the machines,
->>> and I would expect that to be the first to catch a mislocking issue.
->>>
->>> In the past my problems with that BUG (well, the spur to introduce it)
->>> came from hugepages.
->>
->> My patchset hasn't your mem_cgroup_reset_uncharged_to_root protection,
->> or something to replace it. So, there exist race between cgroup remove and
->> isolated uncharged page put-back, but it shouldn't corrupt lru lists.
->> There something different.
->
-> Yes, I'm not into removing cgroups yet.
+Correct spelling "virtural" to "virtual" in
+sound/pci/ctxfi/ctvmem.c
 
-Ok, my v3 patchset can deal with cgroups removing. At least I believe. =)
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ sound/pci/ctxfi/ctvmem.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I was implemented isolated pages counter.
-Seems like overhead isn't fatal and can be reduced.
-Plus these counters can be used not only as reference counters,
-they provides useful statistics for reclaimer.
-
->
-> I've got it: your "can differ only on lumpy reclaim" belief, first
-> commented in 17/22 but then assumed in 20/22, is wrong: those swapin
-> readahead pages, for example, may shift from root_mem_cgroup to another
-> mem_cgroup while the page is isolated by shrink_active or shrink_inactive.
-
-Ok, thanks.
-
->
-> Patch below against the top of my version of your tree: probably won't
-> quite apply to yours, since we used different bases here; but easy
-> enough to correct yours from it.
->
-> Bisection was misleading: it appeared to be much easier to reproduce
-> with 22/22 taken off, and led to 16/22, but that's because that one
-> introduced a similar bug, which actually got fixed in 22/22:
->
-> relock_page_lruvec() and relock_page_lruvec_irq() in 16/22 onwards
-> are wrong, in each case the if block needs an
-> 	} else
-> 		lruvec = page_lruvec(page);
-
-Ok, fixed in v3
-
->
-> You'll want to fix that in 16/22, but here's the patch for the end state:
->
-> Signed-off-by: Hugh Dickins<hughd@google.com>
-> but forget that, just quietly fold the fixes into yours!
-
-This actually reverts my "mm: optimize putback for 0-order reclaim",
-so I removed this wrong optimization in v3
-
-> ---
->   mm/vmscan.c |   20 ++++++--------------
->   1 file changed, 6 insertions(+), 14 deletions(-)
->
-> --- 3033K2.orig/mm/vmscan.c	2012-02-21 00:02:13.000000000 -0800
-> +++ 3033K2/mm/vmscan.c	2012-02-21 21:23:25.768381375 -0800
-> @@ -1342,7 +1342,6 @@ static int too_many_isolated(struct zone
->    */
->   static noinline_for_stack struct lruvec *
->   putback_inactive_pages(struct lruvec *lruvec,
-> -		       struct scan_control *sc,
->   		       struct list_head *page_list)
->   {
->   	struct zone_reclaim_stat *reclaim_stat =&lruvec->reclaim_stat;
-> @@ -1364,11 +1363,8 @@ putback_inactive_pages(struct lruvec *lr
->   			continue;
->   		}
->
-> -		/* can differ only on lumpy reclaim */
-> -		if (sc->order) {
-> -			lruvec = __relock_page_lruvec(lruvec, page);
-> -			reclaim_stat =&lruvec->reclaim_stat;
-> -		}
-> +		lruvec = __relock_page_lruvec(lruvec, page);
-> +		reclaim_stat =&lruvec->reclaim_stat;
->
->   		SetPageLRU(page);
->   		lru = page_lru(page);
-> @@ -1566,7 +1562,7 @@ shrink_inactive_list(unsigned long nr_to
->   		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
->   	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
->
-> -	lruvec = putback_inactive_pages(lruvec, sc,&page_list);
-> +	lruvec = putback_inactive_pages(lruvec,&page_list);
->
->   	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
->   	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-> @@ -1631,7 +1627,6 @@ shrink_inactive_list(unsigned long nr_to
->
->   static struct lruvec *
->   move_active_pages_to_lru(struct lruvec *lruvec,
-> -			 struct scan_control *sc,
->   			 struct list_head *list,
->   			 struct list_head *pages_to_free,
->   			 enum lru_list lru)
-> @@ -1643,10 +1638,7 @@ move_active_pages_to_lru(struct lruvec *
->   		int numpages;
->
->   		page = lru_to_page(list);
-> -
-> -		/* can differ only on lumpy reclaim */
-> -		if (sc->order)
-> -			lruvec = __relock_page_lruvec(lruvec, page);
-> +		lruvec = __relock_page_lruvec(lruvec, page);
->
->   		VM_BUG_ON(PageLRU(page));
->   		SetPageLRU(page);
-> @@ -1770,9 +1762,9 @@ static void shrink_active_list(unsigned
->   	 */
->   	reclaim_stat->recent_rotated[file] += nr_rotated;
->
-> -	lruvec = move_active_pages_to_lru(lruvec, sc,&l_active,&l_hold,
-> +	lruvec = move_active_pages_to_lru(lruvec,&l_active,&l_hold,
->   						LRU_ACTIVE + file * LRU_FILE);
-> -	lruvec = move_active_pages_to_lru(lruvec, sc,&l_inactive,&l_hold,
-> +	lruvec = move_active_pages_to_lru(lruvec,&l_inactive,&l_hold,
->   						LRU_BASE   + file * LRU_FILE);
->   	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
->   	unlock_lruvec_irq(lruvec);
+diff --git a/sound/pci/ctxfi/ctvmem.c b/sound/pci/ctxfi/ctvmem.c
+index b78f3fc..6109490 100644
+--- a/sound/pci/ctxfi/ctvmem.c
++++ b/sound/pci/ctxfi/ctvmem.c
+@@ -36,7 +36,7 @@ get_vm_block(struct ct_vm *vm, unsigned int size)
+ 
+ 	size = CT_PAGE_ALIGN(size);
+ 	if (size > vm->size) {
+-		printk(KERN_ERR "ctxfi: Fail! No sufficient device virtural "
++		printk(KERN_ERR "ctxfi: Fail! No sufficient device virtual "
+ 				  "memory space available!\n");
+ 		return NULL;
+ 	}
+-- 
+1.7.6.5
 
