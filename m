@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2BWImx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:42:53 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:60729 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab2BWImw (ORCPT
+	id S1754112Ab2BWIyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:54:22 -0500
+Received: from www17.your-server.de ([213.133.104.17]:42253 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab2BWIyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:42:52 -0500
-Message-ID: <4F45FBB7.5090607@ct.jp.nec.com>
-Date: Thu, 23 Feb 2012 17:41:27 +0900
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 23 Feb 2012 03:54:17 -0500
+Message-ID: <20120223095407.16803qant5u4yoxb@webmail.your-server.de>
+Date: Thu, 23 Feb 2012 09:54:07 +0100
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Ian Kent <raven@themaw.net>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net>
+ <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net>
+ <1329890027.2193.48.camel@perseus.themaw.net>
+ <1329890251.2193.50.camel@perseus.themaw.net>
+ <1329903139.2193.66.camel@perseus.themaw.net>
+ <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
+ <1329961703.2244.8.camel@perseus.themaw.net>
+ <1329962085.2244.10.camel@perseus.themaw.net>
+ <1329963683.2244.19.camel@perseus.themaw.net>
+In-Reply-To: <1329963683.2244.19.camel@perseus.themaw.net>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [PATCH] Pass nice as a value to proc_sched_autogroup_set_nice()
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain;
+ charset=UTF-8;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.6)
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-No side effect is expected, and the variable err will be overwritten with
-return value.
+Zitat von Ian Kent <raven@themaw.net>:
 
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
----
- fs/proc/base.c            |    3 +--
- include/linux/sched.h     |    2 +-
- kernel/sched/auto_group.c |   12 ++++++------
- 3 files changed, 8 insertions(+), 9 deletions(-)
+> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
+>> On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
+>>
+>> On second thought, I suppose other user space users don't "have" to use
+>> mount(2) ....
+>
+> Thomas, what does systemd use to mount the autofs mounts that it uses?
+>
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index db6ab4b..d449c02 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1310,8 +1310,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
- 	if (!p)
- 		return -ESRCH;
- 
--	err = nice;
--	err = proc_sched_autogroup_set_nice(p, &err);
-+	err = proc_sched_autogroup_set_nice(p, nice);
- 	if (err)
- 		count = err;
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4fb1d62..ee882cb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2064,7 +2064,7 @@ extern void sched_autogroup_fork(struct signal_struct *sig);
- extern void sched_autogroup_exit(struct signal_struct *sig);
- #ifdef CONFIG_PROC_FS
- extern void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m);
--extern int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice);
-+extern int proc_sched_autogroup_set_nice(struct task_struct *p, int nice);
- #endif
- #else
- static inline void sched_autogroup_create_attach(struct task_struct *p) { }
-diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-index e8a1f83..0984a21 100644
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -195,20 +195,20 @@ __setup("noautogroup", setup_autogroup);
- 
- #ifdef CONFIG_PROC_FS
- 
--int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
-+int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
- {
- 	static unsigned long next = INITIAL_JIFFIES;
- 	struct autogroup *ag;
- 	int err;
- 
--	if (*nice < -20 || *nice > 19)
-+	if (nice < -20 || nice > 19)
- 		return -EINVAL;
- 
--	err = security_task_setnice(current, *nice);
-+	err = security_task_setnice(current, nice);
- 	if (err)
- 		return err;
- 
--	if (*nice < 0 && !can_nice(current, *nice))
-+	if (nice < 0 && !can_nice(current, nice))
- 		return -EPERM;
- 
- 	/* this is a heavy operation taking global locks.. */
-@@ -219,9 +219,9 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
- 	ag = autogroup_task_get(p);
- 
- 	down_write(&ag->lock);
--	err = sched_group_set_shares(ag->tg, prio_to_weight[*nice + 20]);
-+	err = sched_group_set_shares(ag->tg, prio_to_weight[nice + 20]);
- 	if (!err)
--		ag->nice = *nice;
-+		ag->nice = nice;
- 	up_write(&ag->lock);
- 
- 	autogroup_kref_put(ag);
--- 
-1.7.7.6
+Judging from  
+http://cgit.freedesktop.org/systemd/systemd/tree/src/automount.c#n515  
+- mount is called via library/system call.
+
 
