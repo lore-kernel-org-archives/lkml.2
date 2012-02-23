@@ -1,180 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2BWJqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:46:19 -0500
-Received: from mga12.intel.com ([143.182.124.36]:27214 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754079Ab2BWJqR (ORCPT
+	id S1755026Ab2BWJwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:52:49 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39592 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab2BWJwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:46:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.68.221.42 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
+	Thu, 23 Feb 2012 04:52:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of christian.gmeiner@gmail.com designates 10.220.116.7 as permitted sender) smtp.mail=christian.gmeiner@gmail.com; dkim=pass header.i=christian.gmeiner@gmail.com
 MIME-Version: 1.0
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: [PATCH] tmpfs: security xattr setting on inode creation
-Date: Thu, 23 Feb 2012 11:46:05 +0200
-Message-Id: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Thu, 23 Feb 2012 10:52:27 +0100
+Message-ID: <CAH9NwWcbYRq9z_i8BcuQoK05+=ugyLqymHh9H6y963xWNnp2EA@mail.gmail.com>
+Subject: Change MAC address permanently
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds to generic xattr support introduced in Linux 3.0 by
-implementing initxattrs callback. This enables consulting
-of security attributes from LSM and EVM when inode is
-created.
+Hi all,
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
----
- mm/shmem.c |   82 ++++++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 66 insertions(+), 16 deletions(-)
+I have found out that ioctl SIOCSIFHWADDR could be used to change the
+current MAC address
+of an Ethernet device. But the big problem is that after an reboot the
+change is gone. Is there
+an other way of changing the MAC address permanently?
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 7a45ad0..cd367b1 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1478,6 +1478,64 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- }
- 
- /*
-+ * Allocate new xattr.
-+ */
-+static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
-+{
-+	/* wrap around? */
-+	size_t len = sizeof(**new_xattr) + size;
-+	if (len <= sizeof(**new_xattr))
-+		return -ENOMEM;
-+
-+	*new_xattr = kmalloc(len, GFP_KERNEL);
-+	if (*new_xattr == NULL)
-+		return -ENOMEM;
-+
-+	(*new_xattr)->size = size;
-+	return 0;
-+}
-+
-+/*
-+ * Callback for security_inode_init_security() for acquiring xattrs.
-+ */
-+static int shmem_initxattrs(struct inode *inode,
-+			    const struct xattr *xattr_array,
-+			    void *fs_info)
-+{
-+	const struct xattr *xattr;
-+	struct shmem_inode_info *info = SHMEM_I(inode);
-+	struct shmem_xattr *new_xattr = NULL;
-+	size_t len;
-+	int err = 0;
-+
-+	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-+		err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
-+		if (err < 0)
-+			return err;
-+
-+		len = strlen(xattr->name) + 1;
-+		new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
-+					  GFP_KERNEL);
-+		if (new_xattr->name == NULL) {
-+			kfree(new_xattr);
-+			return -ENOMEM;
-+		}
-+
-+		memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
-+		       XATTR_SECURITY_PREFIX_LEN);
-+		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
-+		       xattr->name, len);
-+		memcpy(new_xattr->value, xattr->value, xattr->value_len);
-+
-+		spin_lock(&info->lock);
-+		list_add(&new_xattr->list, &info->xattr_list);
-+		spin_unlock(&info->lock);
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-  * File creation. Allocate an inode, and we're done..
-  */
- static int
-@@ -1490,7 +1548,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
- 	if (inode) {
- 		error = security_inode_init_security(inode, dir,
- 						     &dentry->d_name,
--						     NULL, NULL);
-+						     &shmem_initxattrs, NULL);
- 		if (error) {
- 			if (error != -EOPNOTSUPP) {
- 				iput(inode);
-@@ -1630,7 +1688,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
- 		return -ENOSPC;
- 
- 	error = security_inode_init_security(inode, dir, &dentry->d_name,
--					     NULL, NULL);
-+					     &shmem_initxattrs, NULL);
- 	if (error) {
- 		if (error != -EOPNOTSUPP) {
- 			iput(inode);
-@@ -1731,26 +1789,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
- 	return ret;
- }
- 
--static int shmem_xattr_set(struct dentry *dentry, const char *name,
-+static int shmem_xattr_set(struct inode *inode, const char *name,
- 			   const void *value, size_t size, int flags)
- {
--	struct inode *inode = dentry->d_inode;
- 	struct shmem_inode_info *info = SHMEM_I(inode);
- 	struct shmem_xattr *xattr;
- 	struct shmem_xattr *new_xattr = NULL;
--	size_t len;
- 	int err = 0;
- 
- 	/* value == NULL means remove */
- 	if (value) {
--		/* wrap around? */
--		len = sizeof(*new_xattr) + size;
--		if (len <= sizeof(*new_xattr))
--			return -ENOMEM;
--
--		new_xattr = kmalloc(len, GFP_KERNEL);
--		if (!new_xattr)
--			return -ENOMEM;
-+		err = shmem_xattr_alloc(size, &new_xattr);
-+		if (err < 0)
-+			return err;
- 
- 		new_xattr->name = kstrdup(name, GFP_KERNEL);
- 		if (!new_xattr->name) {
-@@ -1758,7 +1809,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
- 			return -ENOMEM;
- 		}
- 
--		new_xattr->size = size;
- 		memcpy(new_xattr->value, value, size);
- 	}
- 
-@@ -1858,7 +1908,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
- 	if (size == 0)
- 		value = "";  /* empty EA, do not remove */
- 
--	return shmem_xattr_set(dentry, name, value, size, flags);
-+	return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
- 
- }
- 
-@@ -1878,7 +1928,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
- 	if (err)
- 		return err;
- 
--	return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
-+	return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
- }
- 
- static bool xattr_is_trusted(const char *name)
--- 
-1.7.5.4
+I am asking, as I am working in a company which does produce devices
+which are using Intel
+based NICs and where Linux is used as OS. At the moment we need to
+boot vxworks to change
+the MAC address and could the "install" Linux on the device. The
+biggest problem here is that
+for vxworks we need an other BIOS as for Linux.
 
+Thanks for any hints
+--
+Christian Gmeiner, MSc
