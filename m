@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab2BWRb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 12:31:26 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59054 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab2BWRbZ convert rfc822-to-8bit (ORCPT
+	id S1754484Ab2BWRdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 12:33:55 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52187 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab2BWRdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 12:31:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of airlied@gmail.com designates 10.101.4.16 as permitted sender) smtp.mail=airlied@gmail.com; dkim=pass header.i=airlied@gmail.com
+	Thu, 23 Feb 2012 12:33:53 -0500
+Date: Thu, 23 Feb 2012 09:33:48 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120223173348.GD22536@google.com>
+References: <20120221211938.GE12236@google.com>
+ <4F45F742.1060605@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwDXZSwDf3xjAofe_R15pu5G0Pg2UnkJTx-KVTXez4ZqA@mail.gmail.com>
-References: <4F4669B1.4020306@tu-ilmenau.de>
-	<aefc95$3a3h8b@orsmga001.jf.intel.com>
-	<CA+55aFwDXZSwDf3xjAofe_R15pu5G0Pg2UnkJTx-KVTXez4ZqA@mail.gmail.com>
-Date: Thu, 23 Feb 2012 17:31:24 +0000
-Message-ID: <CAPM=9tyQx2Yn1wmm4Kv6EMPVcv8jP4YR55PEff8tHU1ZxyEDog@mail.gmail.com>
-Subject: Re: responsiveness: newer kernels causing lagging and blocking
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, stephan.baerwolf@tu-ilmenau.de,
-        linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F45F742.1060605@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 5:29 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Feb 23, 2012 at 9:21 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->>
->> One mystery that has never been resolved is just why wine causes a flood
->> of xrandr/connection probes, and then there is still the underlying issue
->> that probing blocks the device and causes noticeable latency.
->
-> Is there any chance that the EDID code would just have a "if I probed
-> in the last second or two, let's not do it again and instead just
-> return the cached data from last time" thing to just protect against
-> some odd interrupt flood (or a user that asks for edid information
-> explicitly like xrandr).
+Hello, Li.
 
-X already does that, if you can the randr interfaces it doesn't cause
-a probe unless you ask for it.
+On Thu, Feb 23, 2012 at 04:22:26PM +0800, Li Zefan wrote:
+> > The following is a "best practices" document on using cgroups.
+> > 
+> >   http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
+> > 
+> > To me, it seems to demonstrate the rather ugly situation that the
+> > current cgroup is providing.  Everyone should tip-toe around cgroup
+> > hierarchies and nobody has full knowledge or control over them.
+> > e.g. base system management (e.g. systemd) can't use freezer or task
+> > counter as someone else might want to use it for different hierarchy
+> > layout.
+> > 
+> 
+> This issue still exists if we allow a single hierarchy only, right?
+> Different cgroup users/applications have to struggle not to step
+> on each other's toe.
 
-wine must be doing something silly or just needs to call a different interface.
+Oh sure, having single hierarchy doesn't solve that problem but makes
+it clear that there's single representation that kernel understands
+and deals with.  I think the problem now is that kernel tries to
+multiplex multiple users.  Unfortunately, it does that half-way and
+badly and I think the nature of the problem doesn't really allow
+proper muxed interface at kernel layer.  So, I'm suggesting to let go
+of the broken pretense and just have a single unified interfce and let
+userland deal with resource allocation policies.
 
-Dave.
->
->                   Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
+
+-- 
+tejun
