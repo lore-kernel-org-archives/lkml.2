@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2BWUMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:12:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44034 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab2BWUMn (ORCPT
+	id S1756855Ab2BWUOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:14:45 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59221 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab2BWUOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:12:43 -0500
-Date: Thu, 23 Feb 2012 12:12:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: hugetlb: bail out unmapping after serving reference
- page
-Message-Id: <20120223121238.b597e7e4.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBA53nS70Q7GEeskKFas-hfg4GKmUf=Zut5anSN0P+d1KA@mail.gmail.com>
-References: <CAJd=RBALNtedfq+PLPnGKd4i4D0mLiVPdW_7pWWopnSZNC_vqA@mail.gmail.com>
-	<20120222130659.d75b6f69.akpm@linux-foundation.org>
-	<CAJd=RBA53nS70Q7GEeskKFas-hfg4GKmUf=Zut5anSN0P+d1KA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 15:14:44 -0500
+Date: Thu, 23 Feb 2012 12:09:05 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: stable@vger.kernel.org, Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+Message-ID: <20120223200905.GA5475@kroah.com>
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+ <20120222211928.GA4448@kroah.com>
+ <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
+ <20120222213253.GA25150@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120222213253.GA25150@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 21:05:41 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+On Wed, Feb 22, 2012 at 01:32:53PM -0800, Greg Kroah-Hartman wrote:
+> On Wed, Feb 22, 2012 at 01:29:11PM -0800, Linus Torvalds wrote:
+> > On Wed, Feb 22, 2012 at 1:19 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> > >
+> > > Thanks for doing the backport.  Any ideas on how far back this problem
+> > > goes?
+> > 
+> > The fundamental bug goes back forever, but happily afaik you can only
+> > *trigger* it by doing FPU accesses from interrupts, and nobody did
+> > that until the AES-NI instructions came about.
+> > 
+> > So practically speaking it goes back to the introduction of
+> > CRYPTO_AES_NI_INTEL, in commit 54b6a1bd5364 ("crypto: aes-ni - Add
+> > support to Intel AES-NI instructions for x86_64 platform").
+> > 
+> > Which was merged into 2.6.30. So it still goes back pretty far.
+> > 
+> > The good news is that I *think* the whole i387 handling code hasn't
+> > been touched much. But I didn't really check deeply.
+> 
+> Ok, I'll see how far back I can backport it easily, after Peter verifies
+> that this series works for him on his box.
 
-> and a follow-up cleanup also attached.
+I've applied this now to the 3.0 and 3.2-stable trees.  It looks like it
+would work on the 2.6.32-stable tree, but it needs some tweaks, and as I
+can't really test this, and the .32-stable tree is probably not going to
+have problems in this area, I'll let someone else generate those patches
+and test them if they feel it is needed there.
 
-Please, never put more than one patches in an email - it is rather a
-pain to manually unpick everything.
+thanks,
 
-> When unmapping given VM range, a couple of code duplicate, such as pte_page()
-> and huge_pte_none(), so a cleanup needed to compact them together.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/hugetlb.c	Thu Feb 23 20:13:06 2012
-> +++ b/mm/hugetlb.c	Thu Feb 23 20:30:16 2012
-> @@ -2245,16 +2245,23 @@ void __unmap_hugepage_range(struct vm_ar
->  		if (huge_pmd_unshare(mm, &address, ptep))
->  			continue;
-> 
-> +		pte = huge_ptep_get(ptep);
-> +		if (huge_pte_none(pte))
-> +			continue;
-> +
-> +		/*
-> +		 * HWPoisoned hugepage is already unmapped and dropped reference
-> +		 */
-> +		if (unlikely(is_hugetlb_entry_hwpoisoned(pte)))
-> +			continue;
-> +
-> +		page = pte_page(pte);
->  		/*
->  		 * If a reference page is supplied, it is because a specific
->  		 * page is being unmapped, not a range. Ensure the page we
->  		 * are about to unmap is the actual page of interest.
->  		 */
->  		if (ref_page) {
-> -			pte = huge_ptep_get(ptep);
-> -			if (huge_pte_none(pte))
-> -				continue;
-> -			page = pte_page(pte);
->  			if (page != ref_page)
->  				continue;
-> 
-> @@ -2267,16 +2274,6 @@ void __unmap_hugepage_range(struct vm_ar
->  		}
-> 
->  		pte = huge_ptep_get_and_clear(mm, address, ptep);
-> -		if (huge_pte_none(pte))
-> -			continue;
-> -
-> -		/*
-> -		 * HWPoisoned hugepage is already unmapped and dropped reference
-> -		 */
-> -		if (unlikely(is_hugetlb_entry_hwpoisoned(pte)))
-> -			continue;
-> -
-> -		page = pte_page(pte);
->  		if (pte_dirty(pte))
->  			set_page_dirty(page);
->  		list_add(&page->lru, &page_list);
-
-This changes behaviour when ref_page refers to a hwpoisoned page.
+greg k-h
