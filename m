@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab2BWX3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:29:35 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39895 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab2BWX3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:29:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [Bug #42669] 3.3-rc1: compiling problems nvme , l2cap_sock , mc13892-regulator , and snd-pcsp don't work
-Date: Fri, 24 Feb 2012 00:30:27 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
-        maciej.rutecki@gmail.com, florian@mickler.org, w.landgraf@ru.ru
-References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera> <qCQH7HfZS8E.A.FVG.M9rRPB@chimera> <20120223.181904.501214130038312055.davem@davemloft.net>
-In-Reply-To: <20120223.181904.501214130038312055.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757347Ab2BWXb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:31:59 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:57696 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab2BWXb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 18:31:57 -0500
+Date: Thu, 23 Feb 2012 18:31:45 -0500 (EST)
+Message-Id: <20120223.183145.519627082998533863.davem@davemloft.net>
+To: tj@kernel.org
+Cc: mroos@linux.ee, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120223185503.GI22536@google.com>
+References: <20120222174825.GA32694@google.com>
+	<alpine.SOC.1.00.1202222025120.20496@math.ut.ee>
+	<20120223185503.GI22536@google.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202240030.27270.rjw@sisk.pl>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 23 Feb 2012 15:31:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 24, 2012, David Miller wrote:
-> From: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Date: Thu, 23 Feb 2012 23:51:25 +0100 (CET)
-> 
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 3.2.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42669
-> > Subject		: 3.3-rc1: compiling problems  nvme , l2cap_sock , mc13892-regulator , and snd-pcsp don't work
-> > Submitter	: werner <w.landgraf@ru.ru>
-> > Date		: 2012-01-20 18:52 (35 days old)
-> > Message-ID	: <web-682421181@zbackend1.aha.ru>
-> > References	: http://marc.info/?l=linux-kernel&m=132708923719565&w=2
-> 
-> The l2cap_sock problem is fixed in the net GIT tree by commit:
+From: Tejun Heo <tj@kernel.org>
+Date: Thu, 23 Feb 2012 10:55:03 -0800
 
-Thanks, closed.
+> Hello,
+> 
+> On Wed, Feb 22, 2012 at 08:25:32PM +0200, Meelis Roos wrote:
+>> > Can you please try the following patch?  If it still fails to boot,
+>> > please attach the failing log.  Thank you.
+>> 
+>> It works on E3500! Will try other machines tomorrow.
+> 
+> Once confirmed, I'll push the patch through tip.  It just hides the
+> underlying problem but we should be in no worse shape than before,
+> it's two line change so reproduing the problem again for proper
+> diagnosing isn't difficult, and we're getting a bit late in release
+> cycle already.
 
-Rafael
+Ok.
