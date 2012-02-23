@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2BWDdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 22:33:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53871 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395Ab2BWDdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 22:33:03 -0500
-Message-ID: <4F45B35D.1010702@zytor.com>
-Date: Wed, 22 Feb 2012 19:32:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1753568Ab2BWDdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 22:33:13 -0500
+Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:54915 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753508Ab2BWDdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 22:33:06 -0500
+Date: Thu, 23 Feb 2012 04:25:03 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of
+ at91_sys_read/write
+Message-ID: <20120223032503.GA20176@game.jcrosoft.org>
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+ <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
+ <4F456AAF.3090809@gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: mingo@redhat.com, mjg@redhat.com, linux-kernel@vger.kernel.org,
-        keithp@keithp.com, rui.zhang@intel.com, huang.ying.caritas@gmail.com,
-        stable@vger.kernel.org, matt.fleming@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32
- oops
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org> <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org> <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F456AAF.3090809@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 12929553057244883725
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 06:20 PM, Yinghai Lu wrote:
+On 09:22 Thu 23 Feb     , Ryan Mallon wrote:
+> On 22/02/12 20:39, Nicolas Ferre wrote:
 > 
-> Why is MAXMEM used here?
+> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > 
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > ---
+> >  arch/arm/mach-at91/at91x40.c              |    2 +-
+> >  arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
+> >  arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
+> >  3 files changed, 27 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+> > index 0154b7f..5400a1d 100644
+> > --- a/arch/arm/mach-at91/at91x40.c
+> > +++ b/arch/arm/mach-at91/at91x40.c
+> > @@ -44,7 +44,7 @@ static void at91x40_idle(void)
+> >  	 * Disable the processor clock.  The processor will be automatically
+> >  	 * re-enabled by an interrupt or by a reset.
+> >  	 */
+> > -	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
+> > +	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
 > 
-> EFI reserved area could be above 4G?
 > 
-> if that is the case, you will map all mmio hole below 4g.
+> This doesn't seem to be equivalent, at91_sys_write does:
 > 
+>   void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
+>   __raw_writel(value, addr + reg_offset);
+> 
+> and this patch doesn't redefine AT91_PS_CR. Was it broken before this
+> patch? What am I missing?
+this is right
+#define AT91_PS_CR      (AT91_PS + 0)   /* PS Control register */
 
-OK, dropping this patch for now, at least from -urgent.
-
-We really need to restrict the memory types we map, at least without
-ioremap() called on them.  In theory, on x86-64, we could have a
-dedicated "1:1" address for each physical address, but there is no good
-reason we should ever map memory types other than RAM, ACPI and EFI by
-default -- with the possible exception of the low 1 MiB legacy area.
-
-Therefore, I don't see why on Earth we have
-kernel_physical_mapping_init() create mappings for areas which are not
-RAM.  It has access to the memory map at this point, so there is no
-reason for it.  Unfortunately I think we still have a bunch of code
-which implicitly assumes the old "PC" model with separate contiguous
-memory ranges starting at 0, 1 MiB, and 4 GiB, however, there are more
-and more systems where that just doesn't match reality.
-
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Best Regards,
+J.
