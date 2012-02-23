@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab2BWWhB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:37:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45385 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000Ab2BWWg7 (ORCPT
+	id S1756518Ab2BWWii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:38:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46887 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab2BWWig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:36:59 -0500
-Date: Thu, 23 Feb 2012 14:36:58 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
- PAGE_SIZE
-Message-Id: <20120223143658.0e318ce2.akpm@linux-foundation.org>
-In-Reply-To: <1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
-References: <1329393696-4802-1-git-send-email-daniel.vetter@ffwll.ch>
-	<1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 17:38:36 -0500
+Date: Thu, 23 Feb 2012 14:38:32 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120223223832.GK22536@google.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222183351.GD32694@google.com>
+ <20120223194109.GI19691@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120223194109.GI19691@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 13:01:36 +0100
-Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+Hello,
 
-> drm/i915 wants to read/write more than one page in its fastpath
-> and hence needs to prefault more than PAGE_SIZE bytes.
-> 
-> I've checked the callsites and they all already clamp size when
-> calling fault_in_pages_* to the same as for the subsequent
-> __copy_to|from_user and hence don't rely on the implicit clamping
-> to PAGE_SIZE.
-> 
-> Also kill a copy&pasted spurious space in both functions while at it.
->
-> ...
->
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -408,6 +408,7 @@ extern void add_page_wait_queue(struct page *page, wait_queue_t *waiter);
->  static inline int fault_in_pages_writeable(char __user *uaddr, int size)
->  {
->  	int ret;
-> +	char __user *end = uaddr + size - 1;
->  
->  	if (unlikely(size == 0))
->  		return 0;
-> @@ -416,17 +417,20 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
->  	 * Writing zeroes into userspace here is OK, because we know that if
->  	 * the zero gets there, we'll be overwriting it.
->  	 */
-> -	ret = __put_user(0, uaddr);
-> +	while (uaddr <= end) {
-> +		ret = __put_user(0, uaddr);
-> +		if (ret != 0)
-> +			return ret;
-> +		uaddr += PAGE_SIZE;
-> +	}
+On Thu, Feb 23, 2012 at 02:41:10PM -0500, Vivek Goyal wrote:
+> Considering everything internally as flat, isn't it simpler. So cgroup 
+> tree still might look hierarchical but actually controller treats it
+> as.
+> 				root
+> 		              / / | \ \
+> 			    g1 g2 g3 g4 g5
 
-The callsites in filemap.c are pretty hot paths, which is why this
-thing remains explicitly inlined.  I think it would be worth adding a
-bit of code here to avoid adding a pointless test-n-branch and larger
-cache footprint to read() and write().
+I don't know.  Mixing the above with controllers which implement
+proper nesting makes my head explode (why is there a hierarchy at
+all?).  Root is always special anyway.  Just treating root differently
+and collapsing the rest of hierarchies should do, right?
 
-A way of doing that is to add another argument to these functions, say
-"bool multipage".  Change the code to do
+Thanks.
 
-	if (multipage) {
-		while (uaddr <= end) {
-			...
-		}
-	}
-
-and change the callsites to pass in constant "true" or "false".  Then
-compile it up and manually check that the compiler completely removed
-the offending code from the filemap.c callsites.
-
-Wanna have a think about that?  If it all looks OK then please be sure
-to add code comments explaining why we did this.
-
->  	if (ret == 0) {
-> -		char __user *end = uaddr + size - 1;
-> -
->  		/*
->  		 * If the page was already mapped, this will get a cache miss
->  		 * for sure, so try to avoid doing it.
->  		 */
-> -		if (((unsigned long)uaddr & PAGE_MASK) !=
-> +		if (((unsigned long)uaddr & PAGE_MASK) ==
->  				((unsigned long)end & PAGE_MASK))
-
-Maybe I'm having a dim day, but I don't immediately see why != got
-turned into ==.
-
-
-Once we have this settled I'd suggest that the patch be carried in
-whatever-git-tree-needs-it.
+-- 
+tejun
