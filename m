@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2BWQXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:23:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26417 "EHLO mga09.intel.com"
+	id S1753905Ab2BWQ0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:26:38 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:63593 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab2BWQXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:23:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="111244962"
-Date: Thu, 23 Feb 2012 17:23:04 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: wm8994: Add __devinit and __devexit annotations for
- probe and remove
-Message-ID: <20120223162304.GK24377@sortiz-mobl>
-References: <1329523083-31644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1752943Ab2BWQ0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 11:26:37 -0500
+Date: Thu, 23 Feb 2012 17:25:55 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH V2 1/2] mfd: Add driver for STA2X11 MFD block
+Message-ID: <20120223162555.GA11815@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329523083-31644-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120223161914.GJ24377@sortiz-mobl>
+References: <20120223161914.GJ24377@sortiz-mobl>
+  <cover.1329396583.git.rubini@gnudd.com>
+  <8f360fc42e201ccc0ab64aa73ffe9671c9b8963f.1329396583.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+> A few minor comments, since it seems you're going to re-spin this one:
 
-On Fri, Feb 17, 2012 at 03:58:03PM -0800, Mark Brown wrote:
-> Fixes warnings and needed for correctness.
-Thanks, applied.
+Thanks. Will do. The "#if 1" is clearly an oversight.
+I should be able to resping it over the weekeend.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+/alessandro
