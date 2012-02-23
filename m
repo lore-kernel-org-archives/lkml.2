@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2BWSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:44:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44291 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab2BWSo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:44:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120626184"
-From: Andi Kleen <andi@firstfloor.org>
+	id S1756639Ab2BWSph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:45:37 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:46726 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752588Ab2BWSpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 13:45:36 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JPsXRPcVM1kqEF_sEam_QsdwN3LELsCnjLg6FabH7kB1zcB
+ cYUwRXr5ZZ_m0tJn28mZFyu0WSn7e2xdvNTu0YuM3sUTCK5X0pwBpSTDa.cI
+ Uh1u0eUIYQd2O0jcLdrKKEX8MYmYnoCw87k5Z1j1D9cIjblFu7dBy260lN7e
+ cpa8Se5_ZF7OQ8uaf0K4CVU_.80dFp1_mQ4rc6U0fsyLWKRYHvQWS8lLZGmt
+ 6zNsPio3q.z9vFKtG4KbfEdNmj08OTCJJdBXRU9Wva8f6JNFHH5toMuNx3tc
+ hmb_OukC6m4cim.frblUXCohz8q0wFBmlYMOcTXz0JhPLTFgMXzLr3fGGEhL
+ DPG_r.W3P3U4aV4WXvjdwqRNCYs1oYmka6XWcEK2UNMpu.cAwvwlshQtCRVc
+ H
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 23 Feb 2012 12:45:33 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
 To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: cl@linux.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+In-Reply-To: <20120223180740.C4EC4156@kernel>
+Message-ID: <alpine.DEB.2.00.1202231240590.9878@router.home>
 References: <20120223180740.C4EC4156@kernel>
-Date: Thu, 23 Feb 2012 10:45:00 -0800
-In-Reply-To: <20120223180740.C4EC4156@kernel> (Dave Hansen's message of "Thu,
-	23 Feb 2012 10:07:40 -0800")
-Message-ID: <m2zkc9pexf.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen <dave@linux.vnet.ibm.com> writes:
+On Thu, 23 Feb 2012, Dave Hansen wrote:
 
-> sys_move_pages() and sys_migrate_pages() are a pretty nice copy
-> and paste job of each other.  They both take a pid, find the task
-> struct, and then grab a ref on the mm.  They both also do an
-> rcu_read_unlock() after they've taken the mm and then proceed to
-> access 'task'.  I think this is a bug in both cases.
+> I think I got lucky that my task_struct was bogus in the oops
+> below.  It's probably quite feasible that a task_struct could get
+> freed back in to the slab, reallocated as another task_struct,
+> and then we do these cred checks against a valid, but basically
+> random task.
 
-Can we share code?
+Ok I buy that.
 
-
->
 > This patch takes the pid-to-task code along with the credential
 > and security checks in sys_move_pages() and sys_migrate_pages()
 > and consolidates them.  It now takes a task reference in
 > the new function and requires the caller to drop it.  I
 > believe this resolves the race.
 
-Looks good to me.
+And this way its safer?
 
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> diff -puN include/linux/migrate.h~movememory-helper include/linux/migrate.h
+> --- linux-2.6.git/include/linux/migrate.h~movememory-helper	2012-02-16 09:59:17.270207242 -0800
+> +++ linux-2.6.git-dave/include/linux/migrate.h	2012-02-16 09:59:17.286207438 -0800
+> @@ -31,6 +31,7 @@ extern int migrate_vmas(struct mm_struct
+>  extern void migrate_page_copy(struct page *newpage, struct page *page);
+>  extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+>  				  struct page *newpage, struct page *page);
+> +struct task_struct *can_migrate_get_task(pid_t pid);
 
-BTW looks like we really need a better stress test for these
-syscalls.
+Could we use something easier to understand? try_get_task()?
 
--Andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+> +++ linux-2.6.git-dave/mm/mempolicy.c	2012-02-16 09:59:17.286207438 -0800
+> diff -puN mm/migrate.c~movememory-helper mm/migrate.c
+> --- linux-2.6.git/mm/migrate.c~movememory-helper	2012-02-16 09:59:17.278207340 -0800
+> +++ linux-2.6.git-dave/mm/migrate.c	2012-02-16 09:59:17.286207438 -0800
+> @@ -1339,38 +1339,22 @@ static int do_pages_stat(struct mm_struc
+>  }
+>
+>  /*
+> - * Move a list of pages in the address space of the currently executing
+> - * process.
+> + * If successful, takes a task_struct reference that
+> + * the caller is responsible for releasing.
+>   */
+> -SYSCALL_DEFINE6(move_pages, pid_t, pid, unsigned long, nr_pages,
+> -		const void __user * __user *, pages,
+> -		const int __user *, nodes,
+> -		int __user *, status, int, flags)
+> +struct task_struct *can_migrate_get_task(pid_t pid)
+>  {
+> -	const struct cred *cred = current_cred(), *tcred;
+>  	struct task_struct *task;
+> -	struct mm_struct *mm;
+> -	int err;
+> -
+> -	/* Check flags */
+> -	if (flags & ~(MPOL_MF_MOVE|MPOL_MF_MOVE_ALL))
+> -		return -EINVAL;
+> -
+> -	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
+> -		return -EPERM;
+> +	const struct cred *cred = current_cred(), *tcred;
+> +	int err = 0;
+>
+> -	/* Find the mm_struct */
+>  	rcu_read_lock();
+>  	task = pid ? find_task_by_vpid(pid) : current;
+>  	if (!task) {
+>  		rcu_read_unlock();
+> -		return -ESRCH;
+> +		return ERR_PTR(-ESRCH);
+>  	}
+> -	mm = get_task_mm(task);
+> -	rcu_read_unlock();
+> -
+> -	if (!mm)
+> -		return -EINVAL;
+> +	get_task_struct(task);
+
+Hmmm isnt the race still there between the determination of the task and
+the get_task_struct()? You would have to verify after the get_task_struct
+that this is really the task we wanted to avoid the race.
