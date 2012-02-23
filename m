@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2BWPYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 10:24:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36781 "EHLO mx1.redhat.com"
+	id S1756319Ab2BWPYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 10:24:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48466 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756179Ab2BWPYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 10:24:08 -0500
-Date: Thu, 23 Feb 2012 13:22:27 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
-Message-ID: <20120223152226.GA2014@x61.redhat.com>
-References: <20120222115320.GA3107@x61.redhat.com>
- <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com>
+	id S1756191Ab2BWPYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 10:24:45 -0500
+Date: Thu, 23 Feb 2012 16:17:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ptrace] Problem with ptrace cleanup logic.
+Message-ID: <20120223151754.GA1065@redhat.com>
+References: <201202230526.q1N5QdUc035041@www262.sakura.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201202230526.q1N5QdUc035041@www262.sakura.ne.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 04:44:58PM -0800, David Rientjes wrote:
-> I don't like this because it duplicates what is given by /proc/slabinfo 
-> that can easily be read at the time of oom and is unnecessary to dump to 
-> the kernel log.  We display the meminfo (which includes the amount of 
-> slab, just not broken down by cache) because it's absolutely necessary to 
-> understand why the oom was triggered.  The tasklist dump is allowed 
-> because it's difficult to attain all that information easily and to 
-> determine which threads are eligible in the oom context (global, memcg, 
-> cpuset, mempolicy) so they matter to the oom condition.  The per-cache 
-> slabinfo fits neither of that criteria and just duplicates code in the 
-> slab allocators that is attainable elsewhere.
+On 02/23, Tetsuo Handa wrote:
+>
+> I noticed that ptrace(PTRACE_ATTACH, 1) makes the global init process remain
+> killable even after a process that called ptrace(PTRACE_ATTACH, 1) exits.
 
-Lets say the slab gets so bloated that for every user task spawned OOM-killer 
-just kills it instantly, or the system falls under severe thrashing, leaving no
-chance for you getting an interactive session to parse /proc/slabinfo, thus 
-making the reset button as your only escape... How would you identify what was 
-the set of caches responsible by the slab swelling?
+Yes, known problem. We should cleanup the usage of signal->flags.
+This also allows to kill the new bitfields in signal_struct.
 
-IMHO, having such qualified info about slab usage at hand is very useful in
-several occurrences of OOM. It not only helps out developers, but also sysadmins
-on troubleshooting slab usage when OOM-killer is invoked, thus qualifying and 
-showing such data surely does make sense for a lot of people. For those who do 
-not mind/care about such reporting, in the end it just takes a sysctl knob 
-adjustment to make it go quiet.
+But firstly we should cleanup force_sig_info(), I sent the initial
+patches.
 
-> 
-> I think this also gives another usecase for a possible /dev/mem_notify in 
-> the future: userspace could easily poll on an eventfd and wait for an oom 
-> to occur and then cat /proc/slabinfo to attain all this.  In other words, 
-> if we had this functionality (which I think we undoubtedly will in the 
-> future), this patch would be obsoleted.
+The problem is: init loses SIGNAL_UNKILLABLE.
 
-Great! So, why not letting the time tell us if this feature will be obsoleted
-or not? I'd rather have this patch obsoleted by another one proven better, than
-just stay still waiting for something that might, or might not, happen in the
-future.
+Oleg.
 
-
-
-Thanks for your feedback!
--- 
-Rafael Aquini <aquini@redhat.com>
-Software Maintenance Engineer
-Red Hat, Inc.
-+55 51 4063.9436 / 8426138 (ext)
