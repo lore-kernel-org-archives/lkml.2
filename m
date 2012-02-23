@@ -1,162 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab2BWO3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:29:00 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:61392 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab2BWO0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:26:34 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        kernel@avr32linux.org
-Subject: [PATCH v3 18/21] Atmel: move console default platform_device to serial driver
-Date: Thu, 23 Feb 2012 15:26:02 +0100
-Message-Id: <69f6a27bf4c86e986964100e560d991a8de03833.1330006537.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
-References: <cover.1330006537.git.nicolas.ferre@atmel.com>
-In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
-References: <cover.1330006537.git.nicolas.ferre@atmel.com>
+	id S1756497Ab2BWO3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:29:35 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39284 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756185Ab2BWO3d convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 09:29:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jiangtao.jit@gmail.com designates 10.152.104.143 as permitted sender) smtp.mail=jiangtao.jit@gmail.com; dkim=pass header.i=jiangtao.jit@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CAJd=RBCF+1xON8VHCHt1KujSkgn9-XNwSHyf7-dfVYZLNFpyFg@mail.gmail.com>
+References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
+	<CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com>
+	<4F411373.50304@gmail.com>
+	<CAOe6JY3yM24CGYOpPc98QfjRYah5U+L9DB46WH60LVrxN9=eRQ@mail.gmail.com>
+	<CAMzpN2gnOgZWZFTVHnL8ySQSXCykc9ZpoDYMUvHGPVpy4OVWOw@mail.gmail.com>
+	<CAOe6JY21ao5BUcsOfS2S1xtp0iuO+9O_O9qK=AMNmjZGmTMGOw@mail.gmail.com>
+	<CAJd=RBCF+1xON8VHCHt1KujSkgn9-XNwSHyf7-dfVYZLNFpyFg@mail.gmail.com>
+Date: Thu, 23 Feb 2012 22:29:31 +0800
+Message-ID: <CAOe6JY2_E7FCAHkLJpG5BF9xvMiH4=MDmEkFzJOcViKBWBF6kw@mail.gmail.com>
+Subject: Re: A problem with percpu variable cpu_number
+From: Tao Jiang <jiangtao.jit@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Brian Gerst <brgerst@gmail.com>, Cong Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Hillf Danton:
 
-This variable spread on every SoC that is using the atmel_serial.c
-driver can be included directly into the latter.
+Thanks for your remind
+and sorry for my poor English.
 
-This will allow to compile multiple soc in the same kernel.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: kernel@avr32linux.org
----
- arch/arm/mach-at91/at91rm9200_devices.c  |    1 -
- arch/arm/mach-at91/at91sam9260_devices.c |    1 -
- arch/arm/mach-at91/at91sam9261_devices.c |    1 -
- arch/arm/mach-at91/at91sam9263_devices.c |    1 -
- arch/arm/mach-at91/at91sam9g45_devices.c |    1 -
- arch/arm/mach-at91/at91sam9rl_devices.c  |    1 -
- arch/arm/mach-at91/at91sam9x5.c          |    1 -
- arch/avr32/mach-at32ap/at32ap700x.c      |    2 --
- drivers/tty/serial/atmel_serial.c        |    2 ++
- 9 files changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-index aca272b..640520c 100644
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -1115,7 +1115,6 @@ static inline void configure_usart3_pins(unsigned pins)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index 34d2f5a..df487ce 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -1164,7 +1164,6 @@ static inline void configure_usart5_pins(void)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-index b9c06c4..3bd10ce 100644
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -1015,7 +1015,6 @@ static inline void configure_usart2_pins(unsigned pins)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index a8ae6f5..7792de5 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -1424,7 +1424,6 @@ static inline void configure_usart2_pins(unsigned pins)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 98e4041..4108295 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -1683,7 +1683,6 @@ static inline void configure_usart3_pins(unsigned pins)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index 342a6c5..eda72e8 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -1152,7 +1152,6 @@ static inline void configure_usart3_pins(unsigned pins)
- }
- 
- static struct platform_device *__initdata at91_uarts[ATMEL_MAX_UART];	/* the UARTs to use */
--struct platform_device *atmel_default_console_device;	/* the serial console device */
- 
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins)
- {
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-index 67b37a0..90bb7ec 100644
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -320,7 +320,6 @@ void __init at91sam9x5_initialize(void)
-  * -------------------------------------------------------------------- */
- void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins) {}
- void __init at91_set_serial_console(unsigned portnr) {}
--struct platform_device *atmel_default_console_device = NULL;
- 
- void __init at91_add_device_nand(struct atmel_nand_data *data) {}
- 
-diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-index 402a7bb..889c544 100644
---- a/arch/avr32/mach-at32ap/at32ap700x.c
-+++ b/arch/avr32/mach-at32ap/at32ap700x.c
-@@ -1055,8 +1055,6 @@ struct platform_device *__init at32_add_device_usart(unsigned int id)
- 	return at32_usarts[id];
- }
- 
--struct platform_device *atmel_default_console_device;
--
- void __init at32_setup_serial_console(unsigned int usart_id)
- {
- 	atmel_default_console_device = at32_usarts[usart_id];
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 10605ec..f9a6be7 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1526,6 +1526,8 @@ void __init atmel_register_uart_fns(struct atmel_port_fns *fns)
- 	atmel_pops.set_wake	= fns->set_wake;
- }
- 
-+struct platform_device *atmel_default_console_device;	/* the serial console device */
-+
- #ifdef CONFIG_SERIAL_ATMEL_CONSOLE
- static void atmel_console_putchar(struct uart_port *port, int ch)
- {
--- 
-1.7.9
-
+2012/2/22 Hillf Danton <dhillf@gmail.com>:
+> On Wed, Feb 22, 2012 at 7:13 PM, Tao Jiang <jiangtao.jit@gmail.com> wrote:
+>> Hi:
+>>
+>> Thank you all.
+>>
+>> So in boot_cpu_init(), it will always set bit 0 to these masks.
+>> If the boot cpu is the first processor, it's the right case.
+>> And if the BP is not the first one, is it wrong?
+>> But can it happen that the BP is not cpu0?
+>
+> BP could be not "the first one".
+> Due to that current code boots fine, I guess, you mess
+> logic CPU with hard CPU.
+>
+> btw, replying messages in this way looks not fine.
+>
+>> Thank you.
+>>
+>>
+>> 2012/2/22 Brian Gerst <brgerst@gmail.com>:
+>>> On Tue, Feb 21, 2012 at 9:29 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+>>>> On 02/21/2012 08:41 PM, Tao Jiang wrote:
+>>>>>
+>>>>> Hi Cong Wang:
+>>>>>
+>>>>> I read the file vmlinux.lds.S in arch/x86/kernel
+>>>>> section .data..percpu is between .init.data and .init.end
+>>>>> Is that means these percpu variables will be freed after init?
+>>>>
+>>>>
+>>>> % grep -e __init_begin -e __init_end -e __per_cpu_start -e __per_cpu_end
+>>>> /boot/System.map
+>>>> 0000000000000000 D __per_cpu_start
+>>>> 0000000000014bc0 D __per_cpu_end
+>>>> ffffffff81cf3000 D __init_begin
+>>>> ffffffff81dfc000 R __init_end
+>>>> % objdump -d -j .data..percpu vmlinux | grep cpu_number
+>>>> 000000000000dc38 <cpu_number>:
+>>>
+>>> The .data..percpu section is placed in the init section, but x86-64 is
+>>> a special case as noted below.  The boot cpu is pointed to the init
+>>> percpu section until setup_per_cpu_areas() is called, when it switches
+>>> to the regular percpu area.  The init percpu data is then freed with
+>>> all other init data.
+>>>
+>>> The reason the percpu symbols start at virtual address 0 on x86-64 is
+>>> because of the requirement that gs_base must be a canonical address
+>>> (it cannot be a simple offset like x86-32).  But, the data is still
+>>> loaded in the init section in memory.  See
+>>> arch/x86/kernel/vmlinux.lds.S for the explanation of how the linker
+>>> changes the program headers to set the virtual address to zero but
+>>> keeps the load address in the init section.
+>>>
+>>> To answer the original question. in the case of cpu_number, it is set
+>>> to zero in the init section because it doesn't have an explicit
+>>> initializer.  Therefore the boot cpu will always read zero for the
+>>> cpu_number, even before setup_per_cpu_areas() is called.
+>>>
+>>>
+>>> --
+>>> Brian Gerst
+>> --
