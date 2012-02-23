@@ -1,209 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab2BWKnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 05:43:40 -0500
-Received: from damascus.uab.es ([158.109.168.135]:10316 "EHLO damascus.uab.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab2BWKni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 05:43:38 -0500
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 05:43:38 EST
-Date: Thu, 23 Feb 2012 11:44:14 +0100
-From: Davidlohr Bueso <dave@gnu.org>
-Subject: Re: [PATCH] locks: new procfs lockinfo
-In-reply-to: <m1r4xmz8n0.fsf@fess.ebiederm.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Matthew Wilcox <matthew@wil.cx>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Message-id: <1329993854.30585.3.camel@offworld>
-Organization: GNU
-MIME-version: 1.0
-X-Mailer: Evolution 3.0.3-2
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-X-Spam-Tests: ALL_TRUSTED=-1
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:N SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18728.005)
-X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
-References: <1329737454.3058.3.camel@offbook> <m1r4xmz8n0.fsf@fess.ebiederm.org>
+	id S1755476Ab2BWKuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 05:50:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46574 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab2BWKuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 05:50:24 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.194.65 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F461A42.2080202@gmail.com>
+Date: Thu, 23 Feb 2012 21:51:46 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: plagnioj@jcrosoft.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 09/19] ARM: at91: make sdram/ddr register base soc
+ independent
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com> <4F456D1E.8070807@gmail.com> <4F45FF46.3060702@atmel.com> <4F460DD0.1050108@atmel.com>
+In-Reply-To: <4F460DD0.1050108@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 16:38 -0800, Eric W. Biederman wrote:
-> Davidlohr Bueso <dave@gnu.org> writes:
-> 
-> > From: Davidlohr Bueso <dave@gnu.org>
-> >
-> > Based on our previous discussion https://lkml.org/lkml/2012/2/10/462 we came to
-> > agree on deprecating the current /proc/locks in favor of a more extensible interface.
-> > The new /proc/lockinfo file exports similar information - except instead of maj:min the
-> > device name is shown - and entries are formated like those in /proc/cpuinfo, allowing us
-> > to add new entries without breaking userspace.
-> 
-> You can't know the device name, attempt to say what you don't know seems
-> very dangerous.  It may be reasonable to simply give the deivce number
-> and not split the device number into major/minor any more and I am
-> concerned about reality.
-> 
-> Andrew's question about the pid namespace is answered below.
-> 
-> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> > ---
-> >  Documentation/feature-removal-schedule.txt |    9 +++
-> >  fs/locks.c                                 |  109 ++++++++++++++++++++++++++--
-> >  2 files changed, 113 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> > index a0ffac0..1c5e14b 100644
-> > --- a/Documentation/feature-removal-schedule.txt
-> > +++ b/Documentation/feature-removal-schedule.txt
-> > @@ -524,3 +524,12 @@ Files:	arch/arm/mach-at91/at91cap9.c
-> >  Why:	The code is not actively maintained and platforms are now hard to find.
-> >  Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
-> >  	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > +
-> > +---------------------------
-> > +
-> > +What:	/proc/locks
-> > +When:	2014
-> > +Why:	The current /proc/locks file does not allow modifying entries as it breaks
-> > +        userspace (most notably lslk(8)). A new /proc/lockinfo interface replaces
-> > +        this file in a more extendable format (lines per entry), like /proc/cpuinfo.
-> > +Who:	Davidlohr Bueso <dave@gnu.org>
-> 
-> This is a ancient file of long standing I really doubt that we can
-> safely remove it any time soon.  Is there any good reason to want to
-> remove this file?
-> 
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index 637694b..f7b27fe 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -112,6 +112,9 @@
-> >   *  Leases and LOCK_MAND
-> >   *  Matthew Wilcox <willy@debian.org>, June, 2000.
-> >   *  Stephen Rothwell <sfr@canb.auug.org.au>, June, 2000.
-> > + *
-> > + *  Deprecated /proc/locks in favor of /proc/lockinfo
-> > + *  Davidlohr Bueso <dave@gnu.org>, February, 2012.
-> >   */
-> >  
-> >  #include <linux/capability.h>
-> > @@ -2156,6 +2159,10 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
-> >  	struct inode *inode = NULL;
-> >  	unsigned int fl_pid;
-> >  
-> > +	/* deprecated, see Documentation/feature-removal-schedule.txt */
-> > +	printk_once(KERN_WARNING "%s (%d): /proc/locks is deprecated please use /proc/lockinfo instead.\n",
-> > +		    current->comm, task_pid_nr(current));
-> > +
-> >  	if (fl->fl_nspid)
-> >  		fl_pid = pid_vnr(fl->fl_nspid);
-> 
-> Apparently this was overlooked.  Sigh.
-> 
-> We need not to use pid_vnr but instead pid_nr_ns(sb->s_fs_info, fl->fl_nspid);
-> 
-> For using this outside of fs/proc/base.c this clearly needs a trivial
-> helper instead of raw s_fs_info access, but the point remains that
-> the proc filesystem when mounted has a pid namespace that it displays
-> everything relative too and /proc/locks should be the same.
-> 
-> >  	else
-> > @@ -2199,15 +2206,10 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
-> >  			       : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
-> >  	}
-> >  	if (inode) {
-> > -#ifdef WE_CAN_BREAK_LSLK_NOW
-> > -		seq_printf(f, "%d %s:%ld ", fl_pid,
-> > -				inode->i_sb->s_id, inode->i_ino);
-> > -#else
-> >  		/* userspace relies on this representation of dev_t ;-( */
-> >  		seq_printf(f, "%d %02x:%02x:%ld ", fl_pid,
-> >  				MAJOR(inode->i_sb->s_dev),
-> >  				MINOR(inode->i_sb->s_dev), inode->i_ino);
-> > -#endif
-> >  	} else {
-> >  		seq_printf(f, "%d <none>:0 ", fl_pid);
-> >  	}
-> > @@ -2275,9 +2277,106 @@ static const struct file_operations proc_locks_operations = {
-> >  	.release	= seq_release_private,
-> >  };
-> >  
-> > +static void lockinfo_get_status(struct seq_file *f, struct file_lock *fl,
-> > +				loff_t id)
-> > +{
-> > +	struct inode *inode = NULL;
-> > +	unsigned int fl_pid;
-> > +
-> > +	if (fl->fl_nspid)
-> > +		fl_pid = pid_vnr(fl->fl_nspid);
-> 
-> We shouldn't copy the wrong definition for fl_pid from the old code but
-> should instead get this right.
+On 23/02/12 20:58, Nicolas Ferre wrote:
 
-Will correct.
-
+> On 02/23/2012 09:56 AM, Nicolas Ferre :
+>> On 02/22/2012 11:33 PM, Ryan Mallon :
+>>> On 22/02/12 20:39, Nicolas Ferre wrote:
+>>>
+>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>
+>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>> ---
+>>>
+>>> <snip>
+>>>
+>>>> +void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
+>>>> +{
+>>>> +	if (id > 1) {
+>>>> +		pr_warn("%s: id > 2\n", __func__);
+>>>> +		return;
+>>>> +	}
+>>>> +	at91_ramc_base[id] = ioremap(addr, size);
+>>>> +	if (!at91_ramc_base[id])
+>>>> +		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
+>>>> +}
+>>>
+>>>
+>>> If this fails then you will oops if you call either at91_ramc_read or
+>>> at91_ramc_write since they don't check if at91_ramc_base[id] is a valid
+>>> pointer. Either this function should panic, like the other at91_ioremap
+>>> functions, or the at91_ramc_read/write functions should check for a
+>>> valid pointer.
+>>
+>> Yes, as you pointed out, it is done in a not-related following patch.
+>> I will bring the code here.
+>>
+>>
+>>> Nitpick: The id check should probably also be BUG() or WARN() since it
+>>> indicates a bug in the core AT91 code. pr_warn is likely to missed and
+>>> not reported by users. Since the value is int, the check should be:
+>>>
+>>>   if (id < 0 || id > 1)
+>>>
+>>> Obviously the chance of this error happening are slim, but if you are
+>>> going to check and warn for it, it should be done properly :-).
+>>
+>> Yes, I agree and modify it at the very moment.
 > 
-> > +	else
-> > +		fl_pid = fl->fl_pid;
-> > +
-> > +	if (fl->fl_file != NULL)
-> > +		inode = fl->fl_file->f_path.dentry->d_inode;
-> > +
-> > +	if (IS_POSIX(fl)) {
-> > +		seq_printf(f, "Personality:\t %s\n",
-> > +			   (fl->fl_flags & FL_ACCESS) ? "ACCESS" : "POSIX ");
-> > +		seq_printf(f, "Type:\t\t %s\n",
-> > +			   (!inode) ? "*NOINODE*" : mandatory_lock(inode)
-> > +			   ? "MANDATORY" : "ADVISORY ");
-> > +	} else if (IS_FLOCK(fl)) {
-> > +		seq_printf(f, "Personality:\t FLOCK\n");
-> > +		seq_printf(f, "Type:\t\t %s\n",
-> > +			   (fl->fl_type & LOCK_MAND) ? "MSNFS" : "ADVISORY");
-> > +	} else if (IS_LEASE(fl)) {
-> > +		seq_printf(f, "Personality:\t LEASE\n");
-> > +		seq_printf(f, "Type:\t\t %s\n",
-> > +			   (lease_breaking(fl)) ? "BREAKING"
-> > +			   : (fl->fl_file) ? "ACTIVE" : "BREAKER");
-> > +	} else {
-> > +		seq_printf(f, "Personality:\t UNKNOWN\n");
-> > +		seq_printf(f, "Type:\t\t UNKNOWN\n");
-> > +	}
-> > +
-> > +	if (fl->fl_type & LOCK_MAND) {
-> > +		seq_printf(f, "Access:\t\t %s\n",
-> > +			   (fl->fl_type & LOCK_READ)
-> > +			   ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
-> > +			   : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
-> > +	} else {
-> > +		seq_printf(f, "Access:\t\t %s\n",
-> > +			   (lease_breaking(fl))
-> > +			   ? (fl->fl_type & F_UNLCK) ? "UNLCK" : "READ "
-> > +			   : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
-> > +	}
-> > +
-> > +	seq_printf(f, "PID:\t\t %d\n", fl_pid);
-> > +
-> > +	if (inode) {
-> > +		seq_printf(f, "Device:\t\t %s\n",  inode->i_sb->s_id);
 > 
-> Hmm.  The label on this is wrong.    What if this comes from a
-> filesystem that is not block device based?  I expect it is ok to print
-> sb->s_id here but it needs a less confusing label.
-
-I think that even if its not a block based device, the "Device" label is
-pretty obvious. 
-
-I'll send a v2 of this patch with the corrections and documenting the
-new file in Documentation/filesystems/proc.txt
-
-Thanks,
-Davidlohr
+> What do you think about that:
+> If id is not setup properly, I try to find a way out by using id = 0...
+> Then, a panic is added if the iremap() fails.
+> 
+> 
+> --- a/arch/arm/mach-at91/pm.c
+> +++ b/arch/arm/mach-at91/pm.c
+> @@ -200,13 +200,14 @@ void __iomem *at91_ramc_base[2];
+>  
+>  void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
+>  {
+> -       if (id > 1) {
+> -               pr_warn("%s: id > 2\n", __func__);
+> -               return;
+> +       if (id < 0 || id > 1) {
+> +               WARN(1, "%s: Wrong RAM controller id (%d), set it to 0\n",
+> +                                                               __func__, id);
+> +               id = 0;
 
 
+I don't think you should try to fix the id, just issue the warning and
+return. 
+
+~Ryan
