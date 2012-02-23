@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab2BWXRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:17:40 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41809 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab2BWXRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:17:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.219.70 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
-Date: Thu, 23 Feb 2012 15:17:35 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Rafael Aquini <aquini@redhat.com>
-cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
-In-Reply-To: <20120223152226.GA2014@x61.redhat.com>
-Message-ID: <alpine.DEB.2.00.1202231509510.26362@chino.kir.corp.google.com>
-References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com> <20120223152226.GA2014@x61.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932234Ab2BWXSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:18:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58071 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141Ab2BWXSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 18:18:13 -0500
+Message-ID: <4F46C92B.4090508@zytor.com>
+Date: Thu, 23 Feb 2012 15:18:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org> <20120222211928.GA4448@kroah.com> <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com> <20120222213253.GA25150@kroah.com> <20120223200905.GA5475@kroah.com> <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com> <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com> <4F46C63C.4040602@zytor.com> <20120223231605.GA15329@kroah.com>
+In-Reply-To: <20120223231605.GA15329@kroah.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012, Rafael Aquini wrote:
-
-> Lets say the slab gets so bloated that for every user task spawned OOM-killer 
-> just kills it instantly, or the system falls under severe thrashing, leaving no
-> chance for you getting an interactive session to parse /proc/slabinfo, thus 
-> making the reset button as your only escape... How would you identify what was 
-> the set of caches responsible by the slab swelling?
+On 02/23/2012 03:16 PM, Greg Kroah-Hartman wrote:
+> 
+> And a "clean" 3.2.7 doesn't have that problem?
+> 
+> Does the same thing happen in Linus's tree at the moment?
 > 
 
-I think you misunderstand completely how the oom killer works, 
-unfortunately.  It, by default unless you have changed oom_score_adj 
-tunables, kills the most memory-hogging eligible thread possible.  That 
-certainly wouldn't be a freshly forked user task prior to execve() unless 
-you've enabled /proc/sys/vm/oom_kill_allocating_task, which you shouldn't 
-unless you're running on a machine with 1k cores, for example.  It would 
-be existing thread that was using a lot of memory to allow for things 
-EXACTLY LIKE forking additional user tasks.  We don't want to get into a 
-self-imposed DoS because something is oom and the oom killer does quite a 
-good job at ensuring it doesn't.  The goal is to kill a single thread to 
-free the most amount of memory possible.
+Clean 3.2.7 I don't think has that problem, although of course when I
+run the stress test it fails on other ways so it's hard to 100% rule out.
 
-If this is what is affecting you, then you'll need to figure out why you 
-have changed the oom killer priority in such a way to do so: check your 
-/proc/pid/oom_score_adj values that you have set in a way that when they 
-are inherited they will instantly kill the child because it will quickly 
-use more memory than the parent.
+Linus' tree doesn't have that problems.
 
-> IMHO, having such qualified info about slab usage at hand is very useful in
-> several occurrences of OOM. It not only helps out developers, but also sysadmins
-> on troubleshooting slab usage when OOM-killer is invoked, thus qualifying and 
-> showing such data surely does make sense for a lot of people. For those who do 
-> not mind/care about such reporting, in the end it just takes a sysctl knob 
-> adjustment to make it go quiet.
-> 
+	-hpa
 
-cat /proc/slabinfo
 
-> > I think this also gives another usecase for a possible /dev/mem_notify in 
-> > the future: userspace could easily poll on an eventfd and wait for an oom 
-> > to occur and then cat /proc/slabinfo to attain all this.  In other words, 
-> > if we had this functionality (which I think we undoubtedly will in the 
-> > future), this patch would be obsoleted.
-> 
-> Great! So, why not letting the time tell us if this feature will be obsoleted
-> or not? I'd rather have this patch obsoleted by another one proven better, than
-> just stay still waiting for something that might, or might not, happen in the
-> future.
-> 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Because (1) you're adding a sysctl that we don't want to obsolete and 
-remove from the kernel that someone will come to depend on and then have 
-to find an alternative solution like /dev/mem_notify, and (2) people parse 
-messages like this that are emitted to the kernel log that we don't want 
-to break in the future.
-
-So NACK on this approach.
