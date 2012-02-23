@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab2BWO04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:26:56 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:29219 "EHLO
+	id S1756431Ab2BWO1E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:27:04 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:49754 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab2BWO0y (ORCPT
+	with ESMTP id S1755817Ab2BWO1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:26:54 -0500
+	Thu, 23 Feb 2012 09:27:02 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de
-Subject: [PATCH v3 09/21] ARM: at91: make sdram/ddr register base soc independent
-Date: Thu, 23 Feb 2012 15:25:53 +0100
-Message-Id: <f363c407b42c467d06675c852e55f26adb959915.1330006537.git.nicolas.ferre@atmel.com>
+        arnd@arndb.de, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 03/21] ARM: at91: make matrix register base soc independent
+Date: Thu, 23 Feb 2012 15:25:47 +0100
+Message-Id: <4342d6479e249c0cc952ff71f22167e4276a4927.1330006537.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
 References: <cover.1330006537.git.nicolas.ferre@atmel.com>
@@ -27,804 +28,964 @@ From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/arm/mach-at91/at91rm9200.c                    |    1 +
- arch/arm/mach-at91/at91rm9200_devices.c            |   13 ++++----
  arch/arm/mach-at91/at91sam9260.c                   |    1 +
+ arch/arm/mach-at91/at91sam9260_devices.c           |    9 +-
  arch/arm/mach-at91/at91sam9261.c                   |    1 +
- arch/arm/mach-at91/at91sam9263.c                   |    2 +
- arch/arm/mach-at91/at91sam9_alt_reset.S            |   12 +++----
- arch/arm/mach-at91/at91sam9g45.c                   |    2 +
- arch/arm/mach-at91/at91sam9g45_reset.S             |   12 +++----
+ arch/arm/mach-at91/at91sam9261_devices.c           |    5 +-
+ arch/arm/mach-at91/at91sam9263.c                   |    1 +
+ arch/arm/mach-at91/at91sam9263_devices.c           |    9 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |    1 +
+ arch/arm/mach-at91/at91sam9g45_devices.c           |    5 +-
  arch/arm/mach-at91/at91sam9rl.c                    |    1 +
- arch/arm/mach-at91/at91sam9x5.c                    |    1 +
- arch/arm/mach-at91/board-cpuat91.c                 |    1 +
- arch/arm/mach-at91/board-eco920.c                  |    5 ++-
- arch/arm/mach-at91/board-kb9202.c                  |    1 +
- arch/arm/mach-at91/board-picotux200.c              |    1 +
- arch/arm/mach-at91/board-rm9200dk.c                |    1 +
- arch/arm/mach-at91/board-rm9200ek.c                |    1 +
- arch/arm/mach-at91/board-yl-9200.c                 |    3 +-
- arch/arm/mach-at91/generic.h                       |    3 ++
- arch/arm/mach-at91/include/mach/at91_ramc.h        |   31 ++++++++++++++++++++
- arch/arm/mach-at91/include/mach/at91rm9200.h       |    2 +-
- arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   14 ++++----
- .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   18 ++++++------
+ arch/arm/mach-at91/at91sam9rl_devices.c            |    5 +-
+ arch/arm/mach-at91/board-cpu9krea.c                |    5 +-
+ arch/arm/mach-at91/generic.h                       |    3 +
+ arch/arm/mach-at91/include/mach/at91_matrix.h      |   23 ++++++
+ arch/arm/mach-at91/include/mach/at91rm9200.h       |    2 -
  arch/arm/mach-at91/include/mach/at91sam9260.h      |    2 +-
+ .../mach-at91/include/mach/at91sam9260_matrix.h    |   36 ++++----
  arch/arm/mach-at91/include/mach/at91sam9261.h      |    2 +-
- arch/arm/mach-at91/include/mach/at91sam9263.h      |    4 +-
- arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h  |    6 ----
- arch/arm/mach-at91/include/mach/at91sam9_sdramc.h  |    6 ----
- arch/arm/mach-at91/include/mach/at91sam9g45.h      |    4 +-
+ .../mach-at91/include/mach/at91sam9261_matrix.h    |   18 ++--
+ arch/arm/mach-at91/include/mach/at91sam9263.h      |    2 +-
+ .../mach-at91/include/mach/at91sam9263_matrix.h    |   74 +++++++++---------
+ arch/arm/mach-at91/include/mach/at91sam9g45.h      |    2 +-
+ .../mach-at91/include/mach/at91sam9g45_matrix.h    |   84 ++++++++++----------
  arch/arm/mach-at91/include/mach/at91sam9rl.h       |    2 +-
- arch/arm/mach-at91/include/mach/at91sam9x5.h       |    2 +-
- arch/arm/mach-at91/pm.c                            |   27 ++++++++---------
- arch/arm/mach-at91/pm.h                            |    6 +--
- arch/arm/mach-at91/pm_slowclock.S                  |   10 +------
- drivers/pcmcia/at91_cf.c                           |    5 ++-
- 34 files changed, 114 insertions(+), 89 deletions(-)
- create mode 100644 arch/arm/mach-at91/include/mach/at91_ramc.h
+ .../arm/mach-at91/include/mach/at91sam9rl_matrix.h |   42 +++++-----
+ arch/arm/mach-at91/setup.c                         |    9 ++
+ drivers/usb/gadget/at91_udc.c                      |    9 +-
+ 26 files changed, 199 insertions(+), 154 deletions(-)
+ create mode 100644 arch/arm/mach-at91/include/mach/at91_matrix.h
 
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index ebe597b..7923197 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -320,6 +320,7 @@ static void __init at91rm9200_map_io(void)
- static void __init at91rm9200_ioremap_registers(void)
- {
- 	at91rm9200_ioremap_st(AT91RM9200_BASE_ST);
-+	at91_ioremap_ramc(0, AT91RM9200_BASE_MC, 256);
- }
- 
- static void __init at91rm9200_initialize(void)
-diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-index 18bacec..aca272b 100644
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -21,6 +21,7 @@
- #include <mach/board.h>
- #include <mach/at91rm9200.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
- 
- #include "generic.h"
- 
-@@ -241,15 +242,15 @@ void __init at91_add_device_cf(struct at91_cf_data *data)
- 	data->chipselect = 4;		/* can only use EBI ChipSelect 4 */
- 
- 	/* CF takes over CS4, CS5, CS6 */
--	csa = at91_sys_read(AT91_EBI_CSA);
--	at91_sys_write(AT91_EBI_CSA, csa | AT91_EBI_CS4A_SMC_COMPACTFLASH);
-+	csa = at91_ramc_read(0, AT91_EBI_CSA);
-+	at91_ramc_write(0, AT91_EBI_CSA, csa | AT91_EBI_CS4A_SMC_COMPACTFLASH);
- 
- 	/*
- 	 * Static memory controller timing adjustments.
- 	 * REVISIT:  these timings are in terms of MCK cycles, so
- 	 * when MCK changes (cpufreq etc) so must these values...
- 	 */
--	at91_sys_write(AT91_SMC_CSR(4),
-+	at91_ramc_write(0, AT91_SMC_CSR(4),
- 				  AT91_SMC_ACSS_STD
- 				| AT91_SMC_DBW_16
- 				| AT91_SMC_BAT
-@@ -407,11 +408,11 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
- 		return;
- 
- 	/* enable the address range of CS3 */
--	csa = at91_sys_read(AT91_EBI_CSA);
--	at91_sys_write(AT91_EBI_CSA, csa | AT91_EBI_CS3A_SMC_SMARTMEDIA);
-+	csa = at91_ramc_read(0, AT91_EBI_CSA);
-+	at91_ramc_write(0, AT91_EBI_CSA, csa | AT91_EBI_CS3A_SMC_SMARTMEDIA);
- 
- 	/* set the bus interface characteristics */
--	at91_sys_write(AT91_SMC_CSR(3), AT91_SMC_ACSS_STD | AT91_SMC_DBW_8 | AT91_SMC_WSEN
-+	at91_ramc_write(0, AT91_SMC_CSR(3), AT91_SMC_ACSS_STD | AT91_SMC_DBW_8 | AT91_SMC_WSEN
- 		| AT91_SMC_NWS_(5)
- 		| AT91_SMC_TDF_(1)
- 		| AT91_SMC_RWSETUP_(0)	/* tDS Data Set up Time 30 - ns */
 diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index 5c15d14..14882ae 100644
+index e965332..5c15d14 100644
 --- a/arch/arm/mach-at91/at91sam9260.c
 +++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -325,6 +325,7 @@ static void __init at91sam9260_ioremap_registers(void)
- {
- 	at91_ioremap_shdwc(AT91SAM9260_BASE_SHDWC);
+@@ -327,6 +327,7 @@ static void __init at91sam9260_ioremap_registers(void)
  	at91_ioremap_rstc(AT91SAM9260_BASE_RSTC);
-+	at91_ioremap_ramc(0, AT91SAM9260_BASE_SDRAMC, 512);
  	at91sam926x_ioremap_pit(AT91SAM9260_BASE_PIT);
  	at91sam9_ioremap_smc(0, AT91SAM9260_BASE_SMC);
- 	at91_ioremap_matrix(AT91SAM9260_BASE_MATRIX);
++	at91_ioremap_matrix(AT91SAM9260_BASE_MATRIX);
+ }
+ 
+ static void __init at91sam9260_initialize(void)
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 642ccb6..b93a337 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -21,6 +21,7 @@
+ #include <mach/cpu.h>
+ #include <mach/at91sam9260.h>
+ #include <mach/at91sam9260_matrix.h>
++#include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ 
+ #include "generic.h"
+@@ -422,8 +423,8 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
+ 	if (!data)
+ 		return;
+ 
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
+ 
+ 	/* enable pin */
+ 	if (gpio_is_valid(data->enable_pin))
+@@ -1265,7 +1266,7 @@ void __init at91_add_device_cf(struct at91_cf_data *data)
+ 	if (!data)
+ 		return;
+ 
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
+ 
+ 	switch (data->chipselect) {
+ 	case 4:
+@@ -1288,7 +1289,7 @@ void __init at91_add_device_cf(struct at91_cf_data *data)
+ 		return;
+ 	}
+ 
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa);
+ 
+ 	if (gpio_is_valid(data->rst_pin)) {
+ 		at91_set_multi_drive(data->rst_pin, 0);
 diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 50971e6..684c5df 100644
+index d7f51d6..50971e6 100644
 --- a/arch/arm/mach-at91/at91sam9261.c
 +++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -283,6 +283,7 @@ static void __init at91sam9261_ioremap_registers(void)
- {
- 	at91_ioremap_shdwc(AT91SAM9261_BASE_SHDWC);
+@@ -285,6 +285,7 @@ static void __init at91sam9261_ioremap_registers(void)
  	at91_ioremap_rstc(AT91SAM9261_BASE_RSTC);
-+	at91_ioremap_ramc(0, AT91SAM9261_BASE_SDRAMC, 512);
  	at91sam926x_ioremap_pit(AT91SAM9261_BASE_PIT);
  	at91sam9_ioremap_smc(0, AT91SAM9261_BASE_SMC);
- 	at91_ioremap_matrix(AT91SAM9261_BASE_MATRIX);
++	at91_ioremap_matrix(AT91SAM9261_BASE_MATRIX);
+ }
+ 
+ static void __init at91sam9261_initialize(void)
+diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
+index fc59cbd..52c1f1a 100644
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -24,6 +24,7 @@
+ #include <mach/board.h>
+ #include <mach/at91sam9261.h>
+ #include <mach/at91sam9261_matrix.h>
++#include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ 
+ #include "generic.h"
+@@ -236,8 +237,8 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
+ 	if (!data)
+ 		return;
+ 
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
+ 
+ 	/* enable pin */
+ 	if (gpio_is_valid(data->enable_pin))
 diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index 5fd6fe8..0b4fa5a 100644
+index 8bdba2a..5fd6fe8 100644
 --- a/arch/arm/mach-at91/at91sam9263.c
 +++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -303,6 +303,8 @@ static void __init at91sam9263_ioremap_registers(void)
- {
- 	at91_ioremap_shdwc(AT91SAM9263_BASE_SHDWC);
- 	at91_ioremap_rstc(AT91SAM9263_BASE_RSTC);
-+	at91_ioremap_ramc(0, AT91SAM9263_BASE_SDRAMC0, 512);
-+	at91_ioremap_ramc(1, AT91SAM9263_BASE_SDRAMC1, 512);
+@@ -306,6 +306,7 @@ static void __init at91sam9263_ioremap_registers(void)
  	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
  	at91sam9_ioremap_smc(0, AT91SAM9263_BASE_SMC0);
  	at91sam9_ioremap_smc(1, AT91SAM9263_BASE_SMC1);
-diff --git a/arch/arm/mach-at91/at91sam9_alt_reset.S b/arch/arm/mach-at91/at91sam9_alt_reset.S
-index 518e423..7af2e10 100644
---- a/arch/arm/mach-at91/at91sam9_alt_reset.S
-+++ b/arch/arm/mach-at91/at91sam9_alt_reset.S
-@@ -15,16 +15,17 @@
- 
- #include <linux/linkage.h>
- #include <mach/hardware.h>
--#include <mach/at91sam9_sdramc.h>
-+#include <mach/at91_ramc.h>
- #include <mach/at91_rstc.h>
- 
- 			.arm
- 
- 			.globl	at91sam9_alt_restart
- 
--at91sam9_alt_restart:	ldr	r0, .at91_va_base_sdramc	@ preload constants
--			ldr	r1, =at91_rstc_base
--			ldr	r1, [r1]
-+at91sam9_alt_restart:	ldr	r0, =at91_ramc_base		@ preload constants
-+			ldr	r0, [r0]
-+			ldr	r4, =at91_rstc_base
-+			ldr	r1, [r4]
- 
- 			mov	r2, #1
- 			mov	r3, #AT91_SDRAMC_LPCB_POWER_DOWN
-@@ -37,6 +38,3 @@ at91sam9_alt_restart:	ldr	r0, .at91_va_base_sdramc	@ preload constants
- 			str	r4, [r1, #AT91_RSTC_CR]		@ reset processor
- 
- 			b	.
--
--.at91_va_base_sdramc:
--	.word AT91_VA_BASE_SYS + AT91_SDRAMC0
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 3726160..a41622ea6 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -331,6 +331,8 @@ static void __init at91sam9g45_ioremap_registers(void)
- {
- 	at91_ioremap_shdwc(AT91SAM9G45_BASE_SHDWC);
- 	at91_ioremap_rstc(AT91SAM9G45_BASE_RSTC);
-+	at91_ioremap_ramc(0, AT91SAM9G45_BASE_DDRSDRC1, 512);
-+	at91_ioremap_ramc(1, AT91SAM9G45_BASE_DDRSDRC0, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
- 	at91sam9_ioremap_smc(0, AT91SAM9G45_BASE_SMC);
- 	at91_ioremap_matrix(AT91SAM9G45_BASE_MATRIX);
-diff --git a/arch/arm/mach-at91/at91sam9g45_reset.S b/arch/arm/mach-at91/at91sam9g45_reset.S
-index 0468be1..9d45718 100644
---- a/arch/arm/mach-at91/at91sam9g45_reset.S
-+++ b/arch/arm/mach-at91/at91sam9g45_reset.S
-@@ -12,7 +12,7 @@
- 
- #include <linux/linkage.h>
- #include <mach/hardware.h>
--#include <mach/at91sam9_ddrsdr.h>
-+#include <mach/at91_ramc.h>
- #include <mach/at91_rstc.h>
- 
- 			.arm
-@@ -20,9 +20,10 @@
- 			.globl	at91sam9g45_restart
- 
- at91sam9g45_restart:
--			ldr	r0, .at91_va_base_sdramc0	@ preload constants
--			ldr	r1, =at91_rstc_base
--			ldr	r1, [r1]
-+			ldr	r5, =at91_ramc_base		@ preload constants
-+			ldr	r0, [r5]
-+			ldr	r4, =at91_rstc_base
-+			ldr	r1, [r4]
- 
- 			mov	r2, #1
- 			mov	r3, #AT91_DDRSDRC_LPCB_POWER_DOWN
-@@ -35,6 +36,3 @@ at91sam9g45_restart:
- 			str	r4, [r1, #AT91_RSTC_CR]		@ reset processor
- 
- 			b	.
--
--.at91_va_base_sdramc0:
--	.word AT91_VA_BASE_SYS + AT91_DDRSDRC0
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index d95ff97..63d9372 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -288,6 +288,7 @@ static void __init at91sam9rl_ioremap_registers(void)
- {
- 	at91_ioremap_shdwc(AT91SAM9RL_BASE_SHDWC);
- 	at91_ioremap_rstc(AT91SAM9RL_BASE_RSTC);
-+	at91_ioremap_ramc(0, AT91SAM9RL_BASE_SDRAMC, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
- 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
- 	at91_ioremap_matrix(AT91SAM9RL_BASE_MATRIX);
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-index 1c3444d..67b37a0 100644
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -303,6 +303,7 @@ static void __init at91sam9x5_ioremap_registers(void)
- {
- 	if (of_at91sam926x_pit_init() < 0)
- 		panic("Impossible to find PIT\n");
-+	at91_ioremap_ramc(0, AT91SAM9X5_BASE_DDRSDRC0, 512);
++	at91_ioremap_matrix(AT91SAM9263_BASE_MATRIX);
  }
  
- void __init at91sam9x5_initialize(void)
-diff --git a/arch/arm/mach-at91/board-cpuat91.c b/arch/arm/mach-at91/board-cpuat91.c
-index 368e142..e094cc8 100644
---- a/arch/arm/mach-at91/board-cpuat91.c
-+++ b/arch/arm/mach-at91/board-cpuat91.c
-@@ -38,6 +38,7 @@
- 
+ static void __init at91sam9263_initialize(void)
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index 49aa6a9..545826b 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -23,6 +23,7 @@
  #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
- #include <mach/cpu.h>
+ #include <mach/at91sam9263.h>
+ #include <mach/at91sam9263_matrix.h>
++#include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
  
  #include "generic.h"
-diff --git a/arch/arm/mach-at91/board-eco920.c b/arch/arm/mach-at91/board-eco920.c
-index 07ef35b..f23aabe 100644
---- a/arch/arm/mach-at91/board-eco920.c
-+++ b/arch/arm/mach-at91/board-eco920.c
-@@ -26,6 +26,7 @@
+@@ -409,7 +410,7 @@ void __init at91_add_device_cf(struct at91_cf_data *data)
+ 	 * we assume SMC timings are configured by board code,
+ 	 * except True IDE where timings are controlled by driver
+ 	 */
+-	ebi0_csa = at91_sys_read(AT91_MATRIX_EBI0CSA);
++	ebi0_csa = at91_matrix_read(AT91_MATRIX_EBI0CSA);
+ 	switch (data->chipselect) {
+ 	case 4:
+ 		at91_set_A_periph(AT91_PIN_PD6, 0);  /* EBI0_NCS4/CFCS0 */
+@@ -428,7 +429,7 @@ void __init at91_add_device_cf(struct at91_cf_data *data)
+ 		       data->chipselect);
+ 		return;
+ 	}
+-	at91_sys_write(AT91_MATRIX_EBI0CSA, ebi0_csa);
++	at91_matrix_write(AT91_MATRIX_EBI0CSA, ebi0_csa);
  
+ 	if (gpio_is_valid(data->det_pin)) {
+ 		at91_set_gpio_input(data->det_pin, 1);
+@@ -496,8 +497,8 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
+ 	if (!data)
+ 		return;
+ 
+-	csa = at91_sys_read(AT91_MATRIX_EBI0CSA);
+-	at91_sys_write(AT91_MATRIX_EBI0CSA, csa | AT91_MATRIX_EBI0_CS3A_SMC_SMARTMEDIA);
++	csa = at91_matrix_read(AT91_MATRIX_EBI0CSA);
++	at91_matrix_write(AT91_MATRIX_EBI0CSA, csa | AT91_MATRIX_EBI0_CS3A_SMC_SMARTMEDIA);
+ 
+ 	/* enable pin */
+ 	if (gpio_is_valid(data->enable_pin))
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 5d2ff90..3726160 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -333,6 +333,7 @@ static void __init at91sam9g45_ioremap_registers(void)
+ 	at91_ioremap_rstc(AT91SAM9G45_BASE_RSTC);
+ 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9G45_BASE_SMC);
++	at91_ioremap_matrix(AT91SAM9G45_BASE_MATRIX);
+ }
+ 
+ static void __init at91sam9g45_initialize(void)
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index bd4e68c..8c036ff 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -25,6 +25,7 @@
  #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
- #include <mach/cpu.h>
+ #include <mach/at91sam9g45.h>
+ #include <mach/at91sam9g45_matrix.h>
++#include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ #include <mach/at_hdmac.h>
+ #include <mach/atmel-mci.h>
+@@ -557,8 +558,8 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
+ 	if (!data)
+ 		return;
  
- #include "generic.h"
-@@ -110,7 +111,7 @@ static void __init eco920_board_init(void)
- 	at91_add_device_mmc(0, &eco920_mmc_data);
- 	platform_device_register(&eco920_flash);
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_EBI_CS3A_SMC_SMARTMEDIA);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_EBI_CS3A_SMC_SMARTMEDIA);
  
--	at91_sys_write(AT91_SMC_CSR(7),	AT91_SMC_RWHOLD_(1)
-+	at91_ramc_write(0, AT91_SMC_CSR(7),	AT91_SMC_RWHOLD_(1)
- 				| AT91_SMC_RWSETUP_(1)
- 				| AT91_SMC_DBW_8
- 				| AT91_SMC_WSEN
-@@ -122,7 +123,7 @@ static void __init eco920_board_init(void)
- 	at91_set_deglitch(AT91_PIN_PA23, 1);
+ 	/* enable pin */
+ 	if (gpio_is_valid(data->enable_pin))
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index e86c50b..d95ff97 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -290,6 +290,7 @@ static void __init at91sam9rl_ioremap_registers(void)
+ 	at91_ioremap_rstc(AT91SAM9RL_BASE_RSTC);
+ 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
++	at91_ioremap_matrix(AT91SAM9RL_BASE_MATRIX);
+ }
  
- /* Initialization of the Static Memory Controller for Chip Select 3 */
--	at91_sys_write(AT91_SMC_CSR(3),
-+	at91_ramc_write(0, AT91_SMC_CSR(3),
- 		AT91_SMC_DBW_16  |	/* 16 bit */
- 		AT91_SMC_WSEN    |
- 		AT91_SMC_NWS_(5) |	/* wait states */
-diff --git a/arch/arm/mach-at91/board-kb9202.c b/arch/arm/mach-at91/board-kb9202.c
-index d75a4a2..bb99145 100644
---- a/arch/arm/mach-at91/board-kb9202.c
-+++ b/arch/arm/mach-at91/board-kb9202.c
-@@ -38,6 +38,7 @@
+ static void __init at91sam9rl_initialize(void)
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index 9be71c1..936cf20 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -20,6 +20,7 @@
  #include <mach/board.h>
- #include <mach/cpu.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
+ #include <mach/at91sam9rl.h>
+ #include <mach/at91sam9rl_matrix.h>
++#include <mach/at91_matrix.h>
+ #include <mach/at91sam9_smc.h>
+ #include <mach/at_hdmac.h>
  
- #include "generic.h"
+@@ -265,8 +266,8 @@ void __init at91_add_device_nand(struct atmel_nand_data *data)
+ 	if (!data)
+ 		return;
  
-diff --git a/arch/arm/mach-at91/board-picotux200.c b/arch/arm/mach-at91/board-picotux200.c
-index ab024fa..59e35dd 100644
---- a/arch/arm/mach-at91/board-picotux200.c
-+++ b/arch/arm/mach-at91/board-picotux200.c
-@@ -39,6 +39,7 @@
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_CS3A_SMC_SMARTMEDIA);
  
+ 	/* enable pin */
+ 	if (gpio_is_valid(data->enable_pin))
+diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
+index 9ab3d1e..989e1c5 100644
+--- a/arch/arm/mach-at91/board-cpu9krea.c
++++ b/arch/arm/mach-at91/board-cpu9krea.c
+@@ -43,6 +43,7 @@
  #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
+ #include <mach/at91sam9_smc.h>
+ #include <mach/at91sam9260_matrix.h>
++#include <mach/at91_matrix.h>
  
+ #include "sam9_smc.h"
  #include "generic.h"
+@@ -238,8 +239,8 @@ static __init void cpu9krea_add_device_nor(void)
+ {
+ 	unsigned long csa;
  
-diff --git a/arch/arm/mach-at91/board-rm9200dk.c b/arch/arm/mach-at91/board-rm9200dk.c
-index 782f379..9083df0 100644
---- a/arch/arm/mach-at91/board-rm9200dk.c
-+++ b/arch/arm/mach-at91/board-rm9200dk.c
-@@ -41,6 +41,7 @@
- #include <mach/hardware.h>
- #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
+-	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+-	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_VDDIOMSEL_3_3V);
++	csa = at91_matrix_read(AT91_MATRIX_EBICSA);
++	at91_matrix_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_VDDIOMSEL_3_3V);
  
- #include "generic.h"
- 
-diff --git a/arch/arm/mach-at91/board-rm9200ek.c b/arch/arm/mach-at91/board-rm9200ek.c
-index ef7c12a..11cbaa8 100644
---- a/arch/arm/mach-at91/board-rm9200ek.c
-+++ b/arch/arm/mach-at91/board-rm9200ek.c
-@@ -41,6 +41,7 @@
- #include <mach/hardware.h>
- #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
- 
- #include "generic.h"
- 
-diff --git a/arch/arm/mach-at91/board-yl-9200.c b/arch/arm/mach-at91/board-yl-9200.c
-index bbd553e..52f4607 100644
---- a/arch/arm/mach-at91/board-yl-9200.c
-+++ b/arch/arm/mach-at91/board-yl-9200.c
-@@ -45,6 +45,7 @@
- #include <mach/hardware.h>
- #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
- #include <mach/cpu.h>
- 
- #include "generic.h"
-@@ -393,7 +394,7 @@ static void yl9200_init_video(void)
- 	at91_set_A_periph(AT91_PIN_PC6, 0);
- 
- 	/* Initialization of the Static Memory Controller for Chip Select 2 */
--	at91_sys_write(AT91_SMC_CSR(2), AT91_SMC_DBW_16		/* 16 bit */
-+	at91_ramc_write(0, AT91_SMC_CSR(2), AT91_SMC_DBW_16		/* 16 bit */
- 			| AT91_SMC_WSEN | AT91_SMC_NWS_(0x4)	/* wait states */
- 			| AT91_SMC_TDF_(0x100)			/* float time */
- 	);
+ 	/* configure chip-select 0 (NOR) */
+ 	sam9_smc_configure(0, 0, &cpu9krea_nor_smc_config);
 diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index aec7fd0..4cad85e 100644
+index 4e322f34..dc74ec0 100644
 --- a/arch/arm/mach-at91/generic.h
 +++ b/arch/arm/mach-at91/generic.h
-@@ -71,6 +71,9 @@ extern void at91_ioremap_shdwc(u32 base_addr);
- /* Matrix */
- extern void at91_ioremap_matrix(u32 base_addr);
+@@ -67,6 +67,9 @@ extern void at91sam9g45_restart(char, const char *);
+ /* shutdown */
+ extern void at91_ioremap_shdwc(u32 base_addr);
  
-+/* Ram Controler */
-+extern void at91_ioremap_ramc(int id, u32 addr, u32 size);
++/* Matrix */
++extern void at91_ioremap_matrix(u32 base_addr);
 +
   /* GPIO */
  #define AT91RM9200_PQFP		3	/* AT91RM9200 PQFP package has 3 banks */
  #define AT91RM9200_BGA		4	/* AT91RM9200 BGA package has 4 banks */
-diff --git a/arch/arm/mach-at91/include/mach/at91_ramc.h b/arch/arm/mach-at91/include/mach/at91_ramc.h
+diff --git a/arch/arm/mach-at91/include/mach/at91_matrix.h b/arch/arm/mach-at91/include/mach/at91_matrix.h
 new file mode 100644
-index 0000000..3155499
+index 0000000..02fae9d
 --- /dev/null
-+++ b/arch/arm/mach-at91/include/mach/at91_ramc.h
-@@ -0,0 +1,31 @@
++++ b/arch/arm/mach-at91/include/mach/at91_matrix.h
+@@ -0,0 +1,23 @@
 +/*
-+ * Header file for the Atmel RAM Controller
-+ *
 + * Copyright (C) 2011 Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 + *
-+ * Under GPLv2 only
++ * Under GPLv2
 + */
 +
-+#ifndef __AT91_RAMC_H__
-+#define __AT91_RAMC_H__
++#ifndef __MACH_AT91_MATRIX_H__
++#define __MACH_AT91_MATRIX_H__
 +
 +#ifndef __ASSEMBLY__
-+extern void __iomem *at91_ramc_base[];
++extern void __iomem *at91_matrix_base;
 +
-+#define at91_ramc_read(id, field) \
-+	__raw_readl(at91_ramc_base[id] + field)
++#define at91_matrix_read(field) \
++	__raw_readl(at91_matrix_base + field)
 +
-+#define at91_ramc_write(id, field, value) \
-+	__raw_writel(value, at91_ramc_base[id] + field)
++#define at91_matrix_write(field, value) \
++	__raw_writel(value, at91_matrix_base + field);
++
 +#else
-+.extern at91_ramc_base
++.extern at91_matrix_base
 +#endif
 +
-+#ifdef CONFIG_ARCH_AT91RM9200
-+#include <mach/at91rm9200_mc.h>
-+#else
-+#include <mach/at91sam9_ddrsdr.h>
-+#include <mach/at91sam9_sdramc.h>
-+#endif
-+
-+#endif /* __AT91_RAMC_H__ */
++#endif /* __MACH_AT91_MATRIX_H__ */
 diff --git a/arch/arm/mach-at91/include/mach/at91rm9200.h b/arch/arm/mach-at91/include/mach/at91rm9200.h
-index 0d0b9b3..32d57be 100644
+index bacb511..fbde306 100644
 --- a/arch/arm/mach-at91/include/mach/at91rm9200.h
 +++ b/arch/arm/mach-at91/include/mach/at91rm9200.h
-@@ -80,7 +80,6 @@
-  * System Peripherals (offset from AT91_BASE_SYS)
+@@ -95,8 +95,6 @@
+ #define AT91_USART2	AT91RM9200_BASE_US2
+ #define AT91_USART3	AT91RM9200_BASE_US3
+ 
+-#define AT91_MATRIX	0	/* not supported */
+-
+ /*
+  * Internal Memory.
   */
- #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)	/* Power Management Controller */
--#define AT91_MC		(0xffffff00 - AT91_BASE_SYS)	/* Memory Controllers */
- 
- #define AT91RM9200_BASE_DBGU	AT91_BASE_DBGU0	/* Debug Unit */
- #define AT91RM9200_BASE_PIOA	0xfffff400	/* PIO Controller A */
-@@ -89,6 +88,7 @@
- #define AT91RM9200_BASE_PIOD	0xfffffa00	/* PIO Controller D */
- #define AT91RM9200_BASE_ST	0xfffffd00	/* System Timer */
- #define AT91RM9200_BASE_RTC	0xfffffe00	/* Real-Time Clock */
-+#define AT91RM9200_BASE_MC	0xffffff00	/* Memory Controllers */
- 
- #define AT91_USART0	AT91RM9200_BASE_US0
- #define AT91_USART1	AT91RM9200_BASE_US1
-diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
-index 0eb031b..aeaadfb 100644
---- a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
-+++ b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
-@@ -17,10 +17,10 @@
- #define AT91RM9200_MC_H
- 
- /* Memory Controller */
--#define AT91_MC_RCR		(AT91_MC + 0x00)	/* MC Remap Control Register */
-+#define AT91_MC_RCR		0x00			/* MC Remap Control Register */
- #define		AT91_MC_RCB		(1 <<  0)		/* Remap Command Bit */
- 
--#define AT91_MC_ASR		(AT91_MC + 0x04)	/* MC Abort Status Register */
-+#define AT91_MC_ASR		0x04			/* MC Abort Status Register */
- #define		AT91_MC_UNADD		(1 <<  0)		/* Undefined Address Abort Status */
- #define		AT91_MC_MISADD		(1 <<  1)		/* Misaligned Address Abort Status */
- #define		AT91_MC_ABTSZ		(3 <<  8)		/* Abort Size Status */
-@@ -40,16 +40,16 @@
- #define		AT91_MC_SVMST2		(1 << 26)		/* Saved UHP Abort Source */
- #define		AT91_MC_SVMST3		(1 << 27)		/* Saved EMAC Abort Source */
- 
--#define AT91_MC_AASR		(AT91_MC + 0x08)	/* MC Abort Address Status Register */
-+#define AT91_MC_AASR		0x08			/* MC Abort Address Status Register */
- 
--#define AT91_MC_MPR		(AT91_MC + 0x0c)	/* MC Master Priority Register */
-+#define AT91_MC_MPR		0x0c			/* MC Master Priority Register */
- #define		AT91_MPR_MSTP0		(7 <<  0)		/* ARM920T Priority */
- #define		AT91_MPR_MSTP1		(7 <<  4)		/* PDC Priority */
- #define		AT91_MPR_MSTP2		(7 <<  8)		/* UHP Priority */
- #define		AT91_MPR_MSTP3		(7 << 12)		/* EMAC Priority */
- 
- /* External Bus Interface (EBI) registers */
--#define AT91_EBI_CSA		(AT91_MC + 0x60)	/* Chip Select Assignment Register */
-+#define AT91_EBI_CSA		0x60			/* Chip Select Assignment Register */
- #define		AT91_EBI_CS0A		(1 << 0)		/* Chip Select 0 Assignment */
- #define			AT91_EBI_CS0A_SMC		(0 << 0)
- #define			AT91_EBI_CS0A_BFC		(1 << 0)
-@@ -66,7 +66,7 @@
- #define		AT91_EBI_DBPUC		(1 << 0)		/* Data Bus Pull-Up Configuration */
- 
- /* Static Memory Controller (SMC) registers */
--#define	AT91_SMC_CSR(n)		(AT91_MC + 0x70 + ((n) * 4))/* SMC Chip Select Register */
-+#define	AT91_SMC_CSR(n)		(0x70 + ((n) * 4))	/* SMC Chip Select Register */
- #define		AT91_SMC_NWS		(0x7f <<  0)		/* Number of Wait States */
- #define			AT91_SMC_NWS_(x)	((x) << 0)
- #define		AT91_SMC_WSEN		(1    <<  7)		/* Wait State Enable */
-@@ -88,7 +88,7 @@
- #define			AT91_SMC_RWHOLD_(x)	((x) << 28)
- 
- /* Burst Flash Controller register */
--#define AT91_BFC_MR		(AT91_MC + 0xc0)	/* Mode Register */
-+#define AT91_BFC_MR		0xc0			/* Mode Register */
- #define		AT91_BFC_BFCOM		(3   <<  0)		/* Burst Flash Controller Operating Mode */
- #define			AT91_BFC_BFCOM_DISABLED	(0 << 0)
- #define			AT91_BFC_BFCOM_ASYNC	(1 << 0)
-diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
-index 7ad3597..aa047f45 100644
---- a/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
-+++ b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
-@@ -17,7 +17,7 @@
- #define AT91RM9200_SDRAMC_H
- 
- /* SDRAM Controller registers */
--#define AT91RM9200_SDRAMC_MR		(AT91_MC + 0x90)	/* Mode Register */
-+#define AT91RM9200_SDRAMC_MR		0x90			/* Mode Register */
- #define		AT91RM9200_SDRAMC_MODE	(0xf << 0)		/* Command Mode */
- #define			AT91RM9200_SDRAMC_MODE_NORMAL		(0 << 0)
- #define			AT91RM9200_SDRAMC_MODE_NOP		(1 << 0)
-@@ -28,10 +28,10 @@
- #define			AT91RM9200_SDRAMC_DBW_32	(0 << 4)
- #define			AT91RM9200_SDRAMC_DBW_16	(1 << 4)
- 
--#define AT91RM9200_SDRAMC_TR		(AT91_MC + 0x94)	/* Refresh Timer Register */
-+#define AT91RM9200_SDRAMC_TR		0x94			/* Refresh Timer Register */
- #define		AT91RM9200_SDRAMC_COUNT	(0xfff << 0)		/* Refresh Timer Count */
- 
--#define AT91RM9200_SDRAMC_CR		(AT91_MC + 0x98)	/* Configuration Register */
-+#define AT91RM9200_SDRAMC_CR		0x98			/* Configuration Register */
- #define		AT91RM9200_SDRAMC_NC		(3   <<  0)		/* Number of Column Bits */
- #define			AT91RM9200_SDRAMC_NC_8	(0 << 0)
- #define			AT91RM9200_SDRAMC_NC_9	(1 << 0)
-@@ -53,11 +53,11 @@
- #define		AT91RM9200_SDRAMC_TRAS	(0xf << 23)		/* Active to Precharge Delay */
- #define		AT91RM9200_SDRAMC_TXSR	(0xf << 27)		/* Exit Self Refresh to Active Delay */
- 
--#define AT91RM9200_SDRAMC_SRR		(AT91_MC + 0x9c)	/* Self Refresh Register */
--#define AT91RM9200_SDRAMC_LPR		(AT91_MC + 0xa0)	/* Low Power Register */
--#define AT91RM9200_SDRAMC_IER		(AT91_MC + 0xa4)	/* Interrupt Enable Register */
--#define AT91RM9200_SDRAMC_IDR		(AT91_MC + 0xa8)	/* Interrupt Disable Register */
--#define AT91RM9200_SDRAMC_IMR		(AT91_MC + 0xac)	/* Interrupt Mask Register */
--#define AT91RM9200_SDRAMC_ISR		(AT91_MC + 0xb0)	/* Interrupt Status Register */
-+#define AT91RM9200_SDRAMC_SRR		0x9c			/* Self Refresh Register */
-+#define AT91RM9200_SDRAMC_LPR		0xa0			/* Low Power Register */
-+#define AT91RM9200_SDRAMC_IER		0xa4			/* Interrupt Enable Register */
-+#define AT91RM9200_SDRAMC_IDR		0xa8			/* Interrupt Disable Register */
-+#define AT91RM9200_SDRAMC_IMR		0xac			/* Interrupt Mask Register */
-+#define AT91RM9200_SDRAMC_ISR		0xb0			/* Interrupt Status Register */
- 
- #endif
 diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
-index 2bde649..c5b6b3b 100644
+index fa5ca27..2bde649 100644
 --- a/arch/arm/mach-at91/include/mach/at91sam9260.h
 +++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
-@@ -80,11 +80,11 @@
- /*
+@@ -81,12 +81,12 @@
   * System Peripherals (offset from AT91_BASE_SYS)
   */
--#define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+ #define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+-#define AT91_MATRIX	(0xffffee00 - AT91_BASE_SYS)
  #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
  #define AT91_GPBR	(0xfffffd50 - AT91_BASE_SYS)
  
  #define AT91SAM9260_BASE_ECC	0xffffe800
-+#define AT91SAM9260_BASE_SDRAMC	0xffffea00
  #define AT91SAM9260_BASE_SMC	0xffffec00
- #define AT91SAM9260_BASE_MATRIX	0xffffee00
++#define AT91SAM9260_BASE_MATRIX	0xffffee00
  #define AT91SAM9260_BASE_DBGU	AT91_BASE_DBGU0
+ #define AT91SAM9260_BASE_PIOA	0xfffff400
+ #define AT91SAM9260_BASE_PIOB	0xfffff600
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9260_matrix.h b/arch/arm/mach-at91/include/mach/at91sam9260_matrix.h
+index 020f02e..f459df4 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9260_matrix.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9260_matrix.h
+@@ -15,12 +15,12 @@
+ #ifndef AT91SAM9260_MATRIX_H
+ #define AT91SAM9260_MATRIX_H
+ 
+-#define AT91_MATRIX_MCFG0	(AT91_MATRIX + 0x00)	/* Master Configuration Register 0 */
+-#define AT91_MATRIX_MCFG1	(AT91_MATRIX + 0x04)	/* Master Configuration Register 1 */
+-#define AT91_MATRIX_MCFG2	(AT91_MATRIX + 0x08)	/* Master Configuration Register 2 */
+-#define AT91_MATRIX_MCFG3	(AT91_MATRIX + 0x0C)	/* Master Configuration Register 3 */
+-#define AT91_MATRIX_MCFG4	(AT91_MATRIX + 0x10)	/* Master Configuration Register 4 */
+-#define AT91_MATRIX_MCFG5	(AT91_MATRIX + 0x14)	/* Master Configuration Register 5 */
++#define AT91_MATRIX_MCFG0	0x00			/* Master Configuration Register 0 */
++#define AT91_MATRIX_MCFG1	0x04			/* Master Configuration Register 1 */
++#define AT91_MATRIX_MCFG2	0x08			/* Master Configuration Register 2 */
++#define AT91_MATRIX_MCFG3	0x0C			/* Master Configuration Register 3 */
++#define AT91_MATRIX_MCFG4	0x10			/* Master Configuration Register 4 */
++#define AT91_MATRIX_MCFG5	0x14			/* Master Configuration Register 5 */
+ #define		AT91_MATRIX_ULBT		(7 << 0)	/* Undefined Length Burst Type */
+ #define			AT91_MATRIX_ULBT_INFINITE	(0 << 0)
+ #define			AT91_MATRIX_ULBT_SINGLE		(1 << 0)
+@@ -28,11 +28,11 @@
+ #define			AT91_MATRIX_ULBT_EIGHT		(3 << 0)
+ #define			AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
+ 
+-#define AT91_MATRIX_SCFG0	(AT91_MATRIX + 0x40)	/* Slave Configuration Register 0 */
+-#define AT91_MATRIX_SCFG1	(AT91_MATRIX + 0x44)	/* Slave Configuration Register 1 */
+-#define AT91_MATRIX_SCFG2	(AT91_MATRIX + 0x48)	/* Slave Configuration Register 2 */
+-#define AT91_MATRIX_SCFG3	(AT91_MATRIX + 0x4C)	/* Slave Configuration Register 3 */
+-#define AT91_MATRIX_SCFG4	(AT91_MATRIX + 0x50)	/* Slave Configuration Register 4 */
++#define AT91_MATRIX_SCFG0	0x40			/* Slave Configuration Register 0 */
++#define AT91_MATRIX_SCFG1	0x44			/* Slave Configuration Register 1 */
++#define AT91_MATRIX_SCFG2	0x48			/* Slave Configuration Register 2 */
++#define AT91_MATRIX_SCFG3	0x4C			/* Slave Configuration Register 3 */
++#define AT91_MATRIX_SCFG4	0x50			/* Slave Configuration Register 4 */
+ #define		AT91_MATRIX_SLOT_CYCLE		(0xff <<  0)	/* Maximum Number of Allowed Cycles for a Burst */
+ #define		AT91_MATRIX_DEFMSTR_TYPE	(3    << 16)	/* Default Master Type */
+ #define			AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+@@ -43,11 +43,11 @@
+ #define			AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
+ #define			AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
+ 
+-#define AT91_MATRIX_PRAS0	(AT91_MATRIX + 0x80)	/* Priority Register A for Slave 0 */
+-#define AT91_MATRIX_PRAS1	(AT91_MATRIX + 0x88)	/* Priority Register A for Slave 1 */
+-#define AT91_MATRIX_PRAS2	(AT91_MATRIX + 0x90)	/* Priority Register A for Slave 2 */
+-#define AT91_MATRIX_PRAS3	(AT91_MATRIX + 0x98)	/* Priority Register A for Slave 3 */
+-#define AT91_MATRIX_PRAS4	(AT91_MATRIX + 0xA0)	/* Priority Register A for Slave 4 */
++#define AT91_MATRIX_PRAS0	0x80			/* Priority Register A for Slave 0 */
++#define AT91_MATRIX_PRAS1	0x88			/* Priority Register A for Slave 1 */
++#define AT91_MATRIX_PRAS2	0x90			/* Priority Register A for Slave 2 */
++#define AT91_MATRIX_PRAS3	0x98			/* Priority Register A for Slave 3 */
++#define AT91_MATRIX_PRAS4	0xA0			/* Priority Register A for Slave 4 */
+ #define		AT91_MATRIX_M0PR		(3 << 0)	/* Master 0 Priority */
+ #define		AT91_MATRIX_M1PR		(3 << 4)	/* Master 1 Priority */
+ #define		AT91_MATRIX_M2PR		(3 << 8)	/* Master 2 Priority */
+@@ -55,11 +55,11 @@
+ #define		AT91_MATRIX_M4PR		(3 << 16)	/* Master 4 Priority */
+ #define		AT91_MATRIX_M5PR		(3 << 20)	/* Master 5 Priority */
+ 
+-#define AT91_MATRIX_MRCR	(AT91_MATRIX + 0x100)	/* Master Remap Control Register */
++#define AT91_MATRIX_MRCR	0x100			/* Master Remap Control Register */
+ #define		AT91_MATRIX_RCB0		(1 << 0)	/* Remap Command for AHB Master 0 (ARM926EJ-S Instruction Master) */
+ #define		AT91_MATRIX_RCB1		(1 << 1)	/* Remap Command for AHB Master 1 (ARM926EJ-S Data Master) */
+ 
+-#define AT91_MATRIX_EBICSA	(AT91_MATRIX + 0x11C)	/* EBI Chip Select Assignment Register */
++#define AT91_MATRIX_EBICSA	0x11C			/* EBI Chip Select Assignment Register */
+ #define		AT91_MATRIX_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_CS1A_SDRAMC		(1 << 1)
 diff --git a/arch/arm/mach-at91/include/mach/at91sam9261.h b/arch/arm/mach-at91/include/mach/at91sam9261.h
-index 6dcff27..a269cef 100644
+index 7cde2d3..6dcff27 100644
 --- a/arch/arm/mach-at91/include/mach/at91sam9261.h
 +++ b/arch/arm/mach-at91/include/mach/at91sam9261.h
-@@ -65,12 +65,12 @@
- /*
+@@ -66,11 +66,11 @@
   * System Peripherals (offset from AT91_BASE_SYS)
   */
--#define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+ #define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+-#define AT91_MATRIX	(0xffffee00 - AT91_BASE_SYS)
  #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
  #define AT91_GPBR	(0xfffffd50 - AT91_BASE_SYS)
  
  #define AT91SAM9261_BASE_SMC	0xffffec00
- #define AT91SAM9261_BASE_MATRIX	0xffffee00
-+#define AT91SAM9261_BASE_SDRAMC	0xffffea00
++#define AT91SAM9261_BASE_MATRIX	0xffffee00
  #define AT91SAM9261_BASE_DBGU	AT91_BASE_DBGU0
  #define AT91SAM9261_BASE_PIOA	0xfffff400
  #define AT91SAM9261_BASE_PIOB	0xfffff600
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9261_matrix.h b/arch/arm/mach-at91/include/mach/at91sam9261_matrix.h
+index 69c6501..a50cdf8 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9261_matrix.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9261_matrix.h
+@@ -15,15 +15,15 @@
+ #ifndef AT91SAM9261_MATRIX_H
+ #define AT91SAM9261_MATRIX_H
+ 
+-#define AT91_MATRIX_MCFG	(AT91_MATRIX + 0x00)	/* Master Configuration Register */
++#define AT91_MATRIX_MCFG	0x00			/* Master Configuration Register */
+ #define		AT91_MATRIX_RCB0	(1 << 0)		/* Remap Command for AHB Master 0 (ARM926EJ-S Instruction Master) */
+ #define		AT91_MATRIX_RCB1	(1 << 1)		/* Remap Command for AHB Master 1 (ARM926EJ-S Data Master) */
+ 
+-#define AT91_MATRIX_SCFG0	(AT91_MATRIX + 0x04)	/* Slave Configuration Register 0 */
+-#define AT91_MATRIX_SCFG1	(AT91_MATRIX + 0x08)	/* Slave Configuration Register 1 */
+-#define AT91_MATRIX_SCFG2	(AT91_MATRIX + 0x0C)	/* Slave Configuration Register 2 */
+-#define AT91_MATRIX_SCFG3	(AT91_MATRIX + 0x10)	/* Slave Configuration Register 3 */
+-#define AT91_MATRIX_SCFG4	(AT91_MATRIX + 0x14)	/* Slave Configuration Register 4 */
++#define AT91_MATRIX_SCFG0	0x04			/* Slave Configuration Register 0 */
++#define AT91_MATRIX_SCFG1	0x08			/* Slave Configuration Register 1 */
++#define AT91_MATRIX_SCFG2	0x0C			/* Slave Configuration Register 2 */
++#define AT91_MATRIX_SCFG3	0x10			/* Slave Configuration Register 3 */
++#define AT91_MATRIX_SCFG4	0x14			/* Slave Configuration Register 4 */
+ #define		AT91_MATRIX_SLOT_CYCLE		(0xff << 0)	/* Maximum Number of Allowed Cycles for a Burst */
+ #define		AT91_MATRIX_DEFMSTR_TYPE	(3    << 16)	/* Default Master Type */
+ #define			AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+@@ -31,7 +31,7 @@
+ #define			AT91_MATRIX_DEFMSTR_TYPE_FIXED	(2 << 16)
+ #define		AT91_MATRIX_FIXED_DEFMSTR	(7    << 18)	/* Fixed Index of Default Master */
+ 
+-#define AT91_MATRIX_TCR		(AT91_MATRIX + 0x24)	/* TCM Configuration Register */
++#define AT91_MATRIX_TCR		0x24			/* TCM Configuration Register */
+ #define		AT91_MATRIX_ITCM_SIZE		(0xf << 0)	/* Size of ITCM enabled memory block */
+ #define			AT91_MATRIX_ITCM_0		(0 << 0)
+ #define			AT91_MATRIX_ITCM_16		(5 << 0)
+@@ -43,7 +43,7 @@
+ #define			AT91_MATRIX_DTCM_32		(6 << 4)
+ #define			AT91_MATRIX_DTCM_64		(7 << 4)
+ 
+-#define AT91_MATRIX_EBICSA	(AT91_MATRIX + 0x30)	/* EBI Chip Select Assignment Register */
++#define AT91_MATRIX_EBICSA	0x30			/* EBI Chip Select Assignment Register */
+ #define		AT91_MATRIX_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_CS1A_SDRAMC		(1 << 1)
+@@ -58,7 +58,7 @@
+ #define			AT91_MATRIX_CS5A_SMC_CF2	(1 << 5)
+ #define		AT91_MATRIX_DBPUC		(1 << 8)	/* Data Bus Pull-up Configuration */
+ 
+-#define AT91_MATRIX_USBPUCR	(AT91_MATRIX + 0x34)	/* USB Pad Pull-Up Control Register */
++#define AT91_MATRIX_USBPUCR	0x34			/* USB Pad Pull-Up Control Register */
+ #define		AT91_MATRIX_USBPUCR_PUON	(1 << 30)	/* USB Device PAD Pull-up Enable */
+ 
+ #endif
 diff --git a/arch/arm/mach-at91/include/mach/at91sam9263.h b/arch/arm/mach-at91/include/mach/at91sam9263.h
-index fe73bfa..bccba0b 100644
+index 5949abd..fe73bfa 100644
 --- a/arch/arm/mach-at91/include/mach/at91sam9263.h
 +++ b/arch/arm/mach-at91/include/mach/at91sam9263.h
-@@ -74,14 +74,14 @@
- /*
-  * System Peripherals (offset from AT91_BASE_SYS)
+@@ -76,7 +76,6 @@
   */
--#define AT91_SDRAMC0	(0xffffe200 - AT91_BASE_SYS)
--#define AT91_SDRAMC1	(0xffffe800 - AT91_BASE_SYS)
+ #define AT91_SDRAMC0	(0xffffe200 - AT91_BASE_SYS)
+ #define AT91_SDRAMC1	(0xffffe800 - AT91_BASE_SYS)
+-#define AT91_MATRIX	(0xffffec00 - AT91_BASE_SYS)
  #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
  #define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
  
- #define AT91SAM9263_BASE_ECC0	0xffffe000
-+#define AT91SAM9263_BASE_SDRAMC0 0xffffe200
+@@ -84,6 +83,7 @@
  #define AT91SAM9263_BASE_SMC0	0xffffe400
  #define AT91SAM9263_BASE_ECC1	0xffffe600
-+#define AT91SAM9263_BASE_SDRAMC1 0xffffe800
  #define AT91SAM9263_BASE_SMC1	0xffffea00
- #define AT91SAM9263_BASE_MATRIX	0xffffec00
++#define AT91SAM9263_BASE_MATRIX	0xffffec00
  #define AT91SAM9263_BASE_DBGU	AT91_BASE_DBGU1
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h b/arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h
-index 5d4a9f8..0210797 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h
-@@ -121,10 +121,4 @@
- #define		AT91_DDRSDRC_WPVS	(1 << 0)		/* Write protect violation status */
- #define		AT91_DDRSDRC_WPVSRC	(0xffff << 8)		/* Write protect violation source */
+ #define AT91SAM9263_BASE_PIOA	0xfffff200
+ #define AT91SAM9263_BASE_PIOB	0xfffff400
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9263_matrix.h b/arch/arm/mach-at91/include/mach/at91sam9263_matrix.h
+index 9b3efd3..ebb5fdb 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9263_matrix.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9263_matrix.h
+@@ -15,15 +15,15 @@
+ #ifndef AT91SAM9263_MATRIX_H
+ #define AT91SAM9263_MATRIX_H
  
--/* Register access macros */
--#define at91_ramc_read(num, reg) \
--	at91_sys_read(AT91_DDRSDRC##num + reg)
--#define at91_ramc_write(num, reg, value) \
--	at91_sys_write(AT91_DDRSDRC##num + reg, value)
--
- #endif
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9_sdramc.h b/arch/arm/mach-at91/include/mach/at91sam9_sdramc.h
-index 100f5a5..3d085a9 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9_sdramc.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9_sdramc.h
-@@ -82,10 +82,4 @@
- #define			AT91_SDRAMC_MD_SDRAM		0
- #define			AT91_SDRAMC_MD_LOW_POWER_SDRAM	1
+-#define AT91_MATRIX_MCFG0	(AT91_MATRIX + 0x00)	/* Master Configuration Register 0 */
+-#define AT91_MATRIX_MCFG1	(AT91_MATRIX + 0x04)	/* Master Configuration Register 1 */
+-#define AT91_MATRIX_MCFG2	(AT91_MATRIX + 0x08)	/* Master Configuration Register 2 */
+-#define AT91_MATRIX_MCFG3	(AT91_MATRIX + 0x0C)	/* Master Configuration Register 3 */
+-#define AT91_MATRIX_MCFG4	(AT91_MATRIX + 0x10)	/* Master Configuration Register 4 */
+-#define AT91_MATRIX_MCFG5	(AT91_MATRIX + 0x14)	/* Master Configuration Register 5 */
+-#define AT91_MATRIX_MCFG6	(AT91_MATRIX + 0x18)	/* Master Configuration Register 6 */
+-#define AT91_MATRIX_MCFG7	(AT91_MATRIX + 0x1C)	/* Master Configuration Register 7 */
+-#define AT91_MATRIX_MCFG8	(AT91_MATRIX + 0x20)	/* Master Configuration Register 8 */
++#define AT91_MATRIX_MCFG0	0x00			/* Master Configuration Register 0 */
++#define AT91_MATRIX_MCFG1	0x04			/* Master Configuration Register 1 */
++#define AT91_MATRIX_MCFG2	0x08			/* Master Configuration Register 2 */
++#define AT91_MATRIX_MCFG3	0x0C			/* Master Configuration Register 3 */
++#define AT91_MATRIX_MCFG4	0x10			/* Master Configuration Register 4 */
++#define AT91_MATRIX_MCFG5	0x14			/* Master Configuration Register 5 */
++#define AT91_MATRIX_MCFG6	0x18			/* Master Configuration Register 6 */
++#define AT91_MATRIX_MCFG7	0x1C			/* Master Configuration Register 7 */
++#define AT91_MATRIX_MCFG8	0x20			/* Master Configuration Register 8 */
+ #define		AT91_MATRIX_ULBT	(7 << 0)	/* Undefined Length Burst Type */
+ #define			AT91_MATRIX_ULBT_INFINITE	(0 << 0)
+ #define			AT91_MATRIX_ULBT_SINGLE		(1 << 0)
+@@ -31,14 +31,14 @@
+ #define			AT91_MATRIX_ULBT_EIGHT		(3 << 0)
+ #define			AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
  
--/* Register access macros */
--#define at91_ramc_read(num, reg) \
--	at91_sys_read(AT91_SDRAMC##num + reg)
--#define at91_ramc_write(num, reg, value) \
--	at91_sys_write(AT91_SDRAMC##num + reg, value)
--
- #endif
+-#define AT91_MATRIX_SCFG0	(AT91_MATRIX + 0x40)	/* Slave Configuration Register 0 */
+-#define AT91_MATRIX_SCFG1	(AT91_MATRIX + 0x44)	/* Slave Configuration Register 1 */
+-#define AT91_MATRIX_SCFG2	(AT91_MATRIX + 0x48)	/* Slave Configuration Register 2 */
+-#define AT91_MATRIX_SCFG3	(AT91_MATRIX + 0x4C)	/* Slave Configuration Register 3 */
+-#define AT91_MATRIX_SCFG4	(AT91_MATRIX + 0x50)	/* Slave Configuration Register 4 */
+-#define AT91_MATRIX_SCFG5	(AT91_MATRIX + 0x54)	/* Slave Configuration Register 5 */
+-#define AT91_MATRIX_SCFG6	(AT91_MATRIX + 0x58)	/* Slave Configuration Register 6 */
+-#define AT91_MATRIX_SCFG7	(AT91_MATRIX + 0x5C)	/* Slave Configuration Register 7 */
++#define AT91_MATRIX_SCFG0	0x40			/* Slave Configuration Register 0 */
++#define AT91_MATRIX_SCFG1	0x44			/* Slave Configuration Register 1 */
++#define AT91_MATRIX_SCFG2	0x48			/* Slave Configuration Register 2 */
++#define AT91_MATRIX_SCFG3	0x4C			/* Slave Configuration Register 3 */
++#define AT91_MATRIX_SCFG4	0x50			/* Slave Configuration Register 4 */
++#define AT91_MATRIX_SCFG5	0x54			/* Slave Configuration Register 5 */
++#define AT91_MATRIX_SCFG6	0x58			/* Slave Configuration Register 6 */
++#define AT91_MATRIX_SCFG7	0x5C			/* Slave Configuration Register 7 */
+ #define		AT91_MATRIX_SLOT_CYCLE		(0xff << 0)	/* Maximum Number of Allowed Cycles for a Burst */
+ #define		AT91_MATRIX_DEFMSTR_TYPE	(3    << 16)	/* Default Master Type */
+ #define			AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+@@ -49,22 +49,22 @@
+ #define			AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
+ #define			AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
+ 
+-#define AT91_MATRIX_PRAS0	(AT91_MATRIX + 0x80)	/* Priority Register A for Slave 0 */
+-#define AT91_MATRIX_PRBS0	(AT91_MATRIX + 0x84)	/* Priority Register B for Slave 0 */
+-#define AT91_MATRIX_PRAS1	(AT91_MATRIX + 0x88)	/* Priority Register A for Slave 1 */
+-#define AT91_MATRIX_PRBS1	(AT91_MATRIX + 0x8C)	/* Priority Register B for Slave 1 */
+-#define AT91_MATRIX_PRAS2	(AT91_MATRIX + 0x90)	/* Priority Register A for Slave 2 */
+-#define AT91_MATRIX_PRBS2	(AT91_MATRIX + 0x94)	/* Priority Register B for Slave 2 */
+-#define AT91_MATRIX_PRAS3	(AT91_MATRIX + 0x98)	/* Priority Register A for Slave 3 */
+-#define AT91_MATRIX_PRBS3	(AT91_MATRIX + 0x9C)	/* Priority Register B for Slave 3 */
+-#define AT91_MATRIX_PRAS4	(AT91_MATRIX + 0xA0)	/* Priority Register A for Slave 4 */
+-#define AT91_MATRIX_PRBS4	(AT91_MATRIX + 0xA4)	/* Priority Register B for Slave 4 */
+-#define AT91_MATRIX_PRAS5	(AT91_MATRIX + 0xA8)	/* Priority Register A for Slave 5 */
+-#define AT91_MATRIX_PRBS5	(AT91_MATRIX + 0xAC)	/* Priority Register B for Slave 5 */
+-#define AT91_MATRIX_PRAS6	(AT91_MATRIX + 0xB0)	/* Priority Register A for Slave 6 */
+-#define AT91_MATRIX_PRBS6	(AT91_MATRIX + 0xB4)	/* Priority Register B for Slave 6 */
+-#define AT91_MATRIX_PRAS7	(AT91_MATRIX + 0xB8)	/* Priority Register A for Slave 7 */
+-#define AT91_MATRIX_PRBS7	(AT91_MATRIX + 0xBC)	/* Priority Register B for Slave 7 */
++#define AT91_MATRIX_PRAS0	0x80			/* Priority Register A for Slave 0 */
++#define AT91_MATRIX_PRBS0	0x84			/* Priority Register B for Slave 0 */
++#define AT91_MATRIX_PRAS1	0x88			/* Priority Register A for Slave 1 */
++#define AT91_MATRIX_PRBS1	0x8C			/* Priority Register B for Slave 1 */
++#define AT91_MATRIX_PRAS2	0x90			/* Priority Register A for Slave 2 */
++#define AT91_MATRIX_PRBS2	0x94			/* Priority Register B for Slave 2 */
++#define AT91_MATRIX_PRAS3	0x98			/* Priority Register A for Slave 3 */
++#define AT91_MATRIX_PRBS3	0x9C			/* Priority Register B for Slave 3 */
++#define AT91_MATRIX_PRAS4	0xA0			/* Priority Register A for Slave 4 */
++#define AT91_MATRIX_PRBS4	0xA4			/* Priority Register B for Slave 4 */
++#define AT91_MATRIX_PRAS5	0xA8			/* Priority Register A for Slave 5 */
++#define AT91_MATRIX_PRBS5	0xAC			/* Priority Register B for Slave 5 */
++#define AT91_MATRIX_PRAS6	0xB0			/* Priority Register A for Slave 6 */
++#define AT91_MATRIX_PRBS6	0xB4			/* Priority Register B for Slave 6 */
++#define AT91_MATRIX_PRAS7	0xB8			/* Priority Register A for Slave 7 */
++#define AT91_MATRIX_PRBS7	0xBC			/* Priority Register B for Slave 7 */
+ #define		AT91_MATRIX_M0PR		(3 << 0)	/* Master 0 Priority */
+ #define		AT91_MATRIX_M1PR		(3 << 4)	/* Master 1 Priority */
+ #define		AT91_MATRIX_M2PR		(3 << 8)	/* Master 2 Priority */
+@@ -75,7 +75,7 @@
+ #define		AT91_MATRIX_M7PR		(3 << 28)	/* Master 7 Priority */
+ #define		AT91_MATRIX_M8PR		(3 << 0)	/* Master 8 Priority (in Register B) */
+ 
+-#define AT91_MATRIX_MRCR	(AT91_MATRIX + 0x100)	/* Master Remap Control Register */
++#define AT91_MATRIX_MRCR	0x100			/* Master Remap Control Register */
+ #define		AT91_MATRIX_RCB0		(1 << 0)	/* Remap Command for AHB Master 0 (ARM926EJ-S Instruction Master) */
+ #define		AT91_MATRIX_RCB1		(1 << 1)	/* Remap Command for AHB Master 1 (ARM926EJ-S Data Master) */
+ #define		AT91_MATRIX_RCB2		(1 << 2)
+@@ -86,7 +86,7 @@
+ #define		AT91_MATRIX_RCB7		(1 << 7)
+ #define		AT91_MATRIX_RCB8		(1 << 8)
+ 
+-#define AT91_MATRIX_TCMR	(AT91_MATRIX + 0x114)	/* TCM Configuration Register */
++#define AT91_MATRIX_TCMR	0x114			/* TCM Configuration Register */
+ #define		AT91_MATRIX_ITCM_SIZE		(0xf << 0)	/* Size of ITCM enabled memory block */
+ #define			AT91_MATRIX_ITCM_0		(0 << 0)
+ #define			AT91_MATRIX_ITCM_16		(5 << 0)
+@@ -96,7 +96,7 @@
+ #define			AT91_MATRIX_DTCM_16		(5 << 4)
+ #define			AT91_MATRIX_DTCM_32		(6 << 4)
+ 
+-#define AT91_MATRIX_EBI0CSA	(AT91_MATRIX + 0x120)	/* EBI0 Chip Select Assignment Register */
++#define AT91_MATRIX_EBI0CSA	0x120			/* EBI0 Chip Select Assignment Register */
+ #define		AT91_MATRIX_EBI0_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_EBI0_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_EBI0_CS1A_SDRAMC		(1 << 1)
+@@ -114,7 +114,7 @@
+ #define			AT91_MATRIX_EBI0_VDDIOMSEL_1_8V		(0 << 16)
+ #define			AT91_MATRIX_EBI0_VDDIOMSEL_3_3V		(1 << 16)
+ 
+-#define AT91_MATRIX_EBI1CSA	(AT91_MATRIX + 0x124)	/* EBI1 Chip Select Assignment Register */
++#define AT91_MATRIX_EBI1CSA	0x124			/* EBI1 Chip Select Assignment Register */
+ #define		AT91_MATRIX_EBI1_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_EBI1_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_EBI1_CS1A_SDRAMC		(1 << 1)
 diff --git a/arch/arm/mach-at91/include/mach/at91sam9g45.h b/arch/arm/mach-at91/include/mach/at91sam9g45.h
-index c8fe455..dfc4570 100644
+index dd9c95e..c8fe455 100644
 --- a/arch/arm/mach-at91/include/mach/at91sam9g45.h
 +++ b/arch/arm/mach-at91/include/mach/at91sam9g45.h
-@@ -86,12 +86,12 @@
- /*
-  * System Peripherals (offset from AT91_BASE_SYS)
+@@ -88,13 +88,13 @@
   */
--#define AT91_DDRSDRC1	(0xffffe400 - AT91_BASE_SYS)
--#define AT91_DDRSDRC0	(0xffffe600 - AT91_BASE_SYS)
+ #define AT91_DDRSDRC1	(0xffffe400 - AT91_BASE_SYS)
+ #define AT91_DDRSDRC0	(0xffffe600 - AT91_BASE_SYS)
+-#define AT91_MATRIX	(0xffffea00 - AT91_BASE_SYS)
  #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
  #define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
  
  #define AT91SAM9G45_BASE_ECC	0xffffe200
-+#define AT91SAM9G45_BASE_DDRSDRC1 0xffffe400
-+#define AT91SAM9G45_BASE_DDRSDRC0 0xffffe600
  #define AT91SAM9G45_BASE_DMA	0xffffec00
  #define AT91SAM9G45_BASE_SMC	0xffffe800
- #define AT91SAM9G45_BASE_MATRIX	0xffffea00
++#define AT91SAM9G45_BASE_MATRIX	0xffffea00
+ #define AT91SAM9G45_BASE_DBGU	AT91_BASE_DBGU1
+ #define AT91SAM9G45_BASE_PIOA	0xfffff200
+ #define AT91SAM9G45_BASE_PIOB	0xfffff400
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9g45_matrix.h b/arch/arm/mach-at91/include/mach/at91sam9g45_matrix.h
+index c972d60..b76e2ed 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9g45_matrix.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9g45_matrix.h
+@@ -15,18 +15,18 @@
+ #ifndef AT91SAM9G45_MATRIX_H
+ #define AT91SAM9G45_MATRIX_H
+ 
+-#define AT91_MATRIX_MCFG0	(AT91_MATRIX + 0x00)	/* Master Configuration Register 0 */
+-#define AT91_MATRIX_MCFG1	(AT91_MATRIX + 0x04)	/* Master Configuration Register 1 */
+-#define AT91_MATRIX_MCFG2	(AT91_MATRIX + 0x08)	/* Master Configuration Register 2 */
+-#define AT91_MATRIX_MCFG3	(AT91_MATRIX + 0x0C)	/* Master Configuration Register 3 */
+-#define AT91_MATRIX_MCFG4	(AT91_MATRIX + 0x10)	/* Master Configuration Register 4 */
+-#define AT91_MATRIX_MCFG5	(AT91_MATRIX + 0x14)	/* Master Configuration Register 5 */
+-#define AT91_MATRIX_MCFG6	(AT91_MATRIX + 0x18)	/* Master Configuration Register 6 */
+-#define AT91_MATRIX_MCFG7	(AT91_MATRIX + 0x1C)	/* Master Configuration Register 7 */
+-#define AT91_MATRIX_MCFG8	(AT91_MATRIX + 0x20)	/* Master Configuration Register 8 */
+-#define AT91_MATRIX_MCFG9	(AT91_MATRIX + 0x24)	/* Master Configuration Register 9 */
+-#define AT91_MATRIX_MCFG10	(AT91_MATRIX + 0x28)	/* Master Configuration Register 10 */
+-#define AT91_MATRIX_MCFG11	(AT91_MATRIX + 0x2C)	/* Master Configuration Register 11 */
++#define AT91_MATRIX_MCFG0	0x00			/* Master Configuration Register 0 */
++#define AT91_MATRIX_MCFG1	0x04			/* Master Configuration Register 1 */
++#define AT91_MATRIX_MCFG2	0x08			/* Master Configuration Register 2 */
++#define AT91_MATRIX_MCFG3	0x0C			/* Master Configuration Register 3 */
++#define AT91_MATRIX_MCFG4	0x10			/* Master Configuration Register 4 */
++#define AT91_MATRIX_MCFG5	0x14			/* Master Configuration Register 5 */
++#define AT91_MATRIX_MCFG6	0x18			/* Master Configuration Register 6 */
++#define AT91_MATRIX_MCFG7	0x1C			/* Master Configuration Register 7 */
++#define AT91_MATRIX_MCFG8	0x20			/* Master Configuration Register 8 */
++#define AT91_MATRIX_MCFG9	0x24			/* Master Configuration Register 9 */
++#define AT91_MATRIX_MCFG10	0x28			/* Master Configuration Register 10 */
++#define AT91_MATRIX_MCFG11	0x2C			/* Master Configuration Register 11 */
+ #define		AT91_MATRIX_ULBT	(7 << 0)	/* Undefined Length Burst Type */
+ #define			AT91_MATRIX_ULBT_INFINITE	(0 << 0)
+ #define			AT91_MATRIX_ULBT_SINGLE		(1 << 0)
+@@ -37,14 +37,14 @@
+ #define			AT91_MATRIX_ULBT_SIXTYFOUR	(6 << 0)
+ #define			AT91_MATRIX_ULBT_128		(7 << 0)
+ 
+-#define AT91_MATRIX_SCFG0	(AT91_MATRIX + 0x40)	/* Slave Configuration Register 0 */
+-#define AT91_MATRIX_SCFG1	(AT91_MATRIX + 0x44)	/* Slave Configuration Register 1 */
+-#define AT91_MATRIX_SCFG2	(AT91_MATRIX + 0x48)	/* Slave Configuration Register 2 */
+-#define AT91_MATRIX_SCFG3	(AT91_MATRIX + 0x4C)	/* Slave Configuration Register 3 */
+-#define AT91_MATRIX_SCFG4	(AT91_MATRIX + 0x50)	/* Slave Configuration Register 4 */
+-#define AT91_MATRIX_SCFG5	(AT91_MATRIX + 0x54)	/* Slave Configuration Register 5 */
+-#define AT91_MATRIX_SCFG6	(AT91_MATRIX + 0x58)	/* Slave Configuration Register 6 */
+-#define AT91_MATRIX_SCFG7	(AT91_MATRIX + 0x5C)	/* Slave Configuration Register 7 */
++#define AT91_MATRIX_SCFG0	0x40			/* Slave Configuration Register 0 */
++#define AT91_MATRIX_SCFG1	0x44			/* Slave Configuration Register 1 */
++#define AT91_MATRIX_SCFG2	0x48			/* Slave Configuration Register 2 */
++#define AT91_MATRIX_SCFG3	0x4C			/* Slave Configuration Register 3 */
++#define AT91_MATRIX_SCFG4	0x50			/* Slave Configuration Register 4 */
++#define AT91_MATRIX_SCFG5	0x54			/* Slave Configuration Register 5 */
++#define AT91_MATRIX_SCFG6	0x58			/* Slave Configuration Register 6 */
++#define AT91_MATRIX_SCFG7	0x5C			/* Slave Configuration Register 7 */
+ #define		AT91_MATRIX_SLOT_CYCLE		(0x1ff << 0)	/* Maximum Number of Allowed Cycles for a Burst */
+ #define		AT91_MATRIX_DEFMSTR_TYPE	(3    << 16)	/* Default Master Type */
+ #define			AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+@@ -52,22 +52,22 @@
+ #define			AT91_MATRIX_DEFMSTR_TYPE_FIXED	(2 << 16)
+ #define		AT91_MATRIX_FIXED_DEFMSTR	(0xf  << 18)	/* Fixed Index of Default Master */
+ 
+-#define AT91_MATRIX_PRAS0	(AT91_MATRIX + 0x80)	/* Priority Register A for Slave 0 */
+-#define AT91_MATRIX_PRBS0	(AT91_MATRIX + 0x84)	/* Priority Register B for Slave 0 */
+-#define AT91_MATRIX_PRAS1	(AT91_MATRIX + 0x88)	/* Priority Register A for Slave 1 */
+-#define AT91_MATRIX_PRBS1	(AT91_MATRIX + 0x8C)	/* Priority Register B for Slave 1 */
+-#define AT91_MATRIX_PRAS2	(AT91_MATRIX + 0x90)	/* Priority Register A for Slave 2 */
+-#define AT91_MATRIX_PRBS2	(AT91_MATRIX + 0x94)	/* Priority Register B for Slave 2 */
+-#define AT91_MATRIX_PRAS3	(AT91_MATRIX + 0x98)	/* Priority Register A for Slave 3 */
+-#define AT91_MATRIX_PRBS3	(AT91_MATRIX + 0x9C)	/* Priority Register B for Slave 3 */
+-#define AT91_MATRIX_PRAS4	(AT91_MATRIX + 0xA0)	/* Priority Register A for Slave 4 */
+-#define AT91_MATRIX_PRBS4	(AT91_MATRIX + 0xA4)	/* Priority Register B for Slave 4 */
+-#define AT91_MATRIX_PRAS5	(AT91_MATRIX + 0xA8)	/* Priority Register A for Slave 5 */
+-#define AT91_MATRIX_PRBS5	(AT91_MATRIX + 0xAC)	/* Priority Register B for Slave 5 */
+-#define AT91_MATRIX_PRAS6	(AT91_MATRIX + 0xB0)	/* Priority Register A for Slave 6 */
+-#define AT91_MATRIX_PRBS6	(AT91_MATRIX + 0xB4)	/* Priority Register B for Slave 6 */
+-#define AT91_MATRIX_PRAS7	(AT91_MATRIX + 0xB8)	/* Priority Register A for Slave 7 */
+-#define AT91_MATRIX_PRBS7	(AT91_MATRIX + 0xBC)	/* Priority Register B for Slave 7 */
++#define AT91_MATRIX_PRAS0	0x80			/* Priority Register A for Slave 0 */
++#define AT91_MATRIX_PRBS0	0x84			/* Priority Register B for Slave 0 */
++#define AT91_MATRIX_PRAS1	0x88			/* Priority Register A for Slave 1 */
++#define AT91_MATRIX_PRBS1	0x8C			/* Priority Register B for Slave 1 */
++#define AT91_MATRIX_PRAS2	0x90			/* Priority Register A for Slave 2 */
++#define AT91_MATRIX_PRBS2	0x94			/* Priority Register B for Slave 2 */
++#define AT91_MATRIX_PRAS3	0x98			/* Priority Register A for Slave 3 */
++#define AT91_MATRIX_PRBS3	0x9C			/* Priority Register B for Slave 3 */
++#define AT91_MATRIX_PRAS4	0xA0			/* Priority Register A for Slave 4 */
++#define AT91_MATRIX_PRBS4	0xA4			/* Priority Register B for Slave 4 */
++#define AT91_MATRIX_PRAS5	0xA8			/* Priority Register A for Slave 5 */
++#define AT91_MATRIX_PRBS5	0xAC			/* Priority Register B for Slave 5 */
++#define AT91_MATRIX_PRAS6	0xB0			/* Priority Register A for Slave 6 */
++#define AT91_MATRIX_PRBS6	0xB4			/* Priority Register B for Slave 6 */
++#define AT91_MATRIX_PRAS7	0xB8			/* Priority Register A for Slave 7 */
++#define AT91_MATRIX_PRBS7	0xBC			/* Priority Register B for Slave 7 */
+ #define		AT91_MATRIX_M0PR		(3 << 0)	/* Master 0 Priority */
+ #define		AT91_MATRIX_M1PR		(3 << 4)	/* Master 1 Priority */
+ #define		AT91_MATRIX_M2PR		(3 << 8)	/* Master 2 Priority */
+@@ -81,7 +81,7 @@
+ #define		AT91_MATRIX_M10PR		(3 << 8)	/* Master 10 Priority (in Register B) */
+ #define		AT91_MATRIX_M11PR		(3 << 12)	/* Master 11 Priority (in Register B) */
+ 
+-#define AT91_MATRIX_MRCR	(AT91_MATRIX + 0x100)	/* Master Remap Control Register */
++#define AT91_MATRIX_MRCR	0x100			/* Master Remap Control Register */
+ #define		AT91_MATRIX_RCB0		(1 << 0)	/* Remap Command for AHB Master 0 (ARM926EJ-S Instruction Master) */
+ #define		AT91_MATRIX_RCB1		(1 << 1)	/* Remap Command for AHB Master 1 (ARM926EJ-S Data Master) */
+ #define		AT91_MATRIX_RCB2		(1 << 2)
+@@ -95,7 +95,7 @@
+ #define		AT91_MATRIX_RCB10		(1 << 10)
+ #define		AT91_MATRIX_RCB11		(1 << 11)
+ 
+-#define AT91_MATRIX_TCMR	(AT91_MATRIX + 0x110)	/* TCM Configuration Register */
++#define AT91_MATRIX_TCMR	0x110			/* TCM Configuration Register */
+ #define		AT91_MATRIX_ITCM_SIZE		(0xf << 0)	/* Size of ITCM enabled memory block */
+ #define			AT91_MATRIX_ITCM_0		(0 << 0)
+ #define			AT91_MATRIX_ITCM_32		(6 << 0)
+@@ -107,12 +107,12 @@
+ #define			AT91_MATRIX_TCM_NO_WS		(0x0 << 11)
+ #define			AT91_MATRIX_TCM_ONE_WS		(0x1 << 11)
+ 
+-#define AT91_MATRIX_VIDEO	(AT91_MATRIX + 0x118)	/* Video Mode Configuration Register */
++#define AT91_MATRIX_VIDEO	0x118			/* Video Mode Configuration Register */
+ #define		AT91C_VDEC_SEL			(0x1 <<  0) /* Video Mode Selection */
+ #define			AT91C_VDEC_SEL_OFF		(0 << 0)
+ #define			AT91C_VDEC_SEL_ON		(1 << 0)
+ 
+-#define AT91_MATRIX_EBICSA	(AT91_MATRIX + 0x128)	/* EBI Chip Select Assignment Register */
++#define AT91_MATRIX_EBICSA	0x128			/* EBI Chip Select Assignment Register */
+ #define		AT91_MATRIX_EBI_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_EBI_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_EBI_CS1A_SDRAMC		(1 << 1)
+@@ -138,13 +138,13 @@
+ #define			AT91_MATRIX_EBI_DDR_IOSR_REDUCED	(0 << 18)
+ #define			AT91_MATRIX_EBI_DDR_IOSR_NORMAL		(1 << 18)
+ 
+-#define AT91_MATRIX_WPMR	(AT91_MATRIX + 0x1E4)	/* Write Protect Mode Register */
++#define AT91_MATRIX_WPMR	0x1E4			/* Write Protect Mode Register */
+ #define		AT91_MATRIX_WPMR_WPEN		(1 << 0)	/* Write Protect ENable */
+ #define			AT91_MATRIX_WPMR_WP_WPDIS		(0 << 0)
+ #define			AT91_MATRIX_WPMR_WP_WPEN		(1 << 0)
+ #define		AT91_MATRIX_WPMR_WPKEY		(0xFFFFFF << 8)	/* Write Protect KEY */
+ 
+-#define AT91_MATRIX_WPSR	(AT91_MATRIX + 0x1E8)	/* Write Protect Status Register */
++#define AT91_MATRIX_WPSR	0x1E8			/* Write Protect Status Register */
+ #define		AT91_MATRIX_WPSR_WPVS		(1 << 0)	/* Write Protect Violation Status */
+ #define			AT91_MATRIX_WPSR_NO_WPV		(0 << 0)
+ #define			AT91_MATRIX_WPSR_WPV		(1 << 0)
 diff --git a/arch/arm/mach-at91/include/mach/at91sam9rl.h b/arch/arm/mach-at91/include/mach/at91sam9rl.h
-index 51edc25..de960dc 100644
+index d7bead7..51edc25 100644
 --- a/arch/arm/mach-at91/include/mach/at91sam9rl.h
 +++ b/arch/arm/mach-at91/include/mach/at91sam9rl.h
-@@ -69,13 +69,13 @@
- /*
+@@ -70,7 +70,6 @@
   * System Peripherals (offset from AT91_BASE_SYS)
   */
--#define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+ #define AT91_SDRAMC0	(0xffffea00 - AT91_BASE_SYS)
+-#define AT91_MATRIX	(0xffffee00 - AT91_BASE_SYS)
  #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
  #define AT91_SCKCR	(0xfffffd50 - AT91_BASE_SYS)
  #define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
- 
+@@ -78,6 +77,7 @@
  #define AT91SAM9RL_BASE_DMA	0xffffe600
  #define AT91SAM9RL_BASE_ECC	0xffffe800
-+#define AT91SAM9RL_BASE_SDRAMC	0xffffea00
  #define AT91SAM9RL_BASE_SMC	0xffffec00
- #define AT91SAM9RL_BASE_MATRIX	0xffffee00
++#define AT91SAM9RL_BASE_MATRIX	0xffffee00
  #define AT91SAM9RL_BASE_DBGU	AT91_BASE_DBGU0
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9x5.h b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-index 8476871..96f25f5 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9x5.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9x5.h
-@@ -57,7 +57,7 @@
- /*
-  * System Peripherals (offset from AT91_BASE_SYS)
-  */
--#define AT91_DDRSDRC0	(0xffffe800 - AT91_BASE_SYS)
-+#define AT91SAM9X5_BASE_DDRSDRC0	0xffffe800
- #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)
+ #define AT91SAM9RL_BASE_PIOA	0xfffff400
+ #define AT91SAM9RL_BASE_PIOB	0xfffff600
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9rl_matrix.h b/arch/arm/mach-at91/include/mach/at91sam9rl_matrix.h
+index 5f91490..6d160ad 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9rl_matrix.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9rl_matrix.h
+@@ -14,12 +14,12 @@
+ #ifndef AT91SAM9RL_MATRIX_H
+ #define AT91SAM9RL_MATRIX_H
  
- /*
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 8046a50..46dbb7e 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -196,19 +196,18 @@ extern u32 at91_slow_clock_sz;
- #endif
+-#define AT91_MATRIX_MCFG0	(AT91_MATRIX + 0x00)	/* Master Configuration Register 0 */
+-#define AT91_MATRIX_MCFG1	(AT91_MATRIX + 0x04)	/* Master Configuration Register 1 */
+-#define AT91_MATRIX_MCFG2	(AT91_MATRIX + 0x08)	/* Master Configuration Register 2 */
+-#define AT91_MATRIX_MCFG3	(AT91_MATRIX + 0x0C)	/* Master Configuration Register 3 */
+-#define AT91_MATRIX_MCFG4	(AT91_MATRIX + 0x10)	/* Master Configuration Register 4 */
+-#define AT91_MATRIX_MCFG5	(AT91_MATRIX + 0x14)	/* Master Configuration Register 5 */
++#define AT91_MATRIX_MCFG0	0x00			/* Master Configuration Register 0 */
++#define AT91_MATRIX_MCFG1	0x04			/* Master Configuration Register 1 */
++#define AT91_MATRIX_MCFG2	0x08			/* Master Configuration Register 2 */
++#define AT91_MATRIX_MCFG3	0x0C			/* Master Configuration Register 3 */
++#define AT91_MATRIX_MCFG4	0x10			/* Master Configuration Register 4 */
++#define AT91_MATRIX_MCFG5	0x14			/* Master Configuration Register 5 */
+ #define		AT91_MATRIX_ULBT	(7 << 0)	/* Undefined Length Burst Type */
+ #define			AT91_MATRIX_ULBT_INFINITE	(0 << 0)
+ #define			AT91_MATRIX_ULBT_SINGLE		(1 << 0)
+@@ -27,12 +27,12 @@
+ #define			AT91_MATRIX_ULBT_EIGHT		(3 << 0)
+ #define			AT91_MATRIX_ULBT_SIXTEEN	(4 << 0)
  
- static void __iomem *at91_pmc_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_PMC);
--#ifdef CONFIG_ARCH_AT91RM9200
--static void __iomem *at91_ramc0_base = (void __iomem*)AT91_VA_BASE_SYS;
--#elif defined(CONFIG_ARCH_AT91SAM9G45)
--static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC0);
--#else
--static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_SDRAMC0);
--#endif
-+void __iomem *at91_ramc_base[2];
+-#define AT91_MATRIX_SCFG0	(AT91_MATRIX + 0x40)	/* Slave Configuration Register 0 */
+-#define AT91_MATRIX_SCFG1	(AT91_MATRIX + 0x44)	/* Slave Configuration Register 1 */
+-#define AT91_MATRIX_SCFG2	(AT91_MATRIX + 0x48)	/* Slave Configuration Register 2 */
+-#define AT91_MATRIX_SCFG3	(AT91_MATRIX + 0x4C)	/* Slave Configuration Register 3 */
+-#define AT91_MATRIX_SCFG4	(AT91_MATRIX + 0x50)	/* Slave Configuration Register 4 */
+-#define AT91_MATRIX_SCFG5	(AT91_MATRIX + 0x54)	/* Slave Configuration Register 5 */
++#define AT91_MATRIX_SCFG0	0x40			/* Slave Configuration Register 0 */
++#define AT91_MATRIX_SCFG1	0x44			/* Slave Configuration Register 1 */
++#define AT91_MATRIX_SCFG2	0x48			/* Slave Configuration Register 2 */
++#define AT91_MATRIX_SCFG3	0x4C			/* Slave Configuration Register 3 */
++#define AT91_MATRIX_SCFG4	0x50			/* Slave Configuration Register 4 */
++#define AT91_MATRIX_SCFG5	0x54			/* Slave Configuration Register 5 */
+ #define		AT91_MATRIX_SLOT_CYCLE		(0xff << 0)	/* Maximum Number of Allowed Cycles for a Burst */
+ #define		AT91_MATRIX_DEFMSTR_TYPE	(3    << 16)	/* Default Master Type */
+ #define			AT91_MATRIX_DEFMSTR_TYPE_NONE	(0 << 16)
+@@ -43,12 +43,12 @@
+ #define			AT91_MATRIX_ARBT_ROUND_ROBIN	(0 << 24)
+ #define			AT91_MATRIX_ARBT_FIXED_PRIORITY	(1 << 24)
  
--#if defined(CONFIG_ARCH_AT91SAM9G45)
--static void __iomem *at91_ramc1_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC1);
--#else
--static void __iomem *at91_ramc1_base = NULL;
--#endif
-+void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
+-#define AT91_MATRIX_PRAS0	(AT91_MATRIX + 0x80)	/* Priority Register A for Slave 0 */
+-#define AT91_MATRIX_PRAS1	(AT91_MATRIX + 0x88)	/* Priority Register A for Slave 1 */
+-#define AT91_MATRIX_PRAS2	(AT91_MATRIX + 0x90)	/* Priority Register A for Slave 2 */
+-#define AT91_MATRIX_PRAS3	(AT91_MATRIX + 0x98)	/* Priority Register A for Slave 3 */
+-#define AT91_MATRIX_PRAS4	(AT91_MATRIX + 0xA0)	/* Priority Register A for Slave 4 */
+-#define AT91_MATRIX_PRAS5	(AT91_MATRIX + 0xA8)	/* Priority Register A for Slave 5 */
++#define AT91_MATRIX_PRAS0	0x80			/* Priority Register A for Slave 0 */
++#define AT91_MATRIX_PRAS1	0x88			/* Priority Register A for Slave 1 */
++#define AT91_MATRIX_PRAS2	0x90			/* Priority Register A for Slave 2 */
++#define AT91_MATRIX_PRAS3	0x98			/* Priority Register A for Slave 3 */
++#define AT91_MATRIX_PRAS4	0xA0			/* Priority Register A for Slave 4 */
++#define AT91_MATRIX_PRAS5	0xA8			/* Priority Register A for Slave 5 */
+ #define		AT91_MATRIX_M0PR		(3 << 0)	/* Master 0 Priority */
+ #define		AT91_MATRIX_M1PR		(3 << 4)	/* Master 1 Priority */
+ #define		AT91_MATRIX_M2PR		(3 << 8)	/* Master 2 Priority */
+@@ -56,7 +56,7 @@
+ #define		AT91_MATRIX_M4PR		(3 << 16)	/* Master 4 Priority */
+ #define		AT91_MATRIX_M5PR		(3 << 20)	/* Master 5 Priority */
+ 
+-#define AT91_MATRIX_MRCR	(AT91_MATRIX + 0x100)	/* Master Remap Control Register */
++#define AT91_MATRIX_MRCR	0x100			/* Master Remap Control Register */
+ #define		AT91_MATRIX_RCB0		(1 << 0)	/* Remap Command for AHB Master 0 (ARM926EJ-S Instruction Master) */
+ #define		AT91_MATRIX_RCB1		(1 << 1)	/* Remap Command for AHB Master 1 (ARM926EJ-S Data Master) */
+ #define		AT91_MATRIX_RCB2		(1 << 2)
+@@ -64,7 +64,7 @@
+ #define		AT91_MATRIX_RCB4		(1 << 4)
+ #define		AT91_MATRIX_RCB5		(1 << 5)
+ 
+-#define AT91_MATRIX_TCMR	(AT91_MATRIX + 0x114)	/* TCM Configuration Register */
++#define AT91_MATRIX_TCMR	0x114			/* TCM Configuration Register */
+ #define		AT91_MATRIX_ITCM_SIZE		(0xf << 0)	/* Size of ITCM enabled memory block */
+ #define			AT91_MATRIX_ITCM_0		(0 << 0)
+ #define			AT91_MATRIX_ITCM_16		(5 << 0)
+@@ -74,7 +74,7 @@
+ #define			AT91_MATRIX_DTCM_16		(5 << 4)
+ #define			AT91_MATRIX_DTCM_32		(6 << 4)
+ 
+-#define AT91_MATRIX_EBICSA	(AT91_MATRIX + 0x120)	/* EBI0 Chip Select Assignment Register */
++#define AT91_MATRIX_EBICSA	0x120			/* EBI0 Chip Select Assignment Register */
+ #define		AT91_MATRIX_CS1A		(1 << 1)	/* Chip Select 1 Assignment */
+ #define			AT91_MATRIX_CS1A_SMC		(0 << 1)
+ #define			AT91_MATRIX_CS1A_SDRAMC		(1 << 1)
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 620c67e..372396c 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -276,6 +276,15 @@ void __init at91_ioremap_rstc(u32 base_addr)
+ 		panic("Impossible to ioremap at91_rstc_base\n");
+ }
+ 
++void __iomem *at91_matrix_base;
++
++void __init at91_ioremap_matrix(u32 base_addr)
 +{
-+	if (id < 0 || id > 1) {
-+		pr_emerg("Wrong RAM controller id (%d), cannot continue\n", id);
-+		BUG();
-+	}
-+	at91_ramc_base[id] = ioremap(addr, size);
-+	if (!at91_ramc_base[id])
-+		panic("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
++	at91_matrix_base = ioremap(base_addr, 512);
++	if (!at91_matrix_base)
++		panic("Impossible to ioremap at91_matrix_base\n");
 +}
- 
- static int at91_pm_enter(suspend_state_t state)
++
+ void __init at91_initialize(unsigned long main_clock)
  {
-@@ -246,7 +245,7 @@ static int at91_pm_enter(suspend_state_t state)
- 				/* copy slow_clock handler to SRAM, and call it */
- 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
- #endif
--				slow_clock(at91_pmc_base, at91_ramc0_base, at91_ramc1_base);
-+				slow_clock(at91_pmc_base, at91_ramc_base[0], at91_ramc_base[1]);
- 				break;
- 			} else {
- 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
-@@ -315,7 +314,7 @@ static int __init at91_pm_init(void)
- 
- #ifdef CONFIG_ARCH_AT91RM9200
- 	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
--	at91_sys_write(AT91RM9200_SDRAMC_LPR, 0);
-+	at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
- #endif
- 
- 	suspend_set_ops(&at91_pm_ops);
-diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-index 41cdd2b..89f56f3 100644
---- a/arch/arm/mach-at91/pm.h
-+++ b/arch/arm/mach-at91/pm.h
-@@ -11,8 +11,8 @@
- #ifndef __ARCH_ARM_MACH_AT91_PM
- #define __ARCH_ARM_MACH_AT91_PM
- 
-+#include <mach/at91_ramc.h>
- #ifdef CONFIG_ARCH_AT91RM9200
--#include <mach/at91rm9200_mc.h>
- #include <mach/at91rm9200_sdramc.h>
- 
- /*
-@@ -27,7 +27,7 @@
- 
- static inline void at91rm9200_standby(void)
- {
--	u32 lpr = at91_sys_read(AT91RM9200_SDRAMC_LPR);
-+	u32 lpr = at91_ramc_read(0, AT91RM9200_SDRAMC_LPR);
- 
- 	asm volatile(
- 		"b    1f\n\t"
-@@ -46,7 +46,6 @@ static inline void at91rm9200_standby(void)
- #define at91_standby at91rm9200_standby
- 
- #elif defined(CONFIG_ARCH_AT91SAM9G45)
--#include <mach/at91sam9_ddrsdr.h>
- 
- /* We manage both DDRAM/SDRAM controllers, we need more than one value to
-  * remember.
-@@ -79,7 +78,6 @@ static inline void at91sam9g45_standby(void)
- #define at91_standby at91sam9g45_standby
- 
- #else
--#include <mach/at91sam9_sdramc.h>
- 
- #ifdef CONFIG_ARCH_AT91SAM9263
- /*
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index aee0b2c..a2835a8 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -15,15 +15,7 @@
- #include <linux/linkage.h>
- #include <mach/hardware.h>
- #include <mach/at91_pmc.h>
--
--#if defined(CONFIG_ARCH_AT91RM9200)
--#include <mach/at91rm9200_mc.h>
--#include <mach/at91rm9200_sdramc.h>
--#elif defined(CONFIG_ARCH_AT91SAM9G45)
--#include <mach/at91sam9_ddrsdr.h>
--#else
--#include <mach/at91sam9_sdramc.h>
--#endif
-+#include <mach/at91_ramc.h>
- 
- 
- #ifdef CONFIG_ARCH_AT91SAM9263
-diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
-index 4902206..1dd68f5 100644
---- a/drivers/pcmcia/at91_cf.c
-+++ b/drivers/pcmcia/at91_cf.c
-@@ -26,6 +26,7 @@
- 
+ 	at91_boot_soc.ioremap_registers();
+diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+index 143a725..f99b3dc 100644
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -41,6 +41,7 @@
  #include <mach/board.h>
- #include <mach/at91rm9200_mc.h>
-+#include <mach/at91_ramc.h>
+ #include <mach/cpu.h>
+ #include <mach/at91sam9261_matrix.h>
++#include <mach/at91_matrix.h>
  
+ #include "at91_udc.h"
  
- /*
-@@ -156,7 +157,7 @@ static int at91_cf_set_io_map(struct pcmcia_socket *s, struct pccard_io_map *io)
- 	/*
- 	 * Use 16 bit accesses unless/until we need 8-bit i/o space.
- 	 */
--	csr = at91_sys_read(AT91_SMC_CSR(cf->board->chipselect)) & ~AT91_SMC_DBW;
-+	csr = at91_ramc_read(0, AT91_SMC_CSR(cf->board->chipselect)) & ~AT91_SMC_DBW;
+@@ -910,9 +911,9 @@ static void pullup(struct at91_udc *udc, int is_on)
+ 		} else if (cpu_is_at91sam9261() || cpu_is_at91sam9g10()) {
+ 			u32	usbpucr;
  
- 	/*
- 	 * NOTE: this CF controller ignores IOIS16, so we can't really do
-@@ -175,7 +176,7 @@ static int at91_cf_set_io_map(struct pcmcia_socket *s, struct pccard_io_map *io)
- 		csr |= AT91_SMC_DBW_16;
- 		pr_debug("%s: 16bit i/o bus\n", driver_name);
+-			usbpucr = at91_sys_read(AT91_MATRIX_USBPUCR);
++			usbpucr = at91_matrix_read(AT91_MATRIX_USBPUCR);
+ 			usbpucr |= AT91_MATRIX_USBPUCR_PUON;
+-			at91_sys_write(AT91_MATRIX_USBPUCR, usbpucr);
++			at91_matrix_write(AT91_MATRIX_USBPUCR, usbpucr);
+ 		}
+ 	} else {
+ 		stop_activity(udc);
+@@ -928,9 +929,9 @@ static void pullup(struct at91_udc *udc, int is_on)
+ 		} else if (cpu_is_at91sam9261() || cpu_is_at91sam9g10()) {
+ 			u32	usbpucr;
+ 
+-			usbpucr = at91_sys_read(AT91_MATRIX_USBPUCR);
++			usbpucr = at91_matrix_read(AT91_MATRIX_USBPUCR);
+ 			usbpucr &= ~AT91_MATRIX_USBPUCR_PUON;
+-			at91_sys_write(AT91_MATRIX_USBPUCR, usbpucr);
++			at91_matrix_write(AT91_MATRIX_USBPUCR, usbpucr);
+ 		}
+ 		clk_off(udc);
  	}
--	at91_sys_write(AT91_SMC_CSR(cf->board->chipselect), csr);
-+	at91_ramc_write(0, AT91_SMC_CSR(cf->board->chipselect), csr);
- 
- 	io->start = cf->socket.io_offset;
- 	io->stop = io->start + SZ_2K - 1;
 -- 
 1.7.9
 
