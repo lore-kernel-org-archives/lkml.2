@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2BWThM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:37:12 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52133 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755529Ab2BWThL (ORCPT
+	id S1755988Ab2BWTjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:39:16 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:48608 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571Ab2BWTjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:37:11 -0500
-X-Sasl-enc: jJG7t5Eiy7ViIXqhHZYRQs6EOx3BZtsVaUXCpTkOyrs9 1330025830
-Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
- browser
-From: Colin Walters <walters@verbum.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Thu, 23 Feb 2012 14:36:41 -0500
-In-Reply-To: <1330013922-3332-1-git-send-email-penberg@kernel.org>
-References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1330025802.17301.1.camel@lenny>
-Mime-Version: 1.0
+	Thu, 23 Feb 2012 14:39:14 -0500
+X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 14:39:14 EST
+From: Arun Raghavan <arun.raghavan@collabora.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Arun Raghavan <arun.raghavan@collabora.co.uk>
+Subject: [PATCH] [RESEND] rlimits: Print more information when limits are exceeded
+Date: Fri, 24 Feb 2012 00:59:38 +0530
+Message-Id: <1330025378-26075-1-git-send-email-arun.raghavan@collabora.co.uk>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 18:18 +0200, Pekka Enberg wrote:
-> This patch adds a simple GTK2-based browser to 'perf report' that's based on
-> the TTY-based browser in builtin-report.c.
-> 
-> Please not that you need to use
-> 
->   make WERROR=0
+This dumps some information in logs when a process exceeds its CPU or RT
+limits (soft and hard). Makes debugging easier when userspace triggers
+these limits.
 
-You could -Wnoerror=strict-prototypes...
+Signed-off-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
+---
+ kernel/posix-cpu-timers.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-> 
-> to build perf on Fedora 15 (and possibly other distributions) because GTK
-> headers do not compile cleanly:
-> 
->       CC util/gtk/browser.o
->   In file included from /usr/include/gtk-2.0/gtk/gtk.h:234:0,
->                    from util/gtk/browser.c:7:
->   /usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
-
-Unfortunately it was a historical mistake, but it's part of the public
-API:
-
-https://bugzilla.gnome.org/show_bug.cgi?id=508760
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 125cb67..bb0ae71 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -956,6 +956,9 @@ static void check_thread_timers(struct task_struct *tsk,
+ 			 * At the hard limit, we just die.
+ 			 * No need to calculate anything else now.
+ 			 */
++			printk(KERN_INFO
++				"RT Watchdog Timeout (hard): %s[%d]\n",
++				tsk->comm, task_pid_nr(tsk));
+ 			__group_send_sig_info(SIGKILL, SEND_SIG_PRIV, tsk);
+ 			return;
+ 		}
+@@ -968,7 +971,7 @@ static void check_thread_timers(struct task_struct *tsk,
+ 				sig->rlim[RLIMIT_RTTIME].rlim_cur = soft;
+ 			}
+ 			printk(KERN_INFO
+-				"RT Watchdog Timeout: %s[%d]\n",
++				"RT Watchdog Timeout (soft): %s[%d]\n",
+ 				tsk->comm, task_pid_nr(tsk));
+ 			__group_send_sig_info(SIGXCPU, SEND_SIG_PRIV, tsk);
+ 		}
+@@ -1116,6 +1119,9 @@ static void check_process_timers(struct task_struct *tsk,
+ 			 * At the hard limit, we just die.
+ 			 * No need to calculate anything else now.
+ 			 */
++			printk(KERN_INFO
++				"CPU Watchdog Timeout (hard): %s[%d]\n",
++				tsk->comm, task_pid_nr(tsk));
+ 			__group_send_sig_info(SIGKILL, SEND_SIG_PRIV, tsk);
+ 			return;
+ 		}
+@@ -1123,6 +1129,9 @@ static void check_process_timers(struct task_struct *tsk,
+ 			/*
+ 			 * At the soft limit, send a SIGXCPU every second.
+ 			 */
++			printk(KERN_INFO
++				"CPU Watchdog Timeout (soft): %s[%d]\n",
++				tsk->comm, task_pid_nr(tsk));
+ 			__group_send_sig_info(SIGXCPU, SEND_SIG_PRIV, tsk);
+ 			if (soft < hard) {
+ 				soft++;
+-- 
+1.7.8.4
 
