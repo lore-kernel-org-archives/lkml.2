@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2BWJVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:21:16 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62727 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763Ab2BWJVN (ORCPT
+	id S1755065Ab2BWJWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:22:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42348 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab2BWJWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:21:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F46055B.9050308@gmail.com>
-Date: Thu, 23 Feb 2012 20:22:35 +1100
+	Thu, 23 Feb 2012 04:22:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.244.4 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F4605A4.5050203@gmail.com>
+Date: Thu, 23 Feb 2012 20:23:48 +1100
 From: Ryan Mallon <rmallon@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH v2 11/19] ARM: at91/PMC: make register base soc independent
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <bdea371b518c7b6d04ae1cfacacca2f75b191984.1329903206.git.nicolas.ferre@atmel.com> <4F457128.6060407@gmail.com> <4F45FAF7.3080409@atmel.com>
-In-Reply-To: <4F45FAF7.3080409@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of at91_sys_read/write
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com> <4F456AAF.3090809@gmail.com> <20120223032503.GA20176@game.jcrosoft.org> <4F45B985.1000204@gmail.com> <20120223060151.GD20176@game.jcrosoft.org>
+In-Reply-To: <20120223060151.GD20176@game.jcrosoft.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/12 19:38, Nicolas Ferre wrote:
+On 23/02/12 17:01, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-> On 02/22/2012 11:50 PM, Ryan Mallon :
->> On 22/02/12 20:39, Nicolas Ferre wrote:
+> On 14:59 Thu 23 Feb     , Ryan Mallon wrote:
+>> On 23/02/12 14:25, Jean-Christophe PLAGNIOL-VILLARD wrote:
 >>
->>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>
->>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> Reviewed-by: Ryan Mallon <rmallon@gmail.com>
->>> ---
+>>> On 09:22 Thu 23 Feb     , Ryan Mallon wrote:
+>>>> On 22/02/12 20:39, Nicolas Ferre wrote:
+>>>>
+>>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>>
+>>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>> ---
+>>>>>  arch/arm/mach-at91/at91x40.c              |    2 +-
+>>>>>  arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
+>>>>>  arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
+>>>>>  3 files changed, 27 insertions(+), 21 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+>>>>> index 0154b7f..5400a1d 100644
+>>>>> --- a/arch/arm/mach-at91/at91x40.c
+>>>>> +++ b/arch/arm/mach-at91/at91x40.c
+>>>>> @@ -44,7 +44,7 @@ static void at91x40_idle(void)
+>>>>>  	 * Disable the processor clock.  The processor will be automatically
+>>>>>  	 * re-enabled by an interrupt or by a reset.
+>>>>>  	 */
+>>>>> -	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
+>>>>> +	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
+>>>>
+>>>>
+>>>> This doesn't seem to be equivalent, at91_sys_write does:
+>>>>
+>>>>   void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
+>>>>   __raw_writel(value, addr + reg_offset);
+>>>>
+>>>> and this patch doesn't redefine AT91_PS_CR. Was it broken before this
+>>>> patch? What am I missing?
+>>> this is right
+>>> #define AT91_PS_CR      (AT91_PS + 0)   /* PS Control register */
 >>
->> <snip>
 >>
->>> -	seq_printf(s, "SCSR = %8x\n", scsr = at91_sys_read(AT91_PMC_SCSR));
->>> -	seq_printf(s, "PCSR = %8x\n", pcsr = at91_sys_read(AT91_PMC_PCSR));
->>> -	seq_printf(s, "MOR  = %8x\n", at91_sys_read(AT91_CKGR_MOR));
->>> -	seq_printf(s, "MCFR = %8x\n", at91_sys_read(AT91_CKGR_MCFR));
->>> -	seq_printf(s, "PLLA = %8x\n", at91_sys_read(AT91_CKGR_PLLAR));
->>> +	seq_printf(s, "SCSR = %8x\n", scsr = at91_pmc_read(AT91_PMC_SCSR));
->>> +	seq_printf(s, "PCSR = %8x\n", pcsr = at91_pmc_read(AT91_PMC_PCSR));
+>> That doesn't answer my question.
 >>
+>> The old, at91_sys_write, version was writing to (using __raw_writel):
 >>
->> I realise the original code is wrong, so doesn't need to be fixed in
->> this patch, but can we please move the assignments out of the seq_printf
->> calls.
+>>   AT91_VA_BASE_SYS + AT91_PS_CR
+>>
+>> The new version is writing, also using __raw_writel, to:
+>>
+>>   AT91_PS_CR
+>>
+>> The value of AT91_PS_CR is not changed in this patch. Assuming that
+>> AT91_VA_BASE_SYS for at91x40 (which at a quick glance it is not), then
+>> the old and the new version of the code are not writing to the same
+>> address.
+>>
+>> Was it previously incorrect, or is it incorrect now?
+> it's as we update
 > 
-> Well, I would not say "wrong". But ugly, for sure. I queue a patch to
-> correct this just before this one.
+> +#define AT91_PS		0xffff4000	/* Power Save */
 
 
-Sorry, I meant ugly rather than wrong. When I first saw it, I thought your 
-replace script had made a mistake :-). 
+Ah, I missed the new value of AT91_PS. Sorry for the confusion.
 
 ~Ryan
