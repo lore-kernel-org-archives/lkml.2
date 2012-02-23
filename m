@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab2BWV1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:27:53 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58410 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab2BWV1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:27:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of neilaclarkson@gmail.com designates 10.180.109.225 as permitted sender) smtp.mail=neilaclarkson@gmail.com; dkim=pass header.i=neilaclarkson@gmail.com
+	id S1757154Ab2BWV3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:29:06 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39432 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757101Ab2BWV3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:29:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
+Date: Thu, 23 Feb 2012 22:32:58 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: John Stultz <john.stultz@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+References: <201202070200.55505.rjw@sisk.pl> <4F45DBDB.4010308@linux.vnet.ibm.com> <201202232226.43104.rjw@sisk.pl>
+In-Reply-To: <201202232226.43104.rjw@sisk.pl>
 MIME-Version: 1.0
-Date: Thu, 23 Feb 2012 21:27:50 +0000
-Message-ID: <CADzG2TCx8OtpBqwEA1VNN-PUFcPU5WBns2D5LtsZZu9mXUgeOQ@mail.gmail.com>
-Subject: ext4 superblock last write time clearly isnt the last write time
-From: Neil Clarkson <neilaclarkson@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202232232.59114.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isn't the s_wtime field of the ext4 superblock supposed to show the
-time, in seconds since the epoch, of the last write to the file
-system? All the public domain info I found seems to indicate so, as
-does this excerpt of code from 'static int ext4_commit_super(struct
-super_block *sb, int sync)'
+On Thursday, February 23, 2012, Rafael J. Wysocki wrote:
+> On Thursday, February 23, 2012, Srivatsa S. Bhat wrote:
+> > On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
+> > 
+> > > On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
+> > >> On 02/22/2012 10:19 AM, John Stultz wrote:
+> > >>
+> > >>> On Wed, 2012-02-22 at 00:31 +0100, Rafael J. Wysocki wrote:
+> > >>>> Hi all,
+> > >>>>
+> > >>>> After the feedback so far I've decided to follow up with a refreshed patchset.
+> > >>>> The first two patches from the previous one went to linux-pm/linux-next
+> > >>>> and I included the recent evdev patch from Arve (with some modifications)
+> > >>>> to this patchset for completness.
+> > >>>
+> > >>> Hey Rafael, 
+> > >>> 	Thanks again for posting this! I've started playing around with it in a
+> > >>> kvm environment, and got the following warning after echoing off >
+> > >>> autosleep:
+> > >>> ...
+> > >>> PM: resume of devices complete after 185.615 msecs
+> > >>> PM: Finishing wakeup.
+> > >>> Restarting tasks ... done.
+> > >>> PM: Syncing filesystems ... done.
+> > >>> PM: Preparing system for mem sleep
+> > >>> Freezing user space processes ... 
+> > >>> Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
+> > >>> bash            D ffff880015714010 
+> > >>
+> > >>
+> > >> Ah.. I think I know what is the problem here..
+> > >>
+> > >> The kernel was freezing userspace processes and meanwhile, you wrote "off"
+> > >> to autosleep. So, as a result, this userspace process (bash) just now
+> > >> entered kernel mode. Unfortunately, the autosleep_lock is held for too long,
+> > >> that is, something like:
+> > >>
+> > >> acquire autosleep_lock
+> > >> modify autosleep_state
+> > >>                                <============== "A"
+> > >>  pm_suspend or hibernate()
+> > >>
+> > >> release autosleep_lock
+> > >>
+> > >> At point marked "A", we should have released the autosleep lock and only then
+> > >> entered pm_suspend or hibernate(). Since the current code holds the lock and
+> > >> enters suspend/hibernate, the userspace process that wrote "off" to autosleep
+> > >> (or even userspace process that writes to /sys/power/state will end up waiting
+> > >> on autosleep_lock, thus failing the freezing operation.)
+> > >>
+> > >> So the solution is to always release the autosleep lock before entering
+> > >> suspend/hibernation.
+> > > 
+> > > Well, the autosleep lock is intentionally held around suspend/hibernation in
+> > > try_to_suspend(), because otherwise it would be possible to trigger automatic
+> > > suspend right after user space has disabled it.
+> > >
+> > 
+> > 
+> > Hmm.. I was just wondering if we could avoid holding yet another lock in the
+> > suspend/hibernate path, if possible.. 
+> > 
+> >  
+> > > I think the solution is to make pm_autosleep_lock() do a _trylock() and
+> > > return error code if already locked.
+> > >
+> > 
+> > ... and also do a trylock() in pm_autosleep_set_state() right?.... that is
+> > where John hit the problem..
+> > 
+> > By the way, I am just curious.. how difficult will this make it for userspace
+> > to disable autosleep? I mean, would a trylock mean that the user has to keep
+> > fighting until he finally gets a chance to disable autosleep?
+> 
+> That's a good point, so I think it may be a good idea to do
+> mutex_lock_interruptible() in pm_autosleep_set_state() instead.
 
-	/*
-	 * If the file system is mounted read-only, don't update the
-	 * superblock write time.  This avoids updating the superblock
-	 * write time when we are mounting the root file system
-	 * read/only but we need to replay the journal; at that point,
-	 * for people who are east of GMT and who make their clock
-	 * tick in localtime for Windows bug-for-bug compatibility,
-	 * the clock is set in the future, and this will cause e2fsck
-	 * to complain and force a full file system check.
-	 */
-	if (!(sb->s_flags & MS_RDONLY))
-		es->s_wtime = cpu_to_le32(get_seconds());
+Now that I think of it, perhaps it's a good idea to just make
+pm_autosleep_lock() do mutex_lock_interruptible() _and_ make
+pm_autosleep_set_state() use pm_autosleep_lock().
 
+What do you think?
 
-Yet I noticed, on the 3 systems available to me, that it isn't
-anything of the sort. Using dumpe2fs -h to show the timestamp fields
-in the superblock, one seems be set at a half hour post file system
-creation, the others clearly mirror the last mount time. None of them
-are showing the time of the last write. None of them are mounted read
-only.
-
-Linux Wallace 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
-2012 x86_64 x86_64 x86_64 GNU/Linux (Ubuntu 11.10)
-
-Filesystem created:       Wed Nov 23 13:42:18 2011
-Last mount time:          Tue Feb 21 09:07:54 2012
-Last write time:          Wed Nov 23 14:12:57 2011
-
-Linux VM-OpenSUSE2 2.6.37.1-1.2-desktop #1 SMP PREEMPT 2011-02-21
-10:34:10 +0100 x86_64 x86_64 x86_64 GNU/Linux (Open SUSE 11.4)
-
-Filesystem created:       Fri Sep 23 18:04:27 2011
-Last mount time:          Fri Jan 27 09:34:55 2012
-Last write time:          Fri Jan 27 09:34:55 2012
-
-Linux fedoraVM 2.6.35.6-45.fc14.i686 #1 SMP Mon Oct 18 23:56:17 UTC
-2010 i686 i686 i386 GNU/Linux (Fedora 14)
-
-Filesystem created:       Wed Nov  3 07:24:17 2010
-Last mount time:          Fri Feb  3 13:04:41 2012
-Last write time:          Fri Feb  3 13:04:41 2012
-
-Clearly I'm missing something? Anyone know what? I've not found any
-hints so far.
+Rafael
