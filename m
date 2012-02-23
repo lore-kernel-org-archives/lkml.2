@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab2BWXYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:24:42 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39848 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757337Ab2BWXXh convert rfc822-to-8bit (ORCPT
+	id S1757432Ab2BWXZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:25:06 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64074 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab2BWXZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:23:37 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Joseph Parmelee" <jparmele@wildbear.com>
-References: <1qKPXd1RqtP.A.wjG.ShsRPB@chimera>
-In-Reply-To: <1qKPXd1RqtP.A.wjG.ShsRPB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Thu, 23 Feb 2012 18:25:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.225.73 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Thu, 23 Feb 2012 15:24:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: vgoyal@redhat.com, axboe@kernel.dk, hughd@google.com, avi@redhat.com,
+        nate@cpanel.net, cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120223232458.GN22536@google.com>
+References: <1330036246-21633-1-git-send-email-tj@kernel.org>
+ <20120223144336.58742e1b.akpm@linux-foundation.org>
+ <20120223230123.GL22536@google.com>
+ <20120223231204.GM22536@google.com>
+ <20120223152223.43c72ccb.akpm@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <JM4ZOHxb-FL.A.E8G.ghsRPB@chimera>
-Subject: [Bug #42631] Sound broken in 3.2.0 and 3.2.1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 24 Feb 2012 00:06:33 +0100 (CET)
+In-Reply-To: <20120223152223.43c72ccb.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 3.1 and 3.2.
+Hello, Andrew.
 
-The following bug entry is on the current list of known regressions
-introduced between 3.1 and 3.2.  Please verify if it still should
-be listed and let the tracking team know (either way).
+On Thu, Feb 23, 2012 at 03:22:23PM -0800, Andrew Morton wrote:
+> I forget how those patches work, but they might be vulnerable to the
+> same issue.  If the block layer can handle the failed allocation
+> attempt and retry at the next I/O event then I guess that would be
+> acceptable; we'd lose a bit of statistical info occasionally, but who
+> cares.
+>
+> But ISTR that we can't handle allocation failures here?
 
+It's just gonna skip percpu stats.  The problem with percpu mempool is
+more about what __GFP_WAIT means in the interface.  Handling alloc
+failure isn't difficult at all.
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42631
-Subject		: Sound broken in 3.2.0 and 3.2.1
-Submitter	: Joseph Parmelee <jparmele@wildbear.com>
-Date		: 2012-01-13 19:44 (42 days old)
-Message-ID	: <alpine.LNX.2.00.1201131241090.1239@bruno>
-References	: http://marc.info/?l=linux-kernel&m=132648462806235&w=2
+Thanks.
 
-
+-- 
+tejun
