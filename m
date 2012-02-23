@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2BWK2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 05:28:51 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:46074 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932121Ab2BWK2t (ORCPT
+	id S932147Ab2BWKgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 05:36:12 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63068 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2BWKgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 05:28:49 -0500
-Date: Thu, 23 Feb 2012 12:28:40 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: Felipe Balbi <balbi@ti.com>, Danny Kukawka <dkukawka@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] at91_udc: linux/prefetch.h included twice
-Message-ID: <20120223102839.GX18463@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1329328567-5012-1-git-send-email-danny.kukawka@bisect.de>
+	Thu, 23 Feb 2012 05:36:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8D1TCnBmjJJF2KCx"
-Content-Disposition: inline
-In-Reply-To: <1329328567-5012-1-git-send-email-danny.kukawka@bisect.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F45B35D.1010702@zytor.com>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	<tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	<CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
+	<4F45B35D.1010702@zytor.com>
+Date: Thu, 23 Feb 2012 02:36:10 -0800
+X-Google-Sender-Auth: Tr0R2Y4sN0BYTGrX_emivvncHXM
+Message-ID: <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, matt.fleming@intel.com, mingo@redhat.com
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org, keithp@keithp.com,
+        rui.zhang@intel.com, huang.ying.caritas@gmail.com,
+        stable@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf303ea5f862560404b99f36d9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---8D1TCnBmjJJF2KCx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--20cf303ea5f862560404b99f36d9
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Feb 15, 2012 at 06:56:07PM +0100, Danny Kukawka wrote:
-> drivers/usb/gadget/at91_udc.c included 'linux/prefetch.h' twice,
-> remove the duplicate.
->=20
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+On Wed, Feb 22, 2012 at 7:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/22/2012 06:20 PM, Yinghai Lu wrote:
+>>
+>> Why is MAXMEM used here?
+>>
+>> EFI reserved area could be above 4G?
+>>
+>> if that is the case, you will map all mmio hole below 4g.
+>>
+>
+> OK, dropping this patch for now, at least from -urgent.
+>
+> We really need to restrict the memory types we map, at least without
+> ioremap() called on them. =A0In theory, on x86-64, we could have a
+> dedicated "1:1" address for each physical address, but there is no good
+> reason we should ever map memory types other than RAM, ACPI and EFI by
+> default -- with the possible exception of the low 1 MiB legacy area.
 
-applied, thanks
+please check attach patch for tip/efi branch.
 
---=20
-balbi
+Thanks
 
---8D1TCnBmjJJF2KCx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+       Yinghai
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+--20cf303ea5f862560404b99f36d9
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_efi_map_end.patch"
+Content-Disposition: attachment; filename="fix_efi_map_end.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gyznl0bj0
 
-iQIcBAEBAgAGBQJPRhTXAAoJEIaOsuA1yqRE8QAP/iJBZadkWdXuItQ17WlEjXEt
-AbhXENxXVQE4Gm228VvbZyELgLWvObkHsX6zzA8wnk2hGHXrZKpO3ViVEbwhHFCS
-vqi3Hm0QL2vtGSyl6JTsq30sP1Zkj9mQAWpEVDIrPalfM8EQ/cUQYJ3lZ0/+d5v3
-NLz7Bsc60k2ioQIWTbPP6Or8GDupZLOWw6h3Zc53hX+PWGO2HJsAaZFcewldwlxS
-740swkLLLRgpVPrOik1O/lAeZbCMUx31Y9agAxt3cSHGjw+b6rBLiKmaftq/iEpv
-jFF9jB7+klWyPmimmxN2FAmakqvGl9XZSVYahuS71MYwlwdIy6tOfd+OgGzOy9L5
-/O3lXHfePwsY20o2cYFYTGcPRe19BEamXf3LtdtCJYdkcubtixHNfSyGmRHUuPh/
-I4z/bBmLumV3anIA1EgINQjn5qtKGUe9XtCJg8Ghjrn+N+8F0v4AunYRqt86p9Ia
-bPnisXEetBP7a6/xj6V+qeLjvBBhdt2LypgmX72Vp7Uyh0QOhkz9TrFBMrVoCwgM
-WcFJgNRfSBkywbXbaTheL/Jx3azCIeWGqrHuo7eWNuKB8XUpKFUhRga/XNHn/w/S
-+JBZej9uIF+qaSOJTvNK8yxowd/7nFIzbikjTMKEJPFO40gV0i+aSaa8w7DVDzto
-q1yVHOq8yxlgGfoYj28O
-=mhGd
------END PGP SIGNATURE-----
-
---8D1TCnBmjJJF2KCx--
+U3ViamVjdDogW1BBVENIXSB4ODYsIGVmaTogdXNlIGU4MjBfZW5kX3Bmbl9lZmkgd2l0aCBsb3df
+cGZuIGFuZCBtYXhfcGZuCkZyb206IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KClNv
+IGF2b2lkIHRvIG1hcCBtbWlvIGJlbG93IDRnLCBpZiBzeXN0ZW0gaGF2ZSBFRkkgcmFuZ2UgYWJv
+dmUgNGcuCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+Cgot
+LS0KIGFyY2gveDg2L2tlcm5lbC9zZXR1cC5jIHwgICA0MiArKysrKysrKysrKysrKysrKysrKysr
+KystLS0tLS0tLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAyNCBpbnNlcnRpb25zKCspLCAx
+OCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVwLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYva2VybmVsL3NldHVwLmMKKysr
+IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwpAQCAtNjgxLDYgKzY4MSwyNyBAQCBz
+dGF0aWMgaW50IF9faW5pdCBwYXJzZV9yZXNlcnZlbG93KGNoYXIKIAogZWFybHlfcGFyYW0oInJl
+c2VydmVsb3ciLCBwYXJzZV9yZXNlcnZlbG93KTsKIAorc3RhdGljIHVuc2lnbmVkIGxvbmcgX19p
+bml0IGU4MjBfZW5kX3Bmbl9lZmkodW5zaWduZWQgbG9uZyBlbmRfcGZuLAorCQkJCQkgICAgIHVu
+c2lnbmVkIGxvbmcgbGltaXRfcGZuKQoreworI2lmZGVmIENPTkZJR19YODZfNjQKKwkvKgorCSAq
+IFRoZXJlIG1heSBiZSByZWdpb25zIGFmdGVyIHRoZSBsYXN0IEU4MjBfUkFNIHJlZ2lvbiB0aGF0
+IHdlCisJICogd2FudCB0byBpbmNsdWRlIGluIHRoZSBrZXJuZWwgZGlyZWN0IG1hcHBpbmcgYmVj
+YXVzZSB0aGVpcgorCSAqIGNvbnRlbnRzIGFyZSBuZWVkZWQgYXQgcnVudGltZS4KKwkgKi8KKwlp
+ZiAoZWZpX2VuYWJsZWQpIHsKKwkJdW5zaWduZWQgbG9uZyBlZmlfZW5kOworCisJCWVmaV9lbmQg
+PSBlODIwX2VuZF9wZm4obGltaXRfcGZuLCBFODIwX1JFU0VSVkVEX0VGSSk7CisJCWlmIChlZmlf
+ZW5kID4gZW5kX3BmbikKKwkJCWVuZF9wZm4gPSBlZmlfZW5kOworCX0KKyNlbmRpZgorCisJcmV0
+dXJuIGVuZF9wZm47Cit9CisKIC8qCiAgKiBEZXRlcm1pbmUgaWYgd2Ugd2VyZSBsb2FkZWQgYnkg
+YW4gRUZJIGxvYWRlci4gIElmIHNvLCB0aGVuIHdlIGhhdmUgYWxzbyBiZWVuCiAgKiBwYXNzZWQg
+dGhlIGVmaSBtZW1tYXAsIHN5c3RhYiwgZXRjLiwgc28gd2Ugc2hvdWxkIHVzZSB0aGVzZSBkYXRh
+IHN0cnVjdHVyZXMKQEAgLTkzNCwzMCArOTU1LDE1IEBAIHZvaWQgX19pbml0IHNldHVwX2FyY2go
+Y2hhciAqKmNtZGxpbmVfcCkKIAlpbml0X2dicGFnZXMoKTsKIAogCS8qIG1heF9wZm5fbWFwcGVk
+IGlzIHVwZGF0ZWQgaGVyZSAqLwotCWVuZF9wZm4gPSBtYXhfbG93X3BmbjsKLQotI2lmZGVmIENP
+TkZJR19YODZfNjQKLQkvKgotCSAqIFRoZXJlIG1heSBiZSByZWdpb25zIGFmdGVyIHRoZSBsYXN0
+IEU4MjBfUkFNIHJlZ2lvbiB0aGF0IHdlCi0JICogd2FudCB0byBpbmNsdWRlIGluIHRoZSBrZXJu
+ZWwgZGlyZWN0IG1hcHBpbmcgYmVjYXVzZSB0aGVpcgotCSAqIGNvbnRlbnRzIGFyZSBuZWVkZWQg
+YXQgcnVudGltZS4KLQkgKi8KLQlpZiAoZWZpX2VuYWJsZWQpIHsKLQkJdW5zaWduZWQgbG9uZyBl
+ZmlfZW5kOwotCi0JCWVmaV9lbmQgPSBlODIwX2VuZF9wZm4oTUFYTUVNPj5QQUdFX1NISUZULCBF
+ODIwX1JFU0VSVkVEX0VGSSk7Ci0JCWlmIChlZmlfZW5kID4gZW5kX3BmbikKLQkJCWVuZF9wZm4g
+PSBlZmlfZW5kOwotCX0KLSNlbmRpZgotCisJZW5kX3BmbiA9IGU4MjBfZW5kX3Bmbl9lZmkobWF4
+X2xvd19wZm4sIDFVTDw8KDMyLVBBR0VfU0hJRlQpKTsKIAltYXhfbG93X3Bmbl9tYXBwZWQgPSBp
+bml0X21lbW9yeV9tYXBwaW5nKDAsIGVuZF9wZm4gPDwgUEFHRV9TSElGVCk7CiAJbWF4X3Bmbl9t
+YXBwZWQgPSBtYXhfbG93X3Bmbl9tYXBwZWQ7CiAKICNpZmRlZiBDT05GSUdfWDg2XzY0CiAJaWYg
+KG1heF9wZm4gPiBtYXhfbG93X3BmbikgeworCQllbmRfcGZuID0gZTgyMF9lbmRfcGZuX2VmaSht
+YXhfcGZuLCBNQVhNRU0+PlBBR0VfU0hJRlQpOwogCQltYXhfcGZuX21hcHBlZCA9IGluaXRfbWVt
+b3J5X21hcHBpbmcoMVVMPDwzMiwKLQkJCQkJCSAgICAgbWF4X3Bmbjw8UEFHRV9TSElGVCk7CisJ
+CQkJCQkgICAgIGVuZF9wZm48PFBBR0VfU0hJRlQpOwogCQkvKiBjYW4gd2UgcHJlc2V2ZSBtYXhf
+bG93X3BmbiA/Ki8KIAkJbWF4X2xvd19wZm4gPSBtYXhfcGZuOwogCX0K
+--20cf303ea5f862560404b99f36d9--
