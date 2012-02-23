@@ -1,101 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab2BWO3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:29:35 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39284 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756185Ab2BWO3d convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:29:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jiangtao.jit@gmail.com designates 10.152.104.143 as permitted sender) smtp.mail=jiangtao.jit@gmail.com; dkim=pass header.i=jiangtao.jit@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAJd=RBCF+1xON8VHCHt1KujSkgn9-XNwSHyf7-dfVYZLNFpyFg@mail.gmail.com>
-References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
-	<CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com>
-	<4F411373.50304@gmail.com>
-	<CAOe6JY3yM24CGYOpPc98QfjRYah5U+L9DB46WH60LVrxN9=eRQ@mail.gmail.com>
-	<CAMzpN2gnOgZWZFTVHnL8ySQSXCykc9ZpoDYMUvHGPVpy4OVWOw@mail.gmail.com>
-	<CAOe6JY21ao5BUcsOfS2S1xtp0iuO+9O_O9qK=AMNmjZGmTMGOw@mail.gmail.com>
-	<CAJd=RBCF+1xON8VHCHt1KujSkgn9-XNwSHyf7-dfVYZLNFpyFg@mail.gmail.com>
-Date: Thu, 23 Feb 2012 22:29:31 +0800
-Message-ID: <CAOe6JY2_E7FCAHkLJpG5BF9xvMiH4=MDmEkFzJOcViKBWBF6kw@mail.gmail.com>
-Subject: Re: A problem with percpu variable cpu_number
-From: Tao Jiang <jiangtao.jit@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Brian Gerst <brgerst@gmail.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756142Ab2BWO0c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:26:32 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:35635 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367Ab2BWO0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 09:26:30 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
+        arnd@arndb.de
+Subject: [PATCH v3 08/21] ARM: at91: move at91rm9200 sdramc defines to at91rm9200_sdramc.h
+Date: Thu, 23 Feb 2012 15:25:52 +0100
+Message-Id: <1a269ade22bb65d0afc0d20e0a19602453fae04a.1330006537.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
+References: <cover.1330006537.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
+References: <cover.1330006537.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton:
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Thanks for your remind
-and sorry for my poor English.
+This cleanup is done to allow to have multiple SoC in the same image.
 
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   44 --------------
+ .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   63 ++++++++++++++++++++
+ arch/arm/mach-at91/pm.c                            |    2 +-
+ arch/arm/mach-at91/pm.h                            |    7 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |    3 +-
+ 5 files changed, 70 insertions(+), 49 deletions(-)
+ create mode 100644 arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
 
-2012/2/22 Hillf Danton <dhillf@gmail.com>:
-> On Wed, Feb 22, 2012 at 7:13 PM, Tao Jiang <jiangtao.jit@gmail.com> wrote:
->> Hi:
->>
->> Thank you all.
->>
->> So in boot_cpu_init(), it will always set bit 0 to these masks.
->> If the boot cpu is the first processor, it's the right case.
->> And if the BP is not the first one, is it wrong?
->> But can it happen that the BP is not cpu0?
->
-> BP could be not "the first one".
-> Due to that current code boots fine, I guess, you mess
-> logic CPU with hard CPU.
->
-> btw, replying messages in this way looks not fine.
->
->> Thank you.
->>
->>
->> 2012/2/22 Brian Gerst <brgerst@gmail.com>:
->>> On Tue, Feb 21, 2012 at 9:29 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
->>>> On 02/21/2012 08:41 PM, Tao Jiang wrote:
->>>>>
->>>>> Hi Cong Wang:
->>>>>
->>>>> I read the file vmlinux.lds.S in arch/x86/kernel
->>>>> section .data..percpu is between .init.data and .init.end
->>>>> Is that means these percpu variables will be freed after init?
->>>>
->>>>
->>>> % grep -e __init_begin -e __init_end -e __per_cpu_start -e __per_cpu_end
->>>> /boot/System.map
->>>> 0000000000000000 D __per_cpu_start
->>>> 0000000000014bc0 D __per_cpu_end
->>>> ffffffff81cf3000 D __init_begin
->>>> ffffffff81dfc000 R __init_end
->>>> % objdump -d -j .data..percpu vmlinux | grep cpu_number
->>>> 000000000000dc38 <cpu_number>:
->>>
->>> The .data..percpu section is placed in the init section, but x86-64 is
->>> a special case as noted below.  The boot cpu is pointed to the init
->>> percpu section until setup_per_cpu_areas() is called, when it switches
->>> to the regular percpu area.  The init percpu data is then freed with
->>> all other init data.
->>>
->>> The reason the percpu symbols start at virtual address 0 on x86-64 is
->>> because of the requirement that gs_base must be a canonical address
->>> (it cannot be a simple offset like x86-32).  But, the data is still
->>> loaded in the init section in memory.  See
->>> arch/x86/kernel/vmlinux.lds.S for the explanation of how the linker
->>> changes the program headers to set the virtual address to zero but
->>> keeps the load address in the init section.
->>>
->>> To answer the original question. in the case of cpu_number, it is set
->>> to zero in the init section because it doesn't have an explicit
->>> initializer.  Therefore the boot cpu will always read zero for the
->>> cpu_number, even before setup_per_cpu_areas() is called.
->>>
->>>
->>> --
->>> Brian Gerst
->> --
+diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
+index d34e4ed..0eb031b 100644
+--- a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
++++ b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
+@@ -87,50 +87,6 @@
+ #define		AT91_SMC_RWHOLD		(7 << 28)		/* Read & Write Signal Hold Time */
+ #define			AT91_SMC_RWHOLD_(x)	((x) << 28)
+ 
+-/* SDRAM Controller registers */
+-#define AT91_SDRAMC_MR		(AT91_MC + 0x90)	/* Mode Register */
+-#define		AT91_SDRAMC_MODE	(0xf << 0)		/* Command Mode */
+-#define			AT91_SDRAMC_MODE_NORMAL		(0 << 0)
+-#define			AT91_SDRAMC_MODE_NOP		(1 << 0)
+-#define			AT91_SDRAMC_MODE_PRECHARGE	(2 << 0)
+-#define			AT91_SDRAMC_MODE_LMR		(3 << 0)
+-#define			AT91_SDRAMC_MODE_REFRESH	(4 << 0)
+-#define		AT91_SDRAMC_DBW		(1   << 4)		/* Data Bus Width */
+-#define			AT91_SDRAMC_DBW_32	(0 << 4)
+-#define			AT91_SDRAMC_DBW_16	(1 << 4)
+-
+-#define AT91_SDRAMC_TR		(AT91_MC + 0x94)	/* Refresh Timer Register */
+-#define		AT91_SDRAMC_COUNT	(0xfff << 0)		/* Refresh Timer Count */
+-
+-#define AT91_SDRAMC_CR		(AT91_MC + 0x98)	/* Configuration Register */
+-#define		AT91_SDRAMC_NC		(3   <<  0)		/* Number of Column Bits */
+-#define			AT91_SDRAMC_NC_8	(0 << 0)
+-#define			AT91_SDRAMC_NC_9	(1 << 0)
+-#define			AT91_SDRAMC_NC_10	(2 << 0)
+-#define			AT91_SDRAMC_NC_11	(3 << 0)
+-#define		AT91_SDRAMC_NR		(3   <<  2)		/* Number of Row Bits */
+-#define			AT91_SDRAMC_NR_11	(0 << 2)
+-#define			AT91_SDRAMC_NR_12	(1 << 2)
+-#define			AT91_SDRAMC_NR_13	(2 << 2)
+-#define		AT91_SDRAMC_NB		(1   <<  4)		/* Number of Banks */
+-#define			AT91_SDRAMC_NB_2	(0 << 4)
+-#define			AT91_SDRAMC_NB_4	(1 << 4)
+-#define		AT91_SDRAMC_CAS		(3   <<  5)		/* CAS Latency */
+-#define			AT91_SDRAMC_CAS_2	(2 << 5)
+-#define		AT91_SDRAMC_TWR		(0xf <<  7)		/* Write Recovery Delay */
+-#define		AT91_SDRAMC_TRC		(0xf << 11)		/* Row Cycle Delay */
+-#define		AT91_SDRAMC_TRP		(0xf << 15)		/* Row Precharge Delay */
+-#define		AT91_SDRAMC_TRCD	(0xf << 19)		/* Row to Column Delay */
+-#define		AT91_SDRAMC_TRAS	(0xf << 23)		/* Active to Precharge Delay */
+-#define		AT91_SDRAMC_TXSR	(0xf << 27)		/* Exit Self Refresh to Active Delay */
+-
+-#define AT91_SDRAMC_SRR		(AT91_MC + 0x9c)	/* Self Refresh Register */
+-#define AT91_SDRAMC_LPR		(AT91_MC + 0xa0)	/* Low Power Register */
+-#define AT91_SDRAMC_IER		(AT91_MC + 0xa4)	/* Interrupt Enable Register */
+-#define AT91_SDRAMC_IDR		(AT91_MC + 0xa8)	/* Interrupt Disable Register */
+-#define AT91_SDRAMC_IMR		(AT91_MC + 0xac)	/* Interrupt Mask Register */
+-#define AT91_SDRAMC_ISR		(AT91_MC + 0xb0)	/* Interrupt Status Register */
+-
+ /* Burst Flash Controller register */
+ #define AT91_BFC_MR		(AT91_MC + 0xc0)	/* Mode Register */
+ #define		AT91_BFC_BFCOM		(3   <<  0)		/* Burst Flash Controller Operating Mode */
+diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
+new file mode 100644
+index 0000000..7ad3597
+--- /dev/null
++++ b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
+@@ -0,0 +1,63 @@
++/*
++ * arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
++ *
++ * Copyright (C) 2005 Ivan Kokshaysky
++ * Copyright (C) SAN People
++ *
++ * Memory Controllers (SDRAMC only) - System peripherals registers.
++ * Based on AT91RM9200 datasheet revision E.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef AT91RM9200_SDRAMC_H
++#define AT91RM9200_SDRAMC_H
++
++/* SDRAM Controller registers */
++#define AT91RM9200_SDRAMC_MR		(AT91_MC + 0x90)	/* Mode Register */
++#define		AT91RM9200_SDRAMC_MODE	(0xf << 0)		/* Command Mode */
++#define			AT91RM9200_SDRAMC_MODE_NORMAL		(0 << 0)
++#define			AT91RM9200_SDRAMC_MODE_NOP		(1 << 0)
++#define			AT91RM9200_SDRAMC_MODE_PRECHARGE	(2 << 0)
++#define			AT91RM9200_SDRAMC_MODE_LMR		(3 << 0)
++#define			AT91RM9200_SDRAMC_MODE_REFRESH	(4 << 0)
++#define		AT91RM9200_SDRAMC_DBW		(1   << 4)		/* Data Bus Width */
++#define			AT91RM9200_SDRAMC_DBW_32	(0 << 4)
++#define			AT91RM9200_SDRAMC_DBW_16	(1 << 4)
++
++#define AT91RM9200_SDRAMC_TR		(AT91_MC + 0x94)	/* Refresh Timer Register */
++#define		AT91RM9200_SDRAMC_COUNT	(0xfff << 0)		/* Refresh Timer Count */
++
++#define AT91RM9200_SDRAMC_CR		(AT91_MC + 0x98)	/* Configuration Register */
++#define		AT91RM9200_SDRAMC_NC		(3   <<  0)		/* Number of Column Bits */
++#define			AT91RM9200_SDRAMC_NC_8	(0 << 0)
++#define			AT91RM9200_SDRAMC_NC_9	(1 << 0)
++#define			AT91RM9200_SDRAMC_NC_10	(2 << 0)
++#define			AT91RM9200_SDRAMC_NC_11	(3 << 0)
++#define		AT91RM9200_SDRAMC_NR		(3   <<  2)		/* Number of Row Bits */
++#define			AT91RM9200_SDRAMC_NR_11	(0 << 2)
++#define			AT91RM9200_SDRAMC_NR_12	(1 << 2)
++#define			AT91RM9200_SDRAMC_NR_13	(2 << 2)
++#define		AT91RM9200_SDRAMC_NB		(1   <<  4)		/* Number of Banks */
++#define			AT91RM9200_SDRAMC_NB_2	(0 << 4)
++#define			AT91RM9200_SDRAMC_NB_4	(1 << 4)
++#define		AT91RM9200_SDRAMC_CAS		(3   <<  5)		/* CAS Latency */
++#define			AT91RM9200_SDRAMC_CAS_2	(2 << 5)
++#define		AT91RM9200_SDRAMC_TWR		(0xf <<  7)		/* Write Recovery Delay */
++#define		AT91RM9200_SDRAMC_TRC		(0xf << 11)		/* Row Cycle Delay */
++#define		AT91RM9200_SDRAMC_TRP		(0xf << 15)		/* Row Precharge Delay */
++#define		AT91RM9200_SDRAMC_TRCD	(0xf << 19)		/* Row to Column Delay */
++#define		AT91RM9200_SDRAMC_TRAS	(0xf << 23)		/* Active to Precharge Delay */
++#define		AT91RM9200_SDRAMC_TXSR	(0xf << 27)		/* Exit Self Refresh to Active Delay */
++
++#define AT91RM9200_SDRAMC_SRR		(AT91_MC + 0x9c)	/* Self Refresh Register */
++#define AT91RM9200_SDRAMC_LPR		(AT91_MC + 0xa0)	/* Low Power Register */
++#define AT91RM9200_SDRAMC_IER		(AT91_MC + 0xa4)	/* Interrupt Enable Register */
++#define AT91RM9200_SDRAMC_IDR		(AT91_MC + 0xa8)	/* Interrupt Disable Register */
++#define AT91RM9200_SDRAMC_IMR		(AT91_MC + 0xac)	/* Interrupt Mask Register */
++#define AT91RM9200_SDRAMC_ISR		(AT91_MC + 0xb0)	/* Interrupt Status Register */
++
++#endif
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index aac00ce..8046a50 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -315,7 +315,7 @@ static int __init at91_pm_init(void)
+ 
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
+-	at91_sys_write(AT91_SDRAMC_LPR, 0);
++	at91_sys_write(AT91RM9200_SDRAMC_LPR, 0);
+ #endif
+ 
+ 	suspend_set_ops(&at91_pm_ops);
+diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+index bba9ce1..41cdd2b 100644
+--- a/arch/arm/mach-at91/pm.h
++++ b/arch/arm/mach-at91/pm.h
+@@ -13,6 +13,7 @@
+ 
+ #ifdef CONFIG_ARCH_AT91RM9200
+ #include <mach/at91rm9200_mc.h>
++#include <mach/at91rm9200_sdramc.h>
+ 
+ /*
+  * The AT91RM9200 goes into self-refresh mode with this command, and will
+@@ -26,7 +27,7 @@
+ 
+ static inline void at91rm9200_standby(void)
+ {
+-	u32 lpr = at91_sys_read(AT91_SDRAMC_LPR);
++	u32 lpr = at91_sys_read(AT91RM9200_SDRAMC_LPR);
+ 
+ 	asm volatile(
+ 		"b    1f\n\t"
+@@ -37,8 +38,8 @@ static inline void at91rm9200_standby(void)
+ 		"    mcr    p15, 0, %0, c7, c0, 4\n\t"
+ 		"    str    %5, [%1, %2]"
+ 		:
+-		: "r" (0), "r" (AT91_BASE_SYS), "r" (AT91_SDRAMC_LPR),
+-		  "r" (1), "r" (AT91_SDRAMC_SRR),
++		: "r" (0), "r" (AT91_BASE_SYS), "r" (AT91RM9200_SDRAMC_LPR),
++		  "r" (1), "r" (AT91RM9200_SDRAMC_SRR),
+ 		  "r" (lpr));
+ }
+ 
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index e31a5f2..aee0b2c 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -18,6 +18,7 @@
+ 
+ #if defined(CONFIG_ARCH_AT91RM9200)
+ #include <mach/at91rm9200_mc.h>
++#include <mach/at91rm9200_sdramc.h>
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ #include <mach/at91sam9_ddrsdr.h>
+ #else
+@@ -131,7 +132,7 @@ ENTRY(at91_slow_clock)
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	/* Put SDRAM in self-refresh mode */
+ 	mov	tmp1, #1
+-	str	tmp1, [sdramc, #AT91_SDRAMC_SRR]
++	str	tmp1, [sdramc, #AT91RM9200_SDRAMC_SRR]
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ 
+ 	/* prepare for DDRAM self-refresh mode */
+-- 
+1.7.9
+
