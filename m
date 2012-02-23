@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab2BWVly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:41:54 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:28435 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755571Ab2BWVlx (ORCPT
+	id S1753441Ab2BWVrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:47:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45438 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2BWVrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:41:53 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: g.uQ4M4VM1ktrUeceqHjAmn35GrHa1pZ4GBniJ8cdqfmuiK
- zO5wZgqhq4W9k03twB8HqypktyC7aWvwa_rHUKAfabRP7jCzHnfEo72hUR4w
- l0OEotxYlMCwScx8CjqVVvhFzN3RpYfa505dmtd38549LU7zL3BJhHdG9oCJ
- ZvQt0Ba5IrZXBq00u62DjPyYAgtGd0wEhfs0SOGa.eaeI5agHIqgkbVks29L
- lPbFjvGd2MFTQT1z4ynPvHAn1sHutOPilpUuuVJ2zz3wFDg3mayCScMrTKvK
- XRSqAXIO5ygw1GGbGkl5zhABB.TRic7MBsysi6lGe1Df5hDExkbwq_ODjfH2
- uP5sjgC2PvQl0019Xii7S_wCAbs2HWSDLsfXksvO.1.jeI3nneVr_iWxgoyH
- o
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 23 Feb 2012 15:41:50 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-In-Reply-To: <4F469BC7.50705@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1202231536240.13554@router.home>
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 23 Feb 2012 16:47:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.193.136 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F46B3DF.7010402@gmail.com>
+Date: Fri, 24 Feb 2012 08:47:11 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de
+Subject: Re: [PATCH v3 17/21] ARM: at91: merge SRAM Memory banks thanks to
+ mirroring
+References: <cover.1330006537.git.nicolas.ferre@atmel.com> <c9b1e3ffbc322a1d1e1272062a9361abe536a33a.1330006537.git.nicolas.ferre@atmel.com>
+In-Reply-To: <c9b1e3ffbc322a1d1e1272062a9361abe536a33a.1330006537.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012, Dave Hansen wrote:
+On 24/02/12 01:26, Nicolas Ferre wrote:
 
-> > We may at this point be getting a reference to a task struct from another
-> > process not only from the current process (where the above procedure is
-> > valid). You rightly pointed out that the slab rcu free mechanism allows a
-> > free and a reallocation within the RCU period.
->
-> I didn't _mean_ to point that out, but I think I realize what you're
-> talking about.  What we have before this patch is this:
->
->         rcu_read_lock();
->         task = pid ? find_task_by_vpid(pid) : current;
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
+> merge them together to be able to have bigger and continuous
+> internal RAM.
 
-We take a refcount here on the mm ... See the code. We could simply take a
-refcount on the task as well if this is considered safe enough. If we have
-a refcount on the task then we do not need the refcount on the mm. Thats
-was your approach...
+I think this patch needs some comments in the code. As mentioned in the
+last round, this functionality is not documented, so it is not obvious
+how/why this works. This is especially true for any user who has
+problems with this code and then tries to look up those addresses in
+their at91 manual only to find the regions are reserved.
 
->         rcu_read_unlock();
+Nicolas, are you able to give an official Atmel stance on this?
 
-> > Is that a real difference or are you just playing with words?
->
-> I think we're talking about two different things:
-> 1. does RCU protect the pid->task lookup sufficiently?
+~Ryan
 
-I dont know
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  arch/arm/mach-at91/at91sam9260.c              |   13 +++++--------
+>  arch/arm/mach-at91/include/mach/at91sam9260.h |    4 ++++
+>  2 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+> index 14882ae..4ade265 100644
+> --- a/arch/arm/mach-at91/at91sam9260.c
+> +++ b/arch/arm/mach-at91/at91sam9260.c
+> @@ -310,15 +310,12 @@ static void __init at91sam9xe_map_io(void)
+>  
+>  static void __init at91sam9260_map_io(void)
+>  {
+> -	if (cpu_is_at91sam9xe()) {
+> +	if (cpu_is_at91sam9xe())
+>  		at91sam9xe_map_io();
+> -	} else if (cpu_is_at91sam9g20()) {
+> -		at91_init_sram(0, AT91SAM9G20_SRAM0_BASE, AT91SAM9G20_SRAM0_SIZE);
+> -		at91_init_sram(1, AT91SAM9G20_SRAM1_BASE, AT91SAM9G20_SRAM1_SIZE);
+> -	} else {
+> -		at91_init_sram(0, AT91SAM9260_SRAM0_BASE, AT91SAM9260_SRAM0_SIZE);
+> -		at91_init_sram(1, AT91SAM9260_SRAM1_BASE, AT91SAM9260_SRAM1_SIZE);
+> -	}
+> +	else if (cpu_is_at91sam9g20())
+> +		at91_init_sram(0, AT91SAM9G20_SRAM_BASE, AT91SAM9G20_SRAM_SIZE);
+> +	else
+> +		at91_init_sram(0, AT91SAM9260_SRAM_BASE, AT91SAM9260_SRAM_SIZE);
+>  }
+>  
+>  static void __init at91sam9260_ioremap_registers(void)
+> diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
+> index 2e47b6d..08ae9af 100644
+> --- a/arch/arm/mach-at91/include/mach/at91sam9260.h
+> +++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
+> @@ -113,6 +113,8 @@
+>  #define AT91SAM9260_SRAM0_SIZE	SZ_4K		/* Internal SRAM 0 size (4Kb) */
+>  #define AT91SAM9260_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+>  #define AT91SAM9260_SRAM1_SIZE	SZ_4K		/* Internal SRAM 1 size (4Kb) */
+> +#define AT91SAM9260_SRAM_BASE	0x002FF000	/* Internal SRAM base address */
+> +#define AT91SAM9260_SRAM_SIZE	SZ_8K		/* Internal SRAM size (8Kb) */
+>  
+>  #define AT91SAM9260_UHP_BASE	0x00500000	/* USB Host controller */
+>  
+> @@ -126,6 +128,8 @@
+>  #define AT91SAM9G20_SRAM0_SIZE	SZ_16K		/* Internal SRAM 0 size (16Kb) */
+>  #define AT91SAM9G20_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+>  #define AT91SAM9G20_SRAM1_SIZE	SZ_16K		/* Internal SRAM 1 size (16Kb) */
+> +#define AT91SAM9G20_SRAM_BASE	0x002FC000	/* Internal SRAM base address */
+> +#define AT91SAM9G20_SRAM_SIZE	SZ_32K		/* Internal SRAM size (32Kb) */
+>  
+>  #define AT91SAM9G20_UHP_BASE	0x00500000	/* USB Host controller */
+>  
 
-> 2. Can the task simply go away in the move/migrate_pages() calls?
-
-The task may go away but we need the mm to stay for migration.
-That is why a refcount is taken on the mm.
-
-The bug in migrate_pages() is that we do a rcu_unlock and a rcu_lock. If
-we drop those then we should be safe if the use of a task pointer within a
-rcu section is safe without taking a refcount.
 
