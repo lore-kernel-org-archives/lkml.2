@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2BWAC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 19:02:56 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34988 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab2BWACy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 19:02:54 -0500
-Date: Thu, 23 Feb 2012 09:02:40 +0900
-From: Norbert Preining <preining@logic.at>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
-Message-ID: <20120223000240.GA1931@gamma.logic.tuwien.ac.at>
-References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
+	id S1753468Ab2BWAFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 19:05:11 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58661 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752930Ab2BWAFI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 19:05:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	<1329845435-2313-7-git-send-email-wad@chromium.org>
+	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+Date: Wed, 22 Feb 2012 18:05:05 -0600
+Message-ID: <CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 21 Feb 2012, Brian Norris wrote:
-> This series addresses regression problems with
-> 
->     commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
->     ahci: start engine only during soft/hard resets
-> 
-> Because the fix provided by the above commit caused COMRESET failures and
-> 10 second boot-time/resume-time hangs for certain DVD drives, we need to
-> make the fix conditional to certain devices/platforms. Add a flag for this.
+On Wed, Feb 22, 2012 at 5:53 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Feb 22, 2012 at 3:38 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>> On Wed, Feb 22, 2012 at 11:48 AM, Will Drewry <wad@chromium.org> wrote:
+>>> On Wed, Feb 22, 2012 at 2:34 AM, Indan Zupancic <indan@nul.nu> wrote:
+>>>> On Tue, February 21, 2012 18:30, Will Drewry wrote:
+>>>>> This change enables SIGSYS, defines _sigfields._sigsys, and adds
+>>>>> x86 (compat) arch support.  _sigsys defines fields which allow
+>>>>> a signal handler to receive the triggering system call number,
+>>>>> the relevant AUDIT_ARCH_* value for that number, and the address
+>>>>> of the callsite.
+>>>>>
+>>>>> To ensure that SIGSYS delivery occurs on return from the triggering
+>>>>> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.  I'm
+>>>>> this is enough to ensure it will be synchronous or if it is explicitly
+>>>>> required to ensure an immediate delivery of the signal upon return from
+>>>>> the blocked system call.
+>>>>>
+>>>>> The first consumer of SIGSYS would be seccomp filter.  In particular,
+>>>>> a filter program could specify a new return value, SECCOMP_RET_TRAP,
+>>>>> which would result in the system call being denied and the calling
+>>>>> thread signaled.  This also means that implementing arch-specific
+>>>>> support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
+>>>>
+>>>> I think others said this is useful, but I don't see how. Easier
+>>>> debugging compared to checking return values?
+>>>>
+>>>> I suppose SIGSYS can be blocked, so there is no guarantee the process
+>>>> will be killed.
+>>>
+>>> Yeah, this allows for in-process system call emulation, if desired, or
+>>> for the process to dump core/etc.  With RET_ERRNO or RET_KILL, there
+>>> isn't any feedback to the system about the state of the process.  Kill
+>>> populates audit_seccomp and dmesg, but if the application
+>>> user/developer isn't the system admin, installing audit bits or
+>>> checking system logs seems onerous.
+>>
+>> [Warning: this suggestion may be bad for any number of reasons]
+>>
+>> I wonder if it would be helpful to change the semantics of RET_KILL
+>> slightly.  Rather than killing via do_exit, what if it killed via a
+>> forcibly-fatal SIGSYS?  That way, the parent's waitid() / SIGCHLD
+>> would indicate CLD_KILLED with si_status == SIGSYS.  The parent could
+>> check that and report that the child was probably compromised.
+>>
+>> --Andy
+>
+> I'd prefer sticking with do_exit. This provides much less chance of
+> things going wrong. A parent seeing a child killed with SIGKILL is
+> already pretty distinct, IMO.
 
-I confirm that these patches without the previous fix also 
-fixes the regression I have seen. Thanks.
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SHIRMERS (pl.n.)
-Tall young men who stand around smiling at weddings as if to suggest
-that they know they bride reather well.
-			--- Douglas Adams, The Meaning of Liff
+Hrm, it might be possible to do_exit(SIGSYS) which would be both. It
+looks like tsk->exit_code would be SIGSYS then, but I'll look a little
+more closely to see what that'll actually do.
