@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2BWNwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 08:52:12 -0500
+	id S1756059Ab2BWNw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 08:52:27 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39147 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab2BWNwI (ORCPT
+	with ESMTP id S1755817Ab2BWNwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 08:52:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.154.28 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v3 06/21] mm: lruvec linking functions
+	Thu, 23 Feb 2012 08:52:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.156.204 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v3 08/21] mm: unify inactive_list_is_low()
 To: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Andi Kleen <andi@firstfloor.org>
-Date: Thu, 23 Feb 2012 17:52:04 +0400
-Message-ID: <20120223135204.12988.75350.stgit@zurg>
+Date: Thu, 23 Feb 2012 17:52:19 +0400
+Message-ID: <20120223135219.12988.94138.stgit@zurg>
 In-Reply-To: <20120223133728.12988.5432.stgit@zurg>
 References: <20120223133728.12988.5432.stgit@zurg>
 User-Agent: StGit/0.15
@@ -27,200 +27,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds links from page to its lruvec and from lruvec to its zone and node.
-If CONFIG_CGROUP_MEM_RES_CTLR=n they just page_zone() and container_of().
+Unify memcg and non-memcg logic, always use exact counters from struct lruvec.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- include/linux/mm.h     |   37 +++++++++++++++++++++++++++++++++++++
- include/linux/mmzone.h |   12 ++++++++----
- mm/internal.h          |    1 +
- mm/memcontrol.c        |   27 ++++++++++++++++++++++++---
- mm/page_alloc.c        |   17 ++++++++++++++---
- 5 files changed, 84 insertions(+), 10 deletions(-)
+ mm/vmscan.c |   30 ++++++++----------------------
+ 1 files changed, 8 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index ee3ebc1..c6dc4ab 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -728,6 +728,43 @@ static inline void set_page_links(struct page *page, enum zone_type zone,
- #endif
- }
- 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+
-+/* Multiple lruvecs in zone */
-+
-+extern struct lruvec *page_lruvec(struct page *page);
-+
-+static inline struct zone *lruvec_zone(struct lruvec *lruvec)
-+{
-+	return lruvec->zone;
-+}
-+
-+static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
-+{
-+	return lruvec->node;
-+}
-+
-+#else /* CONFIG_CGROUP_MEM_RES_CTLR */
-+
-+/* Single lruvec in zone */
-+
-+static inline struct lruvec *page_lruvec(struct page *page)
-+{
-+	return &page_zone(page)->lruvec;
-+}
-+
-+static inline struct zone *lruvec_zone(struct lruvec *lruvec)
-+{
-+	return container_of(lruvec, struct zone, lruvec);
-+}
-+
-+static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
-+{
-+	return lruvec_zone(lruvec)->zone_pgdat;
-+}
-+
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR */
-+
- /*
-  * Some inline functions in vmstat.h depend on page_zone()
-  */
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index ddd0fd2..be8873a 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -159,10 +159,6 @@ static inline int is_unevictable_lru(enum lru_list lru)
- 	return (lru == LRU_UNEVICTABLE);
- }
- 
--struct lruvec {
--	struct list_head pages_lru[NR_LRU_LISTS];
--};
--
- /* Mask used at gathering information at once (see memcontrol.c) */
- #define LRU_ALL_FILE (BIT(LRU_INACTIVE_FILE) | BIT(LRU_ACTIVE_FILE))
- #define LRU_ALL_ANON (BIT(LRU_INACTIVE_ANON) | BIT(LRU_ACTIVE_ANON))
-@@ -300,6 +296,14 @@ struct zone_reclaim_stat {
- 	unsigned long		recent_scanned[2];
- };
- 
-+struct lruvec {
-+	struct list_head	pages_lru[NR_LRU_LISTS];
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+	struct zone		*zone;
-+	struct pglist_data	*node;
-+#endif
-+};
-+
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-diff --git a/mm/internal.h b/mm/internal.h
-index 2189af4..ef49dbf 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -100,6 +100,7 @@ extern void prep_compound_page(struct page *page, unsigned long order);
- extern bool is_free_buddy_page(struct page *page);
- #endif
- 
-+extern void init_zone_lruvec(struct zone *zone, struct lruvec *lruvec);
- 
- /*
-  * function for dealing with page's order in buddy system.
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8f8c7c4..8b53150 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1026,6 +1026,28 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
- 	return &mz->lruvec;
- }
- 
-+/**
-+ * page_lruvec - get the lruvec there this page is located
-+ * @page: the struct page pointer with stable reference
-+ *
-+ * page_cgroup->mem_cgroup pointer validity guaranteed by caller.
-+ *
-+ * Returns pointer to struct lruvec.
-+ */
-+struct lruvec *page_lruvec(struct page *page)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	struct page_cgroup *pc;
-+
-+	if (mem_cgroup_disabled())
-+		return &page_zone(page)->lruvec;
-+
-+	pc = lookup_page_cgroup(page);
-+	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-+			page_to_nid(page), page_zonenum(page));
-+	return &mz->lruvec;
-+}
-+
- /*
-  * Following LRU functions are allowed to be used without PCG_LOCK.
-  * Operations are called by routine of global LRU independently from memcg.
-@@ -4697,7 +4719,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f3c0fbe..b3e8bab 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1822,6 +1822,7 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
  {
- 	struct mem_cgroup_per_node *pn;
- 	struct mem_cgroup_per_zone *mz;
--	enum lru_list lru;
- 	int zone, tmp = node;
+ 	unsigned long active, inactive;
+ 	unsigned int gb, ratio;
++	struct lruvec *lruvec;
+ 
  	/*
- 	 * This routine is called against possible nodes.
-@@ -4715,8 +4736,8 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 	 * If we don't have swap space, anonymous page deactivation
+@@ -1830,17 +1831,9 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+ 	if (!total_swap_pages)
+ 		return 0;
  
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
--		for_each_lru(lru)
--			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
-+		init_zone_lruvec(&NODE_DATA(node)->node_zones[zone],
-+				 &mz->lruvec);
- 		mz->usage_in_excess = 0;
- 		mz->on_tree = false;
- 		mz->memcg = memcg;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5f19392..1cc3afe 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4289,6 +4289,19 @@ static inline int pageblock_default_order(unsigned int order)
+-	if (scanning_global_lru(mz)) {
+-		active = zone_page_state(mz->zone, NR_ACTIVE_ANON);
+-		inactive = zone_page_state(mz->zone, NR_INACTIVE_ANON);
+-	} else {
+-		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
+-				zone_to_nid(mz->zone), zone_idx(mz->zone),
+-				BIT(LRU_ACTIVE_ANON));
+-		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
+-				zone_to_nid(mz->zone), zone_idx(mz->zone),
+-				BIT(LRU_INACTIVE_ANON));
+-	}
++	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
++	active = lruvec->pages_count[LRU_ACTIVE_ANON];
++	inactive = lruvec->pages_count[LRU_INACTIVE_ANON];
  
- #endif /* CONFIG_HUGETLB_PAGE_SIZE_VARIABLE */
+ 	/* Total size in gigabytes */
+ 	gb = (active + inactive) >> (30 - PAGE_SHIFT);
+@@ -1875,18 +1868,11 @@ static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+ static int inactive_file_is_low(struct mem_cgroup_zone *mz)
+ {
+ 	unsigned long active, inactive;
++	struct lruvec *lruvec;
  
-+void init_zone_lruvec(struct zone *zone, struct lruvec *lruvec)
-+{
-+	enum lru_list lru;
-+
-+	memset(lruvec, 0, sizeof(struct lruvec));
-+	for_each_lru(lru)
-+		INIT_LIST_HEAD(&lruvec->pages_lru[lru]);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-+	lruvec->node = zone->zone_pgdat;
-+	lruvec->zone = zone;
-+#endif
-+}
-+
- /*
-  * Set up the zone data structures:
-  *   - mark all pages reserved
-@@ -4312,7 +4325,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
- 		unsigned long size, realsize, memmap_pages;
--		enum lru_list lru;
+-	if (scanning_global_lru(mz)) {
+-		active = zone_page_state(mz->zone, NR_ACTIVE_FILE);
+-		inactive = zone_page_state(mz->zone, NR_INACTIVE_FILE);
+-	} else {
+-		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
+-				zone_to_nid(mz->zone), zone_idx(mz->zone),
+-				BIT(LRU_ACTIVE_FILE));
+-		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
+-				zone_to_nid(mz->zone), zone_idx(mz->zone),
+-				BIT(LRU_INACTIVE_FILE));
+-	}
++	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
++	active = lruvec->pages_count[LRU_ACTIVE_FILE];
++	inactive = lruvec->pages_count[LRU_INACTIVE_FILE];
  
- 		size = zone_spanned_pages_in_node(nid, j, zones_size);
- 		realsize = size - zone_absent_pages_in_node(nid, j,
-@@ -4362,8 +4374,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone->zone_pgdat = pgdat;
- 
- 		zone_pcp_init(zone);
--		for_each_lru(lru)
--			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
-+		init_zone_lruvec(zone, &zone->lruvec);
- 		zone->reclaim_stat.recent_rotated[0] = 0;
- 		zone->reclaim_stat.recent_rotated[1] = 0;
- 		zone->reclaim_stat.recent_scanned[0] = 0;
+ 	return inactive < active;
+ }
 
