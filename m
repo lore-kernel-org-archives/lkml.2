@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab2BWWbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:31:17 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51487 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab2BWWbN (ORCPT
+	id S1756673Ab2BWWbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:31:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52037 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505Ab2BWWbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:31:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.136.100 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Thu, 23 Feb 2012 17:31:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.130.234 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com, akpm@linux-foundation.org,
         hughd@google.com
 Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
         linux-kernel@vger.kernel.org, dpshah@google.com, ctalbott@google.com,
         rni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/8] blkcg: restructure blkio_get_stat()
-Date: Thu, 23 Feb 2012 14:30:45 -0800
-Message-Id: <1330036246-21633-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/8] blkcg: simplify stat reset
+Date: Thu, 23 Feb 2012 14:30:44 -0800
+Message-Id: <1330036246-21633-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1330036246-21633-1-git-send-email-tj@kernel.org>
 References: <1330036246-21633-1-git-send-email-tj@kernel.org>
@@ -24,186 +24,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restructure blkio_get_stat() to prepare for removal of stats_lock.
+blkiocg_reset_stats() implements stat reset for blkio.reset_stats
+cgroupfs file.  This feature is very unconventional and something
+which shouldn't have been merged.  It's only useful when there's only
+one user or tool looking at the stats.  As soon as multiple users
+and/or tools are involved, it becomes useless as resetting disrupts
+other usages.  There are very good reasons why all other stats expect
+readers to read values at the start and end of a period and subtract
+to determine delta over the period.
 
-* Define BLKIO_STAT_ARR_NR explicitly to denote which stats have
-  subtypes instead of using BLKIO_STAT_QUEUED.
+The implementation is rather complex - some fields shouldn't be
+cleared and it saves some fields, resets whole and restores for some
+reason.  Reset of percpu stats is also racy.  The comment points to
+64bit store atomicity for the reason but even without that stores for
+zero can simply race with other CPUs doing RMW and get clobbered.
 
-* Separate out stat acquisition and printing.  After this, there are
-  only two users of blkio_fill_stat().  Just open code it.
+Simplify reset by
 
-* The code was mixing MAX_KEY_LEN and MAX_KEY_LEN - 1.  There's no
-  need to subtract one.  Use MAX_KEY_LEN consistently.
+* Clear selectively instead of resetting and restoring.
+
+* Grouping debug stat fields to be reset and using memset() over them.
+
+* Not caring about stats_lock.
+
+* Using memset() to reset percpu stats.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c |  100 ++++++++++++++++++++++++++-------------------------
- block/blk-cgroup.h |    6 +++-
- 2 files changed, 56 insertions(+), 50 deletions(-)
+ block/blk-cgroup.c |   80 ++++++++++++++++-----------------------------------
+ block/blk-cgroup.h |   14 ++++++++-
+ 2 files changed, 37 insertions(+), 57 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 614b7b3..bc2d1f3 100644
+index ced9acd..614b7b3 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -833,15 +833,6 @@ static void blkio_get_key_name(enum stat_sub_type type, const char *dname,
+@@ -747,80 +747,50 @@ EXPORT_SYMBOL_GPL(__blkg_release);
+ static void blkio_reset_stats_cpu(struct blkio_group *blkg, int plid)
+ {
+ 	struct blkg_policy_data *pd = blkg->pd[plid];
+-	struct blkio_group_stats_cpu *stats_cpu;
+-	int i, j, k;
+-	/*
+-	 * Note: On 64 bit arch this should not be an issue. This has the
+-	 * possibility of returning some inconsistent value on 32bit arch
+-	 * as 64bit update on 32bit is non atomic. Taking care of this
+-	 * corner case makes code very complicated, like sending IPIs to
+-	 * cpus, taking care of stats of offline cpus etc.
+-	 *
+-	 * reset stats is anyway more of a debug feature and this sounds a
+-	 * corner case. So I am not complicating the code yet until and
+-	 * unless this becomes a real issue.
+-	 */
+-	for_each_possible_cpu(i) {
+-		stats_cpu = per_cpu_ptr(pd->stats_cpu, i);
+-		stats_cpu->sectors = 0;
+-		for(j = 0; j < BLKIO_STAT_CPU_NR; j++)
+-			for (k = 0; k < BLKIO_STAT_TOTAL; k++)
+-				stats_cpu->stat_arr_cpu[j][k] = 0;
++	int cpu;
++
++	for_each_possible_cpu(cpu) {
++		struct blkio_group_stats_cpu *sc =
++			per_cpu_ptr(pd->stats_cpu, cpu);
++
++		sc->sectors = 0;
++		memset(sc->stat_arr_cpu, 0, sizeof(sc->stat_arr_cpu));
  	}
  }
  
--static uint64_t blkio_fill_stat(char *str, int chars_left, uint64_t val,
--				struct cgroup_map_cb *cb, const char *dname)
--{
--	blkio_get_key_name(0, dname, str, chars_left, true);
--	cb->fill(cb, str, val);
--	return val;
--}
--
--
- static uint64_t blkio_read_stat_cpu(struct blkio_group *blkg, int plid,
- 			enum stat_type_cpu type, enum stat_sub_type sub_type)
+ static int
+ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
  {
-@@ -878,8 +869,9 @@ static uint64_t blkio_get_stat_cpu(struct blkio_group *blkg, int plid,
+-	struct blkio_cgroup *blkcg;
++	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	struct blkio_group *blkg;
+-	struct blkio_group_stats *stats;
+ 	struct hlist_node *n;
+-	uint64_t queued[BLKIO_STAT_TOTAL];
+ 	int i;
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-	bool idling, waiting, empty;
+-	unsigned long long now = sched_clock();
+-#endif
  
- 	if (type == BLKIO_STAT_CPU_SECTORS) {
- 		val = blkio_read_stat_cpu(blkg, plid, type, 0);
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1, val, cb,
--				       dname);
-+		blkio_get_key_name(0, dname, key_str, MAX_KEY_LEN, true);
-+		cb->fill(cb, key_str, val);
-+		return val;
- 	}
+-	blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	spin_lock(&blkio_list_lock);
+ 	spin_lock_irq(&blkcg->lock);
++
++	/*
++	 * Note that stat reset is racy - it doesn't synchronize against
++	 * stat updates.  This is a debug feature which shouldn't exist
++	 * anyway.  If you get hit by a race, retry.
++	 */
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+ 		struct blkio_policy_type *pol;
  
- 	for (sub_type = BLKIO_STAT_READ; sub_type < BLKIO_STAT_TOTAL;
-@@ -904,50 +896,60 @@ static uint64_t blkio_get_stat(struct blkio_group *blkg, int plid,
- 			       struct cgroup_map_cb *cb, const char *dname,
- 			       enum stat_type type)
- {
--	struct blkg_policy_data *pd = blkg->pd[plid];
--	uint64_t disk_total;
-+	struct blkio_group_stats *stats = &blkg->pd[plid]->stats;
-+	uint64_t v = 0, disk_total = 0;
- 	char key_str[MAX_KEY_LEN];
--	enum stat_sub_type sub_type;
-+	int st;
- 
--	if (type == BLKIO_STAT_TIME)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--					pd->stats.time, cb, dname);
-+	if (type >= BLKIO_STAT_ARR_NR) {
-+		switch (type) {
-+		case BLKIO_STAT_TIME:
-+			v = stats->time;
-+			break;
+ 		list_for_each_entry(pol, &blkio_list, list) {
+ 			struct blkg_policy_data *pd = blkg->pd[pol->plid];
+-
+-			spin_lock(&blkg->stats_lock);
+-			stats = &pd->stats;
++			struct blkio_group_stats *stats = &pd->stats;
++
++			/* queued stats shouldn't be cleared */
++			for (i = 0; i < ARRAY_SIZE(stats->stat_arr); i++)
++				if (i != BLKIO_STAT_QUEUED)
++					memset(stats->stat_arr[i], 0,
++					       sizeof(stats->stat_arr[i]));
++			stats->time = 0;
  #ifdef CONFIG_DEBUG_BLK_CGROUP
--	if (type == BLKIO_STAT_UNACCOUNTED_TIME)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       pd->stats.unaccounted_time, cb, dname);
--	if (type == BLKIO_STAT_AVG_QUEUE_SIZE) {
--		uint64_t sum = pd->stats.avg_queue_size_sum;
--		uint64_t samples = pd->stats.avg_queue_size_samples;
--		if (samples)
--			do_div(sum, samples);
--		else
--			sum = 0;
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       sum, cb, dname);
--	}
--	if (type == BLKIO_STAT_GROUP_WAIT_TIME)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       pd->stats.group_wait_time, cb, dname);
--	if (type == BLKIO_STAT_IDLE_TIME)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       pd->stats.idle_time, cb, dname);
--	if (type == BLKIO_STAT_EMPTY_TIME)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       pd->stats.empty_time, cb, dname);
--	if (type == BLKIO_STAT_DEQUEUE)
--		return blkio_fill_stat(key_str, MAX_KEY_LEN - 1,
--				       pd->stats.dequeue, cb, dname);
-+		case BLKIO_STAT_UNACCOUNTED_TIME:
-+			v = stats->unaccounted_time;
-+			break;
-+		case BLKIO_STAT_AVG_QUEUE_SIZE: {
-+			uint64_t samples = stats->avg_queue_size_samples;
-+
-+			if (samples) {
-+				v = stats->avg_queue_size_sum;
-+				do_div(v, samples);
-+			}
-+			break;
-+		}
-+		case BLKIO_STAT_IDLE_TIME:
-+			v = stats->idle_time;
-+			break;
-+		case BLKIO_STAT_EMPTY_TIME:
-+			v = stats->empty_time;
-+			break;
-+		case BLKIO_STAT_DEQUEUE:
-+			v = stats->dequeue;
-+			break;
-+		case BLKIO_STAT_GROUP_WAIT_TIME:
-+			v = stats->group_wait_time;
-+			break;
+-			idling = blkio_blkg_idling(stats);
+-			waiting = blkio_blkg_waiting(stats);
+-			empty = blkio_blkg_empty(stats);
++			memset((void *)stats + BLKG_STATS_DEBUG_CLEAR_START, 0,
++			       BLKG_STATS_DEBUG_CLEAR_SIZE);
  #endif
-+		default:
-+			WARN_ON_ONCE(1);
-+		}
- 
--	for (sub_type = BLKIO_STAT_READ; sub_type < BLKIO_STAT_TOTAL;
--			sub_type++) {
--		blkio_get_key_name(sub_type, dname, key_str, MAX_KEY_LEN,
--				   false);
--		cb->fill(cb, key_str, pd->stats.stat_arr[type][sub_type]);
-+		blkio_get_key_name(0, dname, key_str, MAX_KEY_LEN, true);
-+		cb->fill(cb, key_str, v);
-+		return v;
+-			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+-				queued[i] = stats->stat_arr[BLKIO_STAT_QUEUED][i];
+-			memset(stats, 0, sizeof(struct blkio_group_stats));
+-			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+-				stats->stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-			if (idling) {
+-				blkio_mark_blkg_idling(stats);
+-				stats->start_idle_time = now;
+-			}
+-			if (waiting) {
+-				blkio_mark_blkg_waiting(stats);
+-				stats->start_group_wait_time = now;
+-			}
+-			if (empty) {
+-				blkio_mark_blkg_empty(stats);
+-				stats->start_empty_time = now;
+-			}
+-#endif
+-			spin_unlock(&blkg->stats_lock);
+-
+-			/* Reset Per cpu stats which don't take blkg->stats_lock */
+ 			blkio_reset_stats_cpu(blkg, pol->plid);
+ 		}
  	}
--	disk_total = pd->stats.stat_arr[type][BLKIO_STAT_READ] +
--			pd->stats.stat_arr[type][BLKIO_STAT_WRITE];
-+
-+	for (st = BLKIO_STAT_READ; st < BLKIO_STAT_TOTAL; st++) {
-+		v = stats->stat_arr[type][st];
-+
-+		blkio_get_key_name(st, dname, key_str, MAX_KEY_LEN, false);
-+		cb->fill(cb, key_str, v);
-+		if (st == BLKIO_STAT_READ || st == BLKIO_STAT_WRITE)
-+			disk_total += v;
-+	}
-+
- 	blkio_get_key_name(BLKIO_STAT_TOTAL, dname, key_str, MAX_KEY_LEN,
- 			   false);
- 	cb->fill(cb, key_str, disk_total);
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 3937a9e..1425de1 100644
+index af6e00a..3937a9e 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -39,6 +39,7 @@ enum stat_type {
- 	BLKIO_STAT_WAIT_TIME,
- 	/* Number of IOs queued up */
- 	BLKIO_STAT_QUEUED,
+@@ -131,21 +131,31 @@ struct blkio_group_stats {
+ 
+ 	/* Total time spent waiting for it to be assigned a timeslice. */
+ 	uint64_t group_wait_time;
+-	uint64_t start_group_wait_time;
+ 
+ 	/* Time spent idling for this blkio_group */
+ 	uint64_t idle_time;
+-	uint64_t start_idle_time;
+ 	/*
+ 	 * Total time when we have requests queued and do not contain the
+ 	 * current active queue.
+ 	 */
+ 	uint64_t empty_time;
 +
- 	/* All the single valued stats go below this */
- 	BLKIO_STAT_TIME,
- #ifdef CONFIG_DEBUG_BLK_CGROUP
-@@ -52,6 +53,9 @@ enum stat_type {
++	/* fields after this shouldn't be cleared on stat reset */
++	uint64_t start_group_wait_time;
++	uint64_t start_idle_time;
+ 	uint64_t start_empty_time;
+ 	uint16_t flags;
  #endif
  };
  
-+/* Types lower than this live in stat_arr and have subtypes */
-+#define BLKIO_STAT_ARR_NR	(BLKIO_STAT_QUEUED + 1)
++#ifdef CONFIG_DEBUG_BLK_CGROUP
++#define BLKG_STATS_DEBUG_CLEAR_START	\
++	offsetof(struct blkio_group_stats, unaccounted_time)
++#define BLKG_STATS_DEBUG_CLEAR_SIZE	\
++	(offsetof(struct blkio_group_stats, start_group_wait_time) - \
++	 BLKG_STATS_DEBUG_CLEAR_START)
++#endif
 +
- /* Per cpu stats */
- enum stat_type_cpu {
- 	BLKIO_STAT_CPU_SECTORS,
-@@ -117,7 +121,7 @@ struct blkio_cgroup {
- struct blkio_group_stats {
- 	/* total disk time and nr sectors dispatched by this group */
- 	uint64_t time;
--	uint64_t stat_arr[BLKIO_STAT_QUEUED + 1][BLKIO_STAT_TOTAL];
-+	uint64_t stat_arr[BLKIO_STAT_ARR_NR][BLKIO_STAT_TOTAL];
- #ifdef CONFIG_DEBUG_BLK_CGROUP
- 	/* Time not charged to this cgroup */
- 	uint64_t unaccounted_time;
+ /* Per cpu blkio group stats */
+ struct blkio_group_stats_cpu {
+ 	uint64_t sectors;
 -- 
 1.7.7.3
 
