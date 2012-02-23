@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2BWKEe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 05:04:34 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:32784 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861Ab2BWKEc (ORCPT
+	id S1755436Ab2BWKIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 05:08:37 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54652 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab2BWKIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 05:04:32 -0500
-Date: Thu, 23 Feb 2012 12:04:27 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: Felipe Balbi <balbi@ti.com>, Danny Kukawka <dkukawka@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dwc3: linux/module.h included twice
-Message-ID: <20120223100426.GQ18463@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1329328551-4957-1-git-send-email-danny.kukawka@bisect.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WZLuFERxa6Y0cbOt"
-Content-Disposition: inline
-In-Reply-To: <1329328551-4957-1-git-send-email-danny.kukawka@bisect.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Feb 2012 05:08:35 -0500
+Message-ID: <1329990828.19165.36.camel@ThinkPad-T61>
+Subject: Re: [PATCH 0/2 x86] fix some page faults in nmi if kmemcheck is
+ enabled
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net
+Date: Thu, 23 Feb 2012 17:53:48 +0800
+In-Reply-To: <1329819437.2293.382.camel@twins>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
+	 <1329819437.2293.382.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12022309-8878-0000-0000-00000168D753
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-02-21 at 11:17 +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-21 at 09:42 +0800, Li Zhong wrote:
+> 
+> > > Hell no, these are some of the ugliest patches I've seen in a while. Not
+> > > to mention that their changelogs are utter crap since they don't even
+> > > explain why they're doing what they're doing.
+> > > 
+> > Hi Peter, 
+> > 
+> > I agree that the fix is ugly. I'm willing to change if there are some
+> > better ways. 
+> 
+> There are always better ways..
 
---WZLuFERxa6Y0cbOt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Peter,
 
-Hi,
+I will think further about it, and would appreciate it if you could give
+some good ideas. 
 
-On Wed, Feb 15, 2012 at 06:55:51PM +0100, Danny Kukawka wrote:
->=20
-> drivers/usb/dwc3/core.c and drivers/usb/dwc3/dwc3-omap.c
-> included 'linux/module.h' twice, remove the duplicates.
->=20
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> 
+> > The problem here is: 
+> > 1. It seems x86 doesn't allow page faults in nmi, and there are checks
+> > in the code, like WARN_ON_ONCE(in_nmi()).
+> 
+> I bet that's not x86 only..
 
-applied, thanks
+Maybe, I found this problem on x86, didn't check other archs. 
 
---=20
-balbi
+However, from Documentation/kmemcheck.txt, seems kmemcheck only supports
+x86. 
 
---WZLuFERxa6Y0cbOt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> > 2. If CONFIG_KMEMCHECK is enabled, the pages allocated through slab will
+> > be marked as non-present, to capture uninitialized memory access. More
+> > information in Documentation/kmemcheck.txt .
+> 
+> So then kmemcheck is buggy, since the nmiaction structure is initialized
+> in register_nmi_handler(), so it should most definitely not be marked
+> non-present.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I'm not sure whether I understand it correctly. Do you mean that
+nmiaction is initialized in register_nmi_handler(), which indicates it
+will be used in nmi, so it shouldn't be marked non-present?
 
-iQIcBAEBAgAGBQJPRg8qAAoJEIaOsuA1yqREtWIQAKB2gu7sabASrDPxXKoIcxv7
-AVHIdNXa7LVYTR+2YiRX9voGytiq0xlQ62temoRgWjKVx/DN9rezzrUXGPYSGhsa
-tRX3jNpai3j5uCcqqm9x5zOLgZOnOJsxnlUlHYtCNWegrOjqASm0nuquz11nmLKH
-pCXRFBMscr57Ee5HiKiV2XpKK4dykqAGYlP1Gtjvsd25xWr+R7GLjNMaD+oFCzEv
-F8P6ITB/RDMEozZnVbWSO4RBQbrCHzEYmMeKXqEWYmB1s9cxDzKCQXgPZavrHGWO
-rx1+VYBdRcbhSjegufcCBTgkjXnWg0UGulVo8fjpktca5++nqxuXspKbLNf71j5V
-Oi7cTbLUrIbKDQaLT9lE7oC+waihuzfXFUzPNLuPDXjsmG+lJIaSnPuNpwWKUbRN
-XG1WFFUYtcoxRMDAMKbGfcQbd3O+pcNejlU/5aw737myCK+QA0otnHHsOYw9iQfU
-Qq38LJpc2F16FwBE26PS8rSp3JHy3PFCCm2GrDkUMEmmatFx2kSpZiiNgO7oJI/p
-fN7wvHzM+2P/MVGaZDFgPI9XD/8W2UsQgGoC2VIhNL/rhsrPodi5qH5V3N4QClGl
-Qa+74aoe4BDoEL6YG8Zwr5cTCcZ3wdT2QZwzLsxiq1x+uv7mh+EqNwUQJ1k8uJrQ
-WyPSlaQRKuJalsgNxAQ1
-=vAIQ
------END PGP SIGNATURE-----
+But for kmemcheck, why need it know the information that page fault is
+not allowed in nmi? 
 
---WZLuFERxa6Y0cbOt--
+Or maybe I misunderstand your point here? 
+
+> > 3. From the log, there are some memories accessed in nmi, which are in
+> > pages marked as non-present by kmemcheck, as they are allocated by
+> > something like kmalloc(). 
+> 
+> So figure out why and fix that instead of writing ugly ass patches that
+> seemingly work around the problem without actually thinking about it.
+> 
+
+I think the reason is that kmalloc ( or kzalloc ... ) uses malloc_sizes
+slab caches to allocate memory. The malloc_sizes slab caches is set up
+without SLAB_NOTRACK flag, then kmemcheck marks the pages non-present to
+do its check in page fault handling code. I think we shouldn't disable
+kmemechek for the general malloc_sizes caches. 
+
+Thanks,
+Zhong
+
+
+
+
