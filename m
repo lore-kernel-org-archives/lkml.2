@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2BWPYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 10:24:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48466 "EHLO mx1.redhat.com"
+	id S1756371Ab2BWPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 10:25:29 -0500
+Received: from mga03.intel.com ([143.182.124.21]:22994 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756191Ab2BWPYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 10:24:45 -0500
-Date: Thu, 23 Feb 2012 16:17:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ptrace] Problem with ptrace cleanup logic.
-Message-ID: <20120223151754.GA1065@redhat.com>
-References: <201202230526.q1N5QdUc035041@www262.sakura.ne.jp>
+	id S1756192Ab2BWPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 10:25:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="69530192"
+Date: Thu, 23 Feb 2012 16:25:27 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Fix kcalloc parameters swapped
+Message-ID: <20120223152527.GB24377@sortiz-mobl>
+References: <1329039802.10760.0.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201202230526.q1N5QdUc035041@www262.sakura.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1329039802.10760.0.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23, Tetsuo Handa wrote:
->
-> I noticed that ptrace(PTRACE_ATTACH, 1) makes the global init process remain
-> killable even after a process that called ptrace(PTRACE_ATTACH, 1) exits.
+Hi Axel,
 
-Yes, known problem. We should cleanup the usage of signal->flags.
-This also allows to kill the new bitfields in signal_struct.
+On Sun, Feb 12, 2012 at 05:43:22PM +0800, Axel Lin wrote:
+> The first parameter should be "number of elements" and the second parameter
+> should be "element size".
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Applied, thanks.
 
-But firstly we should cleanup force_sig_info(), I sent the initial
-patches.
+Cheers,
+Samuel.
 
-The problem is: init loses SIGNAL_UNKILLABLE.
-
-Oleg.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
