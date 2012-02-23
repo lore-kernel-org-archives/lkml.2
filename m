@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab2BWXSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:18:46 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:40318 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756141Ab2BWXSp (ORCPT
+	id S1757320Ab2BWXTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:19:21 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:57502 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab2BWXTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:18:45 -0500
-Date: Thu, 23 Feb 2012 18:18:42 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        a.p.zijlstra@chello.nl, davem@davemloft.net, ddaney.cavm@gmail.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
-	+ docs
-Message-ID: <20120223231842.GA31030@Krystal>
-References: <1329856745.25686.72.camel@gandalf.stny.rr.com> <20120222073251.GB17291@elte.hu> <20120222075334.GA25053@elte.hu> <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com> <20120222081855.GB25318@elte.hu> <20120222213343.GA19758@bloggs.ozlabs.ibm.com> <20120223100205.GD24310@elte.hu> <CA+55aFwwV3GsqHue8oUsx-XbvSQXSawJ0w5z=wL8ue=EH4ifzw@mail.gmail.com> <20120223223348.GA25513@elte.hu> <20120223223933.GA7942@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223223933.GA7942@elte.hu>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:08:43 up 457 days,  4:11,  5 users,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 23 Feb 2012 18:19:19 -0500
+Date: Thu, 23 Feb 2012 18:19:04 -0500 (EST)
+Message-Id: <20120223.181904.501214130038312055.davem@davemloft.net>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
+        maciej.rutecki@gmail.com, florian@mickler.org, w.landgraf@ru.ru
+Subject: Re: [Bug #42669] 3.3-rc1: compiling problems nvme , l2cap_sock ,
+ mc13892-regulator , and snd-pcsp don't work
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <qCQH7HfZS8E.A.FVG.M9rRPB@chimera>
+References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera>
+	<qCQH7HfZS8E.A.FVG.M9rRPB@chimera>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 23 Feb 2012 15:19:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar (mingo@elte.hu) wrote:
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Thu, 23 Feb 2012 23:51:25 +0100 (CET)
+
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> * Ingo Molnar <mingo@elte.hu> wrote:
+> The following bug entry is on the current list of known regressions
+> from 3.2.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> > So, a modified scheme would be:
-> > 
-> >         #include <linux/static_key.h>
-> > 
-> >         struct static_key key = STATIC_KEY_INIT_TRUE;
-> > 
-> >         if (static_key_false(&key))
-> >                 do unlikely code
-> >         else
-> >                 do likely code
-> > 
-> > Or:
-> > 
-> >         if (static_key_true(&key))
-> >                 do likely code
-> >         else
-> >                 do unlikely code
-> > 
-> > The static key is modified via:
-> > 
-> >         static_key_slow_inc(&key);
-> >         ...
-> >         static_key_slow_dec(&key);
-> > 
-> > Is that API fine? I'll rework the series to such an effect if 
-> > everyone agrees.
 > 
-> I.e. something like the patch below on top of 
-> tip:perf/jump-labels.
-> 
-> Untested - will test it and will refactor the series if 
-> everyone's happy.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42669
+> Subject		: 3.3-rc1: compiling problems  nvme , l2cap_sock , mc13892-regulator , and snd-pcsp don't work
+> Submitter	: werner <w.landgraf@ru.ru>
+> Date		: 2012-01-20 18:52 (35 days old)
+> Message-ID	: <web-682421181@zbackend1.aha.ru>
+> References	: http://marc.info/?l=linux-kernel&m=132708923719565&w=2
 
-Hi Ingo,
+The l2cap_sock problem is fixed in the net GIT tree by commit:
 
-Reading your documentation updates makes me realise that adding the
-"inline" keyword in there would make the whole thing even clearer:
+--------------------
+commit 4aa832c27edf902130f8bace1d42cf22468823fa
+Author: Johan Hedberg <johan.hedberg@intel.com>
+Date:   Sun Jan 8 22:51:16 2012 +0200
 
-struct static_key key = STATIC_KEY_INLINE_TRUE_INIT;
-struct static_key key = STATIC_KEY_INLINE_FALSE_INIT;
+    Bluetooth: Remove bogus inline declaration from l2cap_chan_connect
+    
+    As reported by Dan Carpenter this function causes a Sparse warning and
+    shouldn't be declared inline:
+    
+    include/net/bluetooth/l2cap.h:837:30 error: marked inline, but without a
+    definition"
+    
+    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+    Acked-by: Marcel Holtmann <marcel@holtmann.org>
 
-static_key_inline_true() / static_key_inline_false()
-
-to show that the "true/false" in there does not mean that the key will
-always be true or false (the key value can indeed by changed by calling
-static_key_slow_inc/dec), but that the inlined path is either the true
-of false branch.
-
-The rest looks fine.
-
-Best regards,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+diff --git a/include/net/bluetooth/l2cap.h b/include/net/bluetooth/l2cap.h
+index 68f5891..124f7cf 100644
+--- a/include/net/bluetooth/l2cap.h
++++ b/include/net/bluetooth/l2cap.h
+@@ -834,7 +834,7 @@ int l2cap_add_scid(struct l2cap_chan *chan,  __u16 scid);
+ struct l2cap_chan *l2cap_chan_create(struct sock *sk);
+ void l2cap_chan_close(struct l2cap_chan *chan, int reason);
+ void l2cap_chan_destroy(struct l2cap_chan *chan);
+-inline int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid,
++int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid,
+ 								bdaddr_t *dst);
+ int l2cap_chan_send(struct l2cap_chan *chan, struct msghdr *msg, size_t len,
+ 								u32 priority);
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index faf0b11..980abdb 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -1120,7 +1120,7 @@ static struct l2cap_chan *l2cap_global_chan_by_psm(int state, __le16 psm, bdaddr
+ 	return c1;
+ }
+ 
+-inline int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid, bdaddr_t *dst)
++int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid, bdaddr_t *dst)
+ {
+ 	struct sock *sk = chan->sk;
+ 	bdaddr_t *src = &bt_sk(sk)->src;
