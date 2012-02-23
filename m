@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab2BWSKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:10:18 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:56254 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756528Ab2BWSKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:10:15 -0500
-Date: Thu, 23 Feb 2012 13:10:14 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: "Zhang, Rui" <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
-In-Reply-To: <1330004496.2469.3.camel@hp6530s>
-Message-ID: <Pine.LNX.4.44L0.1202231306340.1671-100000@iolanthe.rowland.org>
+	id S1756579Ab2BWSMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:12:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756501Ab2BWSMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 13:12:03 -0500
+Date: Thu, 23 Feb 2012 16:11:32 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Roberto Agostino Vitillo <ravitillo@lbl.gov>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v6 13/18] perf: add support for taken branch sampling
+	to perf report
+Message-ID: <20120223181132.GB3571@infradead.org>
+References: <1328826068-11713-1-git-send-email-eranian@google.com> <1328826068-11713-14-git-send-email-eranian@google.com> <20120222111501.GA23068@elte.hu> <CABPqkBQz0G6DQfAfzD2=1mCDvmVsaZhFjW0qEh4y+rNxtbLC4Q@mail.gmail.com> <20120223095922.GC24310@elte.hu> <CABPqkBT39C6zaKWGoHrRjqWE2P433NF-gYCYoa=JkJnGzMVjMQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBT39C6zaKWGoHrRjqWE2P433NF-gYCYoa=JkJnGzMVjMQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012, Lin Ming wrote:
-
-> > > For example,
-> > > /sys/devices/pci0000:00/0000:00:1f.2/ata0/host1/target1:0:0/1:0:0:0/
-> > > 
-> > > ata0 is resumed.
-> > > 
-> > > Then who will be responsible to resume host1, target1:0:0 and 1:0:0:0?
-> > > 
-> > > Or do you mean that we don't need to resume these devices at all?
-> > > host1 and target1:0:0 are logical devices, but I think 1:0:0:0 is not.
-> > 
-> > That's right.  It makes no difference whether the host and target 
-> > are resumed or suspended.  In fact, you could also call 
-> > pm_runtime_no_callbacks() for them.
+Em Thu, Feb 23, 2012 at 05:53:53PM +0100, Stephane Eranian escreveu:
+> Ok, so I looked at that today. Adding the feature bit is trivial.
+> But what's not easy is to get to the feature bit in perf report
+> by the time we need it. Very quickly after parsing the options,
+> we setup a bunch of things such as browser mode, sorting
+> order based on the -b option. But to get to the feature bit, we
+> would need to wait until after the session is created in
+> __cmd_report() which is way later.
 > 
-> But host and target are added in scsi layer. How do we know if they are
-> "logical device"?
+> So we either hoist perf_session__new() very early, i.e., as soon
+> as we have the filename or we write yet another parse_header()
+> function just to get to the feature bits. I would rather choose the
+> first option. But none is really pretty...
+> 
+> Arnaldo, any better idea?
 
-Those data structures may be created by the SCSI layer, but you know
-that the hardware is all controlled by the ATA layer.  Therefore you
-know there is no physical hardware corresponding to the host or target
-device.
+Humm, lemme see...
 
-> Or do you mean that we can call pm_runtime_no_callbacks() for them
-> because scsi layer(scsi_pm.c) only implements runtime pm for scsi
-> device.
 
-That's right.  And you know why?  It's because the SCSI host and target
-do not refer to power-manageable hardware.
+By the time we need it is when we do setup_sorting, right? Perhaps we
+can delay that till after we do perf_session__new and thus have read the
+headers...
 
-Alan Stern
+/me looks at the code.
 
+- Arnaldo
