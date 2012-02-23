@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2BWQoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:44:34 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:58215 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab2BWQob convert rfc822-to-8bit (ORCPT
+	id S1754912Ab2BWQpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:45:09 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48667 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab2BWQpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:44:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F45887A.5010809@zytor.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-	<1329845435-2313-7-git-send-email-wad@chromium.org>
-	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
-	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
-	<CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
-	<CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
-	<4F45887A.5010809@zytor.com>
-Date: Thu, 23 Feb 2012 10:44:29 -0600
-Message-ID: <CABqD9havUbeHDQVqxf7iy1XjNSrUkh=ehSW_h2OfU2QQ_VQaaA@mail.gmail.com>
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
-From: Will Drewry <wad@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, Andrew Lutomirski <luto@mit.edu>,
-        Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Feb 2012 11:45:07 -0500
+Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
+ browser
+From: Pekka Enberg <penberg@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20120223163938.GD25177@infradead.org>
+References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
+	 <20120223162850.GC25177@infradead.org>
+	 <CAOJsxLG2c=Mc-Rn56jmB290LtHpRY8pkfyqPrizgwE8_8+uxFQ@mail.gmail.com>
+	 <20120223163938.GD25177@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 23 Feb 2012 18:45:04 +0200
+Message-ID: <1330015504.13624.84.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 6:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/22/2012 04:08 PM, Kees Cook wrote:
->>>
->>> Hrm, it might be possible to do_exit(SIGSYS) which would be both. It
->>> looks like tsk->exit_code would be SIGSYS then, but I'll look a little
->>> more closely to see what that'll actually do.
->>
->> As long as there's no way it can get blocked, I'd be fine with that.
->> It would, actually, be better than SIGKILL because, as Andy said, it's
->> more distinguishable from other situations. I've long wanted a signal
->> to be used for "violated policy" that wasn't just a straight SIGKILL.
->>
->
-> Can we really introduce force-kill semantics for a POSIX-defined signal?
->  Other user space programs might use it for other purposes.
->
-> I'm wondering if the right thing may be to introduce some variant of
-> exit() which can return more information about a signal, including some
-> kind of cause code for SIGKILL?
+On Thu, 2012-02-23 at 14:39 -0200, Arnaldo Carvalho de Melo wrote:
+> > Dunno, probably. Does that matter, though? It's pretty damn fast as-is.
+> 
+> Well, what kinds of perf.data file are you feeding it?
 
-While it'd be harder to send back extra info, passing SIGSYS to
-do_exit() should result in the si_status for the emitted SIGCHLD to be
-SIGSYS (si_status = (tsk->exit_code & 0x7f)).  I think it'll still
-have a si_code of CLD_KILLED, but it'd be enough for a parent to
-differentiate the task-death path.  I'll try it out before I post
-another patch rev.
+It's a real-world case where I'm profiling JRuby startup under Jato with
+perf:
 
-A variant that allowed extended exit information would be useful
-(especially for this patch series), I'm not sure I'd know where to
-start.
+penberg@jaguar:~/src/jato$ ls -lh perf.data 
+-rw------- 1 penberg penberg 453K 2012-02-23 18:06 perf.data
 
-cheers!
-will
+On Thu, 2012-02-23 at 14:39 -0200, Arnaldo Carvalho de Melo wrote:
+> I'm testing it now with large ones, lets see.
+
+How big files are we talking about here?
+
+			Pekka
+
