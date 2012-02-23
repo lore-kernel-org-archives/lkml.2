@@ -1,588 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab2BWWfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:35:06 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47659 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756Ab2BWWe7 convert rfc822-to-8bit (ORCPT
+	id S1757221Ab2BWWfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:35:05 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:38090 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab2BWWe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:34:59 -0500
+	Thu, 23 Feb 2012 17:34:58 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: ke.yu@intel.com, kevin.tian@intel.com, JBeulich@novell.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         lenb@kernel.org
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/3] xen/processor-passthru: Provide an driver that passes struct acpi_processor data to the hypervisor.
-Date: Thu, 23 Feb 2012 17:31:10 -0500
-Message-Id: <1330036270-20015-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
+Date: Thu, 23 Feb 2012 17:31:09 -0500
+Message-Id: <1330036270-20015-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
 In-Reply-To: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
 References: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F46BF09.00BF,ss=1,re=-2.300,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F46BF08.0092,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI processor processes the _Pxx and the _Cx state information
-which are populated in the 'struct acpi_processor' per-cpu structure.
-We read the contents of that structure and pass it up the Xen hypervisor.
+For the hypervisor to take advantage of the MWAIT support it needs
+to extract from the ACPI _CST the register address. But the
+hypervisor does not have the support to parse DSDT so it relies on
+the initial domain (dom0) to parse the ACPI Power Management information
+and push it up to the hypervisor. The pushing of the data is done
+by the processor_harveset_xen module which parses the information that
+the ACPI parser has graciously exposed in 'struct acpi_processor'.
 
-The ACPI processor along with the CPU freq driver does all the heavy-lifting
-for us (filtering, calling ACPI functions, etc) so that the contents is correct.
-After we are done parsing the information, we wait in case of hotplug CPUs
-get loaded and then pass that information to the hypervisor.
+For the ACPI parser to also expose the Cx states for MWAIT, we need
+to expose the MWAIT capability (leaf 1). Furthermore we also need to
+expose the MWAIT_LEAF capability (leaf 5) for cstate.c to properly
+function.
 
-[v1-v2: Initial RFC implementations that were posted]
-[v3: Changed the name to passthru suggested by Pasi Kärkkäinen <pasik@iki.fi>]
-[v4: Added vCPU != pCPU support - aka dom0_max_vcpus support]
-[v5: Cleaned up the driver, fix bug under Athlon XP]
+The hypervisor could expose these flags when it traps the XEN_EMULATE_PREFIX
+operations, but it can't do it since it needs to be backwards compatible.
+Instead we choose to use the native CPUID to figure out if the MWAIT
+capability exists and use the XEN_SET_PDC query hypercall to figure out
+if the hypervisor wants us to expose the MWAIT_LEAF capability or not.
+
+Note: The XEN_SET_PDC query was implemented in c/s 23783:
+"ACPI: add _PDC input override mechanism".
+
+With this in place, instead of
+ C3 ACPI IOPORT 415
+we get now
+ C3:ACPI FFH INTEL MWAIT 0x20
+
+Note: The cpu_idle which would be calling the mwait variants for idling
+never gets set b/c we set the default pm_idle to be the hypercall variant.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/Kconfig              |   14 +
- drivers/xen/Makefile             |    2 +-
- drivers/xen/processor-passthru.c |  492 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 507 insertions(+), 1 deletions(-)
- create mode 100644 drivers/xen/processor-passthru.c
+ arch/x86/xen/enlighten.c         |   92 +++++++++++++++++++++++++++++++++++++-
+ include/xen/interface/platform.h |    4 +-
+ 2 files changed, 94 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index a1ced52..af5e062 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -178,4 +178,18 @@ config XEN_PRIVCMD
- 	depends on XEN
- 	default m
- 
-+config XEN_PROCESSOR_PASSTHRU
-+	tristate "Processor passthrough driver for Xen"
-+	depends on XEN
-+	depends on ACPI_PROCESSOR
-+	depends on X86
-+	depends on CPU_FREQ
-+	help
-+	  This driver parses the processor structure and passes the information
-+	  to the Xen hypervisor. It is used to allow the Xen hypervisor to have the
-+	  full power management data and be able to select proper Cx and Pxx states.
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 12eb07b..4c82936 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -62,6 +62,14 @@
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
+ #include <asm/hypervisor.h>
++#include <asm/mwait.h>
 +
-+	  The driver should be loaded after acpi processor and cpufreq drivers have
-+	  been loaded. If you do not know what to choose, select M here.
-+
- endmenu
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index aa31337..ce235e7a 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -20,7 +20,7 @@ obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
- obj-$(CONFIG_XEN_DOM0)			+= pci.o
- obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
- obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
--
-+obj-$(CONFIG_XEN_PROCESSOR_PASSTHRU)	+= processor-passthru.o
- xen-evtchn-y				:= evtchn.o
- xen-gntdev-y				:= gntdev.o
- xen-gntalloc-y				:= gntalloc.o
-diff --git a/drivers/xen/processor-passthru.c b/drivers/xen/processor-passthru.c
-new file mode 100644
-index 0000000..e4dff42
---- /dev/null
-+++ b/drivers/xen/processor-passthru.c
-@@ -0,0 +1,492 @@
-+/*
-+ * Copyright 2012 by Oracle Inc
-+ * Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-+ *
-+ * This code borrows ideas from https://lkml.org/lkml/2011/11/30/249
-+ * so many thanks go to Kevin Tian <kevin.tian@intel.com>
-+ * and Yu Ke <ke.yu@intel.com>.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include <linux/cpumask.h>
-+#include <linux/cpufreq.h>
-+#include <linux/kernel.h>
-+#include <linux/kthread.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <acpi/acpi_bus.h>
-+#include <acpi/acpi_drivers.h>
++#ifdef CONFIG_ACPI
++#include <asm/acpi.h>
++#include <acpi/pdc_intel.h>
 +#include <acpi/processor.h>
-+
 +#include <xen/interface/platform.h>
-+#include <asm/xen/hypercall.h>
-+
-+#define DRV_NAME "xen-processor-thru"
-+MODULE_AUTHOR("Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>");
-+MODULE_DESCRIPTION("ACPI Power Management driver to pass Cx and Pxx data to Xen hypervisor");
-+MODULE_LICENSE("GPL");
-+
-+
-+static int no_hypercall;
-+MODULE_PARM_DESC(off, "Inhibit the hypercall.");
-+module_param_named(off, no_hypercall, int, 0400);
-+
-+/*
-+ * Mutex to protect the acpi_ids_done.
-+ */
-+static DEFINE_MUTEX(acpi_ids_mutex);
-+/*
-+ * Don't think convert this to cpumask_var_t or use cpumask_bit - as those
-+ * shrink to nr_cpu_bits (which is dependent on possible_cpu), which can be
-+ * less than what we want to put in.
-+ */
-+#define NR_ACPI_CPUS	NR_CPUS
-+#define MAX_ACPI_BITS	(BITS_TO_LONGS(NR_ACPI_CPUS))
-+static unsigned long *acpi_ids_done;
-+/*
-+ * Again, don't convert to cpumask - as we are reading the raw ACPI CPU ids
-+ * which can go beyond what we presently see.
-+ */
-+static unsigned long *acpi_id_present;
-+
-+
-+#define POLL_TIMER	msecs_to_jiffies(5000 /* 5 sec */)
-+static struct task_struct *xen_processor_thread;
-+
-+static int xen_push_cxx_to_hypervisor(struct acpi_processor *_pr)
-+{
-+	struct xen_platform_op op = {
-+		.cmd			= XENPF_set_processor_pminfo,
-+		.interface_version	= XENPF_INTERFACE_VERSION,
-+		.u.set_pminfo.id	= _pr->acpi_id,
-+		.u.set_pminfo.type	= XEN_PM_CX,
-+	};
-+	struct xen_processor_cx *xen_cx, *xen_cx_states = NULL;
-+	struct acpi_processor_cx *cx;
-+	int i, ok, ret = 0;
-+
-+	xen_cx_states = kcalloc(_pr->power.count,
-+				sizeof(struct xen_processor_cx), GFP_KERNEL);
-+	if (!xen_cx_states)
-+		return -ENOMEM;
-+
-+	for (ok = 0, i = 1; i <= _pr->power.count; i++) {
-+		cx = &_pr->power.states[i];
-+		if (!cx->valid)
-+			continue;
-+
-+		xen_cx = &(xen_cx_states[ok++]);
-+
-+		xen_cx->reg.space_id = ACPI_ADR_SPACE_SYSTEM_IO;
-+		if (cx->entry_method == ACPI_CSTATE_SYSTEMIO) {
-+			xen_cx->reg.bit_width = 8;
-+			xen_cx->reg.bit_offset = 0;
-+			xen_cx->reg.access_size = 1;
-+		} else {
-+			xen_cx->reg.space_id = ACPI_ADR_SPACE_FIXED_HARDWARE;
-+			if (cx->entry_method == ACPI_CSTATE_FFH) {
-+				/* NATIVE_CSTATE_BEYOND_HALT */
-+				xen_cx->reg.bit_offset = 2;
-+				xen_cx->reg.bit_width = 1; /* VENDOR_INTEL */
-+			}
-+			xen_cx->reg.access_size = 0;
-+		}
-+		xen_cx->reg.address = cx->address;
-+
-+		xen_cx->type = cx->type;
-+		xen_cx->latency = cx->latency;
-+		xen_cx->power = cx->power;
-+
-+		xen_cx->dpcnt = 0;
-+		set_xen_guest_handle(xen_cx->dp, NULL);
-+#ifdef DEBUG
-+		pr_debug(DRV_NAME ": CX: ID:%d [C%d:%s] entry:%d\n", _pr->acpi_id,
-+			 cx->type, cx->desc, cx->entry_method);
 +#endif
-+	}
-+	if (!ok) {
-+		pr_err(DRV_NAME ": No available Cx info for cpu %d\n", _pr->acpi_id);
-+		kfree(xen_cx_states);
-+		return -EINVAL;
-+	}
-+	op.u.set_pminfo.power.count = ok;
-+	op.u.set_pminfo.power.flags.bm_control = _pr->flags.bm_control;
-+	op.u.set_pminfo.power.flags.bm_check = _pr->flags.bm_check;
-+	op.u.set_pminfo.power.flags.has_cst = _pr->flags.has_cst;
-+	op.u.set_pminfo.power.flags.power_setup_done =
-+		_pr->flags.power_setup_done;
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
+@@ -200,13 +208,17 @@ static void __init xen_banner(void)
+ static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
+ static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
+ 
++static __read_mostly unsigned int cpuid_leaf1_ecx_set_mask;
++static __read_mostly unsigned int cpuid_leaf5_ecx_val;
++static __read_mostly unsigned int cpuid_leaf5_edx_val;
 +
-+	set_xen_guest_handle(op.u.set_pminfo.power.states, xen_cx_states);
+ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 		      unsigned int *cx, unsigned int *dx)
+ {
+ 	unsigned maskebx = ~0;
+ 	unsigned maskecx = ~0;
+ 	unsigned maskedx = ~0;
+-
++	unsigned setecx = 0;
+ 	/*
+ 	 * Mask out inconvenient features, to try and disable as many
+ 	 * unsupported kernel subsystems as possible.
+@@ -214,9 +226,18 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 	switch (*ax) {
+ 	case 1:
+ 		maskecx = cpuid_leaf1_ecx_mask;
++		setecx = cpuid_leaf1_ecx_set_mask;
+ 		maskedx = cpuid_leaf1_edx_mask;
+ 		break;
+ 
++	case CPUID_MWAIT_LEAF:
++		/* Synthesize the values.. */
++		*ax = 0;
++		*bx = 0;
++		*cx = cpuid_leaf5_ecx_val;
++		*dx = cpuid_leaf5_edx_val;
++		return;
 +
-+	if (!no_hypercall)
-+		ret = HYPERVISOR_dom0_op(&op);
+ 	case 0xb:
+ 		/* Suppress extended topology stuff */
+ 		maskebx = 0;
+@@ -232,9 +253,75 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 
+ 	*bx &= maskebx;
+ 	*cx &= maskecx;
++	*cx |= setecx;
+ 	*dx &= maskedx;
 +
-+	if (ret)
-+		pr_err(DRV_NAME "(CX): Hypervisor returned (%d) for ACPI ID: %d\n",
-+		       ret, _pr->acpi_id);
-+
-+	kfree(xen_cx_states);
-+
-+	return ret;
-+}
-+static struct xen_processor_px *xen_copy_pss_data(struct acpi_processor *_pr,
-+						  struct xen_processor_performance *xen_perf)
+ }
+ 
++static bool __init xen_check_mwait(void)
 +{
-+	struct xen_processor_px *xen_states = NULL;
-+	int i;
-+
-+	BUILD_BUG_ON(sizeof(struct xen_processor_px) !=
-+		     sizeof(struct acpi_processor_px));
-+
-+	xen_states = kcalloc(_pr->performance->state_count,
-+			     sizeof(struct xen_processor_px), GFP_KERNEL);
-+	if (!xen_states)
-+		return ERR_PTR(-ENOMEM);
-+
-+	xen_perf->state_count = _pr->performance->state_count;
-+	for (i = 0; i < _pr->performance->state_count; i++) {
-+		/* Fortunatly for us, they are both the same size */
-+		memcpy(&(xen_states[i]), &(_pr->performance->states[i]),
-+		       sizeof(struct acpi_processor_px));
-+	}
-+	return xen_states;
-+}
-+static int xen_copy_psd_data(struct acpi_processor *_pr,
-+			     struct xen_processor_performance *xen_perf)
-+{
-+	BUILD_BUG_ON(sizeof(struct xen_psd_package) !=
-+		     sizeof(struct acpi_psd_package));
-+
-+	if (_pr->performance->shared_type != CPUFREQ_SHARED_TYPE_NONE) {
-+		xen_perf->shared_type = _pr->performance->shared_type;
-+
-+		memcpy(&(xen_perf->domain_info), &(_pr->performance->domain_info),
-+		       sizeof(struct acpi_psd_package));
-+	} else {
-+		if ((&cpu_data(0))->x86_vendor != X86_VENDOR_AMD)
-+			return -EINVAL;
-+
-+		/* On AMD, the powernow-k8 is loaded before acpi_cpufreq
-+		 * meaning that acpi_processor_preregister_performance never
-+		 * gets called which would parse the _PSD. The only relevant
-+		 * information from _PSD we need is whether it is HW_ALL or any
-+		 * other type. AMD K8 >= are SW_ALL or SW_ANY, AMD K7<= HW_ANY.
-+		 * This driver checks at the start whether it is K8 so it
-+		 * if we get here it can only be K8.
-+		 */
-+		xen_perf->shared_type = CPUFREQ_SHARED_TYPE_ANY;
-+		xen_perf->domain_info.coord_type = DOMAIN_COORD_TYPE_SW_ANY;
-+		xen_perf->domain_info.num_processors = num_online_cpus();
-+	}
-+	return 0;
-+}
-+static int xen_copy_pct_data(struct acpi_pct_register *pct,
-+			     struct xen_pct_register *_pct)
-+{
-+	/* It would be nice if you could just do 'memcpy(pct, _pct') but
-+	 * sadly the Xen structure did not have the proper padding
-+	 * so the descriptor field takes two (_pct) bytes instead of one (pct).
-+	 */
-+	_pct->descriptor = pct->descriptor;
-+	_pct->length = pct->length;
-+	_pct->space_id = pct->space_id;
-+	_pct->bit_width = pct->bit_width;
-+	_pct->bit_offset = pct->bit_offset;
-+	_pct->reserved = pct->reserved;
-+	_pct->address = pct->address;
-+	return 0;
-+}
-+static int xen_push_pxx_to_hypervisor(struct acpi_processor *_pr)
-+{
-+	int ret = 0;
++#if CONFIG_ACPI
 +	struct xen_platform_op op = {
 +		.cmd			= XENPF_set_processor_pminfo,
-+		.interface_version	= XENPF_INTERFACE_VERSION,
-+		.u.set_pminfo.id	= _pr->acpi_id,
-+		.u.set_pminfo.type	= XEN_PM_PX,
++		.u.set_pminfo.id	= -1,
++		.u.set_pminfo.type	= XEN_PM_PDC,
 +	};
-+	struct xen_processor_performance *xen_perf;
-+	struct xen_processor_px *xen_states = NULL;
++	uint32_t buf[3];
++	unsigned int ax, bx, cx, dx;
++	unsigned int mwait_mask;
 +
-+	xen_perf = &op.u.set_pminfo.perf;
-+
-+	xen_perf->platform_limit = _pr->performance_platform_limit;
-+	xen_perf->flags |= XEN_PX_PPC;
-+	xen_copy_pct_data(&(_pr->performance->control_register),
-+			  &xen_perf->control_register);
-+	xen_copy_pct_data(&(_pr->performance->status_register),
-+			  &xen_perf->status_register);
-+	xen_perf->flags |= XEN_PX_PCT;
-+	xen_states = xen_copy_pss_data(_pr, xen_perf);
-+	if (!IS_ERR_OR_NULL(xen_states)) {
-+		set_xen_guest_handle(xen_perf->states, xen_states);
-+		xen_perf->flags |= XEN_PX_PSS;
-+	}
-+	if (!xen_copy_psd_data(_pr, xen_perf))
-+		xen_perf->flags |= XEN_PX_PSD;
-+
-+	if (!no_hypercall)
-+		ret = HYPERVISOR_dom0_op(&op);
-+
-+	if (ret)
-+		pr_err(DRV_NAME "(_PXX): Hypervisor returned (%d) for ACPI ID %d\n",
-+		       ret, _pr->acpi_id);
-+
-+	if (!IS_ERR_OR_NULL(xen_states))
-+		kfree(xen_states);
-+
-+	return ret;
-+}
-+/*
-+ * We read out the struct acpi_processor, and serialize access
-+ * so that there is only one caller. This is so that we won't
-+ * race with the CPU hotplug code (xen_cpu_soft_notify).
-+ */
-+static int xen_process_data(struct acpi_processor *_pr)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&acpi_ids_mutex);
-+	if (__test_and_set_bit(_pr->acpi_id, acpi_ids_done)) {
-+		mutex_unlock(&acpi_ids_mutex);
-+		return -EBUSY;
-+	}
-+	if (_pr->flags.power)
-+		err = xen_push_cxx_to_hypervisor(_pr);
-+
-+	if (_pr->performance && _pr->performance->states)
-+		err |= xen_push_pxx_to_hypervisor(_pr);
-+
-+	mutex_unlock(&acpi_ids_mutex);
-+	return err;
-+}
-+static acpi_status
-+xen_read_acpi_id(acpi_handle handle, u32 lvl, void *context, void **rv)
-+{
-+	u32 acpi_id;
-+	acpi_status status;
-+	acpi_object_type acpi_type;
-+	unsigned long long tmp;
-+	union acpi_object object = { 0 };
-+	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
-+
-+	status = acpi_get_type(handle, &acpi_type);
-+	if (ACPI_FAILURE(status))
-+		return AE_OK;
-+
-+	switch (acpi_type) {
-+	case ACPI_TYPE_PROCESSOR:
-+		status = acpi_evaluate_object(handle, NULL, NULL, &buffer);
-+		if (ACPI_FAILURE(status))
-+			return AE_OK;
-+		acpi_id = object.processor.proc_id;
-+		break;
-+	case ACPI_TYPE_DEVICE:
-+		status = acpi_evaluate_integer(handle, "_UID", NULL, &tmp);
-+		if (ACPI_FAILURE(status))
-+			return AE_OK;
-+		acpi_id = tmp;
-+		break;
-+	default:
-+		return AE_OK;
-+	}
-+	if (acpi_id > NR_ACPI_CPUS) {
-+		WARN_ONCE(1, "There are %d ACPI processors, but kernel can only do %d!\n",
-+		     acpi_id, NR_ACPI_CPUS);
-+		return AE_OK;
-+	}
-+	__set_bit(acpi_id, acpi_id_present);
-+
-+	return AE_OK;
-+}
-+static unsigned int xen_acpi_ids_more(void)
-+{
-+	unsigned int n = 0;
-+
-+	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
-+			    ACPI_UINT32_MAX,
-+			    xen_read_acpi_id, NULL, NULL, NULL);
-+	acpi_get_devices("ACPI0007", xen_read_acpi_id, NULL, NULL);
-+
-+	mutex_lock(&acpi_ids_mutex);
-+	if (!bitmap_equal(acpi_id_present, acpi_ids_done, MAX_ACPI_BITS))
-+		n = bitmap_weight(acpi_id_present, MAX_ACPI_BITS);
-+	mutex_unlock(&acpi_ids_mutex);
-+
-+	return n;
-+}
-+
-+static int xen_processor_check(void)
-+{
-+	struct cpufreq_policy *policy;
-+	struct acpi_processor *pr_backup = NULL;
-+	int cpu, err = 0;
-+
-+	cpu = get_cpu();
-+	put_cpu();
-+	policy = cpufreq_cpu_get(cpu);
-+	if (!policy)
-+		return -EBUSY;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu) {
-+		struct acpi_processor *_pr;
-+
-+		_pr = per_cpu(processors, cpu /* APIC ID */);
-+		if (!_pr)
-+			continue;
-+
-+		if (!pr_backup) {
-+			pr_backup = kzalloc(sizeof(struct acpi_processor), GFP_KERNEL);
-+			memcpy(pr_backup, _pr, sizeof(struct acpi_processor));
-+		}
-+		(void)xen_process_data(_pr);
-+	}
-+	put_online_cpus();
-+
-+	cpufreq_cpu_put(policy);
-+
-+	/* All online CPUs have been processed at this stage. Now verify
-+	 * whether in fact "online CPUs" == physical CPUs.
++	/* We need to determine whether it is OK to expose the MWAIT
++	 * capability to the kernel to harvest deeper than C3 states from ACPI
++	 * _CST using the processor_harvest_xen.c module. For this to work, we
++	 * need to gather the MWAIT_LEAF values (which the cstate.c code
++	 * checks against). The hypervisor won't expose the MWAIT flag because
++	 * it would break backwards compatibility; so we will find out directly
++	 * from the hardware and hypercall.
 +	 */
-+	acpi_id_present = kcalloc(MAX_ACPI_BITS, sizeof(unsigned long), GFP_KERNEL);
-+	if (!acpi_id_present) {
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
-+	memset(acpi_id_present, 0, MAX_ACPI_BITS * sizeof(unsigned long));
-+
-+	if (xen_acpi_ids_more() && pr_backup) {
-+		for_each_set_bit(cpu, acpi_id_present, MAX_ACPI_BITS) {
-+			pr_backup->acpi_id = cpu;
-+			/* We will get -EBUSY if it has been programmed already. */
-+			(void)xen_process_data(pr_backup);
-+		}
-+	}
-+	kfree(acpi_id_present);
-+	acpi_id_present = NULL;
-+err_out:
-+	kfree(pr_backup);
-+	pr_backup = NULL;
-+	return err;
-+}
-+/*
-+ * The purpose of this timer/thread is to wait for the ACPI processor
-+ * and CPUfreq drivers to load up and parse the Pxx and Cxx information
-+ * before we attempt to read it.
-+ */
-+static void xen_processor_timeout(unsigned long arg)
-+{
-+	wake_up_process((struct task_struct *)arg);
-+}
-+static int xen_processor_thread_func(void *dummy)
-+{
-+	struct timer_list timer;
-+	int err = 0;
-+
-+	setup_deferrable_timer_on_stack(&timer, xen_processor_timeout,
-+					(unsigned long)current);
-+	do {
-+		__set_current_state(TASK_INTERRUPTIBLE);
-+		mod_timer(&timer, jiffies + POLL_TIMER);
-+		schedule();
-+		err = xen_processor_check();
-+		if (err != -EBUSY)
-+			break;
-+	} while (!kthread_should_stop());
-+
-+	if (err)
-+		pr_err(DRV_NAME ": Failed to upload data (%d)!\n", err);
-+	del_timer_sync(&timer);
-+	destroy_timer_on_stack(&timer);
-+	return 0;
-+}
-+
-+static int xen_cpu_soft_notify(struct notifier_block *nfb,
-+			       unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+	struct acpi_processor *_pr = per_cpu(processors, cpu);
-+
-+	if (action == CPU_ONLINE && _pr)
-+		(void)xen_process_data(_pr);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block xen_cpu_notifier = {
-+	.notifier_call = xen_cpu_soft_notify,
-+	.priority = -1, /* Be the last one */
-+};
-+
-+static int __init check_prereq(void)
-+{
-+	struct cpuinfo_x86 *c = &cpu_data(0);
-+
 +	if (!xen_initial_domain())
-+		return -ENODEV;
++		return false;
 +
-+	if (!acpi_gbl_FADT.smi_command)
-+		return -ENODEV;
++	ax = 1;
++	cx = 0;
 +
-+	if (c->x86_vendor == X86_VENDOR_INTEL) {
-+		if (!cpu_has(c, X86_FEATURE_EST))
-+			return -ENODEV;
++	native_cpuid(&ax, &bx, &cx, &dx);
 +
-+		return 0;
++	mwait_mask = (1 << (X86_FEATURE_EST % 32)) |
++		     (1 << (X86_FEATURE_MWAIT % 32));
++
++	if ((cx & mwait_mask) != mwait_mask)
++		return false;
++
++	/* We need to emulate the MWAIT_LEAF and for that we need both
++	 * ecx and edx. The hypercall provides only partial information.
++	 */
++
++	ax = CPUID_MWAIT_LEAF;
++	bx = 0;
++	cx = 0;
++	dx = 0;
++
++	native_cpuid(&ax, &bx, &cx, &dx);
++
++	/* Ask the Hypervisor whether to clear ACPI_PDC_C_C2C3_FFH. If so,
++	 * don't expose MWAIT_LEAF and let ACPI pick the IOPORT version of C3.
++	 */
++	buf[0] = ACPI_PDC_REVISION_ID;
++	buf[1] = 1;
++	buf[2] = (ACPI_PDC_C_CAPABILITY_SMP | ACPI_PDC_EST_CAPABILITY_SWSMP);
++
++	set_xen_guest_handle(op.u.set_pminfo.pdc, buf);
++
++	if ((HYPERVISOR_dom0_op(&op) == 0) &&
++	    (buf[2] & (ACPI_PDC_C_C1_FFH | ACPI_PDC_C_C2C3_FFH))) {
++		cpuid_leaf5_ecx_val = cx;
++		cpuid_leaf5_edx_val = dx;
 +	}
-+	if (c->x86_vendor == X86_VENDOR_AMD) {
-+		u32 hi = 0, lo = 0;
-+		/* Copied from powernow-k8.h, can't include ../cpufreq/powernow
-+		 * as we get compile warnings for the static functions.
-+		 */
-+#define MSR_PSTATE_CUR_LIMIT    0xc0010061 /* pstate current limit MSR */
-+		rdmsr(MSR_PSTATE_CUR_LIMIT, lo, hi);
-+
-+		/* If the MSR cannot provide the data, the powernow-k8
-+		 * won't process the data properly either.
-+		 */
-+		if (hi || lo)
-+			return 0;
-+	}
-+	return -ENODEV;
++	return true;
++#else
++	return false;
++#endif
 +}
+ static void __init xen_init_cpuid_mask(void)
+ {
+ 	unsigned int ax, bx, cx, dx;
+@@ -261,6 +348,9 @@ static void __init xen_init_cpuid_mask(void)
+ 	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
+ 	if ((cx & xsave_mask) != xsave_mask)
+ 		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
 +
-+static int __init xen_processor_passthru_init(void)
-+{
-+	int rc = check_prereq();
-+
-+	if (rc)
-+		return rc;
-+
-+	acpi_ids_done = kcalloc(MAX_ACPI_BITS, sizeof(unsigned long), GFP_KERNEL);
-+	if (!acpi_ids_done)
-+		return -ENOMEM;
-+	memset(acpi_ids_done, 0, MAX_ACPI_BITS * sizeof(unsigned long));
-+	xen_processor_thread = kthread_run(xen_processor_thread_func, NULL, DRV_NAME);
-+	if (IS_ERR(xen_processor_thread)) {
-+		pr_err(DRV_NAME ": Failed to create thread. Aborting.\n");
-+		return -ENOMEM;
-+	}
-+	register_hotcpu_notifier(&xen_cpu_notifier);
-+	return 0;
-+}
-+static void __exit xen_processor_passthru_exit(void)
-+{
-+	unregister_hotcpu_notifier(&xen_cpu_notifier);
-+	if (xen_processor_thread)
-+		kthread_stop(xen_processor_thread);
-+	kfree(acpi_ids_done);
-+}
-+late_initcall(xen_processor_passthru_init);
-+module_exit(xen_processor_passthru_exit);
++	if (xen_check_mwait())
++		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
+ }
+ 
+ static void xen_set_debugreg(int reg, unsigned long val)
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+index c168468..6220b98 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -200,7 +200,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_getidletime_t);
+ #define XEN_PM_CX   0
+ #define XEN_PM_PX   1
+ #define XEN_PM_TX   2
+-
++#define XEN_PM_PDC  3
+ /* Px sub info type */
+ #define XEN_PX_PCT   1
+ #define XEN_PX_PSS   2
+@@ -286,6 +286,7 @@ struct xen_processor_performance {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xen_processor_performance);
+ 
++DEFINE_GUEST_HANDLE(uint32_t);
+ struct xenpf_set_processor_pminfo {
+ 	/* IN variables */
+ 	uint32_t id;    /* ACPI CPU ID */
+@@ -293,6 +294,7 @@ struct xenpf_set_processor_pminfo {
+ 	union {
+ 		struct xen_processor_power          power;/* Cx: _CST/_CSD */
+ 		struct xen_processor_performance    perf; /* Px: _PPC/_PCT/_PSS/_PSD */
++		GUEST_HANDLE(uint32_t)              pdc;
+ 	};
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo);
 -- 
 1.7.9.48.g85da4d
 
