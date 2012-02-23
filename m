@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2BWG2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 01:28:51 -0500
-Received: from hulk.biessmann.org ([62.75.166.25]:54195 "EHLO
-	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2BWG2u (ORCPT
+	id S1753404Ab2BWG3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:29:25 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33714 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752154Ab2BWG3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 01:28:50 -0500
-Message-ID: <4F45DC99.1050405@biessmann.de>
-Date: Thu, 23 Feb 2012 07:28:41 +0100
-From: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jochen Friedrich <jochen@scram.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: [PATCH] mod/file2alias: make modpost compile on darwin again
-References: <1329947735-4331-1-git-send-email-andreas@biessmann.de> <874nui5uv2.fsf@rustcorp.com.au>
-In-Reply-To: <874nui5uv2.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SPAM_bar: --
-X-SPAM_score: -28
-X-ChkData-Signature: d7728f4bf4f79dc40812083b19a5dfae
+	Thu, 23 Feb 2012 01:29:23 -0500
+X-Sasl-enc: YBPSTedndO4aQRVSI0Rkor4zISGUOAEw9sZd6N9XAhpz7d4qnwmEAsHFUw 1329978562
+Message-ID: <1329978558.25314.0.camel@perseus.themaw.net>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+From: Ian Kent <raven@themaw.net>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Date: Thu, 23 Feb 2012 14:29:18 +0800
+In-Reply-To: <1329963683.2244.19.camel@perseus.themaw.net>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+	 <20120221.221609.218135609185671883.davem@davemloft.net>
+	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+	 <1329889428.2193.45.camel@perseus.themaw.net>
+	 <1329890027.2193.48.camel@perseus.themaw.net>
+	 <1329890251.2193.50.camel@perseus.themaw.net>
+	 <1329903139.2193.66.camel@perseus.themaw.net>
+	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
+	 <1329961703.2244.8.camel@perseus.themaw.net>
+	 <1329962085.2244.10.camel@perseus.themaw.net>
+	 <1329963683.2244.19.camel@perseus.themaw.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 23.02.12 00:08, Rusty Russell wrote:
-> On Wed, 22 Feb 2012 22:55:35 +0100, Andreas Bießmann <andreas@biessmann.de> wrote:
->> commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
->> the linux kernel on darwin hosts.
->> This fix introduce some minimal glue to adopt linker section handling
->> for darwin hosts.
+On Thu, 2012-02-23 at 10:21 +0800, Ian Kent wrote:
+> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
+> > On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
+> > > On Wed, 2012-02-22 at 08:12 -0800, Linus Torvalds wrote:
+> > > > On Wed, Feb 22, 2012 at 1:32 AM, Ian Kent <raven@themaw.net> wrote:
+> > > > >
+> > > > > Oh, DOH ...
+> > > > >
+> > > > > The process mounting the autofs mount is passing the pipe it will use
+> > > > > for communication via a mount option so we can do this right in
+> > > > > fill_super.
+> > > > 
+> > > > No, we really cannot.
+> > > 
+> > > Sorry, I think your wrong this time.
+> > 
+> > On second thought, I suppose other user space users don't "have" to use
+> > mount(2) ....
 > 
-> Really?
+> Thomas, what does systemd use to mount the autofs mounts that it uses?
 
-Yes.
+Mmm ... AFAICS systemd uses mount(2) so that looks OK too.
 
-> Yes, I assumed an ELF host.  There's a portable way of doing this, but
-> it's damn ugly (see http://ccodearchive.net/info/autodata.html).
+Ian
 
-I stumbled over some other code snippet [1] when searching for a solution.
-
-> Oh, and checkpatch.pl is wrong, the code was fine.
-
-Sorry for that. I was running checkpatch.pl as dutiful patch submitter
-and that complained. Should I provide another version with 'checkpatch'
-adoptions changed back?
-
-> If noone has strong opinions about this, I'll apply it.
-
-Would be great. I guess this is a rare case (cross compiling on darwin
-host) but at least I and some of my colleagues do it from time to time.
-
-Andreas
---
-[1]
-http://google-perftools.googlecode.com/svn/!svn/bc/48/trunk/src/base/basictypes.h
