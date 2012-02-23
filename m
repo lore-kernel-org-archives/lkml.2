@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2BWJWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:22:11 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42348 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab2BWJWJ (ORCPT
+	id S1755261Ab2BWJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:28:24 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:45444 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab2BWJ2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:22:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.244.4 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F4605A4.5050203@gmail.com>
-Date: Thu, 23 Feb 2012 20:23:48 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Thu, 23 Feb 2012 04:28:22 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>,
+        Josh Boyer <jboyer@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hugetlbfs lockdep spew revisited.
+In-Reply-To: <20120217002726.GL23916@ZenIV.linux.org.uk>
+References: <20120217000856.GA13112@redhat.com> <20120217002726.GL23916@ZenIV.linux.org.uk>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 23 Feb 2012 14:57:41 +0530
+Message-ID: <87obspzype.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of at91_sys_read/write
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com> <4F456AAF.3090809@gmail.com> <20120223032503.GA20176@game.jcrosoft.org> <4F45B985.1000204@gmail.com> <20120223060151.GD20176@game.jcrosoft.org>
-In-Reply-To: <20120223060151.GD20176@game.jcrosoft.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12022309-2000-0000-0000-000006827166
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/12 17:01, Jean-Christophe PLAGNIOL-VILLARD wrote:
-
-> On 14:59 Thu 23 Feb     , Ryan Mallon wrote:
->> On 23/02/12 14:25, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>
->>> On 09:22 Thu 23 Feb     , Ryan Mallon wrote:
->>>> On 22/02/12 20:39, Nicolas Ferre wrote:
->>>>
->>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>>>
->>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> ---
->>>>>  arch/arm/mach-at91/at91x40.c              |    2 +-
->>>>>  arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
->>>>>  arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
->>>>>  3 files changed, 27 insertions(+), 21 deletions(-)
->>>>>
->>>>> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
->>>>> index 0154b7f..5400a1d 100644
->>>>> --- a/arch/arm/mach-at91/at91x40.c
->>>>> +++ b/arch/arm/mach-at91/at91x40.c
->>>>> @@ -44,7 +44,7 @@ static void at91x40_idle(void)
->>>>>  	 * Disable the processor clock.  The processor will be automatically
->>>>>  	 * re-enabled by an interrupt or by a reset.
->>>>>  	 */
->>>>> -	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
->>>>> +	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
->>>>
->>>>
->>>> This doesn't seem to be equivalent, at91_sys_write does:
->>>>
->>>>   void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
->>>>   __raw_writel(value, addr + reg_offset);
->>>>
->>>> and this patch doesn't redefine AT91_PS_CR. Was it broken before this
->>>> patch? What am I missing?
->>> this is right
->>> #define AT91_PS_CR      (AT91_PS + 0)   /* PS Control register */
->>
->>
->> That doesn't answer my question.
->>
->> The old, at91_sys_write, version was writing to (using __raw_writel):
->>
->>   AT91_VA_BASE_SYS + AT91_PS_CR
->>
->> The new version is writing, also using __raw_writel, to:
->>
->>   AT91_PS_CR
->>
->> The value of AT91_PS_CR is not changed in this patch. Assuming that
->> AT91_VA_BASE_SYS for at91x40 (which at a quick glance it is not), then
->> the old and the new version of the code are not writing to the same
->> address.
->>
->> Was it previously incorrect, or is it incorrect now?
-> it's as we update
+On Fri, 17 Feb 2012 00:27:26 +0000, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
+> > Remember this ? https://lkml.org/lkml/2011/4/15/272
+> > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
+> > but it seems to still be there.
 > 
-> +#define AT91_PS		0xffff4000	/* Power Save */
+> > the existing dependency chain (in reverse order) is:
+> 
+> [snip]
+> 
+> ... and as bloody usual, that mentioning of readdir in the output is a
+> red herring; the real problem (and yes, it *is* deadlock-prone) is not
+> with getdents(2) that cannot happen on anything that could be mmaped;
+> it's with hugetlbfs_read() (i.e. read(2)) that very definitely *can*.
+> 
+> This is *not* a misannotation and not a false positive; this is a real,
+> honest deadlock.
+> Thread A:
+> 	read() on hugetlbfs
+> 	hugetlbfs_read() called
+> 	i_mutex grabbed
+> 	hugetlbfs_read_actor() called
+> 	__copy_to_user() called
+> 	page fault is triggered
+> Thread B, sharing address space with A:
+> 	mmap() the same file
+> 	->mmap_sem is grabbed on task_B->mm->mmap_sem
+> 	hugetlbfs_file_mmap() is called
+> 	attempt to grab ->i_mutex and block waiting for A to give it up
+> Thread A:
+> 	pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
+> which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
+> for B to give it up.
+> 
+> Deadlock.
 
+How about the below patch ? If this is ok, I can send this as a separate
+mail. I am still not sure about dropping inode->i_mutex in mmap as that
+will mean we cannot update i_size in mmap and that will break userspace ?
 
-Ah, I missed the new value of AT91_PS. Sorry for the confusion.
+commit 8fb2df40cabd99dc4f39f7fd26ba1d4db885cb5e
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Wed Feb 22 10:18:51 2012 +0530
 
-~Ryan
+    hugetlbfs: Add new rw_semaphore for truncate/read race
+    
+    Drop using inode->i_mutex from read, since that can result in deadlock with
+    mmap. Ideally we can extend the patch to make sure we don't increase i_size
+    in mmap. But that will break userspace, because application will have to now
+    use truncate(2) to increase i_size in hugetlbfs.
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 2680578..cd33685 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -238,8 +238,9 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
+ 	unsigned long end_index;
+ 	loff_t isize;
+ 	ssize_t retval = 0;
++	struct hugetlbfs_inode_info *hinfo = HUGETLBFS_I(inode);
+ 
+-	mutex_lock(&inode->i_mutex);
++	down_read(&hinfo->truncate_sem);
+ 
+ 	/* validate length */
+ 	if (len == 0)
+@@ -309,7 +310,7 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
+ 	}
+ out:
+ 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
+-	mutex_unlock(&inode->i_mutex);
++	up_read(&hinfo->truncate_sem);
+ 	return retval;
+ }
+ 
+@@ -408,16 +409,19 @@ static int hugetlb_vmtruncate(struct inode *inode, loff_t offset)
+ 	pgoff_t pgoff;
+ 	struct address_space *mapping = inode->i_mapping;
+ 	struct hstate *h = hstate_inode(inode);
++	struct hugetlbfs_inode_info *hinfo = HUGETLBFS_I(inode);
+ 
+ 	BUG_ON(offset & ~huge_page_mask(h));
+ 	pgoff = offset >> PAGE_SHIFT;
+ 
++	down_write(&hinfo->truncate_sem);
+ 	i_size_write(inode, offset);
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	if (!prio_tree_empty(&mapping->i_mmap))
+ 		hugetlb_vmtruncate_list(&mapping->i_mmap, pgoff);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 	truncate_hugepages(inode, offset);
++	up_write(&hinfo->truncate_sem);
+ 	return 0;
+ }
+ 
+@@ -695,9 +699,10 @@ static const struct address_space_operations hugetlbfs_aops = {
+ 
+ static void init_once(void *foo)
+ {
+-	struct hugetlbfs_inode_info *ei = (struct hugetlbfs_inode_info *)foo;
++	struct hugetlbfs_inode_info *hinfo = (struct hugetlbfs_inode_info *)foo;
+ 
+-	inode_init_once(&ei->vfs_inode);
++	init_rwsem(&hinfo->truncate_sem);
++	inode_init_once(&hinfo->vfs_inode);
+ }
+ 
+ const struct file_operations hugetlbfs_file_operations = {
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 226f488..57fb788 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -155,6 +155,7 @@ struct hugetlbfs_sb_info {
+ 
+ struct hugetlbfs_inode_info {
+ 	struct shared_policy policy;
++	struct rw_semaphore truncate_sem;
+ 	struct inode vfs_inode;
+ };
+ 
+
