@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2BWVdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:33:47 -0500
-Received: from mga03.intel.com ([143.182.124.21]:53021 "EHLO mga03.intel.com"
+	id S1757146Ab2BWVjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:39:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab2BWVdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:33:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="110093454"
-Message-ID: <4F46B169.1030307@intel.com>
-Date: Thu, 23 Feb 2012 19:36:41 -0200
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+	id S1753424Ab2BWVjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:39:07 -0500
+Date: Thu, 23 Feb 2012 16:38:47 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120223213847.GK19691@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [PATCH] drm: Reduce the number of retries whilst reading EDIDs
-References: <CA+55aFxO27oa+WAtDLuWtr-NFNmKb2T0V6pccn=AE+g5PePPUg@mail.gmail.com> <1330026771-19937-1-git-send-email-chris@chris-wilson.co.uk> <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
-In-Reply-To: <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329990094.24994.64.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 06:15 PM, Linus Torvalds wrote:
-> On Thu, Feb 23, 2012 at 11:52 AM, Chris Wilson<chris@chris-wilson.co.uk>  wrote:
->>
->> i2c retries if sees an EGAIN, drm_do_probe_ddc_edid retries until it
->> gets a result and *then* drm_do_get_edid retries until it gets a result
->> it is happy with. All in all, that is a lot of processor intensive
->> looping in cases where we do not expect and cannot get valid data - for
->> example on Intel with disconnected hardware we will busy-spin until we
->> hit the i2c timeout. This is then repeated for every connector when
->> querying the current status of outputs.
->
-> Sadly, this doesn't seem to make any difference to my case. My xrandr
-> stays at 0.555s even with this patch.
+On Thu, Feb 23, 2012 at 10:41:34AM +0100, Peter Zijlstra wrote:
+> On Wed, 2012-02-22 at 11:57 -0500, Vivek Goyal wrote:
+> > 
+> > Again, it does not mean I am advocating flat hiearchy. I am just wondering
+> > in case of fully nested hierarchies (task at same level as groups), how
+> > does one explain it to a layman user who understands things in terms of
+> > % of resources. 
+> 
+> If your complete control is % based then I would assume its a % of a %.
+> Simple enough.
 
-Perhaps a stupid question, but does you tree has 
-http://cgit.freedesktop.org/~airlied/linux/commit/?h=drm-next&id=9292f37e1f5c79400254dca46f83313488093825 
-from Dave's drm-next?
+But % of % will vary dynamically and not be static. So if root has got
+100% of resources and we want 25% of that for a group, then hierarchy
+might look as follows.
 
-If it has, it would be the 1st time that I see xrandr take longer than 
-.5s with that patch on an Intel GPU. We even added a check for this into 
-intel-gpu-tools to warn us if any machine takes that long, and none had 
-hit it so far. So if this is the case here, there is something Mac 
-Mini-specific indeed to investigate.
+				root
+				/ | \
+			       T1 T2 g1
 
--Eugeni
+T1, T2 are tasks and g1 is the group needing 25% of root's resources. Now
+number of tasks running in parallel to g1 will determine its effective %
+and tasks come and go. So the only way to do this would be that move T1
+and T2 in a child group under root and make sure new tasks don't show up
+in root. 
+
+Otherwise creating a group under root does not ensure that you get minimum
+% of resource. It just makes sure that you can't get more than 25% of
+% resources when things are tight.
+
+> 
+> If its bandwidth based then simply don't allow a child to consume more
+> bandwidth than its parent, also simple.
+
+In case of absolute limit, things are somewhat simpler. A group is not impacted
+by its peer tasks/groups that much. Well, there is also an issue and that
+is how do all the children of a group share the resources. So assume
+following.
+
+				  g1
+				/ | \
+			       T1 T2 g2
+
+Assume g1 has 100MB/s limit and g2 has 90MB/s limit too. Now how this
+100MB/s is divided among T1, T2 and g2? Round robin or do proportional
+division based on weights.  I think for cpu scheduler it can do
+proportional division as everything is implemented in single layer. For
+blkio, trottling is stacked on top of proportional. So I guess, I can
+do round robin between T1, T2 and g2 and also make sure total of T1, T2
+and g2 does not cross g1's bandwidth.
+
+So upper limit is not that big a issue. Proportional one does become
+one with effective % varying dynamically.
+
+Thanks
+Vivek
