@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086Ab2BWQsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:48:22 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:42863 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752736Ab2BWQsU (ORCPT
+	id S1753173Ab2BWQtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:49:16 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3695 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab2BWQtO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:48:20 -0500
-Date: Thu, 23 Feb 2012 08:48:13 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: shpc with acpi=off?
-Message-ID: <20120223084813.39908d81@jbarnes-desktop>
-In-Reply-To: <20120216150421.GA26167@redhat.com>
-References: <20120216150421.GA26167@redhat.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/eR5zNMI19XUPhk2mZEmMiX."; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 23 Feb 2012 11:49:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 23 Feb 2012 08:48:58 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 23 Feb 2012 08:48:56 -0800
+Subject: RE: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
+ config operations
+Thread-Topic: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
+ config operations
+Thread-Index: Aczx8ZTr0108S81NQBC8o/dSco+xUgAWS7ig
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC978@HQMAIL01.nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+	<1329720360-23227-21-git-send-email-swarren@nvidia.com>
+ <CACRpkdZshQqM5ZZj21gXMZ6xZCUsdEvDDDyzvhFJTjnuZ2=twg@mail.gmail.com>
+In-Reply-To: <CACRpkdZshQqM5ZZj21gXMZ6xZCUsdEvDDDyzvhFJTjnuZ2=twg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/eR5zNMI19XUPhk2mZEmMiX.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Linus Walleij wrote at Wednesday, February 22, 2012 11:09 PM:
+> On Mon, Feb 20, 2012 at 7:46 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-On Thu, 16 Feb 2012 17:04:22 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+...
+> > @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
+> >  mux settings on the primary pin controller, there is a convenience macro for
+> >  this:
+> >
+> > -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
+> > +PIN_MAP_MUX_GROUP("pinctrl-foo", "active", "pinctrl-foo", NULL, "power_func")
+> 
+> Please keep the explicit _HOG macros for readability. Relying on
+> the implicit relation between dev and pctldev being the same and to be
+> parsed by humans is vulnerable.
+> 
+> PIN_MAP_MUX_GROUP_HOG()
 
-> I have a box where shpc works fine with acpi,
-> as well as when acpi is not built into kernel,
-> but fails with acpi=3Doff
-> Some debugging seems to indicate that
-> acpi_get_hp_hw_control_from_firmware
-> fails with acpi=3Doff.
->=20
-> Is this a bug or is there a reason to prevent shpc
-> from working in this setup?
-> Do we even care about acpi=3Doff?
-> Assuming we want to make acpi_get_hp_hw_control_from_firmware
-> succeed with acpi=3Doff, what is the best way to do this?
-> Check acpi_pci_disabled?
+OK, I guess I can add some of those back. The main reason I removed the
+special-cases was to avoid consumer.h being chock full of a ton of
+different macros you had to choose from. This wasn't so much of an issue
+before, but since the number of macros has grown now to support pin
+config, dummy states, etc., it seemed cluttered.
 
-Yeah not sure it's important to have SHPC work with acpi=3Doff.
-Disabling ACPI prevents us from getting all sorts of important info
-these days...
+Still, I guess they're useful, so I can add them back since you asked.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+-- 
+nvpublic
 
---Sig_/eR5zNMI19XUPhk2mZEmMiX.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPRm3NAAoJEIEoDkX4Qk9hVjoQAKLz+XnHv42HdmYLE6qtrgwe
-XYGjpicKKBQfkG3rTvXQLQnPP9n6xJl7Vbi0bwvsHYr0skA49UbzATWqMi0blbUZ
-WgL5CUDpFpXeC8iXTZwlbH4v7FHKd21ukB9RPX45Db11qKhQLN48cWnwJ+1Wki5D
-VpWBJ8orhGTSoLBP7dlKAqE0+BMbFTraa0gnzL/UIjgGSWH1t9MhY427cagrIJhn
-4DUxdqjqDzj245bybIdnCAzAxv3A5++yev89s25V6W4HqYZThf9oUZKGrkVyvQ6B
-MWTOeCMVS1XHogaOtQC4Vq1q5oo0Jr7Okm82xuZduk9/Usuhwt5xpwtoYo/14+ZA
-V7KIz5m1hQCNHTUL3PIr1gIBArXhRyFrKNkA8mA9DMPVa2KcrCT8GEWcbdfHRTFB
-GdE4FdeRpiRpxIdxSWVaiAbG6/RX0VQmcSNyCTilzeabPf4wodPNltchtGgaeQB+
-FoJ1gKHN00lA3+hltMnkpzZmA+N3qPHfgo2QG/Nc47LjghnwQumXwk7XZsfSDk13
-k9eZ1vc2YquoS5sPzRSoyNGJ91+Q6BfZnZ9n+oc4WxaIYmIqXYfsifTxcaMg1N4s
-B6F183bz++mO1DMIZ7QW4LMdX32cz1S/zZb4uXZVAsbTpVHGgZFmJHKpXUV1Jwhe
-cL+B4aHhnurz944FmDct
-=eyjL
------END PGP SIGNATURE-----
-
---Sig_/eR5zNMI19XUPhk2mZEmMiX.--
