@@ -1,223 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab2BWFgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 00:36:17 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:49717 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2BWFgQ (ORCPT
+	id S1752617Ab2BWFjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 00:39:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44648 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2BWFjl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 00:36:16 -0500
-Message-ID: <4F45D035.5000906@linux.vnet.ibm.com>
-Date: Thu, 23 Feb 2012 11:05:49 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Thu, 23 Feb 2012 00:39:41 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Nori, Sekhar" <nsekhar@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: RE: [PATCH v4 2/3] arm:davinci: move emif driver to drivers/mfd
+ from mach-davinci folder
+Thread-Topic: [PATCH v4 2/3] arm:davinci: move emif driver to drivers/mfd
+ from mach-davinci folder
+Thread-Index: AQHM5wFGKpFBqAjVOUWX8ihjnrE7QJZKDCsA
+Date: Thu, 23 Feb 2012 05:39:11 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3176A846@DBDE01.ent.ti.com>
+References: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
+ <1328771908-32527-3-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <1328771908-32527-3-git-send-email-prakash.pm@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [RFC][PATCH 5/7] PM / Sleep: Implement opportunistic sleep
-References: <201202070200.55505.rjw@sisk.pl> <201202220035.48033.rjw@sisk.pl> <4F44AB34.9030704@linux.vnet.ibm.com> <201202222310.47278.rjw@sisk.pl>
-In-Reply-To: <201202222310.47278.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12022220-3568-0000-0000-0000014195CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
+Hi,
 
-> On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
->> On 02/22/2012 05:05 AM, Rafael J. Wysocki wrote:
->>
->>> From: Rafael J. Wysocki <rjw@sisk.pl>
->>>
->>> Introduce a mechanism by which the kernel can trigger global
->>> transitions to a sleep state chosen by user space if there are no
->>> active wakeup sources.
->>>
->>> It consists of a new sysfs attribute, /sys/power/autosleep, that
->>> can be written one of the strings returned by reads from
->>> /sys/power/state, an ordered workqueue and a work item carrying out
->>> the "suspend" operations.  If a string representing the system's
->>> sleep state is written to /sys/power/autosleep, the work item
->>> triggering transitions to that state is queued up and it requeues
->>> itself after every execution until user space writes "off" to
->>> /sys/power/autosleep.
->>>
->>> That work item enables the detection of wakeup events using the
->>> functions already defined in drivers/base/power/wakeup.c (with one
->>> small modification) and calls either pm_suspend(), or hibernate() to
->>> put the system into a sleep state.  If a wakeup event is reported
->>> while the transition is in progress, it will abort the transition and
->>> the "system suspend" work item will be queued up again.
->>>
->>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
->>> ---
->>>  Documentation/ABI/testing/sysfs-power |   17 +++++
->>>  drivers/base/power/wakeup.c           |   38 ++++++-----
->>>  include/linux/suspend.h               |   13 +++-
->>>  kernel/power/Kconfig                  |    8 ++
->>>  kernel/power/Makefile                 |    1 
->>>  kernel/power/autosleep.c              |   98 ++++++++++++++++++++++++++++++
->>>  kernel/power/main.c                   |  108 ++++++++++++++++++++++++++++------
->>>  kernel/power/power.h                  |   18 +++++
->>>  8 files changed, 266 insertions(+), 35 deletions(-)
->>>
->>> Index: linux/kernel/power/Makefile
->>> ===================================================================
->>> --- linux.orig/kernel/power/Makefile
->>> +++ linux/kernel/power/Makefile
->>> @@ -9,5 +9,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
->>>  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
->>>  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
->>>  				   block_io.o
->>> +obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
->>>
->>>  obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
->>> Index: linux/kernel/power/Kconfig
->>> ===================================================================
->>> --- linux.orig/kernel/power/Kconfig
->>> +++ linux/kernel/power/Kconfig
->>> @@ -103,6 +103,14 @@ config PM_SLEEP_SMP
->>>  	select HOTPLUG
->>>  	select HOTPLUG_CPU
->>>
->>> +config PM_AUTOSLEEP
->>> +	bool "Opportunistic sleep"
->>> +	depends on PM_SLEEP
->>> +	default n
->>> +	---help---
->>> +	Allow the kernel to trigger a system transition into a global sleep
->>> +	state automatically whenever there are no active wakeup sources.
->>> +
->>>  config PM_RUNTIME
->>>  	bool "Run-time PM core functionality"
->>>  	depends on !IA64_HP_SIM
->>> Index: linux/kernel/power/power.h
->>> ===================================================================
->>> --- linux.orig/kernel/power/power.h
->>> +++ linux/kernel/power/power.h
->>> @@ -264,3 +264,21 @@ static inline void suspend_thaw_processe
->>>  {
->>>  }
->>>  #endif
->>> +
->>> +#ifdef CONFIG_PM_AUTOSLEEP
->>> +
->>> +/* kernel/power/autosleep.c */
->>> +extern int pm_autosleep_init(void);
->>> +extern void pm_autosleep_lock(void);
->>> +extern void pm_autosleep_unlock(void);
->>> +extern suspend_state_t pm_autosleep_state(void);
->>> +extern int pm_autosleep_set_state(suspend_state_t state);
->>> +
->>> +#else /* !CONFIG_PM_AUTOSLEEP */
->>> +
->>> +static inline int pm_autosleep_init(void) { return 0; }
->>> +static inline void pm_autosleep_lock(void) {}
->>> +static inline void pm_autosleep_unlock(void) {}
->>> +static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
->>> +
->>> +#endif /* !CONFIG_PM_AUTOSLEEP */
->>> Index: linux/include/linux/suspend.h
->>> ===================================================================
->>> --- linux.orig/include/linux/suspend.h
->>> +++ linux/include/linux/suspend.h
->>> @@ -356,7 +356,7 @@ extern int unregister_pm_notifier(struct
->>>  extern bool events_check_enabled;
->>>
->>>  extern bool pm_wakeup_pending(void);
->>> -extern bool pm_get_wakeup_count(unsigned int *count);
->>> +extern bool pm_get_wakeup_count(unsigned int *count, bool block);
->>>  extern bool pm_save_wakeup_count(unsigned int count);
->>>
->>>  static inline void lock_system_sleep(void)
->>> @@ -407,6 +407,17 @@ static inline void unlock_system_sleep(v
->>>
->>>  #endif /* !CONFIG_PM_SLEEP */
->>>
->>> +#ifdef CONFIG_PM_AUTOSLEEP
->>> +
->>> +/* kernel/power/autosleep.c */
->>> +void queue_up_suspend_work(void);
->>> +
->>> +#else /* !CONFIG_PM_AUTOSLEEP */
->>> +
->>> +static inline void queue_up_suspend_work(void) {}
->>> +
->>> +#endif /* !CONFIG_PM_AUTOSLEEP */
->>> +
->>>  #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
->>>  /*
->>>   * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
->>> Index: linux/kernel/power/autosleep.c
->>> ===================================================================
->>> --- /dev/null
->>> +++ linux/kernel/power/autosleep.c
->>> @@ -0,0 +1,98 @@
->>> +/*
->>> + * kernel/power/autosleep.c
->>> + *
->>> + * Opportunistic sleep support.
->>> + *
->>> + * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
->>> + */
->>> +
->>> +#include <linux/device.h>
->>> +#include <linux/mutex.h>
->>> +#include <linux/pm_wakeup.h>
->>> +
->>> +#include "power.h"
->>> +
->>> +static suspend_state_t autosleep_state;
->>> +static struct workqueue_struct *autosleep_wq;
->>> +static DEFINE_MUTEX(autosleep_lock);
->>> +
->>> +static void try_to_suspend(struct work_struct *work)
->>> +{
->>> +	unsigned int initial_count, final_count;
->>> +
->>> +	if (!pm_get_wakeup_count(&initial_count, true))
->>> +		goto out;
->>> +
->>> +	mutex_lock(&autosleep_lock);
->>> +
->>> +	if (!pm_save_wakeup_count(initial_count)) {
->>> +		mutex_unlock(&autosleep_lock);
->>> +		goto out;
->>> +	}
->>> +
->>> +	if (autosleep_state == PM_SUSPEND_ON) {
->>> +		mutex_unlock(&autosleep_lock);
->>> +		return;
->>> +	}
->>> +	if (autosleep_state >= PM_SUSPEND_MAX)
->>> +		hibernate();
->>> +	else
->>> +		pm_suspend(autosleep_state);
->>
->>
->> We are calling pm_suspend() or hibernate() directly here.
->> Won't this break build when CONFIG_SUSPEND or CONFIG_HIBERNATION is not set?
->> CONFIG_PM_AUTOSLEEP depends only on PM_SLEEP which means we could enable
->> either one of suspend or hibernation and yet come to this point, breaking
->> the option which was not enabled.
+On Thu, Feb 09, 2012 at 12:48:27, Manjunathappa, Prakash wrote:
+> Move aemif kernel module from arch/arm/mach-davinci/ to multi functional
+> devices frame work. "davinci_aemif" MFD driver adds "davinci_nand" and
+> "physmap-flash" slave devices.
 > 
-> Both pm_suspend() and hibernate() have appropriate static inline definitions
-> for !CONFIG_SUSPEND and !CONFIG_HIBERNATION (in suspend.h), as far as I can say.
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> ---
+> Since v3:
+> No change. Resending as 3/3 in patch changed.
+> Since v2:
+> Modified emif MFD driver to load multiple instance of NAND/NOR devices.
+> Since v1:
+> Patch generated using -M option.
 > 
+>  arch/arm/Kconfig                                   |    1 +
+>  arch/arm/mach-davinci/Makefile                     |    2 +-
+>  drivers/mfd/Makefile                               |    1 +
+>  .../aemif.c => drivers/mfd/davinci_aemif.c         |   75 +++++++++++++++++++-
+>  include/linux/mfd/davinci_aemif.h                  |   14 ++++
+>  5 files changed, 91 insertions(+), 2 deletions(-)
+>  rename arch/arm/mach-davinci/aemif.c => drivers/mfd/davinci_aemif.c (66%)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index a48aecc..09dcb94 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -934,6 +934,7 @@ config ARCH_DAVINCI
+>  	select GENERIC_ALLOCATOR
+>  	select GENERIC_IRQ_CHIP
+>  	select ARCH_HAS_HOLES_MEMORYMODEL
+> +	select MFD_CORE
+>  	help
+>  	  Support for TI's DaVinci platform.
+>  
+> diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
+> index 2db78bd..8bab47c 100644
+> --- a/arch/arm/mach-davinci/Makefile
+> +++ b/arch/arm/mach-davinci/Makefile
+> @@ -5,7 +5,7 @@
+>  
+>  # Common objects
+>  obj-y 			:= time.o clock.o serial.o psc.o \
+> -			   dma.o usb.o common.o sram.o aemif.o
+> +			   dma.o usb.o common.o sram.o
+>  
+>  obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
+>  
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index b953bab..54fc267 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -11,6 +11,7 @@ obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
+>  obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
+>  obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
+>  
+> +obj-${CONFIG_ARCH_DAVINCI}	+= davinci_aemif.o
+>  obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
+>  obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
+>  obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
+> diff --git a/arch/arm/mach-davinci/aemif.c b/drivers/mfd/davinci_aemif.c
+> similarity index 66%
+> rename from arch/arm/mach-davinci/aemif.c
+> rename to drivers/mfd/davinci_aemif.c
+> index b67c115..5fb490d 100644
+> --- a/arch/arm/mach-davinci/aemif.c
+> +++ b/drivers/mfd/davinci_aemif.c
+> @@ -14,8 +14,13 @@
+>  #include <linux/clk.h>
+>  #include <linux/module.h>
+>  #include <linux/time.h>
+> -
+>  #include <linux/mfd/davinci_aemif.h>
+> +#include <linux/mtd/physmap.h>
+> +#include <linux/slab.h>
+> +#include <mach/nand.h>
+> +
+> +static char *name[] = {"davinci_nand", "physmap-flash",};
+> +#define MAX ARRAY_SIZE(name)
+>  
+>  /* Timing value configuration */
+>  
+> @@ -131,3 +136,71 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(davinci_aemif_setup_timing);
+> +
+> +static int __init davinci_aemif_probe(struct platform_device *pdev)
+> +{
+> +	struct davinci_aemif_devices *davinci_aemif_devices =
+> +		pdev->dev.platform_data;
+> +	struct platform_device *devices;
+> +	struct mfd_cell *cells;
+> +	int ret, i, j, count;
+> +
+> +	devices = davinci_aemif_devices->devices;
+> +
+> +	cells = kzalloc(sizeof(struct mfd_cell) *
+> +			davinci_aemif_devices->num_devices, GFP_KERNEL);
+> +
+> +	for (j = 0, count = 0; j < MAX; j++) {
+> +		for (i = 0; i < davinci_aemif_devices->num_devices; i++) {
+> +			if (strcmp(devices[i].name, name[j]))
+> +				continue;
+> +			cells[count].name = name[j];
+> +			cells[count].platform_data =
+> +				devices[i].dev.platform_data;
+> +			cells[count].pdata_size =
+> +				sizeof(struct davinci_nand_pdata);
 
+Doesnot take care of updating nor platform data size, I will fix this send out next version.
 
-Oh, you are right.. I overlooked that, sorry!
- 
-Regards,
-Srivatsa S. Bhat
+Thanks,
+Prakash
+
+> +			cells[count].id = devices[i].id;
+> +			cells[count].resources = devices[i].resource;
+> +			cells[count].num_resources = devices[i].num_resources;
+> +			count++;
+> +		}
+> +	}
+> +
+> +	ret = mfd_add_devices(&pdev->dev, 0, cells,
+> +			      count, NULL, 0);
+> +	if (ret != 0)
+> +		dev_err(&pdev->dev, "fail to register client devices\n");
+> +
+> +	return 0;
+> +}
+> +
+> +static int __devexit davinci_aemif_remove(struct platform_device *pdev)
+> +{
+> +	mfd_remove_devices(&pdev->dev);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver davinci_aemif_driver = {
+> +	.driver	= {
+> +		.name = "davinci_aemif",
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.remove	= __devexit_p(davinci_aemif_remove),
+> +};
+> +
+> +static int __init davinci_aemif_init(void)
+> +{
+> +	return platform_driver_probe(&davinci_aemif_driver,
+> +			davinci_aemif_probe);
+> +}
+> +module_init(davinci_aemif_init);
+> +
+> +static void __exit davinci_aemif_exit(void)
+> +{
+> +	platform_driver_unregister(&davinci_aemif_driver);
+> +}
+> +module_exit(davinci_aemif_exit);
+> +
+> +MODULE_AUTHOR("Prakash Manjunathappa");
+> +MODULE_DESCRIPTION("Texas Instruments AEMIF Interface");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/mfd/davinci_aemif.h b/include/linux/mfd/davinci_aemif.h
+> index 05b2934..18650c3 100644
+> --- a/include/linux/mfd/davinci_aemif.h
+> +++ b/include/linux/mfd/davinci_aemif.h
+> @@ -10,6 +10,10 @@
+>  #ifndef _MACH_DAVINCI_AEMIF_H
+>  #define _MACH_DAVINCI_AEMIF_H
+>  
+> +#include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/core.h>
+> +
+>  #define NRCSR_OFFSET		0x00
+>  #define AWCCR_OFFSET		0x04
+>  #define A1CR_OFFSET		0x10
+> @@ -18,6 +22,16 @@
+>  #define ACR_EW_MASK		BIT(30)
+>  #define ACR_SS_MASK		BIT(31)
+>  
+> +enum davinci_emif_cells {
+> +	DAVINCI_NAND_DEVICE_CELL,
+> +	DAVINCI_NOR_FLASH_CELL,
+> +};
+> +
+> +struct davinci_aemif_devices {
+> +	struct platform_device *devices;
+> +	unsigned int num_devices;
+> +};
+> +
+>  /* All timings in nanoseconds */
+>  struct davinci_aemif_timing {
+>  	u8	wsetup;
+> -- 
+> 1.7.1
+> 
+> 
 
