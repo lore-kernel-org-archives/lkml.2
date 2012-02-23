@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab2BWWbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:31:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52037 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab2BWWbL (ORCPT
+	id S1756456Ab2BWWbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:31:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51487 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab2BWWbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:31:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.130.234 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Thu, 23 Feb 2012 17:31:02 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.210.12 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com, akpm@linux-foundation.org,
         hughd@google.com
 Cc: avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
         linux-kernel@vger.kernel.org, dpshah@google.com, ctalbott@google.com,
-        rni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/8] blkcg: simplify stat reset
-Date: Thu, 23 Feb 2012 14:30:44 -0800
-Message-Id: <1330036246-21633-7-git-send-email-tj@kernel.org>
+        rni@google.com, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 1/8] mempool: factor out mempool_fill()
+Date: Thu, 23 Feb 2012 14:30:39 -0800
+Message-Id: <1330036246-21633-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1330036246-21633-1-git-send-email-tj@kernel.org>
 References: <1330036246-21633-1-git-send-email-tj@kernel.org>
@@ -24,186 +25,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkiocg_reset_stats() implements stat reset for blkio.reset_stats
-cgroupfs file.  This feature is very unconventional and something
-which shouldn't have been merged.  It's only useful when there's only
-one user or tool looking at the stats.  As soon as multiple users
-and/or tools are involved, it becomes useless as resetting disrupts
-other usages.  There are very good reasons why all other stats expect
-readers to read values at the start and end of a period and subtract
-to determine delta over the period.
+Factor out mempool_fill() from mempool_create() and mempool_resize().
+When called, it fills the reservoir upto the configured min_nr
+elements.
 
-The implementation is rather complex - some fields shouldn't be
-cleared and it saves some fields, resets whole and restores for some
-reason.  Reset of percpu stats is also racy.  The comment points to
-64bit store atomicity for the reason but even without that stores for
-zero can simply race with other CPUs doing RMW and get clobbered.
+After the change, gotos in mempool_resize() exit paths don't make
+whole lot of sense, unlock and return directly.
 
-Simplify reset by
-
-* Clear selectively instead of resetting and restoring.
-
-* Grouping debug stat fields to be reset and using memset() over them.
-
-* Not caring about stats_lock.
-
-* Using memset() to reset percpu stats.
+Note that mempool_create() repeatedly locks and unlocks pool->lock
+while filling the pool initially and mempool_resize() may go through
+one extra locking cycle.  This shouldn't result in noticeable
+difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- block/blk-cgroup.c |   80 ++++++++++++++++-----------------------------------
- block/blk-cgroup.h |   14 ++++++++-
- 2 files changed, 37 insertions(+), 57 deletions(-)
+ mm/mempool.c |   75 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 47 insertions(+), 28 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index ced9acd..614b7b3 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -747,80 +747,50 @@ EXPORT_SYMBOL_GPL(__blkg_release);
- static void blkio_reset_stats_cpu(struct blkio_group *blkg, int plid)
- {
- 	struct blkg_policy_data *pd = blkg->pd[plid];
--	struct blkio_group_stats_cpu *stats_cpu;
--	int i, j, k;
--	/*
--	 * Note: On 64 bit arch this should not be an issue. This has the
--	 * possibility of returning some inconsistent value on 32bit arch
--	 * as 64bit update on 32bit is non atomic. Taking care of this
--	 * corner case makes code very complicated, like sending IPIs to
--	 * cpus, taking care of stats of offline cpus etc.
--	 *
--	 * reset stats is anyway more of a debug feature and this sounds a
--	 * corner case. So I am not complicating the code yet until and
--	 * unless this becomes a real issue.
--	 */
--	for_each_possible_cpu(i) {
--		stats_cpu = per_cpu_ptr(pd->stats_cpu, i);
--		stats_cpu->sectors = 0;
--		for(j = 0; j < BLKIO_STAT_CPU_NR; j++)
--			for (k = 0; k < BLKIO_STAT_TOTAL; k++)
--				stats_cpu->stat_arr_cpu[j][k] = 0;
-+	int cpu;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct blkio_group_stats_cpu *sc =
-+			per_cpu_ptr(pd->stats_cpu, cpu);
-+
-+		sc->sectors = 0;
-+		memset(sc->stat_arr_cpu, 0, sizeof(sc->stat_arr_cpu));
- 	}
- }
+diff --git a/mm/mempool.c b/mm/mempool.c
+index d904981..e0403d0 100644
+--- a/mm/mempool.c
++++ b/mm/mempool.c
+@@ -47,6 +47,43 @@ void mempool_destroy(mempool_t *pool)
+ EXPORT_SYMBOL(mempool_destroy);
  
- static int
- blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
- {
--	struct blkio_cgroup *blkcg;
-+	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
- 	struct blkio_group *blkg;
--	struct blkio_group_stats *stats;
- 	struct hlist_node *n;
--	uint64_t queued[BLKIO_STAT_TOTAL];
- 	int i;
--#ifdef CONFIG_DEBUG_BLK_CGROUP
--	bool idling, waiting, empty;
--	unsigned long long now = sched_clock();
--#endif
- 
--	blkcg = cgroup_to_blkio_cgroup(cgroup);
- 	spin_lock(&blkio_list_lock);
- 	spin_lock_irq(&blkcg->lock);
-+
+ /**
++ * mempool_fill - fill a memory pool
++ * @pool:	memory pool to fill
++ * @gfp_mask:	allocation mask to use
++ *
++ * Allocate new elements with @gfp_mask and fill @pool so that it has
++ * @pool->min_nr elements.  Returns 0 on success, -errno on failure.
++ */
++static int mempool_fill(mempool_t *pool, gfp_t gfp_mask)
++{
 +	/*
-+	 * Note that stat reset is racy - it doesn't synchronize against
-+	 * stat updates.  This is a debug feature which shouldn't exist
-+	 * anyway.  If you get hit by a race, retry.
++	 * If curr_nr == min_nr is visible, we're correct regardless of
++	 * locking.
 +	 */
- 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
- 		struct blkio_policy_type *pol;
- 
- 		list_for_each_entry(pol, &blkio_list, list) {
- 			struct blkg_policy_data *pd = blkg->pd[pol->plid];
--
--			spin_lock(&blkg->stats_lock);
--			stats = &pd->stats;
-+			struct blkio_group_stats *stats = &pd->stats;
++	while (pool->curr_nr < pool->min_nr) {
++		void *elem;
++		unsigned long flags;
 +
-+			/* queued stats shouldn't be cleared */
-+			for (i = 0; i < ARRAY_SIZE(stats->stat_arr); i++)
-+				if (i != BLKIO_STAT_QUEUED)
-+					memset(stats->stat_arr[i], 0,
-+					       sizeof(stats->stat_arr[i]));
-+			stats->time = 0;
- #ifdef CONFIG_DEBUG_BLK_CGROUP
--			idling = blkio_blkg_idling(stats);
--			waiting = blkio_blkg_waiting(stats);
--			empty = blkio_blkg_empty(stats);
-+			memset((void *)stats + BLKG_STATS_DEBUG_CLEAR_START, 0,
-+			       BLKG_STATS_DEBUG_CLEAR_SIZE);
- #endif
--			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
--				queued[i] = stats->stat_arr[BLKIO_STAT_QUEUED][i];
--			memset(stats, 0, sizeof(struct blkio_group_stats));
--			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
--				stats->stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
--#ifdef CONFIG_DEBUG_BLK_CGROUP
--			if (idling) {
--				blkio_mark_blkg_idling(stats);
--				stats->start_idle_time = now;
--			}
--			if (waiting) {
--				blkio_mark_blkg_waiting(stats);
--				stats->start_group_wait_time = now;
--			}
--			if (empty) {
--				blkio_mark_blkg_empty(stats);
--				stats->start_empty_time = now;
--			}
--#endif
--			spin_unlock(&blkg->stats_lock);
--
--			/* Reset Per cpu stats which don't take blkg->stats_lock */
- 			blkio_reset_stats_cpu(blkg, pol->plid);
- 		}
- 	}
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index af6e00a..3937a9e 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -131,21 +131,31 @@ struct blkio_group_stats {
- 
- 	/* Total time spent waiting for it to be assigned a timeslice. */
- 	uint64_t group_wait_time;
--	uint64_t start_group_wait_time;
- 
- 	/* Time spent idling for this blkio_group */
- 	uint64_t idle_time;
--	uint64_t start_idle_time;
++		elem = pool->alloc(gfp_mask, pool->pool_data);
++		if (unlikely(!elem))
++			return -ENOMEM;
++
++		spin_lock_irqsave(&pool->lock, flags);
++		if (pool->curr_nr < pool->min_nr) {
++			add_element(pool, elem);
++			elem = NULL;
++		}
++		spin_unlock_irqrestore(&pool->lock, flags);
++
++		if (elem) {
++			pool->free(elem, pool->pool_data);
++			return 0;
++		}
++	}
++	return 0;
++}
++
++/**
+  * mempool_create - create a memory pool
+  * @min_nr:    the minimum number of elements guaranteed to be
+  *             allocated for this pool.
+@@ -90,16 +127,11 @@ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
  	/*
- 	 * Total time when we have requests queued and do not contain the
- 	 * current active queue.
+ 	 * First pre-allocate the guaranteed number of buffers.
  	 */
- 	uint64_t empty_time;
+-	while (pool->curr_nr < pool->min_nr) {
+-		void *element;
+-
+-		element = pool->alloc(GFP_KERNEL, pool->pool_data);
+-		if (unlikely(!element)) {
+-			mempool_destroy(pool);
+-			return NULL;
+-		}
+-		add_element(pool, element);
++	if (mempool_fill(pool, GFP_KERNEL)) {
++		mempool_destroy(pool);
++		return NULL;
+ 	}
 +
-+	/* fields after this shouldn't be cleared on stat reset */
-+	uint64_t start_group_wait_time;
-+	uint64_t start_idle_time;
- 	uint64_t start_empty_time;
- 	uint16_t flags;
- #endif
- };
+ 	return pool;
+ }
+ EXPORT_SYMBOL(mempool_create_node);
+@@ -137,7 +169,8 @@ int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask)
+ 			spin_lock_irqsave(&pool->lock, flags);
+ 		}
+ 		pool->min_nr = new_min_nr;
+-		goto out_unlock;
++		spin_unlock_irqrestore(&pool->lock, flags);
++		return 0;
+ 	}
+ 	spin_unlock_irqrestore(&pool->lock, flags);
  
-+#ifdef CONFIG_DEBUG_BLK_CGROUP
-+#define BLKG_STATS_DEBUG_CLEAR_START	\
-+	offsetof(struct blkio_group_stats, unaccounted_time)
-+#define BLKG_STATS_DEBUG_CLEAR_SIZE	\
-+	(offsetof(struct blkio_group_stats, start_group_wait_time) - \
-+	 BLKG_STATS_DEBUG_CLEAR_START)
-+#endif
+@@ -151,31 +184,17 @@ int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask)
+ 		/* Raced, other resize will do our work */
+ 		spin_unlock_irqrestore(&pool->lock, flags);
+ 		kfree(new_elements);
+-		goto out;
++		return 0;
+ 	}
+ 	memcpy(new_elements, pool->elements,
+ 			pool->curr_nr * sizeof(*new_elements));
+ 	kfree(pool->elements);
+ 	pool->elements = new_elements;
+ 	pool->min_nr = new_min_nr;
+-
+-	while (pool->curr_nr < pool->min_nr) {
+-		spin_unlock_irqrestore(&pool->lock, flags);
+-		element = pool->alloc(gfp_mask, pool->pool_data);
+-		if (!element)
+-			goto out;
+-		spin_lock_irqsave(&pool->lock, flags);
+-		if (pool->curr_nr < pool->min_nr) {
+-			add_element(pool, element);
+-		} else {
+-			spin_unlock_irqrestore(&pool->lock, flags);
+-			pool->free(element, pool->pool_data);	/* Raced */
+-			goto out;
+-		}
+-	}
+-out_unlock:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+-out:
 +
- /* Per cpu blkio group stats */
- struct blkio_group_stats_cpu {
- 	uint64_t sectors;
++	mempool_fill(pool, gfp_mask);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(mempool_resize);
 -- 
 1.7.7.3
 
