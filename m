@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2BWUSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:18:08 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45110 "EHLO
+	id S1756888Ab2BWUTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:19:21 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63646 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab2BWUSF convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1756748Ab2BWUTU convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:18:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.182.89.65 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
+	Thu, 23 Feb 2012 15:19:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of just.for.lkml@googlemail.com designates 10.60.26.166 as permitted sender) smtp.mail=just.for.lkml@googlemail.com; dkim=pass header.i=just.for.lkml@googlemail.com
 MIME-Version: 1.0
-In-Reply-To: <1330025802.17301.1.camel@lenny>
-References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
-	<1330025802.17301.1.camel@lenny>
-Date: Thu, 23 Feb 2012 22:18:05 +0200
-X-Google-Sender-Auth: vufV8MmgLhgWD8pqlBoBVZO8f6o
-Message-ID: <CAOJsxLEQ0VNsTEApsWQHC4G4199xm31UkWt1n0fqh3tZVa2f8A@mail.gmail.com>
-Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report' browser
-From: Pekka Enberg <penberg@kernel.org>
-To: Colin Walters <walters@verbum.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <alpine.DEB.2.00.1202221952430.18534@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1202221952430.18534@skynet.skynet.ie>
+Date: Thu, 23 Feb 2012 21:19:20 +0100
+Message-ID: <CAPVoSvSvQv14dM6EWTi3YxUtxNWB8+kypDHSwkYTiWpBxL2eug@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 18:18 +0200, Pekka Enberg wrote:
->> This patch adds a simple GTK2-based browser to 'perf report' that's based on
->> the TTY-based browser in builtin-report.c.
->>
->> Please not that you need to use
->>
->>   make WERROR=0
+On Wed, Feb 22, 2012 at 8:56 PM, Dave Airlie <airlied@linux.ie> wrote:
+> Eugeni Dodonov (4):
+>      drm/i915: gen7: implement rczunit workaround
+>      drm/i915: gen7: Implement an L3 caching workaround.
+>      drm/i915: gen7: work around a system hang on IVB
+>      drm/i915: do not enable RC6p on Sandy Bridge
 
-On Thu, Feb 23, 2012 at 9:36 PM, Colin Walters <walters@verbum.org> wrote:
-> You could -Wnoerror=strict-prototypes...
+That last patch about RC6p looks wrong.
 
-Sure. We don't want to do that for all files. Just for the ones that
-include <gtk/gtk.h>.
+It does:
+ GEN6_RC_CTL_RC6_ENABLE |
+			(IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENABLE : 0;
+But I think this was meant:
+ GEN6_RC_CTL_RC6_ENABLE |
+			((IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENABLE : 0);
+
+Or did I get the operator precedence wrong?
+
+HTH
+
+Torsten
