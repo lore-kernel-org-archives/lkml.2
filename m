@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab2BWVKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:10:24 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41749 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab2BWVKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:10:22 -0500
-Date: Thu, 23 Feb 2012 13:10:16 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
-        Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-Message-ID: <20120223211016.GA16275@kroah.com>
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
- <20120222211928.GA4448@kroah.com>
- <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
- <20120222213253.GA25150@kroah.com>
- <20120223200905.GA5475@kroah.com>
- <4F46A1C4.90506@zytor.com>
- <20120223204832.GA30322@kroah.com>
- <4F46A6EC.8050804@zytor.com>
+	id S1757050Ab2BWVL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:11:26 -0500
+Received: from antcom.de ([188.40.178.216]:32878 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755975Ab2BWVLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:11:25 -0500
+Message-ID: <4F46AB7B.7010306@antcom.de>
+Date: Thu, 23 Feb 2012 22:11:23 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F46A6EC.8050804@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roland Stigge <stigge@antcom.de>
+CC: w.sang@pengutronix.de, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: LPC32xx: USB Support
+References: <1330030842-3848-1-git-send-email-stigge@antcom.de>
+In-Reply-To: <1330030842-3848-1-git-send-email-stigge@antcom.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 12:51:56PM -0800, H. Peter Anvin wrote:
-> On 02/23/2012 12:48 PM, Greg Kroah-Hartman wrote:
-> > On Thu, Feb 23, 2012 at 12:29:56PM -0800, H. Peter Anvin wrote:
-> >> On 02/23/2012 12:09 PM, Greg Kroah-Hartman wrote:
-> >>>
-> >>> I've applied this now to the 3.0 and 3.2-stable trees.  It looks like it
-> >>> would work on the 2.6.32-stable tree, but it needs some tweaks, and as I
-> >>> can't really test this, and the .32-stable tree is probably not going to
-> >>> have problems in this area, I'll let someone else generate those patches
-> >>> and test them if they feel it is needed there.
-> >>>
-> >>
-> >> It doesn't seem to appear in the stable git tree... anywhere I can get
-> >> your tree so I can test these out?
-> > 
-> > They are in the stable-queue git tree at:
-> > 	/pub/scm/linux/kernel/git/stable/stable-queue.git
-> > on git.kernel.org
-> > 
-> > Testing them out would be great, if you want, I can knock up a git tree
-> > with just these patches in it on 3.2.7 or anything else you need to test
-> > with, if that makes it easier for you.
-> > 
-> 
-> That would be awesome.
+Hi,
 
-Ok, the patches are at:
-	git.kernel.org/pub/scm/linux/kernel/git/gregkh/stable-test.git linux-3.2.y-i387-test
+On 23/02/12 22:00, Roland Stigge wrote:
+> This patch adds OHCI support to the LPC32xx ARM platform. Besides the trivial
+> addition of platform "usb-ohci" support, fixes for the USB PLL have been added
+> to arch/arm/mach-lpc32xx/clock.c, ported from NXP's lpclinux.com.
 
-They are on top of the 3.2.7 kernel release.
+This applies on top of my LPC32xx base patch series recently integrated
+into arm-soc. I can prepare a patch to apply cleanly to current
+mainline, if necessary (please note that without the cited basic
+patches, mach-lpc32xx would be seriously broken, anyway).
 
-If that doesn't work for you, please let me know.
+Thanks in advance,
 
-thanks,
-
-greg k-h
+Roland
