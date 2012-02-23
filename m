@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2BWCyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 21:54:45 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58161 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab2BWCyo (ORCPT
+	id S1754451Ab2BWCz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 21:55:56 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53679 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2BWCzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 21:54:44 -0500
-X-AuditID: 9c930179-b7c4fae0000073fb-11-4f45aa7160a1
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf evlist: Restore original errno after open failed
-Date: Thu, 23 Feb 2012 12:13:36 +0900
-Message-Id: <1329966816-23175-1-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 Feb 2012 21:55:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+ <4F456D8F.1080801@zytor.com> <CA+55aFw4P1qUye5YOJKSQHX+TfxbEDWMF7LPogj128b6gv2Nqg@mail.gmail.com>
+ <CA+55aFziJ=Lw0KxxThwfqRPR+K0OWDorKAfkgKMGPXv5O404JA@mail.gmail.com>
+ <4F4584EB.9060605@zytor.com> <CA+55aFxC6JwWsNcmkQ+DROXtWCzaq52DuX5aMJZfXMLoNCbsWg@mail.gmail.com>
+ <20120223003706.GA3246@kroah.com> <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 18:55:34 -0800
+X-Google-Sender-Auth: JsQlxZfNEheVfTRmGAJdQJUIPMo
+Message-ID: <CA+55aFxTieMqacU9LN8Xmtb3Os8zkub1P+SKpqFtEBQ11STy7g@mail.gmail.com>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+To: raphael@buro.asia
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If perf_evsel__open() failed, the errno was set and returned properly.
-However since the perf_evlist__open() called close() on fd's for all of
-evsel x cpu x thread after the failure, the errno was overridden by
-other code (EBADF). So the caller of the function ended up seeing
-different error message and getting confused.
+On Wed, Feb 22, 2012 at 5:47 PM,  <raphael@buro.asia> wrote:
+>
+> Thank you for backporting this patchset to -stable. FWIW, the test machine I
+> had been working with has an uptime of 4 days now, with the patchset in
+> attachment applied on top of 3.2.6, so if it were unpractical to trim it
+> down further you can find solace in that it does not break anything.
 
-Fit it by restoring original return value. Because one of caller of the
-function is in the python extension, and it uses system errno internally,
-it'd be better restoring the original value rather than using the return
-value of the function directly, IMHO (i.e. I'm not a python expert :)
+Hmm. The patches in your attachements are whitespace-damaged. I was
+going to apply that series and see what the difference was to my
+minimal trial, but with the corruption that isn't possible.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/util/evlist.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I didn't find anything obviously wrong in my series, so..
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index ec4e338ee291..1986d8051bd1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -767,6 +767,7 @@ out_err:
- 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
- 		perf_evsel__close(evsel, ncpus, nthreads);
- 
-+	errno = -err;
- 	return err;
- }
- 
--- 
-1.7.9
+Could you send the patches you used for your backport with the
+whitespace fixed, and preferably with the patch numbering explained?
 
+                   Linus
