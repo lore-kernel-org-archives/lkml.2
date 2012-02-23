@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab2BWFys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 00:54:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33632 "EHLO
+	id S1752920Ab2BWGIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:08:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36112 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab2BWFyr convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751348Ab2BWGIf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 00:54:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.160.131 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Thu, 23 Feb 2012 01:08:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.202.97 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-In-Reply-To: <1329720360-23227-20-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1329720360-23227-21-git-send-email-swarren@nvidia.com>
 References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-20-git-send-email-swarren@nvidia.com>
-Date: Thu, 23 Feb 2012 06:54:46 +0100
-Message-ID: <CACRpkdZQhJ9hBxD93FHjpCngugTZ2EFgJFwWObGd1YmEtfnxFA@mail.gmail.com>
-Subject: Re: [PATCH 19/20] pinctrl: API changes to support multiple states per device
+	<1329720360-23227-21-git-send-email-swarren@nvidia.com>
+Date: Thu, 23 Feb 2012 07:08:35 +0100
+Message-ID: <CACRpkdZshQqM5ZZj21gXMZ6xZCUsdEvDDDyzvhFJTjnuZ2=twg@mail.gmail.com>
+Subject: Re: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
+ config operations
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Stephen Warren <swarren@nvidia.com>
 Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
@@ -27,228 +28,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
+On Mon, Feb 20, 2012 at 7:46 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> The API model is changed from:
+> The pinctrl mapping table can now contain entries to:
+> * Set the mux function of a pin group
+> * Apply a set of pin config options to a pin or a group
 >
-> p = pinctrl_get(dev, "state1");
-> pinctrl_enable(p);
-> ...
-> pinctrl_disable(p);
-> pinctrl_put(p);
-> p = pinctrl_get(dev, "state2");
-> pinctrl_enable(p);
-> ...
-> pinctrl_disable(p);
-> pinctrl_put(p);
->
-> to this:
->
-> p = pinctrl_get(dev);
-> s1 = pinctrl_lookup_state(p, "state1");
-> s2 = pinctrl_lookup_state(p, "state2");
-> pinctrl_select_state(p, s1);
-> ...
-> pinctrl_select_state(p, s2);
-> ...
-> pinctrl_put(p);
->
-> This allows devices to directly transition between states without
-> disabling the pin controller programming and put()/get()ing the
-> configuration data each time. This model will also better suit pinconf
-> programming, which doesn't have a concept of "disable".
->
-> The special-case hogging feature of pin controllers is re-written to use
-> the regular APIs instead of special-case code. Hence, the pinmux-hogs
-> debugfs file is removed; see the top-level pinctrl-handles files for
-> equivalent data.
+> This allows pinctrl_select_state() to apply pin configs settings as well
+> as mux settings.
 >
 > Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Overall this is excellent and exactly what we have discussed and
-just what we want, good job!
+Overall excellent, just smaller things below:
 
->  static const struct pinctrl_map __initdata mapping[] = {
->        {
-> +               .dev_name = "foo-spi.0",
-> +               .name = "default",
-
-I think we should introduce a
-#define PINCTRL_DEFAULT_STATE "default"
-
-And use that #define in examples and code from day 1.
-
-That will ease the transition to generalized states like
-PINCTRL_IDLE_STATE etc further down the road.
-
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "2bit"
->        .ctrl_dev_name = "pinctrl-foo",
->        .function = "mmc0",
->        .group = "mmc0_1_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "4bit"
->        .ctrl_dev_name = "pinctrl-foo",
->        .function = "mmc0",
->        .group = "mmc0_1_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "4bit"
->        .ctrl_dev_name = "pinctrl-foo",
->        .function = "mmc0",
->        .group = "mmc0_2_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "8bit"
->        .ctrl_dev_name = "pinctrl-foo",
-> +       .function = "mmc0",
->        .group = "mmc0_1_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "8bit"
->        .ctrl_dev_name = "pinctrl-foo",
->        .function = "mmc0",
->        .group = "mmc0_2_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
->  {
-> +       .dev_name = "foo-mmc.0",
->        .name = "8bit"
->        .ctrl_dev_name = "pinctrl-foo",
->        .function = "mmc0",
->        .group = "mmc0_3_grp",
-> -       .dev_name = "foo-mmc.0",
->  },
-
-Seems like random reordering but no big deal, could go in separate
-patch.
-
->  The result of grabbing this mapping from the device with something like
->  this (see next paragraph):
+> @@ -817,7 +827,40 @@ it even more compact which assumes you want to use pinctrl-foo and position
+>  0 for mapping, for example:
 >
-> -       p = pinctrl_get(&device, "8bit");
-> +       p = pinctrl_get(dev);
-> +       s = pinctrl_lookup_state(p, "8bit");
-> +       ret = pinctrl_select_state(p, s);
+>  static struct pinctrl_map __initdata mapping[] = {
+> -       PIN_MAP("default", "pinctrl-foo", "i2c0", "foo-i2c.0"),
+> +       PIN_MAP_MUX_GROUP("foo-i2c.o", "default", "pinctrl-foo", NULL, "i2c0"),
+> +};
+
+OK looks good!
+
+> +The mapping table may also contain pin configuration entries. It's common for
+> +each pin/group to have a number of configuration entries that affect it, so
+> +the table entries for configuration reference an array of config parameters
+> +and values. An example using the convenience macros is shown below:
 > +
-> +or more simply:
+> +static unsigned long i2c_grp_configs[] = {
+> +       FOO_PIN_DRIVEN,
+> +       FOO_PIN_PULLUP,
+> +};
 > +
-> +       p = pinctrl_get_select(dev, "8bit");
-
-Ohhh sweet! I like pinctrl_get_select()!
-
->  Pin control map entries can be hogged by the core when the pin controller
-> -is registered. This means that the core will attempt to call pinctrl_get() and
-> -pinctrl_enable() on it immediately after the pin control device has been
-> -registered.
-> +is registered. This means that the core will attempt to call pinctrl_get(),
-> +lookup_state() and select_state() on it immediately after the pin control
-> +device has been registered.
->
-> -This is enabled by simply setting the .dev_name field in the map to the name
-> -of the pin controller itself, like this:
-> +This occurs for mapping table entries where the client device name is equal
-> +to the pin controller device name, and the state name is "active".
->
->  {
-> -       .name = "POWERMAP"
-> +       .dev_name = "pinctrl-foo",
-> +       .name = "active",
-
-Again define a standard name, I think PINCTRL_STATE_DEFAULT
-should be used for this too, since it means it defaults to active.
-
-> -PIN_MAP_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
-> +PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
-
-Then use that PINCTRL_STATE_DEFAULT
-
->  This snippet first muxes the function in the pins defined by group A, enables
->  it, disables and releases it, and muxes it in on the pins defined by group B:
-> @@ -1017,23 +1045,36 @@ it, disables and releases it, and muxes it in on the pins defined by group B:
->  foo_switch()
->  {
->        struct pinctrl *p;
-> +       struct pinctrl_state *s1, *s2;
+> +static unsigned long i2c_pin_configs[] = {
+> +       FOO_OPEN_COLLECTOR,
+> +       FOO_SLEW_RATE_SLOW,
+> +};
 > +
-> +       /* Setup */
-> +       p = pinctrl_get(&device);
-> +       if (IS_ERR(p))
-> +               ...
-> +
-> +       s1 = pinctrl_lookup_state(foo->p, "pos-A");
-> +       if (IS_ERR(s1))
-> +               ...
-> +
-> +       s2 = pinctrl_lookup_state(foo->p, "pos-B");
-> +       if (IS_ERR(s2))
-> +               ...
->
->        /* Enable on position A */
-> -       p = pinctrl_get(&device, "spi0-pos-A");
-> -       if IS_ERR(p)
-> -               return PTR_ERR(p);
-> -       pinctrl_enable(p);
-> +       ret = pinctrl_select_state(s);
-> +       if (ret < 0)
-> +           ...
->
-> -       /* This releases the pins again */
-> -       pinctrl_disable(p);
-> -       pinctrl_put(p);
-> +       ...
->
->        /* Enable on position B */
-> -       p = pinctrl_get(&device, "spi0-pos-B");
-> -       if IS_ERR(p)
-> -               return PTR_ERR(p);
-> -       pinctrl_enable(p);
-> +       ret = pinctrl_select_state(s);
-> +       if (ret < 0)
-> +           ...
-> +
->        ...
-> +
-> +       pinctrl_put(p);
->  }
+> +static struct pinctrl_map __initdata mapping[] = {
+> +       PIN_MAP_MUX_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", "i2c0"),
+> +       PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", i2c_grp_configs),
+> +       PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0scl", i2c_pin_configs),
+> +       PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0sda", i2c_pin_configs),
+> +};
 
-This is looking real good. I think recent discussion with Russell
-also ironed out the problems with potential gpio interaction.
+I buy this too...
 
-> -       PIN_MAP_SYS_HOG("POWER", "pinmux-u300", "power"),
-> -       PIN_MAP_SYS_HOG("EMIF0", "pinmux-u300", "emif0"),
-> -       PIN_MAP_SYS_HOG("EMIF1", "pinmux-u300", "emif1"),
-> +       PIN_MAP_SYS_HOG("default", "pinmux-u300", "power"),
-> +       PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif0"),
-> +       PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif1"),
->        /* per-device maps for MMC/SD, SPI and UART */
-> -       PIN_MAP("MMCSD", "pinmux-u300", "mmc0", "mmci"),
-> -       PIN_MAP("SPI", "pinmux-u300", "spi0", "pl022"),
-> -       PIN_MAP("UART0", "pinmux-u300", "uart0", "uart0"),
-> +       PIN_MAP("default", "pinmux-u300", "mmc0", "mmci"),
-> +       PIN_MAP("default", "pinmux-u300", "spi0", "pl022"),
-> +       PIN_MAP("default", "pinmux-u300", "uart0", "uart0"),
+> +Finally, some devices expect the mapping table to contain certain specific
+> +named states. When running on hardware that doesn't need any pin controller
+> +configuration, the mapping table must still contain those named states, in
+> +order to explicitly indicate that the states were provided and intended to
+> +be empty. Table entry macro PIN_MAP_DUMMY_STATE serves the purpose of defining
+> +a named state without causing any pin controller to be programmed:
+> +
+> +static struct pinctrl_map __initdata mapping[] = {
+> +       PIN_MAP_DUMMY_STATE("foo-i2c.0", "default"),
 >  };
 
-PINCTRL_STATE_DEFAULT
+Looks useful so why not.
 
-So far I really like this. I should look closer at the code but mainly
-I just have to trust you on it and fix any bugs later, this change is
-way more valuable as is.
+> @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
+>  mux settings on the primary pin controller, there is a convenience macro for
+>  this:
+>
+> -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
+> +PIN_MAP_MUX_GROUP("pinctrl-foo", "active", "pinctrl-foo", NULL, "power_func")
 
-Please move this patch as far to the head of the series as possible
-so we can get it in, I guess you need the state lookup in struct pinctrl
-to proceed but could we e.g. puy the locking changes after this?
+Please keep the explicit _HOG macros for readability. Relying on
+the implicit relation between dev and pctldev being the same and to be
+parsed by humans is vulnerable.
+
+PIN_MAP_MUX_GROUP_HOG()
+
+in this case, with the same arguments (though with PINCTRL_STATE_DEFAULT
+in place for "active") is better IMO.
+
+>  /* Pinmux settings */
+>  static struct pinctrl_map __initdata u300_pinmux_map[] = {
+>        /* anonymous maps for chip power and EMIFs */
+> -       PIN_MAP_SYS_HOG("default", "pinmux-u300", "power"),
+> -       PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif0"),
+> -       PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif1"),
+> +       PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "power"),
+> +       PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif0"),
+> +       PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif1"),
+>        /* per-device maps for MMC/SD, SPI and UART */
+> -       PIN_MAP("default", "pinmux-u300", "mmc0", "mmci"),
+> -       PIN_MAP("default", "pinmux-u300", "spi0", "pl022"),
+> -       PIN_MAP("default", "pinmux-u300", "uart0", "uart0"),
+> +       PIN_MAP_MUX_GROUP("mmci",  "default", "pinmux-u300", NULL, "mmc0"),
+> +       PIN_MAP_MUX_GROUP("pl022", "default", "pinmux-u300", NULL, "spi0"),
+> +       PIN_MAP_MUX_GROUP("uart0", "default", "pinmux-u300", NULL, "uart0"),
+>  };
+
+PIN_MAP_MUX_GROUP_HOG() please. PINCTRL_STATE_DEFAULT instead
+of "default".
+
+Or maybe we should imply that PIN_MAP_MUX_GROUP_HOG() hogs the
+default state, or have PIN_MAP_MUX_GROUP_HOG_DEFAULT() even?
+
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -341,6 +341,31 @@ int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
+>  }
+>
+>  /**
+> + * pinctrl_get_pin_id() - returns the group selector for a group
+> + * @pctldev: the pin controller handling the group
+> + * @pin_group: the pin group to look up
+
+This kerneldoc is wrong... pin, not group.
+
+> + */
+> +int pinctrl_get_pin_id(struct pinctrl_dev *pctldev,
+> +                      const char *pin)
+> +{
+> +       unsigned int i;
+> +
+> +       for (i = 0; i < pctldev->desc->npins; i++) {
+> +               if (pctldev->desc->pins[i].name == NULL)
+> +                       continue;
+> +               if (!strcmp(pin, pctldev->desc->pins[i].name)) {
+> +                       dev_dbg(pctldev->dev, "found pin id %u for %s\n",
+> +                               i, pin);
+> +                       return i;
+> +               }
+> +       }
+
+(...)
+
+>        /* First sanity check the new mapping */
+>        for (i = 0; i < num_maps; i++) {
+> +               if (!maps[i].dev_name) {
+> +                       pr_err("failed to register map %s (%d): no device given\n",
+> +                              maps[i].name, i);
+> +                       return -EINVAL;
+> +               }
+> +
+
+Hm should this not be done earlier in the patch series?
+
+> +       /*
+> +        * FIXME: We should really get the pin controler to dump the config
+> +        * values, so they can be decoded to something meaningful.
+> +        */
+> +       for (i = 0; i < setting->data.configs.num_configs; i++)
+> +               seq_printf(s, " %08lx", setting->data.configs.configs[i]);
+> +
+> +       seq_printf(s, "\n");
+> +}
+
+Per-device config print function? But no need to rush that.
+
+Apart from this I mostly just trust this patch, like the previous one.
 
 Yours,
 Linus Walleij
