@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2BWHvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 02:51:47 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:37573 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab2BWHvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 02:51:46 -0500
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 02:51:45 EST
-Date: Thu, 23 Feb 2012 07:45:26 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Lennart Poettering <lennart@poettering.net>, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120223074526.GA15835@mail.hallyn.com>
-References: <20120221211938.GE12236@google.com>
- <20120221212106.GF12236@google.com>
- <4F44EEE4.2000809@parallels.com>
+	id S1753316Ab2BWIKg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:10:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60619 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861Ab2BWIKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 03:10:34 -0500
+Message-ID: <4F45F1F0.2010102@cn.fujitsu.com>
+Date: Thu, 23 Feb 2012 15:59:44 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F44EEE4.2000809@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+References: <20120221211938.GE12236@google.com> <20120222163858.GB4128@redhat.com>
+In-Reply-To: <20120222163858.GB4128@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-23 15:55:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-23 15:55:52,
+	Serialize complete at 2012-02-23 15:55:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Glauber Costa (glommer@parallels.com):
-> >>The support for multiple process hierarchies always struck me as
-> >>rather strange.  If you forget about the current cgroup controllers
-> >>and their implementations, the *only* reason to support multiple
-> >>hierarchies is if you want to apply resource limits based on different
-> >>orthogonal categorizations.
-> >>
+> Trying to make all the controllers uniform in terms of their treatment
+> of cgroup hiearchy sounds like a good thing to do.
 
-Right, the old lwn writeup took the same approach:
-http://lwn.net/Articles/236038/
+Agreed.
 
-> >>Documentation/cgroups.txt seems to be written with this consideration
-> >>on mind.  It's giving an example of applying limits accoring to two
-> >>orthogonal categorizations - user groups (profressors, students...)
-> >>and applications (WWW, NFS...).  While it may sound like a valid use
-> >>case, I'm very skeptical how useful or common mixing such orthogonal
-> >>categorizations in a single setup would be.
+Apart from nesting cgroups, there're other inconsistencies.
 
-My first inclination is to agree, but counterexamples do come to mind.
+- Some controllers disallow more than one cgroup layer. That's the new
+net_prio controller, and I don't know why it's made so, but I guess
+it's fine to eliminate this restriction.
 
-I could imagine a site saying "users can run (X) (say, ftpds), but the
-memory consumed by all those ftpds must not be > 10% total RAM".  At
-the same time, they may run several apaches but want them all locked to
-two of the cpus.
+- Some controllers move resource charges when a task is moved to
+a different cgroup, but some don't?
 
-It might be worth a formal description of the new limits on use cases
-such changes (both dropping support for orthogonal cgroups, and limiting
-cgroups hierarchies to a mirror pstrees, separately) would bring.
+- Some controllers disallow task attaching under some circumstances.
+So if we have a single hierarchy with all subsystems, the chance
+that attaching a task to a cgroup fails may be bigger.
 
-To me personally the hierarchy limitation is more worrying.  There have
-been times when I've simply created cgroups for 'compile' and 'image
-build', with particular cpu and memory limits.  If I started a second
-simultaneous compile, I'd want both compiles confined together.  (That's
-not to say the simplification might not be worth it, just bringing up
-the other side)
-
--serge
+> Once that is done,
+> one can probably see if it is worth to put all the controllers in a
+> single hierarchy.
+> 
