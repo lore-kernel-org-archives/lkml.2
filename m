@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab2BWNhY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 08:37:24 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59652 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab2BWNhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 08:37:23 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i.MX31: mxc-rnga: implement waiting for data in driver
-Date: Thu, 23 Feb 2012 13:37:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Michael Thalmeier <michael.thalmeier@hale.at>,
-        Fabio Estevam <festevam@gmail.com>, michael@thalmeier.at,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>
-References: <1329826410-21739-1-git-send-email-michael.thalmeier@hale.at> <CAOMZO5BGVa0HRKqv9nKQUy9iGnQ3FV_6OnguMyk3rAinaJkb6w@mail.gmail.com> <4F43AC8D.5090508@hale.at>
-In-Reply-To: <4F43AC8D.5090508@hale.at>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202231337.20052.arnd@arndb.de>
-X-Provags-ID: V02:K0:qbCr/PIsJQt3057e7nCJTz4FsQLiExyuDEBabKEdQBe
- /5OKU/lKY1GcQY9KvohSPKBFhaeBWxkx9Vzm8pE3vSFoVLetIy
- TCEt259XISjG5NmfJy9vVmLqvHaZl5AWgHihgPnX/i+efLIwuV
- nO/RQGjC2hZ7IjJj1H4zT17YTegRHWfM+xU8blLaj5y6GHFTLL
- NIhurDLT4VH/JxFq9nIGAzUyNSUVptK0aLsFQWO/QQPeIT0vIx
- Vj+nXov3VEfN+1ikt7zotkGqmc0hpJPbqpZnOw/Bo+qcBbs3ip
- 455yyAAaXS8K8kqjUCuL0fMN6ZasR28+rdcBKAIcb/rTrhU8tv
- 3CRAtPGxJIgjCJEcpy0Q=
+	id S1754509Ab2BWNlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 08:41:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:45722 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135Ab2BWNlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 08:41:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120525347"
+Subject: Re: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202211059180.1366-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1202211059180.1366-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Feb 2012 21:41:36 +0800
+Message-ID: <1330004496.2469.3.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 February 2012, Michael Thalmeier wrote:
-> On 2012-02-21 14:29, Fabio Estevam wrote:
+On Tue, 2012-02-21 at 11:06 -0500, Alan Stern wrote:
+> On Tue, 21 Feb 2012, Lin Ming wrote:
 > 
-> > On Tue, Feb 21, 2012 at 10:13 AM, Michael Thalmeier
-> > <michael.thalmeier@hale.at> wrote:
+> > > Then maybe you can use pm_runtime_no_callbacks() for the ZPODD device.
+> > > It's explained in Documentation/power/runtime_pm.txt, and I use it for
+> > > USB interfaces.
 > > 
-> >> -static int mxc_rnga_data_present(struct hwrng *rng)
-> >> +static int mxc_rnga_data_present(struct hwrng *rng, int wait)
+> > If pm_runtime_no_callbacks() is used, runtime PM sysfs attributes
+> > won't be created.
+> > Then how to disable ZPODD feature in userspace?
 > > 
-> > This looks good, but ...
+> > Currently, I use "control" file of scsi device to enable/disable
+> > ZPODD, for example
+> > echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata0/host1/target1:0:0/1:0:0:0/power/control
+> > echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata0/host1/target1:0:0/1:0:0:0/power/control
+> 
+> You could get the same result by using the "control" file for the ATA
+> port.
+> 
+> > > The idea is that the ZPODD will never receive any runtime PM callbacks
+> > > from the PM core. �Instead the ATA port callback routines will be
+> > > responsible for power management of the ZPODD device.
 > > 
-> >>  {
-> >> -       int level;
-> >> +       int level, i;
-> >>        void __iomem *rng_base = (void __iomem *)rng->priv;
-> >>
-> >> -       /* how many random numbers is in FIFO? [0-16] */
-> >> -       level = ((__raw_readl(rng_base + RNGA_STATUS) &
-> >> -                       RNGA_STATUS_LEVEL_MASK) >> 8);
-> >> +       for (i = 0; i < 20; i++) {
+> > Does the ATA port callback also responsible to resume its child?
 > > 
-> > Why the magic "20" here?
+> > For example,
+> > /sys/devices/pci0000:00/0000:00:1f.2/ata0/host1/target1:0:0/1:0:0:0/
 > > 
-> > It would be better to add a proper timeout mechanism instead, such as
-> > time_after(jiffies, timeout)
+> > ata0 is resumed.
 > > 
-> I am absolutely with you.
-> The point is only that this is the behaviour of nearly all hw_random
-> drivers, and I basically just copied it over into this driver.
+> > Then who will be responsible to resume host1, target1:0:0 and 1:0:0:0?
+> > 
+> > Or do you mean that we don't need to resume these devices at all?
+> > host1 and target1:0:0 are logical devices, but I think 1:0:0:0 is not.
+> 
+> That's right.  It makes no difference whether the host and target 
+> are resumed or suspended.  In fact, you could also call 
+> pm_runtime_no_callbacks() for them.
 
-Hmm, I guess they are all wrong then ;-)
+But host and target are added in scsi layer. How do we know if they are
+"logical device"?
 
-It would be nice to move the retry loop into common code where it
-would be easier to change.
+Or do you mean that we can call pm_runtime_no_callbacks() for them
+because scsi layer(scsi_pm.c) only implements runtime pm for scsi
+device.
 
-Note that comparing jiffies is not going to help here because the
-maximum delay in the loop is less than a jiffy.
+Thanks,
+Lin Ming 
 
-	Arnd
+> 
+> Alan Stern
+> 
+
+
