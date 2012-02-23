@@ -1,133 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2BWO0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:26:40 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:2572 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756108Ab2BWO0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:26:37 -0500
+	id S1756375Ab2BWO0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:26:49 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:24076 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756348Ab2BWO0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 09:26:47 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
-        arnd@arndb.de, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v3 00/21] at91 first cleanup series for 3.4
-Date: Thu, 23 Feb 2012 15:25:44 +0100
-Message-Id: <cover.1330006537.git.nicolas.ferre@atmel.com>
+        arnd@arndb.de
+Subject: [PATCH v3 07/21] ARM: at91/pm_slowclock: function slow_clock() accepts parameters
+Date: Thu, 23 Feb 2012 15:25:51 +0100
+Message-Id: <8ff12ad3df62ee343d5f5ec29572b9d2c5c2cedd.1330006537.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
+References: <cover.1330006537.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1330006537.git.nicolas.ferre@atmel.com>
+References: <cover.1330006537.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is the third revision of this series of cleanup. It includes
-new enhancements recommended by Ryan Mallon and Russell King.
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-This series removes the at91_sys_read/write() functions that where
-used for all System Controller devices. The static offsets that were
-used prevented us from compiling several AT91 SoC support in a single
-zImage.
+Change slow_clock()/at91_slow_clock() prototype to accept the PMC
+base address and one or two RAM controller addresses by parameters.
+The r0, r1 and r2 registers are used differently and preserved during
+function call.
+Those values are defined in pm.c and slow_clock() function is called
+from there with its new parameters.
 
-The other cleanup is the move of some early console initialization. In
-addition, some Makefile.boot modifications have been performed to be
-able to make .dtb files.
+This will allow to have a soc independent pm_slowclock.
 
-All this goes on top of current material that is already in arm-soc
-git tree (merge of all at91/* branches).
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Ached-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/pm.c           |   20 +++++++++++++++--
+ arch/arm/mach-at91/pm_slowclock.S |   41 ++++++++----------------------------
+ 2 files changed, 26 insertions(+), 35 deletions(-)
 
-
-Jean-Christophe PLAGNIOL-VILLARD (18):
-  ARM: at91: factorise duplicated at91sam9 idle
-  ARM: at91/at91x40: remove use of at91_sys_read/write
-  ARM: at91: make matrix register base soc independent
-  ARM: at91: make ST (System Timer) soc independent
-  ARM: at91/pm_slowclock: rename register to named define
-  ARM: at91/pm_slowclock: function slow_clock() accepts parameters
-  ARM: at91: move at91rm9200 sdramc defines to at91rm9200_sdramc.h
-  ARM: at91: make sdram/ddr register base soc independent
-  ARM: at91/pm_slowclock: add runtime detection of memory contoller
-  ARM: at91/PMC: make register base soc independent
-  ARM: at91/rtc-at91sam9: each SoC can select the RTT device to use
-  ARM: at91:rtc/rtc-at91sam9: ioremap register bank
-  ARM: at91/rtc-at91sam9: pass the GPBR to use via resources
-  ARM: at91: finally drop at91_sys_read/write
-  ARM: at91: merge SRAM Memory banks thanks to mirroring
-  Atmel: move console default platform_device to serial driver
-  ARM: at91/board-dt: drop default console
-  ARM: at91: properly sort dtb files in Makefile.boot
-
-Nicolas Ferre (3):
-  ARM: at91/ST: remove not needed casts
-  ARM: at91/PMC: move assignment out of printf
-  ARM: at91: add at91sam9g25ek.dts in Makefile.boot
-
- arch/arm/mach-at91/Makefile.boot                   |    8 +-
- arch/arm/mach-at91/at91rm9200.c                    |    8 +-
- arch/arm/mach-at91/at91rm9200_devices.c            |   14 +-
- arch/arm/mach-at91/at91rm9200_time.c               |   37 ++-
- arch/arm/mach-at91/at91sam9260.c                   |   23 +-
- arch/arm/mach-at91/at91sam9260_devices.c           |   38 +++-
- arch/arm/mach-at91/at91sam9261.c                   |   10 +-
- arch/arm/mach-at91/at91sam9261_devices.c           |   31 ++-
- arch/arm/mach-at91/at91sam9263.c                   |   11 +-
- arch/arm/mach-at91/at91sam9263_devices.c           |   59 ++++-
- arch/arm/mach-at91/at91sam9_alt_reset.S            |   12 +-
- arch/arm/mach-at91/at91sam9g45.c                   |   11 +-
- arch/arm/mach-at91/at91sam9g45_devices.c           |   31 ++-
- arch/arm/mach-at91/at91sam9g45_reset.S             |   12 +-
- arch/arm/mach-at91/at91sam9rl.c                    |   10 +-
- arch/arm/mach-at91/at91sam9rl_devices.c            |   31 ++-
- arch/arm/mach-at91/at91sam9x5.c                    |    5 +-
- arch/arm/mach-at91/at91x40.c                       |    2 +-
- arch/arm/mach-at91/at91x40_time.c                  |   28 ++-
- arch/arm/mach-at91/board-cpu9krea.c                |    5 +-
- arch/arm/mach-at91/board-cpuat91.c                 |    1 +
- arch/arm/mach-at91/board-dt.c                      |    6 -
- arch/arm/mach-at91/board-eco920.c                  |    5 +-
- arch/arm/mach-at91/board-kb9202.c                  |    1 +
- arch/arm/mach-at91/board-picotux200.c              |    1 +
- arch/arm/mach-at91/board-rm9200dk.c                |    1 +
- arch/arm/mach-at91/board-rm9200ek.c                |    1 +
- arch/arm/mach-at91/board-yl-9200.c                 |    3 +-
- arch/arm/mach-at91/clock.c                         |   88 ++++---
- arch/arm/mach-at91/generic.h                       |   10 +
- arch/arm/mach-at91/include/mach/at91_matrix.h      |   23 ++
- arch/arm/mach-at91/include/mach/at91_pmc.h         |   56 +++--
- arch/arm/mach-at91/include/mach/at91_ramc.h        |   32 +++
- arch/arm/mach-at91/include/mach/at91_st.h          |   32 ++-
- arch/arm/mach-at91/include/mach/at91rm9200.h       |   10 +-
- arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   58 +----
- .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   63 +++++
- arch/arm/mach-at91/include/mach/at91sam9260.h      |   14 +-
- .../mach-at91/include/mach/at91sam9260_matrix.h    |   36 ++--
- arch/arm/mach-at91/include/mach/at91sam9261.h      |   10 +-
- .../mach-at91/include/mach/at91sam9261_matrix.h    |   18 +-
- arch/arm/mach-at91/include/mach/at91sam9263.h      |   12 +-
- .../mach-at91/include/mach/at91sam9263_matrix.h    |   74 +++---
- arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h  |    6 -
- arch/arm/mach-at91/include/mach/at91sam9_sdramc.h  |    6 -
- arch/arm/mach-at91/include/mach/at91sam9g45.h      |   12 +-
- .../mach-at91/include/mach/at91sam9g45_matrix.h    |   84 +++---
- arch/arm/mach-at91/include/mach/at91sam9rl.h       |    7 +-
- .../arm/mach-at91/include/mach/at91sam9rl_matrix.h |   42 ++--
- arch/arm/mach-at91/include/mach/at91sam9x5.h       |    5 +-
- arch/arm/mach-at91/include/mach/at91x40.h          |   18 +-
- arch/arm/mach-at91/include/mach/hardware.h         |    3 +-
- arch/arm/mach-at91/include/mach/io.h               |   18 --
- arch/arm/mach-at91/pm.c                            |   35 ++-
- arch/arm/mach-at91/pm.h                            |   11 +-
- arch/arm/mach-at91/pm_slowclock.S                  |  271 ++++++++++----------
- arch/arm/mach-at91/setup.c                         |    9 +
- arch/avr32/mach-at32ap/at32ap700x.c                |    2 -
- drivers/pcmcia/at91_cf.c                           |    5 +-
- drivers/rtc/rtc-at91sam9.c                         |   98 +++-----
- drivers/tty/serial/atmel_serial.c                  |    2 +
- drivers/usb/gadget/at91_udc.c                      |    9 +-
- drivers/usb/gadget/atmel_usba_udc.c                |    6 +-
- drivers/watchdog/at91rm9200_wdt.c                  |    8 +-
- 64 files changed, 920 insertions(+), 678 deletions(-)
- create mode 100644 arch/arm/mach-at91/include/mach/at91_matrix.h
- create mode 100644 arch/arm/mach-at91/include/mach/at91_ramc.h
- create mode 100644 arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
-
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index d554e67..aac00ce 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -188,13 +188,27 @@ int at91_suspend_entering_slow_clock(void)
+ EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
+ 
+ 
+-static void (*slow_clock)(void);
++static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
+ 
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+-extern void at91_slow_clock(void);
++extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
+ extern u32 at91_slow_clock_sz;
+ #endif
+ 
++static void __iomem *at91_pmc_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_PMC);
++#ifdef CONFIG_ARCH_AT91RM9200
++static void __iomem *at91_ramc0_base = (void __iomem*)AT91_VA_BASE_SYS;
++#elif defined(CONFIG_ARCH_AT91SAM9G45)
++static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC0);
++#else
++static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_SDRAMC0);
++#endif
++
++#if defined(CONFIG_ARCH_AT91SAM9G45)
++static void __iomem *at91_ramc1_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC1);
++#else
++static void __iomem *at91_ramc1_base = NULL;
++#endif
+ 
+ static int at91_pm_enter(suspend_state_t state)
+ {
+@@ -232,7 +246,7 @@ static int at91_pm_enter(suspend_state_t state)
+ 				/* copy slow_clock handler to SRAM, and call it */
+ 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+ #endif
+-				slow_clock();
++				slow_clock(at91_pmc_base, at91_ramc0_base, at91_ramc1_base);
+ 				break;
+ 			} else {
+ 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index c802d30..e31a5f2 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -46,11 +46,11 @@
+ #define PLLALOCK_TIMEOUT	1000
+ #define PLLBLOCK_TIMEOUT	1000
+ 
+-pmc	.req	r1
+-sdramc	.req	r2
++pmc	.req	r0
++sdramc	.req	r1
++ramc1	.req	r2
+ tmp1	.req	r3
+ tmp2	.req	r4
+-ramc1	.req	r5
+ 
+ /*
+  * Wait until master clock is ready (after switching master clock source)
+@@ -110,21 +110,19 @@ ramc1	.req	r5
+ 
+ 	.text
+ 
++/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
+ ENTRY(at91_slow_clock)
+ 	/* Save registers on stack */
+-	stmfd	sp!, {r0 - r12, lr}
++	stmfd	sp!, {r3 - r12, lr}
+ 
+ 	/*
+ 	 * Register usage:
+-	 *  R1 = Base address of AT91_PMC
+-	 *  R2 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
++	 *  R0 = Base address of AT91_PMC
++	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
++	 *  R2 = Base address of second RAM Controller or 0 if not present
+ 	 *  R3 = temporary register
+ 	 *  R4 = temporary register
+-	 *  R5 = Base address of second RAM Controller or 0 if not present
+ 	 */
+-	ldr	pmc, .at91_va_base_pmc
+-	ldr	sdramc, .at91_va_base_sdramc
+-	ldr	ramc1, .at91_va_base_ramc1
+ 
+ 	/* Drain write buffer */
+ 	mov	tmp1, #0
+@@ -283,7 +281,7 @@ ENTRY(at91_slow_clock)
+ #endif
+ 
+ 	/* Restore registers, and return */
+-	ldmfd	sp!, {r0 - r12, pc}
++	ldmfd	sp!, {r3 - r12, pc}
+ 
+ 
+ .saved_mckr:
+@@ -301,26 +299,5 @@ ENTRY(at91_slow_clock)
+ .saved_sam9_lpr1:
+ 	.word 0
+ 
+-.at91_va_base_pmc:
+-	.word AT91_VA_BASE_SYS + AT91_PMC
+-
+-#ifdef CONFIG_ARCH_AT91RM9200
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS + AT91_DDRSDRC0
+-#else
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS + AT91_SDRAMC0
+-#endif
+-
+-.at91_va_base_ramc1:
+-#if defined(CONFIG_ARCH_AT91SAM9G45)
+-	.word AT91_VA_BASE_SYS + AT91_DDRSDRC1
+-#else
+-	.word 0
+-#endif
+-
+ ENTRY(at91_slow_clock_sz)
+ 	.word .-at91_slow_clock
 -- 
 1.7.9
 
