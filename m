@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2BWGJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 01:09:57 -0500
-Received: from 16.mo5.mail-out.ovh.net ([87.98.174.144]:50933 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751533Ab2BWGJ4 (ORCPT
+	id S1752889Ab2BWGZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:25:48 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42011 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab2BWGZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 01:09:56 -0500
-Date: Thu, 23 Feb 2012 07:01:51 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of
- at91_sys_read/write
-Message-ID: <20120223060151.GD20176@game.jcrosoft.org>
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
- <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
- <4F456AAF.3090809@gmail.com>
- <20120223032503.GA20176@game.jcrosoft.org>
- <4F45B985.1000204@gmail.com>
+	Thu, 23 Feb 2012 01:25:46 -0500
+Message-ID: <4F45DBDB.4010308@linux.vnet.ibm.com>
+Date: Thu, 23 Feb 2012 11:55:31 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F45B985.1000204@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 15578232586200328973
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: John Stultz <john.stultz@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
+References: <201202070200.55505.rjw@sisk.pl> <1329886179.2229.2.camel@js-netbook> <4F44AB09.9000606@linux.vnet.ibm.com> <201202222310.21627.rjw@sisk.pl>
+In-Reply-To: <201202222310.21627.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12022306-5816-0000-0000-00000169BC63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:59 Thu 23 Feb     , Ryan Mallon wrote:
-> On 23/02/12 14:25, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> 
-> > On 09:22 Thu 23 Feb     , Ryan Mallon wrote:
-> >> On 22/02/12 20:39, Nicolas Ferre wrote:
-> >>
-> >>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> >>>
-> >>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> >>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >>> ---
-> >>>  arch/arm/mach-at91/at91x40.c              |    2 +-
-> >>>  arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
-> >>>  arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
-> >>>  3 files changed, 27 insertions(+), 21 deletions(-)
-> >>>
-> >>> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
-> >>> index 0154b7f..5400a1d 100644
-> >>> --- a/arch/arm/mach-at91/at91x40.c
-> >>> +++ b/arch/arm/mach-at91/at91x40.c
-> >>> @@ -44,7 +44,7 @@ static void at91x40_idle(void)
-> >>>  	 * Disable the processor clock.  The processor will be automatically
-> >>>  	 * re-enabled by an interrupt or by a reset.
-> >>>  	 */
-> >>> -	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
-> >>> +	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
-> >>
-> >>
-> >> This doesn't seem to be equivalent, at91_sys_write does:
-> >>
-> >>   void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
-> >>   __raw_writel(value, addr + reg_offset);
-> >>
-> >> and this patch doesn't redefine AT91_PS_CR. Was it broken before this
-> >> patch? What am I missing?
-> > this is right
-> > #define AT91_PS_CR      (AT91_PS + 0)   /* PS Control register */
-> 
-> 
-> That doesn't answer my question.
-> 
-> The old, at91_sys_write, version was writing to (using __raw_writel):
-> 
->   AT91_VA_BASE_SYS + AT91_PS_CR
-> 
-> The new version is writing, also using __raw_writel, to:
-> 
->   AT91_PS_CR
-> 
-> The value of AT91_PS_CR is not changed in this patch. Assuming that
-> AT91_VA_BASE_SYS for at91x40 (which at a quick glance it is not), then
-> the old and the new version of the code are not writing to the same
-> address.
-> 
-> Was it previously incorrect, or is it incorrect now?
-it's as we update
+On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
 
-+#define AT91_PS		0xffff4000	/* Power Save */
+> On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
+>> On 02/22/2012 10:19 AM, John Stultz wrote:
+>>
+>>> On Wed, 2012-02-22 at 00:31 +0100, Rafael J. Wysocki wrote:
+>>>> Hi all,
+>>>>
+>>>> After the feedback so far I've decided to follow up with a refreshed patchset.
+>>>> The first two patches from the previous one went to linux-pm/linux-next
+>>>> and I included the recent evdev patch from Arve (with some modifications)
+>>>> to this patchset for completness.
+>>>
+>>> Hey Rafael, 
+>>> 	Thanks again for posting this! I've started playing around with it in a
+>>> kvm environment, and got the following warning after echoing off >
+>>> autosleep:
+>>> ...
+>>> PM: resume of devices complete after 185.615 msecs
+>>> PM: Finishing wakeup.
+>>> Restarting tasks ... done.
+>>> PM: Syncing filesystems ... done.
+>>> PM: Preparing system for mem sleep
+>>> Freezing user space processes ... 
+>>> Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
+>>> bash            D ffff880015714010 
+>>
+>>
+>> Ah.. I think I know what is the problem here..
+>>
+>> The kernel was freezing userspace processes and meanwhile, you wrote "off"
+>> to autosleep. So, as a result, this userspace process (bash) just now
+>> entered kernel mode. Unfortunately, the autosleep_lock is held for too long,
+>> that is, something like:
+>>
+>> acquire autosleep_lock
+>> modify autosleep_state
+>>                                <============== "A"
+>>  pm_suspend or hibernate()
+>>
+>> release autosleep_lock
+>>
+>> At point marked "A", we should have released the autosleep lock and only then
+>> entered pm_suspend or hibernate(). Since the current code holds the lock and
+>> enters suspend/hibernate, the userspace process that wrote "off" to autosleep
+>> (or even userspace process that writes to /sys/power/state will end up waiting
+>> on autosleep_lock, thus failing the freezing operation.)
+>>
+>> So the solution is to always release the autosleep lock before entering
+>> suspend/hibernation.
+> 
+> Well, the autosleep lock is intentionally held around suspend/hibernation in
+> try_to_suspend(), because otherwise it would be possible to trigger automatic
+> suspend right after user space has disabled it.
+>
 
-Best Regards,
-J.
+
+Hmm.. I was just wondering if we could avoid holding yet another lock in the
+suspend/hibernate path, if possible.. 
+
+ 
+> I think the solution is to make pm_autosleep_lock() do a _trylock() and
+> return error code if already locked.
+>
+
+... and also do a trylock() in pm_autosleep_set_state() right?.... that is
+where John hit the problem..
+
+By the way, I am just curious.. how difficult will this make it for userspace
+to disable autosleep? I mean, would a trylock mean that the user has to keep
+fighting until he finally gets a chance to disable autosleep?
+
+Regards,
+Srivatsa S. Bhat
+
