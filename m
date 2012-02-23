@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab2BWOhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 09:37:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55981 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab2BWOhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 09:37:05 -0500
-Message-ID: <4F464EF4.80902@zytor.com>
-Date: Thu, 23 Feb 2012 06:36:36 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756112Ab2BWOkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 09:40:36 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39558 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab2BWOkf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 09:40:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bobbypowers@gmail.com designates 10.229.136.19 as permitted sender) smtp.mail=bobbypowers@gmail.com; dkim=pass header.i=bobbypowers@gmail.com
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, luto@mit.edu, tglx@linutronix.de,
-        hjl.tools@gmail.com
-Subject: Re: [tip:x86/x32] x32: Drop non-__vdso weak symbols from the x32
- VDSO
-References: <4F42E171.9080005@mit.edu> <tip-862ae3132dc393ab6ea750b9ee9e0e1c276b9abb@git.kernel.org> <20120223105534.GA17026@elte.hu>
-In-Reply-To: <20120223105534.GA17026@elte.hu>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <1986.1329905936@redhat.com>
+References: <1329888587-3087-1-git-send-email-bobbypowers@gmail.com>
+	<1986.1329905936@redhat.com>
+Date: Thu, 23 Feb 2012 09:40:34 -0500
+Message-ID: <CAArOQ2U5CUiZ++RQdaB_AZSWKof4BM1Sbr=GihMRbH-kj_DGAQ@mail.gmail.com>
+Subject: Re: [PATCH tip/x86/x32] fs: fix close_on_exec pointer in alloc_fdtable
+From: Bobby Powers <bobbypowers@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: dhowells@redhat.com, hpa@zytor.com, viro@zeniv.linux.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 02:55 AM, Ingo Molnar wrote:
-> 
-> * tip-bot for H. Peter Anvin <hpa@zytor.com> wrote:
-> 
->> Commit-ID:  862ae3132dc393ab6ea750b9ee9e0e1c276b9abb
->> Gitweb:     http://git.kernel.org/tip/862ae3132dc393ab6ea750b9ee9e0e1c276b9abb
->> Author:     H. Peter Anvin <hpa@zytor.com>
->> AuthorDate: Wed, 22 Feb 2012 20:37:10 -0800
->> Committer:  H. Peter Anvin <hpa@zytor.com>
->> CommitDate: Wed, 22 Feb 2012 20:40:07 -0800
+On Wed, Feb 22, 2012 at 5:18 AM, David Howells <dhowells@redhat.com> wrote:
+> Bobby Powers <bobbypowers@gmail.com> wrote:
+>
+>> alloc_fdtable allocates space for the open_fds and close_on_exec
+>> bitfields together, as 2 * nr / BITS_PER_BYTE.  close_on_exec needs to
+>> point to open_fds + nr / BITS_PER_BYTE, not open_fds + nr /
+>> BITS_PER_LONG, as introducted in 1fd36adc: Replace the fd_sets in
+>> struct fdtable with an array of unsigned longs.
 >>
->> x32: Drop non-__vdso weak symbols from the x32 VDSO
-> 
-> One of the recent x32 commit broke the build on some configs:
-> 
->   VDSO    arch/x86/vdso/vdsox32.so.dbg
-> /usr/bin/ld: arch/x86/vdso/vgetcpu-x32.o: relocation R_X86_64_64 
-> against symbol `.rodata' isn't supported in x32 mode
-> arch/x86/vdso/vgetcpu-x32.o: could not read symbols: Bad value
-> collect2: error: ld returned 1 exit status
-> 
-> config attached.
-> 
-> binutils-2.21.51, gcc-4.7.0.
-> 
-> Thanks,
-> 
-> 	Ingo
+>> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
+>
+> Yes, you're right.  At one point I changed data to be an unsigned long *.
+>
+> Acked-by: David Howells <dhowells@redhat.com>
 
-Yes, this is known: binutils-2.21.51 has some x32 support, but that
-version of the ABI is too old for what the kernel needs; in other words
-it's not functional.
-
-	-hpa
-
+Thanks, its nice to have confirmation - I'm still pretty new at this.
+Can this get pulled onto tip/x86/x32?  Desktop applications like
+firefox and chrome don't work reliably without it.
