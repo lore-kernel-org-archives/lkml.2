@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab2BWMMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 07:12:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46316 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab2BWMKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 07:10:43 -0500
-From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <grant.likely@secretlab.ca>, <khilman@ti.com>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Subject: [PATCH 0/6] gpio/omap: Some more driver cleanup and fixes
-Date: Thu, 23 Feb 2012 17:40:25 +0530
-Message-ID: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754409Ab2BWMSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 07:18:50 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43764 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab2BWMSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 07:18:49 -0500
+Date: Thu, 23 Feb 2012 17:48:25 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120223121825.GC8454@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1321495153.5100.7.camel@marge.simson.net>
+ <1321544313.6308.25.camel@marge.simson.net>
+ <1321545376.2495.1.camel@laptop>
+ <1321547917.6308.48.camel@marge.simson.net>
+ <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+ <1321629267.7080.13.camel@marge.simson.net>
+ <1329748861.2293.345.camel@twins>
+ <1329761661.6276.146.camel@marge.simpson.net>
+ <20120223104959.GA8454@linux.vnet.ibm.com>
+ <20120223111929.GA23646@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120223111929.GA23646@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022312-5816-0000-0000-0000016B2DC4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cleanup is mostly getting rid of redundant fields in struct gpio_bank{}
-as we already have them as part of bank->context now. Also, remove un-used
-variable from gpio_irq_handler.
+* Ingo Molnar <mingo@elte.hu> [2012-02-23 12:19:29]:
 
-The fix include correction of _set_gpio_irqenable() implementation and fix
-type mismatch of gpio trigger parameter.
+> sysbench is one of the best ones punishing bad scheduler 
+> balancing mistakes.
 
-It is baselined on top of Kevin's following series:
-gpio/omap: cleanup and runtime PM conversion for v3.4
-git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-omap-pm.git for_3.4/gpio/runtime-pm-cleanup
+Here are the sysbench oltp score on same machine i.e:
 
-I have applied Benoit's GPIO patches in following series on top of Kevin's
-before applying my changes.
-gpio/omap: Cleanup and adaptation to Device Tree
-git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.4/dt_gpio
+Machine : 2 Quad-core Intel X5570 CPU (H/T enabled)
+Kernel  : tip (HEAD at 6241cc8)
+sysbench : 0.4.12
 
-Series is available here for reference:
-git://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev for_3.4/gpio_further_cleanup_fixes
+sysbench was run with 16 threads as:
 
-Power Test: Off-mode and Retention on OMAP3430 (Suspend and Idle paths).
-Functional Test: OMAP2430, OMAP3430SDP, ZOOM3, OMAP4430, OMAP4-BLAZE
+./sysbench --num-threads=16 --max-requests=100000 --test=oltp --oltp-table-size=500000 --mysql-socket=/var/lib/mysql/mysql.sock --oltp-read-only --mysql-user=root --mysql-password=blah run
 
-Tarun Kanti DebBarma (6):
-  gpio/omap: remove saved_fallingdetect, saved_risingdetect fields
-  gpio/omap: remove saved_wakeup field from struct gpio_bank
-  gpio/omap: remove suspend_wakeup field from struct gpio_bank
-  gpio/omap: get rid of retrigger variable in gpio_irq_handler
-  gpio/omap: fix trigger type to unsigned
-  gpio/omap: fix _set_gpio_irqenable implementation
+sysbench was run 5 times with fs-cache being purged before each run
+(echo 3 > /proc/sys/vm/drop_caches).
 
- drivers/gpio/gpio-omap.c |   56 +++++++++++++++++++--------------------------
- 1 files changed, 24 insertions(+), 32 deletions(-)
+Average of 5 runs alongwith % std. dev. is noted for various OLTP stats
+
+				SD_BALANCE_WAKE		SD_BALANCE_WAKE	
+				disabled		enabled
+
+transactions (per sec)		4833.826 (+- 0.75%)	4837.354 (+- 1%)
+read/write requests (per sec)	67673.580 (+- 0.75%)	67722.960 (+- 1%)
+other ops (per sec)		9667.654 (+- 0.75%)	9674.710 (+- 1%)
+
+There is minor improvement seen when SD_BALANCE_WAKE is enabled at SMT/MC
+domains, but no degradation observed with it enabled.
+
+- vatsa
 
