@@ -1,69 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2BWJ4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:56:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40053 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab2BWJ4f (ORCPT
+	id S1755404Ab2BWJ5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:57:31 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40158 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2BWJ53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:56:35 -0500
-Date: Thu, 23 Feb 2012 01:57:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2] treewide: fix memory corruptions when TASK_COMM_LEN
- != 16
-Message-Id: <20120223015726.cb065d73.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.01.1202222303190.15465@frira.zrqbmnf.qr>
-References: <1327183785-27023-1-git-send-email-jengelh@medozas.de>
-	<20120124135443.2772d455.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1201250121260.20692@frira.zrqbmnf.qr>
-	<20120131172334.7f26f164.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1202010224510.29848@frira.zrqbmnf.qr>
-	<20120131174914.8ce5291d.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1202010257240.29848@frira.zrqbmnf.qr>
-	<20120131190109.b53347fd.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1202221343530.10125@frira.zrqbmnf.qr>
-	<20120222125810.50cd5789.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1202222303190.15465@frira.zrqbmnf.qr>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 23 Feb 2012 04:57:29 -0500
+Message-ID: <4F460D7B.1020703@linux.vnet.ibm.com>
+Date: Thu, 23 Feb 2012 15:27:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+        paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        paul@paulmenage.org, tj@kernel.org, frank.rowand@am.sony.com,
+        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
+        prashanth@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling related
+ to cpusets
+References: <Pine.LNX.4.44L0.1202101647440.1179-100000@iolanthe.rowland.org> <201202102339.02702.rjw@sisk.pl> <1328926042.2476.3.camel@laptop> <4F35EE11.5010202@linux.vnet.ibm.com> <4F394CA0.9020902@linux.vnet.ibm.com> <4F3E44DB.20201@linux.vnet.ibm.com> <1329742145.2293.337.camel@twins> <4F4243B6.8070507@linux.vnet.ibm.com>
+In-Reply-To: <4F4243B6.8070507@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12022309-2000-0000-0000-000006828AD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 10:09:33 +0100 (CET) Jan Engelhardt <jengelh@medozas.de> wrote:
+On 02/20/2012 06:29 PM, Srivatsa S. Bhat wrote:
 
-> On Wednesday 2012-02-22 21:58, Andrew Morton wrote:
+> Hi Peter,
 > 
-> >On Wed, 22 Feb 2012 13:48:08 +0100 (CET)
-> >Jan Engelhardt <jengelh@medozas.de> wrote:
-> >
-> >> task: provide a larger task command buffer
-> >
-> ><scratches head>
-> >
-> >Why are we bothering ourselves about this?
+> On 02/20/2012 06:19 PM, Peter Zijlstra wrote:
 > 
-> Some prefer to know what's going on in the system. Every other or 
-> so kernel release there are some new happy kthreads, such as
-> 
-> 24930 ?        S      0:00  \_ [btrfs-endio-1]
-> 24931 ?        S      0:00  \_ [btrfs-endio-met]
-> 24932 ?        S      0:00  \_ [btrfs-endio-met]
-> 24933 ?        S      0:00  \_ [btrfs-endio-wri]
-> 24934 ?        S      0:00  \_ [btrfs-freespace]
-> 
-> at which point one is curious to find out the rest of the met and why 
-> there are two of them. If expanded one actually sees they are different 
-> kthreads (rather than just per-cpu instances for a WQ, for example)
-> 
-> $ grep Name /proc/{29431,29432}/stat*
-> /proc/29431/status:Name: btrfs-endio-meta-1
-> /proc/29432/status:Name: btrfs-endio-meta-write-1
-> 
-> That's all.
+>> On Fri, 2012-02-17 at 17:45 +0530, Srivatsa S. Bhat wrote:
+>>
+>>>> Trivially removing CPU_TASKS_FROZEN as shown below doesn't look right to me:
+>>>>
+>>>> ---
+>>>>
+>>>>  kernel/sched/core.c |    4 ++--
+>>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>>
+>>>>
+>>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>>> index 5255c9d..43a166e 100644
+>>>> --- a/kernel/sched/core.c
+>>>> +++ b/kernel/sched/core.c
+>>>> @@ -6729,7 +6729,7 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
+>>>>  static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+>>>>  			     void *hcpu)
+>>>>  {
+>>>> -	switch (action & ~CPU_TASKS_FROZEN) {
+>>>> +	switch (action) {
+>>>>  	case CPU_ONLINE:
+>>>>  	case CPU_DOWN_FAILED:
+>>>>  		cpuset_update_active_cpus();
+>>>> @@ -6742,7 +6742,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+>>>>  static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+>>>>  			       void *hcpu)
+>>>>  {
+>>>> -	switch (action & ~CPU_TASKS_FROZEN) {
+>>>> +	switch (action) {
+>>>>  	case CPU_DOWN_PREPARE:
+>>>>  		cpuset_update_active_cpus();
+>>>>  		return NOTIFY_OK;
+>>>>
+>>>>
+>>>> IMO, irrespective of whether we keep cpusets unaware of all CPU Hotplug or
+>>>> only unaware of the CPU hotplug in the suspend/resume path, I feel the
+>>>> scheduler should always know the true state of the system, ie., offline CPUs
+>>>> must not be part of any sched domain, at any point in time.
+>>
+>> That's really not a problem as long as they're not in the active mask.
+>>
 
-doh.  The fix for that is to have less clueless btrfs developers.
+
+[...]
+
+So, based on what you said above, I guess we can go with that simple patch.
+(See below, for the patch with changelog).
+
+I thought about what Ingo suggested (ie., not touching cpusets during cpu
+hotplug, irrespective of whether it is part of suspend or not). And we can
+implement that by having a scheme something like:
+
+o Currently if a cpuset's cpus_allowed mask becomes empty due to CPU offline,
+  all tasks in that cpuset is moved to a parent cpuset whose cpus_allowed mask
+  is non-empty.
+  Here, instead of *moving* the tasks to another cpuset, we could just change
+  the cpus_allowed mask of each task in that cpuset to reflect the non-empty
+  parent cpuset's cpus_allowed mask. IOW, during a CPU offline, we never touch
+  a cpuset's cpus_allowed mask, we only modify the cpus_allowed mask of the
+  *tasks* in that cpuset. Also, we never move a task from one cpuset to another
+  due to CPU offline.
+
+o Since we never modify a cpuset's cpus_allowed mask due to CPU offline, it is
+  trivial to get back to original state when that CPU comes back online. Just
+  compare the cpuset's cpus_allowed mask with cpu_active_mask and update the
+  cpus_allowed masks of all the tasks in that cpuset.
+
+We can definitely do all this, but I am not quite sure if this complexity is
+justified (ie., complexity in the sense that the cpus_allowed mask of the tasks
+in a cpuset might not always be the same as the cpus_allowed mask of that
+cpuset).
+
+However, if somebody feels that the above mentioned approach looks good and
+the complexity is justified, please let me know.. But until then, the
+following simple fix for the suspend/resume bug should suffice.
+
+----
+
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: CPU hotplug, cpusets, suspend: Don't touch cpusets during suspend/resume
+
+Currently, during CPU hotplug, the cpuset callbacks modify the cpusets
+to reflect the state of the system, and this handling is asymmetric.
+That is, upon CPU offline, that CPU is removed from all cpusets. However
+when it comes back online, it is put back only to the root cpuset.
+
+This gives rise to a significant problem during suspend/resume. During
+suspend, we offline all non-boot cpus and during resume we online them back.
+Which means, after a resume, all cpusets (except the root cpuset) will be
+restricted to just one single CPU (the boot cpu). But the whole point of
+suspend/resume is to restore the system to a state which is as close as
+possible to how it was before suspend.
+
+So to fix this, don't touch cpusets during suspend/resume. That is, modify
+the cpuset-related CPU hotplug callback to just ignore CPU hotplug when it
+is initiated as part of the suspend/resume sequence.
+
+Reported-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
+---
+
+ kernel/sched/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1169246..49ba9d4 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6728,7 +6728,7 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
+ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 			     void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+ 		cpuset_update_active_cpus();
+@@ -6741,7 +6741,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ 			       void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+ 		cpuset_update_active_cpus();
+ 		return NOTIFY_OK;
+
+
