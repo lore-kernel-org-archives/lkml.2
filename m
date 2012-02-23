@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2BWPhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 10:37:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52957 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab2BWPhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 10:37:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="111227540"
-Date: Thu, 23 Feb 2012 16:37:33 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Oskar Schirmer <oskar@scara.com>, dmitry.torokhov@gmail.com,
-        kernel@pengutronix.de, philippe.retornaz@epfl.ch,
-        michael.thalmeier@hale.at, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] add support for mc13892 I2C based touch panel for
- mx35_3ds
-Message-ID: <20120223153733.GF24377@sortiz-mobl>
-References: <1329215672-15706-1-git-send-email-oskar@scara.com>
- <20120214114949.GM14173@pengutronix.de>
+	id S1756460Ab2BWPjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 10:39:08 -0500
+Received: from power.iqm.unicamp.br ([143.106.51.18]:62038 "EHLO
+	webmail.iqm.unicamp.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab2BWPjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 10:39:07 -0500
+X-Greylist: delayed 1079 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 10:39:07 EST
+Message-ID: <20120223131517.14395wrc5m2xsiyt@webmail.iqm.unicamp.br>
+Date: Thu, 23 Feb 2012 13:15:17 -0200
+From: "Mr. Vincent Cheng Hoi" <info@yahoo.com>
+Reply-to: choi_chu15@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120214114949.GM14173@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.10) / FreeBSD-7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe, Oskar,
 
-On Tue, Feb 14, 2012 at 12:49:49PM +0100, Uwe Kleine-König wrote:
-> Hello,
-> 
-> I didn't check your series, but are you aware of the series available at
-> 
-> 	http://thread.gmane.org/gmane.linux.drivers.i2c/9872
-FYI this has not been merged. I'm waiting for Marc to address the many
-comments triggered by his patchset.
+Good Day,
 
-Cheers,
-Samuel.
+I have a business proposal of USD $22,500,000.00 only for you to  
+transact with me from my bank to your country. All confirmable  
+documents to back up the claims will be made available to you prior to  
+your acceptance.Reply to address:choi_chu15@yahoo.co.jp and I will let  
+you know what is required of you.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Best Regards,
+Mr. Vincent Cheng
+
+
+
+
+
