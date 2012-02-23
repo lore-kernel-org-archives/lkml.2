@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab2BWJJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:09:43 -0500
-Received: from seven.medozas.de ([188.40.89.202]:59542 "EHLO seven.medozas.de"
+	id S932068Ab2BWJNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:13:23 -0500
+Received: from mga11.intel.com ([192.55.52.93]:61873 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265Ab2BWJJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:09:36 -0500
-Date: Thu, 23 Feb 2012 10:09:33 +0100 (CET)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] treewide: fix memory corruptions when TASK_COMM_LEN
- != 16
-In-Reply-To: <20120222125810.50cd5789.akpm@linux-foundation.org>
-Message-ID: <alpine.LNX.2.01.1202222303190.15465@frira.zrqbmnf.qr>
-References: <1327183785-27023-1-git-send-email-jengelh@medozas.de> <20120124135443.2772d455.akpm@linux-foundation.org> <alpine.LNX.2.01.1201250121260.20692@frira.zrqbmnf.qr> <20120131172334.7f26f164.akpm@linux-foundation.org> <alpine.LNX.2.01.1202010224510.29848@frira.zrqbmnf.qr>
- <20120131174914.8ce5291d.akpm@linux-foundation.org> <alpine.LNX.2.01.1202010257240.29848@frira.zrqbmnf.qr> <20120131190109.b53347fd.akpm@linux-foundation.org> <alpine.LNX.2.01.1202221343530.10125@frira.zrqbmnf.qr>
- <20120222125810.50cd5789.akpm@linux-foundation.org>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753322Ab2BWJNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 04:13:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120443748"
+Subject: Re: [PATCH 2/3] usb: enable pci MSI/MSIX in usb core
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        andiry.xu@amd.com, clemens@ladisch.de, linux-kernel@vger.kernel.org
+In-Reply-To: <1329986384.21053.165.camel@debian>
+References: <1329728733-32419-1-git-send-email-alex.shi@intel.com>
+	 <1329728733-32419-2-git-send-email-alex.shi@intel.com>
+	 <1329728733-32419-3-git-send-email-alex.shi@intel.com>
+	 <20120223034147.GD27250@xanatos>  <1329986384.21053.165.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Feb 2012 17:11:47 +0800
+Message-ID: <1329988307.21053.167.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 2012-02-22 21:58, Andrew Morton wrote:
 
->On Wed, 22 Feb 2012 13:48:08 +0100 (CET)
->Jan Engelhardt <jengelh@medozas.de> wrote:
->
->> task: provide a larger task command buffer
->
-><scratches head>
->
->Why are we bothering ourselves about this?
+> What do you mean: there is a relation between event rings
+> msix_entries.vectors.  and we need to presents this relationships in the
+> msix interrupt handler? 
+> 
+> So does the following mode you like?
+> 
+> request_irq(hcd->msix_entries[i].vector, msix_irq_handler, 0, "",
+> hcd->ring_handler[i]);
+> 
+> Or another way to do it if we know which ring will handle the irq, like:
 
-Some prefer to know what's going on in the system. Every other or 
-so kernel release there are some new happy kthreads, such as
+here, I mean let the driver remember this relationships. 
+> 
+> irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd)
+> 
+> 	switch (irq2ring(irq))
+> 	case ring0: driver_handle_ring(ring0);
+> 	case ring1: driver_handle_ring(ring1);
+> 
+> In fact, since there is no actual usage of multiple rings now, I have no
+> much idea of the relationships. 
+> 
+> BTW, if it is possible do this change to another patch? 
 
-24930 ?        S      0:00  \_ [btrfs-endio-1]
-24931 ?        S      0:00  \_ [btrfs-endio-met]
-24932 ?        S      0:00  \_ [btrfs-endio-met]
-24933 ?        S      0:00  \_ [btrfs-endio-wri]
-24934 ?        S      0:00  \_ [btrfs-freespace]
 
-at which point one is curious to find out the rest of the met and why 
-there are two of them. If expanded one actually sees they are different 
-kthreads (rather than just per-cpu instances for a WQ, for example)
-
-$ grep Name /proc/{29431,29432}/stat*
-/proc/29431/status:Name: btrfs-endio-meta-1
-/proc/29432/status:Name: btrfs-endio-meta-write-1
-
-That's all.
