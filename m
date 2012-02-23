@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab2BWI4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:56:52 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:18545 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2BWI4v (ORCPT
+	id S1754691Ab2BWJJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:09:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35221 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab2BWJJL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:56:51 -0500
-Message-ID: <4F45FF46.3060702@atmel.com>
-Date: Thu, 23 Feb 2012 09:56:38 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Ryan Mallon <rmallon@gmail.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
-Subject: Re: [PATCH v2 09/19] ARM: at91: make sdram/ddr register base soc
- independent
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com> <4F456D1E.8070807@gmail.com>
-In-Reply-To: <4F456D1E.8070807@gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 04:09:11 -0500
+Message-ID: <1329988135.24994.43.camel@twins>
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 23 Feb 2012 10:08:55 +0100
+In-Reply-To: <20120223075027.GB15306@elte.hu>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+	 <20120223075027.GB15306@elte.hu>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 11:33 PM, Ryan Mallon :
-> On 22/02/12 20:39, Nicolas Ferre wrote:
-> 
->> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>
->> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
-> 
-> <snip>
-> 
->> +void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
->> +{
->> +	if (id > 1) {
->> +		pr_warn("%s: id > 2\n", __func__);
->> +		return;
->> +	}
->> +	at91_ramc_base[id] = ioremap(addr, size);
->> +	if (!at91_ramc_base[id])
->> +		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
->> +}
-> 
-> 
-> If this fails then you will oops if you call either at91_ramc_read or
-> at91_ramc_write since they don't check if at91_ramc_base[id] is a valid
-> pointer. Either this function should panic, like the other at91_ioremap
-> functions, or the at91_ramc_read/write functions should check for a
-> valid pointer.
+On Thu, 2012-02-23 at 08:50 +0100, Ingo Molnar wrote:
+> * Venkatesh Pallipadi <venki@google.com> wrote:
 
-Yes, as you pointed out, it is done in a not-related following patch.
-I will bring the code here.
-
-
-> Nitpick: The id check should probably also be BUG() or WARN() since it
-> indicates a bug in the core AT91 code. pr_warn is likely to missed and
-> not reported by users. Since the value is int, the check should be:
+> > * We can also eliminate TS_POLLING flag in favor of this. But, that will have
+> >   a lot more touchpoints and better done as a standlone change.
 > 
->   if (id < 0 || id > 1)
-> 
-> Obviously the chance of this error happening are slim, but if you are
-> going to check and warn for it, it should be done properly :-).
+> Should most definitely be done for this series to be acceptble - 
+> as a preparatory patch in the series, with the feature at the 
+> end of the series.
 
-Yes, I agree and modify it at the very moment.
+I don't think you can, TS_POLLING still works for idle=poll, whereas
+this new stuff requires monitor/mwait.
 
-thanks, best regards,
--- 
-Nicolas Ferre
