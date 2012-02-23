@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2BWI2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 03:28:13 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:65009 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2BWI1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 03:27:30 -0500
-X-AuditID: 9c93016f-b7cc4ae0000027c5-d9-4f45f86e1a28
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] perf annotate: Restore title when came back to original symbol
-Date: Thu, 23 Feb 2012 17:46:22 +0900
-Message-Id: <1329986784-4916-4-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329986784-4916-1-git-send-email-namhyung.kim@lge.com>
-References: <1329986784-4916-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1753995Ab2BWIhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 03:37:22 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35046 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751573Ab2BWIhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 03:37:20 -0500
+Date: Thu, 23 Feb 2012 09:37:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: mingo@redhat.com, hpa@zytor.com, ananth@in.ibm.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: Re: [tip:perf/core] x86/kprobes: Fix to recover instructions on
+ optimized path
+Message-ID: <20120223083703.GA26781@elte.hu>
+References: <20120221083621.11350.4716.stgit@localhost.localdomain>
+ <tip-f5dbbb8e1e055d6f02817a1995993b461910b1b7@git.kernel.org>
+ <20120222162224.GA5256@elte.hu>
+ <4F459941.1000006@hitachi.com>
+ <20120223070747.GA14495@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120223070747.GA14495@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On tui annotation, the title was set to name of the target symbol if
-user selects the target. However it remained after returning to original
-symbol from the target. Fix it.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/util/ui/browsers/annotate.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index 374d3bc570b2..e73357770d5d 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -343,6 +343,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
- 				pthread_mutex_unlock(&notes->lock);
- 				symbol__tui_annotate(target, ms->map, evidx,
- 						     timer, arg, delay_secs);
-+				ui_browser__show_title(&self->b, sym->name);
- 			}
- 			continue;
- 		case K_LEFT:
--- 
-1.7.9
+> > > Does not build on x86 if CONFIG_OPTPROBES is off:
+> > > 
+> > > arch/x86/kernel/kprobes.c:260:8: error: dereferencing pointer to incomplete type
+> > > arch/x86/kernel/kprobes.c:260:8: error: invalid use of undefined type ‘struct optimized_kprobe’
+> > > arch/x86/kernel/kprobes.c:262:22: error: dereferencing pointer to incomplete type
+> > > arch/x86/kernel/kprobes.c:264:18: error: dereferencing pointer to incomplete type
+> > 
+> > Oops, should I update this patch or send new diff?
+> 
+> Please send a delta fix.
 
+Hm, it was triggering too often so I removed it from perf:core 
+for now - please send an updated patch.
+
+Please also pick up the slightly updated changelog I've created 
+for the commit - you can see it in the -tip notification email.
+
+Btw., why are optprobes limited to !PREEMPT, could we make them 
+preempt safe?
+
+Thanks,
+
+	Ingo
