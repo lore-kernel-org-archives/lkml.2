@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2BWPWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 10:22:34 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4449 "EHLO mga03.intel.com"
+	id S1756242Ab2BWPYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 10:24:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36781 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab2BWPWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 10:22:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109943634"
-Date: Thu, 23 Feb 2012 16:22:09 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/7] MFD: twl-core: regulator configuration for twl6030
- V1V8, V2V1 SMPS
-Message-ID: <20120223152209.GA24377@sortiz-mobl>
-References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
- <1328868316-24749-4-git-send-email-peter.ujfalusi@ti.com>
+	id S1756179Ab2BWPYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 10:24:08 -0500
+Date: Thu, 23 Feb 2012 13:22:27 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
+Message-ID: <20120223152226.GA2014@x61.redhat.com>
+References: <20120222115320.GA3107@x61.redhat.com>
+ <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328868316-24749-4-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Wed, Feb 22, 2012 at 04:44:58PM -0800, David Rientjes wrote:
+> I don't like this because it duplicates what is given by /proc/slabinfo 
+> that can easily be read at the time of oom and is unnecessary to dump to 
+> the kernel log.  We display the meminfo (which includes the amount of 
+> slab, just not broken down by cache) because it's absolutely necessary to 
+> understand why the oom was triggered.  The tasklist dump is allowed 
+> because it's difficult to attain all that information easily and to 
+> determine which threads are eligible in the oom context (global, memcg, 
+> cpuset, mempolicy) so they matter to the oom condition.  The per-cache 
+> slabinfo fits neither of that criteria and just duplicates code in the 
+> slab allocators that is attainable elsewhere.
 
-On Fri, Feb 10, 2012 at 12:05:12PM +0200, Peter Ujfalusi wrote:
-> To be able to attach consumers to these supplies from board
-> files we need to have regulator_init_data for them.
-If I understand correctly, this should also go through Liam's tree. If that's
-so, please add my:
+Lets say the slab gets so bloated that for every user task spawned OOM-killer 
+just kills it instantly, or the system falls under severe thrashing, leaving no
+chance for you getting an interactive session to parse /proc/slabinfo, thus 
+making the reset button as your only escape... How would you identify what was 
+the set of caches responsible by the slab swelling?
 
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+IMHO, having such qualified info about slab usage at hand is very useful in
+several occurrences of OOM. It not only helps out developers, but also sysadmins
+on troubleshooting slab usage when OOM-killer is invoked, thus qualifying and 
+showing such data surely does make sense for a lot of people. For those who do 
+not mind/care about such reporting, in the end it just takes a sysctl knob 
+adjustment to make it go quiet.
 
-Cheers,
-Samuel.
+> 
+> I think this also gives another usecase for a possible /dev/mem_notify in 
+> the future: userspace could easily poll on an eventfd and wait for an oom 
+> to occur and then cat /proc/slabinfo to attain all this.  In other words, 
+> if we had this functionality (which I think we undoubtedly will in the 
+> future), this patch would be obsoleted.
 
+Great! So, why not letting the time tell us if this feature will be obsoleted
+or not? I'd rather have this patch obsoleted by another one proven better, than
+just stay still waiting for something that might, or might not, happen in the
+future.
+
+
+
+Thanks for your feedback!
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Rafael Aquini <aquini@redhat.com>
+Software Maintenance Engineer
+Red Hat, Inc.
++55 51 4063.9436 / 8426138 (ext)
