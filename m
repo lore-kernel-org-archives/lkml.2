@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab2BWHdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 02:33:09 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33153 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab2BWHdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 02:33:07 -0500
-Date: Thu, 23 Feb 2012 08:32:55 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/5] x86: Cleanup and simplify cpu-specific data
-Message-ID: <20120223073255.GA15306@elte.hu>
-References: <20120222092745.GA30339@elte.hu>
- <1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
+	id S1754058Ab2BWHeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 02:34:31 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42312 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab2BWHea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 02:34:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of chaitanyag3.14@gmail.com designates 10.229.77.141 as permitted sender) smtp.mail=chaitanyag3.14@gmail.com; dkim=pass header.i=chaitanyag3.14@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+From: chaitanya g <chaitanyag3.14@gmail.com>
+Date: Thu, 23 Feb 2012 13:04:09 +0530
+Message-ID: <CAOvk4sHM0buk8TW1w8n3EgnNHh6r=57RTUQXKNrCeBFcXjQ7Sg@mail.gmail.com>
+Subject: Linux kernel : sysctl registering table under same proc name (path)
+ gives warning and call trace while unregistering
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello there,
 
-* Kevin Winchester <kjwinchester@gmail.com> wrote:
+I am creating a sysctl kernel module to register 2 hierarchy under
+same proc name. For e.g.
 
->  22 files changed, 91 insertions(+), 190 deletions(-)
+  my_net
+  |          |
+net1  net2
+ |         |
+t1        t2
 
-Btw., the diffstat is very nice - the individual patches only 
-hinted at the simplification effect - the combined diffstat 
-shows that we saved a hundred lines of often rather complex code 
-and made this code quite a bit more hackable.
+So, I used register_sysctl_paths() API. Everything works fine when
+registering the sysctl tables net1 net2 under path name my_net.
+
+Problem is when unregistering the tables dmesg shows kernel tainted
+warning and a call trace.
+
+Here, is pastebin link to the warning message http://pastebin.com/NfLQhikJ
+
+Here is pastebin link to module source http://pastebin.com/jSfPW5Y5
+
+Kindly, please help me to resolve this panic.
 
 Thanks,
-
-	Ingo
+Chaitanya
