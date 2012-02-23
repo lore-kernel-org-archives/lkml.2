@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab2BWWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:36:27 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41927 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755095Ab2BWWgX (ORCPT
+	id S1757255Ab2BWWhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:37:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45385 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000Ab2BWWg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:36:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-	<1329845435-2313-7-git-send-email-wad@chromium.org>
-	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
-	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
-	<CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
-	<CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
-	<4F45887A.5010809@zytor.com>
-	<CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
-	<4F459109.1060205@zytor.com>
-	<CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
-	<CABqD9hbsZTtkFzM_8rHqAWjZhiV0iWb6s1eMF9LriH-NybrorA@mail.gmail.com>
-	<fe2d4b97d84c1e8053c397a20eec7ac8.squirrel@webmail.greenhost.nl>
-	<CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
-Date: Thu, 23 Feb 2012 16:36:21 -0600
-Message-ID: <CABqD9hbE_0mDADUAcU3JYeEroj-57Mz2etd2NaPV_Sb3JpJ21Q@mail.gmail.com>
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
-From: Will Drewry <wad@chromium.org>
-To: Markus Gutschke <markus@chromium.org>
-Cc: Indan Zupancic <indan@nul.nu>, Roland McGrath <mcgrathr@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 Feb 2012 17:36:59 -0500
+Date: Thu, 23 Feb 2012 14:36:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
+ PAGE_SIZE
+Message-Id: <20120223143658.0e318ce2.akpm@linux-foundation.org>
+In-Reply-To: <1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
+References: <1329393696-4802-1-git-send-email-daniel.vetter@ffwll.ch>
+	<1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 4:33 PM, Markus Gutschke <markus@chromium.org> wrote:
-> On Thu, Feb 23, 2012 at 14:15, Indan Zupancic <indan@nul.nu> wrote:
->> What about making SECCOMP_RET_TRAP dump core/send SIGSYS if there is
->> no tracer with PTRACE_O_SECCOMP set?
->
-> Please don't make things dependent on having a tracer. There are
-> applications that don't really need a tracer; in fact, these are
-> typically the exact same applications that can benefit from receiving
-> SIGSYS and then handling it internally.
->
-> If a tracer was required to set this up, it would make it difficult to
-> use gdb, strace, or any other common debugging tools.
->
->> Sending SIGSYS is useful, but it's quite a bit less useful if user
->> space can't handle it in a signal handler, so I don't think it's
->> worth it to make a unblockable version.
->
-> Maybe, I am not parsing your e-mail correctly. But don't we already
-> get the desired behavior, if SIGSYS is treated the same as any other
-> synchronous signal? If it is unblocked and has a handler, the
-> application can decide to handle it. If neither one of these
-> conditions is true, it terminates the program. Ulimits and
-> PR_SET_DUMPABLE determine whether a core file is generated.
+On Thu, 16 Feb 2012 13:01:36 +0100
+Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
 
-Yeah - the current patchset does that just fine. The tweak I was
-proposing was making ti possible to deliver an SIGSYS that always uses
-SIG_DFL so that you don't have to play with signal call enforcement in
-the filters.
+> drm/i915 wants to read/write more than one page in its fastpath
+> and hence needs to prefault more than PAGE_SIZE bytes.
+> 
+> I've checked the callsites and they all already clamp size when
+> calling fault_in_pages_* to the same as for the subsequent
+> __copy_to|from_user and hence don't rely on the implicit clamping
+> to PAGE_SIZE.
+> 
+> Also kill a copy&pasted spurious space in both functions while at it.
+>
+> ...
+>
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -408,6 +408,7 @@ extern void add_page_wait_queue(struct page *page, wait_queue_t *waiter);
+>  static inline int fault_in_pages_writeable(char __user *uaddr, int size)
+>  {
+>  	int ret;
+> +	char __user *end = uaddr + size - 1;
+>  
+>  	if (unlikely(size == 0))
+>  		return 0;
+> @@ -416,17 +417,20 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
+>  	 * Writing zeroes into userspace here is OK, because we know that if
+>  	 * the zero gets there, we'll be overwriting it.
+>  	 */
+> -	ret = __put_user(0, uaddr);
+> +	while (uaddr <= end) {
+> +		ret = __put_user(0, uaddr);
+> +		if (ret != 0)
+> +			return ret;
+> +		uaddr += PAGE_SIZE;
+> +	}
 
-This is a pretty minor tweak either way.
-cheers!
-will
+The callsites in filemap.c are pretty hot paths, which is why this
+thing remains explicitly inlined.  I think it would be worth adding a
+bit of code here to avoid adding a pointless test-n-branch and larger
+cache footprint to read() and write().
+
+A way of doing that is to add another argument to these functions, say
+"bool multipage".  Change the code to do
+
+	if (multipage) {
+		while (uaddr <= end) {
+			...
+		}
+	}
+
+and change the callsites to pass in constant "true" or "false".  Then
+compile it up and manually check that the compiler completely removed
+the offending code from the filemap.c callsites.
+
+Wanna have a think about that?  If it all looks OK then please be sure
+to add code comments explaining why we did this.
+
+>  	if (ret == 0) {
+> -		char __user *end = uaddr + size - 1;
+> -
+>  		/*
+>  		 * If the page was already mapped, this will get a cache miss
+>  		 * for sure, so try to avoid doing it.
+>  		 */
+> -		if (((unsigned long)uaddr & PAGE_MASK) !=
+> +		if (((unsigned long)uaddr & PAGE_MASK) ==
+>  				((unsigned long)end & PAGE_MASK))
+
+Maybe I'm having a dim day, but I don't immediately see why != got
+turned into ==.
+
+
+Once we have this settled I'd suggest that the patch be carried in
+whatever-git-tree-needs-it.
