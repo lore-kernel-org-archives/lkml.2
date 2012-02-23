@@ -1,150 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab2BWGgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 01:36:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43358 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab2BWGf6 (ORCPT
+	id S1751664Ab2BWGrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:47:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51744 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843Ab2BWGrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 01:35:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.203.100 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Thu, 23 Feb 2012 14:35:44 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@linux.intel.com, x86@kernel.org, spock@gentoo.org
-Subject: [PATCH 2/2] video:uvesafb: check whether BIOS is NX before try to
- use PMI
-Message-ID: <20120223063544.GB4090@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-	hpa@linux.intel.com, x86@kernel.org, spock@gentoo.org
+	Thu, 23 Feb 2012 01:47:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128477834"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "rob.lee@linaro.org" <rob.lee@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: RE: [PATCH 1/4] thermal: Add a new trip type to use cooling device
+ instance number
+Thread-Topic: [PATCH 1/4] thermal: Add a new trip type to use cooling device
+ instance number
+Thread-Index: AQHM8UsA11LTi8tOVEee/0VCQ5a0aJZKCgmg
+Date: Thu, 23 Feb 2012 06:46:32 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59043B20@BGSMSX101.gar.corp.intel.com>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+ <1329905650-30161-2-git-send-email-amit.kachhap@linaro.org>
+In-Reply-To: <1329905650-30161-2-git-send-email-amit.kachhap@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Amit,
 
-commit 5bd5a452662bc37c54fb6828db1a3faf87e6511c add NX protection for kernel
-data. So on many machine (like my machine Aspire 4741 and other three machines I
-have tested) this commit will make the BIOS NX,  then when uvesafb use PMI and
-try to execute NX-protected page, Oops!
-This patch try to resolve it!
-(I have try to let uvesafb_pan_display use v86d to do pan, but it works very
-very bad, so I give it up)
+> -----Original Message-----
+> From: amit kachhap [mailto:amitdanielk@gmail.com] On Behalf Of Amit Daniel
+> Kachhap
+> Sent: Wednesday, February 22, 2012 3:44 PM
+> To: linux-pm@lists.linux-foundation.org
+> Cc: linux-kernel@vger.kernel.org; mjg59@srcf.ucam.org; linux-
+> acpi@vger.kernel.org; lenb@kernel.org; linaro-dev@lists.linaro.org;
+> amit.kachhap@linaro.org; R, Durgadoss; rob.lee@linaro.org; patches@linaro.org
+> Subject: [PATCH 1/4] thermal: Add a new trip type to use cooling device
+> instance number
+> 
+> This patch adds a new trip type THERMAL_TRIP_STATE_ACTIVE. This
+> trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
+> device instance number. This helps the cooling device registered as
+> different instances to perform appropriate cooling action decision in
+> the set_cur_state call back function.
+> 
+> Also since the trip temperature's are in ascending order so some logic
+> is put in place to skip the un-necessary checks.
+> 
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> ---
+>  Documentation/thermal/sysfs-api.txt |    4 +-
+>  drivers/thermal/thermal_sys.c       |   45 ++++++++++++++++++++++++++++++++--
+>  include/linux/thermal.h             |    1 +
+>  3 files changed, 45 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-
+> api.txt
+> index 1733ab9..7a0c080 100644
+> --- a/Documentation/thermal/sysfs-api.txt
+> +++ b/Documentation/thermal/sysfs-api.txt
+> @@ -184,8 +184,8 @@ trip_point_[0-*]_temp
+> 
+>  trip_point_[0-*]_type
+>  	Strings which indicate the type of the trip point.
+> -	E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
+> -	thermal zone.
+> +	E.g. it can be one of critical, hot, passive, active[0-1],
+> +	state-active[0-*] for ACPI thermal zone.
+>  	RO, Optional
+> 
+>  cdev[0-*]
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 220ce7e..d4c9b20 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct
+> device_attribute *attr,
+>  		return sprintf(buf, "passive\n");
+>  	case THERMAL_TRIP_ACTIVE:
+>  		return sprintf(buf, "active\n");
+> +	case THERMAL_TRIP_STATE_ACTIVE:
+> +		return sprintf(buf, "state-active\n");
+>  	default:
+>  		return sprintf(buf, "unknown\n");
+>  	}
+> @@ -1034,10 +1036,10 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+> 
+>  void thermal_zone_device_update(struct thermal_zone_device *tz)
+>  {
+> -	int count, ret = 0;
+> -	long temp, trip_temp;
+> +	int count, ret = 0, inst_id;
+> +	long temp, trip_temp, max_state, last_trip_change = 0;
+>  	enum thermal_trip_type trip_type;
+> -	struct thermal_cooling_device_instance *instance;
+> +	struct thermal_cooling_device_instance *instance, *state_instance;
+>  	struct thermal_cooling_device *cdev;
+> 
+>  	mutex_lock(&tz->lock);
+> @@ -1086,6 +1088,43 @@ void thermal_zone_device_update(struct
+> thermal_zone_device *tz)
+>  					cdev->ops->set_cur_state(cdev, 0);
+>  			}
+>  			break;
+> +		case THERMAL_TRIP_STATE_ACTIVE:
+> +			list_for_each_entry(instance, &tz->cooling_devices,
+> +					    node) {
+> +				if (instance->trip != count)
+> +					continue;
+> +
+> +				if (temp <= last_trip_change)
+> +					continue;
+> +
+> +				inst_id = 0;
+> +				/*
+> +				*For this instance how many instance of same
+> +				*cooling device occured before
+> +				*/
+> +
+> +				list_for_each_entry(state_instance,
+> +						&tz->cooling_devices, node) {
+> +					if (instance->cdev ==
+> +							state_instance->cdev)
+> +						inst_id++;
+> +					if (state_instance->trip == count)
+> +						break;
+> +				}
 
-[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
-[   81.609384] uvesafb: protected mode interface info at c000:d350
-[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
-[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
-[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
-[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
-[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
-[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
-[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
-[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
-[   81.744171] Oops: 0011 [#1] SMP
-[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
-[   81.744178]
-[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
-[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
-[   81.744187] EIP is at 0xc00cd3b3
-[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
-[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
-[   81.744196] Stack:
-[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
-[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
-[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
-[   81.744210] Call Trace:
-[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
-[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
-[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
-[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
-[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
-[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
-[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
-[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
-[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
-[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
-[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
-[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
-[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
-[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
-[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
-[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
-[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
-[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
-[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
-[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
-[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
-[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
-[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
-[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
-[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
-[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
-[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
-[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
-[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
-[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
-[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
-[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
-[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
-[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
-[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
-[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
-[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
-[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
-[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
-[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
-[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
-[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
-[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
-[   81.744391] CR2: 00000000c00cd3b3
-[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
+Can you explain a bit more on this loop and the set_cur_state below ?
+Sorry, I don't get the logic behind this..
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/uvesafb.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Thanks,
+Durga
 
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index e7f69ef..f7e326f 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -23,6 +23,7 @@
- #include <video/uvesafb.h>
- #ifdef CONFIG_X86
- #include <video/vga.h>
-+#include <linux/pci.h>
- #endif
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
-@@ -812,11 +813,16 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
- 
- 	par->nocrtc = nocrtc;
- #ifdef CONFIG_X86_32
-+	if (check_pcibios_enabled()) {
- 	par->pmi_setpal = pmi_setpal;
- 	par->ypan = ypan;
- 
- 	if (par->pmi_setpal || par->ypan)
- 		uvesafb_vbe_getpmi(task, par);
-+	} else {
-+		par->pmi_setpal = par->ypan = 0;
-+		printk(KERN_WARNING "uvesafb: PCI BIOS is NX, can't use PMI. Use redraw instead\n");
-+	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
- 	par->pmi_setpal = par->ypan = 0;
--- 
-1.7.3.4
+> +
+> +				cdev = instance->cdev;
+> +				cdev->ops->get_max_state(cdev, &max_state);
+> +
+> +				if ((temp >= trip_temp) &&
+> +						(inst_id <= max_state))
+> +					cdev->ops->set_cur_state(cdev, inst_id);
+> +				else if ((temp < trip_temp) &&
+> +						(--inst_id <= max_state))
+> +					cdev->ops->set_cur_state(cdev, inst_id);
+> +
+> +				last_trip_change = trip_temp;
+> +			}
+> +			break;
+>  		case THERMAL_TRIP_PASSIVE:
+>  			if (temp >= trip_temp || tz->passive)
+>  				thermal_zone_device_passive(tz, temp,
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 796f1ff..8df901f 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -42,6 +42,7 @@ enum thermal_trip_type {
+>  	THERMAL_TRIP_PASSIVE,
+>  	THERMAL_TRIP_HOT,
+>  	THERMAL_TRIP_CRITICAL,
+> +	THERMAL_TRIP_STATE_ACTIVE,
+>  };
+> 
+>  struct thermal_zone_device_ops {
+> --
+> 1.7.1
 
