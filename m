@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab2BWMSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 07:18:50 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43764 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab2BWMSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 07:18:49 -0500
-Date: Thu, 23 Feb 2012 17:48:25 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120223121825.GC8454@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1321495153.5100.7.camel@marge.simson.net>
- <1321544313.6308.25.camel@marge.simson.net>
- <1321545376.2495.1.camel@laptop>
- <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <1329761661.6276.146.camel@marge.simpson.net>
- <20120223104959.GA8454@linux.vnet.ibm.com>
- <20120223111929.GA23646@elte.hu>
+	id S1754265Ab2BWMTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 07:19:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754578Ab2BWMTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 07:19:09 -0500
+Date: Thu, 23 Feb 2012 13:18:05 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120223121805.GB2196@bandura.brq.redhat.com>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120223111929.GA23646@elte.hu>
+In-Reply-To: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12022312-5816-0000-0000-0000016B2DC4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@elte.hu> [2012-02-23 12:19:29]:
+a super minor comment below.
 
-> sysbench is one of the best ones punishing bad scheduler 
-> balancing mistakes.
+On Thu, Feb 23, 2012 at 04:32:45PM +0530, Srikar Dronamraju wrote:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Uprobes uses exception notifiers to get to know if a thread hit a
+> breakpoint or singlestep exception.
+> 
+[snip]
+> ---
+>  arch/x86/include/asm/thread_info.h |    2 
+>  arch/x86/include/asm/uprobes.h     |   16 ++
+>  arch/x86/kernel/signal.c           |    6 +
+>  arch/x86/kernel/uprobes.c          |  275 +++++++++++++++++++++++++++++++++++
+>  include/linux/sched.h              |    4 +
+>  include/linux/uprobes.h            |   44 ++++++
+>  kernel/events/uprobes.c            |  279 ++++++++++++++++++++++++++++++++++++
+>  kernel/fork.c                      |    7 +
+>  kernel/signal.c                    |    6 +
+>  9 files changed, 629 insertions(+), 10 deletions(-)
+> 
+[snip]
 
-Here are the sysbench oltp score on same machine i.e:
+> +static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+> +{
+> +	struct uprobe_consumer *consumer;
+> +
+> +	if (!(uprobe->flags & UPROBES_RUN_HANDLER))
+> +		return;
+> +
+> +	down_read(&uprobe->consumer_rwsem);
+> +	consumer = uprobe->consumers;
+The line above is not needed, looks like a leftover. Perhaps Ingo can
+cut it before commit.
 
-Machine : 2 Quad-core Intel X5570 CPU (H/T enabled)
-Kernel  : tip (HEAD at 6241cc8)
-sysbench : 0.4.12
+> +	for (consumer = uprobe->consumers; consumer; consumer = consumer->next) {
+> +		if (!consumer->filter || consumer->filter(consumer, current))
+> +			consumer->handler(consumer, regs);
+> +	}
+> +	up_read(&uprobe->consumer_rwsem);
+> +}
+> +
+>  /* Returns the previous consumer */
+>  static struct uprobe_consumer *
+>  consumer_add(struct uprobe *uprobe, struct uprobe_consumer *consumer)
+[snip]
 
-sysbench was run with 16 threads as:
-
-./sysbench --num-threads=16 --max-requests=100000 --test=oltp --oltp-table-size=500000 --mysql-socket=/var/lib/mysql/mysql.sock --oltp-read-only --mysql-user=root --mysql-password=blah run
-
-sysbench was run 5 times with fs-cache being purged before each run
-(echo 3 > /proc/sys/vm/drop_caches).
-
-Average of 5 runs alongwith % std. dev. is noted for various OLTP stats
-
-				SD_BALANCE_WAKE		SD_BALANCE_WAKE	
-				disabled		enabled
-
-transactions (per sec)		4833.826 (+- 0.75%)	4837.354 (+- 1%)
-read/write requests (per sec)	67673.580 (+- 0.75%)	67722.960 (+- 1%)
-other ops (per sec)		9667.654 (+- 0.75%)	9674.710 (+- 1%)
-
-There is minor improvement seen when SD_BALANCE_WAKE is enabled at SMT/MC
-domains, but no degradation observed with it enabled.
-
-- vatsa
-
+Anton.
