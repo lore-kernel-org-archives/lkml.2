@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2BWQtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:49:16 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3695 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab2BWQtO convert rfc822-to-8bit (ORCPT
+	id S1755079Ab2BWQuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:50:11 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39426 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753112Ab2BWQuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:49:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 23 Feb 2012 08:48:58 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 23 Feb 2012 08:48:56 -0800
-Subject: RE: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
- config operations
-Thread-Topic: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
- config operations
-Thread-Index: Aczx8ZTr0108S81NQBC8o/dSco+xUgAWS7ig
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC978@HQMAIL01.nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-21-git-send-email-swarren@nvidia.com>
- <CACRpkdZshQqM5ZZj21gXMZ6xZCUsdEvDDDyzvhFJTjnuZ2=twg@mail.gmail.com>
-In-Reply-To: <CACRpkdZshQqM5ZZj21gXMZ6xZCUsdEvDDDyzvhFJTjnuZ2=twg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 23 Feb 2012 11:50:09 -0500
+Date: Thu, 23 Feb 2012 08:50:04 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: RFC: export constants from shpc.h?
+Message-ID: <20120223085004.17e32327@jbarnes-desktop>
+In-Reply-To: <20120216145447.GA25979@redhat.com>
+References: <20120216145447.GA25979@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/U6PI+oWotV80NDBRgRtjQrQ"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, February 22, 2012 11:09 PM:
-> On Mon, Feb 20, 2012 at 7:46 AM, Stephen Warren <swarren@nvidia.com> wrote:
+--Sig_/U6PI+oWotV80NDBRgRtjQrQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-...
-> > @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
-> >  mux settings on the primary pin controller, there is a convenience macro for
-> >  this:
-> >
-> > -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
-> > +PIN_MAP_MUX_GROUP("pinctrl-foo", "active", "pinctrl-foo", NULL, "power_func")
-> 
-> Please keep the explicit _HOG macros for readability. Relying on
-> the implicit relation between dev and pctldev being the same and to be
-> parsed by humans is vulnerable.
-> 
-> PIN_MAP_MUX_GROUP_HOG()
+On Thu, 16 Feb 2012 16:54:49 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-OK, I guess I can add some of those back. The main reason I removed the
-special-cases was to avoid consumer.h being chock full of a ton of
-different macros you had to choose from. This wasn't so much of an issue
-before, but since the number of macros has grown now to support pin
-config, dummy states, etc., it seemed cluttered.
+> I've implemented an shpc controller emulator
+> in qemu, so I needed a bunch of constants
+> similar to what drivers/pci/hotplug/shpc.h has.
+>=20
+> Any objections to adding a PCI_SHPC_XXXX prefix
+> so these and moving them to pci_regs.h?
+> PCI utilities can then use them from /usr/include/linux.
+>=20
+> One can see how a utility that looks at slot LED and MRL
+> states might be useful
+> (we'd need to export the base offset through sysfs
+> to make it possible to use such in parallel with shpc).
 
-Still, I guess they're useful, so I can add them back since you asked.
+pci_regs.h is generally reserved for architected regs, but maybe a
+separate header file makes sense.  Or just patch libpciaccess or
+pci-utils with your tool.
 
--- 
-nvpublic
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/U6PI+oWotV80NDBRgRtjQrQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPRm48AAoJEIEoDkX4Qk9hqvoP+wWCIownLvvL8lOlyYwD1E78
+STSV+RIMaO4zjv9mmJt1177K3APu+Ggx6R1OlV5+8OK8e+0ZTU5i9/YfgKbVuC7p
+mIMUcMwaxUNZvbiyvfXTqz1rNcuZ3DmyJKKl9M38dPQFFKwFbIgM8lCIZhjYv8Mf
+R+SrzLHi5tzgj8s9ZI+nnmOvOpyRFXByHz/koG41DwTv43Pfz2GRWPQ83WGaG/ww
+sOYqUzicE3wlg58hJ7s74yUR5BqyU1nBsYOIj4gRu+7CzJbegv0GB6cIa70ZhizV
+HgWQlGJGPz52iJwYPjMAmJJEAKHf2rYxbMAeqdAQRVp6hvRdGCj/+9aBlSZKZriG
++WhsezIhJ3TskKUSCCVlHAgllrAIhSAWJRzsJeh6ESMJUFmlWPWxeXnVP2K/Whpm
+RXnuPPLa3smWmB9eTQIysbpHNDwsr6Dze/DlRHUx5QSnZjgKv7Q3f4hYEBpCxSG+
+5pi7YkgovyJgA7HORSDGaR8u4NnUH7HOPqea+hyq4mpHkcCR6aGcqctRWDP/jFNh
+25lt+Fjb1NimG8NpBg3aMcaQMpsm4XdLrpnk97qllIvYRR6n4aJrbKzG61Q3aFzW
+9uUwvKZNvuYcY+4bm9e0xepc4LGjXEGT2XI4ZgeII9AqE1JekmpXR2jbjQTkDzhH
+g90lytHgNGYQesIy455K
+=/dKV
+-----END PGP SIGNATURE-----
+
+--Sig_/U6PI+oWotV80NDBRgRtjQrQ--
