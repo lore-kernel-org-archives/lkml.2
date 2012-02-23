@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2BWCMC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 21:12:02 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:32910 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751664Ab2BWCMA (ORCPT
+	id S1755034Ab2BWCUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 21:20:04 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39224 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab2BWCUB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 21:12:00 -0500
-X-Sasl-enc: NyIeu0WG1yMW6rLK3SpGFPbcqIH4PAASyzhY5s6U6/4HCTybNeTU+6BGgg 1329963119
-Message-ID: <1329963115.2244.17.camel@perseus.themaw.net>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
-        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 23 Feb 2012 10:11:55 +0800
-In-Reply-To: <1329962955.2244.16.camel@perseus.themaw.net>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-	 <1329903139.2193.66.camel@perseus.themaw.net>
-	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
-	 <1329961703.2244.8.camel@perseus.themaw.net>
-	 <CA+55aFzRQJ8YeZGnbq=OO0YgzkfrcS4r+G1cJbjtDCZe=t6DNQ@mail.gmail.com>
-	 <1329962955.2244.16.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 Feb 2012 21:20:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	<tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+Date: Wed, 22 Feb 2012 18:20:01 -0800
+X-Google-Sender-Auth: 80tXOEpfwoiNNhvfQKDebtbOclM
+Message-ID: <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Yinghai Lu <yinghai@kernel.org>
+To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        matt.fleming@intel.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 10:09 +0800, Ian Kent wrote:
-> On Wed, 2012-02-22 at 17:56 -0800, Linus Torvalds wrote:
-> > On Wed, Feb 22, 2012 at 5:48 PM, Ian Kent <raven@themaw.net> wrote:
-> > >
-> > > Sorry, I think your wrong this time.
-> > 
-> > Well, that would be good, actually. Doing the test itself at mount
-> > time is certainly the simpler approach.
-> > 
-> > >> The autofs "mount" is done by fork + execve("mount").
-> > >
-> > > It's done like this when mounting things inside an already mounted
-> > > indirect autofs mount or when mounting things on autofs direct mount
-> > > triggers but, in version 5, mount(2) has always used to mount autofs
-> > > file systems.
-> > 
-> > Is that true for legacy autofs daemons too that distros ship? Because
-> > those are the ones we'd be fighting..
-> 
-> That's a good point.
-> 
-> > 
-> > Because when I do
-> > 
-> >     git grep '\<mount[  ]*(' -- '*.[ch]'
-> > 
-> > (that's a space and a tab in that pattern) on the autofs-4.1.4 sources
-> > I downloaded, I don't see a single call to mount. But I do see
-> > spawning of PATH_MOUNT. And one of them is with "-t", "autofs".
-> 
-> Sure, that's true, and you'll see it uses the mount option maxproto with
-> the value of AUTOFS_MAX_PROTO_VERSION. But autofs uses it's own copy of
-> the headers so AUTOFS_MAX_PROTO_VERSION is 4 not 5 so it won't be
-> affected by this change.
+On Wed, Feb 22, 2012 at 5:16 PM, tip-bot for Matt Fleming
+<matt.fleming@intel.com> wrote:
+> Commit-ID:  f75bd1837564657b21431e44243e064a77276589
+> Gitweb:     http://git.kernel.org/tip/f75bd1837564657b21431e44243e064a77276589
+> Author:     Matt Fleming <matt.fleming@intel.com>
+> AuthorDate: Mon, 20 Feb 2012 13:30:26 +0000
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Wed, 22 Feb 2012 14:49:55 -0800
+>
+> x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
+>
+...
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index d7d5099..e22bb08 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -690,6 +690,8 @@ early_param("reservelow", parse_reservelow);
+>
+>  void __init setup_arch(char **cmdline_p)
+>  {
+> +       unsigned long end_pfn;
+> +
+>  #ifdef CONFIG_X86_32
+>        memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+>        visws_early_detect();
+> @@ -926,7 +928,24 @@ void __init setup_arch(char **cmdline_p)
+>        init_gbpages();
+>
+>        /* max_pfn_mapped is updated here */
+> -       max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+> +       end_pfn = max_low_pfn;
+> +
+> +#ifdef CONFIG_X86_64
+> +       /*
+> +        * There may be regions after the last E820_RAM region that we
+> +        * want to include in the kernel direct mapping because their
+> +        * contents are needed at runtime.
+> +        */
+> +       if (efi_enabled) {
+> +               unsigned long efi_end;
+> +
+> +               efi_end = e820_end_pfn(MAXMEM>>PAGE_SHIFT, E820_RESERVED_EFI);
 
-Not to mention that v4 just won't work with a v5 packet.
+> +               if (efi_end > end_pfn)
+> +                       end_pfn = efi_end;
+> +       }
+> +#endif
+> +
+> +       max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
 
-> 
-> Ian
 
+Why is MAXMEM used here?
 
+EFI reserved area could be above 4G?
+
+if that is the case, you will map all mmio hole below 4g.
+
+        Yinghai
