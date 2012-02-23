@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab2BWXkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:40:11 -0500
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50114 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab2BWXkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:40:09 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Date: Thu, 23 Feb 2012 23:40:05 +0000 (GMT)
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] Restore direct_io / truncate locking API
-Message-ID: <Pine.LNX.4.64.1202232321390.1668@hermes-2.csi.cam.ac.uk>
+	id S932197Ab2BWXrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:47:55 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:59309 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756508Ab2BWXry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 18:47:54 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+Date: Thu, 23 Feb 2012 18:47:52 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>
+References: <20120222150010.c784b29b.akpm@linux-foundation.org> <1329969811-3997-1-git-send-email-siddhesh.poyarekar@gmail.com>
+In-Reply-To: <1329969811-3997-1-git-send-email-siddhesh.poyarekar@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart14333366.JjcOP8X6Ki";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202231847.55733.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With kernel 3.1, Christoph removed i_alloc_sem and replaced it with calls 
-(namely inode_dio_wait() and inode_dio_done()) which are 
-EXPORT_SYMBOL_GPL() thus they cannot be used by non-GPL file systems and 
-further inode_dio_wait() was pushed from notify_change() into the file 
-system ->setattr() method but no non-GPL file system can make this call.
+--nextPart14333366.JjcOP8X6Ki
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-That means non-GPL file systems cannot exist any more unless they do not 
-use any VFS functionality related to reading/writing as far as I can tell 
-or at least as long as they want to implement direct i/o.
+On Wednesday 22 February 2012 23:03:31 Siddhesh Poyarekar wrote:
+> With this patch in place, /proc/PID/task/TID/maps are treated as 'maps
+> as the task would see it' and hence, only the vma that that task uses
+> as stack is marked as [stack]. All other 'stack' vmas are marked as
+> anonymous memory. /proc/PID/maps acts as a thread group level view,
+> where all stack vmas are marked.
 
-Both Linus and Al (and others) have said on LKML that this breakage of the
-VFS API should not have happened and that the change was simply missed as
-it was not documented in the change logs of the patches that did those 
-changes.
+i don't suppose we could have it say "[tid stack]" rather than "[stack]" ? =
+ or=20
+perhaps even "[stack tid:%u]" with replacing %u with the tid ?
+=2Dmike
 
-This patch changes the two function exports in question to be 
-EXPORT_SYMBOL() thus restoring the VFS API as it used to be - accessible 
-for all modules.
+--nextPart14333366.JjcOP8X6Ki
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Christoph, who introduced the two functions and exported them GPL-only is 
-CC-ed on this patch to give him the opportunity to object to the symbols 
-being changed in this manner if he did indeed intend them to be GPL-only 
-and does not want them to become available to all modules.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Signed-off-by: Anton Altaparmakov <anton@tuxera.com>
-CC: Christoph Hellwig <hch@infradead.org>
----
+iQIcBAABAgAGBQJPRtArAAoJEEFjO5/oN/WB1uMQAJSUPQQCP7fcPpJaUEMMuaF/
+Nw1wSdyAPKXbZskXaZ1Yzzk09kz+i07kktfH6VreSBNsAGS7B0az2DrUr+aS0egg
+8aJnWWHoF0rCAzJMulw5mpxDtKpg1kjD9vb/N5RFPq/53G6KB4YmqppYQO1JIL8P
+KK+OS86rIsr3EQvOXgZJlbj0rQNdP8HSxL61XvuFcW3UywRu+EVno0eNSwfcyAFd
+bsHhKGdBZ9BztiKL41Zw6DhBty71tR4zUR2UjuONJI4e9tIzP/DHri6WhOIr8qyO
+HFoQ2UpxEfRVCHAUOc/7aObBHL7Yb46mf2XToIA1r4UM5C/8wt8RREsGEOAcv21i
+Exctn/+EuvvNN316APFa3J+67NN4JYotUJ5odWslRNBBsOCzApb3DLiJC/nExXsa
+BITw9UGGgVACmO2bdyuTAAtsU+ttVpTcbuhudGYc80H/DJt72JMHH3Bh4nPrssZN
+rhXqvswqzBSzrFmDmrxuOyr84q4Lqr+Gx6knRL7XjTUR5lz/yk/GX8iu68MLBTt7
+acW4tly8nt5CJAGcY/KL9FBd95FDbZ+TqzzQJG9kVZW3UGU0WkBb0G+B9a/xPnsU
+pCZBM4IMuwtO7cP5cTVan40lk+37MyBRALJ7lljiQcB+Abu2mAbiTUcI+oSNzwZL
+f2SnnQLPpN/0QWoj18fy
+=lVl7
+-----END PGP SIGNATURE-----
 
-diff linux/fs/direct-io.c.old linux/fs/direct-io.c
---- linux/fs/direct-io.c.old	2012-02-23 23:20:26.000000000 +0000
-+++ linux/fs/direct-io.c	2012-02-23 23:20:46.000000000 +0000
-@@ -173,7 +173,7 @@ void inode_dio_wait(struct inode *inode)
- 	if (atomic_read(&inode->i_dio_count))
- 		__inode_dio_wait(inode);
- }
--EXPORT_SYMBOL_GPL(inode_dio_wait);
-+EXPORT_SYMBOL(inode_dio_wait);
- 
- /*
-  * inode_dio_done - signal finish of a direct I/O requests
-@@ -187,7 +187,7 @@ void inode_dio_done(struct inode *inode)
- 	if (atomic_dec_and_test(&inode->i_dio_count))
- 		wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
- }
--EXPORT_SYMBOL_GPL(inode_dio_done);
-+EXPORT_SYMBOL(inode_dio_done);
- 
- /*
-  * How many pages are in the queue?
+--nextPart14333366.JjcOP8X6Ki--
