@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2BWUc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:32:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755540Ab2BWUc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:32:58 -0500
-Date: Thu, 23 Feb 2012 15:32:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120223203241.GJ19691@redhat.com>
-References: <20120221211938.GE12236@google.com>
- <20120222163858.GB4128@redhat.com>
- <4F45F1F0.2010102@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F45F1F0.2010102@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756827Ab2BWUe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:34:27 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36672 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755529Ab2BWUe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 15:34:26 -0500
+X-Sasl-enc: TKxZbGq+f2RR81tybUr+y7Iu8ZOydIhgnJwJzgPk2ufg 1330029265
+Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
+ browser
+From: Colin Walters <walters@verbum.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Date: Thu, 23 Feb 2012 15:33:56 -0500
+In-Reply-To: <CAOJsxLEQ0VNsTEApsWQHC4G4199xm31UkWt1n0fqh3tZVa2f8A@mail.gmail.com>
+References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
+	 <1330025802.17301.1.camel@lenny>
+	 <CAOJsxLEQ0VNsTEApsWQHC4G4199xm31UkWt1n0fqh3tZVa2f8A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1330029238.17301.3.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 03:59:44PM +0800, Li Zefan wrote:
-> > Trying to make all the controllers uniform in terms of their treatment
-> > of cgroup hiearchy sounds like a good thing to do.
+On Thu, 2012-02-23 at 22:18 +0200, Pekka Enberg wrote:
+> On Thu, 2012-02-23 at 18:18 +0200, Pekka Enberg wrote:
+> >> This patch adds a simple GTK2-based browser to 'perf report' that's based on
+> >> the TTY-based browser in builtin-report.c.
+> >>
+> >> Please not that you need to use
+> >>
+> >>   make WERROR=0
 > 
-> Agreed.
+> On Thu, Feb 23, 2012 at 9:36 PM, Colin Walters <walters@verbum.org> wrote:
+> > You could -Wnoerror=strict-prototypes...
 > 
-> Apart from nesting cgroups, there're other inconsistencies.
-> 
-> - Some controllers disallow more than one cgroup layer. That's the new
-> net_prio controller, and I don't know why it's made so, but I guess
-> it's fine to eliminate this restriction.
+> Sure. We don't want to do that for all files. Just for the ones that
+> include <gtk/gtk.h>.
 
-You mean don't allow creating deeper levels in cgroup hierarcy? That will
-fail with libvirt + systemd as they create much deeper levels. I had to
-change that for blkio.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
+#include <gtk/gtk.h>
+#pragma GCC diagnostic pop
 
-> 
-> - Some controllers move resource charges when a task is moved to
-> a different cgroup, but some don't?
 
-I think in case of some controllers it does not even apply. For cpu, blkio
-resources are renewable, so there is no moving around of charges.
-
-Thanks
-Vivek
