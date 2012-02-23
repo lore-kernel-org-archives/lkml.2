@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2BWWGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:06:48 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:43093 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755282Ab2BWWGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:06:47 -0500
-Date: Thu, 23 Feb 2012 23:06:38 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 02/21] memcg: make mm_match_cgroup() hirarchical
-Message-ID: <20120223220638.GC1701@cmpxchg.org>
-References: <20120223133728.12988.5432.stgit@zurg>
- <20120223135146.12988.47611.stgit@zurg>
- <20120223180352.GA1701@cmpxchg.org>
- <4F46978E.2090605@openvz.org>
+	id S1755735Ab2BWWMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:12:12 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:46874 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab2BWWMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 17:12:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F46978E.2090605@openvz.org>
+In-Reply-To: <20120223215242.GA1306@1wt.eu>
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+ <20120222211928.GA4448@kroah.com> <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
+ <20120222213253.GA25150@kroah.com> <20120223200905.GA5475@kroah.com>
+ <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com>
+ <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com> <20120223215242.GA1306@1wt.eu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 23 Feb 2012 14:11:48 -0800
+X-Google-Sender-Auth: AoSNS0Pc-eE2U24L5OhLla-psnA
+Message-ID: <CA+55aFyxB4kmmSOKDSRkAkaRx=G7o7JnuUGBu3_WVr9KbpWWYQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+To: Willy Tarreau <w@1wt.eu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
+        Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 11:46:22PM +0400, Konstantin Khlebnikov wrote:
-> Johannes Weiner wrote:
-> >On Thu, Feb 23, 2012 at 05:51:46PM +0400, Konstantin Khlebnikov wrote:
-> >>@@ -821,6 +821,26 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
-> >>  				struct mem_cgroup, css);
-> >>  }
-> >>
-> >>+/**
-> >>+ * mm_match_cgroup - cgroup hierarchy mm membership test
-> >>+ * @mm		mm_struct to test
-> >>+ * @cgroup	target cgroup
-> >>+ *
-> >>+ * Returns true if mm belong this cgroup or any its child in hierarchy
-> >>+ */
-> >>+int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
-> >>+{
-> >>+	struct mem_cgroup *memcg;
-> >>+
-> >>+	rcu_read_lock();
-> >>+	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> >>+	while (memcg != cgroup&&  memcg&&  memcg->use_hierarchy)
-> >>+		memcg = parent_mem_cgroup(memcg);
-> >>+	rcu_read_unlock();
-> >>+
-> >>+	return cgroup == memcg;
-> >>+}
-> >
-> >Please don't duplicate mem_cgroup_same_or_subtree()'s functionality in
-> >a worse way.  The hierarchy information is kept in a stack such that
-> >ancestry can be detected in linear time, check out css_is_ancestor().
-> 
-> Ok, there will be something like that:
-> 
-> +bool mm_match_cgroup(const struct mm_struct *mm,
-> +                    const struct mem_cgroup *cgroup)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       bool ret;
-> +
-> +       rcu_read_lock();
-> +       memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +       ret = memcg && mem_cgroup_same_or_subtree(cgroup, memcg);
-> +       rcu_read_unlock();
-> +
-> +       return ret;
-> +}
-> +
+On Thu, Feb 23, 2012 at 1:52 PM, Willy Tarreau <w@1wt.eu> wrote:
+>
+> I would test this too, but apart from ensuring my kernel still boots,
+> how do I ensure the patches do really fix what the ought to fix ? I
+> must admit I didn't catch the initial issue they were supposed to fix
+> unfortunately :-/
 
-It would be unfortunate to nest rcu_read_lock(), but I think this
-looks good otherwise.
+Almost nobody did.
 
-> >If you don't want to nest rcu_read_lock(), you could push the
-> >rcu_read_lock() from css_is_ancestor() into its sole user and provide
-> >a __mem_cgroup_is_ancestor() that assumes rcu already read-locked.
-> >
-> >No?
-> 
-> It is not a problem.
-> 
-> looks like mem_cgroup_same_or_subtree() check something different,
-> because it does not check ->use_hierarchy flag on tested cgroup, only on target cgroup.
+This only happens on modern CPU's that support the new AES-NI
+instructions, and only with a 32-bit kernel (although the very
+unlikely preemption issues can happen on x86-64 too). And you need to
+have the AES instructions called from interrupts, which probably only
+happens with the mac80211 wireless networking stack.
 
-If a memcg has hierarchy enabled, any memcg that turns out to be its
-child is guaranteed to have hierarchy enabled.
+And even then you need WPA2 to trigger it (I guess AES is sometimes
+used with "extended WPA1" too, but I dunno).
 
-> Or just all this hierarchical stuff is out of sync in different parts of code.
-> For example memcg_get_hierarchical_limit() start from deepest cgroup and go upper
-> while ->use_hierarchy is set.
+So it's not impossible to trigger, but you do need to have a fairly
+recent CPU that happily runs in 64-bit mode, and install a 32-bit
+system on it. And it needs to use the right wireless setup.
 
-This one really has to walk up and find the smallest applicable limit,
-there is no way around looking at every single level.
+It's possible that the right solution for really older kernels is just
+to say that AES_NI depends on X86_64.
 
-But checking for ancestry can and has been optimized.
+                      Linus
