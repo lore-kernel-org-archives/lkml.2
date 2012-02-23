@@ -1,239 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab2BWWfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:35:05 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:38090 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab2BWWe6 (ORCPT
+	id S1757194Ab2BWWfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:35:46 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63321 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab2BWWfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:34:58 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ke.yu@intel.com, kevin.tian@intel.com, JBeulich@novell.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/3] xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
-Date: Thu, 23 Feb 2012 17:31:09 -0500
-Message-Id: <1330036270-20015-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
-References: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F46BF08.0092,ss=1,re=0.000,fgs=0
+	Thu, 23 Feb 2012 17:35:44 -0500
+Date: Thu, 23 Feb 2012 14:34:57 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120223223457.GJ22536@google.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <20120223213847.GK19691@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120223213847.GK19691@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the hypervisor to take advantage of the MWAIT support it needs
-to extract from the ACPI _CST the register address. But the
-hypervisor does not have the support to parse DSDT so it relies on
-the initial domain (dom0) to parse the ACPI Power Management information
-and push it up to the hypervisor. The pushing of the data is done
-by the processor_harveset_xen module which parses the information that
-the ACPI parser has graciously exposed in 'struct acpi_processor'.
+On Thu, Feb 23, 2012 at 04:38:47PM -0500, Vivek Goyal wrote:
+> On Thu, Feb 23, 2012 at 10:41:34AM +0100, Peter Zijlstra wrote:
+> > On Wed, 2012-02-22 at 11:57 -0500, Vivek Goyal wrote:
+> > > 
+> > > Again, it does not mean I am advocating flat hiearchy. I am just wondering
+> > > in case of fully nested hierarchies (task at same level as groups), how
+> > > does one explain it to a layman user who understands things in terms of
+> > > % of resources. 
+> > 
+> > If your complete control is % based then I would assume its a % of a %.
+> > Simple enough.
+> 
+> But % of % will vary dynamically and not be static. So if root has got
+> 100% of resources and we want 25% of that for a group, then hierarchy
+> might look as follows.
 
-For the ACPI parser to also expose the Cx states for MWAIT, we need
-to expose the MWAIT capability (leaf 1). Furthermore we also need to
-expose the MWAIT_LEAF capability (leaf 5) for cstate.c to properly
-function.
+It is complex but semantics is pretty well defined.  It should behave
+exactly the same as HTB.  Whether the complexity would be justifiable
+is a different issue.
 
-The hypervisor could expose these flags when it traps the XEN_EMULATE_PREFIX
-operations, but it can't do it since it needs to be backwards compatible.
-Instead we choose to use the native CPUID to figure out if the MWAIT
-capability exists and use the XEN_SET_PDC query hypercall to figure out
-if the hypervisor wants us to expose the MWAIT_LEAF capability or not.
+Thanks.
 
-Note: The XEN_SET_PDC query was implemented in c/s 23783:
-"ACPI: add _PDC input override mechanism".
-
-With this in place, instead of
- C3 ACPI IOPORT 415
-we get now
- C3:ACPI FFH INTEL MWAIT 0x20
-
-Note: The cpu_idle which would be calling the mwait variants for idling
-never gets set b/c we set the default pm_idle to be the hypercall variant.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c         |   92 +++++++++++++++++++++++++++++++++++++-
- include/xen/interface/platform.h |    4 +-
- 2 files changed, 94 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 12eb07b..4c82936 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -62,6 +62,14 @@
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
- #include <asm/hypervisor.h>
-+#include <asm/mwait.h>
-+
-+#ifdef CONFIG_ACPI
-+#include <asm/acpi.h>
-+#include <acpi/pdc_intel.h>
-+#include <acpi/processor.h>
-+#include <xen/interface/platform.h>
-+#endif
- 
- #include "xen-ops.h"
- #include "mmu.h"
-@@ -200,13 +208,17 @@ static void __init xen_banner(void)
- static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
- static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
- 
-+static __read_mostly unsigned int cpuid_leaf1_ecx_set_mask;
-+static __read_mostly unsigned int cpuid_leaf5_ecx_val;
-+static __read_mostly unsigned int cpuid_leaf5_edx_val;
-+
- static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 		      unsigned int *cx, unsigned int *dx)
- {
- 	unsigned maskebx = ~0;
- 	unsigned maskecx = ~0;
- 	unsigned maskedx = ~0;
--
-+	unsigned setecx = 0;
- 	/*
- 	 * Mask out inconvenient features, to try and disable as many
- 	 * unsupported kernel subsystems as possible.
-@@ -214,9 +226,18 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 	switch (*ax) {
- 	case 1:
- 		maskecx = cpuid_leaf1_ecx_mask;
-+		setecx = cpuid_leaf1_ecx_set_mask;
- 		maskedx = cpuid_leaf1_edx_mask;
- 		break;
- 
-+	case CPUID_MWAIT_LEAF:
-+		/* Synthesize the values.. */
-+		*ax = 0;
-+		*bx = 0;
-+		*cx = cpuid_leaf5_ecx_val;
-+		*dx = cpuid_leaf5_edx_val;
-+		return;
-+
- 	case 0xb:
- 		/* Suppress extended topology stuff */
- 		maskebx = 0;
-@@ -232,9 +253,75 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 
- 	*bx &= maskebx;
- 	*cx &= maskecx;
-+	*cx |= setecx;
- 	*dx &= maskedx;
-+
- }
- 
-+static bool __init xen_check_mwait(void)
-+{
-+#if CONFIG_ACPI
-+	struct xen_platform_op op = {
-+		.cmd			= XENPF_set_processor_pminfo,
-+		.u.set_pminfo.id	= -1,
-+		.u.set_pminfo.type	= XEN_PM_PDC,
-+	};
-+	uint32_t buf[3];
-+	unsigned int ax, bx, cx, dx;
-+	unsigned int mwait_mask;
-+
-+	/* We need to determine whether it is OK to expose the MWAIT
-+	 * capability to the kernel to harvest deeper than C3 states from ACPI
-+	 * _CST using the processor_harvest_xen.c module. For this to work, we
-+	 * need to gather the MWAIT_LEAF values (which the cstate.c code
-+	 * checks against). The hypervisor won't expose the MWAIT flag because
-+	 * it would break backwards compatibility; so we will find out directly
-+	 * from the hardware and hypercall.
-+	 */
-+	if (!xen_initial_domain())
-+		return false;
-+
-+	ax = 1;
-+	cx = 0;
-+
-+	native_cpuid(&ax, &bx, &cx, &dx);
-+
-+	mwait_mask = (1 << (X86_FEATURE_EST % 32)) |
-+		     (1 << (X86_FEATURE_MWAIT % 32));
-+
-+	if ((cx & mwait_mask) != mwait_mask)
-+		return false;
-+
-+	/* We need to emulate the MWAIT_LEAF and for that we need both
-+	 * ecx and edx. The hypercall provides only partial information.
-+	 */
-+
-+	ax = CPUID_MWAIT_LEAF;
-+	bx = 0;
-+	cx = 0;
-+	dx = 0;
-+
-+	native_cpuid(&ax, &bx, &cx, &dx);
-+
-+	/* Ask the Hypervisor whether to clear ACPI_PDC_C_C2C3_FFH. If so,
-+	 * don't expose MWAIT_LEAF and let ACPI pick the IOPORT version of C3.
-+	 */
-+	buf[0] = ACPI_PDC_REVISION_ID;
-+	buf[1] = 1;
-+	buf[2] = (ACPI_PDC_C_CAPABILITY_SMP | ACPI_PDC_EST_CAPABILITY_SWSMP);
-+
-+	set_xen_guest_handle(op.u.set_pminfo.pdc, buf);
-+
-+	if ((HYPERVISOR_dom0_op(&op) == 0) &&
-+	    (buf[2] & (ACPI_PDC_C_C1_FFH | ACPI_PDC_C_C2C3_FFH))) {
-+		cpuid_leaf5_ecx_val = cx;
-+		cpuid_leaf5_edx_val = dx;
-+	}
-+	return true;
-+#else
-+	return false;
-+#endif
-+}
- static void __init xen_init_cpuid_mask(void)
- {
- 	unsigned int ax, bx, cx, dx;
-@@ -261,6 +348,9 @@ static void __init xen_init_cpuid_mask(void)
- 	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
- 	if ((cx & xsave_mask) != xsave_mask)
- 		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
-+
-+	if (xen_check_mwait())
-+		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
- }
- 
- static void xen_set_debugreg(int reg, unsigned long val)
-diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-index c168468..6220b98 100644
---- a/include/xen/interface/platform.h
-+++ b/include/xen/interface/platform.h
-@@ -200,7 +200,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_getidletime_t);
- #define XEN_PM_CX   0
- #define XEN_PM_PX   1
- #define XEN_PM_TX   2
--
-+#define XEN_PM_PDC  3
- /* Px sub info type */
- #define XEN_PX_PCT   1
- #define XEN_PX_PSS   2
-@@ -286,6 +286,7 @@ struct xen_processor_performance {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_processor_performance);
- 
-+DEFINE_GUEST_HANDLE(uint32_t);
- struct xenpf_set_processor_pminfo {
- 	/* IN variables */
- 	uint32_t id;    /* ACPI CPU ID */
-@@ -293,6 +294,7 @@ struct xenpf_set_processor_pminfo {
- 	union {
- 		struct xen_processor_power          power;/* Cx: _CST/_CSD */
- 		struct xen_processor_performance    perf; /* Px: _PPC/_PCT/_PSS/_PSD */
-+		GUEST_HANDLE(uint32_t)              pdc;
- 	};
- };
- DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo);
 -- 
-1.7.9.48.g85da4d
-
+tejun
