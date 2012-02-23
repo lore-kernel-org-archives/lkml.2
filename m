@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab2BWLUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 06:20:33 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:43842 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755687Ab2BWLU2 (ORCPT
+	id S1755739Ab2BWLUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 06:20:16 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49964 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561Ab2BWLUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 06:20:28 -0500
-X-Sasl-enc: NXsoGbJHI//1ckof/hcq0ry9Nj6UGCkA066nfK/hhnUBeWK/3JW/K/MMsg 1329996027
-Message-ID: <1329996024.25314.10.camel@perseus.themaw.net>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Ian Kent <raven@themaw.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Meyer <thomas@m3y3r.de>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 23 Feb 2012 19:20:24 +0800
-In-Reply-To: <2b90acba-a8e9-485a-b2a6-608d61751f2c@email.android.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-	 <1329903139.2193.66.camel@perseus.themaw.net>
-	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
-	 <1329961703.2244.8.camel@perseus.themaw.net>
-	 <1329962085.2244.10.camel@perseus.themaw.net>
-	 <1329963683.2244.19.camel@perseus.themaw.net>
-	 <1329978558.25314.0.camel@perseus.themaw.net>
-	 <2b90acba-a8e9-485a-b2a6-608d61751f2c@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 23 Feb 2012 06:20:14 -0500
+Date: Thu, 23 Feb 2012 16:50:05 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120223112005.GA7645@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+ <1321495153.5100.7.camel@marge.simson.net>
+ <1321544313.6308.25.camel@marge.simson.net>
+ <1321545376.2495.1.camel@laptop>
+ <1321547917.6308.48.camel@marge.simson.net>
+ <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+ <1321629267.7080.13.camel@marge.simson.net>
+ <1329748861.2293.345.camel@twins>
+ <1329761661.6276.146.camel@marge.simpson.net>
+ <20120223104959.GA8454@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120223104959.GA8454@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022301-0260-0000-0000-0000009709AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 22:31 -0800, H. Peter Anvin wrote:
-> However, I liked Linus' approach.of using the version ioctl; any reason not to?
+* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2012-02-23 16:19:59]:
 
-Not really, although that ioctl is used it doesn't have to be but you
-must mount the autofs file system to use it. Setting a timeout is
-another ioctl that is almost mandatory although not using it amounts to
-saying you don't want anything to expire which is valid.
+> > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
+> > Maybe that has changed, but I doubt it.  (general aside: testing with a
+> > bloated distro config is a big mistake)
+> 
+> I am seeing 2.6% _improvement_ in volanomark score by enabling SD_BALANCE_WAKE
+> at SMT/MC domains.
 
-> 
-> Ian Kent <raven@themaw.net> wrote:
-> 
-> >On Thu, 2012-02-23 at 10:21 +0800, Ian Kent wrote:
-> >> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
-> >> > On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
-> >> > > On Wed, 2012-02-22 at 08:12 -0800, Linus Torvalds wrote:
-> >> > > > On Wed, Feb 22, 2012 at 1:32 AM, Ian Kent <raven@themaw.net>
-> >wrote:
-> >> > > > >
-> >> > > > > Oh, DOH ...
-> >> > > > >
-> >> > > > > The process mounting the autofs mount is passing the pipe it
-> >will use
-> >> > > > > for communication via a mount option so we can do this right
-> >in
-> >> > > > > fill_super.
-> >> > > > 
-> >> > > > No, we really cannot.
-> >> > > 
-> >> > > Sorry, I think your wrong this time.
-> >> > 
-> >> > On second thought, I suppose other user space users don't "have" to
-> >use
-> >> > mount(2) ....
-> >> 
-> >> Thomas, what does systemd use to mount the autofs mounts that it
-> >uses?
-> >
-> >Mmm ... AFAICS systemd uses mount(2) so that looks OK too.
-> >
-> >Ian
-> 
+Ditto with pipe benchmark.
 
+> Machine : 2 Quad-core Intel X5570 CPU (H/T enabled)
+> Kernel  : tip (HEAD at 6241cc8)
+
+"perf bench sched pipe" was run 10 times and average ops/sec score
+alongwith std. dev is noted as below.
+
+
+		SD_BALANCE_WAKE		SD_BALANCE_WAKE
+		 disabled		enabled
+
+Avg. score	108984.900 		111844.300 (+2.6%)
+std dev		20383.457		21668.604
+
+Note:
+
+SD_BALANCE_WAKE for SMT/MC domain was enabled by writing into appropriate 
+flags file present in /proc:
+
+	# cd /proc/sys/kernel/sched_domain/
+	# for i in `find . -name flags | grep domain1`; do echo 4671 > $i; done
+	# for i in `find . -name flags | grep domain0`; do echo 703 > $i; done
+
+- vatsa
 
