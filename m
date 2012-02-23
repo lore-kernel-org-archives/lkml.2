@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab2BWWGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:06:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44258 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753170Ab2BWWG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:06:29 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Mark the cache as clean after a successful sync
-Date: Thu, 23 Feb 2012 22:06:23 +0000
-Message-Id: <1330034783-8023-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1755962Ab2BWWGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:06:48 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:43093 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282Ab2BWWGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 17:06:47 -0500
+Date: Thu, 23 Feb 2012 23:06:38 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 02/21] memcg: make mm_match_cgroup() hirarchical
+Message-ID: <20120223220638.GC1701@cmpxchg.org>
+References: <20120223133728.12988.5432.stgit@zurg>
+ <20120223135146.12988.47611.stgit@zurg>
+ <20120223180352.GA1701@cmpxchg.org>
+ <4F46978E.2090605@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F46978E.2090605@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously the cache would never be marked clean, meaning syncs would
-never be suppressed which isn't the end of the world but could be
-inefficient.
+On Thu, Feb 23, 2012 at 11:46:22PM +0400, Konstantin Khlebnikov wrote:
+> Johannes Weiner wrote:
+> >On Thu, Feb 23, 2012 at 05:51:46PM +0400, Konstantin Khlebnikov wrote:
+> >>@@ -821,6 +821,26 @@ struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p)
+> >>  				struct mem_cgroup, css);
+> >>  }
+> >>
+> >>+/**
+> >>+ * mm_match_cgroup - cgroup hierarchy mm membership test
+> >>+ * @mm		mm_struct to test
+> >>+ * @cgroup	target cgroup
+> >>+ *
+> >>+ * Returns true if mm belong this cgroup or any its child in hierarchy
+> >>+ */
+> >>+int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+> >>+{
+> >>+	struct mem_cgroup *memcg;
+> >>+
+> >>+	rcu_read_lock();
+> >>+	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+> >>+	while (memcg != cgroup&&  memcg&&  memcg->use_hierarchy)
+> >>+		memcg = parent_mem_cgroup(memcg);
+> >>+	rcu_read_unlock();
+> >>+
+> >>+	return cgroup == memcg;
+> >>+}
+> >
+> >Please don't duplicate mem_cgroup_same_or_subtree()'s functionality in
+> >a worse way.  The hierarchy information is kept in a stack such that
+> >ancestry can be detected in linear time, check out css_is_ancestor().
+> 
+> Ok, there will be something like that:
+> 
+> +bool mm_match_cgroup(const struct mm_struct *mm,
+> +                    const struct mem_cgroup *cgroup)
+> +{
+> +       struct mem_cgroup *memcg;
+> +       bool ret;
+> +
+> +       rcu_read_lock();
+> +       memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+> +       ret = memcg && mem_cgroup_same_or_subtree(cgroup, memcg);
+> +       rcu_read_unlock();
+> +
+> +       return ret;
+> +}
+> +
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regcache.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+It would be unfortunate to nest rcu_read_lock(), but I think this
+looks good otherwise.
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index 1124abc..938cb1d 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -288,6 +288,9 @@ int regcache_sync(struct regmap *map)
- 
- 	ret = map->cache_ops->sync(map, 0, map->max_register);
- 
-+	if (ret == 0)
-+		map->cache_dirty = false;
-+
- out:
- 	trace_regcache_sync(map->dev, name, "stop");
- 	/* Restore the bypass state */
--- 
-1.7.9.1
+> >If you don't want to nest rcu_read_lock(), you could push the
+> >rcu_read_lock() from css_is_ancestor() into its sole user and provide
+> >a __mem_cgroup_is_ancestor() that assumes rcu already read-locked.
+> >
+> >No?
+> 
+> It is not a problem.
+> 
+> looks like mem_cgroup_same_or_subtree() check something different,
+> because it does not check ->use_hierarchy flag on tested cgroup, only on target cgroup.
 
+If a memcg has hierarchy enabled, any memcg that turns out to be its
+child is guaranteed to have hierarchy enabled.
+
+> Or just all this hierarchical stuff is out of sync in different parts of code.
+> For example memcg_get_hierarchical_limit() start from deepest cgroup and go upper
+> while ->use_hierarchy is set.
+
+This one really has to walk up and find the smallest applicable limit,
+there is no way around looking at every single level.
+
+But checking for ancestry can and has been optimized.
