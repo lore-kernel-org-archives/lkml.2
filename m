@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab2BWQ27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:28:59 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56415 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367Ab2BWQ26 (ORCPT
+	id S1754462Ab2BWQa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:30:26 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:52628 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753406Ab2BWQaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:28:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of arnaldo.melo@gmail.com designates 10.236.78.6 as permitted sender) smtp.mail=arnaldo.melo@gmail.com; dkim=pass header.i=arnaldo.melo@gmail.com
-Date: Thu, 23 Feb 2012 14:28:50 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
- browser
-Message-ID: <20120223162850.GC25177@infradead.org>
-References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1330013922-3332-1-git-send-email-penberg@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Feb 2012 11:30:25 -0500
+Date: Thu, 23 Feb 2012 08:30:16 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable <stable@kernel.org>, mjg@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
+        "jirisl >> Jiri Slaby" <jirislaby@gmail.com>
+Subject: Re: Lost ps/2 input in 3.2.5 (aka PCI: Rework ASPM disable code)
+Message-ID: <20120223083016.58cba319@jbarnes-desktop>
+In-Reply-To: <4F4540E6.2020708@suse.cz>
+References: <4F4540E6.2020708@suse.cz>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/hPzAcRr.9f9HlU54s+jXrO7"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 23, 2012 at 06:18:42PM +0200, Pekka Enberg escreveu:
-> This patch adds a simple GTK2-based browser to 'perf report' that's based on
-> the TTY-based browser in builtin-report.c.
-> 
-> Please not that you need to use
-> 
->   make WERROR=0
-> 
-> to build perf on Fedora 15 (and possibly other distributions) because GTK
-> headers do not compile cleanly:
-> 
->       CC util/gtk/browser.o
->   In file included from /usr/include/gtk-2.0/gtk/gtk.h:234:0,
->                    from util/gtk/browser.c:7:
->   /usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
-> 
-> To launch "perf report" using the new GTK interface just type:
-> 
->   ./perf report --gtk
-> 
-> The interface is somewhat limited in features at the moment:
-> 
->   - No callgraph support
-> 
->   - No KVM guest profiling support
-> 
->   - No color coding for percentages
-> 
->   - No sorting from the UI
-> 
->   - ..and many, many more!
-> 
-> That said, I think this patch a reasonable start to build future features on.
+--Sig_/hPzAcRr.9f9HlU54s+jXrO7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-<SNIP>
+On Wed, 22 Feb 2012 20:24:22 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-> +	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-> +		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-> +		GtkTreeIter iter;
-> +		double percent;
-> +		char s[512];
-> +
-> +		if (h->filtered)
-> +			continue;
-> +
-> +		gtk_list_store_append(store, &iter);
-> +
-> +		col_idx = 0;
-> +
-> +		percent = (h->period * 100.0) / total_period;
-> +
-> +		snprintf(s, ARRAY_SIZE(s), "%.2f", percent);
-> +
-> +		gtk_list_store_set(store, &iter, col_idx++, s, -1);
-> +
-> +		list_for_each_entry(se, &hist_entry__sort_list, list) {
-> +			if (se->elide)
-> +				continue;
-> +
-> +			se->se_snprintf(h, s, ARRAY_SIZE(s),
-> +					hists__col_len(hists, se->se_width_idx));
-> +
-> +			gtk_list_store_set(store, &iter, col_idx++, s, -1);
-> +		}
-> +	}
+> Hi,
+>=20
+> so I finally decided to commit 3.2.5 into the opensuse kernel. However
+> it does not even work on my laptop.
+>=20
+> Both keyboard and touchpad are not detected. They are connected via PS/2.
+>=20
+> I see
+> PNP: PS/2 appears to have AUX port disabled, if this is incorrect please
+> boot with i8042.nopnp
+>=20
+> Without that patch this warning is gone and devices properly enumerated.
 
-This is what I avoided by writing a tree widget for the TUI, I really
-didn't want to traverse _all_ the hists just to show the ones that
-appear in the screen.
+Does it also work if you pass pcie_aspm=3Doff when you boot?
 
-Isn't there a way to ask GTK to ask a callback to provide a
-representation for the Nth hist entry, i.e. just the ones it _needs_ to
-render the screen?
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-Anyway, great to see this work!
+--Sig_/hPzAcRr.9f9HlU54s+jXrO7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-- Arnaldo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPRmmYAAoJEIEoDkX4Qk9hdm0P/3gbpB+nulwu3hKcQf+k6Zal
+wMYobY9tXgxq0bMwl6OHFw0DuLqUT9JBrGUXfg6x1gx+NWx9skQk1KpbcNM/w6uq
+f1NSjqgME+19qc5rHx00cXbXMKTDLXIKqY+K+n8IfBVVQx8I6ChmIDSWPUxynYUk
+TGJNcpfYiVDQJ0IpB8IduBk/LkIYpSV2msxasWYlNZctzG7ybVlwPHqzEYYhYg2F
+Q4SSmFnRICzvgWnJuIrFaqYhEq3WbJ6i+F6ZAl+QP7Hyeb4+zCtPLV/xs++US1Gy
+vHQ1ZmIHn5WbtGhR5H2h/W+S7FqyLKh8icrUhFAvZSgaInv4KPrHdt9TdBz51Ed8
+caZGXHdxB60TnEGGKnzSFoHuA6cFsWVRrHO95JmaWwZ9HvpquCEt83TNAoBLMI9d
+j4fJjO1QbLXxmXb2kZkKgxE1+xcuNGjvOP3awPkcf+g3DcIvDamsMp4zjzlv6Ku5
+TGeStDBijipC/yvjIC9Vh0kRsxY2aCg+yA9AU9zYZh5YqMZklfURGAR0C/hxYjGy
+PrV+MIwwdKA/WKUnP3duA+7P+DeDEK1wPG4eJvsxXTFm0eGfNCNHrUskoRMBQpTy
+K6+ctCS2m6NIvU4MWPfFBoGRokt/c7WJKF+OotppM7jhaMc+2AUJrERrDu7o88xE
+z7q7k8mYQu3+RU+NJNvk
+=FqXE
+-----END PGP SIGNATURE-----
+
+--Sig_/hPzAcRr.9f9HlU54s+jXrO7--
