@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2BWUmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:42:40 -0500
-Received: from gate.crashing.org ([63.228.1.57]:33284 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756347Ab2BWUmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:42:39 -0500
-Message-ID: <1330029747.20389.37.camel@pasglop>
-Subject: Re: [PATCH] tty: the briq panel isn't a tty, make it use its own
- locking
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 24 Feb 2012 07:42:27 +1100
-In-Reply-To: <20120223133931.6227.89653.stgit@bob.linux.org.uk>
-References: <20120223133931.6227.89653.stgit@bob.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1756900Ab2BWUoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:44:34 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:43218 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756359Ab2BWUoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 15:44:32 -0500
+Date: Thu, 23 Feb 2012 12:44:26 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2 1/4] PCI: Add class support in quirk handling
+Message-ID: <20120223124426.2631b779@jbarnes-desktop>
+In-Reply-To: <1329370832-2253-2-git-send-email-yinghai@kernel.org>
+References: <1329370832-2253-1-git-send-email-yinghai@kernel.org>
+	<1329370832-2253-2-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/BWo0ax=4MrbQ7fkiVm7d6Do"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 13:39 +0000, Alan Cox wrote:
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> The driver appears to be terminall broken, if nobody is maintaining it then
-> perhaps it should go into staging and the out-tray.
+--Sig_/BWo0ax=4MrbQ7fkiVm7d6Do
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hrm, I don't think anybody maintains it but I do have a BriQ somewhere
-in storage, so I suppose I could pick it up, not that I need another
-crap driver to deal with right now though...
+On Wed, 15 Feb 2012 21:40:29 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-Cheers,
-Ben.
+> Recently there is new support to make quirk calling will report duration =
+time.
+> That will boot log get more print out with initcall_debug is specified.
+>=20
+> Found a lot of quirks are calling for not related devices.
+>=20
+> Reason is quirk frame do not support class handling. So quirk code have to
+> use PCI_ANY_ID for vendor/device and let quirk code itself to check class
+> inside the func.
+>=20
+> The patch add class and cls_shift into struct pci_fixup.
+> Also update related macro to accept the class and shift.
+>=20
+> -v2: fix v1 that left over of sparated patch.
 
-> (Fixed bug noted by Jiri)
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  drivers/char/briq_panel.c |   26 +++++++-------------------
->  1 files changed, 7 insertions(+), 19 deletions(-)
-> 
-> 
-> diff --git a/drivers/char/briq_panel.c b/drivers/char/briq_panel.c
-> index 095ab90..3335d07 100644
-> --- a/drivers/char/briq_panel.c
-> +++ b/drivers/char/briq_panel.c
-> @@ -20,6 +20,7 @@
->  #include <linux/mm.h>
->  #include <linux/init.h>
->  
-> +#include <asm/bitops.h>
->  #include <asm/uaccess.h>
->  #include <asm/io.h>
->  #include <asm/prom.h>
-> @@ -30,7 +31,7 @@
->  #define		BRIQ_PANEL_VER		"1.1 (04/20/2002)"
->  #define		BRIQ_PANEL_MSG0		"Loading Linux"
->  
-> -static int		vfd_is_open;
-> +static unsigned long	vfd_is_open;
->  static unsigned char	vfd[40];
->  static int		vfd_cursor;
->  static unsigned char	ledpb, led;
-> @@ -66,37 +67,27 @@ static void set_led(char state)
->  
->  static int briq_panel_open(struct inode *ino, struct file *filep)
->  {
-> -	tty_lock();
-> -	/* enforce single access, vfd_is_open is protected by BKL */
-> -	if (vfd_is_open) {
-> -		tty_unlock();
-> +	/* enforce single open */
-> +	if (test_and_set_bit(0, &vfd_is_open))
->  		return -EBUSY;
->  	}
-> -	vfd_is_open = 1;
-> -
-> -	tty_unlock();
->  	return 0;
->  }
->  
->  static int briq_panel_release(struct inode *ino, struct file *filep)
->  {
-> -	if (!vfd_is_open)
-> -		return -ENODEV;
-> -
-> -	vfd_is_open = 0;
-> -
-> +	clear_bit(0, &vfd_is_open);
->  	return 0;
->  }
->  
-> +/* Note that single open doesn't mean single threaded read or write so all
-> +   this code is unsafe */
->  static ssize_t briq_panel_read(struct file *file, char __user *buf, size_t count,
->  			 loff_t *ppos)
->  {
->  	unsigned short c;
->  	unsigned char cp;
->  
-> -	if (!vfd_is_open)
-> -		return -ENODEV;
-> -
->  	c = (inb(BRIQ_PANEL_LED_IOPORT) & 0x000c) | (ledpb & 0x0003);
->  	set_led(' ');
->  	/* upper button released */
-> @@ -137,9 +128,6 @@ static ssize_t briq_panel_write(struct file *file, const char __user *buf, size_
->  	size_t indx = len;
->  	int i, esc = 0;
->  
-> -	if (!vfd_is_open)
-> -		return -EBUSY;
-> -
->  	for (;;) {
->  		char c;
->  		if (!indx)
+I like this series, a few comments:
+  - class and class_shift everywhere (in pci_fixup {} and the new
+    macros) for readability
+  - split the individual quirk fixes into separate patches (makes it
+    easier to revert or identify if one breaks)
+  - the reassigndev patch looks like a good one independent of the
+    series
 
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/BWo0ax=4MrbQ7fkiVm7d6Do
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPRqUqAAoJEIEoDkX4Qk9hJxEP/jnXFqyV0bxdGFDYRfyZ9NaB
+wjAM7XA4+ERGjN5A5dbmgsPZj71Jo/qsoSc9MWUVySjnD3pLIqDE3tFBL0Fs+hX4
+xZeksBKlX8/3r8EUESpIM/3pMtw1BFor2ubWjD8DlCYDf7RMUTamx8wscFwKLlp7
+j7Pgc39h5PL0GxnnM22K3hbQA+S5b3t6faxpR4GRvS25AIcrPgxWHuA2hi+y82HS
+Eh4MOW3hPWt+TCWhVqQNYaUvRnePXwQxeZTGV17jdGENRGiAaPWEHauXGpDwMFgK
+LRmul3jj3cSUsQVKaovKW7d1VKTpdqY4KTtJvCZywhimloO2DHaemmu1AQFMkFyO
+RuDIUgx4YQd6+nO+qsYArQbPIrPvu4RVwCa0TNFOb8eXc3u/vo3yabd+5vTzWfuY
+njnV3Hj6tkvppUgKx6fAVPpqpBU5nieEfu84aNX1OV0C9sFFcsKdqNNoni9PvON6
+DJ2jDP3RYNrJm+xCi3ARycRDrSAryfKIcVVN3XzwYtT2Eh1oKhZ6H96wvQ92HMFp
+LQYoxWDrnpT5fi+jooikDPgV/wBme65Daiv1rhS3ukwQcVoOWxF2i6QUmYsW9mus
+wz/ULpqlbsMvbg1AkZFNRAv3DgFI+vrP/yqhUEU4V6VbeX2GjWy8KtC33e84J25h
+J0sPT96TgheFwWUf/P1A
+=8nOd
+-----END PGP SIGNATURE-----
+
+--Sig_/BWo0ax=4MrbQ7fkiVm7d6Do--
