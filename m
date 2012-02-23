@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab2BWT4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:56:55 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:41581 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab2BWT4y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:56:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.60.20.101 as permitted sender) smtp.mail=glikely@secretlab.ca
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6vZxWXUG-WJFWDaoH3+PYBGWOXb291_jn9TdjrSF=p_JQ@mail.gmail.com>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-23-git-send-email-grant.likely@secretlab.ca>
- <20120128164405.GA20763@linutronix.de> <20120130195842.GT28397@ponder.secretlab.ca>
- <20120201141705.GF9587@linutronix.de> <CACxGe6vZxWXUG-WJFWDaoH3+PYBGWOXb291_jn9TdjrSF=p_JQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 23 Feb 2012 12:56:34 -0700
-X-Google-Sender-Auth: 6TKD4JS6nnPf4ctAORnxzvOQOoA
-Message-ID: <CACxGe6tQvBZBMynXbknWx1o1s5TPEN7rXrNOOAjC5F_dz9B51w@mail.gmail.com>
-Subject: Re: [PATCH v3 22/25] irq_domain/x86: Convert x86 (embedded) to use
- common irq_domain
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756796Ab2BWT5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:57:54 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48533 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756769Ab2BWT5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 14:57:52 -0500
+Date: Thu, 23 Feb 2012 11:57:47 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] PCI: Make pci bridge reallocating enabled/disabled
+Message-ID: <20120223115747.4b85fdb2@jbarnes-desktop>
+In-Reply-To: <1328916832-6588-6-git-send-email-yinghai@kernel.org>
+References: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
+	<1328916832-6588-6-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/A=.yXc0r1EB_AJvXnQp5jCe"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 11:06 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Feb 1, 2012 at 7:17 AM, Sebastian Andrzej Siewior
-> <bigeasy@linutronix.de> wrote:
->> * Grant Likely | 2012-01-30 12:58:42 [-0700]:
->>
->>>Ugh.  This isn't easy.  The legacy mapping really needs all the
->>
->> Feel free to merge this patch. I don't have the time to look at this now
->> so I take a look at the ioapic later.
->
-> There's no rush here.  I can leave it as-is with IRQ_DOMAIN turned off
-> for x86 for now.
+--Sig_/A=.yXc0r1EB_AJvXnQp5jCe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Turns out I have to enable IRQ_DOMAIN for x86 because the TI TWL4030
-driver needs it.  I do need to apply this patch.  Until something
-better can be implemented, can I change ioapic_add_ofnode() so that it
-allocates all irq_descs immediately.  It's not ideal, but every other
-approach I've looked at results in nasty hacks.
+On Fri, 10 Feb 2012 15:33:50 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
+> +enum enable_type {
+> +	enable_not_set =3D -1,
+> +	enable_no_user,
+> +	enable_no_detected,
+> +	enable_yes_user,
+> +	enable_yes_detected,
+> +};
 
-Looking at the ioapic code, it appears to handle preallocated
-irq_descs gracefully.
+How about:
+  user_enabled
+  user_disabled
+  auto_enabled
+  auto_disabled
+?
 
-Does adding this loop help (apologies if it is whitespace damaged, I
-cut&paste it):
+enable_no_* seems a bit confusing...
 
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index 3ae2ced..89c1310 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -345,7 +345,7 @@ const struct irq_domain_ops ioapic_irq_domain_ops = {
- static void __init ioapic_add_ofnode(struct device_node *np)
- {
- 	struct resource r;
--	int i, ret;
-+	int i, j, ret;
+also the help text in kernel-parameters.txt should mention the config
+option and describe default behavior with and without that config
+option enabled.
 
- 	ret = of_address_to_resource(np, 0, &r);
- 	if (ret) {
-@@ -361,6 +361,14 @@ static void __init ioapic_add_ofnode(struct
-device_node *np)
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
- 			gsi_cfg = mp_ioapic_gsi_routing(i);
+--Sig_/A=.yXc0r1EB_AJvXnQp5jCe
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-+			/*
-+			 * Preallocate irq_descs so that the legacy mapping
-+			 * works, but don't set them up.
-+			 * io_apic_setup_irq_pin_once() will finish the set up.
-+			 */
-+			for (j = 0; j < 32; j++)
-+				irq_alloc_desc_at(gsi_cfg->gsi_base + j,
-+						  cpu_to_node(0));
- 			id = irq_domain_add_legacy(np, 32, gsi_cfg->gsi_base, 0,
- 						   &ioapic_irq_domain_ops,
- 						   (void*)i);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPRpo7AAoJEIEoDkX4Qk9hsNcP/2QR1BTvKR1CRO1vTPhqpMpz
+EegR+Z4LGTOYKZODY7rHeOmi4owV8NkI8HsW1ZHNNWaQ3AY3LU7r/Rrbxwa5D1Ou
+wJe7vTPH4DuHsSsXqNF+TpD4eORWSsV2FWuldSwW0y1GQVRjPM6zfIQjHlcQEYQ+
+8VW8P+RD7AV9HsMx5+DWVFta2lzIf0NAug1Ob/P+Vxq6qFB8dVYJ6h+qB7vOhi+5
+GTCVIaF2yDfVZuJRTrTsooT4YU6k0PY2I2ye8gKC2cby9rf1gBGo4W8/bEEdpOd5
+2wPBkforrrhwO81RW319+RDgQUMhCtAc2LgLGAE51OXVk3XEldp0N9P4NCM5p+Cj
+og5sRPJ2SZRWVhHtmvsfaeVwt4nSNS0yqQ6WDkRHE/8C5Z0duD9cBB4UIKKXAQfN
+fSqXMzdiBf57ITP5j1iMbfE8P2wDbwO8ZrMo/J3qlXfCB5KXiSgxF7EWfDpHqien
+foOYVhFFN6auNwS/Vjrfc5H5KfH5L0EHHnji9u5rH8SQy37YydVtYMQf0rY+QzlG
+oHRLXpeopYLLp24mbOw7AhR/7Cfja1xjtvmLW7hUoRQdVKx5ykMYc2q+H9JPO23Q
+lO+TvSVUlbMqdnc7m6l7xvXKHrnSc2J9biN1ORZ0MA1VV9vsS/DsU62Vgb8WMYhw
+vcPKMYLjgqlDNptsQTG5
+=m7Gh
+-----END PGP SIGNATURE-----
 
-g.
+--Sig_/A=.yXc0r1EB_AJvXnQp5jCe--
