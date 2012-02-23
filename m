@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab2BWStH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:49:07 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40191 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab2BWStE (ORCPT
+	id S1756692Ab2BWSuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:50:16 -0500
+Received: from 124-248-200-34.sunnyvision.com ([124.248.200.34]:58324 "EHLO
+	smtp7.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab2BWSuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:49:04 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of riccardo.magliocchetti@gmail.com designates 10.14.28.137 as permitted sender) smtp.mail=riccardo.magliocchetti@gmail.com; dkim=pass header.i=riccardo.magliocchetti@gmail.com
-Message-ID: <4F468A1B.9080408@gmail.com>
-Date: Thu, 23 Feb 2012 19:48:59 +0100
-From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: i915 regression with 3.3-rc3+git
-References: <4F3EBD0D.7000906@gmail.com> <20120223084106.4b132532@jbarnes-desktop>
-In-Reply-To: <20120223084106.4b132532@jbarnes-desktop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 13:50:14 -0500
+X-Greylist: delayed 1847 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 13:50:14 EST
+X-DKIM: OpenDKIM Filter v2.4.1 smtp7.edmhongkong.com 82DB34FFFE
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com ECE1359435
+X-DomainKeys: Sendmail DomainKeys Filter v1.0.2 smtp1.edmhongkong.com ECE1359435
+Message-ID: <U1n2P3wM@tpts4.seed.net.tw>
+From: wallace@datacentre.com.hk
+To: IT@vger.kernel.org, Services@vger.kernel.org
+Subject: Cloud Server Order
+X-Mailer: OiCvt4Hu510cCHfto0hc57ONJ
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Antivirus: avast! (VPS 120223-1, 2012/02/23), Outbound message
+X-Antivirus-Status: Clean
+Date: Fri, 24 Feb 2012 02:19:20 +0800 (HKT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1NIoOQO000438
 
-Hello,
+Dear Sir / Madam, 
 
-Il 23/02/2012 17:41, Jesse Barnes ha scritto:
-> On Fri, 17 Feb 2012 21:48:13 +0100
-> Riccardo Magliocchetti<riccardo.magliocchetti@gmail.com>  wrote:
->
->> Hello,
->>
->> i've upgraded from 3.2.0-rc7 to post 3.3.0-rc3 git
->> 4903062b5485f0e2c286a23b44c9b59d9b017d53, attached you can find dmesg
->> with drm.debug=0xfff
->>
->> This started to appear in logs:
->>
->> [drm:intel_framebuffer_init] *ERROR* unsupported pixel format
->>
->> X is getting a wrong resolution (log attached) and there's a lot of
->> flickering, if i try to play a video the desktop turns black, the other
->> ttys still works fine though.
->>
->>
->
-> Can you check the drm-intel-fixes branch at
-> git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/drm-intel.git?
-> It has a fix for laod detection that might help.
+Good morning, this is Wallace form Data Centre Hong Kong. 
 
-3.3-rc4 plus these two patches from drm-intel-fixes works great.
+We have Cloud Server for promotion now; we offered the following special server package only USD $ 90/ month to you. Please check the feature below. 
 
-4e9bb47bd29e02f2daaa7bdb2a8ddf977bf76f06 [PATCH 2/2] drm/i915: fix a 
-sprite watermark computation to avoid divide by zero if xpos<0
-5ca0c34ae28344b6b4ca3036bc82f89c8db16a59 [PATCH 1/2] drm/i915: fix mode 
-set on load pipe. (v2)
+Dell-Powered Cloud Server
+Hardware Configuration
+- CPU: 2vCPU
+- RAM: 4G RAM
+- HardDisk: 100GB Storage
+- IP Address: 2 IP Addresses
 
-Thanks!
+Software Configuration
+- OS: Linux CentOS 5.5
+- Parallels Plesk Panel (10 Domain Edition) Standard Package
 
-riccardo
+Data Center Facilities
+- Shared Local & International Bandwidth
+- IP Addresses Allocation
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator
+- FM200 gas-based fire suppression system
+- 24x7 CRAC Air Conditioning and Humidity Control
+-24x7 Security Control
+ 
 
+All the service are hosting in Hong Kong ISO Certificated and TIA 942 Tier3+ Data Center. 
+
+If you are interested in the above server package, please feel free to contact me. 
+
+The following is my contact information. 
+
+Contact No: (852) 6898 0988
+
+Email: wallace@datacentre.com.hk
+
+Best Regards
+Wallace Tang
+Data Centre Hong Kong
 
 
