@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2BWSwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:52:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33769 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2BWSwK convert rfc822-to-8bit (ORCPT
+	id S1756666Ab2BWSzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:55:08 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:44690 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752418Ab2BWSzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:52:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.229.114.210 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
-	<4F4484AC.9050500@lge.com>
-	<87ehtnhz9w.fsf@gmail.com>
-	<CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com>
-	<4F45E9C5.4020900@lge.com>
-	<CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
-Date: Thu, 23 Feb 2012 13:52:09 -0500
-Message-ID: <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-From: Yuanfang Chen <cyfmxc@gmail.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Feb 2012 13:55:07 -0500
+Date: Thu, 23 Feb 2012 10:55:00 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: Re: i915 regression with 3.3-rc3+git
+Message-ID: <20120223105500.59e2476b@jbarnes-desktop>
+In-Reply-To: <4F468A1B.9080408@gmail.com>
+References: <4F3EBD0D.7000906@gmail.com>
+	<20120223084106.4b132532@jbarnes-desktop>
+	<4F468A1B.9080408@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/NwPgiR8JoVYW6/ek=y0MrJX"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 1:51 PM, Yuanfang Chen <cyfmxc@gmail.com> wrote:
-> On Thu, Feb 23, 2012 at 2:24 AM, Namhyung Kim <namhyung.kim@lge.com> wrote:
->> 2012-02-23 4:03 AM, Yuanfang Chen wrote:
->>>
->>> On Wed, Feb 22, 2012 at 6:40 AM, Namhyung Kim <namhyung@gmail.com> wrote:
->>>>
->>>> Namhyung Kim <namhyung.kim@lge.com> wrote:
->>>>>
->>>>> 2012-02-22 10:59 AM, Yuanfang Chen wrote:
->>>>>>
->>>>>> I'm trying use perf tool from the linux kernel package to measure
->>>>>> several raw PMU events. In the manpage of perf-record there is an "-l"
->>>>>> option (Scale counter values), which is useful for my case because I
->>>>>> want to know the total counter value, not just sample count. However
->>>>>> it seems the -l is not recognized, is this expected? How can I get a
->>>>>> total count?
->>>>>
->>>>>
->>>>> "perf report --show-total-period" will be your friend.
->>>>
->>>>
->>>> Or else, why not simply run "perf stat"?
->>>
->>>
->>> My purpose is to get some PMU counter value during each time interval,
->>> only perf record can do this. When using perf record -F, I have to add
->>> up all period value for some event in a some interval to get that
->>> value. When perf record -c, things get a easier, just (sample count x
->>> sample after value) will do, only hassle is to get sample count in
->>> some time interval. However, perf record don't have an option to do
->>> this.
->>>
->>
->> I still don't get it. Why "perf stat -e <events> -p <pid> -- sleep
->> <interval>"
->> doesn't work for you? It will show you the value, won't it?
->
-> say my application(not an existing process, so -p <pid> does not
-> work.) run for 10 seconds. I want the r03c, r2d4 value during each
-> second.  So there will be two values for each event in one second.
+--Sig_/NwPgiR8JoVYW6/ek=y0MrJX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-oops, forgot to forward. :-)
+On Thu, 23 Feb 2012 19:48:59 +0100
+Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com> wrote:
 
->
->>
->> Thanks,
->> Namhyung
+> Hello,
+>=20
+> Il 23/02/2012 17:41, Jesse Barnes ha scritto:
+> > On Fri, 17 Feb 2012 21:48:13 +0100
+> > Riccardo Magliocchetti<riccardo.magliocchetti@gmail.com>  wrote:
+> >
+> >> Hello,
+> >>
+> >> i've upgraded from 3.2.0-rc7 to post 3.3.0-rc3 git
+> >> 4903062b5485f0e2c286a23b44c9b59d9b017d53, attached you can find dmesg
+> >> with drm.debug=3D0xfff
+> >>
+> >> This started to appear in logs:
+> >>
+> >> [drm:intel_framebuffer_init] *ERROR* unsupported pixel format
+> >>
+> >> X is getting a wrong resolution (log attached) and there's a lot of
+> >> flickering, if i try to play a video the desktop turns black, the other
+> >> ttys still works fine though.
+> >>
+> >>
+> >
+> > Can you check the drm-intel-fixes branch at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/drm-intel.git?
+> > It has a fix for laod detection that might help.
+>=20
+> 3.3-rc4 plus these two patches from drm-intel-fixes works great.
+>=20
+> 4e9bb47bd29e02f2daaa7bdb2a8ddf977bf76f06 [PATCH 2/2] drm/i915: fix a=20
+> sprite watermark computation to avoid divide by zero if xpos<0
+> 5ca0c34ae28344b6b4ca3036bc82f89c8db16a59 [PATCH 1/2] drm/i915: fix mode=20
+> set on load pipe. (v2)
+
+Great, thanks for confirming.
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/NwPgiR8JoVYW6/ek=y0MrJX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPRouEAAoJEIEoDkX4Qk9hDS0P+wY9DsrkYNBtj4uvDiXbbOyX
+N3vIVx4DdYvHtnlmy1RBnFN7zlbCO5RvaNkyD4Z3GH3HcuMi8VHNSdmEVuP1pRx6
+cfQRHWZe5xspnCe84yyr+onZ1GHHbaP6E84b+saJeEsKxq4D3B4NfQnn1OGf7IwO
+dZ9lsX16oNGCBKSO5z8Z9Lhh5f/mf1hcPpoCQMRpfGmvLP7dtEzYKdxJbJ3uVatj
+7TkuaUU0E//Wedmyk8Y6lGT4WmAtrkdilmaIuBcu65mPYFGE1j0p7RQTS3ZVDuGh
+ncBrSRqWd/DyqWnN8WX8cQzvTObkKUDiAr4KZp5Zbsv19nIen6vQReQ783ZGHvRE
+eM2OGYF8oYt+L7anAG5yxNNjJYXhlZQkaSCVWQJHVYJBv0FdpAcfzxTvVxz6qDYR
+oP3cKUVZ+yk/9rT7gxu0+2dTmzQvO3TDdVd/IQ+4RmLSUkJrUEUsUX1a7j1og+tq
+DpoLSOJVaDLAYoD48oT+hKfAIZF7uxqxTQe8nlmm4LePLwCYjEb9OxRKJmEcK/P1
+W39HsJ2eP6V4UTuii6HRo/WrEQKacxvFu98kbE2ebbnYD5kzQxk4pEyV/0ddimfE
+0MfGh+00fLBS6fB2DAdraGuT7XLCKhiNaI3OXG5Zhkx0bIlxQwSZG6M0/BrogsvK
+6rAqI8Ux+gD93Vd0fwqc
+=gLAP
+-----END PGP SIGNATURE-----
+
+--Sig_/NwPgiR8JoVYW6/ek=y0MrJX--
