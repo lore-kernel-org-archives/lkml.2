@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750801Ab2BWFDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 00:03:45 -0500
-Received: from 124-248-200-58.sunnyvision.com ([124.248.200.58]:37794 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750705Ab2BWFDn (ORCPT
+	id S1751709Ab2BWF0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 00:26:47 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52983 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab2BWF0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 00:03:43 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 58FFDE224B
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 54C6E4FF15
-Message-ID: <9rk98OHyL@ibm.com>
-From: otto@dedicatedserver.com.hk
-Subject: Professional Web Design Service
-X-Mailer: RAdgq56EtmSHXVM6hrN08y7
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu, 23 Feb 2012 12:39:34 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 23 Feb 2012 00:26:46 -0500
+X-Nat-Received: from [202.181.97.72]:51538 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1329974800.16913
+Message-Id: <201202230526.q1N5QdUc035041@www262.sakura.ne.jp>
+Subject: [ptrace] Problem with ptrace cleanup logic.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: oleg@redhat.com, tj@kernel.org
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Date: Thu, 23 Feb 2012 14:26:39 +0900
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 23022012 #7063985, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1N53pNH029052
 
-Dear Sir / Madam, 
+I noticed that ptrace(PTRACE_ATTACH, 1) makes the global init process remain
+killable even after a process that called ptrace(PTRACE_ATTACH, 1) exits.
 
-Good morning, this is Otto from DS Hong Kong. 
+Steps to reproduce:
 
-We are a web design house and programming service provider. As 14 years experience, we are professional to develop a website for your business. 
+(1) Compile ptrace-init.c as ./a.out .
 
-If you are looking for the web design or related programming service, we are offering the following special offer for our client. 
+----- ptrace-init.c -----
+#include <sys/ptrace.h>
+#include <stdio.h>
 
-*********************************************************
-1) Web Page Development
-- Maximum 20 Web Page 
-- Art and Theme Design Include
-- Unlimited web layout revise
+int main(int argc, char *argv[])
+{
+        printf("PTRACE_ATTACH=%ld\n", ptrace(PTRACE_ATTACH, 1));
+        return 0;
+}
+----- ptrace-init.c -----
 
-2) Content Management System
-- HTML Editor 
-- Support Product, Photo and Text updating. 
-- Maximum 10 Web Page 
-- Admin Panel with 1 Admin Login
+(2) Run below commands as root user.
 
-
-*********************************************************
-
-Promotion Price: 	HKD $28,000.00
-Lead Time: 		32 working days
-
-Our Reference
-http://mirabell.com.hk/slideshow/index.html
-http://www.gome.com.hk/
-http://www.joy-peace.com/
-
-If you have more special requirement, please let us know and we will provide more detail to you. 
-
-Please feel free to contact me.The following is my contact information. 
-
-Contact No: (852) 5108 9664
-
-Skype: yschiu2001 (yschiu2001@yahoo.com.hk)
-
-MSN: yschiu2001@yahoo.com.hk
-
-Email: otto@dedicatedserver.com.hk
-
-If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or remove your email from the list. 
-
-Best Regards
-Otto Chiu
-Dedicated Server Hong Kong
+    # ./a.out
+    # kill -KILL 1
 
 
+
+
+Result on 2.6.26.8 to 2.6.29.6 is
+
+    # head -n 2 /proc/1/status
+    Name:   init
+    State:  S (sleeping)
+    # ./a.out
+    PTRACE_ATTACH=0
+    # head -n 2 /proc/1/status
+    Name:   init
+    State:  S (sleeping)
+    # kill -KILL 1
+
+Result on 2.6.30.10 to 3.3-rc4 is
+
+    # head -n 2 /proc/1/status
+    Name:   init
+    State:  S (sleeping)
+    # ./a.out
+    PTRACE_ATTACH=0
+    # head -n 2 /proc/1/status
+    Name:   init
+    State:  T (stopped)
+    # kill -KILL 1
+    Kernel panic - not syncing: Attempted to kill init!
+
+As you can see, the global init process remains "T (stopped)" state. I think
+this is a regression because it always triggers kernel panic upon sysvinit's
+shutdown sequence.
+
+  Sending all processes the TERM signal...done.
+  Sending all processes the KILL signal...
+  Kernel panic - not syncing: Attempted to kill init!
+  Pid: 1, comm: init Not tainted 3.2.7 #1
+  Call Trace:
+   [<c10354c3>] panic+0x63/0x170
+   [<c1038123>] find_new_reaper+0xa3/0xb0
+   [<c103824c>] forget_original_parent+0x2c/0x180
+   [<c11c7f24>] ? get_current_tty+0x54/0x70
+
+If ptrace-init.c were expected to do some cleanup logic before exit, we can't
+force ptrace-init.c to do it, for ptrace-init.c can be terminated unexpectedly.
