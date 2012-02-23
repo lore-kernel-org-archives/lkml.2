@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab2BWUgw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 15:36:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40850 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab2BWUgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 15:36:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.137.165 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
-References: <CA+55aFxO27oa+WAtDLuWtr-NFNmKb2T0V6pccn=AE+g5PePPUg@mail.gmail.com>
- <1330026771-19937-1-git-send-email-chris@chris-wilson.co.uk> <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 23 Feb 2012 12:36:30 -0800
-X-Google-Sender-Auth: hLLzoj9SBRw7K-d__6VvzpKaiIs
-Message-ID: <CA+55aFz-z72adma1F=b8WL2XZ9=F9mWdt1XC7QGH0-Wc3tYunA@mail.gmail.com>
-Subject: Re: [PATCH] drm: Reduce the number of retries whilst reading EDIDs
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Dave Airlie <airlied@redhat.com>, Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932181Ab2BWUmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 15:42:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:33284 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756347Ab2BWUmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 15:42:39 -0500
+Message-ID: <1330029747.20389.37.camel@pasglop>
+Subject: Re: [PATCH] tty: the briq panel isn't a tty, make it use its own
+ locking
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 24 Feb 2012 07:42:27 +1100
+In-Reply-To: <20120223133931.6227.89653.stgit@bob.linux.org.uk>
+References: <20120223133931.6227.89653.stgit@bob.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 12:15 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Sadly, this doesn't seem to make any difference to my case. My xrandr
-> stays at 0.555s even with this patch.
+On Thu, 2012-02-23 at 13:39 +0000, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> The driver appears to be terminall broken, if nobody is maintaining it then
+> perhaps it should go into staging and the out-tray.
 
-Btw, profiling with call chains seems to say that it all comes from
-intel_sdvo_get_analog_edid() (about half from  intel_sdvo_get_modes()
-and half from intel_sdvo_tmds_sink_detect()).
+Hrm, I don't think anybody maintains it but I do have a BriQ somewhere
+in storage, so I suppose I could pick it up, not that I need another
+crap driver to deal with right now though...
 
-All called through drm_ioctl() -> drm_mode_getconnector() ->
-drm_helper_probe_single_connector_modes().
+Cheers,
+Ben.
 
-Which I guess isn't anything interesting, but that
-intel_sdvo_get_analog_edid() thing seems to be very much a Mac mini
-hack. There's a comment about that in the sources too:
+> (Fixed bug noted by Jiri)
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+>  drivers/char/briq_panel.c |   26 +++++++-------------------
+>  1 files changed, 7 insertions(+), 19 deletions(-)
+> 
+> 
+> diff --git a/drivers/char/briq_panel.c b/drivers/char/briq_panel.c
+> index 095ab90..3335d07 100644
+> --- a/drivers/char/briq_panel.c
+> +++ b/drivers/char/briq_panel.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/init.h>
+>  
+> +#include <asm/bitops.h>
+>  #include <asm/uaccess.h>
+>  #include <asm/io.h>
+>  #include <asm/prom.h>
+> @@ -30,7 +31,7 @@
+>  #define		BRIQ_PANEL_VER		"1.1 (04/20/2002)"
+>  #define		BRIQ_PANEL_MSG0		"Loading Linux"
+>  
+> -static int		vfd_is_open;
+> +static unsigned long	vfd_is_open;
+>  static unsigned char	vfd[40];
+>  static int		vfd_cursor;
+>  static unsigned char	ledpb, led;
+> @@ -66,37 +67,27 @@ static void set_led(char state)
+>  
+>  static int briq_panel_open(struct inode *ino, struct file *filep)
+>  {
+> -	tty_lock();
+> -	/* enforce single access, vfd_is_open is protected by BKL */
+> -	if (vfd_is_open) {
+> -		tty_unlock();
+> +	/* enforce single open */
+> +	if (test_and_set_bit(0, &vfd_is_open))
+>  		return -EBUSY;
+>  	}
+> -	vfd_is_open = 1;
+> -
+> -	tty_unlock();
+>  	return 0;
+>  }
+>  
+>  static int briq_panel_release(struct inode *ino, struct file *filep)
+>  {
+> -	if (!vfd_is_open)
+> -		return -ENODEV;
+> -
+> -	vfd_is_open = 0;
+> -
+> +	clear_bit(0, &vfd_is_open);
+>  	return 0;
+>  }
+>  
+> +/* Note that single open doesn't mean single threaded read or write so all
+> +   this code is unsafe */
+>  static ssize_t briq_panel_read(struct file *file, char __user *buf, size_t count,
+>  			 loff_t *ppos)
+>  {
+>  	unsigned short c;
+>  	unsigned char cp;
+>  
+> -	if (!vfd_is_open)
+> -		return -ENODEV;
+> -
+>  	c = (inb(BRIQ_PANEL_LED_IOPORT) & 0x000c) | (ledpb & 0x0003);
+>  	set_led(' ');
+>  	/* upper button released */
+> @@ -137,9 +128,6 @@ static ssize_t briq_panel_write(struct file *file, const char __user *buf, size_
+>  	size_t indx = len;
+>  	int i, esc = 0;
+>  
+> -	if (!vfd_is_open)
+> -		return -EBUSY;
+> -
+>  	for (;;) {
+>  		char c;
+>  		if (!indx)
 
-        /*
-         * Mac mini hack.  On this device, the DVI-I connector shares one DDC
-         * link between analog and digital outputs. So, if the regular SDVO
-         * DDC fails, check to see if the analog output is disconnected, in
-         * which case we'll look there for the digital DDC data.
-         */
 
-and maybe that mac mini hack ends up interacting badly with something
-else? I'll happily test patches if people have any ideas.
-
-                  Linus
