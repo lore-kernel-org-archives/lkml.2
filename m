@@ -1,237 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab2BWASj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 19:18:39 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6967 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab2BWASi convert rfc822-to-8bit (ORCPT
+	id S1754164Ab2BWAZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 19:25:14 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:35768 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab2BWAZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 19:18:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 22 Feb 2012 16:18:16 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 22 Feb 2012 16:18:15 -0800
-Subject: RE: [PATCH 15/20] pinctrl: Fix and simplify locking
-Thread-Topic: [PATCH 15/20] pinctrl: Fix and simplify locking
-Thread-Index: AczxiNh+md0rkNuvSDypeKD8TuxdqQABJzUQAAvB0AA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC86A@HQMAIL01.nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-16-git-send-email-swarren@nvidia.com>
- <CACRpkdaxgUi1f_CpNRCVrza=TG6-H70o4BqTcCn6_68CGN3k+g@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC6BE@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC6BE@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Feb 2012 19:25:11 -0500
+Message-ID: <bd2dbba59cd4b106014741cf687bf8af.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CABqD9hYTLNrQKzYiRV6yN-z_mYyfPR=3W1P6nC+VmYmFGE1vQg@mail.gmail.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+    <1329845435-2313-5-git-send-email-wad@chromium.org>
+    <38d58caa17befe422065efe5dc451a34.squirrel@webmail.greenhost.nl>
+    <CABqD9hYTLNrQKzYiRV6yN-z_mYyfPR=3W1P6nC+VmYmFGE1vQg@mail.gmail.com>
+Date: Thu, 23 Feb 2012 01:25:06 +0100
+Subject: Re: [PATCH v10 05/11] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: d9e86a85729c02611f348d7c163f195f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Wednesday, February 22, 2012 11:27 AM:
-> Linus Walleij wrote at Wednesday, February 22, 2012 10:39 AM:
-> > On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> >
-> > > struct pinctrl_dev's pin_desc_tree_lock and pinctrl_hogs_lock aren't
-> > > useful; the data they protect is read-only except when registering or
-> > > unregistering a pinctrl_dev, and at those times, it doesn't make sense to
-> > > protect one part of the structure independently from the rest.
-> >
-> > OK makes sense, please split this into a separate patch.
-> >
-> > > struct pinctrl_dev's gpio_ranges_lock isn't effective;
-> > > pinctrl_match_gpio_range() only holds this lock while searching for a gpio
-> > > range, but the found range is return and manipulated after releading the
-> > > lock. This could allow pinctrl_remove_gpio_range() for that range while it
-> > > is in use, and the caller may very well delete the range after removing it,
-> > > causing pinctrl code to touch the now-free range object.
-> > >
-> > > Solving this requires the introduction of a higher-level lock, at least
-> > > a lock per pin controller, which both gpio range registration and
-> > > pinctrl_get()/put() will acquire.
-> >
-> > I don't really like this "big pinctrl lock" approach, atleast for the
-> > gpio ranges the proper approach would rather be to use RCU,
-> > would it not? The above looks like a textbook example of where
-> > RCU should be used.
-> 
-> I'm not familiar with RCU specifically. If it's a single-writer-or-
-> multiple-reader lock, that might well solve this issue.
+On Wed, February 22, 2012 20:47, Will Drewry wrote:
+> On Wed, Feb 22, 2012 at 2:19 AM, Indan Zupancic <indan@nul.nu> wrote:
+>> I highly disagree with every filter having to check the mode: Filters that
+>> don't check the arch on e.g. x86 are buggy, so they have to check it, even
+>> if it's a 32-bit or 64-bit only system, the filters can't know that and
+>> needs to check the arch at every syscall entry. All other info in the data
+>> depends on the arch, because of this there isn't much code to share between
+>> the two archs, so you can as well have one filter for each arch.
+>>
+>> Alternative approach: Tell the arch at filter install time and only run the
+>> filters with the same arch as the current system call. If no filters are run,
+>> deny the systemcall.
+>
+> This was roughly how I first implemented compat and non-compat
+> support.  It causes some implicit behavior across inheritance that is
+> not nice though.
 
-I don't think RCU is the answer here:
+Same implicit behaviour Ben mentioned or something else?
 
-* RCU is great where the read path needs to be really fast at the (slight?)
-  cost of write path speed. In pinctrl, I don't see that the paths that
-  touch the GPIO ranges are especially time-critical since they're mostly
-  probe/remove-time actions.
+Yeah, that's a bit of a problem. It can be solved within filters, but
+it's starting to get more obscure than just checking the arch for every
+syscall.
 
-* RCU is easy to use for simple cases, but more tricky where you want to
-  e.g. modify list elements in-place. While we don't right now, I'd like
-  to add a "usecount" to the gpio_range, so we can guarantee one can't be
-  unregistered while there's an active gpio_request() against it.
-  Otherwise, it'd be impossible to gpio_free() later.
+>
+>> Advantages:
+>>
+>> - Filters don't have to check the arch every syscall entry.
+>
+> This I like.
+>
+>> - Secure by default. Filters don't have to do anything arch specific to
+>>  be secure, no surprises possible.
+>
+> This is partially true, but it is exactly why I hid compat before.
+>
+>> - If a new arch comes into existence, there is no chance of old filters
+>>  becoming buggy and insecure. This is especially true for archs that
+>>  had only one mode, but added another one later on: Old filters had no
+>>  need to check the mode at all.
+>
+> Perhaps.  A buggy filter that works on x86-64 might be exposed on a
+> new x32 ABI.  It's hard to predict how audit_arch and the syscall abi
+> will develop with new platforms.
 
-* RCU knows when you're done with something due to pre-emption. However,
-  the internals of a pinctrl driver's gpio_request_enable might sleep e.g.
-  if it needed to touch registers on an I2C bus. While there is a sleepable
-  RCU, I don't think there's an sleepable equivalent of rculist.h.
+It doesn't matter, if the filter assumes there are only two archs possible
+and those two archs need different treatment, then the new arch at best
+will only match one of them and it depends on which arch the filter checks
+for. E.g. whether it does:
 
-...
-> > Introducing a big pincontroller lock :-(
-> >
-> > As with the big kernel lock was the simplest approach to CPU
-> > locking.
-> >
-> > I really would like to hold back on this, is it really that hard to have
-> > a more fine-granular locking here? Maybe this is a sign that we need
-> > to have the list of states sorted in pincontroller order simply?
-> > In that case we only need a lock per pincontroller I think.
-> 
-> I'd rather not alter the order that the mapping table entries get applied
-> in; I think that'd be confusing. I can certainly envisage use-cases where
-> the order is important (e.g. must disable pin config feature X before
-> enabling pin config feature Y when switching states, to avoid HW damage)
-> and sorting the mapping table would violating such requirements much more
-> likely.
-> 
-> Perhaps pinctrl_get() should keep a separate list of all pin controllers
-> involved anywhere in all the struct pinctrl_settings it contains, and
-> keep that list sorted, so that lock()/unlock() could be applied to that
-> list up-front, rather than locking pin controllers lazily as the settings
-> are applied in order. That'd be a bit more work but would probably allow
-> us to avoid any global locks.
-> 
-> Then, I think we could get away with:
-> 
-> A global lock for (un)registering controllers, (un)registering mapping
-> table entries, (un)registering GPIO ranges, parsing the mapping tables,
-> but which would not be taken when simply programming HW.
-> 
-> I'm not sure whether breaking this up into multiple locks actually makes
-> any sense; all of the above are relatively rare slow-paths anyway. The
-> important thing would be to not take that lock when /just/ programming
-> HW for state changes.
-> 
-> A lock per pin controller, implemented internally to the pin controller
-> driver if required in begin()/end() ops.
-> 
-> Does that seem reasonable?
-> 
-> Related to that, I guess we're currently missing refcounts on pin
-> controllers and GPIO ranges, so they can't be unregistered if
-> pinctrl_get() returned an object that references them, or gpio_request()
-> was called on a GPIO.
+if (arch == AUDIT_ARCH_I386)
+	...
+else /* assume x86_64 */
+	...
 
-I did start looking into having separate locks, and I don't think it's
-really feasible; I'd still like to go with the above; one lock for any
-slow-path data-manipulation and one per "struct pinctrl *p" to allow
-parallelism in the fast path. Some examples of issues with lots of locks:
+versus
 
-It'd be nice to have a lock per struct pinctrl_dev.
+if (arch == AUDIT_ARCH_X86_64)
+	...
+else /* assume i386 */
+	...
 
-I'd like to add a usecount to struct pinctrl_dev. Any struct pinctrl that
-uses a struct pinctrl_dev, or any gpio_request will increase the usecount,
-so that the struct pinctrl_dev can't be unregistered while a struct pinctrl
-or GPIO could use it. That'd require something like the following at the
-end of pinctrl_register():
+>> - For kernels supporting only one arch, the check can be optimised away,
+>>  by not installing unsupported arch filters at all.
+>
+> Somewhat.  Without having a dedicated arch helper, you'd have to guess
+> that arches only support one or two arches (if compat is supported),
+> but I don't know if that is a safe assumption to make.
 
-	mutex_lock(&pinctrldev_list_mutex);
-	/*
-	 * Must do this first, because pinctrl_get needs to find this
-	 * device in the list in order to convert mapping table entries
-	 */
-	list_add_tail(&pctldev->node, &pinctrldev_list);
+Well, if you want to optimise all checks away, then you obviously need
+arch helpers. Without it, you have to install all filters, even the ones
+you'll never run.
 
-	/*
-	 * This must be held so that when pinctrldev_list_mutex is dropped,
-	 * other threads still can't touch pctldev and mess with it usecount
-	 * until we're through here. This could be done before the first
-	 * mutex_lock above too.
-	 */
-	mutex_lock(&pctldev->mutex);
+>> It's more secure, faster and simpler for the filters.
+>>
+>> If something like this is implemented it's fine to expose the arch info
+>> in the syscall data too, and have a way to install filters for all archs,
+>> for the few cases where that might be useful, although I can't think of
+>> any reason why people would like to do unnecessary work in the filters.
+>
+> It seems to just add complexity to support both. I think we'll
+> probably end up with it in the filters for better or worse.  Possibly
+> JITing will be useful since at least a 32-bit load and je is pretty
+> cheap in native instructions.
 
-	/* Done with list manipulations now */
-	mutex_unlock(&pinctrldev_list_mutex);
+Yeah, except that you can't easily do that because you don't have direct
+access to the arch.
 
-	pctldev->p = pinctrl_get(pctldev->dev, "default");
-	if (!IS_ERR(pctldev->p))
-		pinctrl_enable(pctldev->p);
-	pctldev->usecount_post_hog = pctldev->usecount;
+>> All that's needed is an extra argument to the prctl() call. I propose
+>> 0 for the current arch, -1 for all archs and anything else to specify
+>> the arch. Installing a filter for an unsupported arch could return
+>> ENOEXEC.
+>
+> Without adding a per-arch call, there is no way to know all the
+> supported arches at install time.  Current arch, at least, can be
+> determined with a call to syscall_get_arch().
 
-But, the internals of pinctrl_get() will need to increment the usecount
-of every pctldev it finds referenced from the mapping table. To do this,
-the pctldev must be locked since data inside it is being manipulated.
-However, that'd end up attempting to recursively lock this pctldev's
-lock, and Linux locks don't allow recursive locking.
+True.
 
-Perhaps this could be solved by passing a bunch of parameters into
-pinctrl_get (or rather, an internal function called both from the public
-pinctrl_get and here) indicating what was already locked. However, that
-seems pretty nasty, and certainly not very simple.
+> As is, I'm not sure it makes sense to try to reserve two extra input
+> types: 0 and -1.  0 would be sane to treat as either a wildcard or
+> current because it is unlikely to be used by AUDIT_ARCH_* ever since
+> EM_NONE is assigned to 0.  However, I have no such insight into
+> whether it will ever be possible to compose 0xffffffff as an
+> AUDIT_ARCH_.
 
-Or perhaps, we should write some internal pinctrl_get that knows not to
-touch the pctldev's own usecount, so that we don't need the separate
-usecount_post_hog field, since that pinctrl_get wouldn't increment the
-regular usecount. However, that'd be a nasty special case to maintain.
+That seems impossible.
 
-So then I figured, let's just remove pctldev->mutex and use
-pinctrldev_list_mutex to cover both the list, and any/all struct
-pinctrl_dev manipulations. This has the nice advantage that pinctrl_get()
-no longer needs to lock/unlock a mutex for every mapping table entry, so
-speeds things up.
+>> As far as the implementation goes, either have a list per supported arch
+>> or store the arch per filter and check that before running the filter.
+>
+> You can't do it per arch without adding even more per-arch
+> dependencies.  Keeping them annotated in the same list is the clearest
+> way I've seen so far, but it comes with its own burdens.
 
-At this point, we could still have separate mutexes for:
+You could have a list per installed arch, so there is no need to know all
+supported archs, if you don't have the per arch helpers.
 
-pinctrldev_list_mutex: Any operation on a device.
+I don't see how keeping the arch in the filter itself comes with a burden,
+that's what you were basically doing with the compat flag anyway.
 
-pinctrl_list_mutex: Any operation on the list of struct pinctrl.
+But keeping the check within the filter is the simplest solution it seems,
+so ignore my objections and just let's live with the extra hassle at the
+user space side.
 
-pinctrl_maps: Any operation on the mapping table list.
+>> What use is the instruction pointer considering it tells nothing about
+>> the call path?
 
-But then let's take a look at the public pinctrl_get: It needs to lock
-pinctrldev_list_mutex and pinctrl_maps for most of its operation, and
-pinctrl_list_mutex for a little.
+My fear of exposing the IP is that people will erroneously assume that it
+says anything about the call path, and hence write insecure security code
+that's easily bypassed by just jumping to the right instruction address.
+And if the vDSO is used, the IP will always be the same.
 
-Equally, pinctrl_put needs to lock pinctrldev_list_mutex for most of
-its operation since it'd be decreasing many struct pinctrl_dev.usecount
-in general, or at least doing it many times on a single pctldev. It'd
-need to lock pinctrl_list_mutex for at least a little.
+So what use is knowing the IP?
 
-All the GPIO functions also manipulate pctldev usecounts, so would need
-to hold pinctrldev_list_mutex for the data-manipulation portions of their
-run-time.
+>> Wouldn't it make sense to allow going from mode 2 to 1?
+>> After all, the filter could have blocked it if it didn't
+>> want to permit it, and mode 1 is more restrictive than
+>> mode 2.
+>
+> Nope - that might allow a downgrade that bypasses write/read
+> restrictions.  E.g., a filter could only allow a read to a certain buf
+> or of a certain size.  Allowing a downgrade would allow bypassing
+> those filters, whether they are the most sane things or not :)
 
-So, pinctrldev_list_mutex is almost a single global mutex anyway, except
-there are a bunch of other mutexes hanging around making life complex.
+But now you enforce that decision while the filter could make that
+choice itself instead. If the filter doesn't allow read() and write(),
+I really doubt it would allow prctl().
 
-It turns out that the only real parallelism is:
+>> Out of curiosity, did you measure the kernel size differences before and
+>> after these patches? Would be sad if sharing it with the networking code
+>> didn't reduce the actual kernel size.
+>
+> Oh yeah - it was a serious reduction.  Initially, seccomp_filter.o
+> added 8kb by itself.  With the merged seccomp.o, continued code
+> trimming (as suggested), and all the SECCOMP_RET_* variations, the
+> total kernel growth is 2972 bytes for the same kernel config.  This is
+> shared across ~2000 bytes in seccomp.o and ~800 bytes in filter.o.
 
-pinctrl_register_mappings: Only needs pinctrl_maps, but this is probably
-the rarest operation and hardly needs to run parallel.
+Looks good, though the 800 extra bytes for filter.o seems high, it
+used to be 292 bytes according to your email from January the 30th.
+You said the run filter function added 861 bytes, so sharing doesn't
+seem to reduce the kernel size any more?
 
-Every other list-manipulation operation needs to lock pinctrldev_list_mutex
-for either the majority of the time, or over-and-over so may as well just
-do it once.
+Greetings,
 
-pinctrl_enable/disable: The fast path. I think we can usefully have a
-separate mutex per each of these as I mentioned in the email I'm quoting.
+Indan
 
-So it seems again that we really need a single slow-path mutex, and a
-per-struct-pinctrl fast-path mutex.
-
--- 
-nvpublic
 
