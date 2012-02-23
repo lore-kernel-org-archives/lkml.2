@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab2BWQ1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:27:11 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:48424 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752177Ab2BWQ1I (ORCPT
+	id S1753782Ab2BWQ2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:28:12 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:44719 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752535Ab2BWQ2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:27:08 -0500
-Date: Thu, 23 Feb 2012 08:27:03 -0800
+	Thu, 23 Feb 2012 11:28:11 -0500
+Date: Thu, 23 Feb 2012 08:28:07 -0800
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: fix memleak when ACPI _CRS is not used.
-Message-ID: <20120223082703.5d87dab4@jbarnes-desktop>
-In-Reply-To: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
-References: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH V3 0/3] STA2X11: patches for pci bridge support
+Message-ID: <20120223082807.28ea6f23@jbarnes-desktop>
+In-Reply-To: <cover.1329947637.git.rubini@gnudd.com>
+References: <cover.1329947637.git.rubini@gnudd.com>
 X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/bj0o2i=pQojw=/5kVdQ==ti"; protocol="application/pgp-signature"
+ boundary="Sig_/Dh.inh0u.je5GM0x0g9SGBH"; protocol="application/pgp-signature"
 X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/bj0o2i=pQojw=/5kVdQ==ti
+--Sig_/Dh.inh0u.je5GM0x0g9SGBH
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 20 Feb 2012 17:23:47 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+On Wed, 22 Feb 2012 23:13:57 +0100
+Alessandro Rubini <rubini@gnudd.com> wrote:
 
-> got warning:
-> unreferenced object 0xffff8801f6914200 (size 512):
->   comm "swapper/0", pid 1, jiffies 4294893643 (age 2664.644s)
->   hex dump (first 32 bytes):
->     00 00 c0 fe 00 00 00 00 ff ff ff ff 00 00 00 00  ................
->     60 58 2f f6 03 88 ff ff 00 02 00 00 00 00 00 00  `X/.............
->   backtrace:
->     [<ffffffff81c2408c>] kmemleak_alloc+0x26/0x43
->     [<ffffffff8113764f>] __kmalloc+0x121/0x183
->     [<ffffffff81ca8d93>] get_current_resources+0x5a/0xc6
->     [<ffffffff81c5bedd>] pci_acpi_scan_root+0x13c/0x21c
->     [<ffffffff81c2a745>] acpi_pci_root_add+0x1e1/0x421
->     [<ffffffff81408f50>] acpi_device_probe+0x50/0x190
->     [<ffffffff8149edc7>] really_probe+0x99/0x126
->     [<ffffffff8149ef83>] driver_probe_device+0x3b/0x56
->     [<ffffffff8149effd>] __driver_attach+0x5f/0x82
->     [<ffffffff8149d860>] bus_for_each_dev+0x5c/0x88
->     [<ffffffff8149eb87>] driver_attach+0x1e/0x20
->     [<ffffffff8149e7cc>] bus_add_driver+0xca/0x21d
->     [<ffffffff8149f47b>] driver_register+0x91/0xfe
->     [<ffffffff81409d09>] acpi_bus_register_driver+0x43/0x45
->     [<ffffffff8278bdc9>] acpi_pci_root_init+0x20/0x28
->     [<ffffffff810001e7>] do_one_initcall+0x57/0x134
+> This series is V3 of what I sent on Jan 30th as V2.
 >=20
-> The system have _CRS for root buses, but they are not used because is old=
-...
+> Patch 3 is dependent on patch 1 and 2, which are unordered.  When I
+> posted V2 of this set, patch 3 was picked up, but compilation failed
+> because of the missing prerequisites. Also, some prototypes changed
+> in the meanwhile and patch 3 was miscompiling in linux-next so it
+> has been correctly dropped.
 >=20
-> Try free those not used resource array and name.
+> V3: rebased on next-20120221. Fixed patch 3 to match new DMA
+> prototypes. Renamed patch 3 as Ingo and Jesse merged it. Added both of
+> them to explicit Cc: list in the email set.
 >=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> V2: rebased, minor and less-minor changes in patch 3/3.
+>=20
+> Alessandro Rubini (3):
+>   x86: introduce CONFIG_X86_DEV_DMA_OPS
+>   x86: introduce CONFIG_X86_DMA_REMAP
+>   x86/PCI: initial support for sta2x11 I/O hub
+>=20
+>  arch/x86/Kconfig                   |   34 +++-
+>  arch/x86/include/asm/device.h      |    4 +-
+>  arch/x86/include/asm/dma-mapping.h |    9 +-
+>  arch/x86/pci/Makefile              |    2 +
+>  arch/x86/pci/sta2x11-fixup.c       |  367 ++++++++++++++++++++++++++++++=
+++++++
+>  5 files changed, 409 insertions(+), 7 deletions(-)
+>  create mode 100644 arch/x86/pci/sta2x11-fixup.c
+>=20
 
-Applied to for-linus, thanks.
+Ingo, you may as well take the lot of these; they won't clash with
+other PCI stuff if you take them, but if I take them they may well
+clash with other x86 stuff.
 
+Thanks,
 --=20
 Jesse Barnes, Intel Open Source Technology Center
 
---Sig_/bj0o2i=pQojw=/5kVdQ==ti
+--Sig_/Dh.inh0u.je5GM0x0g9SGBH
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPRmjXAAoJEIEoDkX4Qk9hKjoQAMG7ZZ+zVbef+R+uurwWOIKT
-tP4lr1mBd2DJKvFHPXXrL3WlQKxh8F7Y9n5WsIFmqnpTGx9POzeVvH3pRiDGFjdE
-I9VqqkNGAmyqNoNcZ+u5/xnzVBYL1Tc8J7m72WA2i+gCYvXXDiwNK4HfdgN8hQg1
-xsXtKR2lKl6gDv0XzYi8zNE1AThVAyCD7ovNDFkknVM78Wv20pC9HBHQGPfiGyax
-syLGLuNviU+B0Xs9kKn9S4Q4ScexeVRA5fjp8G007/yUknM3S8MXUke4imEMztyY
-I8p0maDyYrR+W6xlAVsC8JoCpPzbzwjPuPtb1Fzigf5XlpJ7NvXucoQ9EVi+6LqX
-wDSmp30HZ84+bAlaZPMy1XPg6IZHgS0C/YcXYjAX/8U3wblfesw8wUNO9q+DLTwT
-GMrG//e0xGYa/L6RaaAY6S/YkXP85mLK3ctKxvpJo3RELm1exQjqClagXAP6qDV6
-HSZZkWPL2HxD747wl9tuFU2VpylzejdyjOFy6xw4Gkj+fiTtJeq5vdLt5u2dkqVu
-Qtog8pa1x5QHpROGjsQloYGCXDCypUk8d2+I5SZMEkIMPtpHWkSq94UCwYJtR17A
-trOVCdWpwktnkxc+LoVT1KNewmIr31Rfu33fw0wMK11UrL0St4tJ6MA+2FgmNY1W
-v8wD+IL9Ucmmyp0U/iGL
-=v0ig
+iQIcBAEBAgAGBQJPRmkXAAoJEIEoDkX4Qk9hkaYP/3rsWfPapibUU+7EE3nF0Ldk
+vymrJLDBvnRu4TVWzrQEoghC1TGepZCrvN2pA25rcjWbtpaEKTx04niQij3lI+rp
+X86QnINpPFC/qYMkzfYR+uaxTOfKGsO6zo0kghA2BtUOsLkH2fAfwov6/1aaTCdl
+8851aDieeNpWaZr8FvryJfyhO76XfRWCzCrqHAbzlXCaIPuMAs7DXFvFC399RC1+
+nphi/V0IBLDN2kk9fTNcIHoIKO8O0gmJPAPpRtA0jNWWHySvqWuxrSab7BtYpq5f
+iU50yl0uAznqETIRtLB2Js8GLNLkB+k3qOJxDEgw5j9PMRFDMkfEdkdV/NIRWb4F
+TYbBqwI0YoeL0C4R4fUELT25jIPoPJ6QaAijhRD4xz4G/ExYNNoqq6Cg4DelQx7q
+JMg4oFRSm0lBcSK904ocg0iBwm0LauT8QyiE0gjH3X+FpZebaZ5rNEwoVKtvyt7M
+yMqHIBTfMLlc2vnquBWrAi6CKDPHuNAOHl+sErYCBfeUTxZQR46PPEvaVXpBmqni
+7PVn47pIn7RFFlFiSfWPZUli0z00xRy2JTlzXcLsKBOJ0pklvCDgtEOpUZgrEcWQ
+xWaL3iJt7fhHYMggeipgFwTH0+aZ9nAR71tPJSug8v/QwSOJGq8EcJyoWNEiamhO
+3Uy6MNFTobj6tuRcTAkB
+=xYWU
 -----END PGP SIGNATURE-----
 
---Sig_/bj0o2i=pQojw=/5kVdQ==ti--
+--Sig_/Dh.inh0u.je5GM0x0g9SGBH--
