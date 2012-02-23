@@ -1,59 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2BWLyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 06:54:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65499 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656Ab2BWLys (ORCPT
+	id S1754015Ab2BWMIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 07:08:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44077 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab2BWMIq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 06:54:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of adobriyan@gmail.com designates 10.43.134.199 as permitted sender) smtp.mail=adobriyan@gmail.com; dkim=pass header.i=adobriyan@gmail.com
+	Thu, 23 Feb 2012 07:08:46 -0500
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
+ regulators
+Thread-Topic: [PATCH v2] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
+ regulators
+Thread-Index: AQHM8YFvKDQzMUTvhU2SIykscj83gJZKY1Kw
+Date: Thu, 23 Feb 2012 12:08:34 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A8317DA6CD@DBDE01.ent.ti.com>
+References: <1329929103-28486-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1329929103-28486-1-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120221210625.89432A014E@akpm.mtv.corp.google.com>
-References: <20120221210625.89432A014E@akpm.mtv.corp.google.com>
-Date: Thu, 23 Feb 2012 13:54:48 +0200
-Message-ID: <CACVxJT9GDB-BXW-B57=_c8s3EtZ=22BEKi8a_0tdr+YDkviYVg@mail.gmail.com>
-Subject: Re: + locks-new-proc-lockinfo.patch added to -mm tree
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: dave@gnu.org, bfields@fieldses.org, ebiederm@xmission.com, matthew@wil.cx,
-        viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1NBsw4D030377
 
-On Wed, Feb 22, 2012 at 12:06 AM,  <akpm@linux-foundation.org> wrote:
-> +static void lockinfo_get_status(struct seq_file *f, struct file_lock *fl,
+On Wed, Feb 22, 2012 at 22:15:03, Porter, Matt wrote:
+> This fixes smsc911x support on platforms using gpmc_smsc911x_init().
+> 
+> Commit c7e963f6888816 (net/smsc911x: Add regulator support) added
+> the requirement that platforms provide vdd33a and vddvario supplies.
+> 
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+> Changes for v2:
+>    - temporary fix to avoid platform device id conflicts
+>    - add commit summary from the smsc911x regulator support commit
+>    - incorporate platform device registration error cause reporting 
+> 
+>  arch/arm/mach-omap2/gpmc-smsc911x.c |   54 ++++++++++++++++++++++++++++++++++-
+>  1 files changed, 53 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gpmc-smsc911x.c
+> index 9970331..a7388ed 100644
+> --- a/arch/arm/mach-omap2/gpmc-smsc911x.c
+> +++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
+> @@ -19,6 +19,8 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/smsc911x.h>
+> +#include <linux/regulator/fixed.h>
+> +#include <linux/regulator/machine.h>
+>  
+>  #include <plat/board.h>
+>  #include <plat/gpmc.h>
+> @@ -42,6 +44,50 @@ static struct smsc911x_platform_config gpmc_smsc911x_config = {
+>  	.flags		= SMSC911X_USE_16BIT,
+>  };
+>  
+> +static struct regulator_consumer_supply gpmc_smsc911x_supply[] = {
+> +	REGULATOR_SUPPLY("vddvario", "smsc911x.0"),
+> +	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
+> +};
+> +
+> +/* Generic regulator definition to satisfy smsc911x */
+> +static struct regulator_init_data gpmc_smsc911x_reg_init_data = {
+> +	.constraints = {
+> +		.min_uV			= 3300000,
+> +		.max_uV			= 3300000,
+> +		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+> +					| REGULATOR_MODE_STANDBY,
+> +		.valid_ops_mask		= REGULATOR_CHANGE_MODE
+> +					| REGULATOR_CHANGE_STATUS,
+> +	},
+> +	.num_consumer_supplies	= ARRAY_SIZE(gpmc_smsc911x_supply),
+> +	.consumer_supplies	= gpmc_smsc911x_supply,
+> +};
+> +
+> +static struct fixed_voltage_config gpmc_smsc911x_fixed_reg_data = {
+> +	.supply_name		= "gpmc_smsc911x",
+> +	.microvolts		= 3300000,
+> +	.gpio			= -EINVAL,
+> +	.startup_delay		= 0,
+> +	.enable_high		= 0,
+> +	.enabled_at_boot	= 1,
+> +	.init_data		= &gpmc_smsc911x_reg_init_data,
+> +};
+> +
+> +/*
+> + * Platform device id of 42 is a temporary fix to avoid conflicts
+> + * with other reg-fixed-voltage devices. The real fix should
+> + * involve the driver core providing a way of dynamically
+> + * assigning a unique id on registration for platform devices
+> + * in the same name space.
+> + */
+> +static struct platform_device gpmc_smsc911x_regulator = {
+> +	.name		= "reg-fixed-voltage",
+> +	.id		= 42,
+> +	.dev = {
+> +		.platform_data	= &gpmc_smsc911x_fixed_reg_data,
+> +	},
+> +};
+> +
+>  /*
+>   * Initialize smsc911x device connected to the GPMC. Note that we
+>   * assume that pin multiplexing is done in the board-*.c file,
+> @@ -51,10 +97,16 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *board_data)
+>  {
+>  	struct platform_device *pdev;
+>  	unsigned long cs_mem_base;
+> -	int ret;
+> +	int ret, err;
+>  
 
-All caps sucks.
+Do you really need another variable here? Can't you use "ret" here?
 
-> + Â  Â  Â  if (fl->fl_type & LOCK_MAND) {
-> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Access:\t\t %s\n",
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â (fl->fl_type & LOCK_READ)
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ? (fl->fl_type & LOCK_WRITE) ? "RW Â  " : "READ "
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
+Thanks,
+Vaibhav
 
-I think using one of --, r-, -w, rw is nicer.
-Trailing whitespace, why?
+>  	gpmc_cfg = board_data;
+>  
+> +	err = platform_device_register(&gpmc_smsc911x_regulator);
+> +	if (err < 0) {
+> +		pr_err("Unable to register smsc911x regulators: %d\n", err);
+> +		return;
+> +	}
+> +
+>  	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
+>  		pr_err("Failed to request GPMC mem region\n");
+>  		return;
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-> + Â  Â  Â  } else {
-> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Access:\t\t %s\n",
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â (lease_breaking(fl))
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ? (fl->fl_type & F_UNLCK) ? "UNLCK" : "READ "
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
-
-Trailing whitespace.
-
-> + Â  Â  Â  if (IS_POSIX(fl)) {
-> + Â  Â  Â  Â  Â  Â  Â  if (fl->fl_end == OFFSET_MAX)
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t %Ld-EOF\n\n", fl->fl_start);
-> + Â  Â  Â  Â  Â  Â  Â  else
-> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t %Ld-%Ld\n\n", fl->fl_start, fl->fl_end);
-> + Â  Â  Â  } else {
-> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t 0-EOF\n\n");
-
-Separate start/end or range, if you want to keep it on one line.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
