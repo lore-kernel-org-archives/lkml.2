@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab2BWJJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:09:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35221 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2BWJJL convert rfc822-to-8bit (ORCPT
+	id S1754884Ab2BWJJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:09:16 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58289 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752265Ab2BWJJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:09:11 -0500
-Message-ID: <1329988135.24994.43.camel@twins>
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 23 Feb 2012 10:08:55 +0100
-In-Reply-To: <20120223075027.GB15306@elte.hu>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
-	 <20120223075027.GB15306@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 23 Feb 2012 04:09:13 -0500
+Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
+From: Matt Fleming <matt@console-pimps.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20120223105444.f0585f65e18be0360f9bfdb9@canb.auug.org.au>
+References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+	 <20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
+	 <1329951508.4759.14.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20120223105444.f0585f65e18be0360f9bfdb9@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Feb 2012 09:09:09 +0000
+Message-ID: <1329988149.4759.17.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 08:50 +0100, Ingo Molnar wrote:
-> * Venkatesh Pallipadi <venki@google.com> wrote:
-
-> > * We can also eliminate TS_POLLING flag in favor of this. But, that will have
-> >   a lot more touchpoints and better done as a standlone change.
+On Thu, 2012-02-23 at 10:54 +1100, Stephen Rothwell wrote:
+> > Peter was talking about exporting unaligned.h for host tools so this
+> > patch will probably go through another iteration anyway.
 > 
-> Should most definitely be done for this series to be acceptble - 
-> as a preparatory patch in the series, with the feature at the 
-> end of the series.
+> OK.  In that case, I will add this version to my fixes tree in linux-next
+> just so that the allmodconfig builds work again.  I will remove it when
+> it turns up (presumably in the tip tree).
 
-I don't think you can, TS_POLLING still works for idle=poll, whereas
-this new stuff requires monitor/mwait.
+OK, thanks.
+
+> Just to be clear, it wasn't the unaligned accesses that were causing me a
+> problem (PowerPC copes), it was the endian issues.
+
+Right. I'll fix up the commit message to be a bit clearer.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
