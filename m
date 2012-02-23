@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2BWCcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 21:32:09 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:35336 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752036Ab2BWCcG (ORCPT
+	id S1753385Ab2BWCyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 21:54:45 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58161 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2BWCyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 21:32:06 -0500
-X-Sasl-enc: t4kKY4ao4WsXa7e6+lZ93mPIk4KSt/9hRNpvN7Qj8pLpkdSTdYVUVmV5nQ 1329964325
-Message-ID: <1329964322.2244.22.camel@perseus.themaw.net>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
-        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 23 Feb 2012 10:32:02 +0800
-In-Reply-To: <CA+55aFyRFGrT6uSSCQoX0pZPZ7j2p4oqX-dcfsFUZt4q81qMrg@mail.gmail.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-	 <1329903139.2193.66.camel@perseus.themaw.net>
-	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
-	 <1329961703.2244.8.camel@perseus.themaw.net>
-	 <CA+55aFzRQJ8YeZGnbq=OO0YgzkfrcS4r+G1cJbjtDCZe=t6DNQ@mail.gmail.com>
-	 <1329962955.2244.16.camel@perseus.themaw.net>
-	 <CA+55aFyRFGrT6uSSCQoX0pZPZ7j2p4oqX-dcfsFUZt4q81qMrg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 Feb 2012 21:54:44 -0500
+X-AuditID: 9c930179-b7c4fae0000073fb-11-4f45aa7160a1
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf evlist: Restore original errno after open failed
+Date: Thu, 23 Feb 2012 12:13:36 +0900
+Message-Id: <1329966816-23175-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.9
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 18:25 -0800, Linus Torvalds wrote:
-> On Wed, Feb 22, 2012 at 6:09 PM, Ian Kent <raven@themaw.net> wrote:
-> >
-> > Sure, that's true, and you'll see it uses the mount option maxproto with
-> > the value of AUTOFS_MAX_PROTO_VERSION. But autofs uses it's own copy of
-> > the headers so AUTOFS_MAX_PROTO_VERSION is 4 not 5 so it won't be
-> > affected by this change.
-> 
-> Ok.
-> 
-> I fetched your git tree, and it seems this changed to use mount()
-> directly in commit a74f68c99d9f ("integrated master map parsing into
-> daemon") back in 2006.
-> 
-> Which seems to be part of autofs_5_0_0_beta1, so I guess we're safe. I
-> hope no distro ever used any early pre-beta versions of autofs that
-> had the new packet support but still used the external 'mount'
-> command.
+If perf_evsel__open() failed, the errno was set and returned properly.
+However since the perf_evlist__open() called close() on fd's for all of
+evsel x cpu x thread after the failure, the errno was overridden by
+other code (EBADF). So the caller of the function ended up seeing
+different error message and getting confused.
 
-If there are they have bigger automount problem than the kernel packet
-size, ;)
+Fit it by restoring original return value. Because one of caller of the
+function is in the python extension, and it uses system errno internally,
+it'd be better restoring the original value rather than using the return
+value of the function directly, IMHO (i.e. I'm not a python expert :)
 
-It really didn't become usable until at least the rc releases and the
-actual first non-test release was 5.0.1, we never had a 5.0.0.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/util/evlist.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Ian
-
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index ec4e338ee291..1986d8051bd1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -767,6 +767,7 @@ out_err:
+ 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
+ 		perf_evsel__close(evsel, ncpus, nthreads);
+ 
++	errno = -err;
+ 	return err;
+ }
+ 
+-- 
+1.7.9
 
