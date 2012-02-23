@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2BWV5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:57:30 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:43080 "EHLO zene.cmpxchg.org"
+	id S1755100Ab2BWV5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:57:42 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21623 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab2BWV53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:57:29 -0500
-Date: Thu, 23 Feb 2012 22:57:23 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
+	id S1753191Ab2BWV5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 16:57:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120687770"
+From: Andi Kleen <andi@firstfloor.org>
 To: Rik van Riel <riel@redhat.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         Andrea Arcangeli <aarcange@redhat.com>, hughd@google.com
-Subject: Re: [PATCH -mm 1/2] mm: fix quadratic behaviour in
- get_unmapped_area_topdown
-Message-ID: <20120223215723.GB1701@cmpxchg.org>
+Subject: Re: [PATCH -mm 2/2] mm: do not reset mm->free_area_cache on every single munmap
 References: <20120223145417.261225fd@cuia.bos.redhat.com>
- <20120223145636.616bef1c@cuia.bos.redhat.com>
+	<20120223150034.2c757b3a@cuia.bos.redhat.com>
+Date: Thu, 23 Feb 2012 13:57:42 -0800
+In-Reply-To: <20120223150034.2c757b3a@cuia.bos.redhat.com> (Rik van Riel's
+	message of "Thu, 23 Feb 2012 15:00:34 -0500")
+Message-ID: <m2vcmxp609.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223145636.616bef1c@cuia.bos.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 02:56:36PM -0500, Rik van Riel wrote:
-> When we look for a VMA smaller than the cached_hole_size, we set the
-> starting search address to mm->mmap_base, to try and find our hole.
-> 
-> However, even in the case where we fall through and found nothing at
-> the mm->free_area_cache, we still reset the search address to mm->mmap_base.
-> This bug results in quadratic behaviour, with observed mmap times of 0.4
-> seconds for processes that have very fragmented memory.
-> 
-> If there is no hole small enough for us to fit the VMA, and we have
-> no good spot for us right at mm->free_area_cache, we are much better
-> off continuing the search down from mm->free_area_cache, instead of
-> all the way from the top.
+Rik van Riel <riel@redhat.com> writes:
 
-Would it make sense to retain the restart for the case where we _know_
-that the remaining address space can not fit the desired area?
+> Some programs have a large number of VMAs, and make frequent calls
+> to mmap and munmap. Having munmap constantly cause the search
+> pointer for get_unmapped_area to get reset can cause a significant
+> slowdown for such programs. 
 
-	/* make sure it can fit in the remaining address space */
-	if (addr > len) {
-		vma = find_vma(mm, addr-len);
-		if (!vma || addr <= vma->vm_start)
-			/* remember the address as a hint for next time */
-			return (mm->free_area_cache = addr-len);
-	} else /* like this */
-		addr = mm->mmap_base - len;
+This would be a much nicer patch if you split it into one that merges
+all the copy'n'paste code and another one that actually implements
+the new algorithm.
 
-It would save one pointless find_vma() further down.  I don't feel too
-strongly about it, though.  Either way:
+-Andi
 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+-- 
+ak@linux.intel.com -- Speaking for myself only
