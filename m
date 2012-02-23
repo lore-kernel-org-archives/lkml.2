@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2BWRCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 12:02:01 -0500
-Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:35189 "EHLO
-	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2BWRB7 (ORCPT
+	id S1754977Ab2BWRC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 12:02:58 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:39106 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab2BWRC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 12:01:59 -0500
-X-Greylist: delayed 1718 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 12:01:59 EST
-Message-ID: <4F4669B1.4020306@tu-ilmenau.de>
-Date: Thu, 23 Feb 2012 17:30:41 +0100
-From: =?UTF-8?B?U3RlcGhhbiBCw6Ryd29sZg==?= 
-	<stephan.baerwolf@tu-ilmenau.de>
-Reply-To: stephan.baerwolf@tu-ilmenau.de
-Organization: TU-Ilmenau
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120217 Thunderbird/10.0.1
+	Thu, 23 Feb 2012 12:02:56 -0500
+Date: Thu, 23 Feb 2012 17:02:33 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable <stable@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
+        "jirisl >> Jiri Slaby" <jirislaby@gmail.com>
+Subject: Re: Lost ps/2 input in 3.2.5 (aka PCI: Rework ASPM disable code)
+Message-ID: <20120223170233.GA4328@srcf.ucam.org>
+References: <4F4540E6.2020708@suse.cz>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Buesch <mb@bu3sch.de>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: responsiveness: newer kernels causing lagging and blocking
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4540E6.2020708@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under various conditions linux since 2.6.39-rc1 laggs and blocks enormously the whole system.
-(For example while starting "winecfg" (on a thinkpad X220) and parallel moving the
-mousecursor you can observe a periodic blocking for some seconds)
+Well, bother. Can you give lspci -vvv before and after the patch, along 
+with dmesg?
 
-After bisecting a little while, commit "4819d2e4310796c4e9eef674499af9b9caf36b5a"
-(" drm: Retry i2c transfer of EDID block after failure ") seems to be responsible.
-
-Because function "drm_do_probe_ddc_edid" loops trying "i2c_transfer" it consumes a lot
-of time during errors. Reverting or changing "retries" from 5 to 1 extremly minimizes the
-problem to "not perceptible".
-It seems the locking within "i2c_transfer" slows everything down.
-So maybe it is possible to yield() before calling it?
-
-
-regards Stephan
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
