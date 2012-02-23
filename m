@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2BWSPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:15:47 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43120 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab2BWSPp convert rfc822-to-8bit (ORCPT
+	id S1756628Ab2BWSPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:15:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34664 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409Ab2BWSPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:15:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.84.170 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Thu, 23 Feb 2012 13:15:38 -0500
+Date: Thu, 23 Feb 2012 10:15:31 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: raphael@buro.asia, "H. Peter Anvin" <hpa@zytor.com>,
+        stable@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+Message-ID: <20120223181531.GA1906@kroah.com>
+References: <4F456D8F.1080801@zytor.com>
+ <CA+55aFw4P1qUye5YOJKSQHX+TfxbEDWMF7LPogj128b6gv2Nqg@mail.gmail.com>
+ <CA+55aFziJ=Lw0KxxThwfqRPR+K0OWDorKAfkgKMGPXv5O404JA@mail.gmail.com>
+ <4F4584EB.9060605@zytor.com>
+ <CA+55aFxC6JwWsNcmkQ+DROXtWCzaq52DuX5aMJZfXMLoNCbsWg@mail.gmail.com>
+ <20120223003706.GA3246@kroah.com>
+ <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
+ <CA+55aFxTieMqacU9LN8Xmtb3Os8zkub1P+SKpqFtEBQ11STy7g@mail.gmail.com>
+ <e709c3b5c5b2aa6e6a9d049f3af857e3@buro.asia>
+ <CA+55aFwQSaWmXS59U5hG5hfww7G6XRs6LfYQ5fpS3og2y0OTYw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <aefc95$3a3h8b@orsmga001.jf.intel.com>
-References: <4F4669B1.4020306@tu-ilmenau.de> <aefc95$3a3h8b@orsmga001.jf.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 23 Feb 2012 10:15:24 -0800
-X-Google-Sender-Auth: Cl2PmSFtkg2Zr5qDstDdfVq3EGY
-Message-ID: <CA+55aFxO27oa+WAtDLuWtr-NFNmKb2T0V6pccn=AE+g5PePPUg@mail.gmail.com>
-Subject: Re: responsiveness: newer kernels causing lagging and blocking
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: stephan.baerwolf@tu-ilmenau.de, linux-kernel@vger.kernel.org,
-        Michael Buesch <mb@bu3sch.de>, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwQSaWmXS59U5hG5hfww7G6XRs6LfYQ5fpS3og2y0OTYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 9:21 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->
-> The second is to break the loop for fatal errors, which is addressed by
->
-> commit 9292f37e1f5c79400254dca46f83313488093825
-> Author: Eugeni Dodonov <eugeni.dodonov@intel.com>
-> Date:   Thu Jan 5 09:34:28 2012 -0200
->
->    drm: give up on edid retries when i2c bus is not responding
+On Wed, Feb 22, 2012 at 07:37:27PM -0800, Linus Torvalds wrote:
+> On Wed, Feb 22, 2012 at 6:41 PM,  <raphael@buro.asia> wrote:
+> >
+> > The patchset is simply made of:
+> > be98c2cdb15ba26148cd2bd58a857d4f7759ed38 (unmodified)
+> > 5b1cbac37798805c1fee18c8cebe5c0a13975b17 (")
+> > c38e23456278e967f094b08247ffc3711b1029b2 (")
+> > 15d8791cae75dca27bfda8ecfe87dca9379d6bb0 (")
+> > b6c66418dcad0fcf83cd1d0a39482db37bf4fc41 (")
+> > 6d59d7a9f5b723a7ac1925c136e93ec83c0c3043 (")
+> > b3b0870ef3ffed72b92415423da864f440f57ad6 (")
+> > 4903062b5485f0e2c286a23b44c9b59d9b017d53: this one requires a slight
+> > modification:
+> > -#define safe_address (kstat_cpu(0).cpustat.user)
+> > instead of:
+> > -#define safe_address (__get_cpu_var(kernel_cpustat).cpustat[CPUTIME_USER])
+> > f94edacf998516ac9d849f7bc6949a703977a7f3 (unmodified)
+> > 34ddc81a230b15c0e345b6b253049db731499f7e (")
+> 
+> Oh, Greg, since that series is tested by Raphael on top of 3.2.6
+> already, let's just make that be the stable backport.
+> 
+> It does mean that the stable backport will contain that whole "rip out
+> fp state preloading and reimplement it" thing, but hey, considering
+> that when I tried to avoid it I clearly screwed something up, maybe
+> that's all for the best. And perhaps staying closer to the development
+> tree is a good idea anyway in case there are any other issues.
 
-So I tried cherry-picking this one commit on top of current -git on
-one of those nasty Mac Mini's.
+I prefer the "staying closer" model, it works out better if there are
+problems found later on.  I'll work on queuing these up now.
 
-I'm sad to report that I don't get anywhere *close* to the reported
-performance numbers. Are there other commits involved that I should
-have tried?
+thanks,
 
->    Timing results for i915-powered machines for 'time xrandr' command:
->    Machine 1: from 0.840s to 0.290s
->    Machine 2: from 0.315s to 0.280s
->    Machine 3: from +/- 4s to 0.184s
->
->    Timing results for HD5770 with 'time xrandr' command:
->    Machine 4: from 3.210s to 1.060s
-
-On that Mac Mini, I get 0.611s before, and 0.553s after. So it does
-seem to improve, but not nearly enough.
-
-Part of the problem seems to be the bogus "TV1 unknown connection",
-which just isn't true (and probably due to some insane Apple
-connection setup). So I suspect something just doesn't get a proper
-EDID, and times out or fails, and falls back to some bogus default. I
-get
-
-  TV1 unknown connection (normal left inverted right x axis y axis)
-     1024x768       60.0
-     800x600        60.3
-     640x480        59.9
-
-and I'm pretty sure there's no TV attached unless it is hiding under
-the carpet somehow.
-
-"perf record -a" shows that it's spending the time in udelay() as
-expected (30% from intel_wait_for_pipe_off(), 30% from sclhi(), 30%
-from bit_xfer() and 10% from acknak()). Which is what you'd expect
-with that CPU-polling EDID thing.
-
-So adding some scheduling might be a good idea regardless of that commit.
-
-                             Linus
+greg k-h
