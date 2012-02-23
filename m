@@ -1,59 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2BWJl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 04:41:56 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39461 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab2BWJly convert rfc822-to-8bit (ORCPT
+	id S1755322Ab2BWJqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 04:46:19 -0500
+Received: from mga12.intel.com ([143.182.124.36]:27214 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754079Ab2BWJqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 04:41:54 -0500
-Message-ID: <1329990094.24994.64.camel@twins>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Date: Thu, 23 Feb 2012 10:41:34 +0100
-In-Reply-To: <20120222165714.GC4128@redhat.com>
-References: <20120221211938.GE12236@google.com>
-	 <20120222163858.GB4128@redhat.com> <20120222165714.GC4128@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 23 Feb 2012 04:46:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.68.221.42 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
+MIME-Version: 1.0
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH] tmpfs: security xattr setting on inode creation
+Date: Thu, 23 Feb 2012 11:46:05 +0200
+Message-Id: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 11:57 -0500, Vivek Goyal wrote:
-> 
-> Again, it does not mean I am advocating flat hiearchy. I am just wondering
-> in case of fully nested hierarchies (task at same level as groups), how
-> does one explain it to a layman user who understands things in terms of
-> % of resources. 
+Adds to generic xattr support introduced in Linux 3.0 by
+implementing initxattrs callback. This enables consulting
+of security attributes from LSM and EVM when inode is
+created.
 
-If your complete control is % based then I would assume its a % of a %.
-Simple enough.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+---
+ mm/shmem.c |   82 ++++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 66 insertions(+), 16 deletions(-)
 
-If its bandwidth based then simply don't allow a child to consume more
-bandwidth than its parent, also simple.
-
-If your layman isn't capable of grokking that, he should stay the f*ck
-away from it.
-
-I'm really thinking that if we stick with the full hierarchical thing we
-should mandate all controllers be fully hierarchical. And yes that
-sucks, but so be it.
-
-The scheduler thing tries to be completely hierarchical and yes it will
-run into the ground if you push it hard enough simply because we're
-hitting the limits of fixed point arithmetic, fractions can only go so
-far, so the deeper you nest the crappier things get -- not that any
-userspace cares about this.
-
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 7a45ad0..cd367b1 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1478,6 +1478,64 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ }
+ 
+ /*
++ * Allocate new xattr.
++ */
++static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
++{
++	/* wrap around? */
++	size_t len = sizeof(**new_xattr) + size;
++	if (len <= sizeof(**new_xattr))
++		return -ENOMEM;
++
++	*new_xattr = kmalloc(len, GFP_KERNEL);
++	if (*new_xattr == NULL)
++		return -ENOMEM;
++
++	(*new_xattr)->size = size;
++	return 0;
++}
++
++/*
++ * Callback for security_inode_init_security() for acquiring xattrs.
++ */
++static int shmem_initxattrs(struct inode *inode,
++			    const struct xattr *xattr_array,
++			    void *fs_info)
++{
++	const struct xattr *xattr;
++	struct shmem_inode_info *info = SHMEM_I(inode);
++	struct shmem_xattr *new_xattr = NULL;
++	size_t len;
++	int err = 0;
++
++	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
++		err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
++		if (err < 0)
++			return err;
++
++		len = strlen(xattr->name) + 1;
++		new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
++					  GFP_KERNEL);
++		if (new_xattr->name == NULL) {
++			kfree(new_xattr);
++			return -ENOMEM;
++		}
++
++		memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
++		       XATTR_SECURITY_PREFIX_LEN);
++		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
++		       xattr->name, len);
++		memcpy(new_xattr->value, xattr->value, xattr->value_len);
++
++		spin_lock(&info->lock);
++		list_add(&new_xattr->list, &info->xattr_list);
++		spin_unlock(&info->lock);
++	}
++
++	return 0;
++}
++
++/*
+  * File creation. Allocate an inode, and we're done..
+  */
+ static int
+@@ -1490,7 +1548,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+ 	if (inode) {
+ 		error = security_inode_init_security(inode, dir,
+ 						     &dentry->d_name,
+-						     NULL, NULL);
++						     &shmem_initxattrs, NULL);
+ 		if (error) {
+ 			if (error != -EOPNOTSUPP) {
+ 				iput(inode);
+@@ -1630,7 +1688,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
+ 		return -ENOSPC;
+ 
+ 	error = security_inode_init_security(inode, dir, &dentry->d_name,
+-					     NULL, NULL);
++					     &shmem_initxattrs, NULL);
+ 	if (error) {
+ 		if (error != -EOPNOTSUPP) {
+ 			iput(inode);
+@@ -1731,26 +1789,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
+ 	return ret;
+ }
+ 
+-static int shmem_xattr_set(struct dentry *dentry, const char *name,
++static int shmem_xattr_set(struct inode *inode, const char *name,
+ 			   const void *value, size_t size, int flags)
+ {
+-	struct inode *inode = dentry->d_inode;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
+ 	struct shmem_xattr *xattr;
+ 	struct shmem_xattr *new_xattr = NULL;
+-	size_t len;
+ 	int err = 0;
+ 
+ 	/* value == NULL means remove */
+ 	if (value) {
+-		/* wrap around? */
+-		len = sizeof(*new_xattr) + size;
+-		if (len <= sizeof(*new_xattr))
+-			return -ENOMEM;
+-
+-		new_xattr = kmalloc(len, GFP_KERNEL);
+-		if (!new_xattr)
+-			return -ENOMEM;
++		err = shmem_xattr_alloc(size, &new_xattr);
++		if (err < 0)
++			return err;
+ 
+ 		new_xattr->name = kstrdup(name, GFP_KERNEL);
+ 		if (!new_xattr->name) {
+@@ -1758,7 +1809,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
+ 			return -ENOMEM;
+ 		}
+ 
+-		new_xattr->size = size;
+ 		memcpy(new_xattr->value, value, size);
+ 	}
+ 
+@@ -1858,7 +1908,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
+ 	if (size == 0)
+ 		value = "";  /* empty EA, do not remove */
+ 
+-	return shmem_xattr_set(dentry, name, value, size, flags);
++	return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
+ 
+ }
+ 
+@@ -1878,7 +1928,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
+ 	if (err)
+ 		return err;
+ 
+-	return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
++	return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
+ }
+ 
+ static bool xattr_is_trusted(const char *name)
+-- 
+1.7.5.4
 
