@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab2BWGcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 01:32:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54272 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2BWGcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 01:32:18 -0500
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com> <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com> <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com> <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com> <1329889428.2193.45.camel@perseus.themaw.net> <1329890027.2193.48.camel@perseus.themaw.net> <1329890251.2193.50.camel@perseus.themaw.net> <1329903139.2193.66.camel@perseus.themaw.net> <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com> <1329961703.2244.8.camel@perseus.themaw.net> <1329962085.2244.10.camel@perseus.themaw.net> <1329963683.2244.19.camel@perseus.themaw.net> <1329978558.25314.0.camel@perseus.themaw.net>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1329978558.25314.0.camel@perseus.themaw.net>
+	id S1753711Ab2BWGcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:32:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37685 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab2BWGck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 01:32:40 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.222.132 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
+Date: Thu, 23 Feb 2012 14:32:19 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@linux.intel.com, x86@kernel.org, spock@gentoo.org
+Subject: [PATCH 0/2] x86: add function to check whether BIOS NX and let
+ uvesafb work
+Message-ID: <20120223063219.GB3886@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+	hpa@linux.intel.com, x86@kernel.org, spock@gentoo.org
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 22 Feb 2012 22:31:38 -0800
-To: Ian Kent <raven@themaw.net>, Thomas Meyer <thomas@m3y3r.de>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Message-ID: <2b90acba-a8e9-485a-b2a6-608d61751f2c@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-However, I liked Linus' approach.of using the version ioctl; any reason not to?
+hi,
+https://lkml.org/lkml/2011/11/17/54 is the first time I
+post the question I meet.At that time, I haven't idea to 
+catch it bug! My computer hang too early, and even seral 
+console doesn't help.
+Recent days I try to compile uvesafb as a module, and insert 
+it when I have a full work kernel, X11, and sshd. Good dog,
+the bug occurs again, and I catch it!
+Here are the two patches that I try to fix it,
+I will appreciate for any comments.Thanks
 
-Ian Kent <raven@themaw.net> wrote:
+attached patches:
+1/2 x86:add function to check BIOS whether NX
+2/2 video:uvesafb: check whether BIOS is NX before try to use PMI
 
->On Thu, 2012-02-23 at 10:21 +0800, Ian Kent wrote:
->> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
->> > On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
->> > > On Wed, 2012-02-22 at 08:12 -0800, Linus Torvalds wrote:
->> > > > On Wed, Feb 22, 2012 at 1:32 AM, Ian Kent <raven@themaw.net>
->wrote:
->> > > > >
->> > > > > Oh, DOH ...
->> > > > >
->> > > > > The process mounting the autofs mount is passing the pipe it
->will use
->> > > > > for communication via a mount option so we can do this right
->in
->> > > > > fill_super.
->> > > > 
->> > > > No, we really cannot.
->> > > 
->> > > Sorry, I think your wrong this time.
->> > 
->> > On second thought, I suppose other user space users don't "have" to
->use
->> > mount(2) ....
->> 
->> Thomas, what does systemd use to mount the autofs mounts that it
->uses?
->
->Mmm ... AFAICS systemd uses mount(2) so that looks OK too.
->
->Ian
-
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+---
+ arch/x86/include/asm/pci.h |    1 +
+ arch/x86/mm/pageattr.c     |    2 +-
+ arch/x86/pci/pcbios.c      |   11 +++++++++++
+ drivers/video/uvesafb.c    |    6 ++++++
+ 4 files changed, 19 insertions(+), 1 deletions(-)
+---
