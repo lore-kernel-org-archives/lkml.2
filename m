@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2BWXtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:49:47 -0500
-Received: from 124-248-200-54.sunnyvision.com ([124.248.200.54]:59851 "EHLO
-	teamb02.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab2BWXtp (ORCPT
+	id S1757259Ab2BWXy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:54:58 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56100 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756086Ab2BWXy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:49:45 -0500
-X-Greylist: delayed 23075 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 18:49:44 EST
-X-DKIM: OpenDKIM Filter v2.4.1 teamb02.edmhongkong.com A3BADE6868
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 3162F4FA8F
-Message-ID: <gZg8B@ksts.seed.net.tw>
-From: otto@cloudluca.com
-Subject: Web Design Service
-X-Mailer: rULDd3CxIZTHLSoQUJuHiL54XJCVe
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Fri, 24 Feb 2012 01:13:10 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 23 Feb 2012 18:54:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.3 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Thu, 23 Feb 2012 15:54:50 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+Message-ID: <20120223235450.GA22345@kroah.com>
+References: <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com>
+ <20120222213253.GA25150@kroah.com>
+ <20120223200905.GA5475@kroah.com>
+ <4F46A1C4.90506@zytor.com>
+ <20120223204832.GA30322@kroah.com>
+ <4F46A6EC.8050804@zytor.com>
+ <20120223211016.GA16275@kroah.com>
+ <4F46C63C.4040602@zytor.com>
+ <20120223231605.GA15329@kroah.com>
+ <4F46C92B.4090508@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F46C92B.4090508@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1NNnrAd002196
 
-Dear Sir / Madam, 
+On Thu, Feb 23, 2012 at 03:18:03PM -0800, H. Peter Anvin wrote:
+> On 02/23/2012 03:16 PM, Greg Kroah-Hartman wrote:
+> > 
+> > And a "clean" 3.2.7 doesn't have that problem?
+> > 
+> > Does the same thing happen in Linus's tree at the moment?
+> > 
+> 
+> Clean 3.2.7 I don't think has that problem, although of course when I
+> run the stress test it fails on other ways so it's hard to 100% rule out.
+> 
+> Linus' tree doesn't have that problems.
 
-Good morning, this is Otto from Cloudluca.com. 
+Ugh.
 
-We are a web design house and programming service provider. As 14 years experience, we are professional to develop a website for your business. 
+So, we need more testers, so let me release a -rc kernel with just these
+changes in it, to get a wider testing range, and make an easy "this
+kernel worked, but this one didn't" for people to work with.
 
-In the Chinese New Year Festival, we have the following offer for your corporate. Please check. 
+I don't suppose that 'git bisect' would work for this, as it's really a
+"all or nothing" type thing with this series from what I can tell,
+right?
 
-Service	Package
+thanks,
 
-Web Development and Programing Service
-*********************************************************
-1)	Website Design Service 			($13,000)
-
-	Maximum 10 Web Pages Development                                                 
-	(Site Map will be confirmed later)
-	All the tailor-made webpage design is included:
--	Theme / Visual Concept Development;
--	Design Study and Analysis / Art Direction;
--	Original Artwork & Layout Design;
--	Steady Web page development;
--	HTML Development for Search Engine Applicable;
-
-2)	Web Programing Service 			($15,000)
-
-Content Management System (For 5 web pages)                                 
--	Standard CMS function for add / edit fields 
--	Max. 10 fields per each CMS section
--	CMS fields only for Text fields and photos upload fields
--	Photos upload only support (.jpg / .png / .bmp) 
--	Each field for one photos
--	20 pages / section for CMS function
--	Database support with un-limit data create;
--	Admin Panel with Login function (1 login account)
-
-
-*********************************************************
-
-Promotion Price: 	HKD $28,000.00
-Lead Time: 		32 working days
-
-If you have more special requirement, please let us know and we will provide more detail to you. 
-
-Please feel free to contact me.The following is my contact information. 
-
-Contact No: (852) 5108 9664
-
-Skype: yschiu2001 (yschiu2001@yahoo.com.hk)
-
-MSN: yschiu2001@yahoo.com.hk
-
-Email: otto@dedicatedserver.com.hk
-
-If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or remove your email from the list. 
-
-Best Regards
-Otto Chiu
-
-
+greg k-h
