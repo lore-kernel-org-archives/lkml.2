@@ -1,192 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab2BWKlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 05:41:09 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34009 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2BWKlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 05:41:06 -0500
-Message-ID: <4F4617AB.2080401@linux.vnet.ibm.com>
-Date: Thu, 23 Feb 2012 18:40:43 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] sched: Avoid unnecessary work in reweight_entity
-References: <4F2F9F6C.1090608@linux.vnet.ibm.com> <4F3089F9.6010609@linux.vnet.ibm.com> <4F308E25.7060101@linux.vnet.ibm.com> <4F31D9B2.5090501@linux.vnet.ibm.com> <4F3D0F41.1010205@linux.vnet.ibm.com> <1329402561.2293.225.camel@twins> <4F3DEDC3.4010004@linux.vnet.ibm.com> <4F3F025B.5010400@linux.vnet.ibm.com> <1329743311.2293.341.camel@twins>
-In-Reply-To: <1329743311.2293.341.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12022300-1396-0000-0000-000000B75E87
+	id S1755504Ab2BWKnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 05:43:40 -0500
+Received: from damascus.uab.es ([158.109.168.135]:10316 "EHLO damascus.uab.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753315Ab2BWKni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 05:43:38 -0500
+X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 05:43:38 EST
+Date: Thu, 23 Feb 2012 11:44:14 +0100
+From: Davidlohr Bueso <dave@gnu.org>
+Subject: Re: [PATCH] locks: new procfs lockinfo
+In-reply-to: <m1r4xmz8n0.fsf@fess.ebiederm.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Matthew Wilcox <matthew@wil.cx>, lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Message-id: <1329993854.30585.3.camel@offworld>
+Organization: GNU
+MIME-version: 1.0
+X-Mailer: Evolution 3.0.3-2
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+X-Spam-Tests: ALL_TRUSTED=-1
+X-imss-version: 2.054
+X-imss-result: Passed
+X-imss-scanInfo: M:P L:N SM:0
+X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18728.005)
+X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
+X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
+References: <1329737454.3058.3.camel@offbook> <m1r4xmz8n0.fsf@fess.ebiederm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2012 09:08 PM, Peter Zijlstra wrote:
-
-Hi, Peter
-
-Sorry for reply so late, I was blocked by some issue army while setup the 
-testing environment.
-
-> On Sat, 2012-02-18 at 09:43 +0800, Michael Wang wrote:
->> And as reight_entity is invoked very often, I think this patch can do some help to the 
->> performance, although there are no numbers, we can prove it logically :)  
+On Wed, 2012-02-22 at 16:38 -0800, Eric W. Biederman wrote:
+> Davidlohr Bueso <dave@gnu.org> writes:
 > 
-> Well, you're probably right (although I think you completely ignored the
-> optimizing compiler), but still it would be good to get some numbers to
-> confirm reality :-)
+> > From: Davidlohr Bueso <dave@gnu.org>
+> >
+> > Based on our previous discussion https://lkml.org/lkml/2012/2/10/462 we came to
+> > agree on deprecating the current /proc/locks in favor of a more extensible interface.
+> > The new /proc/lockinfo file exports similar information - except instead of maj:min the
+> > device name is shown - and entries are formated like those in /proc/cpuinfo, allowing us
+> > to add new entries without breaking userspace.
+> 
+> You can't know the device name, attempt to say what you don't know seems
+> very dangerous.  It may be reasonable to simply give the deivce number
+> and not split the device number into major/minor any more and I am
+> concerned about reality.
+> 
+> Andrew's question about the pid namespace is answered below.
+> 
+> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> > ---
+> >  Documentation/feature-removal-schedule.txt |    9 +++
+> >  fs/locks.c                                 |  109 ++++++++++++++++++++++++++--
+> >  2 files changed, 113 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > index a0ffac0..1c5e14b 100644
+> > --- a/Documentation/feature-removal-schedule.txt
+> > +++ b/Documentation/feature-removal-schedule.txt
+> > @@ -524,3 +524,12 @@ Files:	arch/arm/mach-at91/at91cap9.c
+> >  Why:	The code is not actively maintained and platforms are now hard to find.
+> >  Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+> >  	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > +
+> > +---------------------------
+> > +
+> > +What:	/proc/locks
+> > +When:	2014
+> > +Why:	The current /proc/locks file does not allow modifying entries as it breaks
+> > +        userspace (most notably lslk(8)). A new /proc/lockinfo interface replaces
+> > +        this file in a more extendable format (lines per entry), like /proc/cpuinfo.
+> > +Who:	Davidlohr Bueso <dave@gnu.org>
+> 
+> This is a ancient file of long standing I really doubt that we can
+> safely remove it any time soon.  Is there any good reason to want to
+> remove this file?
+> 
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index 637694b..f7b27fe 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -112,6 +112,9 @@
+> >   *  Leases and LOCK_MAND
+> >   *  Matthew Wilcox <willy@debian.org>, June, 2000.
+> >   *  Stephen Rothwell <sfr@canb.auug.org.au>, June, 2000.
+> > + *
+> > + *  Deprecated /proc/locks in favor of /proc/lockinfo
+> > + *  Davidlohr Bueso <dave@gnu.org>, February, 2012.
+> >   */
+> >  
+> >  #include <linux/capability.h>
+> > @@ -2156,6 +2159,10 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+> >  	struct inode *inode = NULL;
+> >  	unsigned int fl_pid;
+> >  
+> > +	/* deprecated, see Documentation/feature-removal-schedule.txt */
+> > +	printk_once(KERN_WARNING "%s (%d): /proc/locks is deprecated please use /proc/lockinfo instead.\n",
+> > +		    current->comm, task_pid_nr(current));
+> > +
+> >  	if (fl->fl_nspid)
+> >  		fl_pid = pid_vnr(fl->fl_nspid);
+> 
+> Apparently this was overlooked.  Sigh.
+> 
+> We need not to use pid_vnr but instead pid_nr_ns(sb->s_fs_info, fl->fl_nspid);
+> 
+> For using this outside of fs/proc/base.c this clearly needs a trivial
+> helper instead of raw s_fs_info access, but the point remains that
+> the proc filesystem when mounted has a pid namespace that it displays
+> everything relative too and /proc/locks should be the same.
+> 
+> >  	else
+> > @@ -2199,15 +2206,10 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+> >  			       : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
+> >  	}
+> >  	if (inode) {
+> > -#ifdef WE_CAN_BREAK_LSLK_NOW
+> > -		seq_printf(f, "%d %s:%ld ", fl_pid,
+> > -				inode->i_sb->s_id, inode->i_ino);
+> > -#else
+> >  		/* userspace relies on this representation of dev_t ;-( */
+> >  		seq_printf(f, "%d %02x:%02x:%ld ", fl_pid,
+> >  				MAJOR(inode->i_sb->s_dev),
+> >  				MINOR(inode->i_sb->s_dev), inode->i_ino);
+> > -#endif
+> >  	} else {
+> >  		seq_printf(f, "%d <none>:0 ", fl_pid);
+> >  	}
+> > @@ -2275,9 +2277,106 @@ static const struct file_operations proc_locks_operations = {
+> >  	.release	= seq_release_private,
+> >  };
+> >  
+> > +static void lockinfo_get_status(struct seq_file *f, struct file_lock *fl,
+> > +				loff_t id)
+> > +{
+> > +	struct inode *inode = NULL;
+> > +	unsigned int fl_pid;
+> > +
+> > +	if (fl->fl_nspid)
+> > +		fl_pid = pid_vnr(fl->fl_nspid);
+> 
+> We shouldn't copy the wrong definition for fl_pid from the old code but
+> should instead get this right.
 
-
-That's right, if consider the compiler's optimization, the logic improvements 
-I listed may not be true...
+Will correct.
 
 > 
-
-> Just pick your favourite cgroup workload/benchmark and run a pre/post
-> comparison, possible using perf record.
+> > +	else
+> > +		fl_pid = fl->fl_pid;
+> > +
+> > +	if (fl->fl_file != NULL)
+> > +		inode = fl->fl_file->f_path.dentry->d_inode;
+> > +
+> > +	if (IS_POSIX(fl)) {
+> > +		seq_printf(f, "Personality:\t %s\n",
+> > +			   (fl->fl_flags & FL_ACCESS) ? "ACCESS" : "POSIX ");
+> > +		seq_printf(f, "Type:\t\t %s\n",
+> > +			   (!inode) ? "*NOINODE*" : mandatory_lock(inode)
+> > +			   ? "MANDATORY" : "ADVISORY ");
+> > +	} else if (IS_FLOCK(fl)) {
+> > +		seq_printf(f, "Personality:\t FLOCK\n");
+> > +		seq_printf(f, "Type:\t\t %s\n",
+> > +			   (fl->fl_type & LOCK_MAND) ? "MSNFS" : "ADVISORY");
+> > +	} else if (IS_LEASE(fl)) {
+> > +		seq_printf(f, "Personality:\t LEASE\n");
+> > +		seq_printf(f, "Type:\t\t %s\n",
+> > +			   (lease_breaking(fl)) ? "BREAKING"
+> > +			   : (fl->fl_file) ? "ACTIVE" : "BREAKER");
+> > +	} else {
+> > +		seq_printf(f, "Personality:\t UNKNOWN\n");
+> > +		seq_printf(f, "Type:\t\t UNKNOWN\n");
+> > +	}
+> > +
+> > +	if (fl->fl_type & LOCK_MAND) {
+> > +		seq_printf(f, "Access:\t\t %s\n",
+> > +			   (fl->fl_type & LOCK_READ)
+> > +			   ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
+> > +			   : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
+> > +	} else {
+> > +		seq_printf(f, "Access:\t\t %s\n",
+> > +			   (lease_breaking(fl))
+> > +			   ? (fl->fl_type & F_UNLCK) ? "UNLCK" : "READ "
+> > +			   : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
+> > +	}
+> > +
+> > +	seq_printf(f, "PID:\t\t %d\n", fl_pid);
+> > +
+> > +	if (inode) {
+> > +		seq_printf(f, "Device:\t\t %s\n",  inode->i_sb->s_id);
 > 
-> If all squares up you should see an improvement in your benchmark score
-> as well as see a reduction in time spend in the function you're
-> patching.
+> Hmm.  The label on this is wrong.    What if this comes from a
+> filesystem that is not block device based?  I expect it is ok to print
+> sb->s_id here but it needs a less confusing label.
 
+I think that even if its not a block based device, the "Device" label is
+pretty obvious. 
 
-So I created a cpuset cgroup 'rg1' and his sub memory group 'sub',
-attached current shell to 'sub', then use 'time make kernel' as benchmark.
+I'll send a v2 of this patch with the corrections and documenting the
+new file in Documentation/filesystems/proc.txt
 
-Below is the test result:
-
-'time make':
-old
-	real: 87m53.804s	user: 66m41.886s	sys: 11m51.792s
-new
-	real: 86m8.485s		user: 65m49.211s	sys: 11m47.264s
-
-'time make -j14':
-old:	
-	real: 42m43.825s	user: 124m13.726s	sys: 17m57.183s
-new
-	real: 39m0.072s		user: 114m33.258s	sys: 15m30.662s
-
-I also try to use 'perf sched record', but I can only record few seconds time,
-otherwise it will be too big and report some error, as the record time is too 
-short, results are very different from each other, I failed to use them to prove 
-the patch:(
-
-I also have try to use some other method, I moved 'reweight_entity' and related 
-functions to user space, and invoke it 10000000 times in 'main', I have append 
-part of the code (really raw...) in the end.
-
-Three times output is:
-
-old:
-	real	0m0.715s	0m0.710s	0m0.739s
-	user	0m0.716s	0m0.708s	0m0.736s
-	sys	0m0.000s	0m0.000s	0m0.000s
-
-new:
-	real	0m0.318s	0m0.308s	0m0.317s
-	user	0m0.316s	0m0.304s	0m0.316s
-	sys	0m0.000s	0m0.000s	0m0.000s
-
-It seems like that new code can save more then half execution time, but also we 
-can see, after calculation, what I have done can only save 0.04ns(too small...).
-
-The user space test result is not accurate but at least we can know new code is
-faster then old.
-
-Please tell me if we need to do some thing else, and thanks for your suggestion :)
-
-Regards,
-Michael Wang
-
-
-
-User space code:
-
-void
-account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
-{
-        update_load_add(&cfs_rq->load, se->load.weight);
-        if (1)
-                update_load_add(&cfs_rq->load, se->load.weight);
-        if (1) {
-                add_cfs_task_weight(cfs_rq, se->load.weight);
-                list_add(&se->group_node, &cfs_rq->tasks);
-        }
-        cfs_rq->nr_running++;
-}
-
-void
-account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
-{
-        update_load_sub(&cfs_rq->load, se->load.weight);
-        if (1)
-                update_load_sub(&cfs_rq->load, se->load.weight);
-        if (1) {
-                add_cfs_task_weight(cfs_rq, -se->load.weight);
-                list_del_init(&se->group_node);
-        }
-        cfs_rq->nr_running--;
-}
-
-void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
-                            unsigned long weight)
-{
-        if (1) {
-                account_entity_dequeue(cfs_rq, se);
-        }
-
-        update_load_set(&se->load, weight);
-
-        if (1)
-                account_entity_enqueue(cfs_rq, se);
-}
-
-void reweight_entity_new(struct cfs_rq *cfs_rq, struct sched_entity *se,
-                            unsigned long weight)
-{
-        if (1) {
-                update_load_add(&cfs_rq->load, weight - se->load.weight);
-                if(1)
-                        update_load_add(&cfs_rq->load, weight -
-se->load.weight);
-                if(1)
-                        add_cfs_task_weight(cfs_rq, weight
--se->load.weight);
-        }
-        update_load_set(&se->load, weight);
-}
-
-int main()
-{
-        struct cfs_rq cfsrq;
-        struct sched_entity se;
-        memset(&cfsrq, 0, sizeof(struct cfs_rq));
-        memset(&se, 0, sizeof(struct sched_entity));
-        INIT_LIST_HEAD(&se.group_node);
-        INIT_LIST_HEAD(&cfsrq.tasks);
-        int i = 10000000;
-        while(i) {
-                i--;
-                reweight_entity_new(&cfsrq, &se, 10);
-                //reweight_entity(&cfsrq, &se, 10);
-        }
-}
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
-
-
-
-
+Thanks,
+Davidlohr
 
 
