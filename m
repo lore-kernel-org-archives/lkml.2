@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2BWXSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:18:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58071 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756141Ab2BWXSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932209Ab2BWXSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:18:14 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64110 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089Ab2BWXSN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Feb 2012 18:18:13 -0500
-Message-ID: <4F46C92B.4090508@zytor.com>
-Date: Thu, 23 Feb 2012 15:18:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
-        Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org> <20120222211928.GA4448@kroah.com> <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com> <20120222213253.GA25150@kroah.com> <20120223200905.GA5475@kroah.com> <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com> <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com> <4F46C63C.4040602@zytor.com> <20120223231605.GA15329@kroah.com>
-In-Reply-To: <20120223231605.GA15329@kroah.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
+References: <4F32B776.6070007@gmail.com> <1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 23 Feb 2012 18:17:52 -0500
+Message-ID: <CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
+        vapier@gentoo.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 03:16 PM, Greg Kroah-Hartman wrote:
-> 
-> And a "clean" 3.2.7 doesn't have that problem?
-> 
-> Does the same thing happen in Linus's tree at the moment?
-> 
+Hi
 
-Clean 3.2.7 I don't think has that problem, although of course when I
-run the stress test it fails on other ways so it's hard to 100% rule out.
+This version makes sense to me. and I verified this change don't break
+procps tools.
 
-Linus' tree doesn't have that problems.
+But,
 
-	-hpa
+> +int vm_is_stack(struct task_struct *task,
+> +                             struct vm_area_struct *vma, int in_group)
+> +{
+> +       if (vm_is_stack_for_task(task, vma))
+> +               return 1;
+> +
+> +       if (in_group) {
+> +               struct task_struct *t = task;
+> +               while_each_thread(task, t) {
+
+How protect this loop from task exiting? AFAIK, while_each_thread
+require rcu_read_lock or task_list_lock.
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+> +                       if (vm_is_stack_for_task(t, vma))
+> +                               return 1;
+> +               }
+> +       }
