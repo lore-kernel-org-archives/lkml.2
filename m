@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab2BWGcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 01:32:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37685 "EHLO
+	id S1752630Ab2BWGev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 01:34:51 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59566 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab2BWGck (ORCPT
+	with ESMTP id S1751065Ab2BWGeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 01:32:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.222.132 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Thu, 23 Feb 2012 14:32:19 +0800
+	Thu, 23 Feb 2012 01:34:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.155.231 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
+Date: Thu, 23 Feb 2012 14:34:35 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@linux.intel.com, x86@kernel.org, spock@gentoo.org
-Subject: [PATCH 0/2] x86: add function to check whether BIOS NX and let
- uvesafb work
-Message-ID: <20120223063219.GB3886@udknight>
+Subject: [PATCH 1/2] x86:add function to check BIOS whether NX
+Message-ID: <20120223063435.GA4090@udknight>
 Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
 	Linus Torvalds <torvalds@linux-foundation.org>,
 	linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
@@ -28,25 +27,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-https://lkml.org/lkml/2011/11/17/54 is the first time I
-post the question I meet.At that time, I haven't idea to 
-catch it bug! My computer hang too early, and even seral 
-console doesn't help.
-Recent days I try to compile uvesafb as a module, and insert 
-it when I have a full work kernel, X11, and sshd. Good dog,
-the bug occurs again, and I catch it!
-Here are the two patches that I try to fix it,
-I will appreciate for any comments.Thanks
+Although we don't want any RWX memory in system,
+but there are still some may need it, for example
+uvesafb, so we give them this function to check
+and ajust themself.
 
-attached patches:
-1/2 x86:add function to check BIOS whether NX
-2/2 video:uvesafb: check whether BIOS is NX before try to use PMI
-
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
  arch/x86/include/asm/pci.h |    1 +
  arch/x86/mm/pageattr.c     |    2 +-
  arch/x86/pci/pcbios.c      |   11 +++++++++++
- drivers/video/uvesafb.c    |    6 ++++++
- 4 files changed, 19 insertions(+), 1 deletions(-)
----
+ 3 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index df75d07..31d657b 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -66,6 +66,7 @@ extern unsigned long pci_mem_start;
+ #define PCIBIOS_MIN_CARDBUS_IO	0x4000
+ 
+ extern int pcibios_enabled;
++extern int check_pcibios_enabled(void);
+ void pcibios_config_init(void);
+ struct pci_bus *pcibios_scan_root(int bus);
+ 
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index e1ebde3..b1fb064 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -260,7 +260,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
+ #ifdef CONFIG_PCI_BIOS
+-	if (pcibios_enabled && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
++	if (check_pcibios_enabled() && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
+ #endif
+ 
+diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
+index da8fe05..86e0674 100644
+--- a/arch/x86/pci/pcbios.c
++++ b/arch/x86/pci/pcbios.c
+@@ -28,6 +28,17 @@
+ 
+ int pcibios_enabled;
+ 
++/*
++  Although we don't want any RWX memory in system,
++  but there are still some may need it, so we give
++  them this function to check and ajust themself.
++*/
++int check_pcibios_enabled()
++{
++	return pcibios_enabled;
++}
++EXPORT_SYMBOL(check_pcibios_enabled);
++
+ /* According to the BIOS specification at:
+  * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
+  * restrict the x zone to some pages and make it ro. But this may be
+-- 
+1.7.3.4
+
