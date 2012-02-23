@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2BWQeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:34:10 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35512 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2BWQeJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:34:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.180.107.2 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
+	id S1754653Ab2BWQfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:35:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64130 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab2BWQfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 11:35:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120580758"
+Date: Thu, 23 Feb 2012 17:35:42 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: Fix ACPI conflict check
+Message-ID: <20120223163542.GM24377@sortiz-mobl>
+References: <20120218175423.3f8d6ce6@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <4F4661D6.7030809@gmail.com>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
-	<4F4661D6.7030809@gmail.com>
-Date: Thu, 23 Feb 2012 11:34:08 -0500
-Message-ID: <CAG4AFWa3cs-V+wfL8o6PauTAOtvj8t1E_iSN5r0A8z=Aqzg0tg@mail.gmail.com>
-Subject: Re: Can we move device drivers into user-space?
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120218175423.3f8d6ce6@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 10:57 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
-> On 02/23/2012 12:56 PM, Jidong Xiao wrote:
->>
->> Hi,
->
->
-> Hi,
->
->
->> So is it mainly because the high overhead that prevents the user-space
->> device drivers ideas being accepted in Linux?
->>
->
-> At least UIO drivers are already in Linux kernel, see drivers/uio/.
->
+Hi Jean,
 
-Oh, so does it make sense to move existing device drivers into user
-space? For example, move most of the stuff located under drivers/usb
-into user-space?
+On Sat, Feb 18, 2012 at 05:54:23PM +0100, Jean Delvare wrote:
+> The code is currently always checking the first resource of every
+> device only (several times.) This has been broken since the ACPI check
+> was added in February 2010 in commit
+> 91fedede0338eb6203cdd618d8ece873fdb7c22c.
+> 
+> Fix the check to run on each resource individually, once.
+Thanks for catching this one. Applied to both my for-next and for-linus
+branches.
 
--Jidong
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
