@@ -1,829 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab2BWDmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 22:42:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9575 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab2BWDmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 22:42:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="111035625"
-Date: Wed, 22 Feb 2012 19:41:47 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alex Shi <alex.shi@intel.com>, Felipe Balbi <balbi@ti.com>
-Cc: gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, andiry.xu@amd.com, clemens@ladisch.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] usb: enable pci MSI/MSIX in usb core
-Message-ID: <20120223034147.GD27250@xanatos>
-References: <1329728733-32419-1-git-send-email-alex.shi@intel.com>
- <1329728733-32419-2-git-send-email-alex.shi@intel.com>
- <1329728733-32419-3-git-send-email-alex.shi@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329728733-32419-3-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753835Ab2BWDnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 22:43:45 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:59976 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753386Ab2BWDnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 22:43:43 -0500
+Message-ID: <1329968622.5143.46.camel@joe2Laptop>
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+From: Joe Perches <joe@perches.com>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andrei.emeltchenko.news@gmail.com" 
+	<andrei.emeltchenko.news@gmail.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 22 Feb 2012 19:43:42 -0800
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	 <20120221.144417.1445117001833888214.davem@davemloft.net>
+	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+	 <20120221.154053.2103818562080068513.davem@davemloft.net>
+	 <1329857959.5143.11.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+	 <1329874581.5143.22.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>
+	 <1329875935.5143.24.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 05:05:32PM +0800, Alex Shi wrote:
-> MSI/MSIX is the favorite interrupt for PCIe device. PCIe usb HCD should
-> be used more and more in future, but current USB core still just wants
-> line IRQ, only XHCI usb driver enabled MSI/MSIX.
+On Wed, 2012-02-22 at 02:17 +0000, Allan, Bruce W wrote:
+> Example 1:
+> 	if (((a == b) ||
+> 	     (c == d) ||
+> 	     (e == f)) &&
+> 	    (bool_var))
+> 		baz();
 > 
-> This patch enabled pci MSI/MSIX in usb core for HCD, and removed MSI/MSIX
-> setup code from XHCI since it becomes redundant now.
-> There 3 places need prepare to enable MSI/MSIX in usb driver.
-> 1, set HCD_MSI_FIRST in driver->flags to enable MSI/MSIX.
-> 2, prepare a get_msix_num() to get msix vector numb.
-> 3, prepare msi/msix_irq handler if needed.
+> Example 2:
+> 	if ((!(var & FOO_MASK) &&
+> 	     (a == b)) ||
+> 	    (c == d))
+> 		baz();
 > 
-> XHCI is a good example for this.
+> Example 3:
+> 	if (!((foo & FOO_MASK) &&
+> 	      (bar & BAR_MASK)))
+> 		baz();
 > 
-> Thanks for Sarah's effort on the MSI/MSIX enabling in XHCI. In fact most
-> of MSI/MSIX setup functions reuse from XHCI.
 
-Comments below.
+Hi Bruce. (yay, I got your name right)
 
-Felipe, can you please review this patch for the effects on non-PCI
-hosts?  I think nothing will change, since this patchset just modifies
-the USB core PCI initialization flow, but I need your eyes on this. :)
+Thanks.
 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  drivers/usb/core/hcd-pci.c  |  223 ++++++++++++++++++++++++++++++++++++++++++-
->  drivers/usb/core/hcd.c      |   22 ++++-
->  drivers/usb/host/xhci-pci.c |   16 ++--
->  drivers/usb/host/xhci.c     |  216 +++---------------------------------------
->  drivers/usb/host/xhci.h     |    5 +-
->  include/linux/usb/hcd.h     |   17 ++++
->  6 files changed, 276 insertions(+), 223 deletions(-)
-> 
-> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-> index 81e2c0d..8475b25 100644
-> --- a/drivers/usb/core/hcd-pci.c
-> +++ b/drivers/usb/core/hcd-pci.c
-> @@ -153,6 +153,218 @@ static inline void wait_for_companions(struct pci_dev *d, struct usb_hcd *h) {}
->  
->  /*-------------------------------------------------------------------------*/
->  
-> +static int hcd_free_msix(struct usb_hcd *hcd)
-> +{
-> +	int i;
-> +	struct pci_dev  *pdev = to_pci_dev(hcd->self.controller);
-> +
-> +	if (!hcd->msix_entries) {
-> +		printk(KERN_ERR "No msix entries found!\n");
-> +		return -EINVAL;
-> +	}
-> +	for (i = 0; i < hcd->msix_count; i++)
-> +		if (hcd->msix_entries[i].vector)
-> +			free_irq(hcd->msix_entries[i].vector,
-> +					hcd);
-> +
-> +	pci_disable_msix(pdev);
-> +	kfree(hcd->msix_entries);
-> +	hcd->msix_entries = NULL;
-> +	hcd->msix_enabled = 0;
-> +
-> +	return 0;
-> +}
-> +
-> +static int hcd_free_msi(struct usb_hcd *hcd)
-> +{
-> +	struct pci_dev  *pdev = to_pci_dev(hcd->self.controller);
-> +
-> +	if (pdev->irq > 0 && hcd->irq <0)
-> +		free_irq(pdev->irq, hcd);
-> +
-> +	pci_disable_msi(pdev);
-> +	return 0;
-> +}
-> +
-> +/* Free and disable msi/msix */
-> +void usb_hcd_free_msi_msix(struct usb_hcd *hcd)
-> +{
-> +	if (hcd->msix_entries)
-> +		hcd_free_msix(hcd);
-> +	else
-> +		hcd_free_msi(hcd);
-> +
-> +	return;
-> +}
-> +EXPORT_SYMBOL_GPL(usb_hcd_free_msi_msix);
-> +
-> +void usb_hcd_msix_sync_irqs(struct usb_hcd *hcd)
-> +{
-> +	int i;
-> +	if (hcd->msix_entries) {
-> +		for (i = 0; i < hcd->msix_count; i++)
-> +			synchronize_irq(hcd->msix_entries[i].vector);
-> +	}
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(usb_hcd_msix_sync_irqs);
-> +
-> +/*
-> + * Set up MSI
-> + */
-> +static int hcd_setup_msi(struct pci_dev *pdev, struct usb_hcd *hcd)
-> +{
-> +	int ret;
-> +
-> +	ret = pci_enable_msi(pdev);
-> +	if (ret)
-> +		dev_dbg(&pdev->dev, "failed to allocate MSI entry\n");
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Set up MSI-X
-> + */
-> +static int hcd_setup_msix(struct pci_dev *pdev, struct usb_hcd *hcd)
-> +{
-> +	int i, ret = 0;
-> +
-> +	/*
-> +	 * calculate number of msi-x vectors supported.
-> +	 * Add additional 1 vector to ensure always available interrupt.
-> +	 */
-> +	hcd->msix_count = min((int)num_online_cpus() + 1,
-> +				hcd->driver->get_msix_num(hcd));
-> +
-> +	hcd->msix_entries =
-> +		kmalloc((sizeof(struct msix_entry))*hcd->msix_count,
-> +				GFP_KERNEL);
-> +	if (!hcd->msix_entries) {
-> +		dev_err(&pdev->dev, "Failed to allocate MSI-X entries\n");
-> +		hcd->msix_count = 0;
-> +		return -ENOMEM;
-> +	}
-> +
-> +	for (i = 0; i < hcd->msix_count; i++) {
-> +		hcd->msix_entries[i].entry = i;
-> +		hcd->msix_entries[i].vector = 0;
-> +	}
-> +
-> +	ret = pci_enable_msix(pdev, hcd->msix_entries, hcd->msix_count);
-> +	if (ret) {
-> +		dev_dbg(&pdev->dev, "Failed to enable MSI-X\n");
-> +		goto free_entries;
-> +	}
-> +
-> +	return ret;
-> +
-> +free_entries:
-> +	kfree(hcd->msix_entries);
-> +	hcd->msix_entries = NULL;
-> +	hcd->msix_count = 0;
-> +	return ret;
-> +}
-> +
-> +/* Device for a quirk */
-> +#define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
-> +#define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
+How about testing this?
 
-This PCI device and vendor ID is now used in two drivers (xhci and USB
-core).  Please create a separate patch to add this ID to the pci_ids.h
-file, and remove the reference here and in the xHCI driver.
+It allows all spaces or appropriate tabs for indentation,
+and I believe it works OK.
 
-> +
-> +/* Check for buggy HCD devices, and driver's expectation for MSI.
-> + * Now, only xhci driver want it by HCD_MSI_FIRST setting. Other driver
-> + * like ehci/uhci can follow this setting, if they want.
-> + */
-> +static int hcd_no_msi(struct pci_dev *pdev, struct usb_hcd *hcd)
-> +{
-> +	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
-> +			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
-> +
-> +		/* Fresco Logic confirms: all revisions of this chip do not
-> +		 * support MSI, even though some of them claim to in their PCI
-> +		 * capabilities.
-> +		 */
-> +		dev_dbg(&pdev->dev, "QUIRK: Fresco Logic revision %u "
-> +				"has broken MSI implementation\n",
-> +				pdev->revision);
-> +		return 1;
-> +	}
-> +	if (!(hcd->driver->flags & HCD_MSI_FIRST))
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +/* setup msi/msix interrupts. if fails, fallback to line irq */
-> +static int hcd_setup_int(struct pci_dev *pdev, struct usb_hcd *hcd)
-> +{
-> +	int ret;
-> +
-> +	hcd->irq = -1;
-> +
-> +	if (!hcd_no_msi(pdev, hcd)) {
+---
+ scripts/checkpatch.pl |   65 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 63 insertions(+), 2 deletions(-)
 
-Why don't you rename hcd_no_msi() to hcd_supports_msi() and remove the
-negation of the return value?
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 89d24b3..7a0514b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -330,10 +330,11 @@ sub build_types {
+ }
+ build_types();
+ 
+-our $match_balanced_parentheses = qr/(\((?:[^\(\)]+|(-1))*\))/;
++our $balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
++our $lval_parens = qr/(\((?:[^\(\)]+|(-1))*\))/;
+ 
+ our $Typecast	= qr{\s*(\(\s*$NonptrType\s*\)){0,1}\s*};
+-our $LvalOrFunc	= qr{($Lval)\s*($match_balanced_parentheses{0,1})\s*};
++our $LvalOrFunc	= qr{($Lval)\s*($lval_parens{0,1})\s*};
+ our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
+ 
+ sub deparenthesize {
+@@ -1330,6 +1331,36 @@ sub check_absolute_file {
+ 	}
+ }
+ 
++sub pos_last_openparen {
++	my ($line) = @_;
++
++	my $pos = 0;
++
++	my $opens = $line =~ tr/\(/\(/;
++	my $closes = $line =~ tr/\)/\)/;
++
++	my $last_openparen = 0;
++
++	if (($opens == 0) || ($closes >= $opens)) {
++		return -1;
++	}
++
++	my $len = length($line);
++
++	for ($pos = 0; $pos < $len; $pos++) {
++	    my $string = substr($line, $pos);
++	    if ($string =~ /^($FuncArg|$balanced_parens)/) {
++		    $pos += length($1);
++	    }
++
++	    if (substr($line, $pos, 1) eq '(') {
++		$last_openparen = $pos;
++	    }
++	}
++
++	return $last_openparen + 1;
++}
++
+ sub process {
+ 	my $filename = shift;
+ 
+@@ -1783,6 +1814,36 @@ sub process {
+ 			     "please, no space before tabs\n" . $herevet);
+ 		}
+ 
++# check for && or || at the start of a line
++		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
++			CHK("LOGICAL_CONTINUATIONS",
++			    "Logical continuations should be on the previous line\n" . $hereprev);
++		}
++
++# check multi-line statement indentation matches previous line
++		if ($prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
++			$prevline =~ /^\+(\t*)(.*)$/;
++			my $oldindent = $1;
++			my $rest = $2;
++
++			my $pos = pos_last_openparen($rest);
++			if ($pos >= 0) {
++				$line =~ /^\+([ \t]*)/;
++				my $newindent = $1;
++
++				my $goodtabindent = $oldindent .
++					"\t" x ($pos / 8) .
++					" "  x ($pos % 8);
++				my $goodspaceindent = $oldindent . " "  x $pos;
++
++				if ($newindent ne $goodtabindent &&
++				    $newindent ne $goodspaceindent) {
++					CHK("PARENTHESIS_ALIGNMENT",
++					    "Alignment should match open parenthesis\n" . $hereprev);
++				}
++			}
++		}
++
+ # check for spaces at the beginning of a line.
+ # Exceptions:
+ #  1) within comments
 
-> +
-> +		ret = hcd_setup_msix(pdev, hcd);
-> +		if (ret)
-> +			/* fall back to msi*/
-> +			ret = hcd_setup_msi(pdev, hcd);
-> +
-> +		if (!ret)
-> +			/* hcd->irq is -1, we have MSI */
-> +			return 0;
-> +	}
-> +
-> +	if (!pdev->irq) {
-> +		dev_err(&pdev->dev, "No msi or line irq found!\n");
-> +		return -1;
-> +	}
-> +	/* fallback to line irq */
-> +	hcd->irq = pdev->irq;
-> +	return 0;
-> +}
-> +
-> +int usb_hcd_request_msi_msix_irqs(struct usb_hcd *hcd, unsigned int irqnum,
-> +					unsigned long irqflags)
-> +{
-> +	int retval = 1;
-> +	if (hcd->msix_entries && hcd->driver->msix_irq) {
-> +		int i;
-> +		/* register hc_driver's msix_irq handler */
-> +		for (i = 0; i < hcd->msix_count; i++) {
-> +			retval = request_irq(hcd->msix_entries[i].vector,
-> +					(irq_handler_t)hcd->driver->msix_irq,
-> +					0, hcd->driver->description, hcd);
 
-I really think you need to allow the host controller driver to set
-different pointers for the msix data pointer.  It's something that we
-need to figure out, so that we can have the infrastructure in place for
-multiple event rings.
-
-I'm not sure whether the new get MSIX count needs to allow the xHCI
-driver to return an array of pointers, or if the driver can modify the
-irq pointer later?  I don't think you can modify the irq data pointer
-after it's been requested (that would lead to all kinds of race
-conditions, I think).
-
-It's probably better to allow the xHCI driver to pass this function the
-pointers it needs for each MSI-X vector.  You'll always call
-usb_hcd_request_msi_msix_irqs() after you call xhci_init(), correct?  At
-that point, we should have allocated the multiple event rings, so it
-should be easy to pass the pointers to this function.
-
-> +			if (retval) {
-> +				hcd_free_msix(hcd);
-> +				break;
-> +			}
-> +		}
-> +		if (i == hcd->msix_count)
-> +			hcd->msix_enabled = 1;
-> +	} else if (hcd->irq == -1 && hcd->driver->msi_irq) {
-> +		/* register hc_driver's msi_irq handler */
-> +		retval = request_irq(irqnum,
-> +					(irq_handler_t)hcd->driver->msi_irq,
-> +					0, hcd->driver->description, hcd);
-> +		if (retval)
-> +			hcd_free_msi(hcd);
-> +	}
-> +
-> +	return retval;
-> +}
-> +EXPORT_SYMBOL_GPL(usb_hcd_request_msi_msix_irqs);
-> +
-> +/* setup msi/msix interrupts and requestion irqs for them */
-> +int usb_hcd_register_msi_msix_irqs(struct usb_hcd *hcd)
-> +{
-> +	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
-> +	int ret = -1;
-> +
-> +	if (!hcd_setup_int(pdev, hcd))
-> +		ret = usb_hcd_request_msi_msix_irqs(hcd,
-> +				pdev->irq, IRQF_SHARED);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(usb_hcd_register_msi_msix_irqs);
-> +
->  /* configure so an HC device and id are always provided */
->  /* always called with process context; sleeping is OK */
->  
-> @@ -187,10 +399,8 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  		return -ENODEV;
->  	dev->current_state = PCI_D0;
->  
-> -	/* The xHCI driver supports MSI and MSI-X,
-> -	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-> -	 */
-> -	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
-> +	/* skip irq check if hcd wants MSI firstly. */
-> +	if (!(driver->flags & HCD_MSI_FIRST) && !dev->irq) {
->  		dev_err(&dev->dev,
->  			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
->  			pci_name(dev));
-> @@ -245,6 +455,11 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  
->  	pci_set_master(dev);
->  
-> +	/* try enable MSI, if fail, seek line irq */
-> +	retval = hcd_setup_int(dev, hcd);
-> +	if (retval != 0)
-> +		goto unmap_registers;
-> +
->  	retval = usb_add_hcd(hcd, dev->irq, IRQF_SHARED);
->  	if (retval != 0)
->  		goto unmap_registers;
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index e128232..579cbd3 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -2322,7 +2322,7 @@ int usb_hcd_is_primary_hcd(struct usb_hcd *hcd)
->  }
->  EXPORT_SYMBOL_GPL(usb_hcd_is_primary_hcd);
->  
-> -static int usb_hcd_request_irqs(struct usb_hcd *hcd,
-> +static int usb_hcd_request_default_irqs(struct usb_hcd *hcd,
->  		unsigned int irqnum, unsigned long irqflags)
->  {
->  	int retval;
-> @@ -2362,6 +2362,20 @@ static int usb_hcd_request_irqs(struct usb_hcd *hcd,
->  	return 0;
->  }
->  
-> +int usb_hcd_request_irqs(struct usb_hcd *hcd, unsigned int irqnum,
-> +		unsigned long irqflags)
-> +{
-> +	int retval = 1;
-> +
-> +#ifdef CONFIG_PCI
-> +	retval = usb_hcd_request_msi_msix_irqs(hcd, irqnum, irqflags);
-> +#endif
-> +	if (retval)
-> +		retval = usb_hcd_request_default_irqs(hcd, irqnum, irqflags);
-> +
-> +	return retval;
-> +}
-> +
->  /**
->   * usb_add_hcd - finish generic HCD structure initialization and register
->   * @hcd: the usb_hcd structure to initialize
-> @@ -2447,10 +2461,8 @@ int usb_add_hcd(struct usb_hcd *hcd,
->  			&& device_can_wakeup(&hcd->self.root_hub->dev))
->  		dev_dbg(hcd->self.controller, "supports USB remote wakeup\n");
->  
-> -	/* enable irqs just before we start the controller,
-> -	 * if the BIOS provides legacy PCI irqs.
-> -	 */
-> -	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
-> +	/* enable irqs just before we start the controller */
-> +	if (usb_hcd_is_primary_hcd(hcd)) {
->  		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
->  		if (retval)
->  			goto err_request_irq;
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index ef98b38..39be795 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -64,14 +64,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
->  			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
->  					" endpoint cmd after reset endpoint\n");
->  		}
-> -		/* Fresco Logic confirms: all revisions of this chip do not
-> -		 * support MSI, even though some of them claim to in their PCI
-> -		 * capabilities.
-> -		 */
-> -		xhci->quirks |= XHCI_BROKEN_MSI;
-> -		xhci_dbg(xhci, "QUIRK: Fresco Logic revision %u "
-> -				"has broken MSI implementation\n",
-> -				pdev->revision);
->  	}
->  
->  	if (pdev->vendor == PCI_VENDOR_ID_NEC)
-> @@ -124,6 +116,7 @@ static int xhci_pci_setup(struct usb_hcd *hcd)
->  	return retval;
->  }
->  
-> +
-
-Don't add spaces here.
-
->  /*
->   * We need to register our own PCI probe function (instead of the USB core's
->   * function) in order to create a second roothub under xHCI.
-> @@ -136,6 +129,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  	struct usb_hcd *hcd;
->  
->  	driver = (struct hc_driver *)id->driver_data;
-> +
-
-Or here.
-
->  	/* Register the USB 2.0 roothub.
->  	 * FIXME: USB core must know to register the USB 2.0 roothub first.
->  	 * This is sort of silly, because we could just set the HCD driver flags
-> @@ -243,13 +237,17 @@ static const struct hc_driver xhci_pci_hc_driver = {
->  	 * generic hardware linkage
->  	 */
->  	.irq =			xhci_irq,
-> -	.flags =		HCD_MEMORY | HCD_USB3 | HCD_SHARED,
-> +	.msi_irq =		xhci_msi_irq,
-> +	.msix_irq =		xhci_msi_irq,
-> +	.flags =		HCD_MEMORY | HCD_USB3 | HCD_SHARED |
-> +				HCD_MSI_FIRST,
->  
->  	/*
->  	 * basic lifecycle operations
->  	 */
->  	.reset =		xhci_pci_setup,
->  	.start =		xhci_run,
-> +	.get_msix_num =		xhci_get_msix_num,
->  #ifdef CONFIG_PM
->  	.pci_suspend =          xhci_pci_suspend,
->  	.pci_resume =           xhci_pci_resume,
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index c939f5f..95dc48f 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -176,210 +176,24 @@ int xhci_reset(struct xhci_hcd *xhci)
->  }
->  
->  #ifdef CONFIG_PCI
-> -static int xhci_free_msi(struct xhci_hcd *xhci)
-> -{
-> -	int i;
-> -
-> -	if (!xhci->msix_entries)
-> -		return -EINVAL;
-> -
-> -	for (i = 0; i < xhci->msix_count; i++)
-> -		if (xhci->msix_entries[i].vector)
-> -			free_irq(xhci->msix_entries[i].vector,
-> -					xhci_to_hcd(xhci));
-> -	return 0;
-> -}
-> -
-> -/*
-> - * Set up MSI
-> - */
-> -static int xhci_setup_msi(struct xhci_hcd *xhci)
-> -{
-> -	int ret;
-> -	struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
-> -
-> -	ret = pci_enable_msi(pdev);
-> -	if (ret) {
-> -		xhci_dbg(xhci, "failed to allocate MSI entry\n");
-> -		return ret;
-> -	}
-> -
-> -	ret = request_irq(pdev->irq, (irq_handler_t)xhci_msi_irq,
-> -				0, "xhci_hcd", xhci_to_hcd(xhci));
-> -	if (ret) {
-> -		xhci_dbg(xhci, "disable MSI interrupt\n");
-> -		pci_disable_msi(pdev);
-> -	}
-> -
-> -	return ret;
-> -}
-> -
-> -/*
-> - * Free IRQs
-> - * free all IRQs request
-> - */
-> -static void xhci_free_irq(struct xhci_hcd *xhci)
-> -{
-> -	struct pci_dev *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
-> -	int ret;
-> -
-> -	/* return if using legacy interrupt */
-> -	if (xhci_to_hcd(xhci)->irq >= 0)
-> -		return;
-> -
-> -	ret = xhci_free_msi(xhci);
-> -	if (!ret)
-> -		return;
-> -	if (pdev->irq >= 0)
-> -		free_irq(pdev->irq, xhci_to_hcd(xhci));
-> -
-> -	return;
-> -}
-> -
-> -/*
-> - * Set up MSI-X
-> - */
-> -static int xhci_setup_msix(struct xhci_hcd *xhci)
-> -{
-> -	int i, ret = 0;
-> -	struct usb_hcd *hcd = xhci_to_hcd(xhci);
-> -	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
-> -
-> -	/*
-> -	 * calculate number of msi-x vectors supported.
-> -	 * - HCS_MAX_INTRS: the max number of interrupts the host can handle,
-> -	 *   with max number of interrupters based on the xhci HCSPARAMS1.
-> -	 * - num_online_cpus: maximum msi-x vectors per CPUs core.
-> -	 *   Add additional 1 vector to ensure always available interrupt.
-> -	 */
-> -	xhci->msix_count = min(num_online_cpus() + 1,
-> -				HCS_MAX_INTRS(xhci->hcs_params1));
-> -
-> -	xhci->msix_entries =
-> -		kmalloc((sizeof(struct msix_entry))*xhci->msix_count,
-> -				GFP_KERNEL);
-> -	if (!xhci->msix_entries) {
-> -		xhci_err(xhci, "Failed to allocate MSI-X entries\n");
-> -		return -ENOMEM;
-> -	}
-> -
-> -	for (i = 0; i < xhci->msix_count; i++) {
-> -		xhci->msix_entries[i].entry = i;
-> -		xhci->msix_entries[i].vector = 0;
-> -	}
-> -
-> -	ret = pci_enable_msix(pdev, xhci->msix_entries, xhci->msix_count);
-> -	if (ret) {
-> -		xhci_dbg(xhci, "Failed to enable MSI-X\n");
-> -		goto free_entries;
-> -	}
-> -
-> -	for (i = 0; i < xhci->msix_count; i++) {
-> -		ret = request_irq(xhci->msix_entries[i].vector,
-> -				(irq_handler_t)xhci_msi_irq,
-> -				0, "xhci_hcd", xhci_to_hcd(xhci));
-> -		if (ret)
-> -			goto disable_msix;
-> -	}
-> -
-> -	hcd->msix_enabled = 1;
-> -	return ret;
-> -
-> -disable_msix:
-> -	xhci_dbg(xhci, "disable MSI-X interrupt\n");
-> -	xhci_free_irq(xhci);
-> -	pci_disable_msix(pdev);
-> -free_entries:
-> -	kfree(xhci->msix_entries);
-> -	xhci->msix_entries = NULL;
-> -	return ret;
-> -}
-> -
-> -/* Free any IRQs and disable MSI-X */
-> -static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-> -{
-> -	struct usb_hcd *hcd = xhci_to_hcd(xhci);
-> -	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
-> -
-> -	xhci_free_irq(xhci);
-> -
-> -	if (xhci->msix_entries) {
-> -		pci_disable_msix(pdev);
-> -		kfree(xhci->msix_entries);
-> -		xhci->msix_entries = NULL;
-> -	} else {
-> -		pci_disable_msi(pdev);
-> -	}
-> -
-> -	hcd->msix_enabled = 0;
-> -	return;
-> -}
->  
->  static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
->  {
-> -	int i;
-> -
-> -	if (xhci->msix_entries) {
-> -		for (i = 0; i < xhci->msix_count; i++)
-> -			synchronize_irq(xhci->msix_entries[i].vector);
-> -	}
-> +	usb_hcd_msix_sync_irqs(xhci_to_hcd(xhci));
->  }
->  
-> -static int xhci_try_enable_msi(struct usb_hcd *hcd)
-> +/* called in interrupt setup during pci probe() */
-> +int xhci_get_msix_num(struct usb_hcd *hcd)
->  {
->  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-> -	struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
-> -	int ret;
-> -
-> -	/*
-> -	 * Some Fresco Logic host controllers advertise MSI, but fail to
-> -	 * generate interrupts.  Don't even try to enable MSI.
-> -	 */
-> -	if (xhci->quirks & XHCI_BROKEN_MSI)
-> -		return 0;
-> -
-> -	/* unregister the legacy interrupt */
-> -	if (hcd->irq)
-> -		free_irq(hcd->irq, hcd);
-> -	hcd->irq = -1;
->  
-> -	ret = xhci_setup_msix(xhci);
-> -	if (ret)
-> -		/* fall back to msi*/
-> -		ret = xhci_setup_msi(xhci);
-> -
-> -	if (!ret)
-> -		/* hcd->irq is -1, we have MSI */
-> -		return 0;
-> -
-> -	if (!pdev->irq) {
-> -		xhci_err(xhci, "No msi-x/msi found and no IRQ in BIOS\n");
-> -		return -EINVAL;
-> -	}
-> -
-> -	/* fall back to legacy interrupt*/
-> -	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
-> -			hcd->irq_descr, hcd);
-> -	if (ret) {
-> -		xhci_err(xhci, "request interrupt %d failed\n",
-> -				pdev->irq);
-> -		return ret;
-> -	}
-> -	hcd->irq = pdev->irq;
-> -	return 0;
-> +	/* danger: xhci may be null, but it's useless in xhci_readl() now */
-> +	return HCS_MAX_INTRS(xhci_readl(xhci,
-> +			&((struct xhci_cap_regs *)hcd->regs)->hcs_params1));
->  }
->  
->  #else
->  
-> -static int xhci_try_enable_msi(struct usb_hcd *hcd)
-> -{
-> -	return 0;
-> -}
-> -
-> -static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-> -{
-> -}
-> -
->  static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
->  {
->  }
-> @@ -411,7 +225,6 @@ int xhci_init(struct usb_hcd *hcd)
->  
->  	return retval;
->  }
-> -
->  /*-------------------------------------------------------------------------*/
->  
->  
-> @@ -497,7 +310,6 @@ int xhci_run(struct usb_hcd *hcd)
->  {
->  	u32 temp;
->  	u64 temp_64;
-> -	int ret;
->  	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
->  
->  	/* Start the xHCI host controller running only after the USB 2.0 roothub
-> @@ -510,10 +322,6 @@ int xhci_run(struct usb_hcd *hcd)
->  
->  	xhci_dbg(xhci, "xhci_run\n");
->  
-> -	ret = xhci_try_enable_msi(hcd);
-> -	if (ret)
-> -		return ret;
-> -
->  #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
->  	init_timer(&xhci->event_ring_timer);
->  	xhci->event_ring_timer.data = (unsigned long) xhci;
-> @@ -609,7 +417,7 @@ void xhci_stop(struct usb_hcd *hcd)
->  	xhci_reset(xhci);
->  	spin_unlock_irq(&xhci->lock);
->  
-> -	xhci_cleanup_msix(xhci);
-> +	usb_hcd_free_msi_msix(hcd);
->  
->  #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
->  	/* Tell the event ring poll function not to reschedule */
-> @@ -651,7 +459,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
->  	xhci_halt(xhci);
->  	spin_unlock_irq(&xhci->lock);
->  
-> -	xhci_cleanup_msix(xhci);
-> +	usb_hcd_free_msi_msix(hcd);
->  
->  	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
->  		    xhci_readl(xhci, &xhci->op_regs->status));
-> @@ -853,7 +661,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
->  		xhci_halt(xhci);
->  		xhci_reset(xhci);
->  		spin_unlock_irq(&xhci->lock);
-> -		xhci_cleanup_msix(xhci);
-> +		usb_hcd_free_msi_msix(hcd);
->  
->  #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
->  		/* Tell the event ring poll function not to reschedule */
-> @@ -888,7 +696,11 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
->  		if (retval)
->  			return retval;
->  		xhci_dbg(xhci, "Start the primary HCD\n");
-> -		retval = xhci_run(hcd->primary_hcd);
-> +		if (dev_is_pci(hcd->self.controller))
-> +			retval = usb_hcd_register_msi_msix_irqs(
-> +						hcd->primary_hcd);
-
-Why not change this function to take a count of msix vectors and
-pointers for data?  Then you don't need the new usb_hcd driver method
-for getting the msix count.
-
-> +		if (!retval)
-> +			retval = xhci_run(hcd->primary_hcd);
->  		if (!retval) {
->  			xhci_dbg(xhci, "Start the secondary HCD\n");
->  			retval = xhci_run(secondary_hcd);
-> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-> index fb99c83..8d511dd 100644
-> --- a/drivers/usb/host/xhci.h
-> +++ b/drivers/usb/host/xhci.h
-> @@ -1388,9 +1388,6 @@ struct xhci_hcd {
->  	int		page_size;
->  	/* Valid values are 12 to 20, inclusive */
->  	int		page_shift;
-> -	/* msi-x vectors */
-> -	int		msix_count;
-> -	struct msix_entry	*msix_entries;
->  	/* data structures */
->  	struct xhci_device_context_array *dcbaa;
->  	struct xhci_ring	*cmd_ring;
-> @@ -1643,9 +1640,11 @@ void xhci_free_command(struct xhci_hcd *xhci,
->  /* xHCI PCI glue */
->  int xhci_register_pci(void);
->  void xhci_unregister_pci(void);
-> +int xhci_get_msix_num(struct usb_hcd *hcd);
->  #else
->  static inline int xhci_register_pci(void) { return 0; }
->  static inline void xhci_unregister_pci(void) {}
-> +static inline int xhci_get_msix_num(struct usb_hcd *hcd) { return 0; }
->  #endif
->  
->  /* xHCI host controller glue */
-> diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-> index b2f62f3..5253c02 100644
-> --- a/include/linux/usb/hcd.h
-> +++ b/include/linux/usb/hcd.h
-> @@ -22,6 +22,7 @@
->  #ifdef __KERNEL__
->  
->  #include <linux/rwsem.h>
-> +#include <linux/pci.h>		/* for struct msix_entry */
->  
->  #define MAX_TOPO_LEVEL		6
->  
-> @@ -133,6 +134,12 @@ struct usb_hcd {
->  	u64			rsrc_len;	/* memory/io resource length */
->  	unsigned		power_budget;	/* in mA, 0 = no limit */
->  
-> +#ifdef CONFIG_PCI
-> +	/* msi-x vectors */
-> +	int			msix_count;
-> +	struct msix_entry	*msix_entries;
-> +#endif
-> +
->  	/* bandwidth_mutex should be taken before adding or removing
->  	 * any new bus bandwidth constraints:
->  	 *   1. Before adding a configuration for a new device.
-> @@ -205,11 +212,14 @@ struct hc_driver {
->  
->  	/* irq handler */
->  	irqreturn_t	(*irq) (struct usb_hcd *hcd);
-> +	irqreturn_t	(*msi_irq) (int irq, struct usb_hcd *hcd);
-> +	irqreturn_t	(*msix_irq) (int irq, struct usb_hcd *hcd);
->  
->  	int	flags;
->  #define	HCD_MEMORY	0x0001		/* HC regs use memory (else I/O) */
->  #define	HCD_LOCAL_MEM	0x0002		/* HC needs local memory */
->  #define	HCD_SHARED	0x0004		/* Two (or more) usb_hcds share HW */
-> +#define	HCD_MSI_FIRST	0x0008		/* Try to get MSI first, PCI only */
->  #define	HCD_USB11	0x0010		/* USB 1.1 */
->  #define	HCD_USB2	0x0020		/* USB 2.0 */
->  #define	HCD_USB3	0x0040		/* USB 3.0 */
-> @@ -218,6 +228,7 @@ struct hc_driver {
->  	/* called to init HCD and root hub */
->  	int	(*reset) (struct usb_hcd *hcd);
->  	int	(*start) (struct usb_hcd *hcd);
-> +	int	(*get_msix_num) (struct usb_hcd *hcd);
->  
->  	/* NOTE:  these suspend/resume calls relate to the HC as
->  	 * a whole, not just the root hub; they're for PCI bus glue.
-> @@ -393,6 +404,12 @@ extern int usb_hcd_pci_probe(struct pci_dev *dev,
->  extern void usb_hcd_pci_remove(struct pci_dev *dev);
->  extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
->  
-> +extern void usb_hcd_free_msi_msix(struct usb_hcd *hcd);
-> +extern void usb_hcd_msix_sync_irqs(struct usb_hcd *hcd);
-> +extern int usb_hcd_request_msi_msix_irqs(struct usb_hcd *hcd,
-> +		unsigned int irqnum, unsigned long irqflags);
-> +extern int usb_hcd_register_msi_msix_irqs(struct usb_hcd *hcd);
-> +
->  #ifdef CONFIG_PM_SLEEP
->  extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
->  #endif
-> -- 
-> 1.6.3.3
-> 
