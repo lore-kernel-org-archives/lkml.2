@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab2BWSrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:47:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52812 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756634Ab2BWSrP (ORCPT
+	id S1756670Ab2BWSsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:48:30 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:36072 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756012Ab2BWSs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:47:15 -0500
-Date: Thu, 23 Feb 2012 12:47:01 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Lennart Poettering <lennart@poettering.net>, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120223184701.GA4394@vostro.hallyn.com>
-References: <20120221211938.GE12236@google.com>
- <20120221212106.GF12236@google.com>
- <4F44EEE4.2000809@parallels.com>
- <20120223074526.GA15835@mail.hallyn.com>
- <20120223172915.GC22536@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223172915.GC22536@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Feb 2012 13:48:28 -0500
+Date: Thu, 23 Feb 2012 10:48:23 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Hao, Xudong" <xudong.hao@intel.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: Re: [PATCH] Quirk for IVB graphics FLR errata
+Message-ID: <20120223104823.7bac1916@jbarnes-desktop>
+In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FCD089A@SHSMSX102.ccr.corp.intel.com>
+References: <403610A45A2B5242BD291EDAE8B37D300FCD089A@SHSMSX102.ccr.corp.intel.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/P4Zy5anbcafpsmzP/Y_eDUO"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> Hey, Serge.
-> 
-> On Thu, Feb 23, 2012 at 07:45:26AM +0000, Serge E. Hallyn wrote:
-> > > >>Documentation/cgroups.txt seems to be written with this consideration
-> > > >>on mind.  It's giving an example of applying limits accoring to two
-> > > >>orthogonal categorizations - user groups (profressors, students...)
-> > > >>and applications (WWW, NFS...).  While it may sound like a valid use
-> > > >>case, I'm very skeptical how useful or common mixing such orthogonal
-> > > >>categorizations in a single setup would be.
-> > 
-> > My first inclination is to agree, but counterexamples do come to mind.
-> > 
-> > I could imagine a site saying "users can run (X) (say, ftpds), but the
-> > memory consumed by all those ftpds must not be > 10% total RAM".  At
-> > the same time, they may run several apaches but want them all locked to
-> > two of the cpus.
-> 
-> Orthogonal hierarchies is a feature and it does allow use cases which
+--Sig_/P4Zy5anbcafpsmzP/Y_eDUO
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Of course.  Note that while I used myself in the examples, I'm not
-opposed to any of what you've suggested.  Just trying to raise
-discussion.
+On Mon, 20 Feb 2012 02:27:25 +0000
+"Hao, Xudong" <xudong.hao@intel.com> wrote:
 
-> aren't possible to support otherwise.  It's not too difficult to come
-> up with a use case crafted to exploit the feature.  The main thing is
-> whether the added functionality justifies the complexity and other
+> For IvyBridge Mobile platform, a system hang may occur if a FLR(Function =
+Level Reset) is asserted to internal graphics.
+>=20
+> This quirk patch is workaround for the IVB FLR errata issue.
+>=20
 
-And (somehow) I think we need to get input from the users - the ones not
-on lkml.  There is an end-user summit coming up, right?  Perhaps this
-question should be floated there?
+Can you name the magic constants and offsets and document what the FLR
+quirk is actually trying to do?  IIRC it had something to do with
+waiting for the PCH acknowledge for the display portion of the reset...
 
-> disadvantages described earlier in the thread.  To me, the scenarios
-> seem not realistic, common place or essential enough.
-> 
-> Also, it's not like there's only one problem to solve these issues.
-> It may not be exactly the same thing but that's just part of the
-> trade-off game we all play.
-> 
-> > It might be worth a formal description of the new limits on use cases
-> > such changes (both dropping support for orthogonal cgroups, and limiting
-> > cgroups hierarchies to a mirror pstrees, separately) would bring.
-> 
-> The word "formal" scares me. :)
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-The upside would be a clear explanation of what userspace can do to
-work around the more limited kernel functionality.
+--Sig_/P4Zy5anbcafpsmzP/Y_eDUO
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-> > To me personally the hierarchy limitation is more worrying.  There have
-> > been times when I've simply created cgroups for 'compile' and 'image
-> > build', with particular cpu and memory limits.  If I started a second
-> > simultaneous compile, I'd want both compiles confined together.  (That's
-> > not to say the simplification might not be worth it, just bringing up
-> > the other side)
-> 
-> Yeah, that's an interesting point, but wouldn't something like the
-> following work too?
-> 
-> 1. create_cgroup --cpu 40% --mem 20% screen
-> 2. tell screen to create as many build screens you want
-> 3. issue builds from those screens
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-That works for a single user.  Gets more complicated if you have multiple
-users but still want to confine compiles differently from other workloads.
+iQIcBAEBAgAGBQJPRon3AAoJEIEoDkX4Qk9hzTAQANAijXxvHI5LTAkZbRjA2kYv
+TL22RD4yujLxWchmUmuB8E+w8s11/jiPFDp2F5m4WvMU++jtyxXHD8XghXtqVfp6
+UuUuAllVfzUlB/+IXOmLE7b7hWvLYLta6iFvUdfzC06kSZfLNnXpo6WJfWDKocgv
+v5Ia0uXsIuxDjkBbDCydKm6o6qSeOxj+vEKpsiFFPFeCXn6zXq3h++em4YGl5dUG
+fMP9DarYyXL7HSp1sL5bYJYnYEj+BUPVBf5uFAs2LA6E2XyV5apGQzJiZ1gBG34W
+xt/uwmtpUVpBB5PQmZJ7byi5/YuDuPOXyeTXK7qKaF2OvyDE/bpRBSzN+mzFKM6X
+U7iyA/R0h9UyIIefltClXwK6pamSoR3xSm206rXWbGUGdG97fBeHs1W9fsqcyuoC
+DtEpFvSY1Su+RQKZD1MVW+nxj+jtuT4SoT1MNPsCdwnCKRV+7qMkQhYwB5IdVq1g
+tAd/eRPjRmA3/oAJ63igGZHULoqqBP7YHhmzc3c2rezBUNakS1CtdBgXrviM/2zL
+jQFajNbc+kTDZX8oJsjYN43hu/lJ5/A+/gUZ8MyAPZGfGt9OEAAhd8Ig7ZQBVq45
+cMgJMfJFIb5n8tD3D3XYaXisKsA7HnTk5ScSTZ3w3/XuR2A3fsg+6djLqQkKC6jS
++xVErWz+PJjuE0uEbelV
+=O8mZ
+-----END PGP SIGNATURE-----
 
-Still, we now have 'namespace attach', so even if we generally shadow
-pstree with the cgroups, perhaps we could implement a cgroup transfer
-much more cleanly than the current cgroup attach stuff.
-
-Or, maybe it's just not something users would deem worthwhile.  *I*
-will be fine either way.
-
-> To me, something like the above seems far more consistent with
-> everything else we have on the system than moving tasks around by
-> echoing pids to some sysfs file.
-
--serge
+--Sig_/P4Zy5anbcafpsmzP/Y_eDUO--
