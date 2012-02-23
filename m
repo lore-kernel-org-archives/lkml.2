@@ -1,29 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab2BWAte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 19:49:34 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:35938 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab2BWAtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 19:49:33 -0500
-Message-Id: <20120223004930.817124691@gulag1.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Wed, 22 Feb 2012 18:49:30 -0600
-From: Mike Travis <travis@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, David Woodhouse <dwmw2@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>, Daniel Rahn <drahn@suse.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jack Steiner <steiner@sgi.com>, Tony Ernst <tee@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] Updates for SGI UV1/UV2 systems...
+	id S1754536Ab2BWAvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 19:51:05 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39284 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab2BWAvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 19:51:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mcgrathr@google.com designates 10.229.111.228 as permitted sender) smtp.mail=mcgrathr@google.com; dkim=pass header.i=mcgrathr@google.com
+MIME-Version: 1.0
+In-Reply-To: <4F45887A.5010809@zytor.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+ <1329845435-2313-7-git-send-email-wad@chromium.org> <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+ <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+ <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+ <CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+ <CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
+ <CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com> <4F45887A.5010809@zytor.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Wed, 22 Feb 2012 16:50:40 -0800
+Message-ID: <CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 22, 2012 at 4:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Can we really introduce force-kill semantics for a POSIX-defined signal?
+> Other user space programs might use it for other purposes.
 
-- Fix arbitrary limitation of number of IOMMU (from 64 to MAX_IO_APICS [128])
+The semantics are based on how the signal was generated, not what signal
+number it was.  The only thing that depends on the signal number is
+SYNCHRONOUS_MASK, which just determines in which order pending signals are
+dequeued (POSIX says it may be any order).  We only have that so your state
+doesn't get unhelpfully warped to another signal handler entry point
+(including fiddling the stack) before you dump core.
 
-- Fix IOMMU identity mapping to not map a PCI device that does not to DMA.
-
--- 
+No use of SIGSYS is specified by POSIX at all, of course, since "system
+call" is an implementation concept below the level POSIX specifies.
