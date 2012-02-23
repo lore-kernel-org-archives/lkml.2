@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2BWL1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 06:27:03 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37843 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932165Ab2BWL1A (ORCPT
+	id S1755703Ab2BWL1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 06:27:38 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:41709 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203Ab2BWL1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 06:27:00 -0500
-X-Sasl-enc: dqjbfB8TcctFegYP5FUFZ0G4Gt7T2PD2dGlIfVSwIUJZSk7a38T592lL9w 1329996419
-Message-ID: <1329996416.25314.12.camel@perseus.themaw.net>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Ian Kent <raven@themaw.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Meyer <thomas@m3y3r.de>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 23 Feb 2012 19:26:56 +0800
-In-Reply-To: <1329996024.25314.10.camel@perseus.themaw.net>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-	 <1329903139.2193.66.camel@perseus.themaw.net>
-	 <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
-	 <1329961703.2244.8.camel@perseus.themaw.net>
-	 <1329962085.2244.10.camel@perseus.themaw.net>
-	 <1329963683.2244.19.camel@perseus.themaw.net>
-	 <1329978558.25314.0.camel@perseus.themaw.net>
-	 <2b90acba-a8e9-485a-b2a6-608d61751f2c@email.android.com>
-	 <1329996024.25314.10.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 06:27:35 -0500
+Date: Thu, 23 Feb 2012 20:33:53 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com
+Subject: [PATCH 1/4] KVM: MMU: Split the main body of rmap_write_protect()
+ off from others
+Message-Id: <20120223203353.ae79e816.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-23 at 19:20 +0800, Ian Kent wrote:
-> On Wed, 2012-02-22 at 22:31 -0800, H. Peter Anvin wrote:
-> > However, I liked Linus' approach.of using the version ioctl; any reason not to?
-> 
-> Not really, although that ioctl is used it doesn't have to be but you
-> must mount the autofs file system to use it. Setting a timeout is
-> another ioctl that is almost mandatory although not using it amounts to
-> saying you don't want anything to expire which is valid.
+We will use this in the following patch to implement another function
+which needs to write protect pages using the rmap information.
 
-The open, to get an ioctl is another that pretty much must be done to
-use the mount.
+Note that there is a small change in debug printing for large pages:
+we do not differentiate them from others to avoid duplicating code.
 
-> 
-> > 
-> > Ian Kent <raven@themaw.net> wrote:
-> > 
-> > >On Thu, 2012-02-23 at 10:21 +0800, Ian Kent wrote:
-> > >> On Thu, 2012-02-23 at 09:54 +0800, Ian Kent wrote:
-> > >> > On Thu, 2012-02-23 at 09:48 +0800, Ian Kent wrote:
-> > >> > > On Wed, 2012-02-22 at 08:12 -0800, Linus Torvalds wrote:
-> > >> > > > On Wed, Feb 22, 2012 at 1:32 AM, Ian Kent <raven@themaw.net>
-> > >wrote:
-> > >> > > > >
-> > >> > > > > Oh, DOH ...
-> > >> > > > >
-> > >> > > > > The process mounting the autofs mount is passing the pipe it
-> > >will use
-> > >> > > > > for communication via a mount option so we can do this right
-> > >in
-> > >> > > > > fill_super.
-> > >> > > > 
-> > >> > > > No, we really cannot.
-> > >> > > 
-> > >> > > Sorry, I think your wrong this time.
-> > >> > 
-> > >> > On second thought, I suppose other user space users don't "have" to
-> > >use
-> > >> > mount(2) ....
-> > >> 
-> > >> Thomas, what does systemd use to mount the autofs mounts that it
-> > >uses?
-> > >
-> > >Mmm ... AFAICS systemd uses mount(2) so that looks OK too.
-> > >
-> > >Ian
-> > 
-> 
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+---
+ arch/x86/kvm/mmu.c |   53 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 27 insertions(+), 26 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ff053ca..67857bd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1010,42 +1010,43 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+ 
+-int kvm_mmu_rmap_write_protect(struct kvm *kvm, u64 gfn,
+-			       struct kvm_memory_slot *slot)
++static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+ {
+-	unsigned long *rmapp;
+-	u64 *spte;
+-	int i, write_protected = 0;
++	u64 *spte = NULL;
++	int write_protected = 0;
+ 
+-	rmapp = __gfn_to_rmap(gfn, PT_PAGE_TABLE_LEVEL, slot);
+-	spte = rmap_next(rmapp, NULL);
+-	while (spte) {
++	while ((spte = rmap_next(rmapp, spte))) {
+ 		BUG_ON(!(*spte & PT_PRESENT_MASK));
+ 		rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
+-		if (is_writable_pte(*spte)) {
++
++		if (!is_writable_pte(*spte))
++			continue;
++
++		if (level == PT_PAGE_TABLE_LEVEL) {
+ 			mmu_spte_update(spte, *spte & ~PT_WRITABLE_MASK);
+-			write_protected = 1;
++		} else {
++			BUG_ON(!is_large_pte(*spte));
++			drop_spte(kvm, spte);
++			--kvm->stat.lpages;
++			spte = NULL;
+ 		}
+-		spte = rmap_next(rmapp, spte);
++
++		write_protected = 1;
+ 	}
+ 
+-	/* check for huge page mappings */
+-	for (i = PT_DIRECTORY_LEVEL;
++	return write_protected;
++}
++
++int kvm_mmu_rmap_write_protect(struct kvm *kvm, u64 gfn,
++			       struct kvm_memory_slot *slot)
++{
++	unsigned long *rmapp;
++	int i, write_protected = 0;
++
++	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+-		spte = rmap_next(rmapp, NULL);
+-		while (spte) {
+-			BUG_ON(!(*spte & PT_PRESENT_MASK));
+-			BUG_ON(!is_large_pte(*spte));
+-			pgprintk("rmap_write_protect(large): spte %p %llx %lld\n", spte, *spte, gfn);
+-			if (is_writable_pte(*spte)) {
+-				drop_spte(kvm, spte);
+-				--kvm->stat.lpages;
+-				spte = NULL;
+-				write_protected = 1;
+-			}
+-			spte = rmap_next(rmapp, spte);
+-		}
++		write_protected |= __rmap_write_protect(kvm, rmapp, i);
+ 	}
+ 
+ 	return write_protected;
+-- 
+1.7.5.4
 
