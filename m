@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab2BWQlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:41:15 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:51808 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752207Ab2BWQlO (ORCPT
+	id S1754679Ab2BWQoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:44:34 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58215 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab2BWQob convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:41:14 -0500
-Date: Thu, 23 Feb 2012 08:41:06 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: i915 regression with 3.3-rc3+git
-Message-ID: <20120223084106.4b132532@jbarnes-desktop>
-In-Reply-To: <4F3EBD0D.7000906@gmail.com>
-References: <4F3EBD0D.7000906@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/MAZAxcxpjNWTpsyO4HX_kTQ"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 23 Feb 2012 11:44:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F45887A.5010809@zytor.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	<1329845435-2313-7-git-send-email-wad@chromium.org>
+	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+	<CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
+	<CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
+	<4F45887A.5010809@zytor.com>
+Date: Thu, 23 Feb 2012 10:44:29 -0600
+Message-ID: <CABqD9havUbeHDQVqxf7iy1XjNSrUkh=ehSW_h2OfU2QQ_VQaaA@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, Andrew Lutomirski <luto@mit.edu>,
+        Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MAZAxcxpjNWTpsyO4HX_kTQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 22, 2012 at 6:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/22/2012 04:08 PM, Kees Cook wrote:
+>>>
+>>> Hrm, it might be possible to do_exit(SIGSYS) which would be both. It
+>>> looks like tsk->exit_code would be SIGSYS then, but I'll look a little
+>>> more closely to see what that'll actually do.
+>>
+>> As long as there's no way it can get blocked, I'd be fine with that.
+>> It would, actually, be better than SIGKILL because, as Andy said, it's
+>> more distinguishable from other situations. I've long wanted a signal
+>> to be used for "violated policy" that wasn't just a straight SIGKILL.
+>>
+>
+> Can we really introduce force-kill semantics for a POSIX-defined signal?
+>  Other user space programs might use it for other purposes.
+>
+> I'm wondering if the right thing may be to introduce some variant of
+> exit() which can return more information about a signal, including some
+> kind of cause code for SIGKILL?
 
-On Fri, 17 Feb 2012 21:48:13 +0100
-Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com> wrote:
+While it'd be harder to send back extra info, passing SIGSYS to
+do_exit() should result in the si_status for the emitted SIGCHLD to be
+SIGSYS (si_status = (tsk->exit_code & 0x7f)).  I think it'll still
+have a si_code of CLD_KILLED, but it'd be enough for a parent to
+differentiate the task-death path.  I'll try it out before I post
+another patch rev.
 
-> Hello,
->=20
-> i've upgraded from 3.2.0-rc7 to post 3.3.0-rc3 git=20
-> 4903062b5485f0e2c286a23b44c9b59d9b017d53, attached you can find dmesg=20
-> with drm.debug=3D0xfff
->=20
-> This started to appear in logs:
->=20
-> [drm:intel_framebuffer_init] *ERROR* unsupported pixel format
->=20
-> X is getting a wrong resolution (log attached) and there's a lot of=20
-> flickering, if i try to play a video the desktop turns black, the other=20
-> ttys still works fine though.
->=20
-> Please CC me since i'm not subscribed.
->=20
-> 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series=20
-> Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA=20
-> controller])
-> 	Subsystem: Samsung Electronics Co Ltd Device c045
-> 	Flags: bus master, fast devsel, latency 0, IRQ 45
-> 	Memory at f8000000 (64-bit, non-prefetchable) [size=3D4M]
-> 	Memory at d0000000 (64-bit, prefetchable) [size=3D256M]
-> 	I/O ports at 1800 [size=3D8]
-> 	Expansion ROM at <unassigned> [disabled]
-> 	Capabilities: [90] MSI: Enable+ Count=3D1/1 Maskable- 64bit-
-> 	Capabilities: [d0] Power Management version 3
-> 	Kernel driver in use: i915
->=20
-> 00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset=20
-> Integrated Graphics Controller (rev 07)
-> 	Subsystem: Samsung Electronics Co Ltd Device c045
-> 	Flags: bus master, fast devsel, latency 0
-> 	Memory at f8400000 (64-bit, non-prefetchable) [size=3D1M]
-> 	Capabilities: [d0] Power Management version 3
->=20
-> Thanks
->=20
+A variant that allowed extended exit information would be useful
+(especially for this patch series), I'm not sure I'd know where to
+start.
 
-Can you check the drm-intel-fixes branch at
-git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/drm-intel.git?
-It has a fix for laod detection that might help.
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/MAZAxcxpjNWTpsyO4HX_kTQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPRmwiAAoJEIEoDkX4Qk9h+8UQALF0aZMvXXzqC3t9yavzmvI0
-F/8NEv3cfksteomp/L73dE0QO5XgItJ9t98B/2J2utpkQUsSv+1GnrU/nKorje5a
-qmRWIGjPTqimRUte2TBcFGmIW7rp1SM9oGaEye2LwUw0mvWk0sSNwxfJUKbFxYvH
-4d8Ez5aanSnH6g1OCCORqGIQKF5D/7xHSZMhcTteVRI1gS9MpT3Udxi6DS8JzuFk
-XsSrG8z768MqNcUdPTQX0J/no1l1EoSJftaFeRtLA6P0dVwljqLeOO53XYTTQ9eC
-gUsWawzN0JGEJoPOvYe3AYmSLW7YY6sGAY9qVWiBwJ9652mTdF+BMM4oLFsj4BZe
-17immOiSX0yrQWpqDbFdKkuAyuBVhzIN9UvwfVt6LDOqA02W420756SXZs60Kdwo
-YL5+Qsy8CEkiEIbRrU192q2zv2Y7sElgH1ZYAoirQXM11nxQVlyXaHzMHwhikYPE
-qH8dy2qGgv4wnh8OHJwhaNPKlUuz8rukmjSYNJ04gfMVgslwcr+w4mEDq/3/Wpwy
-aM15uPHrkZeaBj7LkU+AtB3+Y7jFVIhvpXfSX83YqHkv/pRXwJcyOpvhpKt3aebl
-jinRINqhS0kRBFu2BijUa/ecDeXyfY4XMqwVjcHOxw+QrSkWY1BBfoDyR3sCQ+Dz
-g9E1MOzGlvB9QZ6xqIds
-=ZoJN
------END PGP SIGNATURE-----
-
---Sig_/MAZAxcxpjNWTpsyO4HX_kTQ--
+cheers!
+will
