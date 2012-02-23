@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab2BWVku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 16:40:50 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59321 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab2BWVkt (ORCPT
+	id S1757143Ab2BWVly (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 16:41:54 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:28435 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755571Ab2BWVlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 16:40:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.24.202 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Thu, 23 Feb 2012 16:41:53 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: g.uQ4M4VM1ktrUeceqHjAmn35GrHa1pZ4GBniJ8cdqfmuiK
+ zO5wZgqhq4W9k03twB8HqypktyC7aWvwa_rHUKAfabRP7jCzHnfEo72hUR4w
+ l0OEotxYlMCwScx8CjqVVvhFzN3RpYfa505dmtd38549LU7zL3BJhHdG9oCJ
+ ZvQt0Ba5IrZXBq00u62DjPyYAgtGd0wEhfs0SOGa.eaeI5agHIqgkbVks29L
+ lPbFjvGd2MFTQT1z4ynPvHAn1sHutOPilpUuuVJ2zz3wFDg3mayCScMrTKvK
+ XRSqAXIO5ygw1GGbGkl5zhABB.TRic7MBsysi6lGe1Df5hDExkbwq_ODjfH2
+ uP5sjgC2PvQl0019Xii7S_wCAbs2HWSDLsfXksvO.1.jeI3nneVr_iWxgoyH
+ o
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 23 Feb 2012 15:41:50 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+In-Reply-To: <4F469BC7.50705@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1202231536240.13554@router.home>
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4F46B169.1030307@intel.com>
-References: <CA+55aFxO27oa+WAtDLuWtr-NFNmKb2T0V6pccn=AE+g5PePPUg@mail.gmail.com>
- <1330026771-19937-1-git-send-email-chris@chris-wilson.co.uk>
- <CA+55aFyAUgY5BBLA+eVF4bFTFkooxQneKE-0BWy1nrjUni=vxg@mail.gmail.com> <4F46B169.1030307@intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 23 Feb 2012 13:40:28 -0800
-X-Google-Sender-Auth: Z78RhVUUOd7WB2jFCTpevBVjLbc
-Message-ID: <CA+55aFxh=Q=+qm+tj1tfsTZ_3cke-H57Fi2YfX_vgJ=5-T2ueA@mail.gmail.com>
-Subject: Re: [PATCH] drm: Reduce the number of retries whilst reading EDIDs
-To: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 1:36 PM, Eugeni Dodonov
-<eugeni.dodonov@intel.com> wrote:
+On Thu, 23 Feb 2012, Dave Hansen wrote:
+
+> > We may at this point be getting a reference to a task struct from another
+> > process not only from the current process (where the above procedure is
+> > valid). You rightly pointed out that the slab rcu free mechanism allows a
+> > free and a reallocation within the RCU period.
 >
-> Perhaps a stupid question, but does you tree has
-> http://cgit.freedesktop.org/~airlied/linux/commit/?h=drm-next&id=9292f37e1f5c79400254dca46f83313488093825
-> from Dave's drm-next?
+> I didn't _mean_ to point that out, but I think I realize what you're
+> talking about.  What we have before this patch is this:
 >
-> If it has, it would be the 1st time that I see xrandr take longer than .5s
-> with that patch on an Intel GPU. We even added a check for this into
-> intel-gpu-tools to warn us if any machine takes that long, and none had hit
-> it so far. So if this is the case here, there is something Mac Mini-specific
-> indeed to investigate.
+>         rcu_read_lock();
+>         task = pid ? find_task_by_vpid(pid) : current;
 
-Yup, the tree I tested was current -git with the two commits mentioned
-in this thread:
+We take a refcount here on the mm ... See the code. We could simply take a
+refcount on the task as well if this is considered safe enough. If we have
+a refcount on the task then we do not need the refcount on the mm. Thats
+was your approach...
 
-   drm: Reduce the number of retries whilst reading EDIDs
-   drm: give up on edid retries when i2c bus is not responding
+>         rcu_read_unlock();
 
-applied separately on top of it.
+> > Is that a real difference or are you just playing with words?
+>
+> I think we're talking about two different things:
+> 1. does RCU protect the pid->task lookup sufficiently?
 
-                Linus
+I dont know
+
+> 2. Can the task simply go away in the move/migrate_pages() calls?
+
+The task may go away but we need the mm to stay for migration.
+That is why a refcount is taken on the mm.
+
+The bug in migrate_pages() is that we do a rcu_unlock and a rcu_lock. If
+we drop those then we should be safe if the use of a task pointer within a
+rcu section is safe without taking a refcount.
+
