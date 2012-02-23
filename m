@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab2BWTmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:42:13 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64859 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab2BWTmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:42:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120223193620.GA16477@kroah.com>
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
- <4F456D8F.1080801@zytor.com> <CA+55aFw4P1qUye5YOJKSQHX+TfxbEDWMF7LPogj128b6gv2Nqg@mail.gmail.com>
- <CA+55aFziJ=Lw0KxxThwfqRPR+K0OWDorKAfkgKMGPXv5O404JA@mail.gmail.com>
- <4F4584EB.9060605@zytor.com> <CA+55aFxC6JwWsNcmkQ+DROXtWCzaq52DuX5aMJZfXMLoNCbsWg@mail.gmail.com>
- <20120223003706.GA3246@kroah.com> <6e9d38ffcb1a66f62a335450d4722809@buro.asia>
- <CA+55aFxTieMqacU9LN8Xmtb3Os8zkub1P+SKpqFtEBQ11STy7g@mail.gmail.com>
- <e709c3b5c5b2aa6e6a9d049f3af857e3@buro.asia> <20120223193620.GA16477@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 23 Feb 2012 11:41:50 -0800
-X-Google-Sender-Auth: DWFzDIXjT_LOw15MR6KR9QUQYpM
-Message-ID: <CA+55aFwZqBdvB4HrW_mSzksimrWyRDhphkLbKxE9azmcb305Ow@mail.gmail.com>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: raphael@buro.asia, "H. Peter Anvin" <hpa@zytor.com>,
-        stable@vger.kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756689Ab2BWTpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:45:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46184 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab2BWTpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 14:45:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128734249"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] x86/mce recovery cleanup patch
+Date: Thu, 23 Feb 2012 11:45:40 -0800
+Message-Id: <4f46976434651797d@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 11:36 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->
+Ingo,
 
-The insane safe_address games go away in the cleanup patch, so it
-really shouldn't be much of an issue.
+This is the patch to replace some hard coded constants that we discussed
+here: https://lkml.org/lkml/2012/1/27/127
 
-In the end, save_address should just be
+I'd coded it up four weeks ago, but forgot to send you a pull. This
+goes on top of the previous patchset for mce recovery that is sitting
+in your x86/mce branch of the tip tree waiting for the 3.4 merge window.
 
-  #define safe_address (tsk->thread.has_fpu)
+-Tony
 
-(and in fact the whole #define got removed entirely in mainline in
-commit 80ab6f1e8c98, which might be fodder for -stable too)
+The following changes since commit 5f7b88d51e89771f64c15903b96b5933dd0bc6d8:
 
-                 Linus
+  x86/mce: Recognise machine check bank signature for data path error (2012-01-03 12:07:07 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-recovery-for-tip
+
+for you to fetch changes up to 08dda402d60a721ac94e79efd7646b332be3e3b2:
+
+  x86/mce: Replace hard coded hex constants with symbolic defines (2012-01-26 16:02:22 -0800)
+
+----------------------------------------------------------------
+Symbolic defines for architectural MCACOD constants
+
+----------------------------------------------------------------
+Tony Luck (1):
+      x86/mce: Replace hard coded hex constants with symbolic defines
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
