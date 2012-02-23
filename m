@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2BWNwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 08:52:44 -0500
+	id S1756174Ab2BWNw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 08:52:58 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:39147 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab2BWNwm (ORCPT
+	with ESMTP id S1756159Ab2BWNw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 08:52:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.128.143 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v3 12/21] mm: push lruvec into update_page_reclaim_stat()
+	Thu, 23 Feb 2012 08:52:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.10.80 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v3 15/21] mm: handle lruvec relocks on lumpy reclaim
 To: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Andi Kleen <andi@firstfloor.org>
-Date: Thu, 23 Feb 2012 17:52:38 +0400
-Message-ID: <20120223135238.12988.79360.stgit@zurg>
+Date: Thu, 23 Feb 2012 17:52:52 +0400
+Message-ID: <20120223135252.12988.50017.stgit@zurg>
 In-Reply-To: <20120223133728.12988.5432.stgit@zurg>
 References: <20120223133728.12988.5432.stgit@zurg>
 User-Agent: StGit/0.15
@@ -27,117 +27,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Push lruvec pointer into update_page_reclaim_stat()
-* drop page argument
-* drop active and file arguments, use lru instead
+Prepare for lock splitting in lumly reclaim logic.
+Now move_active_pages_to_lru() and putback_inactive_pages()
+can put pages into different lruvecs.
+
+* relock book before SetPageLRU()
+* update reclaim_stat pointer after relocks
+* return currently locked lruvec
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/swap.c |   30 +++++++++---------------------
- 1 files changed, 9 insertions(+), 21 deletions(-)
+ mm/vmscan.c |   45 +++++++++++++++++++++++++++++++++------------
+ 1 files changed, 33 insertions(+), 12 deletions(-)
 
-diff --git a/mm/swap.c b/mm/swap.c
-index 0cbc558..1f5731e 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -276,24 +276,19 @@ void rotate_reclaimable_page(struct page *page)
- 	}
- }
- 
--static void update_page_reclaim_stat(struct zone *zone, struct page *page,
--				     int file, int rotated)
-+static void update_page_reclaim_stat(struct lruvec *lruvec, enum lru_list lru)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a3941d1..6eeeb4b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1114,6 +1114,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		unsigned long *nr_scanned, struct scan_control *sc,
+ 		isolate_mode_t mode, int active, int file)
  {
--	struct zone_reclaim_stat *reclaim_stat;
--
--	reclaim_stat = &page_lruvec(page)->reclaim_stat;
-+	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
-+	int file = is_file_lru(lru);
++	struct lruvec *cursor_lruvec = lruvec;
+ 	struct list_head *src;
+ 	unsigned long nr_taken = 0;
+ 	unsigned long nr_lumpy_taken = 0;
+@@ -1197,14 +1198,17 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			    !PageSwapCache(cursor_page))
+ 				break;
  
- 	reclaim_stat->recent_scanned[file]++;
--	if (rotated)
-+	if (is_active_lru(lru))
- 		reclaim_stat->recent_rotated[file]++;
- }
++			/* Switch cursor_lruvec lock for lumpy isolate */
++			if (!__lock_page_lruvec_irq(&cursor_lruvec,
++						    cursor_page))
++				continue;
++
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+ 				unsigned int isolated_pages;
+-				struct lruvec *cursor_lruvec;
+ 				int cursor_lru = page_lru(cursor_page);
  
- static void __activate_page(struct page *page, void *arg)
- {
--	struct zone *zone = page_zone(page);
--
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
--		int file = page_is_file_cache(page);
- 		int lru = page_lru_base_type(page);
- 		struct lruvec *lruvec = page_lruvec(page);
- 
-@@ -304,7 +299,7 @@ static void __activate_page(struct page *page, void *arg)
- 		add_page_to_lru_list(lruvec, page, lru);
- 		__count_vm_event(PGACTIVATE);
- 
--		update_page_reclaim_stat(zone, page, file, 1);
-+		update_page_reclaim_stat(lruvec, lru);
- 	}
- }
- 
-@@ -443,7 +438,6 @@ static void lru_deactivate_fn(struct page *page, void *arg)
- {
- 	int lru, file;
- 	bool active;
--	struct zone *zone = page_zone(page);
- 	struct lruvec *lruvec;
- 
- 	if (!PageLRU(page))
-@@ -484,7 +478,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
- 
- 	if (active)
- 		__count_vm_event(PGDEACTIVATE);
--	update_page_reclaim_stat(zone, page, file, 0);
-+	update_page_reclaim_stat(lruvec, lru);
- }
- 
- /*
-@@ -649,9 +643,7 @@ EXPORT_SYMBOL(__pagevec_release);
- void lru_add_page_tail(struct zone* zone,
- 		       struct page *page, struct page *page_tail)
- {
--	int active;
- 	enum lru_list lru;
--	const int file = 0;
- 	struct lruvec *lruvec = page_lruvec(page);
- 
- 	VM_BUG_ON(!PageHead(page));
-@@ -664,13 +656,11 @@ void lru_add_page_tail(struct zone* zone,
- 	if (page_evictable(page_tail, NULL)) {
- 		if (PageActive(page)) {
- 			SetPageActive(page_tail);
--			active = 1;
- 			lru = LRU_ACTIVE_ANON;
- 		} else {
--			active = 0;
- 			lru = LRU_INACTIVE_ANON;
+ 				list_move(&cursor_page->lru, dst);
+ 				isolated_pages = hpage_nr_pages(cursor_page);
+-				cursor_lruvec = page_lruvec(cursor_page);
+ 				cursor_lruvec->pages_count[cursor_lru] -=
+ 								isolated_pages;
+ 				VM_BUG_ON((long)cursor_lruvec->
+@@ -1235,6 +1239,9 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			}
  		}
--		update_page_reclaim_stat(zone, page_tail, file, active);
-+		update_page_reclaim_stat(lruvec, lru);
- 	} else {
- 		SetPageUnevictable(page_tail);
- 		lru = LRU_UNEVICTABLE;
-@@ -698,17 +688,15 @@ static void __pagevec_lru_add_fn(struct page *page, void *arg)
- {
- 	enum lru_list lru = (enum lru_list)arg;
- 	struct lruvec *lruvec = page_lruvec(page);
--	int file = is_file_lru(lru);
--	int active = is_active_lru(lru);
  
- 	VM_BUG_ON(PageActive(page));
- 	VM_BUG_ON(PageUnevictable(page));
- 	VM_BUG_ON(PageLRU(page));
- 
- 	SetPageLRU(page);
--	if (active)
-+	if (is_active_lru(lru))
- 		SetPageActive(page);
--	update_page_reclaim_stat(lruvec_zone(lruvec), page, file, active);
-+	update_page_reclaim_stat(lruvec, lru);
- 	add_page_to_lru_list(lruvec, page, lru);
++		/* Restore original lruvec lock */
++		cursor_lruvec = __relock_page_lruvec(cursor_lruvec, page);
++
+ 		/* If we break out of the loop above, lumpy reclaim failed */
+ 		if (pfn < end_pfn)
+ 			nr_lumpy_failed++;
+@@ -1325,7 +1332,10 @@ static int too_many_isolated(struct zone *zone, int file,
+ 	return isolated > inactive;
  }
  
+-static noinline_for_stack void
++/*
++ * Returns currently locked lruvec
++ */
++static noinline_for_stack struct lruvec *
+ putback_inactive_pages(struct lruvec *lruvec,
+ 		       struct list_head *page_list)
+ {
+@@ -1347,10 +1357,13 @@ putback_inactive_pages(struct lruvec *lruvec,
+ 			lock_lruvec_irq(lruvec);
+ 			continue;
+ 		}
++
++		lruvec = __relock_page_lruvec(lruvec, page);
++		reclaim_stat = &lruvec->reclaim_stat;
++
+ 		SetPageLRU(page);
+ 		lru = page_lru(page);
+ 
+-		lruvec = page_lruvec(page);
+ 		add_page_to_lru_list(lruvec, page, lru);
+ 		if (is_active_lru(lru)) {
+ 			int file = is_file_lru(lru);
+@@ -1375,6 +1388,8 @@ putback_inactive_pages(struct lruvec *lruvec,
+ 	 * To save our caller's stack, now use input list for pages to free.
+ 	 */
+ 	list_splice(&pages_to_free, page_list);
++
++	return lruvec;
+ }
+ 
+ static noinline_for_stack void
+@@ -1544,7 +1559,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+ 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+ 
+-	putback_inactive_pages(lruvec, &page_list);
++	lruvec = putback_inactive_pages(lruvec, &page_list);
+ 
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
+@@ -1603,12 +1618,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+  *
+  * The downside is that we have to touch page->_count against each page.
+  * But we had to alter page->flags anyway.
++ *
++ * Returns currently locked lruvec
+  */
+ 
+-static void move_active_pages_to_lru(struct lruvec *lruvec,
+-				     struct list_head *list,
+-				     struct list_head *pages_to_free,
+-				     enum lru_list lru)
++static struct lruvec *
++move_active_pages_to_lru(struct lruvec *lruvec,
++			 struct list_head *list,
++			 struct list_head *pages_to_free,
++			 enum lru_list lru)
+ {
+ 	unsigned long pgmoved = 0;
+ 	struct page *page;
+@@ -1630,10 +1648,11 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
+ 
+ 		page = lru_to_page(list);
+ 
++		lruvec = __relock_page_lruvec(lruvec, page);
++
+ 		VM_BUG_ON(PageLRU(page));
+ 		SetPageLRU(page);
+ 
+-		lruvec = page_lruvec(page);
+ 		list_move(&page->lru, &lruvec->pages_lru[lru]);
+ 		numpages = hpage_nr_pages(page);
+ 		lruvec->pages_count[lru] += numpages;
+@@ -1655,6 +1674,8 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
+ 	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, pgmoved);
+ 	if (!is_active_lru(lru))
+ 		__count_vm_events(PGDEACTIVATE, pgmoved);
++
++	return lruvec;
+ }
+ 
+ static void shrink_active_list(unsigned long nr_to_scan,
+@@ -1744,9 +1765,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	 */
+ 	reclaim_stat->recent_rotated[file] += nr_rotated;
+ 
+-	move_active_pages_to_lru(lruvec, &l_active, &l_hold,
++	lruvec = move_active_pages_to_lru(lruvec, &l_active, &l_hold,
+ 						LRU_ACTIVE + file * LRU_FILE);
+-	move_active_pages_to_lru(lruvec, &l_inactive, &l_hold,
++	lruvec = move_active_pages_to_lru(lruvec, &l_inactive, &l_hold,
+ 						LRU_BASE   + file * LRU_FILE);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+ 	unlock_lruvec_irq(lruvec);
 
