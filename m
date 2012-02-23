@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab2BWNra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 08:47:30 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:22011 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab2BWNr3 (ORCPT
+	id S1755463Ab2BWNvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 08:51:43 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39147 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab2BWNvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 08:47:29 -0500
-Message-ID: <4F46435A.5080608@atmel.com>
-Date: Thu, 23 Feb 2012 14:47:06 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 23 Feb 2012 08:51:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.127.147 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v3 00/21] mm: lru_lock splitting
+To: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Date: Thu, 23 Feb 2012 17:51:36 +0400
+Message-ID: <20120223133728.12988.5432.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Ryan Mallon <rmallon@gmail.com>, plagnioj@jcrosoft.com
-CC: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 09/19] ARM: at91: make sdram/ddr register base soc
- independent
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com> <4F456D1E.8070807@gmail.com> <4F45FF46.3060702@atmel.com> <4F460DD0.1050108@atmel.com> <4F461A42.2080202@gmail.com>
-In-Reply-To: <4F461A42.2080202@gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 11:51 AM, Ryan Mallon :
-> On 23/02/12 20:58, Nicolas Ferre wrote:
-> 
->> On 02/23/2012 09:56 AM, Nicolas Ferre :
->>> On 02/22/2012 11:33 PM, Ryan Mallon :
->>>> On 22/02/12 20:39, Nicolas Ferre wrote:
->>>>
->>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>>>
->>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> ---
->>>>
->>>> <snip>
->>>>
->>>>> +void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
->>>>> +{
->>>>> +	if (id > 1) {
->>>>> +		pr_warn("%s: id > 2\n", __func__);
->>>>> +		return;
->>>>> +	}
->>>>> +	at91_ramc_base[id] = ioremap(addr, size);
->>>>> +	if (!at91_ramc_base[id])
->>>>> +		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
->>>>> +}
->>>>
->>>>
->>>> If this fails then you will oops if you call either at91_ramc_read or
->>>> at91_ramc_write since they don't check if at91_ramc_base[id] is a valid
->>>> pointer. Either this function should panic, like the other at91_ioremap
->>>> functions, or the at91_ramc_read/write functions should check for a
->>>> valid pointer.
->>>
->>> Yes, as you pointed out, it is done in a not-related following patch.
->>> I will bring the code here.
->>>
->>>
->>>> Nitpick: The id check should probably also be BUG() or WARN() since it
->>>> indicates a bug in the core AT91 code. pr_warn is likely to missed and
->>>> not reported by users. Since the value is int, the check should be:
->>>>
->>>>   if (id < 0 || id > 1)
->>>>
->>>> Obviously the chance of this error happening are slim, but if you are
->>>> going to check and warn for it, it should be done properly :-).
->>>
->>> Yes, I agree and modify it at the very moment.
->>
->>
->> What do you think about that:
->> If id is not setup properly, I try to find a way out by using id = 0...
->> Then, a panic is added if the iremap() fails.
->>
->>
->> --- a/arch/arm/mach-at91/pm.c
->> +++ b/arch/arm/mach-at91/pm.c
->> @@ -200,13 +200,14 @@ void __iomem *at91_ramc_base[2];
->>  
->>  void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
->>  {
->> -       if (id > 1) {
->> -               pr_warn("%s: id > 2\n", __func__);
->> -               return;
->> +       if (id < 0 || id > 1) {
->> +               WARN(1, "%s: Wrong RAM controller id (%d), set it to 0\n",
->> +                                                               __func__, id);
->> +               id = 0;
-> 
-> 
-> I don't think you should try to fix the id, just issue the warning and
-> return. 
+v3 changes:
+* inactive-ratio reworked again, now it always calculated from from scratch
+* hierarchical pte reference bits filter in memory-cgroup reclaimer
+* fixed two bugs in locking, found by Hugh Dickins
+* locking functions slightly simplified
+* new patch for isolated pages accounting
+* new patch with lru interleaving
 
-Well, I was trying hard to find a way out: but you may be right: a plain
-and good-old BUG() should be a safer solution!
+This patchset is based on next-20120210
 
-Bye,
+git: https://github.com/koct9i/linux/commits/lruvec-v3
+
+---
+
+Konstantin Khlebnikov (21):
+      memcg: unify inactive_ratio calculation
+      memcg: make mm_match_cgroup() hirarchical
+      memcg: fix page_referencies cgroup filter on global reclaim
+      memcg: use vm_swappiness from target memory cgroup
+      mm: rename lruvec->lists into lruvec->pages_lru
+      mm: lruvec linking functions
+      mm: add lruvec->pages_count
+      mm: unify inactive_list_is_low()
+      mm: add lruvec->reclaim_stat
+      mm: kill struct mem_cgroup_zone
+      mm: move page-to-lruvec translation upper
+      mm: push lruvec into update_page_reclaim_stat()
+      mm: push lruvecs from pagevec_lru_move_fn() to iterator
+      mm: introduce lruvec locking primitives
+      mm: handle lruvec relocks on lumpy reclaim
+      mm: handle lruvec relocks in compaction
+      mm: handle lruvec relock in memory controller
+      mm: add to lruvec isolated pages counters
+      memcg: check lru vectors emptiness in pre-destroy
+      mm: split zone->lru_lock
+      mm: zone lru vectors interleaving
+
+
+ include/linux/huge_mm.h    |    3 
+ include/linux/memcontrol.h |   75 ------
+ include/linux/mm.h         |   66 +++++
+ include/linux/mm_inline.h  |   19 +-
+ include/linux/mmzone.h     |   39 ++-
+ include/linux/swap.h       |    6 
+ mm/Kconfig                 |   16 +
+ mm/compaction.c            |   31 +--
+ mm/huge_memory.c           |   14 +
+ mm/internal.h              |  204 +++++++++++++++++
+ mm/ksm.c                   |    2 
+ mm/memcontrol.c            |  343 +++++++++++-----------------
+ mm/migrate.c               |    2 
+ mm/page_alloc.c            |   70 +-----
+ mm/rmap.c                  |    2 
+ mm/swap.c                  |  217 ++++++++++--------
+ mm/vmscan.c                |  534 ++++++++++++++++++++++++--------------------
+ mm/vmstat.c                |    6 
+ 18 files changed, 932 insertions(+), 717 deletions(-)
+
 -- 
-Nicolas Ferre
+Signature
