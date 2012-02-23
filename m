@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab2BWWgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 17:36:11 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:38092 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab2BWWe6 (ORCPT
+	id S1757261Ab2BWWg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 17:36:27 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41927 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755095Ab2BWWgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 17:34:58 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: ke.yu@intel.com, kevin.tian@intel.com, JBeulich@novell.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] processor passthru - upload _Cx and _Pxx data to hypervisor (v5).
-Date: Thu, 23 Feb 2012 17:31:07 -0500
-Message-Id: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F46BF08.00AA,ss=1,re=0.000,fgs=0
+	Thu, 23 Feb 2012 17:36:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	<1329845435-2313-7-git-send-email-wad@chromium.org>
+	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+	<CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
+	<CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
+	<4F45887A.5010809@zytor.com>
+	<CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
+	<4F459109.1060205@zytor.com>
+	<CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
+	<CABqD9hbsZTtkFzM_8rHqAWjZhiV0iWb6s1eMF9LriH-NybrorA@mail.gmail.com>
+	<fe2d4b97d84c1e8053c397a20eec7ac8.squirrel@webmail.greenhost.nl>
+	<CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
+Date: Thu, 23 Feb 2012 16:36:21 -0600
+Message-ID: <CABqD9hbE_0mDADUAcU3JYeEroj-57Mz2etd2NaPV_Sb3JpJ21Q@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+From: Will Drewry <wad@chromium.org>
+To: Markus Gutschke <markus@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, Roland McGrath <mcgrathr@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem these three patches try to solve is to provide ACPI power management
-information to the Xen hypervisor. The hypervisor lacks the ACPI DSDT parser so it can't
-get that data without some help - and the initial domain can provide that. One
-approach (https://lkml.org/lkml/2011/11/30/245) augments the ACPI code to call
-an external PM code - but there were no comments about it so I decided to see
-if another approach could solve it.
+On Thu, Feb 23, 2012 at 4:33 PM, Markus Gutschke <markus@chromium.org> wrote:
+> On Thu, Feb 23, 2012 at 14:15, Indan Zupancic <indan@nul.nu> wrote:
+>> What about making SECCOMP_RET_TRAP dump core/send SIGSYS if there is
+>> no tracer with PTRACE_O_SECCOMP set?
+>
+> Please don't make things dependent on having a tracer. There are
+> applications that don't really need a tracer; in fact, these are
+> typically the exact same applications that can benefit from receiving
+> SIGSYS and then handling it internally.
+>
+> If a tracer was required to set this up, it would make it difficult to
+> use gdb, strace, or any other common debugging tools.
+>
+>> Sending SIGSYS is useful, but it's quite a bit less useful if user
+>> space can't handle it in a signal handler, so I don't think it's
+>> worth it to make a unblockable version.
+>
+> Maybe, I am not parsing your e-mail correctly. But don't we already
+> get the desired behavior, if SIGSYS is treated the same as any other
+> synchronous signal? If it is unblocked and has a handler, the
+> application can decide to handle it. If neither one of these
+> conditions is true, it terminates the program. Ulimits and
+> PR_SET_DUMPABLE determine whether a core file is generated.
 
-This module (processor-passthru)  collects the information that the cpufreq
-drivers and the ACPI processor code save in the 'struct acpi_processor' and
-then uploads it to the hypervisor.
+Yeah - the current patchset does that just fine. The tweak I was
+proposing was making ti possible to deliver an SIGSYS that always uses
+SIG_DFL so that you don't have to play with signal call enforcement in
+the filters.
 
-The driver can be either an module or compiled in. In either mode the driver
-launches a thread that checks whether an cpufreq driver is registered. If so
-it reads all the 'struct acpi_processor' data for all online CPUs and sends
-it to hypervisor. The driver also register a CPU hotplug component - so if a new
-CPU shows up - it would send the data to the hypervisor for it as well.
-Furthermore it also verifies whether the ACPI ID count is different than what
-the kernel sees (which is possible with dom0_max_vcpus) and if so uploads
-the data for the other ACPI IDs.
-
-The patches are available in this git tree:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/processor-passthru.v5
-
-
-Konrad Rzeszutek Wilk (3):
-      xen/setup/pm/acpi: Remove the call to boot_option_idle_override.
-      xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
-      xen/processor-passthru: Provide an driver that passes struct acpi_processor data to the hypervisor.
-
- arch/x86/xen/enlighten.c         |   92 +++++++-
- arch/x86/xen/setup.c             |    1 -
- drivers/xen/Kconfig              |   14 +
- drivers/xen/Makefile             |    2 +-
- drivers/xen/processor-passthru.c |  485 ++++++++++++++++++++++++++++++++++++++
- include/xen/interface/platform.h |    4 +-
- 6 files changed, 594 insertions(+), 4 deletions(-)
-
-
-P.S.
-On the hypervisor side, it requires this patch on AMD:
-# HG changeset patch
-# Parent aea8cfac8cf1afe397f2e1d422a852008d8a83fe
-traps: AMD PM RDMSRs (MSR_K8_PSTATE_CTRL, etc)
-
-The restriction to read and write the AMD power management MSRs is gated if the
-domain 0 is the PM domain (so FREQCTL_dom0_kernel is set). But we can
-relax this restriction and allow the privileged domain to read the MSRs
-(but not write). This allows the priviliged domain to harvest the power
-management information (ACPI _PSS states) and send it to the hypervisor.
-
-This patch works fine with older classic dom0 (2.6.32) and with
-AMD K7 and K8 boxes.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-diff -r aea8cfac8cf1 xen/arch/x86/traps.c
---- a/xen/arch/x86/traps.c	Thu Feb 23 13:23:02 2012 -0500
-+++ b/xen/arch/x86/traps.c	Thu Feb 23 13:29:00 2012 -0500
-@@ -2484,7 +2484,7 @@ static int emulate_privileged_op(struct 
-         case MSR_K8_PSTATE7:
-             if ( boot_cpu_data.x86_vendor != X86_VENDOR_AMD )
-                 goto fail;
--            if ( !is_cpufreq_controller(v->domain) )
-+            if ( !is_cpufreq_controller(v->domain) && !IS_PRIV(v->domain) )
-             {
-                 regs->eax = regs->edx = 0;
-                 break;
-
-
+This is a pretty minor tweak either way.
+cheers!
+will
