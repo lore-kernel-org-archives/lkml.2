@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab2BWTLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:11:15 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46990 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab2BWTLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:11:14 -0500
-Message-ID: <4F468F09.5050200@linux.vnet.ibm.com>
-Date: Thu, 23 Feb 2012 11:10:01 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1754699Ab2BWT1E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:27:04 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58943 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752736Ab2BWT07 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 14:26:59 -0500
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home>
-In-Reply-To: <alpine.DEB.2.00.1202231240590.9878@router.home>
+In-Reply-To: <CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	<1329845435-2313-7-git-send-email-wad@chromium.org>
+	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+	<CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
+	<CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
+	<CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
+	<4F45887A.5010809@zytor.com>
+	<CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
+	<4F459109.1060205@zytor.com>
+	<CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
+Date: Thu, 23 Feb 2012 13:26:57 -0600
+Message-ID: <CABqD9hbsZTtkFzM_8rHqAWjZhiV0iWb6s1eMF9LriH-NybrorA@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+From: Will Drewry <wad@chromium.org>
+To: Roland McGrath <mcgrathr@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022319-7282-0000-0000-000006C7C8A9
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 10:45 AM, Christoph Lameter wrote:
-> On Thu, 23 Feb 2012, Dave Hansen wrote:
->> This patch takes the pid-to-task code along with the credential
->> and security checks in sys_move_pages() and sys_migrate_pages()
->> and consolidates them.  It now takes a task reference in
->> the new function and requires the caller to drop it.  I
->> believe this resolves the race.
-> 
-> And this way its safer?
-
-I think so... I'll talk about it below.
-
->> diff -puN include/linux/migrate.h~movememory-helper include/linux/migrate.h
->> --- linux-2.6.git/include/linux/migrate.h~movememory-helper	2012-02-16 09:59:17.270207242 -0800
->> +++ linux-2.6.git-dave/include/linux/migrate.h	2012-02-16 09:59:17.286207438 -0800
->> @@ -31,6 +31,7 @@ extern int migrate_vmas(struct mm_struct
->>  extern void migrate_page_copy(struct page *newpage, struct page *page);
->>  extern int migrate_huge_page_move_mapping(struct address_space *mapping,
->>  				  struct page *newpage, struct page *page);
->> +struct task_struct *can_migrate_get_task(pid_t pid);
-> 
-> Could we use something easier to understand? try_get_task()?
-
-It's hard to see in the patch context, but can_migrate_get_task() does
-two migration-specific operations:
-
->         tcred = __task_cred(task);
->         if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
->             cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
->             !capable(CAP_SYS_NICE)) {
->                 err = -EPERM;
->                 goto out;
->         }
-> 
->         err = security_task_movememory(task);
-
-So, I was trying to relate that it's checking the current's permissions
-to _do_ migration on task.  try_get_task() wouldn't really say much
-about that part of its job.
-
-
->> +struct task_struct *can_migrate_get_task(pid_t pid)
->>  {
->> -	const struct cred *cred = current_cred(), *tcred;
->>  	struct task_struct *task;
->> -	struct mm_struct *mm;
->> -	int err;
->> -
->> -	/* Check flags */
->> -	if (flags & ~(MPOL_MF_MOVE|MPOL_MF_MOVE_ALL))
->> -		return -EINVAL;
->> -
->> -	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
->> -		return -EPERM;
->> +	const struct cred *cred = current_cred(), *tcred;
->> +	int err = 0;
+On Thu, Feb 23, 2012 at 11:38 AM, Roland McGrath <mcgrathr@google.com> wrote:
+> On Wed, Feb 22, 2012 at 5:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> I meant whether or not a signal can be blocked/caught and the fact that
+>> the signal exists at all.
 >>
->> -	/* Find the mm_struct */
->>  	rcu_read_lock();
->>  	task = pid ? find_task_by_vpid(pid) : current;
->>  	if (!task) {
->>  		rcu_read_unlock();
->> -		return -ESRCH;
->> +		return ERR_PTR(-ESRCH);
->>  	}
->> -	mm = get_task_mm(task);
->> -	rcu_read_unlock();
->> -
->> -	if (!mm)
->> -		return -EINVAL;
->> +	get_task_struct(task);
-> 
-> Hmmm isnt the race still there between the determination of the task and
-> the get_task_struct()? You would have to verify after the get_task_struct
-> that this is really the task we wanted to avoid the race.
+>> Now I guess we could have "blockable" and "unblockable" SIGSYS, but that
+>> would seem to have its own set of issues...
+>
+> Oh.  I certainly don't think we should ever add any new signals to the set
+> that cannot be caught, blocked, or ignored.  That has been just SIGKILL and
+> SIGSTOP since 4.2BSD, which first introduced the modern concept of blocking
+> signals.  There are lots of reasons not to change that, which I won't go
+> into unless someone really wants me to.
+>
+> However, I don't think there is anything really wrong with having certain
+> cases that generate a signal and at the same time unblock it and reset it
+> to SIG_DFL.  That's just an implementation detail of a policy of "dump core
+> right now, no other option".  (Conversely, directly calling do_exit won't
+> ever dump core, though it can be made to look signalesque to the parent and
+> tracers.)
+>
+> For seccomp-filter, I personally don't see any problem with simply
+> generating SIGSYS in the normal way (and aborting the syscall, of course).
+> If someone wants to ensure that SIGSYS is never caught or blocked, they can
+> just do that by having a filter that doesn't allow it to be caught or
+> blocked (and of course make sure to reset its inherited state).  It is a
+> bit tricky to cover all the ways, since it's not just sigaction and
+> sigprocmask but also sigreturn, where the blocked signal set to be restored
+> is in a slightly arcane location--but it ain't rocket science.
+>
+> But I don't really have any strong opinion about what seccomp-filter should
+> do.  (Though it does seem worthwhile not to rule out the possibility of
+> dumping core on a policy violation, since that will be useful for people to
+> debug their code.)
 
-It's true that selecting a task by pid is inherently racy.  What that
-code does is ensure that the task you've got current has 'pid', but not
-ensure that 'pid' has never represented another task.  But, that's what
-we do everywhere else in the kernel; there's not much better that we can do.
+Seems like there's an argument for another return code,
+SECCOMP_RET_CORE, that resets/unblocks the SIGSYS handler since the
+existing TRAP and KILL options seem to cover the other paths (signal
+handler and do_exit).
 
-Maybe "race" is the wrong word for what we've got here.  It's a lack of
-a refcount being taken.
+It's a very small tweak if that'd be useful to include explicitly.
 
+Thanks!
+will
