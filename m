@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2BWLya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 06:54:30 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53692 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab2BWLy3 (ORCPT
+	id S1753918Ab2BWLyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 06:54:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65499 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab2BWLys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 06:54:29 -0500
-Date: Thu, 23 Feb 2012 17:02:24 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120223113224.GB8454@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1321544313.6308.25.camel@marge.simson.net>
- <1321545376.2495.1.camel@laptop>
- <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <1329761661.6276.146.camel@marge.simpson.net>
- <20120223104959.GA8454@linux.vnet.ibm.com>
- <20120223112005.GA7645@linux.vnet.ibm.com>
- <20120223112650.GA23844@elte.hu>
+	Thu, 23 Feb 2012 06:54:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of adobriyan@gmail.com designates 10.43.134.199 as permitted sender) smtp.mail=adobriyan@gmail.com; dkim=pass header.i=adobriyan@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120223112650.GA23844@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12022311-9574-0000-0000-0000017F1506
+In-Reply-To: <20120221210625.89432A014E@akpm.mtv.corp.google.com>
+References: <20120221210625.89432A014E@akpm.mtv.corp.google.com>
+Date: Thu, 23 Feb 2012 13:54:48 +0200
+Message-ID: <CACVxJT9GDB-BXW-B57=_c8s3EtZ=22BEKi8a_0tdr+YDkviYVg@mail.gmail.com>
+Subject: Re: + locks-new-proc-lockinfo.patch added to -mm tree
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: dave@gnu.org, bfields@fieldses.org, ebiederm@xmission.com, matthew@wil.cx,
+        viro@zeniv.linux.org.uk
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1NBsw4D030377
 
-* Ingo Molnar <mingo@elte.hu> [2012-02-23 12:26:50]:
+On Wed, Feb 22, 2012 at 12:06 AM,  <akpm@linux-foundation.org> wrote:
+> +static void lockinfo_get_status(struct seq_file *f, struct file_lock *fl,
 
-> pro perf tip of the day: did you know that it's possible to run:
-> 
->   perf stat --repeat 10 --null perf bench sched pipe
+All caps sucks.
 
-Ah yes ..had forgotten that! What is the recommended # of iterations 
-to run?
+> + Â  Â  Â  if (fl->fl_type & LOCK_MAND) {
+> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Access:\t\t %s\n",
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â (fl->fl_type & LOCK_READ)
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ? (fl->fl_type & LOCK_WRITE) ? "RW Â  " : "READ "
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
 
-> and get meaningful, normalized stddev calculations for free:
-> 
->        5.486491487 seconds time elapsed                                          ( +-  5.50% )
-> 
-> the percentage at the end shows the level of standard deviation.
-> 
-> You can add "--sync" as well, which will cause perf stat to call 
-> sync() - this gives extra stability of individual iterations and 
-> makes sure all IO cost is accounted to the right run.
+I think using one of --, r-, -w, rw is nicer.
+Trailing whitespace, why?
 
-Ok ..thanks for the 'pro' tip!! Will use it in my subsequent runs!
+> + Â  Â  Â  } else {
+> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Access:\t\t %s\n",
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â (lease_breaking(fl))
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ? (fl->fl_type & F_UNLCK) ? "UNLCK" : "READ "
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
 
-- vatsa
+Trailing whitespace.
 
+> + Â  Â  Â  if (IS_POSIX(fl)) {
+> + Â  Â  Â  Â  Â  Â  Â  if (fl->fl_end == OFFSET_MAX)
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t %Ld-EOF\n\n", fl->fl_start);
+> + Â  Â  Â  Â  Â  Â  Â  else
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t %Ld-%Ld\n\n", fl->fl_start, fl->fl_end);
+> + Â  Â  Â  } else {
+> + Â  Â  Â  Â  Â  Â  Â  seq_printf(f, "Start-end:\t 0-EOF\n\n");
+
+Separate start/end or range, if you want to keep it on one line.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
