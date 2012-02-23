@@ -1,165 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab2BWNzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 08:55:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39147 "EHLO
+	id S1755539Ab2BWN5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 08:57:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46531 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab2BWNwE (ORCPT
+	with ESMTP id S1752642Ab2BWN5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 08:52:04 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.128.211 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v3 05/21] mm: rename lruvec->lists into lruvec->pages_lru
-To: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+	Thu, 23 Feb 2012 08:57:09 -0500
+Message-ID: <4F4645B0.5040702@openvz.org>
+Date: Thu, 23 Feb 2012 17:57:04 +0400
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Date: Thu, 23 Feb 2012 17:52:00 +0400
-Message-ID: <20120223135200.12988.92340.stgit@zurg>
-In-Reply-To: <20120223133728.12988.5432.stgit@zurg>
-References: <20120223133728.12988.5432.stgit@zurg>
-User-Agent: StGit/0.15
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memcg: fix page_referencies cgroup filter on global
+ reclaim
+References: <20120215162830.13902.60256.stgit@zurg> <20120221104622.GB1676@cmpxchg.org> <4F43821C.7080001@openvz.org> <20120221131122.GC1676@cmpxchg.org>
+In-Reply-To: <20120221131122.GC1676@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is much more unique and grep-friendly name.
+Johannes Weiner wrote:
+> On Tue, Feb 21, 2012 at 03:38:04PM +0400, Konstantin Khlebnikov wrote:
+>> Johannes Weiner wrote:
+>>> On Wed, Feb 15, 2012 at 08:28:30PM +0400, Konstantin Khlebnikov wrote:
+>>>> Global memory reclaimer should't skip referencies for any pages,
+>>>> even if they are shared between different cgroups.
+>>>
+>>> Agreed: if we reclaim from one memcg because of its limit, we want to
+>>> reclaim those pages that this group is not using.  If it's used by
+>>> someone else, it should be evicted and refaulted by the group that
+>>> needs it.
+>>>
+>>> If we reclaim globally, all references are "true" because we want to
+>>> evict those pages that are not used by any cgroup.
+>>>
+>>> But if we reclaim a hierarchical subgroup, we don't want to evict
+>>> pages that are shared among this hierarchy, either, even if the memcg
+>>> that has the page charged to it is not using it.  Bouncing the page
+>>> around the hierarchy is not sensible, because it does not solve the
+>>> problem of the parent hitting its limit when the sibling group will
+>>> refault it in a blink of an eye.  It should only be evicted if the
+>>> memcg that's not using it nears its own limit, because only in that
+>>> case would reclaiming the page remedy the situation.
+>>>
+>>>> This patch adds scan_control->current_mem_cgroup, which points to currently
+>>>> shrinking sub-cgroup in hierarchy, at global reclaim it always NULL.
+>>>
+>>> So to be consistent, I'm wondering if we should pass
+>>> sc->target_mem_cgroup - the limit-hitting hierarchy root - to
+>>> page_referenced() and then have mm_match_cgroup() do a
+>>> mem_cgroup_same_or_subtree() check to see if the vma is in the
+>>> hierarchy rooted at sc->target_mem_cgroup.
+>>>
+>>> Global reclaim is handled automatically, because mm_match_cgroup() is
+>>> not checked when the passed memcg is NULL, which sc->target_mem_cgroup
+>>> is for global reclaim.
+>>
+>> Also we can try to recharge page to other cgroup, if we found in rmap another its user
+>> outsize of currently shrinking hierarchy, page there is isolated, so at the end we will
+>> insert page directly to its lru.
+>
+> Not sure if it's worth the trouble, but that could work.
+>
+>> But the main purpose of this patch for me is killing mz->mem_cgroup dereference,
+>> because I plan to replace mz with direct reference to lruvec, which will be memcg-free object.
+>
+> I like that plan.  How about this patch then?
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- include/linux/mm_inline.h |    2 +-
- include/linux/mmzone.h    |    2 +-
- mm/memcontrol.c           |    6 +++---
- mm/page_alloc.c           |    2 +-
- mm/swap.c                 |    4 ++--
- mm/vmscan.c               |    6 +++---
- 6 files changed, 11 insertions(+), 11 deletions(-)
+I sent my version. See patch "[PATCH v3 02/21] memcg: make mm_match_cgroup() hirarchical"
 
-diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-index 227fd3e..8415596 100644
---- a/include/linux/mm_inline.h
-+++ b/include/linux/mm_inline.h
-@@ -27,7 +27,7 @@ add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
- 	struct lruvec *lruvec;
- 
- 	lruvec = mem_cgroup_lru_add_list(zone, page, lru);
--	list_add(&page->lru, &lruvec->lists[lru]);
-+	list_add(&page->lru, &lruvec->pages_lru[lru]);
- 	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
- }
- 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 3e1f7ff..ddd0fd2 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -160,7 +160,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
- }
- 
- struct lruvec {
--	struct list_head lists[NR_LRU_LISTS];
-+	struct list_head pages_lru[NR_LRU_LISTS];
- };
- 
- /* Mask used at gathering information at once (see memcontrol.c) */
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 77f5d48..8f8c7c4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1050,7 +1050,7 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
-  * the lruvec for the given @zone and the memcg @page is charged to.
-  *
-  * The callsite is then responsible for physically linking the page to
-- * the returned lruvec->lists[@lru].
-+ * the returned lruvec->pages_lru[@lru].
-  */
- struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
- 				       enum lru_list lru)
-@@ -3592,7 +3592,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- 
- 	zone = &NODE_DATA(node)->node_zones[zid];
- 	mz = mem_cgroup_zoneinfo(memcg, node, zid);
--	list = &mz->lruvec.lists[lru];
-+	list = &mz->lruvec.pages_lru[lru];
- 
- 	loop = mz->lru_size[lru];
- 	/* give some margin against EBUSY etc...*/
-@@ -4716,7 +4716,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
- 		for_each_lru(lru)
--			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
-+			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
- 		mz->usage_in_excess = 0;
- 		mz->on_tree = false;
- 		mz->memcg = memcg;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 38f6744..5f19392 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4363,7 +4363,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 
- 		zone_pcp_init(zone);
- 		for_each_lru(lru)
--			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
-+			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
- 		zone->reclaim_stat.recent_rotated[0] = 0;
- 		zone->reclaim_stat.recent_rotated[1] = 0;
- 		zone->reclaim_stat.recent_scanned[0] = 0;
-diff --git a/mm/swap.c b/mm/swap.c
-index fff1ff7..17993c0 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -238,7 +238,7 @@ static void pagevec_move_tail_fn(struct page *page, void *arg)
- 
- 		lruvec = mem_cgroup_lru_move_lists(page_zone(page),
- 						   page, lru, lru);
--		list_move_tail(&page->lru, &lruvec->lists[lru]);
-+		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
- 		(*pgmoved)++;
- 	}
- }
-@@ -482,7 +482,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
- 		 * We moves tha page into tail of inactive.
- 		 */
- 		lruvec = mem_cgroup_lru_move_lists(zone, page, lru, lru);
--		list_move_tail(&page->lru, &lruvec->lists[lru]);
-+		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
- 		__count_vm_event(PGROTATED);
- 	}
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8b59cb5..e41ad52 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1164,7 +1164,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		lru += LRU_ACTIVE;
- 	if (file)
- 		lru += LRU_FILE;
--	src = &lruvec->lists[lru];
-+	src = &lruvec->pages_lru[lru];
- 
- 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
- 		struct page *page;
-@@ -1663,7 +1663,7 @@ static void move_active_pages_to_lru(struct zone *zone,
- 		SetPageLRU(page);
- 
- 		lruvec = mem_cgroup_lru_add_list(zone, page, lru);
--		list_move(&page->lru, &lruvec->lists[lru]);
-+		list_move(&page->lru, &lruvec->pages_lru[lru]);
- 		pgmoved += hpage_nr_pages(page);
- 
- 		if (put_page_testzero(page)) {
-@@ -3592,7 +3592,7 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
- 			__dec_zone_state(zone, NR_UNEVICTABLE);
- 			lruvec = mem_cgroup_lru_move_lists(zone, page,
- 						LRU_UNEVICTABLE, lru);
--			list_move(&page->lru, &lruvec->lists[lru]);
-+			list_move(&page->lru, &lruvec->pages_lru[lru]);
- 			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
- 			pgrescued++;
- 		}
+one note below
+
+>
+> ---
+> From: Johannes Weiner<hannes@cmpxchg.org>
+> Subject: mm: memcg: count pte references from every member of the reclaimed hierarchy
+>
+> The rmap walker checking page table references has historically
+> ignored references from VMAs that were not part of the memcg that was
+> being reclaimed during memcg hard limit reclaim.
+>
+> When transitioning global reclaim to memcg hierarchy reclaim, I missed
+> that bit and now references from outside a memcg are ignored even
+> during global reclaim.
+>
+> Reverting back to traditional behaviour - count all references during
+> global reclaim and only mind references of the memcg being reclaimed
+> during limit reclaim would be one option.
+>
+> However, the more generic idea is to ignore references exactly then
+> when they are outside the hierarchy that is currently under reclaim;
+> because only then will their reclamation be of any use to help the
+> pressure situation.  It makes no sense to ignore references from a
+> sibling memcg and then evict a page that will be immediately refaulted
+> by that sibling which contributes to the same usage of the common
+> ancestor under reclaim.
+>
+> The solution: make the rmap walker ignore references from VMAs that
+> are not part of the hierarchy that is being reclaimed.
+>
+> Flat limit reclaim will stay the same, hierarchical limit reclaim will
+> mind the references only to pages that the hierarchy owns.  Global
+> reclaim, since it reclaims from all memcgs, will be fixed to regard
+> all references.
+>
+> Reported-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> Signed-off-by: Johannes Weiner<hannes@cmpxchg.org>
+> ---
+>   include/linux/memcontrol.h |    3 ++-
+>   mm/memcontrol.c            |    2 +-
+>   mm/vmscan.c                |    6 ++++--
+>   3 files changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 8537c5d..ba9455d 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_page(struct page *page);
+>   extern void mem_cgroup_uncharge_cache_page(struct page *page);
+>
+>   extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
+> +bool mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
+>   int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
+>
+>   extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+> @@ -91,7 +92,7 @@ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+>   	rcu_read_lock();
+>   	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+>   	rcu_read_unlock();
+> -	return cgroup == memcg;
+> +	return mem_cgroup_same_or_subtree(cgroup, memcg);
+>   }
+
+seems like this memcg pointer is rcu-protected, so it seems broken.
+
+>
+>   extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index e4be95a..f91d762 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1044,7 +1044,7 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+>    * Checks whether given mem is same or in the root_mem_cgroup's
+>    * hierarchy subtree
+>    */
+> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+>   		struct mem_cgroup *memcg)
+>   {
+>   	if (root_memcg != memcg) {
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c631234..120646e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
+>   	int referenced_ptes, referenced_page;
+>   	unsigned long vm_flags;
+>
+> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup,&vm_flags);
+> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
+> +					&vm_flags);
+>   	referenced_page = TestClearPageReferenced(page);
+>
+>   	/* Lumpy reclaim - ignore references */
+> @@ -1710,7 +1711,8 @@ static void shrink_active_list(unsigned long nr_pages,
+>   			continue;
+>   		}
+>
+> -		if (page_referenced(page, 0, mz->mem_cgroup,&vm_flags)) {
+> +		if (page_referenced(page, 0, sc->target_mem_cgroup,
+> +				&vm_flags)) {
+>   			nr_rotated += hpage_nr_pages(page);
+>   			/*
+>   			 * Identify referenced, file-backed active pages and
 
