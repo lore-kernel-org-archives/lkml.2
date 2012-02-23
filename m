@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab2BWQrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 11:47:47 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62492 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752891Ab2BWQrq (ORCPT
+	id S1755086Ab2BWQsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 11:48:22 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:42863 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752736Ab2BWQsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 11:47:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of arnaldo.melo@gmail.com designates 10.236.125.130 as permitted sender) smtp.mail=arnaldo.melo@gmail.com; dkim=pass header.i=arnaldo.melo@gmail.com
-Date: Thu, 23 Feb 2012 14:47:39 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
- browser
-Message-ID: <20120223164739.GF25177@infradead.org>
-References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
- <20120223162850.GC25177@infradead.org>
- <CAOJsxLG2c=Mc-Rn56jmB290LtHpRY8pkfyqPrizgwE8_8+uxFQ@mail.gmail.com>
- <20120223163938.GD25177@infradead.org>
- <1330015504.13624.84.camel@jaguar>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330015504.13624.84.camel@jaguar>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Feb 2012 11:48:20 -0500
+Date: Thu, 23 Feb 2012 08:48:13 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: shpc with acpi=off?
+Message-ID: <20120223084813.39908d81@jbarnes-desktop>
+In-Reply-To: <20120216150421.GA26167@redhat.com>
+References: <20120216150421.GA26167@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/eR5zNMI19XUPhk2mZEmMiX."; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 23, 2012 at 06:45:04PM +0200, Pekka Enberg escreveu:
-> On Thu, 2012-02-23 at 14:39 -0200, Arnaldo Carvalho de Melo wrote:
-> > > Dunno, probably. Does that matter, though? It's pretty damn fast as-is.
-> > 
-> > Well, what kinds of perf.data file are you feeding it?
-> 
-> It's a real-world case where I'm profiling JRuby startup under Jato with
-> perf:
-> 
-> penberg@jaguar:~/src/jato$ ls -lh perf.data 
-> -rw------- 1 penberg penberg 453K 2012-02-23 18:06 perf.data
-> 
-> On Thu, 2012-02-23 at 14:39 -0200, Arnaldo Carvalho de Melo wrote:
-> > I'm testing it now with large ones, lets see.
-> 
-> How big files are we talking about here?
+--Sig_/eR5zNMI19XUPhk2mZEmMiX.
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-5 MB ones, say.
+On Thu, 16 Feb 2012 17:04:22 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-But the way you did it is pretty minimalistic, which is good, its just
-that I don't really like the idea of having two mirror data structures
-representing the report lines.
+> I have a box where shpc works fine with acpi,
+> as well as when acpi is not built into kernel,
+> but fails with acpi=3Doff
+> Some debugging seems to indicate that
+> acpi_get_hp_hw_control_from_firmware
+> fails with acpi=3Doff.
+>=20
+> Is this a bug or is there a reason to prevent shpc
+> from working in this setup?
+> Do we even care about acpi=3Doff?
+> Assuming we want to make acpi_get_hp_hw_control_from_firmware
+> succeed with acpi=3Doff, what is the best way to do this?
+> Check acpi_pci_disabled?
 
-- Arnaldo
+Yeah not sure it's important to have SHPC work with acpi=3Doff.
+Disabling ACPI prevents us from getting all sorts of important info
+these days...
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/eR5zNMI19XUPhk2mZEmMiX.
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPRm3NAAoJEIEoDkX4Qk9hVjoQAKLz+XnHv42HdmYLE6qtrgwe
+XYGjpicKKBQfkG3rTvXQLQnPP9n6xJl7Vbi0bwvsHYr0skA49UbzATWqMi0blbUZ
+WgL5CUDpFpXeC8iXTZwlbH4v7FHKd21ukB9RPX45Db11qKhQLN48cWnwJ+1Wki5D
+VpWBJ8orhGTSoLBP7dlKAqE0+BMbFTraa0gnzL/UIjgGSWH1t9MhY427cagrIJhn
+4DUxdqjqDzj245bybIdnCAzAxv3A5++yev89s25V6W4HqYZThf9oUZKGrkVyvQ6B
+MWTOeCMVS1XHogaOtQC4Vq1q5oo0Jr7Okm82xuZduk9/Usuhwt5xpwtoYo/14+ZA
+V7KIz5m1hQCNHTUL3PIr1gIBArXhRyFrKNkA8mA9DMPVa2KcrCT8GEWcbdfHRTFB
+GdE4FdeRpiRpxIdxSWVaiAbG6/RX0VQmcSNyCTilzeabPf4wodPNltchtGgaeQB+
+FoJ1gKHN00lA3+hltMnkpzZmA+N3qPHfgo2QG/Nc47LjghnwQumXwk7XZsfSDk13
+k9eZ1vc2YquoS5sPzRSoyNGJ91+Q6BfZnZ9n+oc4WxaIYmIqXYfsifTxcaMg1N4s
+B6F183bz++mO1DMIZ7QW4LMdX32cz1S/zZb4uXZVAsbTpVHGgZFmJHKpXUV1Jwhe
+cL+B4aHhnurz944FmDct
+=eyjL
+-----END PGP SIGNATURE-----
+
+--Sig_/eR5zNMI19XUPhk2mZEmMiX.--
