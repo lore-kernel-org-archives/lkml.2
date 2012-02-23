@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab2BWXNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:13:06 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39696 "EHLO ogre.sisk.pl"
+	id S1757368Ab2BWXNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 18:13:40 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39714 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756089Ab2BWXNC convert rfc822-to-8bit (ORCPT
+	id S1755199Ab2BWXNh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:13:02 -0500
+	Thu, 23 Feb 2012 18:13:37 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+        "Norbert Preining" <preining@logic.at>
 References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera>
 In-Reply-To: <y44pDJ8xoDC.A.08E.h8rRPB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <qCQH7HfZS8E.A.t0F.68rRPB@chimera>
-Subject: [Bug #42713] Regression in skge that started around acb42a3 (so past v3.3-rc1)
+Message-ID: <qCQH7HfZS8E.A.suF.48rRPB@chimera>
+Subject: [Bug #42733] Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume, COMRESET failed
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Thu, 23 Feb 2012 23:55:58 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +34,11 @@ from 3.2.  Please verify if it still should be listed and let the tracking team
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42713
-Subject		: Regression in skge that started around acb42a3 (so past v3.3-rc1)
-Submitter	: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date		: 2012-01-30 15:58 (25 days old)
-Message-ID	: <20120130155816.GA1400@phenom.dumpdata.com>
-References	: http://marc.info/?l=linux-kernel&m=132793944220262&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42733
+Subject		: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume, COMRESET failed
+Submitter	: Norbert Preining <preining@logic.at>
+Date		: 2012-02-02 5:12 (22 days old)
+Message-ID	: <20120202051258.GA15550@gamma.logic.tuwien.ac.at>
+References	: http://marc.info/?l=linux-kernel&m=132815978615112&w=2
 
 
