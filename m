@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2BWSQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 13:16:58 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45992 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756595Ab2BWSQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 13:16:57 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX18CBzUt7aMCPzVjHH8ggyEUDFcPz5Fm8HgRv/nvc3
-	oN76QkGCEokzsZ
-From: Sven Joachim <svenjoac@gmx.de>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: i915 regression with 3.3-rc3+git
-References: <4F3EBD0D.7000906@gmail.com>
-	<20120223084106.4b132532@jbarnes-desktop>
-Date: Thu, 23 Feb 2012 19:16:54 +0100
-In-Reply-To: <20120223084106.4b132532@jbarnes-desktop> (Jesse Barnes's message
-	of "Thu, 23 Feb 2012 08:41:06 -0800")
-Message-ID: <8739a12z55.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.93 (gnu/linux)
+	id S1756620Ab2BWSU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 13:20:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756440Ab2BWSU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 13:20:57 -0500
+Date: Thu, 23 Feb 2012 13:20:46 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 33/36] block: add io_context->active_ref
+Message-ID: <20120223182046.GF19691@redhat.com>
+References: <1329875223-5102-1-git-send-email-tj@kernel.org>
+ <1329875223-5102-34-git-send-email-tj@kernel.org>
+ <20120222184736.GE4128@redhat.com>
+ <20120222191347.GB17480@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222191347.GB17480@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-23 17:41 +0100, Jesse Barnes wrote:
+On Wed, Feb 22, 2012 at 11:13:47AM -0800, Tejun Heo wrote:
 
-> On Fri, 17 Feb 2012 21:48:13 +0100
-> Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com> wrote:
->
->> Hello,
->> 
->> i've upgraded from 3.2.0-rc7 to post 3.3.0-rc3 git 
->> 4903062b5485f0e2c286a23b44c9b59d9b017d53, attached you can find dmesg 
->> with drm.debug=0xfff
->> 
->> This started to appear in logs:
->> 
->> [drm:intel_framebuffer_init] *ERROR* unsupported pixel format
->> 
->> X is getting a wrong resolution (log attached) and there's a lot of 
->> flickering, if i try to play a video the desktop turns black, the other 
->> ttys still works fine though.
+[..]
+> It indeed is ugly to have ref, active_ref and nr_tasks tho.  If we can
+> remove CLONE_IO, nr_tasks will go away with it.  Maybe, I don't know.
+> Let's see.
 
-I noticed very similar problems when I upgraded from 3.2 to 3.3-rc4 on
-my laptop.  Same error message but the symptoms were worse, got a black
-screen when the display manager started X.
+I just remembered following commit where a race was fixed and in this
+case two processes were sharing io context.
 
-> Can you check the drm-intel-fixes branch at
-> git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/drm-intel.git?
-> It has a fix for laod detection that might help.
+>From 5eb46851de3904cd1be9192fdacb8d34deadc1fc Mon Sep 17 00:00:00 2001
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Date: Fri, 2 Dec 2011 10:07:07 +0100
+Subject: [PATCH 1/1] cfq-iosched: fix cfq_cic_link() race confition
 
-Works great for me, thanks.
+Just thought of mentioning here. It shows somebody out there uses 
+and cares about CLONE_IO.
 
-Cheers,
-       Sven
+Thanks
+Vivek
