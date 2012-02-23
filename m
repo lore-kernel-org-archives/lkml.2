@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2BWRjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 12:39:23 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:48502 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab2BWRjU (ORCPT
+	id S1756182Ab2BWRlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 12:41:52 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:16914 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373Ab2BWRlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 12:39:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mcgrathr@google.com designates 10.229.78.135 as permitted sender) smtp.mail=mcgrathr@google.com; dkim=pass header.i=mcgrathr@google.com
+	Thu, 23 Feb 2012 12:41:50 -0500
+X-IronPort-AV: E=Sophos;i="4.73,470,1325462400"; 
+   d="scan'208";a="10904372"
+Date: Thu, 23 Feb 2012 17:47:35 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>, <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <catalin.marinas@arm.com>,
+        <linaro-dev@lists.linaro.org>, <kvm@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH-WIP 00/13] xen/arm: receive Xen events and initialize
+ xenbus
+Message-ID: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4F459109.1060205@zytor.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
- <1329845435-2313-7-git-send-email-wad@chromium.org> <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
- <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
- <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
- <CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
- <CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
- <CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
- <4F45887A.5010809@zytor.com> <CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
- <4F459109.1060205@zytor.com>
-From: Roland McGrath <mcgrathr@google.com>
-Date: Thu, 23 Feb 2012 09:38:57 -0800
-Message-ID: <CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Andrew Lutomirski <luto@mit.edu>, Indan Zupancic <indan@nul.nu>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 5:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I meant whether or not a signal can be blocked/caught and the fact that
-> the signal exists at all.
->
-> Now I guess we could have "blockable" and "unblockable" SIGSYS, but that
-> would seem to have its own set of issues...
+Hi all,
+this patch series is part of the work in progress support for Xen on
+ARMv7 with virtualization extensions in Linux.
 
-Oh.  I certainly don't think we should ever add any new signals to the set
-that cannot be caught, blocked, or ignored.  That has been just SIGKILL and
-SIGSTOP since 4.2BSD, which first introduced the modern concept of blocking
-signals.  There are lots of reasons not to change that, which I won't go
-into unless someone really wants me to.
-
-However, I don't think there is anything really wrong with having certain
-cases that generate a signal and at the same time unblock it and reset it
-to SIG_DFL.  That's just an implementation detail of a policy of "dump core
-right now, no other option".  (Conversely, directly calling do_exit won't
-ever dump core, though it can be made to look signalesque to the parent and
-tracers.)
-
-For seccomp-filter, I personally don't see any problem with simply
-generating SIGSYS in the normal way (and aborting the syscall, of course).
-If someone wants to ensure that SIGSYS is never caught or blocked, they can
-just do that by having a filter that doesn't allow it to be caught or
-blocked (and of course make sure to reset its inherited state).  It is a
-bit tricky to cover all the ways, since it's not just sigaction and
-sigprocmask but also sigreturn, where the blocked signal set to be restored
-is in a slightly arcane location--but it ain't rocket science.
-
-But I don't really have any strong opinion about what seccomp-filter should
-do.  (Though it does seem worthwhile not to rule out the possibility of
-dumping core on a policy violation, since that will be useful for people to
-debug their code.)
+It is obviously NOT ready to be accepted upstream but implements
+enough support to allow Linux Dom0 to receive event channel
+notifications and initialize xenbus.
+With this series applied and the corresponding Xen patch series
+(http://marc.info/?l=xen-devel&m=133001696312879) is possible to boot
+Linux as Dom0 on Xen on a Versatile Express Cortex A15 emulator and
+issue basic xl commands, like "xl list" and "xl uptime".
+"xl create" is still not working though but it is the next on the list
+:)
 
 
-Thanks,
-Roland
+Working on this series it became obvious that passing the hypercall
+number as IMM parameter to HVC is not flexible enough because we don't
+always know the hypercall number at compile time.
+As a result I changed the hypercall.h header file to use r12 to pass the
+hypercall number instead. r12 was chosen because it is defined as
+"intra-procedure call scratch register" so it seems the most appropriate. 
+
+I have CC'ed the KVM list on the first patch because following previous
+discussions hypercall.h might become a common header file to issue
+hypercalls on different hypervisors on ARM. I haven't disentangled the
+Xen specific bits from the generic ones yet, however it should be
+straightforward.
+
+I am looking forward to hearing your opinions, especially on the
+hypercall calling convention.
+
+
+The patch series is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git xenarmv7-1
+
+It is based on the vexpress-dt branch of
+git://xenbits.xen.org/people/dvrabel/linux.git, that we are currently
+using as development tree for Linux on Xen on Cortex A15.  See
+http://wiki.xen.org/wiki/Xen_ARMv7_with_Virtualization_Extensions.
+
+
+The list of patches with diffstat follows:
+
+Stefano Stabellini (13):
+      xen/arm: use r12 to pass the hypercall number to the hypervisor
+      xen/arm: introduce privcmp, physdev_op and memory_op hypercalls.
+      xen/arm: mmu.h and page.h related definitions
+      xen/arm: sync_bitops
+      xen/arm: empty implementation of grant_table arch specific functions
+      xen/arm: missing includes
+      xen/arm: receive xen events on arm
+      xen/arm: fix arm xen guest handle definitions
+      xen/arm: shared_info and start_info
+      xen/arm: empty implementation of xen_remap_domain_mfn_range
+      xen/arm: Introduce xen_pfn_t for pfn and mfn types
+      xen/arm: compile and run xenbus
+      xen/arm: compile grant-table features events and xenbus, do not compile pci
+
+ arch/arm/Kconfig                           |    4 +
+ arch/arm/include/asm/sync_bitops.h         |   17 ++++
+ arch/arm/include/asm/xen/events.h          |    9 ++
+ arch/arm/include/asm/xen/grant_table.h     |    2 +
+ arch/arm/include/asm/xen/hypercall.h       |  111 ++++++++++++++++++----------
+ arch/arm/include/asm/xen/interface.h       |   12 +--
+ arch/arm/include/asm/xen/mmu.h             |   61 +++++++++++++++
+ arch/arm/include/asm/xen/page.h            |   14 +++-
+ arch/arm/xen/Makefile                      |    2 +-
+ arch/arm/xen/enlighten.c                   |   71 ++++++++++++++++--
+ arch/arm/xen/grant-table.c                 |   47 ++++++++++++
+ arch/ia64/include/asm/xen/interface.h      |    3 +-
+ arch/x86/include/asm/xen/interface.h       |    3 +
+ drivers/xen/Makefile                       |    7 +-
+ drivers/xen/events.c                       |   36 +++++++++-
+ drivers/xen/grant-table.c                  |    2 +
+ drivers/xen/xenbus/xenbus_client.c         |    1 +
+ drivers/xen/xenbus/xenbus_comms.c          |    2 +-
+ drivers/xen/xenbus/xenbus_probe.c          |   26 ++++---
+ drivers/xen/xenbus/xenbus_probe_frontend.c |    1 +
+ drivers/xen/xenbus/xenbus_xs.c             |    3 +-
+ drivers/xen/xenfs/xenstored.c              |    1 +
+ include/xen/interface/grant_table.h        |    4 +-
+ include/xen/interface/memory.h             |    6 +-
+ include/xen/interface/platform.h           |    4 +-
+ include/xen/interface/xen.h                |    6 +-
+ include/xen/privcmd.h                      |    3 +-
+ include/xen/xen.h                          |    2 +-
+ 28 files changed, 371 insertions(+), 89 deletions(-)
+
+
+Cheers,
+
+Stefano
