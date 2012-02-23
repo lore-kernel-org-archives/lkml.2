@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2BWTIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 14:08:49 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52719 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2BWTIs (ORCPT
+	id S1755295Ab2BWTJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 14:09:40 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50916 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab2BWTJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 14:08:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.218.228 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
-Message-ID: <4F468EBB.9000209@gmail.com>
-Date: Thu, 23 Feb 2012 12:08:43 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Yuanfang Chen <cyfmxc@gmail.com>
-CC: Namhyung Kim <namhyung.kim@lge.com>, linux-kernel@vger.kernel.org
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com> <4F4484AC.9050500@lge.com> <87ehtnhz9w.fsf@gmail.com> <CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com> <4F45E9C5.4020900@lge.com> <CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com> <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
-In-Reply-To: <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 14:09:38 -0500
+From: santoshprasadnayak@gmail.com
+To: tytso@mit.edu
+Cc: adilger@dilger.ca, andrew_perepechko@xyratex.com,
+        nikitas_angelinas@xyratex.com, johann@whamcloud.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] ext4: MMP: Fix endianness bug.
+Date: Fri, 24 Feb 2012 00:39:05 +0530
+Message-Id: <4f468ef2.4105440a.56cc.ffffa1d7@mx.google.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/23/12 11:52 AM, Yuanfang Chen wrote:
->>
->> say my application(not an existing process, so -p<pid>  does not
->> work.) run for 10 seconds. I want the r03c, r2d4 value during each
->> second.  So there will be two values for each event in one second.
->
-> oops, forgot to forward. :-)
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-you are looking for something like this?
-http://www.spinics.net/lists/linux-perf-users/msg00211.html
+Sparse complaint this endian bug in ext4: mmp.
 
-David
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ fs/ext4/mmp.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+index 7ea4ba4..ed6548d 100644
+--- a/fs/ext4/mmp.c
++++ b/fs/ext4/mmp.c
+@@ -257,8 +257,8 @@ int ext4_multi_mount_protect(struct super_block *sb,
+ 	 * If check_interval in MMP block is larger, use that instead of
+ 	 * update_interval from the superblock.
+ 	 */
+-	if (mmp->mmp_check_interval > mmp_check_interval)
+-		mmp_check_interval = mmp->mmp_check_interval;
++	if (le16_to_cpu(mmp->mmp_check_interval) > mmp_check_interval)
++		mmp_check_interval = le16_to_cpu(mmp->mmp_check_interval);
+ 
+ 	seq = le32_to_cpu(mmp->mmp_seq);
+ 	if (seq == EXT4_MMP_SEQ_CLEAN)
+-- 
+1.7.4.4
 
