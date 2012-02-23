@@ -1,82 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2BWLTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 06:19:45 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58336 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755656Ab2BWLTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 06:19:43 -0500
-Date: Thu, 23 Feb 2012 12:19:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120223111929.GA23646@elte.hu>
-References: <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
- <1321495153.5100.7.camel@marge.simson.net>
- <1321544313.6308.25.camel@marge.simson.net>
- <1321545376.2495.1.camel@laptop>
- <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <1329761661.6276.146.camel@marge.simpson.net>
- <20120223104959.GA8454@linux.vnet.ibm.com>
+	id S1755783Ab2BWLUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 06:20:19 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39012 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755710Ab2BWLUQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 06:20:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223104959.GA8454@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59043B20@BGSMSX101.gar.corp.intel.com>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+	<1329905650-30161-2-git-send-email-amit.kachhap@linaro.org>
+	<4D68720C2E767A4AA6A8796D42C8EB59043B20@BGSMSX101.gar.corp.intel.com>
+Date: Thu, 23 Feb 2012 16:50:14 +0530
+Message-ID: <CAK44p233Gsh3WavAEJPRcyAHERYttnJFDXsOAmAGK7tv6jhNGQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] thermal: Add a new trip type to use cooling device
+ instance number
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "rob.lee@linaro.org" <rob.lee@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 23 February 2012 12:16, R, Durgadoss <durgadoss.r@intel.com> wrote:
+> Hi Amit,
+>
+>> -----Original Message-----
+>> From: amit kachhap [mailto:amitdanielk@gmail.com] On Behalf Of Amit Daniel
+>> Kachhap
+>> Sent: Wednesday, February 22, 2012 3:44 PM
+>> To: linux-pm@lists.linux-foundation.org
+>> Cc: linux-kernel@vger.kernel.org; mjg59@srcf.ucam.org; linux-
+>> acpi@vger.kernel.org; lenb@kernel.org; linaro-dev@lists.linaro.org;
+>> amit.kachhap@linaro.org; R, Durgadoss; rob.lee@linaro.org; patches@linaro.org
+>> Subject: [PATCH 1/4] thermal: Add a new trip type to use cooling device
+>> instance number
+>>
+>> This patch adds a new trip type THERMAL_TRIP_STATE_ACTIVE. This
+>> trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
+>> device instance number. This helps the cooling device registered as
+>> different instances to perform appropriate cooling action decision in
+>> the set_cur_state call back function.
+>>
+>> Also since the trip temperature's are in ascending order so some logic
+>> is put in place to skip the un-necessary checks.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+>> ---
+>>  Documentation/thermal/sysfs-api.txt |    4 +-
+>>  drivers/thermal/thermal_sys.c       |   45 ++++++++++++++++++++++++++++++++--
+>>  include/linux/thermal.h             |    1 +
+>>  3 files changed, 45 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-
+>> api.txt
+>> index 1733ab9..7a0c080 100644
+>> --- a/Documentation/thermal/sysfs-api.txt
+>> +++ b/Documentation/thermal/sysfs-api.txt
+>> @@ -184,8 +184,8 @@ trip_point_[0-*]_temp
+>>
+>>  trip_point_[0-*]_type
+>>       Strings which indicate the type of the trip point.
+>> -     E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
+>> -     thermal zone.
+>> +     E.g. it can be one of critical, hot, passive, active[0-1],
+>> +     state-active[0-*] for ACPI thermal zone.
+>>       RO, Optional
+>>
+>>  cdev[0-*]
+>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+>> index 220ce7e..d4c9b20 100644
+>> --- a/drivers/thermal/thermal_sys.c
+>> +++ b/drivers/thermal/thermal_sys.c
+>> @@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct
+>> device_attribute *attr,
+>>               return sprintf(buf, "passive\n");
+>>       case THERMAL_TRIP_ACTIVE:
+>>               return sprintf(buf, "active\n");
+>> +     case THERMAL_TRIP_STATE_ACTIVE:
+>> +             return sprintf(buf, "state-active\n");
+>>       default:
+>>               return sprintf(buf, "unknown\n");
+>>       }
+>> @@ -1034,10 +1036,10 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+>>
+>>  void thermal_zone_device_update(struct thermal_zone_device *tz)
+>>  {
+>> -     int count, ret = 0;
+>> -     long temp, trip_temp;
+>> +     int count, ret = 0, inst_id;
+>> +     long temp, trip_temp, max_state, last_trip_change = 0;
+>>       enum thermal_trip_type trip_type;
+>> -     struct thermal_cooling_device_instance *instance;
+>> +     struct thermal_cooling_device_instance *instance, *state_instance;
+>>       struct thermal_cooling_device *cdev;
+>>
+>>       mutex_lock(&tz->lock);
+>> @@ -1086,6 +1088,43 @@ void thermal_zone_device_update(struct
+>> thermal_zone_device *tz)
+>>                                       cdev->ops->set_cur_state(cdev, 0);
+>>                       }
+>>                       break;
+>> +             case THERMAL_TRIP_STATE_ACTIVE:
+>> +                     list_for_each_entry(instance, &tz->cooling_devices,
+>> +                                         node) {
+>> +                             if (instance->trip != count)
+>> +                                     continue;
+>> +
+>> +                             if (temp <= last_trip_change)
+>> +                                     continue;
+>> +
+>> +                             inst_id = 0;
+>> +                             /*
+>> +                             *For this instance how many instance of same
+>> +                             *cooling device occured before
+>> +                             */
+>> +
+>> +                             list_for_each_entry(state_instance,
+>> +                                             &tz->cooling_devices, node) {
+>> +                                     if (instance->cdev ==
+>> +                                                     state_instance->cdev)
+>> +                                             inst_id++;
+>> +                                     if (state_instance->trip == count)
+>> +                                             break;
+>> +                             }
+>
+> Can you explain a bit more on this loop and the set_cur_state below ?
+> Sorry, I don't get the logic behind this..
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> wrote:
+This loop is basically finding the instance id of the same cooling device.
+Say we have done like this,
+thermal_zone_bind_cooling_device(thermal, 2, cdev);
+thermal_zone_bind_cooling_device(thermal, 3, cdev);
+thermal_zone_bind_cooling_device(thermal, 4, cdev);
 
-> * Mike Galbraith <efault@gmx.de> [2012-02-20 19:14:21]:
-> 
-> > > I was looking at this code due to vatsa wanting to do SD_BALANCE_WAKE.
-> > 
-> > I really really need to find time to do systematic mainline testing.
-> > 
-> > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
-> > Maybe that has changed, but I doubt it.  (general aside: testing with a
-> > bloated distro config is a big mistake)
-> 
-> I am seeing 2.6% _improvement_ in volanomark score by enabling SD_BALANCE_WAKE 
-> at SMT/MC domains.
-> 
-> Machine : 2 Quad-core Intel X5570 CPU (H/T enabled)
-> Kernel  : tip (HEAD at 6241cc8)
-> Java	: OpenJDK 1.6.0_20
-> Volano  : 2_9_0
-> 
-> Volano benchmark was run 4 times with and w/o SD_BALANCE_WAKE enabled in
-> SMT/MC domains.
-> 
-> 				Average score	std. dev
-> 
-> SD_BALANCE_WAKE disabled	369459.750	4825.046
-> SD_BALANCE_WAKE enabled		379070.500	379070.5
-> 
-> I am going to try pipe benchmark next. Do you have suggestions 
-> for any other benchmarks I should try to see the effect of 
-> SD_BALANCE_WAKE turned on in SMT/MC domains?
-
-sysbench is one of the best ones punishing bad scheduler 
-balancing mistakes.
+In above same cooling device cdev is binded to trip no 2,3 and 4 with
+inst_id generated as 1,2,3 respectively. so set_cur_state for those
+trip reached will be called as,
+set_cur_state(cdev, 1);
+set_cur_state(cdev, 2);
+set_cur_state(cdev, 3);
 
 Thanks,
+Amit D
 
-	Ingo
+>
+> Thanks,
+> Durga
+>
+>> +
+>> +                             cdev = instance->cdev;
+>> +                             cdev->ops->get_max_state(cdev, &max_state);
+>> +
+>> +                             if ((temp >= trip_temp) &&
+>> +                                             (inst_id <= max_state))
+>> +                                     cdev->ops->set_cur_state(cdev, inst_id);
+>> +                             else if ((temp < trip_temp) &&
+>> +                                             (--inst_id <= max_state))
+>> +                                     cdev->ops->set_cur_state(cdev, inst_id);
+>> +
+>> +                             last_trip_change = trip_temp;
+>> +                     }
+>> +                     break;
+>>               case THERMAL_TRIP_PASSIVE:
+>>                       if (temp >= trip_temp || tz->passive)
+>>                               thermal_zone_device_passive(tz, temp,
+>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>> index 796f1ff..8df901f 100644
+>> --- a/include/linux/thermal.h
+>> +++ b/include/linux/thermal.h
+>> @@ -42,6 +42,7 @@ enum thermal_trip_type {
+>>       THERMAL_TRIP_PASSIVE,
+>>       THERMAL_TRIP_HOT,
+>>       THERMAL_TRIP_CRITICAL,
+>> +     THERMAL_TRIP_STATE_ACTIVE,
+>>  };
+>>
+>>  struct thermal_zone_device_ops {
+>> --
+>> 1.7.1
+>
