@@ -1,167 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2BWDnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 22:43:45 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59976 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753386Ab2BWDnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 22:43:43 -0500
-Message-ID: <1329968622.5143.46.camel@joe2Laptop>
-Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
-From: Joe Perches <joe@perches.com>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andrei.emeltchenko.news@gmail.com" 
-	<andrei.emeltchenko.news@gmail.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	id S1753704Ab2BWDtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 22:49:01 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:46201
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753366Ab2BWDtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 22:49:00 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 23 Feb 2012 11:56:41 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 22 Feb 2012 19:43:42 -0800
-In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
-References: <20120221151435.GA19354@tuxdriver.com>
-	 <20120221.144417.1445117001833888214.davem@davemloft.net>
-	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
-	 <20120221.154053.2103818562080068513.davem@davemloft.net>
-	 <1329857959.5143.11.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
-	 <1329874581.5143.22.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>
-	 <1329875935.5143.24.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: Re: [PATCH 08/20] pinctrl: Assume map table entries can't have a
+ NULL name field
+Message-ID: <20120223035640.GC9141@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-9-git-send-email-swarren@nvidia.com>
+ <CACRpkdYK1epBfxPCu+cc3Edmd_9aZf4nvNyBx8O0sns5V+gNWw@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC323@HQMAIL01.nvidia.com>
+ <20120222063440.GB11087@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC6A9@HQMAIL01.nvidia.com>
+ <20120223033510.GA9141@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC8E3@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC8E3@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 02:17 +0000, Allan, Bruce W wrote:
-> Example 1:
-> 	if (((a == b) ||
-> 	     (c == d) ||
-> 	     (e == f)) &&
-> 	    (bool_var))
-> 		baz();
+On Wed, Feb 22, 2012 at 07:39:42PM -0800, Stephen Warren wrote:
+> Dong Aisheng wrote at Wednesday, February 22, 2012 8:35 PM:
+> > On Wed, Feb 22, 2012 at 10:05:20AM -0800, Stephen Warren wrote:
+> > > Dong Aisheng wrote at Tuesday, February 21, 2012 11:35 PM:
+> > > > On Tue, Feb 21, 2012 at 09:46:01AM -0800, Stephen Warren wrote:
+> > > > ....
+> > > > > > we might just
+> > > > > >
+> > > > > > #define PIN_MAP_NAME_DEFAULT "default"
+> > > > > > In <linux/pinctrl/consumer.h> and <linux/pinctrl/machine.h> alike,
+> > > > > > maybe in some <linux/pinctrl/mapnames.h> that both of these
+> > > > > > include?
+> > > > > >
+> > > > > > the have the driver ask for:
+> > > > > >
+> > > > > > sirfport->p = pinctrl_get(&pdev->dev, PIN_MAP_NAME_DEFAULT);
+> > > > > >
+> > > > > > (Similar changes can be done for U300, naming all its map
+> > > > > > "default".)
+> > > > >
+> > > > > I guess we could just modify pinmux_get() such that if NULL is passed as
+> > > > > the state name, it uses "default" instead internally. The disadvantage I
+> > > > > see here is that someone reading the client driver and writing the mapping
+> > > > > table then has to know that pinmux_get() does that internally, rather than
+> > > > > it being obvious right in the client driver code.
+> > > >
+> > > > It looks like a way out.
+> > >
+> > > > The left problem seems to be that we may force the mapping table writer to
+> > > > specify "default" name for map at least.
+> > > > Is there any way to avoid it?
+> > >
+> > > That specific restriction has been present since the very first patch
+> > > that created the pinctrl subsystem.
+> >
+> > Since i saw some code in pinctrl subsystem formerly like:
+> > /*
+> >  * If we're looking for a specific named map, this must match,
+> >  * else we loop and look for the next.
+> >  */
+> > if (name != NULL) {
+> > 	if (map->name == NULL)
+> > 		continue;
+> > 	if (strcmp(map->name, name))
+> > 		continue;
+> > }
+> > So i guessed the map->name could be NULL in the original design.
+> > Of course, if we used the convenience macro to define map, there's no
+> > chance to make map name NULL.
 > 
-> Example 2:
-> 	if ((!(var & FOO_MASK) &&
-> 	     (a == b)) ||
-> 	    (c == d))
-> 		baz();
+> Admittedly, the code is a little inconsistent. I was thinking of:
 > 
-> Example 3:
-> 	if (!((foo & FOO_MASK) &&
-> 	      (bar & BAR_MASK)))
-> 		baz();
+> +int __init pinmux_register_mappings(struct pinmux_map const *maps,
+> ...
+> +       for (i = 0; i < num_maps; i++) {
+> +               /* Sanity check the mapping */
+> +               if (!maps[i].name) {
+> +                       pr_err("failed to register map %d: "
+> +                              "no map name given\n", i);
+> +                       return -EINVAL;
+> +               }
 > 
+> > We did not force users to must convenience macros, right?
+> 
+> No. In fact, my patches for Tegra's board file didn't always use them.
+> 
+> > > > I just think it may be better if we do not have such restriction.
+> > >
+> > > Given that all map entries have a name, I'd really prefer that all drivers
+> > > had to request a specific matching name, rather than saying "just give me
+> > > whatever is in the mapping table".
+> > >
+> > > I don't see this as a restriction, but more of a correctness issue;
+> > > every mapping table entry has a name and drivers (or device tree bindings)
+> > > define what that name must be, so why shouldn't drivers be required to
+> > > request that specific name, and experience an error if the mapping table
+> > > author didn't create that name?
+> >
+> > Yes, i agree.
+> > Based on this point, i feel maybe internally convert NULL to a "default" name for
+> > pinctrl_get does not make too much sense.
+> > 
+> > > regulator_get(dev, id) requires id != NULL.
+> > >
+> > > clk_get(dev, con_id) requires con_id != NULL in order to match a clock
+> > > that has a non-NULL con_id defined (although clocks with a NULL con_id
+> > > are also legal, in which case, the con_id parameter to clk_get is
+> > > ignored)
+> > >
+> > > So pinctrl_get(dev, state) requiring state != NULL seems consistent
+> > > with existing practice.
+> >
+> > Yes, it's true if given all map entries have a name.
+> > 
+> > Now i'm intend to the way you mentioned at:
+> > https://lkml.org/lkml/2012/2/21/213
+> > 
+> > And i agree with the way you said:
+> > If we continue to allow NULL names, I think we should change that to:
+> > if name:
+> >     match = map->name && !strcmp(name, map->name)
+> > else:
+> >     match = !map->name
+> > 
+> > And i think allowing map name to be NULL will make life easy for those
+> > devices who do not support multi states.
+> 
+> It does make it a little convenient for board files, but isn't really
+> practical to implement for device-tree unless we modify the binding to
+> have something that means "no name". I'd rather not allow more options
+> in the binding though.
+> 
+> What's wrong with writing e.g. PINCTRL_DEFAULT instead of NULL when calling
+> pinctrl_get() or pinctrl_lookup_state() though? Given pinctrl.h having:
+> 
+> #define PINCTRL_DEFAULT "default"
+> 
+First, map writer needs know this logic.
+Second, all as you said:
+> > > every mapping table entry has a name and drivers (or device tree bindings)
+> > > define what that name must be, so why shouldn't drivers be required to
+> > > request that specific name, and experience an error if the mapping table
+> > > author didn't create that name?
+if want to keep align with regulator and clock,
+i just feel a little that it does not make too much sense to
+internally convert NULL to "default", right?
 
-Hi Bruce. (yay, I got your name right)
-
-Thanks.
-
-How about testing this?
-
-It allows all spaces or appropriate tabs for indentation,
-and I believe it works OK.
-
----
- scripts/checkpatch.pl |   65 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 63 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 89d24b3..7a0514b 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -330,10 +330,11 @@ sub build_types {
- }
- build_types();
- 
--our $match_balanced_parentheses = qr/(\((?:[^\(\)]+|(-1))*\))/;
-+our $balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
-+our $lval_parens = qr/(\((?:[^\(\)]+|(-1))*\))/;
- 
- our $Typecast	= qr{\s*(\(\s*$NonptrType\s*\)){0,1}\s*};
--our $LvalOrFunc	= qr{($Lval)\s*($match_balanced_parentheses{0,1})\s*};
-+our $LvalOrFunc	= qr{($Lval)\s*($lval_parens{0,1})\s*};
- our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
- 
- sub deparenthesize {
-@@ -1330,6 +1331,36 @@ sub check_absolute_file {
- 	}
- }
- 
-+sub pos_last_openparen {
-+	my ($line) = @_;
-+
-+	my $pos = 0;
-+
-+	my $opens = $line =~ tr/\(/\(/;
-+	my $closes = $line =~ tr/\)/\)/;
-+
-+	my $last_openparen = 0;
-+
-+	if (($opens == 0) || ($closes >= $opens)) {
-+		return -1;
-+	}
-+
-+	my $len = length($line);
-+
-+	for ($pos = 0; $pos < $len; $pos++) {
-+	    my $string = substr($line, $pos);
-+	    if ($string =~ /^($FuncArg|$balanced_parens)/) {
-+		    $pos += length($1);
-+	    }
-+
-+	    if (substr($line, $pos, 1) eq '(') {
-+		$last_openparen = $pos;
-+	    }
-+	}
-+
-+	return $last_openparen + 1;
-+}
-+
- sub process {
- 	my $filename = shift;
- 
-@@ -1783,6 +1814,36 @@ sub process {
- 			     "please, no space before tabs\n" . $herevet);
- 		}
- 
-+# check for && or || at the start of a line
-+		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
-+			CHK("LOGICAL_CONTINUATIONS",
-+			    "Logical continuations should be on the previous line\n" . $hereprev);
-+		}
-+
-+# check multi-line statement indentation matches previous line
-+		if ($prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
-+			$prevline =~ /^\+(\t*)(.*)$/;
-+			my $oldindent = $1;
-+			my $rest = $2;
-+
-+			my $pos = pos_last_openparen($rest);
-+			if ($pos >= 0) {
-+				$line =~ /^\+([ \t]*)/;
-+				my $newindent = $1;
-+
-+				my $goodtabindent = $oldindent .
-+					"\t" x ($pos / 8) .
-+					" "  x ($pos % 8);
-+				my $goodspaceindent = $oldindent . " "  x $pos;
-+
-+				if ($newindent ne $goodtabindent &&
-+				    $newindent ne $goodspaceindent) {
-+					CHK("PARENTHESIS_ALIGNMENT",
-+					    "Alignment should match open parenthesis\n" . $hereprev);
-+				}
-+			}
-+		}
-+
- # check for spaces at the beginning of a line.
- # Exceptions:
- #  1) within comments
-
+Regards
+Dong Aisheng
 
