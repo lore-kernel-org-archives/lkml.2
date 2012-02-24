@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab2BXJU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 04:20:59 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:49604 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755674Ab2BXJU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 04:20:56 -0500
-Date: Fri, 24 Feb 2012 11:20:54 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Tejun Heo <tj@kernel.org>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>, sam@ravnborg.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-In-Reply-To: <20120223185503.GI22536@google.com>
-Message-ID: <alpine.SOC.1.00.1202241120300.1227@math.ut.ee>
-References: <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org>
- <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <alpine.SOC.1.00.1202220213180.4171@math.ut.ee> <20120222174825.GA32694@google.com> <alpine.SOC.1.00.1202222025120.20496@math.ut.ee>
- <20120223185503.GI22536@google.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1756582Ab2BXJX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 04:23:59 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:60809 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755604Ab2BXJX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 04:23:56 -0500
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At94ANpWR09V5qjTPGdsb2JhbABEiW2nZQOBAhkBAQEBNzSBcwEBBTocIxAIAxguFCUKGogduUQTikOCLhUJFgsDDw0CCQYVBQMCiFljBJU6hW2NBA
+X-IronPort-AV: E=Sophos;i="4.73,475,1325458800"; 
+   d="scan'208";a="54294502"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 24 Feb 2012 10:23:51 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Chung-yih Wang <cywang@chromium.org>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
+ low z values
+Message-ID: <20120224092351.GA2203@polaris.bitmath.org>
+References: <1329896503-28394-1-git-send-email-cywang@chromium.org>
+ <20120222083858.GA26570@polaris.bitmath.org>
+ <CAGS+omCU9f=DyC442+4HOF=sGhZYXne+E2ephFiOmuj-XKciMA@mail.gmail.com>
+ <20120222110459.GA28126@polaris.bitmath.org>
+ <CAGS+omB0GCQHOjrb_T6h7DzHrH2sp4Xqb5av6JC-ttJ8HZ5BcQ@mail.gmail.com>
+ <20120222152425.GA29436@polaris.bitmath.org>
+ <20120224082706.GB18291@core.coreip.homeip.net>
+ <20120224090835.GA2154@polaris.bitmath.org>
+ <20120224091452.GD10763@core.coreip.homeip.net>
+ <20120224091602.GE10763@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224091602.GE10763@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Can you please try the following patch?  If it still fails to boot,
-> > > please attach the failing log.  Thank you.
+On Fri, Feb 24, 2012 at 01:16:02AM -0800, Dmitry Torokhov wrote:
+> On Fri, Feb 24, 2012 at 01:14:52AM -0800, Dmitry Torokhov wrote:
+> > On Fri, Feb 24, 2012 at 10:08:35AM +0100, Henrik Rydberg wrote:
+> > > > > The most striking effect is the ability to better retain a
+> > > > > drag. Although the statement was made in light of possible
+> > > > > (1-strong,1-weak) packets, it should help in the 2-weak case too.
+> > > > 
+> > > > The bigger question is why is this needed in kernel. The original
+> > > > hysteresis with BTN_TOUCH was done for sole benefit of mousedev so that
+> > > > we could allow somewhat better transition from standard PS/2 mode into
+> > > > native Synaptics mode with absolute coordinates at time when barely
+> > > > anyone had Synaptics X driver installed. This was, what, 10 years ago?
+> > > 
+> > > The semi-mt behavior is obviously a special case, where userspace
+> > > relies on the reported number of fingers to transition between one
+> > > touch and two touches. There is no pressure information sent to
+> > > userspace in this case, so the situation is in fact quite similar to
+> > > the ancient mousedev situation.
 > > 
-> > It works on E3500! Will try other machines tomorrow.
+> > We still report ABS_PRESSURE but maybe we should report ABS_MT_PRESSURE
+> > as well?
 > 
-> Once confirmed, I'll push the patch through tip.  It just hides the
-> underlying problem but we should be in no worse shape than before,
-> it's two line change so reproduing the problem again for proper
-> diagnosing isn't difficult, and we're getting a bit late in release
-> cycle already.
+> BTW, the reason I do not like this in kernel is because it dos not allow
+> users control touchpad sensitivity.
 
-It cured the V210 too but I could not test V100 since it's offline until 
-monday.
+...which is perfectly reasonable, I agree. OTOH, the semi-mt devices
+tend to report close-to-bogus information for anything related to
+individual touches. Pressure is sadly no different, as Daniel pointed
+out. I don't know what is the lesser evil here.
 
--- 
-Meelis Roos (mroos@linux.ee)
+Henrik
