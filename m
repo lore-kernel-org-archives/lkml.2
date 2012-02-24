@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab2BXIRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 03:17:47 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58333 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab2BXIRp (ORCPT
+	id S1755447Ab2BXIUB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 03:20:01 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33193 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab2BXIUA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 03:17:45 -0500
-Date: Fri, 24 Feb 2012 00:17:37 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Akio Idehara <zbe64533@gmail.com>
-Cc: seth.forshee@canonical.com, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, rdunlap@xenotime.net,
-        gregkh@linuxfoundation.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v2] Input: ALPS - Fix ALPS touchpad detection
-Message-ID: <20120224081737.GA10763@core.coreip.homeip.net>
-References: <4F3D009B.8080506@gmail.com>
- <20120216143210.GA30486@ubuntu-macmini>
- <4F465007.30304@gmail.com>
+	Fri, 24 Feb 2012 03:20:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of neilaclarkson@gmail.com designates 10.180.109.225 as permitted sender) smtp.mail=neilaclarkson@gmail.com; dkim=pass header.i=neilaclarkson@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F465007.30304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADzG2TCx8OtpBqwEA1VNN-PUFcPU5WBns2D5LtsZZu9mXUgeOQ@mail.gmail.com>
+References: <CADzG2TCx8OtpBqwEA1VNN-PUFcPU5WBns2D5LtsZZu9mXUgeOQ@mail.gmail.com>
+Date: Fri, 24 Feb 2012 08:19:59 +0000
+Message-ID: <CADzG2TDEK7Us77yUFphH=FSO4Qtqqtja3H6UP5t=5vDoPyBQYg@mail.gmail.com>
+Subject: Re: ext4 superblock last write time clearly isnt the last write time
+From: Neil Clarkson <neilaclarkson@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akio,
+If this time field is meant to be the time of the last write of the
+superblock, as has been suggested to me, but which I doubt, it still
+doesnt make sense. Clearly the superblock must have been rewritten
+when the mount time was updated, yet on my Ubuntu box the last write
+time is far older than that.
 
-On Thu, Feb 23, 2012 at 11:41:11PM +0900, Akio Idehara wrote:
-> This is definitely a bug which isn't fixed for nine years.
-> Why this patch isn't applied to the input sub-system (or mainline)?
-> 
-
-Well, if we waited for 9 years, we could wait for couple more days...
-
-Also, please make sure you do not send patches as:
-
-	Content-Type: text/plain; charset=ISO-8859-1; format=flowed 
-
-as this requires fixing up the patch manually before it can be applied.
-
-Anyway, applied, thank you.
-
--- 
-Dmitry
+On 23 February 2012 21:27, Neil Clarkson <neilaclarkson@gmail.com> wrote:
+> Isn't the s_wtime field of the ext4 superblock supposed to show the
+> time, in seconds since the epoch, of the last write to the file
+> system? All the public domain info I found seems to indicate so, as
+> does this excerpt of code from 'static int ext4_commit_super(struct
+> super_block *sb, int sync)'
+>
+>        /*
+>         * If the file system is mounted read-only, don't update the
+>         * superblock write time.  This avoids updating the superblock
+>         * write time when we are mounting the root file system
+>         * read/only but we need to replay the journal; at that point,
+>         * for people who are east of GMT and who make their clock
+>         * tick in localtime for Windows bug-for-bug compatibility,
+>         * the clock is set in the future, and this will cause e2fsck
+>         * to complain and force a full file system check.
+>         */
+>        if (!(sb->s_flags & MS_RDONLY))
+>                es->s_wtime = cpu_to_le32(get_seconds());
+>
+>
+> Yet I noticed, on the 3 systems available to me, that it isn't
+> anything of the sort. Using dumpe2fs -h to show the timestamp fields
+> in the superblock, one seems be set at a half hour post file system
+> creation, the others clearly mirror the last mount time. None of them
+> are showing the time of the last write. None of them are mounted read
+> only.
+>
+> Linux Wallace 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+> 2012 x86_64 x86_64 x86_64 GNU/Linux (Ubuntu 11.10)
+>
+> Filesystem created:       Wed Nov 23 13:42:18 2011
+> Last mount time:          Tue Feb 21 09:07:54 2012
+> Last write time:          Wed Nov 23 14:12:57 2011
+>
+> Linux VM-OpenSUSE2 2.6.37.1-1.2-desktop #1 SMP PREEMPT 2011-02-21
+> 10:34:10 +0100 x86_64 x86_64 x86_64 GNU/Linux (Open SUSE 11.4)
+>
+> Filesystem created:       Fri Sep 23 18:04:27 2011
+> Last mount time:          Fri Jan 27 09:34:55 2012
+> Last write time:          Fri Jan 27 09:34:55 2012
+>
+> Linux fedoraVM 2.6.35.6-45.fc14.i686 #1 SMP Mon Oct 18 23:56:17 UTC
+> 2010 i686 i686 i386 GNU/Linux (Fedora 14)
+>
+> Filesystem created:       Wed Nov  3 07:24:17 2010
+> Last mount time:          Fri Feb  3 13:04:41 2012
+> Last write time:          Fri Feb  3 13:04:41 2012
+>
+> Clearly I'm missing something? Anyone know what? I've not found any
+> hints so far.
