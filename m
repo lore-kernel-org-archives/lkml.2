@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab2BXXiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 18:38:22 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51549 "EHLO
+	id S1755016Ab2BXXnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 18:43:52 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64733 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756034Ab2BXXiU (ORCPT
+	with ESMTP id S1752675Ab2BXXnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 18:38:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 15:38:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] USB: create module_usb_serial_driver macro
-Message-ID: <20120224233814.GA16588@kroah.com>
+	Fri, 24 Feb 2012 18:43:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.229.67 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 15:39:42 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/4] pch_uart: Add Fish River Island II uart clock quirks
+Message-ID: <20120224233942.GA16650@kroah.com>
+References: <26a433d1bdb5805cac69efb20d3e32dbf790339b.1329875301.git.dvhart@linux.intel.com>
+ <4982ca7a73cfe208a2a5ff0a7e0da54b99ca2d2e.1329875301.git.dvhart@linux.intel.com>
+ <20120222085250.193096c9@pyramind.ukuu.org.uk>
+ <4F44B95E.3030307@linux.intel.com>
+ <20120224215315.GC25330@kroah.com>
+ <4F480E6B.90301@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F480E6B.90301@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that Alan Stern has cleaned up the usb serial driver registration,
-we have the ability to create a module_usb_serial_driver macro to make
-things a bit simpler, like the other *_driver macros created.
+On Fri, Feb 24, 2012 at 02:25:47PM -0800, Darren Hart wrote:
+> 
+> 
+> On 02/24/2012 01:53 PM, Greg Kroah-Hartman wrote:
+> > On Wed, Feb 22, 2012 at 01:46:06AM -0800, Darren Hart wrote:
+> >>
+> >>
+> >> On 02/22/2012 12:52 AM, Alan Cox wrote:
+> >>>> +	/* Setup UART clock, checking for board specific clocks. */
+> >>>> +	uartclk = DEFAULT_UARTCLK;
+> >>>> +
+> >>>> +	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+> >>>> +	if (board_name && strstr(board_name, "CM-iTC"))
+> >>>> +		uartclk = CMITC_UARTCLK;
+> >>>> +
+> >>>> +	board_name = dmi_get_system_info(DMI_PRODUCT_NAME);
+> >>>> +	if (board_name && strstr(board_name, "Fish River Island II"))
+> >>>> +		uartclk = FRI2_UARTCLK;
+> >>>> +
+> >>>> +	port->uartclk = uartclk;
+> >>>
+> >>> This is confusing, you load product name into a variable called
+> >>> board_name ?? perhaps "name" would be clearer ?
+> >>
+> >> OK, done.
+> > 
+> > "Done" where?  Is there a newer patch series I should be looking at
+> > here to apply?  I'm guessing I can ignore this one, right?
+> > 
+> > consider it ignored :)
+> 
+> I have the V2 patch series here, tested it, was going to send it today
+> .... then received a new revision of the hardware/firmware which hides
+> the PCI device and the UART is driven by the 8250 driver and requires me
+> to use 3318 as the baud ..... ***sigh***. I'm not sure what the right
+> thing is to do right now. I'm going to have a conversation with the
+> hardware manufacturer and the TWO firmware teams I'm working with.
+> 
+> If anyone has experience with this sort of mess and would like to offer
+> a recommended course of action, I'm all ears.
 
-But, as we need two functions here, we can't reuse the existing
-module_driver() macro, so we need to roll our own.
+A big stick is usually best to use on the firmware engineers...
 
-Lars-Peter, or anyone else, am I missing something here and we can use
-module_driver() somehow, or even modify it, to work for subsystems that
-need 2 parameters for their function calls to register/deregister?
-
-Actually, if we want to be tricky, we can go back to assigning the
-usb_driver in the usb_serial_driver structure, and just use that pointer
-in the first structure in the list as that option, but that's getting
-pretty opaque just to reuse a single macro...
-
-Thoughts anyone?
-
-thanks,
+Good luck,
 
 greg k-h
-
-
-Here's a patch implementing module_usb_serial_driver() and it converts
-the pl2303 driver to use it, showing a nice cleanup.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
-
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -855,23 +855,7 @@ static struct usb_serial_driver * const serial_drivers[] = {
- 	&pl2303_device, NULL
- };
- 
--static int __init pl2303_init(void)
--{
--	int retval;
--
--	retval = usb_serial_register_drivers(&pl2303_driver, serial_drivers);
--	if (retval == 0)
--		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
--	return retval;
--}
--
--static void __exit pl2303_exit(void)
--{
--	usb_serial_deregister_drivers(&pl2303_driver, serial_drivers);
--}
--
--module_init(pl2303_init);
--module_exit(pl2303_exit);
-+module_usb_serial_driver(pl2303_driver, serial_drivers);
- 
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 34c06a7..7b1db84 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -406,5 +406,33 @@ do {									\
- 	}								\
- } while (0)
- 
-+/*
-+ * module_usb_serial_driver() - Helper macro for registering a USB Serial driver
-+ * @__usb_driver: usb_driver struct to register
-+ * @__serial_drivers: list of usb_serial drivers to register
-+ *
-+ * Helper macro for USB serial drivers which do not do anything special
-+ * in module init/exit. This eliminates a lot of boilerplate. Each
-+ * module may only use this macro once, and calling it replaces
-+ * module_init() and module_exit()
-+ *
-+ * Note, we can't use the generic module_driver() call here, due to the
-+ * two parameters in the usb_serial_* functions, so we roll our own here
-+ * :(
-+ */
-+#define module_usb_serial_driver(__usb_driver, __serial_drivers)	\
-+static int __init usb_serial_driver_init(void)				\
-+{									\
-+	return usb_serial_register_drivers(&(__usb_driver),		\
-+					   (__serial_drivers));		\
-+}									\
-+module_init(usb_serial_driver_init);					\
-+static void __exit usb_serial_driver_exit(void)				\
-+{									\
-+	return usb_serial_deregister_drivers(&(__usb_driver),		\
-+					     (__serial_drivers));	\
-+}									\
-+module_exit(usb_serial_driver_exit);
-+
- #endif /* __LINUX_USB_SERIAL_H */
- 
