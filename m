@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2BXQi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:38:57 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53512 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2BXQi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:38:56 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.180.86.9 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
+	id S1757767Ab2BXQl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:41:27 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:36351 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751284Ab2BXQlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:41:25 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: James Hogan <james.hogan@imgtec.com>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
+Date: Fri, 24 Feb 2012 11:41:23 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4F47981F.4020305@imgtec.com>
+In-Reply-To: <4F47981F.4020305@imgtec.com>
 MIME-Version: 1.0
-In-Reply-To: <20120224153811.GA16535@kroah.com>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
-	<CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
-	<20120224153811.GA16535@kroah.com>
-Date: Fri, 24 Feb 2012 11:38:54 -0500
-Message-ID: <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
-Subject: Re: Can we move device drivers into user-space?
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart4254397.hFfM5kXm2F";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241141.25462.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:38 AM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Feb 24, 2012 at 10:19:36AM -0500, Jidong Xiao wrote:
->> On Wed, Feb 22, 2012 at 11:56 PM, Jidong Xiao <jidong.xiao@gmail.com> wrote:
->> > Hi,
->> >
->> > I am just curious. Since the concept user-space device drivers has
->> > been proposed for several years, and some related projects and
->> > research papers have demonstrated the feasibility of of moving device
->> > drivers into use space. In particular, this paper:
->> >
->> > Tolerating Malicious Device Drivers in Linux.
->> > http://pdos.csail.mit.edu/papers/sud:usenix10.pdf
->> >
->> > In this paper, existing device driver code need not to be changed,
->> > which should help the idea to be applied in practice.
->> >
->> > The advantage and disadvantage of move device drivers into use space
->> > of both obvious:
->> >
->> > Advantage: Since most of kernel bugs are caused by device drivers
->> > issues, moving device drivers into user space can reduce the impact of
->> > device driver bugs. From security perspective, the system can be more
->> > secure and robust if most device drivers are working in user space.
->> > Disadvantage: At least, existing techniques as well as the above paper
->> > showed a relatively high overhead.
->> >
->> > So is it mainly because the high overhead that prevents the user-space
->> > device drivers ideas being accepted in Linux?
->> >
->>
->> Actually, my major concern is, since UIO has been accepted, then why
->> don't we move all the rest device drivers into user space as well. As
->> I understand, currently, some of device drivers are running on user
->> space, while the other (or say the majority of) device drivers are
->> running on kernel space, so why don't we maintain a consistent device
->> drivers infrastructure, say, either all in user space, or all in
->> kernel space. (Sure some critical device drivers still need to be kept
->> in kernel space.)
->
-> Feel free to create patches to do so, and handle all of the userspace
-> changes needed in order to implement this.
->
-> I think you haven't thought through the true reason we have device
-> drivers, and why Linux isn't a microkernel...
->
-> And I'd take exception to your "advantage:" line above, I don't believe
-> that is true at all.
->
-> Best of luck with your work,
->
-Although I was asking "can we" do something, I am not actually
-strongly in favor of either move or not move, as indeed it costs too
-much to do the moving job.
+--nextPart4254397.hFfM5kXm2F
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 
-But when you say "handle all of the userspace changes needed in order
-to implement this", if the device driver can be moved without
-modification (like the paper above shows), there should not be much
-changes required for user space applications.
+On Friday 24 February 2012 09:01:03 James Hogan wrote:
+> Some architectures have symbol prefixes and set CONFIG_SYMBOL_PREFIX,
+> but this wasn't taken into account by the generic cond_syscall. It's
+> easy enough to fix in a generic fashion, so add the symbol prefix to
+> symbol names in cond_syscall when CONFIG_SYMBOL_PREFIX is set.
 
-Also, if user space device drivers is a bad idea, why drivers/uio has
-been created and merged into mainline kernel?
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
 
-Regarding "And I'd take exception to your "advantage:" line above, I
-don't believe that is true at all", do you agree that a significant
-portion of kernel crash incidents are due to bugs in drivers?
+--nextPart4254397.hFfM5kXm2F
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-As to "Linux isn't a microkernel", even though the debate between
-Linux and microkernel have never stopped, it's hard to deny the fact
-that Linux is slowly slowly moving towards a microkernel structure:
-LKM, fuse, uio, etc.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Regards
-Jidong
+iQIcBAABAgAGBQJPR720AAoJEEFjO5/oN/WB31cP/0wbj1gclKtz6t0tPSEajNTK
+K+Yp2vsOWHqrd2kpW0e0mBGG+eI3hYbrkmyef2HNRrZ/EUrtPGW5KS5yGeqIESrr
+JSjXXHm1wQMLgiKwv/v1nMLklAOe/8UEQkl9TmsXJ550wtbavBkABgB4mhtpdBw7
+8GMcrVrlMe0kGijYMinE2tn5xyyYe/2fqw86fjdfDBopZkNQl0iTDa9g4ir3X1Yf
+36RFADVK+0pJns2DhEYqY9O5SOvA+CguFaIKH3uWNvAxxNC1kvNqOW5MtIJ/F8ga
+PggPW2+uxHOEsOZYaWKa7AawHO8QObsTHzfJxggyLArjwfdv0WmSgyuC5oTfx5aO
+Ci3a0iFbVX34pltB9CSbDgzImeyp2r5dRz7chnx6QWz5qlZFr3Q94Gr6+wLz0S7s
+nq1h9ELwO2PjJHhMZYNJplKrxqrcpKV/Mt7Rw7Us34K14kWNyyUZUeNi6WXro9CW
+UImfD5eTtwSv5wJWjbagyuy18TgoBhjEAlQy4uo+11wZU3kuNhEFqAjY39TItCI7
++i8Uh+0H9fmkaoE0ktDTsaZMIbWdkq6jL3y7nebsjftxwvJn7nBi/LKQ+cEwLaqj
+d2qmzyL59IgKaJWn3oYnlGWQw22iS2ogurjXn4Rbjd6ILmrHT+c2N+TZdudkK1wm
++xOpCRHps3O7+IWoU/59
+=HBm9
+-----END PGP SIGNATURE-----
+
+--nextPart4254397.hFfM5kXm2F--
