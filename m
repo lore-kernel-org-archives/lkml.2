@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab2BXQBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:01:43 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53220 "EHLO
+	id S932219Ab2BXQB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:01:57 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53250 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757689Ab2BXQBi (ORCPT
+	by vger.kernel.org with ESMTP id S1757726Ab2BXQBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:01:38 -0500
+	Fri, 24 Feb 2012 11:01:49 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
+To: "David S. Miller" <davem@davemloft.net>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        Petko Manolov <petkan@users.sourceforge.net>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
+        "John W. Linville" <linville@tuxdriver.com>, linux390@de.ibm.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
 Cc: Danny Kukawka <dkukawka@suse.de>,
         Stephen Hemminger <shemminger@vyatta.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/12] wan/lapbether: check given MAC address, if invalid return -EADDRNOTAVAIL
-Date: Fri, 24 Feb 2012 17:01:19 +0100
-Message-Id: <1330099282-4588-10-git-send-email-danny.kukawka@bisect.de>
+        Joe Perches <joe@perches.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        libertas-dev@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-mips@linux-mips.org
+Subject: [PATCH 00/12] Part 2: check given MAC address, if invalid return -EADDRNOTAVAIL 
+Date: Fri, 24 Feb 2012 17:01:10 +0100
+Message-Id: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
-References: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330099298;9b1f5155;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330099309;27020129;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check if given address is valid in .ndo_set_mac_address/
-lapbeth_set_mac_address(), if invalid return -EADDRNOTAVAIL as
-eth_mac_addr() already does if is_valid_ether_addr() fails.
+Second Part of series patches to unifiy the return value of 
+.ndo_set_mac_address if the given address isn't valid.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/wan/lapbether.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+These changes check if a given (MAC) address is valid in 
+.ndo_set_mac_address, if invalid return -EADDRNOTAVAIL 
+as eth_mac_addr() already does if is_valid_ether_addr() fails.
 
-diff --git a/drivers/net/wan/lapbether.c b/drivers/net/wan/lapbether.c
-index 7beeb9b..b6d4cbc 100644
---- a/drivers/net/wan/lapbether.c
-+++ b/drivers/net/wan/lapbether.c
-@@ -45,6 +45,7 @@
- #include <linux/module.h>
- #include <linux/lapb.h>
- #include <linux/init.h>
-+#include <linux/etherdevice.h>
- 
- #include <net/x25device.h>
- 
-@@ -254,6 +255,10 @@ static void lapbeth_disconnected(struct net_device *dev, int reason)
- static int lapbeth_set_mac_address(struct net_device *dev, void *addr)
- {
- 	struct sockaddr *sa = addr;
-+
-+	if (!is_valid_ether_addr(sa->sa_data))
-+		return -EADDRNOTAVAIL;
-+
- 	memcpy(dev->dev_addr, sa->sa_data, dev->addr_len);
- 	return 0;
- }
+These patches are against net-next.
+
+Danny Kukawka (12):
+  ethernet: .ndo_set_mac_address: check given address, if invalid
+    return -EADDRNOTAVAIL
+  cris/eth_v10: check given MAC address, if invalid return
+    -EADDRNOTAVAIL
+  dvb_net: check given MAC address, if invalid return -EADDRNOTAVAIL
+  fddi/skfp: check given MAC address, if invalid return -EADDRNOTAVAIL
+  team: check given MAC address, if invalid return -EADDRNOTAVAIL
+  tokenring: check given MAC address, if invalid return -EADDRNOTAVAIL
+  usb/rtl8150: check given MAC address, if invalid return
+    -EADDRNOTAVAIL
+  vmxnet3: check given MAC address, if invalid return -EADDRNOTAVAIL
+  wan/lapbether: check given MAC address, if invalid return
+    -EADDRNOTAVAIL
+  wireless: check given MAC address, if invalid return -EADDRNOTAVAIL
+  s390/net/qeth_l2_main: check given MAC address, if invalid return
+    -EADDRNOTAVAIL
+  rose: check given MAC address, if invalid return -EADDRNOTAVAIL
+
+ drivers/media/dvb/dvb-core/dvb_net.c               |    5 ++++-
+ drivers/net/cris/eth_v10.c                         |    3 +++
+ drivers/net/ethernet/amd/amd8111e.c                |    3 +++
+ drivers/net/ethernet/amd/atarilance.c              |    3 +++
+ drivers/net/ethernet/chelsio/cxgb/cxgb2.c          |    3 +++
+ drivers/net/ethernet/cisco/enic/enic_main.c        |    3 +++
+ drivers/net/ethernet/freescale/fec_mpc52xx.c       |    3 +++
+ drivers/net/ethernet/jme.c                         |    3 +++
+ drivers/net/ethernet/micrel/ks8851_mll.c           |    3 +++
+ drivers/net/ethernet/micrel/ksz884x.c              |    3 +++
+ drivers/net/ethernet/seeq/sgiseeq.c                |    3 +++
+ drivers/net/ethernet/sgi/ioc3-eth.c                |    3 +++
+ drivers/net/ethernet/tehuti/tehuti.c               |    3 +++
+ drivers/net/fddi/skfp/skfddi.c                     |    3 +++
+ drivers/net/team/team.c                            |    3 +++
+ drivers/net/tokenring/3c359.c                      |    4 ++++
+ drivers/net/tokenring/lanstreamer.c                |    4 ++++
+ drivers/net/tokenring/olympic.c                    |    4 ++++
+ drivers/net/tokenring/tms380tr.c                   |    3 +++
+ drivers/net/usb/rtl8150.c                          |    3 +++
+ drivers/net/vmxnet3/vmxnet3_drv.c                  |    3 +++
+ drivers/net/wan/lapbether.c                        |    5 +++++
+ drivers/net/wireless/airo.c                        |    3 +++
+ drivers/net/wireless/atmel.c                       |    3 +++
+ .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    5 ++++-
+ drivers/net/wireless/hostap/hostap_main.c          |    3 +++
+ drivers/net/wireless/libertas/main.c               |    3 +++
+ drivers/net/wireless/mwifiex/main.c                |    3 +++
+ drivers/net/wireless/zd1201.c                      |    2 ++
+ drivers/s390/net/qeth_l2_main.c                    |    3 +++
+ net/rose/rose_dev.c                                |    3 +++
+ 31 files changed, 99 insertions(+), 2 deletions(-)
+
 -- 
 1.7.8.3
 
