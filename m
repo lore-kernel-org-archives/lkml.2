@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab2BXPdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:33:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47055 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755926Ab2BXPdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:33:21 -0500
-From: Petr Uzel <petr.uzel@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: Ravi Anand <ravi.anand@qlogic.com> (supporter:QLOGIC QLA4XXX iS...),
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com> (supporter:QLOGIC
-	QLA4XXX iS...),
-        iscsi-driver@qlogic.com (supporter:QLOGIC QLA4XXX iS...),
-        "James E.J. Bottomley" <JBottomley@parallels.com> (maintainer:SCSI
-	SUBSYSTEM),
-        Jiri Kosina <trivial@kernel.org> (maintainer:TRIVIAL PATCHES),
-        linux-scsi@vger.kernel.org (open list:QLOGIC QLA4XXX iS...)
-Subject: [PATCH] [trivial] [resend] [SCSI] qla4xxx: Add missing spaces to error messages
-Date: Fri, 24 Feb 2012 16:32:59 +0100
-Message-Id: <1330097579-25679-1-git-send-email-petr.uzel@suse.cz>
-X-Mailer: git-send-email 1.7.7
+	id S1757438Ab2BXPdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:33:50 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:55656 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757077Ab2BXPds convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:33:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of just.for.lkml@googlemail.com designates 10.182.222.74 as permitted sender) smtp.mail=just.for.lkml@googlemail.com; dkim=pass header.i=just.for.lkml@googlemail.com
+MIME-Version: 1.0
+In-Reply-To: <20120219142911.12300.7497.stgit@zurg>
+References: <20120219142911.12300.7497.stgit@zurg>
+Date: Fri, 24 Feb 2012 16:33:48 +0100
+Message-ID: <CAPVoSvSimdFfkxSqtW3Gzf+J-sPPzVuyyUEf7Zxo4HLmBx9kxw@mail.gmail.com>
+Subject: Re: [PATCH] percpu: fix generic definition of __this_cpu_add_and_return()
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Feb 19, 2012 at 3:29 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> This patch adds missed "__" into function prefix.
+> Otherwise on all archectures (except x86) it expands to irq/preemtion-safe
+> variant: _this_cpu_generic_add_return(), which do extra irq-save/irq-restore.
+> Optimal generic implementation is __this_cpu_generic_add_return().
+>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  include/linux/percpu.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+> index 32cd1f6..3b609eb 100644
+> --- a/include/linux/percpu.h
+> +++ b/include/linux/percpu.h
+> @@ -718,7 +718,8 @@ do {                                                                        \
+>  # ifndef __this_cpu_add_return_8
+>  #  define __this_cpu_add_return_8(pcp, val)    __this_cpu_generic_add_return(pcp, val)
+>  # endif
+> -# define __this_cpu_add_return(pcp, val)       __pcpu_size_call_return2(this_cpu_add_return_, pcp, val)
+> +# define __this_cpu_add_return(pcp, val)       \
+> +       __pcpu_size_call_return2(__this_cpu_add_return_, pcp, val)
+>  #endif
+>
+>  #define __this_cpu_sub_return(pcp, val)        this_cpu_add_return(pcp, -(val))
 
-Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
----
- drivers/scsi/qla4xxx/ql4_os.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I think, the same fix should be applied to the lines following this patch:
+#define __this_cpu_sub_return(pcp, val) this_cpu_add_return(pcp, -(val))
+#define __this_cpu_inc_return(pcp)      this_cpu_add_return(pcp, 1)
+#define __this_cpu_dec_return(pcp)      this_cpu_add_return(pcp, -1)
 
-diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-index ce6d3b7..edf5034 100644
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -3382,7 +3382,7 @@ static int get_fw_boot_info(struct scsi_qla_host *ha, uint16_t ddb_index[])
- 		if (qla4xxx_get_flash(ha, buf_dma, addr,
- 				      13 * sizeof(uint8_t)) != QLA_SUCCESS) {
- 			DEBUG2(ql4_printk(KERN_ERR, ha, "scsi%ld: %s: Get Flash"
--					  "failed\n", ha->host_no, __func__));
-+					  " failed\n", ha->host_no, __func__));
- 			ret = QLA_ERROR;
- 			goto exit_boot_info_free;
- 		}
-@@ -3620,7 +3620,7 @@ static int qla4xxx_setup_boot_info(struct scsi_qla_host *ha)
- 
- 	if (ql4xdisablesysfsboot) {
- 		ql4_printk(KERN_INFO, ha,
--			   "%s: syfsboot disabled - driver will trigger login"
-+			   "%s: syfsboot disabled - driver will trigger login "
- 			   "and publish session for discovery .\n", __func__);
- 		return QLA_SUCCESS;
- 	}
--- 
-1.7.7
+Shouldn't these other operations also only give the __ relaxed guarantees?
 
+HTH
+
+Torsten
