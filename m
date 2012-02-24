@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758054Ab2BXSSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 13:18:55 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:45662 "EHLO smtp.gentoo.org"
+	id S1757483Ab2BXSVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 13:21:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758036Ab2BXSSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 13:18:53 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Yegor Yefremov <yegorslists@googlemail.com>
-Subject: Re: [ANNOUNCE] util-linux v2.21
-Date: Fri, 24 Feb 2012 13:18:51 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, util-linux@vger.kernel.org
-References: <20120224122755.GA2106@x2.net.home> <CAGm1_ktDhLd=YCT+zfAjQPwTKH+NLGTwew4Wc42wnwLm00RVTw@mail.gmail.com>
-In-Reply-To: <CAGm1_ktDhLd=YCT+zfAjQPwTKH+NLGTwew4Wc42wnwLm00RVTw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart25128220.bMNuJJtDXm";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1754481Ab2BXSVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 13:21:19 -0500
+Date: Fri, 24 Feb 2012 16:21:09 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Jidong Xiao <jidong.xiao@gmail.com>
+Cc: david@lang.hm, Cong Wang <xiyou.wangcong@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224162109.1bbf157b@redhat.com>
+In-Reply-To: <CAG4AFWbfrTtq2OCrkrXfF-VV1+80oUE1Nfaxg5US3hNX3AiQ6A@mail.gmail.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+	<4F4661D6.7030809@gmail.com>
+	<CAG4AFWa3cs-V+wfL8o6PauTAOtvj8t1E_iSN5r0A8z=Aqzg0tg@mail.gmail.com>
+	<alpine.DEB.2.02.1202231247550.1803@asgard.lang.hm>
+	<CAG4AFWbfrTtq2OCrkrXfF-VV1+80oUE1Nfaxg5US3hNX3AiQ6A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202241318.53493.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart25128220.bMNuJJtDXm
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Em Thu, 23 Feb 2012 16:01:56 -0500
+Jidong Xiao <jidong.xiao@gmail.com> escreveu:
 
-On Friday 24 February 2012 08:31:37 Yegor Yefremov wrote:
-> Hi Karel,
->=20
-> On Fri, Feb 24, 2012 at 1:27 PM, Karel Zak <kzak@redhat.com> wrote:
-> > The util-linux release v2.21 is available at
-> >=20
-> >  ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.21
-> >=20
-> > Feedback and bug reports, as always, are welcomed.
->=20
-> I tried to cross-compile the package under Buildroot and got following
-> error:
->=20
-> checking whether __progname is defined... yes
-> checking whether the target supports thread-local storage... yes
-> configure: error: in `buildroot/output/build/util-linux-2.21':
-> configure: error: cannot run test program while cross compiling
+> On Thu, Feb 23, 2012 at 3:48 PM,  <david@lang.hm> wrote:
+> > On Thu, 23 Feb 2012, Jidong Xiao wrote:
+> >
+> >>>
+> >>> At least UIO drivers are already in Linux kernel, see drivers/uio/.
+> >>>
+> >>
+> >> Oh, so does it make sense to move existing device drivers into user
+> >> space? For example, move most of the stuff located under drivers/usb
+> >> into user-space?
+> >
+> >
+> > Why would you want to? What advantage are you looking to gain from all the
+> > effort?
+> >
+> Since device drivers are a significant source of bugs in OS. Moving
+> them to user space can reduce the impact of these bugs. Otherwise, why
+> UIO, or drivers/uio, is accepted by mainstream Linux kernel.
 
-scanf_cv_alloc_modifier=3Das ./configure ...
-=2Dmike
+Moving a buggy driver to userspace won't fix the bug. You're just moving
+it from one place to another place. Also, the code will likely require changes
+to work on userspace, so, the chances are that you're actually introducing more
+bugs.
 
---nextPart25128220.bMNuJJtDXm
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+The impact of the bug won't also reduce, on most cases, as the userspace driver
+will very likely require root capabilities.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+Also, as driver talks directly with the hardware, an userspace block driver
+would have access to the raw disk data. So, even if you find a way for it to
+run unprivileged, it can still mangle the data written on the disk, and
+even have a malicious code there that adds or allows to add a malware at the
+disk partitions.
 
-iQIcBAABAgAGBQJPR9SNAAoJEEFjO5/oN/WBnsEP/2H8/Mjkm8ryNNA1AE/KzqDt
-iWcQlyiks2S5FcklN8Qtn5TFXc/O+XgJtcP+SIwBbTEMpH1x9hSvyN6u/++Pr5K/
-iZ4S2GAowJDcGOAj6YYJfG3G0A7JXn/JPTTSRhtVpDnKsczEvp0cffYl1pSAO0u0
-qozXNhk2nxcopUCl79kDjPlxrS/ID8XEbOx8MznPK1z4/YKACz2UY4ic1ElMnBKB
-WqMgfDJkRheyAtDA6KI1cmU5sJmAmvEJ9RfnqFxt1/YmldsV6zfCyu7lsA8SbSwy
-DFQ4BVckyH2xn1BnOewiEd7fd4oWkXoQWGJbdU+RedygtCAidwRItUMNQ2IlOBVm
-EI/3r03k7HRI8pv01MMwRQ52iDIlJHFAUEs59gG+yBIVTYwMBIIgUvZ/UVrtL/EI
-frbo3c02jMvD7RLc+CrfNQ1v/zKC/GntsblLq/T+zmAmAWB18PDaBfPJHWn5kL+f
-wmcjaVxh2eW2z0+UXseLmMhB31WDNaL9KboowhdbPkgFwY/SQoXd5B/CaXyC46z0
-J6sPGovYf0ShaFXGre3VlGv6VFqY6/Hd1Vstn2HNHzy06FlAOpAmNAo7AxZuM+kL
-dHCnwFIA3TRvbXh3NQXtL9OHrAz+B8ShdUJMU2EJnHbyBDXN6qzJZvL2xHwzSR9S
-pT5s0XFZ82GjpXJX9Ffj
-=bl33
------END PGP SIGNATURE-----
+That's said, there are much more eyes inspecting the kernel sources than on any 
+other userspace project. So, the risk of a bad code to be inserted unnoticed at
+the Linux kernel is degrees of magnitude lower than on an userspace driver.
 
---nextPart25128220.bMNuJJtDXm--
+So, I can't see any advantage on doing something like that.
+
+> 
+> -Jidong
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Cheers,
+Mauro
+
+---
+
+Delivering value year after year.
+Red Hat ranks #1 in value among software vendors.
+http://www.redhat.com/promo/vendor/
