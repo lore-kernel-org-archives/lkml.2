@@ -1,102 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab2BXKli (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:41:38 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43021 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab2BXKlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:41:36 -0500
-Message-ID: <4F476959.2010400@linux.vnet.ibm.com>
-Date: Fri, 24 Feb 2012 16:11:29 +0530
-From: Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1756874Ab2BXKqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:46:15 -0500
+Received: from zfrontend1.aha.ru ([195.2.83.147]:46181 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751766Ab2BXKqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 05:46:14 -0500
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: [Bug #42669] 3.3-rc1: compiling problems nvme , l2cap_sock
+ , mc13892-regulator , and snd-pcsp don't work
+To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com,
+        florian@mickler.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Fri, 24 Feb 2012 06:48:58 -0400
+Message-ID: <web-701709481@zbackend1.aha.ru>
+In-Reply-To: <20120223.181904.501214130038312055.davem@davemloft.net>
+References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera>
+ 	<qCQH7HfZS8E.A.FVG.M9rRPB@chimera>
+ <20120223.181904.501214130038312055.davem@davemloft.net>
 MIME-Version: 1.0
-To: linux-btrfs@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, chris.mason@oracle.com,
-        kamalesh@linux.vnet.ibm.com
-Subject: [BUG] Kernel Bug at fs/btrfs/volumes.c:3638
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12022400-0260-0000-0000-00000098833F
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+But why then the error is still in the source code, at 
+least until the last 3.3-rc4 ???  I also compiled the 
+code, removing always inline from the line as in the 
+patch, then it works.
 
-While working with 'fsfuzz - file system fuzzing tool' on 'btrfs' 
-encountered the following kernel bug.
+Also, the other compiling errors what I reclaim about, 
+aren't yet resolved.
 
-Environment:
-Kernel Version: 3.3.0-rc4
-Architecture: s390, x86
-
-Providing the kernel trace from 's390' arch.
-
-Btrfs loaded
-device fsid 346683e8-0fcc-4440-b421-4535e73d60d6 devid 1 transid 4 
-/dev/loop0
-btrfs: disk space caching is enabled
-unable to find logical 131072 len 4096
-------------[ cut here ]------------
-kernel BUG at fs/btrfs/volumes.c:3638!
-illegal operation: 0001 [#1] SMP
-Modules linked in: btrfs zlib_deflate crc32c libcrc32c loop dm_multipath 
-dm_mod qeth_l3 ipv6 vmur dasd_eckd_mod dasd_mod scsi_dh_hp_sw 
-scsi_dh_alua scsi_dh_rdac scsi_dh_emc scsi_dh scsi_mod qeth qdio 
-ccwgroup ext3 mbcache jbd
-CPU: 0 Not tainted 3.3.0-rc4-0.27-default #1
-Process mount (pid: 2396, task: 000000003f176738, ksp: 0000000002ab7648)
-Krnl PSW : 0704300180000000 000003e004c10e08 
-(__btrfs_map_block+0x794/0x8cc [btrfs])
-            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:3 PM:0 EA:3
-Krnl GPRS: 0000000000010000 0700000000000008 000000000000002d 
-0400000000000000
-            00000000004d3f26 00000000004e21a8 0000000002ab7828 
-0000000002130d00
-            000000003ee5ed90 000000003e962108 0000000000020000 
-000000003e962110
-            000003e004bb0000 000003e004c4c990 000003e004c10e04 
-0000000002ab7620
-Krnl Code: 000003e004c10df8: e34050000004       lg      %r4,0(%r5)
-            000003e004c10dfe: c0e5fffcfb87       brasl   %r14,3e004bb050c
-           #000003e004c10e04: a7f40001           brc     15,3e004c10e06
- >000003e004c10e08: a7f40000           brc     15,3e004c10e08
-            000003e004c10e0c: 12bb               ltr     %r11,%r11
-            000003e004c10e0e: a7c4ffb7           brc     12,3e004c10d7c
-            000003e004c10e12: e31090200004       lg      %r1,32(%r9)
-            000003e004c10e18: d507d0001078       clc     0(8,%r13),120(%r1)
-Call Trace:
-([<000003e004c10e04>] __btrfs_map_block+0x790/0x8cc [btrfs])
-  [<000003e004c10f6e>] btrfs_map_block+0x2e/0x3c [btrfs]
-  [<000003e004c11db4>] btrfs_map_bio+0x74/0x2ac [btrfs]
-  [<000003e004be13c6>] btree_submit_bio_hook+0xd6/0xf0 [btrfs]
-  [<000003e004c06b4c>] submit_one_bio+0xb4/0xf8 [btrfs]
-  [<000003e004c0e292>] read_extent_buffer_pages+0x292/0x630 [btrfs]
-  [<000003e004bddd0c>] btree_read_extent_buffer_pages+0xc8/0xfc [btrfs]
-  [<000003e004bdf488>] read_tree_block+0x48/0x7c [btrfs]
-  [<000003e004be30d6>] open_ctree+0xec6/0x15f8 [btrfs]
-  [<000003e004bbb7d8>] btrfs_fill_super+0x90/0x170 [btrfs]
-  [<000003e004bbbefa>] btrfs_mount+0x3ea/0x3f8 [btrfs]
-  [<0000000000260b96>] mount_fs+0x5a/0x188
-  [<00000000002852e6>] vfs_kern_mount+0x6e/0x11c
-  [<0000000000285442>] do_kern_mount+0x52/0x114
-  [<000000000028573c>] do_mount+0x238/0x288
-  [<000000000028584e>] SyS_mount+0xc2/0xf0
-  [<00000000004d7d88>] sysc_noemu+0x22/0x28
-  [<000003fffd1fab1e>] 0x3fffd1fab1e
-Last Breaking-Event-Address:
-  [<000003e004c10e04>] __btrfs_map_block+0x790/0x8cc [btrfs]
-
----[ end trace 1e786b24696895a8 ]---
+This things happens, because people, after changes, nor 
+compile them subroutines ...   :(   Much less,  test them 
+...
 
 
-Steps to reproduce:
-# mount <mangled file system image> <mount point> -t btrfs -o loop
+W.Landgraf
 
-Please let me know if you need more information. Thanks in advance.
 
-Regards
-R.Nageswara Sastry
+=============================================================
 
+On Thu, 23 Feb 2012 18:19:04 -0500 (EST)
+  David Miller <davem@davemloft.net> wrote:
+>From: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Date: Thu, 23 Feb 2012 23:51:25 +0100 (CET)
+> 
+>> This message has been generated automatically as a part 
+>>of a summary report
+>> of recent regressions.
+>> 
+>> The following bug entry is on the current list of known 
+>>regressions
+>> from 3.2.  Please verify if it still should be listed 
+>>and let the tracking team
+>> know (either way).
+>> 
+>> 
+>> Bug-Entry	: 
+>>http://bugzilla.kernel.org/show_bug.cgi?id=42669
+>> Subject		: 3.3-rc1: compiling problems  nvme , 
+>>l2cap_sock , mc13892-regulator , and snd-pcsp don't work
+>> Submitter	: werner <w.landgraf@ru.ru>
+>> Date		: 2012-01-20 18:52 (35 days old)
+>> Message-ID	: <web-682421181@zbackend1.aha.ru>
+>> References	: 
+>>http://marc.info/?l=linux-kernel&m=132708923719565&w=2
+> 
+> The l2cap_sock problem is fixed in the net GIT tree by 
+>commit:
+> 
+> --------------------
+> commit 4aa832c27edf902130f8bace1d42cf22468823fa
+> Author: Johan Hedberg <johan.hedberg@intel.com>
+> Date:   Sun Jan 8 22:51:16 2012 +0200
+> 
+>    Bluetooth: Remove bogus inline declaration from 
+>l2cap_chan_connect
+>    
+>    As reported by Dan Carpenter this function causes a 
+>Sparse warning and
+>    shouldn't be declared inline:
+>    
+>    include/net/bluetooth/l2cap.h:837:30 error: marked 
+>inline, but without a
+>    definition"
+>    
+>    Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+>    Signed-off-by: Johan Hedberg 
+><johan.hedberg@intel.com>
+>    Acked-by: Marcel Holtmann <marcel@holtmann.org>
+> 
+> diff --git a/include/net/bluetooth/l2cap.h 
+>b/include/net/bluetooth/l2cap.h
+> index 68f5891..124f7cf 100644
+> --- a/include/net/bluetooth/l2cap.h
+> +++ b/include/net/bluetooth/l2cap.h
+> @@ -834,7 +834,7 @@ int l2cap_add_scid(struct l2cap_chan 
+>*chan,  __u16 scid);
+> struct l2cap_chan *l2cap_chan_create(struct sock *sk);
+> void l2cap_chan_close(struct l2cap_chan *chan, int 
+>reason);
+> void l2cap_chan_destroy(struct l2cap_chan *chan);
+> -inline int l2cap_chan_connect(struct l2cap_chan *chan, 
+>__le16 psm, u16 cid,
+> +int l2cap_chan_connect(struct l2cap_chan *chan, __le16 
+>psm, u16 cid,
+> 								bdaddr_t *dst);
+> int l2cap_chan_send(struct l2cap_chan *chan, struct 
+>msghdr *msg, size_t len,
+> 								u32 priority);
+> diff --git a/net/bluetooth/l2cap_core.c 
+>b/net/bluetooth/l2cap_core.c
+> index faf0b11..980abdb 100644
+> --- a/net/bluetooth/l2cap_core.c
+> +++ b/net/bluetooth/l2cap_core.c
+> @@ -1120,7 +1120,7 @@ static struct l2cap_chan 
+>*l2cap_global_chan_by_psm(int state, __le16 psm, bdaddr
+> 	return c1;
+> }
+> 
+> -inline int l2cap_chan_connect(struct l2cap_chan *chan, 
+>__le16 psm, u16 cid, bdaddr_t *dst)
+> +int l2cap_chan_connect(struct l2cap_chan *chan, __le16 
+>psm, u16 cid, bdaddr_t *dst)
+> {
+> 	struct sock *sk = chan->sk;
+> 	bdaddr_t *src = &bt_sk(sk)->src;
+> 
+> 
+
+"werner" <w.landgraf@ru.ru>
+---
+Professional hosting for everyone - http://www.host.ru
