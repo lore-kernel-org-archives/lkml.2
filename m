@@ -1,87 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab2BXK1o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:27:44 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:55510
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756563Ab2BXK1m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:27:42 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I179dN542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h946hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Shengzhou-B36685 <B36685@freescale.com>
-To: "balbi@ti.com" <balbi@ti.com>, "Eibach, Dirk" <Eibach@gdsys.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
-Subject: RE: Commit 529febe breaks usb on Freescale P1022
-Thread-Topic: Commit 529febe breaks usb on Freescale P1022
-Thread-Index: Aczyzrz7Op4ygo1gSgGaOHDIktPOMwAAI4WAABAGdoAADIzlkA==
-Date: Fri, 24 Feb 2012 10:27:36 +0000
-Message-ID: <3F453DDFF675A64A89321A1F3528102170B1BA@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <48D3D52125C49B43AE880038E2E5314BB5BF89@SRV101.gdsys.de>
- <20120224100513.GH17178@legolas.emea.dhcp.ti.com>
- <48D3D52125C49B43AE880038E2E5314BB5BF8C@SRV101.gdsys.de>
- <20120224101432.GK17178@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20120224101432.GK17178@legolas.emea.dhcp.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.89]
-Content-Type: text/plain; charset="Windows-1252"
+	id S1756889Ab2BXKcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:32:22 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42271 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab2BXKcT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Fri, 24 Feb 2012 05:32:19 -0500
+Message-Id: <4F4775410200007800074992@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 24 Feb 2012 10:32:17 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <ke.yu@intel.com>, <kevin.tian@intel.com>, <lenb@kernel.org>,
+        <xen-devel@lists.xensource.com>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] xen/enlighten: Expose MWAIT and MWAIT_LEAF if
+ hypervisor OKs it.
+References: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
+ <1330036270-20015-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1330036270-20015-3-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Friday, February 24, 2012 6:15 PM
-> To: Eibach, Dirk
-> Cc: balbi@ti.com; Liu Shengzhou-B36685; linux-kernel@vger.kernel.org;
-> gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> stern@rowland.harvard.edu
-> Subject: Re: Commit 529febe breaks usb on Freescale P1022
+>>> On 23.02.12 at 23:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> For the hypervisor to take advantage of the MWAIT support it needs
+> to extract from the ACPI _CST the register address. But the
+> hypervisor does not have the support to parse DSDT so it relies on
+> the initial domain (dom0) to parse the ACPI Power Management information
+> and push it up to the hypervisor. The pushing of the data is done
+> by the processor_harveset_xen module which parses the information that
+> the ACPI parser has graciously exposed in 'struct acpi_processor'.
 > 
-> Hi,
+> For the ACPI parser to also expose the Cx states for MWAIT, we need
+> to expose the MWAIT capability (leaf 1). Furthermore we also need to
+> expose the MWAIT_LEAF capability (leaf 5) for cstate.c to properly
+> function.
 > 
-> On Fri, Feb 24, 2012 at 11:11:46AM +0100, Eibach, Dirk wrote:
-> >
-> >
-> > > > This commit introduces a check for the USB PHY clock.
-> > > > Problem is that CTRL_PHY_CLK_VALID bit seems not to be
-> > > present on all
-> > > > Freescale ehci implementations, at least P1022 does not have it.
-> > > > So this check always fails and the driver never gets loaded.
-> > >
-> > > hmm, you would need a revision check on that function then.
-> >
-> > Since I have no idea which Freescale platforms provide this bit and
-> > which platforms don't, I suggest withdrawing this commit and do some
-> > investigation on Freescales side to do this properly.
+> The hypervisor could expose these flags when it traps the XEN_EMULATE_PREFIX
+> operations, but it can't do it since it needs to be backwards compatible.
+> Instead we choose to use the native CPUID to figure out if the MWAIT
+> capability exists and use the XEN_SET_PDC query hypercall to figure out
+> if the hypervisor wants us to expose the MWAIT_LEAF capability or not.
 > 
-> Could be, but I would like to hear from Shengzhou first. Not sure what
-> Greg thinks though :-)
+> Note: The XEN_SET_PDC query was implemented in c/s 23783:
+> "ACPI: add _PDC input override mechanism".
 > 
-> --
-> balbi
+> With this in place, instead of
+>  C3 ACPI IOPORT 415
+> we get now
+>  C3:ACPI FFH INTEL MWAIT 0x20
+> 
+> Note: The cpu_idle which would be calling the mwait variants for idling
+> never gets set b/c we set the default pm_idle to be the hypercall variant.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c         |   92 
+> +++++++++++++++++++++++++++++++++++++-
+>  include/xen/interface/platform.h |    4 +-
+>  2 files changed, 94 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 12eb07b..4c82936 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -62,6 +62,14 @@
+>  #include <asm/reboot.h>
+>  #include <asm/stackprotector.h>
+>  #include <asm/hypervisor.h>
+> +#include <asm/mwait.h>
+> +
+> +#ifdef CONFIG_ACPI
+> +#include <asm/acpi.h>
+> +#include <acpi/pdc_intel.h>
+> +#include <acpi/processor.h>
+> +#include <xen/interface/platform.h>
+> +#endif
+>  
+>  #include "xen-ops.h"
+>  #include "mmu.h"
+> @@ -200,13 +208,17 @@ static void __init xen_banner(void)
+>  static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
+>  static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
+>  
+> +static __read_mostly unsigned int cpuid_leaf1_ecx_set_mask;
+> +static __read_mostly unsigned int cpuid_leaf5_ecx_val;
+> +static __read_mostly unsigned int cpuid_leaf5_edx_val;
+> +
+>  static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+>  		      unsigned int *cx, unsigned int *dx)
+>  {
+>  	unsigned maskebx = ~0;
+>  	unsigned maskecx = ~0;
+>  	unsigned maskedx = ~0;
+> -
+> +	unsigned setecx = 0;
+>  	/*
+>  	 * Mask out inconvenient features, to try and disable as many
+>  	 * unsupported kernel subsystems as possible.
+> @@ -214,9 +226,18 @@ static void xen_cpuid(unsigned int *ax, unsigned int 
+> *bx,
+>  	switch (*ax) {
+>  	case 1:
+>  		maskecx = cpuid_leaf1_ecx_mask;
+> +		setecx = cpuid_leaf1_ecx_set_mask;
+>  		maskedx = cpuid_leaf1_edx_mask;
+>  		break;
+>  
+> +	case CPUID_MWAIT_LEAF:
+> +		/* Synthesize the values.. */
+> +		*ax = 0;
+> +		*bx = 0;
+> +		*cx = cpuid_leaf5_ecx_val;
+> +		*dx = cpuid_leaf5_edx_val;
+> +		return;
+> +
+>  	case 0xb:
+>  		/* Suppress extended topology stuff */
+>  		maskebx = 0;
+> @@ -232,9 +253,75 @@ static void xen_cpuid(unsigned int *ax, unsigned int 
+> *bx,
+>  
+>  	*bx &= maskebx;
+>  	*cx &= maskecx;
+> +	*cx |= setecx;
+>  	*dx &= maskedx;
+> +
+>  }
+>  
+> +static bool __init xen_check_mwait(void)
+> +{
+> +#if CONFIG_ACPI
 
-Hello,  
+#ifdef
 
-Just now I checked it on P1022, P1022 does not have this bit.
-So far what I know as below: 
-       - P1023/P3041/P5020 have this bit, and mentions it in RM.
-       - P3060/4080/PSC913x do have this bit, but not mentioned in RM.
-       - P1022 have no this bit, not mention it in RM.
+> +	struct xen_platform_op op = {
+> +		.cmd			= XENPF_set_processor_pminfo,
+> +		.u.set_pminfo.id	= -1,
+> +		.u.set_pminfo.type	= XEN_PM_PDC,
+> +	};
+> +	uint32_t buf[3];
+> +	unsigned int ax, bx, cx, dx;
+> +	unsigned int mwait_mask;
+> +
+> +	/* We need to determine whether it is OK to expose the MWAIT
+> +	 * capability to the kernel to harvest deeper than C3 states from ACPI
+> +	 * _CST using the processor_harvest_xen.c module. For this to work, we
+> +	 * need to gather the MWAIT_LEAF values (which the cstate.c code
+> +	 * checks against). The hypervisor won't expose the MWAIT flag because
+> +	 * it would break backwards compatibility; so we will find out directly
+> +	 * from the hardware and hypercall.
+> +	 */
+> +	if (!xen_initial_domain())
+> +		return false;
+> +
+> +	ax = 1;
+> +	cx = 0;
+> +
+> +	native_cpuid(&ax, &bx, &cx, &dx);
+> +
+> +	mwait_mask = (1 << (X86_FEATURE_EST % 32)) |
+> +		     (1 << (X86_FEATURE_MWAIT % 32));
+> +
+> +	if ((cx & mwait_mask) != mwait_mask)
+> +		return false;
+> +
+> +	/* We need to emulate the MWAIT_LEAF and for that we need both
+> +	 * ecx and edx. The hypercall provides only partial information.
+> +	 */
+> +
+> +	ax = CPUID_MWAIT_LEAF;
+> +	bx = 0;
+> +	cx = 0;
+> +	dx = 0;
+> +
+> +	native_cpuid(&ax, &bx, &cx, &dx);
+> +
+> +	/* Ask the Hypervisor whether to clear ACPI_PDC_C_C2C3_FFH. If so,
+> +	 * don't expose MWAIT_LEAF and let ACPI pick the IOPORT version of C3.
+> +	 */
+> +	buf[0] = ACPI_PDC_REVISION_ID;
+> +	buf[1] = 1;
+> +	buf[2] = (ACPI_PDC_C_CAPABILITY_SMP | ACPI_PDC_EST_CAPABILITY_SWSMP);
+> +
+> +	set_xen_guest_handle(op.u.set_pminfo.pdc, buf);
+> +
+> +	if ((HYPERVISOR_dom0_op(&op) == 0) &&
+> +	    (buf[2] & (ACPI_PDC_C_C1_FFH | ACPI_PDC_C_C2C3_FFH))) {
+> +		cpuid_leaf5_ecx_val = cx;
+> +		cpuid_leaf5_edx_val = dx;
+> +	}
+> +	return true;
+> +#else
+> +	return false;
+> +#endif
+> +}
+>  static void __init xen_init_cpuid_mask(void)
+>  {
+>  	unsigned int ax, bx, cx, dx;
+> @@ -261,6 +348,9 @@ static void __init xen_init_cpuid_mask(void)
+>  	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
+>  	if ((cx & xsave_mask) != xsave_mask)
+>  		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
+> +
+> +	if (xen_check_mwait())
+> +		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
+>  }
+>  
+>  static void xen_set_debugreg(int reg, unsigned long val)
+> diff --git a/include/xen/interface/platform.h 
+> b/include/xen/interface/platform.h
+> index c168468..6220b98 100644
+> --- a/include/xen/interface/platform.h
+> +++ b/include/xen/interface/platform.h
+> @@ -200,7 +200,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_getidletime_t);
+>  #define XEN_PM_CX   0
+>  #define XEN_PM_PX   1
+>  #define XEN_PM_TX   2
+> -
+> +#define XEN_PM_PDC  3
+>  /* Px sub info type */
+>  #define XEN_PX_PCT   1
+>  #define XEN_PX_PSS   2
+> @@ -286,6 +286,7 @@ struct xen_processor_performance {
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xen_processor_performance);
+>  
+> +DEFINE_GUEST_HANDLE(uint32_t);
 
-I'm confirming this on more chips and will work out a new patch to fix it.
+Do you really need to introduce (step by step) handles for all those
+uintNN_t types in a way different from Xen's
+(__DEFINE_XEN_GUEST_HANDLE(uint32, uint32_t))?
 
-Regards,
-Shengzhou
+Looks good to me otherwise.
+
+Jan
+
+>  struct xenpf_set_processor_pminfo {
+>  	/* IN variables */
+>  	uint32_t id;    /* ACPI CPU ID */
+> @@ -293,6 +294,7 @@ struct xenpf_set_processor_pminfo {
+>  	union {
+>  		struct xen_processor_power          power;/* Cx: _CST/_CSD */
+>  		struct xen_processor_performance    perf; /* Px: _PPC/_PCT/_PSS/_PSD */
+> +		GUEST_HANDLE(uint32_t)              pdc;
+>  	};
+>  };
+>  DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo);
+> -- 
+> 1.7.9.48.g85da4d
+
 
