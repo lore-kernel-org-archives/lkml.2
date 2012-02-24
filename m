@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab2BXOkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 09:40:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab2BXOkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 09:40:36 -0500
-Date: Fri, 24 Feb 2012 09:40:32 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-Message-ID: <20120224144032.GA13903@zod.bos.redhat.com>
-References: <20120222011652.GE23186@zod.bos.redhat.com>
- <20120222013252.GZ2375@linux.vnet.ibm.com>
- <20120222014242.GF23186@zod.bos.redhat.com>
+	id S1756919Ab2BXOmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 09:42:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57486 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab2BXOmx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 09:42:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rabin.vincent@gmail.com designates 10.50.156.166 as permitted sender) smtp.mail=rabin.vincent@gmail.com; dkim=pass header.i=rabin.vincent@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222014242.GF23186@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOh2x=kDxqddm8EdRKp0+38Efs2QX33TtofLgLxe6auex0YZWQ@mail.gmail.com>
+References: <2f2b55523b707d514a15d822ff812cfae654510a.1330079584.git.viresh.kumar@st.com>
+ <CAH+eYFAEnWdvzojefix_iAefUK3BnLQNcwP2xY0vLHf5RLj5eg@mail.gmail.com> <CAOh2x=kDxqddm8EdRKp0+38Efs2QX33TtofLgLxe6auex0YZWQ@mail.gmail.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Fri, 24 Feb 2012 20:12:11 +0530
+X-Google-Sender-Auth: ra_d5mLAACQOyPJmgBLnJT6-ycs
+Message-ID: <CAH+eYFCzL5bmnjDMvT5sH=gcDjnStYWCWWeVq_hMjUk9g=+-9w@mail.gmail.com>
+Subject: Re: [PATCH] gpio/gpio-stmpe: Fix the value returned by _get_value routine
+To: viresh kumar <viresh.linux@gmail.com>
+Cc: salvatore.dedominicis@st.com, bhavna.yadav@st.com, rajeev-dlh.kumar@st.com,
+        Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
+        shiraz.hashim@st.com, grant.likely@secretlab.ca, deepak.sikri@st.com,
+        mirko.gardi@st.com, vipulkumar.samar@st.com,
+        linus.walleij@stericsson.com, armando.visconti@st.com,
+        amit.virdi@st.com, vincenzo.frascino@st.com, vipin.kumar@st.com,
+        linux-kernel@vger.kernel.org, bhupesh.sharma@st.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 08:42:43PM -0500, Josh Boyer wrote:
-> > And patch #47 in that series has been obsoleted by another series
-> > from Steven Rostedt:
-> > 
-> > 	https://lkml.org/lkml/2012/2/7/231
-> 
-> Ok.
-> 
-> > Hopefully these fix both splats and slowness.
-> 
-> So again, I'm slightly confused on how RCU patches flow.  Eric
-> originally reported the bug for which you created the patch I applied
-> against 3.3.  The giant patch series above seems queued for 3.4.
-> 
-> I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
-> I'd want to go applying the 47-patch series on 3.3 at the moment, and
-> given you have these marked for 3.4 I don't think you do either.
-> However, is there some kind of fix for the original bug report against
-> 3.3?
+On Fri, Feb 24, 2012 at 19:59, viresh kumar <viresh.linux@gmail.com> wrote:
+> On Feb 24, 2012 7:46 PM, "Rabin Vincent" <rabin@rab.in> wrote:
+>> On Fri, Feb 24, 2012 at 16:04, Viresh Kumar <viresh.kumar@st.com> wrote:
+>> > The present _get_value routine returns the contents of the GPIO
+>> > Monitor Pin Status Register(GPMR) starting from the bit whose value
+>> > is requested to BIT 0.
+>> >
+>> > For e.g. if we request the value of GPIO 6 in the earlier
+>> > implementation the value returned is:
+>> >
+>> >        BIT6 to BIT0
+>> >
+>> > whereas it should just return BIT6.
+>>
+>> The current implementation just returns (ret & mask) where mask
+>> would have only BIT6 set, so how can it return "BIT6 to BIT0" ?
+>
+> Oops! I gave same comment when i saw this patch
+> on our internal list and i forgot to fix log while applying.
+>
+> It actually returns 0b1000000 for example. And we need 1 here.
 
-I was being sincere when I asked the above questions.  Could you
-describe how you handle RCU patches across releases and if there is a
-fix for the 3.3-rcX issue Eric reported that is going into 3.3?
-
-I know you're quite busy, but I'd like to understand your thinking so I
-know what to expect going forward.
-
-josh
+According to the documentation, gpio_get_value() (i.e. this function)
+can return zero or non-zero, not necessarily zero or one.
