@@ -1,150 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2BXMJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 07:09:24 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:63012 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332Ab2BXMJW convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 24 Feb 2012 07:09:22 -0500
-Message-Id: <4F478C010200007800074A3D@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 24 Feb 2012 12:09:21 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <dzickus@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: properly _init-annotate NMI selftest code
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753910Ab2BXMRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 07:17:41 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:40872 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab2BXMRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 07:17:40 -0500
+X-IronPort-AV: E=Sophos;i="4.73,475,1325462400"; 
+   d="scan'208";a="10917704"
+Date: Fri, 24 Feb 2012 12:23:33 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH-WIP 07/13] xen/arm: receive xen events on arm
+In-Reply-To: <4F4770AD.6040703@citrix.com>
+Message-ID: <alpine.DEB.2.00.1202241221440.23091@kaball-desktop>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>  <1330019314-20865-7-git-send-email-stefano.stabellini@eu.citrix.com> <4F4770AD.6040703@citrix.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After all, this code is being run once at boot only (if configured in
-at all).
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Don Zickus <dzickus@redhat.com>
-
----
- arch/x86/kernel/nmi_selftest.c |   37 +++++++++++++++++++------------------
- 1 file changed, 19 insertions(+), 18 deletions(-)
-
---- 3.3-rc4/arch/x86/kernel/nmi_selftest.c
-+++ 3.3-rc4-x86-nmi-selftest-init/arch/x86/kernel/nmi_selftest.c
-@@ -12,6 +12,7 @@
- #include <linux/smp.h>
- #include <linux/cpumask.h>
- #include <linux/delay.h>
-+#include <linux/init.h>
+On Fri, 24 Feb 2012, David Vrabel wrote:
+> On 23/02/12 17:48, Stefano Stabellini wrote:
+> > Compile events.c and use IRQ 32 to receive events notifications.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> > +#ifdef CONFIG_ARM
+> > +#define IRQ_EVTCHN_CALLBACK 63
+> > +irqreturn_t xen_arm_callback(int irq, void *arg)
+> > +{
+> > +	__xen_evtchn_do_upcall();
+> > +	return 0;
+> > +}
+> > +
+> > +int __init xen_init_IRQ_arm(void)
+> > +{
+> > +	int rc;
+> > +	xen_init_IRQ();
+> > +	rc = request_irq(IRQ_EVTCHN_CALLBACK, xen_arm_callback,
+> > +			IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
+> > +			"events", "events");	
+> > +	if (rc) {
+> > +		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
+> > +	}
+> > +	return rc;
+> > +}
+> > +core_initcall(xen_init_IRQ_arm);
+> > +#endif
+> 
+> You should (eventually) have a device tree binding for the event channel
+> and use a OF (device tree) device driver instead of this core_initcall()
+> to register the handler etc.
  
- #include <asm/apic.h>
- #include <asm/nmi.h>
-@@ -20,35 +21,35 @@
- #define FAILURE		1
- #define TIMEOUT		2
- 
--static int nmi_fail;
-+static int __initdata nmi_fail;
- 
- /* check to see if NMI IPIs work on this machine */
--static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __read_mostly;
-+static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __initdata;
- 
--static int testcase_total;
--static int testcase_successes;
--static int expected_testcase_failures;
--static int unexpected_testcase_failures;
--static int unexpected_testcase_unknowns;
-+static int __initdata testcase_total;
-+static int __initdata testcase_successes;
-+static int __initdata expected_testcase_failures;
-+static int __initdata unexpected_testcase_failures;
-+static int __initdata unexpected_testcase_unknowns;
- 
--static int nmi_unk_cb(unsigned int val, struct pt_regs *regs)
-+static int __init nmi_unk_cb(unsigned int val, struct pt_regs *regs)
- {
- 	unexpected_testcase_unknowns++;
- 	return NMI_HANDLED;
- }
- 
--static void init_nmi_testsuite(void)
-+static void __init init_nmi_testsuite(void)
- {
- 	/* trap all the unknown NMIs we may generate */
- 	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk");
- }
- 
--static void cleanup_nmi_testsuite(void)
-+static void __init cleanup_nmi_testsuite(void)
- {
- 	unregister_nmi_handler(NMI_UNKNOWN, "nmi_selftest_unk");
- }
- 
--static int test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
-+static int __init test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
- {
-         int cpu = raw_smp_processor_id();
- 
-@@ -58,7 +59,7 @@ static int test_nmi_ipi_callback(unsigne
-         return NMI_DONE;
- }
- 
--static void test_nmi_ipi(struct cpumask *mask)
-+static void __init test_nmi_ipi(struct cpumask *mask)
- {
- 	unsigned long timeout;
- 
-@@ -86,7 +87,7 @@ static void test_nmi_ipi(struct cpumask 
- 	return;
- }
- 
--static void remote_ipi(void)
-+static void __init remote_ipi(void)
- {
- 	cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
-@@ -94,19 +95,19 @@ static void remote_ipi(void)
- 		test_nmi_ipi(to_cpumask(nmi_ipi_mask));
- }
- 
--static void local_ipi(void)
-+static void __init local_ipi(void)
- {
- 	cpumask_clear(to_cpumask(nmi_ipi_mask));
- 	cpumask_set_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
- 	test_nmi_ipi(to_cpumask(nmi_ipi_mask));
- }
- 
--static void reset_nmi(void)
-+static void __init reset_nmi(void)
- {
- 	nmi_fail = 0;
- }
- 
--static void dotest(void (*testcase_fn)(void), int expected)
-+static void __init dotest(void (*testcase_fn)(void), int expected)
- {
- 	testcase_fn();
- 	/*
-@@ -131,12 +132,12 @@ static void dotest(void (*testcase_fn)(v
- 	reset_nmi();
- }
- 
--static inline void print_testname(const char *testname)
-+static inline void __init print_testname(const char *testname)
- {
- 	printk("%12s:", testname);
- }
- 
--void nmi_selftest(void)
-+void __init nmi_selftest(void)
- {
- 	init_nmi_testsuite();
- 
-
-
-
+Yes, that is the idea, once we have better device tree support in Xen.
+We should also pass the IRQ number to be used as event injection
+mechanism through the device tree.
