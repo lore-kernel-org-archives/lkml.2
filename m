@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab2BXPwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:52:00 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56080 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754481Ab2BXPv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:51:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.112.31.232 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
-MIME-Version: 1.0
-In-Reply-To: <4F47B1A3.6050503@gmail.com>
-References: <20120224094048.GA7952@quad>
-	<4F47ABAD.9080408@gmail.com>
-	<CABPqkBT1R_SJiQkjujS4dN5yQZPakjOmmCLNR3DmNxTmVT_p9A@mail.gmail.com>
-	<4F47AD6A.6080609@gmail.com>
-	<CABPqkBQyBtxO3ytcZKHyGNAiwYzmqODy+C-EY5gQTENKtngBFw@mail.gmail.com>
-	<4F47B1A3.6050503@gmail.com>
-Date: Fri, 24 Feb 2012 16:51:56 +0100
-Message-ID: <CABPqkBT=po0=-oi0GgGEVCNCxuSMwMyh5vPz=sWcNrqSZDc68Q@mail.gmail.com>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        mingo@elte.hu, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
-        asharma@fb.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        vweaver1@eecs.utk.edu, andi@firstfloor.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1757629Ab2BXP47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:56:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48585 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757160Ab2BXP45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:56:57 -0500
+From: Petr Uzel <petr.uzel@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com> (maintainer:SCSI
+	SUBSYSTEM),
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
+Subject: [PATCH 2/2] [resend] [SCSI] sd: Adapt comment and printk string after renaming sd_attach to sd_probe
+Date: Fri, 24 Feb 2012 16:56:55 +0100
+Message-Id: <1330099015-26893-2-git-send-email-petr.uzel@suse.cz>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330099015-26893-1-git-send-email-petr.uzel@suse.cz>
+References: <1330099015-26893-1-git-send-email-petr.uzel@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 4:49 PM, David Ahern <dsahern@gmail.com> wrote:
-> On 2/24/12 8:40 AM, Stephane Eranian wrote:
->>
->> No, I don't. Read the code carefully. The for loop sets all known feature
->> bits.
->> Then, the ones not necessary or unused are turned off individually.
->
->
-> Ok, I see now. The __set_feat loop is earlier in builtin-record.c, not the
-> util code.
->
-Yeah. Arnaldo simplified the original code in builtin-record.c to have the loop
-instead of individual set_feat().
+Make the comment and printk string match the code.
 
-> David
+Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
+Acked-by: Hannes Reinecke <hare@suse.de>
+---
+ drivers/scsi/sd.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7c0d345..8eea785 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2562,8 +2562,8 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+  *	(e.g. /dev/sda). More precisely it is the block device major 
+  *	and minor number that is chosen here.
+  *
+- *	Assume sd_attach is not re-entrant (for time being)
+- *	Also think about sd_attach() and sd_remove() running coincidentally.
++ *	Assume sd_probe is not re-entrant (for time being)
++ *	Also think about sd_probe() and sd_remove() running coincidentally.
+  **/
+ static int sd_probe(struct device *dev)
+ {
+@@ -2578,7 +2578,7 @@ static int sd_probe(struct device *dev)
+ 		goto out;
+ 
+ 	SCSI_LOG_HLQUEUE(3, sdev_printk(KERN_INFO, sdp,
+-					"sd_attach\n"));
++					"sd_probe\n"));
+ 
+ 	error = -ENOMEM;
+ 	sdkp = kzalloc(sizeof(*sdkp), GFP_KERNEL);
+-- 
+1.7.7
+
