@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab2BXTPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:15:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5054 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757091Ab2BXTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:15:42 -0500
-Message-ID: <4F47E1DA.9040407@redhat.com>
-Date: Fri, 24 Feb 2012 17:15:38 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1757220Ab2BXTRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:17:01 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35582 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab2BXTRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 14:17:00 -0500
+Date: Fri, 24 Feb 2012 17:16:41 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: ananth@in.ibm.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH] perf - ensure offset provided during probe addition is
+ not greater than function length
+Message-ID: <20120224191641.GD27882@infradead.org>
+References: <4F45FABE.90104@linux.vnet.ibm.com>
+ <4F473F33.4060409@linux.vnet.ibm.com>
+ <4F47673B.6000103@hitachi.com>
+ <4F47756F.1020602@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 3.3-rc5] media fixes
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F47756F.1020602@linux.vnet.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Latest commit at the branch: 
-fda27874de91d5a8b9a018b3bc74b14578994908 [media] hdpvr: update picture controls to support firmware versions > 0.15
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
+Em Fri, Feb 24, 2012 at 05:03:03PM +0530, Prashanth Nageshappa escreveu:
+> Can you please pick up this patch?
 
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
+I'll do it, thanks,
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-Janne Grunau (1):
-      [media] hdpvr: fix race conditon during start of streaming
-
-Jarod Wilson (1):
-      [media] imon: don't wedge hardware after early callbacks
-
-Laurent Pinchart (1):
-      [media] omap3isp: Fix crash caused by subdevs now having a pointer to devnodes
-
-Randy Dunlap (1):
-      [media] wl128x: fix build errors when GPIOLIB is not enabled
-
-Taylor Ralph (1):
-      [media] hdpvr: update picture controls to support firmware versions > 0.15
-
- drivers/media/radio/wl128x/Kconfig      |    4 +-
- drivers/media/rc/imon.c                 |   26 +++++++++++++++---
- drivers/media/video/hdpvr/hdpvr-core.c  |   18 ++++++++++--
- drivers/media/video/hdpvr/hdpvr-video.c |   46 ++++++++++++++++++++++---------
- drivers/media/video/hdpvr/hdpvr.h       |    1 +
- drivers/media/video/omap3isp/ispccdc.c  |    2 +-
- 6 files changed, 74 insertions(+), 23 deletions(-)
-
+- Arnaldo
+ 
+> On 02/24/2012 04:02 PM, Masami Hiramatsu wrote:
+> 
+> > (2012/02/24 16:41), Prashanth Nageshappa wrote:
+> >> perf probe allows kprobe to be inserted at any offset from a function
+> >> start, which results in adding kprobes to unintended location.
+> >> (example: perf probe do_fork+10000 is allowed even though size of
+> >> do_fork is ~904)
+> >>
+> >> This patch will ensure probe addition fails when the offset specified
+> >> is greater than size of the function.
+> >>
+> >>
+> >> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+> > 
+> > This seems good to me.
+> > 
+> > Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > 
+> > Thank you,
+> > 
+> >> ---
+> >>
+> >>  tools/perf/util/probe-finder.c |   12 +++++++++++-
+> >>  1 files changed, 11 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> >> index 5d73262..d298f94 100644
+> >> --- a/tools/perf/util/probe-finder.c
+> >> +++ b/tools/perf/util/probe-finder.c
+> >> @@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
+> >>  static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+> >>  				  bool retprobe, struct probe_trace_point *tp)
+> >>  {
+> >> -	Dwarf_Addr eaddr;
+> >> +	Dwarf_Addr eaddr, highaddr;
+> >>  	const char *name;
+> >>
+> >>  	/* Copy the name of probe point */
+> >> @@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+> >>  				   dwarf_diename(sp_die));
+> >>  			return -ENOENT;
+> >>  		}
+> >> +		if (dwarf_highpc(sp_die, &highaddr) != 0) {
+> >> +			pr_warning("Failed to get end address of %s\n",
+> >> +				   dwarf_diename(sp_die));
+> >> +			return -ENOENT;
+> >> +		}
+> >> +		if (paddr > highaddr) {
+> >> +			pr_warning("Offset specified is greater than size of %s\n",
+> >> +				   dwarf_diename(sp_die));
+> >> +			return -EINVAL;
+> >> +		}
+> >>  		tp->symbol = strdup(name);
+> >>  		if (tp->symbol == NULL)
+> >>  			return -ENOMEM;
+> >>
+> > 
+> > 
+> 
