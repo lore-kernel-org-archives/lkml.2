@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab2BXCnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 21:43:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58670 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab2BXCnV (ORCPT
+	id S1754334Ab2BXCtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 21:49:14 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54323 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab2BXCtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 21:43:21 -0500
-Date: Thu, 23 Feb 2012 18:42:58 -0800
-From: tip-bot for Bobby Powers <bobbypowers@gmail.com>
-Message-ID: <tip-f044db4cb4bf16893812d35b5fbeaaf3e30c9215@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bobbypowers@gmail.com, hpa@zytor.com,
-        mingo@redhat.com, dhowells@redhat.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, bobbypowers@gmail.com,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com, tglx@linutronix.de
-In-Reply-To: <1329888587-3087-1-git-send-email-bobbypowers@gmail.com>
-References: <1329888587-3087-1-git-send-email-bobbypowers@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/types] fs: Fix close_on_exec pointer in alloc_fdtable
-Git-Commit-ID: f044db4cb4bf16893812d35b5fbeaaf3e30c9215
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 23 Feb 2012 18:43:04 -0800 (PST)
+	Thu, 23 Feb 2012 21:49:13 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 24 Feb 2012 11:47:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
+Message-Id: <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F468888.9090702@fb.com>
+References: <1326912662-18805-1-git-send-email-asharma@fb.com>
+	<CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com>
+	<4F468888.9090702@fb.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f044db4cb4bf16893812d35b5fbeaaf3e30c9215
-Gitweb:     http://git.kernel.org/tip/f044db4cb4bf16893812d35b5fbeaaf3e30c9215
-Author:     Bobby Powers <bobbypowers@gmail.com>
-AuthorDate: Wed, 22 Feb 2012 00:29:47 -0500
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 23 Feb 2012 18:28:52 -0800
+On Thu, 23 Feb 2012 10:42:16 -0800
+Arun Sharma <asharma@fb.com> wrote:
 
-fs: Fix close_on_exec pointer in alloc_fdtable
+> Hi Balbir,
+> 
+> Thanks for reviewing. Would you change your position if I limit the 
+> scope of the patch to a cgroup with a single address space?
+> 
+> The moment the cgroup sees more than one address space (either due to 
+> tasks getting created or being added), this optimization would be turned 
+> off.
+> 
+> More details below:
+> 
+> On 2/22/12 11:45 PM, Balbir Singh wrote:
+> >
+> > So the assumption is that only apps that have access to each others
+> > VMA's will run in this cgroup?
+> >
+> 
+> In a distributed computing environment, a user submits a job to the 
+> cluster job scheduler. The job might involve multiple related 
+> executables and might involve multiple address spaces. But they're 
+> performing one logical task, have a single resource limit enforced by a 
+> cgroup.
+> 
+> They don't have access to each other's VMAs, but if "accidentally" one 
+> of them comes across an uninitialized page with data from another task, 
+> it's not a violation of the security model.
+> 
+How do you handle shared resouce, file-cache ?
 
-alloc_fdtable allocates space for the open_fds and close_on_exec
-bitfields together, as 2 * nr / BITS_PER_BYTE.  close_on_exec needs to
-point to open_fds + nr / BITS_PER_BYTE, not open_fds + nr /
-BITS_PER_LONG, as introducted in 1fd36adc: Replace the fd_sets in
-struct fdtable with an array of unsigned longs.
+Thanks,
+-Kame
 
-Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
-Link: http://lkml.kernel.org/r/1329888587-3087-1-git-send-email-bobbypowers@gmail.com
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- fs/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/file.c b/fs/file.c
-index 2d479dd..171f6b4 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -179,7 +179,7 @@ static struct fdtable * alloc_fdtable(unsigned int nr)
- 	if (!data)
- 		goto out_arr;
- 	fdt->open_fds = data;
--	data += nr / BITS_PER_LONG;
-+	data += nr / BITS_PER_BYTE;
- 	fdt->close_on_exec = data;
- 	fdt->next = NULL;
- 
