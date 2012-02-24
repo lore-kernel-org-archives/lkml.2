@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab2BXQhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:37:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59316 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757197Ab2BXQhh (ORCPT
+	id S1757657Ab2BXQiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:38:18 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53649 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab2BXQiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:37:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.197.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 08:31:51 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?utf-8?B?0JrQuNGA0LjQu9C7INCg0YPRgdC40L3QvtCy?= 
-	<carasin.berlogue@mail.ru>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Take a look to this bug, please
-Message-ID: <20120224163151.GA8083@kroah.com>
-References: <E1S0xkw-0005Mj-4q.carasin-berlogue-mail-ru@f264.mail.ru>
+	Fri, 24 Feb 2012 11:38:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
+Date: Fri, 24 Feb 2012 16:38:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4F47981F.4020305@imgtec.com> <201202241119.44480.vapier@gentoo.org> <201202241637.30284.arnd@arndb.de>
+In-Reply-To: <201202241637.30284.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <E1S0xkw-0005Mj-4q.carasin-berlogue-mail-ru@f264.mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241638.12205.arnd@arndb.de>
+X-Provags-ID: V02:K0:qgZemHvYuxPtBSwjZZx9rQIm+Mol3AkIGa/r7lFn3q/
+ QUQ7kbnAGR1tSvsyfRliJHMmUot9xkO2kqFkY6OtXZY+3TYKAW
+ AJELxItx4rZm8PvPMFvW+m/kycj5nvoefDpCMweuyHZ4RO+smJ
+ bJgbrQDnzT6upul0zjpjX4jQqCrBTxP1qC9JWHFrTHMoD7OMK1
+ eP4m5qKBIcTMLl6eB/gR3VR7Trs5FxXbz8isyYHZH2j3tVmrxs
+ gxrQ0SMTOzUD60VRrpxSe6QOKb6LmCRzL3oWqH4NPZft1XvIqt
+ zoC2ms21Yzv0cNevGFdfFaNxF9B30O/G3qiegm4hanbFM2m7e+
+ jHBefmcRRiOGp+Uzm6X4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 08:12:26PM +0400, Кирилл Русинов wrote:
-> Good day!
-> My name is Kirill Rusinov. I want to draw your attention to one bugreport.
+On Friday 24 February 2012, Arnd Bergmann wrote:
+> We actually have MODULE_SYMBOL_PREFIX providing the correct string
+> under a name that is not appropriate here. We can probably stick with
+> Jason's patch for now and add a more sophisticated logic if another
+> user of CONFIG_SYMBOL_PREFIX comes up.
 > 
-> This message is a result of my failed attempt to email Greg K.H (only the email-bot has answered to me).
+> So for Jason's patch:
 > 
-> I've posted a bug report here: https://bugzilla.redhat.com/show_bug.cgi?id=796626
-> This applies to problem with the brightness control on the laptop Samsung RV520.
-> It seems to me it deserves your attention.
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> We could put that into the kernel now, but it's probably sufficient if
+> Jason keeps the patch with his others and submits it at the same time
+> when we get there.
 
-I don't understand what this pertains to the stable kernel releases, so
-why email that list?
-
-And as you have created a redhat bug, why not work with the redhat
-developers on this?
-
-Also, have you tried the latest 3.3-rc4 kernel, it should have solved
-this problem.
-
-greg k-h
+Sorry, I meant s/Jason/James/g
