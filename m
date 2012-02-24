@@ -1,121 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2BXHp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 02:45:29 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:16929 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2BXHp2 (ORCPT
+	id S1754490Ab2BXHrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 02:47:13 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:54976 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752282Ab2BXHrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 02:45:28 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz1432Nea8N98dKzz1202hzz8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 24 Feb 2012 15:52:43 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: make the pinmux-pins more helpful
-Message-ID: <20120224075243.GE25789@shlinux2.ap.freescale.net>
-References: <1330062969-25016-1-git-send-email-linus.walleij@stericsson.com>
+	Fri, 24 Feb 2012 02:47:12 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <akpm@linux-foundation.org>, <rui.zhang@intel.com>
+Cc: <armando.visconti@st.com>, <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
+        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
+        <salvatore.dedominicis@st.com>, <linux-kernel@vger.kernel.org>,
+        <len.brown@intel.com>
+Subject: [PATCH] thermal: Add support for thermal sensor present on SPEAr13xx machines
+Date: Fri, 24 Feb 2012 12:57:38 +0530
+Message-ID: <032b0bad50a9ad812c9a907138bb1a6caed38c74.1330068012.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.8.110.g4cb5d
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1330062969-25016-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 06:56:09AM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The debugfs file pinmux-pins used to tell which function was
-> enabled but now states simply which device owns the pin. Being
-> owned by the pinctrl driver itself means just that it's hogged
-> so be a bit more helpful by printing that.
-> 
-It's useful.
+From: Vincenzo Frascino <vincenzo.frascino@st.com>
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+ST's SPEAr13xx machines are based on CortexA9 ARM processors. These
+machines contain a thermal sensor for junction temperature monitoring.
 
-BTW, one question below although it's not relatd to this patch itself.
+This patch adds support for this thermal sensor in existing thermal
+framework.
 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> I somewhat mourn the loss of being able to tell from the debugfs
-> which function is using a certain pin, does anyone have ideas on
-> how to go about fixing this properly? The root file
-> pinctrl-handles does tell it, but requires cross-referencing
-> which isn't helpful.
-> ---
->  drivers/pinctrl/pinmux.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> index 98b89d6..db5ed86 100644
-> --- a/drivers/pinctrl/pinmux.c
-> +++ b/drivers/pinctrl/pinmux.c
-> @@ -626,8 +626,8 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
->  
->  	/* The pin number can be retrived from the pin controller descriptor */
->  	for (i = 0; i < pctldev->desc->npins; i++) {
-> -
->  		struct pin_desc *desc;
-> +		const char *owner;
->  
->  		pin = pctldev->desc->pins[i].number;
->  		desc = pin_desc_get(pctldev, pin);
-> @@ -635,9 +635,16 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
->  		if (desc == NULL)
->  			continue;
->  
-> +		if (!desc->owner)
-> +			owner = "UNCLAIMED";
-> +		else if (!strcmp(desc->owner, pinctrl_dev_get_name(pctldev)))
-> +			owner = "HOG";
-> +		else
-> +			owner = desc->owner;
-> +
->  		seq_printf(s, "pin %d (%s): %s\n", pin,
->  			   desc->name ? desc->name : "unnamed",
-Is there a little issue?
-For this line, i see some code:
-static int pinctrl_register_one_pin(struct pinctrl_dev *pctldev,
-                                    unsigned number, const char *name)
-{
-...
-        pindesc = kzalloc(sizeof(*pindesc), GFP_KERNEL);
-        if (pindesc == NULL)
-                return -ENOMEM;
-...
-        /* Copy basic pin info */
-        if (name) {
-                pindesc->name = name;
-        } else {
-                pindesc->name = kasprintf(GFP_KERNEL, "PIN%u", number);
-                if (pindesc->name == NULL)
-                        return -ENOMEM;
-                pindesc->dynamic_name = true;
-        }
-...
-}
-So is it possible the desc->name is NULL?
+Signed-off-by: Vincenzo Frascino <vincenzo.frascino@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/thermal/Kconfig                     |    7 +
+ drivers/thermal/Makefile                    |    1 +
+ drivers/thermal/spear_thermal.c             |  205 +++++++++++++++++++++++++++
+ include/linux/platform_data/spear_thermal.h |   26 ++++
+ 4 files changed, 239 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/thermal/spear_thermal.c
+ create mode 100644 include/linux/platform_data/spear_thermal.h
 
-> -			   desc->owner ? desc->owner : "UNCLAIMED");
-> +			   owner);
->  	}
->  
->  	return 0;
-
-Regards
-Dong Aisheng
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index f7f71b2..2633fe0 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -18,3 +18,10 @@ config THERMAL_HWMON
+ 	depends on THERMAL
+ 	depends on HWMON=y || HWMON=THERMAL
+ 	default y
++
++config SPEAR_THERMAL
++	bool "SPEAr thermal sensor driver"
++	depends on THERMAL
++	help
++	  Enable this to plug the SPEAr thermal sensor driver into the Linux
++	  thermal framework
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index 31108a0..a9fff0b 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-$(CONFIG_THERMAL)		+= thermal_sys.o
++obj-$(CONFIG_SPEAR_THERMAL)		+= spear_thermal.o
+\ No newline at end of file
+diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+new file mode 100644
+index 0000000..d819b3c
+--- /dev/null
++++ b/drivers/thermal/spear_thermal.c
+@@ -0,0 +1,205 @@
++/*
++ * SPEAr thermal driver.
++ *
++ * Copyright (C) 2011-2012 ST Microelectronics
++ * Author: Vincenzo Frascino <vincenzo.frascino@st.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/platform_data/spear_thermal.h>
++#include <linux/thermal.h>
++
++#define MD_FACTOR	1000
++
++/* SPEAr Thermal Sensor Dev Structure */
++struct spear_thermal_dev {
++	/* pointer to base address of the thermal sensor */
++	void __iomem *thermal_base;
++	/* clk structure */
++	struct clk *clk;
++	/* pointer to thermal flags */
++	unsigned int flags;
++};
++
++static inline int thermal_get_temp(struct thermal_zone_device *thermal,
++				unsigned long *temp)
++{
++	struct spear_thermal_dev *stdev = thermal->devdata;
++
++	/*
++	 * Data are ready to be read after 628 usec from POWERDOWN signal
++	 * (PDN) = 1
++	 */
++	*temp = (readl(stdev->thermal_base) & 0x7F) * MD_FACTOR;
++	return 0;
++}
++
++static struct thermal_zone_device_ops ops = {
++	.get_temp = thermal_get_temp,
++};
++
++#ifdef CONFIG_PM
++static int spear_thermal_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct thermal_zone_device *spear_thermal = platform_get_drvdata(pdev);
++	struct spear_thermal_dev *stdev = spear_thermal->devdata;
++	unsigned int actual_mask = 0;
++
++	/* Disable SPEAr Thermal Sensor */
++	actual_mask = readl(stdev->thermal_base);
++	writel(actual_mask & ~stdev->flags, stdev->thermal_base);
++
++	clk_disable(stdev->clk);
++	dev_info(dev, "Suspended.\n");
++
++	return 0;
++}
++
++static int spear_thermal_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct thermal_zone_device *spear_thermal = platform_get_drvdata(pdev);
++	struct spear_thermal_dev *stdev = spear_thermal->devdata;
++	unsigned int actual_mask = 0;
++	int ret = 0;
++
++	ret = clk_enable(stdev->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't enable clock\n");
++		return ret;
++	}
++
++	/* Enable SPEAr Thermal Sensor */
++	actual_mask = readl(stdev->thermal_base);
++	writel(actual_mask | stdev->flags, stdev->thermal_base);
++
++	dev_info(dev, "Resumed.\n");
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(spear_thermal_pm_ops, spear_thermal_suspend,
++		spear_thermal_resume);
++
++static int spear_thermal_probe(struct platform_device *pdev)
++{
++	struct thermal_zone_device *spear_thermal = NULL;
++	struct spear_thermal_dev *stdev;
++	struct spear_thermal_pdata *pdata;
++	int ret = 0;
++	struct resource *stres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!stres) {
++		dev_err(&pdev->dev, "memory resource missing\n");
++		return -ENODEV;
++	}
++
++	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata) {
++		dev_err(&pdev->dev, "platform data is NULL\n");
++		return -EINVAL;
++	}
++
++	stdev = devm_kzalloc(&pdev->dev, sizeof(*stdev), GFP_KERNEL);
++	if (!stdev) {
++		dev_err(&pdev->dev, "kzalloc fail\n");
++		return -ENOMEM;
++	}
++
++	/* Enable thermal sensor */
++	stdev->thermal_base = devm_ioremap(&pdev->dev, stres->start,
++			resource_size(stres));
++	if (!stdev->thermal_base) {
++		dev_err(&pdev->dev, "ioremap failed\n");
++		return -ENOMEM;
++	}
++
++	stdev->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(stdev->clk)) {
++		dev_err(&pdev->dev, "Can't get clock\n");
++		return PTR_ERR(stdev->clk);
++	}
++
++	ret = clk_enable(stdev->clk);
++	if (ret) {
++		dev_err(&pdev->dev, "Can't enable clock\n");
++		goto put_clk;
++	}
++
++	stdev->flags = pdata->thermal_flags;
++	writel(stdev->flags, stdev->thermal_base);
++
++	spear_thermal = thermal_zone_device_register("spear_thermal", 0,
++				stdev, &ops, 0, 0, 0, 0);
++	if (!spear_thermal) {
++		dev_err(&pdev->dev, "thermal zone device is NULL\n");
++		ret = -EINVAL;
++		goto disable_clk;
++	}
++
++	platform_set_drvdata(pdev, spear_thermal);
++
++	dev_info(&spear_thermal->device, "Thermal Sensor Loaded at: 0x%x.\n",
++			(unsigned int)stdev->thermal_base);
++
++	return 0;
++
++disable_clk:
++	clk_disable(stdev->clk);
++put_clk:
++	clk_put(stdev->clk);
++
++	return ret;
++}
++
++static int spear_thermal_exit(struct platform_device *pdev)
++{
++	unsigned int actual_mask = 0;
++	struct thermal_zone_device *spear_thermal = platform_get_drvdata(pdev);
++	struct spear_thermal_dev *stdev = spear_thermal->devdata;
++
++	thermal_zone_device_unregister(spear_thermal);
++	platform_set_drvdata(pdev, NULL);
++
++	/* Disable SPEAr Thermal Sensor */
++	actual_mask = readl(stdev->thermal_base);
++	writel(actual_mask & ~stdev->flags, stdev->thermal_base);
++
++	clk_disable(stdev->clk);
++	clk_put(stdev->clk);
++
++	return 0;
++}
++
++static struct platform_driver spear_thermal_driver = {
++	.probe = spear_thermal_probe,
++	.remove = spear_thermal_exit,
++	.driver = {
++		.name = "spear_thermal",
++		.owner = THIS_MODULE,
++		.pm = &spear_thermal_pm_ops,
++	},
++};
++
++module_platform_driver(spear_thermal_driver);
++
++MODULE_AUTHOR("Vincenzo Frascino <vincenzo.frascino@st.com>");
++MODULE_DESCRIPTION("SPEAr thermal driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/platform_data/spear_thermal.h b/include/linux/platform_data/spear_thermal.h
+new file mode 100644
+index 0000000..724f2e1
+--- /dev/null
++++ b/include/linux/platform_data/spear_thermal.h
+@@ -0,0 +1,26 @@
++/*
++ * SPEAr thermal driver platform data.
++ *
++ * Copyright (C) 2011-2012 ST Microelectronics
++ * Author: Vincenzo Frascino <vincenzo.frascino@st.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#ifndef SPEAR_THERMAL_H
++#define SPEAR_THERMAL_H
++
++/* SPEAr Thermal Sensor Platform Data */
++struct spear_thermal_pdata {
++	/* flags used to enable thermal sensor */
++	unsigned int thermal_flags;
++};
++
++#endif /* SPEAR_THERMAL_H */
+-- 
+1.7.8.110.g4cb5d
 
