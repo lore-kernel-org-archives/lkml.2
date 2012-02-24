@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab2BXUv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 15:51:58 -0500
-Received: from sender1.zohomail.com ([72.5.230.103]:39814 "EHLO
-	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab2BXUv5 (ORCPT
+	id S1758130Ab2BXUzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 15:55:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53736 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BXUzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 15:51:57 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; 
-  s=zapps768; d=zoho.com; 
-  h=date:from:to:cc:subject:message-id:in-reply-to:references:mime-version:content-type; 
-  b=aV8rsG3PyR1mZAgkAbOzAzpVqEkqC2M/gQauIvk9JQ/e0eJ+t7Hkk/DD5YjNIVYmOO4zFnQJziC3
-    kHHnB1jren+wVGdTGy3IFwMev+vR0DrmxTzATpuF87LKyIafkTaG  
-Date: Fri, 24 Feb 2012 21:34:22 +0100
-From: Torsten Schenk <torsten.schenk@zoho.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Torsten Schenk <torsten.schenk@zoho.com>, linux-next@vger.kernel.org
-Subject: Re: [alsa-devel] linux-next: Tree for Feb 24 (sound/usb/6fire)
-Message-Id: <20120224213422.3693943c2dad148b35e26d21@zoho.com>
-In-Reply-To: <4F47DBD4.4090803@xenotime.net>
-References: <20120224170548.a9a338d64712f06f1b39b7bd@canb.auug.org.au>
-	<4F47DBD4.4090803@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i686-pc-linux-gnu)
+	Fri, 24 Feb 2012 15:55:21 -0500
+Date: Fri, 24 Feb 2012 12:55:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Smith <danms@us.ibm.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com
+Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are
+ page-aligned
+Message-Id: <20120224125519.89120828.akpm@linux-foundation.org>
+In-Reply-To: <87obsoxcn6.fsf@danplanet.com>
+References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
+	<alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
+	<87zkcm23az.fsf@caffeine.danplanet.com>
+	<alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
+	<87obsoxcn6.fsf@danplanet.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-ZohoMail: Ss  CHF_MF_NL SS_10 UW UB UW UB  SGR3_15022_212
-X-ZohoMail-Sender: 92.193.78.133
-X-ZohoMailClient: External
-X-Zoho-Virus-Status: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012 10:49:56 -0800
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Fri, 24 Feb 2012 11:19:25 -0800
+Dan Smith <danms@us.ibm.com> wrote:
 
-> On 02/23/2012 10:05 PM, Stephen Rothwell wrote:
-> > Hi all,
-> >
-> > Changes since 20120223:
-> 
-> 
-> on x86_64:
-> 
-> ERROR: "_snd_ctl_add_slave" [sound/usb/6fire/snd-usb-6fire.ko]
-> undefined! ERROR:
-> "snd_ctl_make_virtual_master" [sound/usb/6fire/snd-usb-6fire.ko]
-> undefined!
-> 
-> 
-> Full randconfig file is attached.
-> 
-> CONFIG_SND_VMASTER is not enabled.  Looks like this driver should
-> either depend on or select SND_VMASTER.
-> 
+>
+> ...
+>
+>     The inner function walk_pte_range() increments "addr" by PAGE_SIZE after
+>     each pte is processed, and only exits the loop if the result is equal to
+>     "end". Current, if either (or both of) the starting or ending addresses
+>     passed to walk_page_range() are not page-aligned, then we will never
+>     satisfy that exit condition and begin calling the pte_entry handler with
+>     bad data.
+>     
+>     To be sure that we will land in the right spot, this patch checks that
+>     both "addr" and "end" are page-aligned in walk_page_range() before starting
+>     the traversal.
+>     
+> ...
+>
+> --- a/mm/pagewalk.c
+> +++ b/mm/pagewalk.c
+> @@ -196,6 +196,11 @@ int walk_page_range(unsigned long addr, unsigned long end,
+>  	if (addr >= end)
+>  		return err;
+>  
+> +	if (WARN_ONCE((addr & ~PAGE_MASK) || (end & ~PAGE_MASK),
+> +		      "address range is not page-aligned")) {
+> +		return -EINVAL;
+> +	}
+> +
+>  	if (!walk->mm)
+>  		return -EINVAL;
 
-Sorry, I was unaware that this option needs to be selected.
-Patch is attached below that selects SND_VMASTER.
+Well...  why should we apply the patch?  Is there some buggy code which
+is triggering the problem?  Do you intend to write some buggy code to
+trigger the problem?  ;) 
 
-Regards,
-Torsten
+IOW, what benefit is there to this change?
 
-
-Select missing SND_VMASTER option in Kconfig.
-
-Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
-
-diff -Nur a/sound/usb/Kconfig b/sound/usb/Kconfig
---- a/sound/usb/Kconfig	2012-02-24 21:17:09.543884187 +0100
-+++ b/sound/usb/Kconfig	2012-02-24 21:19:16.160372882 +0100
-@@ -106,6 +106,7 @@
-         select BITREVERSE
-         select SND_RAWMIDI
-         select SND_PCM
-+        select SND_VMASTER
-         help
-           Say Y here to include support for TerraTec 6fire DMX USB interface.
- 
-
+Also, as it's a developer-only thing we should arrange for the overhead
+to vanish when CONFIG_DEBUG_VM=n?
