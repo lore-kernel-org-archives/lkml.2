@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2BXQcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:32:41 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36246 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754094Ab2BXQcj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:32:39 -0500
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Danny Kukawka <dkukawka@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 24 Feb 2012 08:31:44 -0800
-Subject: Re: [Pv-drivers] [PATCH 08/12] vmxnet3: check given MAC address,	if
- invalid return -EADDRNOTAVAIL
-Thread-Topic: [Pv-drivers] [PATCH 08/12] vmxnet3: check given MAC address,
-	if invalid return -EADDRNOTAVAIL
-Thread-Index: AczzEew6LTaaAN7XTtCfVqUmRm62bw==
-Message-ID: <085E4D48-DF23-4C85-84DF-8321CA236304@vmware.com>
-References: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
- <1330099282-4588-9-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1330099282-4588-9-git-send-email-danny.kukawka@bisect.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932123Ab2BXQhh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:37:37 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55819 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab2BXQhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:37:34 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
+Date: Fri, 24 Feb 2012 16:37:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4F47981F.4020305@imgtec.com> <201202241424.07319.arnd@arndb.de> <201202241119.44480.vapier@gentoo.org>
+In-Reply-To: <201202241119.44480.vapier@gentoo.org>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241637.30284.arnd@arndb.de>
+X-Provags-ID: V02:K0:lyk0Dtf9rM7k0djyPGKqcxfIFFOD6r2XLn85OWWV7sS
+ VDW7U7GfatREM5vZ29mKxDE16IYpFsDjOC7siPa0jZPQfKvbpB
+ fAYCe2FLMNRVIEOCQCmvl6edfa6vvuh9518GqQp6nvHR88GLJz
+ Ryuk53bIEpYnFySRLbR6mtM8SWB3X39PTaLx6227WWNPVCG1m/
+ RC2oKn00P2UoP1pms+3O0+It/yjcwGmUUm+n7EODBEZmRElEhY
+ UhF+H1HMU5WORYmJ5vX6KrATBG1vybsE9b6WRIaiD3+8EltZq9
+ H41//+p/OEpYeGsXrn+TID5hWjiAACFFdji+BqDBpOtk7YyFDu
+ NYl3ixKyUjC+sMBk/yeE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lgtm.
-
-Reviewed-by: Bhavesh Davda <bhavesh@vmware.com>
-
-- Bhavesh
-
-(From my iPhone)
-
-
-On Feb 24, 2012, at 8:01 AM, "Danny Kukawka" <danny.kukawka@bisect.de> wrote:
-
-> Check if given address is valid in .ndo_set_mac_address/
-> vmxnet3_set_mac_addr(), if invalid return -EADDRNOTAVAIL as
-> eth_mac_addr() already does if is_valid_ether_addr() fails.
+On Friday 24 February 2012, Mike Frysinger wrote:
+> > Our trend is to move away from arch specific Kconfig symbols and
+> > __ARCH_HAS_* macros towards just defining whatever you need in the
+> > architecture as an override for the generic definition.
 > 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> ---
-> drivers/net/vmxnet3/vmxnet3_drv.c |    3 +++
-> 1 files changed, 3 insertions(+), 0 deletions(-)
+> i don't see how __ARCH_HAS_xxx would help here.  the symbol prefix is a string, 
+> not a bool value.  it's also already used by linux/export.h, asm-
+> generic/vmlinux.lds.h, and module code in scripts/.
+
+I gave __ARCH_HAS_xxx as an example because a lot of other places use that
+to abstract architecture specific features, even if that wouldn't apply
+here.
+
+> > Just provide your own unistd.h that does
 > 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-> index e1562e8..bd2a7cd 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-> @@ -2331,6 +2331,9 @@ vmxnet3_set_mac_addr(struct net_device *netdev, void *p)
->    struct sockaddr *addr = p;
->    struct vmxnet3_adapter *adapter = netdev_priv(netdev);
-> 
-> +    if (!is_valid_ether_addr(addr->sa_data))
-> +        return -EADDRNOTAVAIL;
-> +
->    memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
->    vmxnet3_write_mac_addr(adapter, addr->sa_data);
-> 
-> -- 
-> 1.7.8.3
-> 
-> _______________________________________________
-> Pv-drivers mailing list
-> Pv-drivers@vmware.com
-> http://mailman2.vmware.com/mailman/listinfo/pv-drivers
+> the point of asm-generic is so that arches don't have to keep copying & 
+> pasting things that they really don't care about.  James' proposed patch looks 
+> good to me.  it might be nice to go even further and add logic to a core 
+> header so that CONFIG_SYMBOL_PREFIX is always defined ...
+
+You are right. I did not realize that CONFIG_SYMBOL_PREFIX is an existing
+symbol rather one that James defined for this purpose.
+
+We actually have MODULE_SYMBOL_PREFIX providing the correct string
+under a name that is not appropriate here. We can probably stick with
+Jason's patch for now and add a more sophisticated logic if another
+user of CONFIG_SYMBOL_PREFIX comes up.
+
+So for Jason's patch:
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+We could put that into the kernel now, but it's probably sufficient if
+Jason keeps the patch with his others and submits it at the same time
+when we get there.
+
+	Arnd
