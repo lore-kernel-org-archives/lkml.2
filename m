@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab2BXKUa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:20:30 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:17019 "EHLO
+	id S1757260Ab2BXKU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:20:28 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:17004 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757129Ab2BXKUX (ORCPT
+	with ESMTP id S1757222Ab2BXKUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:20:23 -0500
+	Fri, 24 Feb 2012 05:20:22 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,56 +18,53 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 22/23] PCI: make pci_rescan_bus_bridge_resize use pci_scan_bridge instead
-Date: Fri, 24 Feb 2012 02:19:10 -0800
-Message-Id: <1330078751-7299-23-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 23/23] PCI: clean up rescan_bus_bridge_resize
+Date: Fri, 24 Feb 2012 02:19:11 -0800
+Message-Id: <1330078751-7299-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330078751-7299-1-git-send-email-yinghai@kernel.org>
 References: <1330078751-7299-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F47645D.0091,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F47645F.003C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So after remove all children and then using setpci change bus register and rescan
-bridge could use new set bus number.
+Should only use it with bridge instead of bus.
+it could get new subordinate. so can not use it with reguar bus.
 
-Otherwise need to rescan parent bus, it would have too much overhead.
-
-also need to use pci_bus_add_single_device to make sure new change bus have directory
- /sys/../.../pci_bus.
+in that case, use may need to make all children devices get removed already.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/pci/pci-sysfs.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 1c36b39..8063cf1 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1961,14 +1961,16 @@ EXPORT_SYMBOL(pci_scan_bus);
-  */
- unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
- {
--	unsigned int max;
--	struct pci_bus *bus = bridge->subordinate;
-+	unsigned int max = 0;
-+	int pass;
-+	struct pci_bus *bus = bridge->bus;
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 68caf29..a3fa64e 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -337,7 +337,7 @@ dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
  
--	max = pci_scan_child_bus(bus);
-+	for (pass = 0; pass < 2; pass++)
-+		max = pci_scan_bridge(bus, bridge, max, pass);
+ 	if (val) {
+ 		mutex_lock(&pci_remove_rescan_mutex);
+-		pci_rescan_bus(pdev->subordinate);
++		pci_rescan_bus_bridge_resize(pdev);
+ 		mutex_unlock(&pci_remove_rescan_mutex);
+ 	}
+ 	return count;
+@@ -387,10 +387,7 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
  
- 	pci_assign_unassigned_bridge_resources(bridge);
- 
--	pci_bus_add_devices(bus);
-+	pci_bus_add_single_device(bridge);
- 
- 	return max;
- }
+ 	if (val) {
+ 		mutex_lock(&pci_remove_rescan_mutex);
+-		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+-			pci_rescan_bus_bridge_resize(bus->self);
+-		else
+-			pci_rescan_bus(bus);
++		pci_rescan_bus(bus);
+ 		mutex_unlock(&pci_remove_rescan_mutex);
+ 	}
+ 	return count;
 -- 
 1.7.7
 
