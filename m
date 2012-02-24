@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab2BXQhh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:37:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:55819 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab2BXQhe (ORCPT
+	id S1757456Ab2BXQhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:37:46 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59316 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757197Ab2BXQhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:37:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
-Date: Fri, 24 Feb 2012 16:37:30 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <4F47981F.4020305@imgtec.com> <201202241424.07319.arnd@arndb.de> <201202241119.44480.vapier@gentoo.org>
-In-Reply-To: <201202241119.44480.vapier@gentoo.org>
+	Fri, 24 Feb 2012 11:37:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.197.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 08:31:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?utf-8?B?0JrQuNGA0LjQu9C7INCg0YPRgdC40L3QvtCy?= 
+	<carasin.berlogue@mail.ru>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Take a look to this bug, please
+Message-ID: <20120224163151.GA8083@kroah.com>
+References: <E1S0xkw-0005Mj-4q.carasin-berlogue-mail-ru@f264.mail.ru>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202241637.30284.arnd@arndb.de>
-X-Provags-ID: V02:K0:lyk0Dtf9rM7k0djyPGKqcxfIFFOD6r2XLn85OWWV7sS
- VDW7U7GfatREM5vZ29mKxDE16IYpFsDjOC7siPa0jZPQfKvbpB
- fAYCe2FLMNRVIEOCQCmvl6edfa6vvuh9518GqQp6nvHR88GLJz
- Ryuk53bIEpYnFySRLbR6mtM8SWB3X39PTaLx6227WWNPVCG1m/
- RC2oKn00P2UoP1pms+3O0+It/yjcwGmUUm+n7EODBEZmRElEhY
- UhF+H1HMU5WORYmJ5vX6KrATBG1vybsE9b6WRIaiD3+8EltZq9
- H41//+p/OEpYeGsXrn+TID5hWjiAACFFdji+BqDBpOtk7YyFDu
- NYl3ixKyUjC+sMBk/yeE=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <E1S0xkw-0005Mj-4q.carasin-berlogue-mail-ru@f264.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 February 2012, Mike Frysinger wrote:
-> > Our trend is to move away from arch specific Kconfig symbols and
-> > __ARCH_HAS_* macros towards just defining whatever you need in the
-> > architecture as an override for the generic definition.
+On Fri, Feb 24, 2012 at 08:12:26PM +0400, Кирилл Русинов wrote:
+> Good day!
+> My name is Kirill Rusinov. I want to draw your attention to one bugreport.
 > 
-> i don't see how __ARCH_HAS_xxx would help here.  the symbol prefix is a string, 
-> not a bool value.  it's also already used by linux/export.h, asm-
-> generic/vmlinux.lds.h, and module code in scripts/.
-
-I gave __ARCH_HAS_xxx as an example because a lot of other places use that
-to abstract architecture specific features, even if that wouldn't apply
-here.
-
-> > Just provide your own unistd.h that does
+> This message is a result of my failed attempt to email Greg K.H (only the email-bot has answered to me).
 > 
-> the point of asm-generic is so that arches don't have to keep copying & 
-> pasting things that they really don't care about.  James' proposed patch looks 
-> good to me.  it might be nice to go even further and add logic to a core 
-> header so that CONFIG_SYMBOL_PREFIX is always defined ...
+> I've posted a bug report here: https://bugzilla.redhat.com/show_bug.cgi?id=796626
+> This applies to problem with the brightness control on the laptop Samsung RV520.
+> It seems to me it deserves your attention.
 
-You are right. I did not realize that CONFIG_SYMBOL_PREFIX is an existing
-symbol rather one that James defined for this purpose.
+I don't understand what this pertains to the stable kernel releases, so
+why email that list?
 
-We actually have MODULE_SYMBOL_PREFIX providing the correct string
-under a name that is not appropriate here. We can probably stick with
-Jason's patch for now and add a more sophisticated logic if another
-user of CONFIG_SYMBOL_PREFIX comes up.
+And as you have created a redhat bug, why not work with the redhat
+developers on this?
 
-So for Jason's patch:
+Also, have you tried the latest 3.3-rc4 kernel, it should have solved
+this problem.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-We could put that into the kernel now, but it's probably sufficient if
-Jason keeps the patch with his others and submits it at the same time
-when we get there.
-
-	Arnd
+greg k-h
