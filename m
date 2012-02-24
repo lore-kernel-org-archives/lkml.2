@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab2BXNrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:47:16 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43972 "EHLO
+	id S1757564Ab2BXNrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:47:46 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:44090 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757454Ab2BXNqj (ORCPT
+	by vger.kernel.org with ESMTP id S1756658Ab2BXNro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:46:39 -0500
+	Fri, 24 Feb 2012 08:47:44 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
+To: Henk de Groot <pe1dnn@amsat.org>
 Cc: Danny Kukawka <dkukawka@suse.de>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] amd/hplance.c: print MAC via printk format specifier
-Date: Fri, 24 Feb 2012 14:45:53 +0100
-Message-Id: <1330091162-8141-3-git-send-email-danny.kukawka@bisect.de>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 11/11] Staging: wlags49_h2: print MAC via printk format specifier
+Date: Fri, 24 Feb 2012 14:46:02 +0100
+Message-Id: <1330091162-8141-12-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
 References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091199;e20e0528;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091264;cbe378a0;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,37 +28,34 @@ instead of custom code.
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/net/ethernet/amd/hplance.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+ drivers/staging/wlags49_h2/wl_cs.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/amd/hplance.c b/drivers/net/ethernet/amd/hplance.c
-index 86aa0d5..40f62e8 100644
---- a/drivers/net/ethernet/amd/hplance.c
-+++ b/drivers/net/ethernet/amd/hplance.c
-@@ -89,7 +89,6 @@ static int __devinit hplance_init_one(struct dio_dev *d,
+diff --git a/drivers/staging/wlags49_h2/wl_cs.c b/drivers/staging/wlags49_h2/wl_cs.c
+index 2faee2d..a2cbb29 100644
+--- a/drivers/staging/wlags49_h2/wl_cs.c
++++ b/drivers/staging/wlags49_h2/wl_cs.c
+@@ -229,7 +229,6 @@ static int wl_adapter_resume(struct pcmcia_device *link)
+ void wl_adapter_insert(struct pcmcia_device *link)
  {
  	struct net_device *dev;
- 	int err = -ENOMEM;
 -	int i;
+ 	int ret;
+ 	/*--------------------------------------------------------------------*/
  
- 	dev = alloc_etherdev(sizeof(struct hplance_private));
- 	if (!dev)
-@@ -107,13 +106,8 @@ static int __devinit hplance_init_one(struct dio_dev *d,
+@@ -266,10 +265,8 @@ void wl_adapter_insert(struct pcmcia_device *link)
  
- 	dio_set_drvdata(d, dev);
+ 	register_wlags_sysfs(dev);
  
--	printk(KERN_INFO "%s: %s; select code %d, addr %2.2x", dev->name, d->name, d->scode, dev->dev_addr[0]);
--
--	for (i=1; i<6; i++) {
--		printk(":%2.2x", dev->dev_addr[i]);
--	}
--
--	printk(", irq %d\n", d->ipl);
-+	printk(KERN_INFO "%s: %s; select code %d, addr %pM, irq %d\n",
-+	       dev->name, d->name, d->scode, dev->dev_addr, d->ipl);
+-	printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, ""mac_address ",
+-		dev->name, dev->base_addr, dev->irq);
+-	for (i = 0; i < ETH_ALEN; i++)
+-		printk("%02X%c", dev->dev_addr[i], ((i < (ETH_ALEN-1)) ? ':' : '\n'));
++	printk(KERN_INFO "%s: Wireless, io_addr %#03lx, irq %d, mac_address"
++		" %pM\n", dev->name, dev->base_addr, dev->irq, dev->dev_addr);
  
- 	return 0;
- 
+ 	DBG_LEAVE(DbgInfo);
+ 	return;
 -- 
 1.7.8.3
 
