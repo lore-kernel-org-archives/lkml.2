@@ -1,146 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab2BXDtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:49:50 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21284 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968Ab2BXDtr (ORCPT
+	id S932178Ab2BXDt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:49:57 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:37350 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab2BXDtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 22:49:47 -0500
+	Thu, 23 Feb 2012 22:49:49 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 02/13] genirq: Split __irq_reserve_irqs from irq_alloc_descs
-Date: Thu, 23 Feb 2012 19:48:48 -0800
-Message-Id: <1330055339-11662-3-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Henrik Kretzschmar <henne@nachtwindheim.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 04/13] x86, irq: pre-reserve irq range that are used by ioapic
+Date: Thu, 23 Feb 2012 19:48:50 -0800
+Message-Id: <1330055339-11662-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
 References: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F4708C3.003B,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090206.4F4708C7.0036,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-also make irq_reserve_irqs to reuse __irq_reserve_irqs.
+realloc_irq_and_cfg_at already can handle pre-reserved case.
+
+those for non-hot add ioapic, but make them to share same code path that
+will be used by hot add ioapic.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Daney <ddaney@caviumnetworks.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- include/linux/irq.h  |    1 +
- kernel/irq/irqdesc.c |   55 ++++++++++++++++++++++++-------------------------
- 2 files changed, 28 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/io_apic.h |    1 +
+ arch/x86/kernel/apic/io_apic.c |  133 ++++++++++++++++++++++++++--------------
+ 2 files changed, 88 insertions(+), 46 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index bff29c5..7a9a19b 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -582,6 +582,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 
- void irq_free_descs(unsigned int irq, unsigned int cnt);
- int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index d86e254..3e23bb9 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -338,19 +338,8 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 690d1cc..f2a83ae 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -164,6 +164,7 @@ extern void setup_ioapic_ids_from_mpc_nocheck(void);
+ struct mp_ioapic_gsi{
+ 	u32 gsi_base;
+ 	u32 gsi_end;
++	u32 irq_base;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 4d62f0f..0702998 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -184,51 +184,6 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
+ 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
  }
- EXPORT_SYMBOL_GPL(irq_free_descs);
  
--/**
-- * irq_alloc_descs - allocate and initialize a range of irq descriptors
-- * @irq:	Allocate for specific irq number if irq >= 0
-- * @from:	Start the search from this irq number
-- * @cnt:	Number of consecutive irqs to allocate.
-- * @node:	Preferred node on which the irq descriptor should be allocated
-- * @owner:	Owning module (can be NULL)
-- *
-- * Returns the first irq number or error code
-- */
- int __ref
--__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
--		  struct module *owner)
-+__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
+-
+-/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+-static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
+-
+-int __init arch_early_irq_init(void)
+-{
+-	struct irq_cfg *cfg;
+-	int count, node, i;
+-
+-	if (!legacy_pic->nr_legacy_irqs)
+-		io_apic_irqs = ~0UL;
+-
+-	for (i = 0; i < nr_ioapics; i++) {
+-		ioapics[i].saved_registers =
+-			kzalloc(sizeof(struct IO_APIC_route_entry) *
+-				ioapics[i].nr_registers, GFP_KERNEL);
+-		if (!ioapics[i].saved_registers)
+-			pr_err("IOAPIC %d: suspend/resume impossible!\n", i);
+-	}
+-
+-	cfg = irq_cfgx;
+-	count = ARRAY_SIZE(irq_cfgx);
+-	node = cpu_to_node(0);
+-
+-	/* Make sure the legacy interrupts are marked in the bitmap */
+-	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
+-
+-	for (i = 0; i < count; i++) {
+-		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+-		irq_set_chip_data(i, &cfg[i]);
+-		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+-		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+-		/*
+-		 * For legacy IRQ's, start with assigning irq0 to irq15 to
+-		 * IRQ0_VECTOR to IRQ15_VECTOR on cpu 0.
+-		 */
+-		if (i < legacy_pic->nr_legacy_irqs) {
+-			cfg[i].vector = IRQ0_VECTOR + i;
+-			cpumask_set_cpu(0, cfg[i].domain);
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ static struct irq_cfg *irq_cfg(unsigned int irq)
  {
- 	int start, ret;
- 
-@@ -368,7 +357,7 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
- 					   from, cnt, 0);
- 	ret = -EEXIST;
--	if (irq >=0 && start != irq)
-+	if (irq >= 0 && start != irq)
- 		goto err;
- 
- 	if (start + cnt > nr_irqs) {
-@@ -379,12 +368,35 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 
- 	bitmap_set(allocated_irqs, start, cnt);
- 	mutex_unlock(&sparse_irq_lock);
--	return alloc_descs(start, cnt, node, owner);
-+	return start;
- 
- err:
- 	mutex_unlock(&sparse_irq_lock);
- 	return ret;
+ 	return irq_get_chip_data(irq);
+@@ -331,6 +286,91 @@ static struct irq_cfg *realloc_irq_and_cfg_at(unsigned int at, int node)
+ 	return alloc_irq_and_cfg_at(at, node);
  }
-+/**
-+ * irq_alloc_descs - allocate and initialize a range of irq descriptors
-+ * @irq:	Allocate for specific irq number if irq >= 0
-+ * @from:	Start the search from this irq number
-+ * @cnt:	Number of consecutive irqs to allocate.
-+ * @node:	Preferred node on which the irq descriptor should be allocated
-+ * @owner:	Owning module (can be NULL)
-+ *
-+ * Returns the first irq number or error code
-+ */
-+int __ref
-+__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-+		  struct module *owner)
+ 
++static int reserve_ioapic_gsi_irq_base(int idx)
 +{
-+	int start;
++	int irq;
++	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
++	int cnt = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
 +
-+	start = __irq_reserve_irqs(irq, from, cnt);
++	irq = __irq_reserve_irqs(-1, gsi_cfg->gsi_base, cnt);
++	if (irq >= 0) {
++		gsi_cfg->irq_base = irq;
++		printk(KERN_INFO
++		"IOAPIC[%d]: apic_id %d, GSI %d-%d ==> irq %d-%d reserved\n",
++			idx, mpc_ioapic_id(idx),
++			gsi_cfg->gsi_base, gsi_cfg->gsi_end,
++			irq, irq + cnt - 1);
++	} else
++		printk(KERN_INFO
++		"IOAPIC[%d]: apic_id %d, GSI %d-%d ==> irq reserve failed\n",
++			idx, mpc_ioapic_id(idx),
++			gsi_cfg->gsi_base, gsi_cfg->gsi_end);
 +
-+	if (start < 0)
-+		return start;
-+
-+	return alloc_descs(start, cnt, node, owner);
++	return irq;
 +}
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
++
++static void __init reserve_ioapic_gsi_irq_extra(void)
++{
++	int irq;
++
++	/* to prevent hot add ioapic taking those slots */
++	if (gsi_top) {
++		irq = irq_reserve_irqs(gsi_top, NR_IRQS_LEGACY);
++		if (irq >= 0)
++			printk(KERN_INFO
++			"IOAPIC[extra]: GSI %d-%d ==> irq %d-%d reserved\n",
++				gsi_top, gsi_top + NR_IRQS_LEGACY - 1,
++				irq, irq + NR_IRQS_LEGACY - 1);
++		else
++			printk(KERN_INFO
++			"IOAPIC[extra]: GSI %d-%d ==> irq reserve failed\n",
++				gsi_top, gsi_top + NR_IRQS_LEGACY - 1);
++	}
++}
++
++static void alloc_ioapic_saved_registers(int idx)
++{
++	if (ioapics[idx].saved_registers)
++		return;
++
++	ioapics[idx].saved_registers =
++			kzalloc(sizeof(struct IO_APIC_route_entry) *
++				ioapics[idx].nr_registers, GFP_KERNEL);
++
++	if (!ioapics[idx].saved_registers)
++		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
++}
++
++int __init arch_early_irq_init(void)
++{
++	int node = cpu_to_node(0);
++	struct irq_cfg *cfg;
++	int i;
++
++	if (!legacy_pic->nr_legacy_irqs)
++		io_apic_irqs = ~0UL;
++
++	for (i = 0; i < nr_ioapics; i++)
++		alloc_ioapic_saved_registers(i);
++
++	for (i = 0; i < nr_ioapics; i++)
++		reserve_ioapic_gsi_irq_base(i);
++
++	reserve_ioapic_gsi_irq_extra();
++
++	/*
++	 * For legacy IRQ's, start with assigning irq0 to irq15 to
++	 * IRQ0_VECTOR to IRQ15_VECTOR on cpu 0.
++	 */
++	for (i = 0; i < legacy_pic->nr_legacy_irqs; i++) {
++		cfg = realloc_irq_and_cfg_at(i, node);
++		cfg->vector = IRQ0_VECTOR + i;
++		cpumask_set_cpu(0, cfg->domain);
++	}
++
++	return 0;
++}
++
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
+@@ -3672,7 +3712,8 @@ int __init arch_probe_nr_irqs(void)
+ 	if (nr < nr_irqs)
+ 		nr_irqs = nr;
  
- /**
-@@ -396,20 +408,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
-  */
- int irq_reserve_irqs(unsigned int from, unsigned int cnt)
- {
--	unsigned int start;
--	int ret = 0;
--
--	if (!cnt || (from + cnt) > nr_irqs)
--		return -EINVAL;
--
--	mutex_lock(&sparse_irq_lock);
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
--	if (start == from)
--		bitmap_set(allocated_irqs, start, cnt);
--	else
--		ret = -EEXIST;
--	mutex_unlock(&sparse_irq_lock);
--	return ret;
-+	return __irq_reserve_irqs(from, from, cnt);
+-	return NR_IRQS_LEGACY;
++	/* x86 arch code will allocate irq_desc/cfg */
++	return 0;
  }
  
- /**
+ int io_apic_set_pci_routing(struct device *dev, int irq,
 -- 
 1.7.7
 
