@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2BXQB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:01:57 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53250 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757726Ab2BXQBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757742Ab2BXQBt (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 24 Feb 2012 11:01:49 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>,
-        Andy Gospodarek <andy@greyhouse.net>,
-        Guo-Fu Tseng <cooldavid@cooldavid.org>,
-        Petko Manolov <petkan@users.sourceforge.net>,
-        "VMware, Inc." <pv-drivers@vmware.com>,
-        "John W. Linville" <linville@tuxdriver.com>, linux390@de.ibm.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Danny Kukawka <dkukawka@suse.de>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Joe Perches <joe@perches.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
-        libertas-dev@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-hams@vger.kernel.org, linux-mips@linux-mips.org
-Subject: [PATCH 00/12] Part 2: check given MAC address, if invalid return -EADDRNOTAVAIL 
-Date: Fri, 24 Feb 2012 17:01:10 +0100
-Message-Id: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.8.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330099309;27020129;
+Received: from relay3.sgi.com ([192.48.152.1]:42740 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757696Ab2BXQBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:01:47 -0500
+Date: Fri, 24 Feb 2012 10:01:47 -0600
+From: Ben Myers <bpm@sgi.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: elder@kernel.org, xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Message-ID: <20120224160147.GD28391@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second Part of series patches to unifiy the return value of 
-.ndo_set_mac_address if the given address isn't valid.
+Bcc: 
+Subject: Re: [PATCH] xfs: Use memset to initialize structure member.
+Reply-To: 
+In-Reply-To: <20120224075354.GA3649@mwanda>
 
-These changes check if a given (MAC) address is valid in 
-.ndo_set_mac_address, if invalid return -EADDRNOTAVAIL 
-as eth_mac_addr() already does if is_valid_ether_addr() fails.
+On Fri, Feb 24, 2012 at 10:53:54AM +0300, Dan Carpenter wrote:
+> On Fri, Feb 24, 2012 at 12:38:42PM +0530, santosh nayak wrote:
+> > From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> > 
+> > Sparse is giving following warning:
+> > fs/xfs/xfs_bmap.c:4826:41: warning: Using plain integer as NULL pointer.
+> > 
+> 
+> You could just do:
+> 	struct xfs_bmalloca     bma = {};
 
-These patches are against net-next.
+Santosh, this aggregate initializer seems cleaner than memset.  Do you
+mind resending the patch with Dan's suggestion?
 
-Danny Kukawka (12):
-  ethernet: .ndo_set_mac_address: check given address, if invalid
-    return -EADDRNOTAVAIL
-  cris/eth_v10: check given MAC address, if invalid return
-    -EADDRNOTAVAIL
-  dvb_net: check given MAC address, if invalid return -EADDRNOTAVAIL
-  fddi/skfp: check given MAC address, if invalid return -EADDRNOTAVAIL
-  team: check given MAC address, if invalid return -EADDRNOTAVAIL
-  tokenring: check given MAC address, if invalid return -EADDRNOTAVAIL
-  usb/rtl8150: check given MAC address, if invalid return
-    -EADDRNOTAVAIL
-  vmxnet3: check given MAC address, if invalid return -EADDRNOTAVAIL
-  wan/lapbether: check given MAC address, if invalid return
-    -EADDRNOTAVAIL
-  wireless: check given MAC address, if invalid return -EADDRNOTAVAIL
-  s390/net/qeth_l2_main: check given MAC address, if invalid return
-    -EADDRNOTAVAIL
-  rose: check given MAC address, if invalid return -EADDRNOTAVAIL
+Thanks for your contribution.  ;)
 
- drivers/media/dvb/dvb-core/dvb_net.c               |    5 ++++-
- drivers/net/cris/eth_v10.c                         |    3 +++
- drivers/net/ethernet/amd/amd8111e.c                |    3 +++
- drivers/net/ethernet/amd/atarilance.c              |    3 +++
- drivers/net/ethernet/chelsio/cxgb/cxgb2.c          |    3 +++
- drivers/net/ethernet/cisco/enic/enic_main.c        |    3 +++
- drivers/net/ethernet/freescale/fec_mpc52xx.c       |    3 +++
- drivers/net/ethernet/jme.c                         |    3 +++
- drivers/net/ethernet/micrel/ks8851_mll.c           |    3 +++
- drivers/net/ethernet/micrel/ksz884x.c              |    3 +++
- drivers/net/ethernet/seeq/sgiseeq.c                |    3 +++
- drivers/net/ethernet/sgi/ioc3-eth.c                |    3 +++
- drivers/net/ethernet/tehuti/tehuti.c               |    3 +++
- drivers/net/fddi/skfp/skfddi.c                     |    3 +++
- drivers/net/team/team.c                            |    3 +++
- drivers/net/tokenring/3c359.c                      |    4 ++++
- drivers/net/tokenring/lanstreamer.c                |    4 ++++
- drivers/net/tokenring/olympic.c                    |    4 ++++
- drivers/net/tokenring/tms380tr.c                   |    3 +++
- drivers/net/usb/rtl8150.c                          |    3 +++
- drivers/net/vmxnet3/vmxnet3_drv.c                  |    3 +++
- drivers/net/wan/lapbether.c                        |    5 +++++
- drivers/net/wireless/airo.c                        |    3 +++
- drivers/net/wireless/atmel.c                       |    3 +++
- .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    5 ++++-
- drivers/net/wireless/hostap/hostap_main.c          |    3 +++
- drivers/net/wireless/libertas/main.c               |    3 +++
- drivers/net/wireless/mwifiex/main.c                |    3 +++
- drivers/net/wireless/zd1201.c                      |    2 ++
- drivers/s390/net/qeth_l2_main.c                    |    3 +++
- net/rose/rose_dev.c                                |    3 +++
- 31 files changed, 99 insertions(+), 2 deletions(-)
-
--- 
-1.7.8.3
-
+-Ben
