@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab2BXKUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:20:17 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31336 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757129Ab2BXKUK (ORCPT
+	id S1757375Ab2BXKUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:20:40 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:17038 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757351Ab2BXKUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:20:10 -0500
+	Fri, 24 Feb 2012 05:20:35 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,147 +17,55 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/23] PCI: Seperate child bus scanning to two passes overall
-Date: Fri, 24 Feb 2012 02:19:03 -0800
-Message-Id: <1330078751-7299-16-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 08/23] PCI, powerpc: Register busn_res for root buses
+Date: Fri, 24 Feb 2012 02:18:56 -0800
+Message-Id: <1330078751-7299-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330078751-7299-1-git-send-email-yinghai@kernel.org>
 References: <1330078751-7299-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4F476450.006E,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F476443.009C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In extreme case: Two bridges are properly setup.
-       bridge A
-               bridge AA
-               bridge AB
-       bridge B
-	       bridge BA
-	       bridge BB
-   but AA, AB are not setup properly.
-   bridge A has small range, and bridge AB could need more, when do the
-       first pass0 for bridge A, it will do pass0 and pass1 for AA and AB,
-	during that process, it will extend range of A for AB blindly.
-	because bridge B is not registered yet.
-       that could overlap range that is used by bridge B.
-
-Right way should be:
-       do pass0 for all good bridges at first.
-So we could do pass0 for bridge B before pass1 for bridge AB.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/pci/probe.c |   50 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 34 insertions(+), 16 deletions(-)
+ arch/powerpc/kernel/pci-common.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 36dd25a..9f748b6 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -778,6 +778,9 @@ static int __devinit pci_bridge_check_busn_broken(struct pci_bus *bus,
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index cce98d7..501f29b 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1732,6 +1732,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 	bus->secondary = hose->first_busno;
+ 	hose->bus = bus;
  
- 	return broken;
- }
++	pci_bus_insert_busn_res(bus, hose->first_busno, hose->last_busno);
 +
-+static unsigned int __devinit __pci_scan_child_bus(struct pci_bus *bus,
-+						 int pass);
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
-@@ -834,11 +837,10 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 	    !is_cardbus && !broken) {
- 		unsigned int cmax;
- 		/*
--		 * Bus already configured by firmware, process it in the first
--		 * pass and just note the configuration.
-+		 * Bus already configured by firmware, still process it in two
-+		 * passes in extreme case like two adjaced bridges have children
-+		 * bridges that are not setup properly.
- 		 */
--		if (pass)
--			goto out;
- 
- 		/*
- 		 * If we already got to this bus through a different bridge,
-@@ -859,7 +861,7 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 			pci_bus_insert_busn_res(child, secondary, subordinate);
- 		}
- 
--		cmax = pci_scan_child_bus(child);
-+		cmax = __pci_scan_child_bus(child, pass);
- 		if (cmax > max)
- 			max = cmax;
- 		if (child->subordinate > max)
-@@ -1653,12 +1655,13 @@ void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
- }
- EXPORT_SYMBOL_GPL(pcie_bus_configure_settings);
- 
--unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
-+static unsigned int __devinit __pci_scan_child_bus(struct pci_bus *bus,
-+						 int pass)
- {
--	unsigned int devfn, pass, max = bus->secondary;
-+	unsigned int devfn, max = bus->secondary;
- 	struct pci_dev *dev;
- 
--	dev_dbg(&bus->dev, "scanning bus\n");
-+	dev_dbg(&bus->dev, "scanning bus pass %d\n", pass);
- 
- 	/* Go find them, Rover! */
- 	for (devfn = 0; devfn < 0x100; devfn += 8)
-@@ -1672,18 +1675,16 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- 	 * all PCI-to-PCI bridges on this bus.
- 	 */
- 	if (!bus->is_added) {
--		dev_dbg(&bus->dev, "fixups for bus\n");
-+		dev_dbg(&bus->dev, "fixups for bus pass %d\n", pass);
- 		pcibios_fixup_bus(bus);
- 		if (pci_is_root_bus(bus))
- 			bus->is_added = 1;
+ 	/* Get probe mode and perform scan */
+ 	mode = PCI_PROBE_NORMAL;
+ 	if (node && ppc_md.pci_probe_mode)
+@@ -1742,8 +1744,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		of_scan_bus(node, bus);
  	}
  
--	for (pass=0; pass < 2; pass++)
--		list_for_each_entry(dev, &bus->devices, bus_list) {
--			if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
--			    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
--				max = pci_scan_bridge(bus, dev, max, pass);
--		}
-+	list_for_each_entry(dev, &bus->devices, bus_list)
-+		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
-+		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
-+			max = pci_scan_bridge(bus, dev, max, pass);
- 
- 	/*
- 	 * We've scanned the bus and so we know all about what's on
-@@ -1692,7 +1693,24 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- 	 *
- 	 * Return how far we've got finding sub-buses.
- 	 */
--	dev_dbg(&bus->dev, "bus scan returning with max=%02x\n", max);
-+	dev_dbg(&bus->dev, "bus scan returning with max=%02x pass %d\n",
-+			max, pass);
-+
-+	return max;
-+}
-+
-+unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
-+{
-+	int pass;
-+	unsigned int max = 0, tmp;
-+
-+	for (pass = 0; pass < 2;  pass++) {
-+		tmp = __pci_scan_child_bus(bus, pass);
-+
-+		if (tmp > max)
-+			max = tmp;
+-	if (mode == PCI_PROBE_NORMAL)
++	if (mode == PCI_PROBE_NORMAL) {
++		pci_bus_update_busn_res_end(bus, 255);
+ 		hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
++		pci_bus_update_busn_res_end(bus, bus->subordinate);
 +	}
-+
- 	return max;
- }
  
+ 	/* Platform gets a chance to do some global fixups before
+ 	 * we proceed to resource allocation
 -- 
 1.7.7
 
