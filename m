@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab2BXWlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:41:07 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53749 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab2BXWlG convert rfc822-to-8bit (ORCPT
+	id S932416Ab2BXWon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:44:43 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35897 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab2BXWom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:41:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.229.78.159 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
+	Fri, 24 Feb 2012 17:44:42 -0500
+Message-ID: <4F4812D5.7060606@suse.cz>
+Date: Fri, 24 Feb 2012 23:44:37 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <4F468EBB.9000209@gmail.com>
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
-	<4F4484AC.9050500@lge.com>
-	<87ehtnhz9w.fsf@gmail.com>
-	<CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com>
-	<4F45E9C5.4020900@lge.com>
-	<CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
-	<CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
-	<4F468EBB.9000209@gmail.com>
-Date: Fri, 24 Feb 2012 17:41:04 -0500
-Message-ID: <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-From: Yuanfang Chen <cyfmxc@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tony Luck <tony.luck@intel.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, fenghua.yu@intel.com,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] IA64: hpsim, fix SAL handling in fw-emu
+References: <1330081818-15517-1-git-send-email-jslaby@suse.cz> <CA+8MBbKtQZkp0RzsP366PgzdN2jvX73njFr1avSoE_CFDv=jNg@mail.gmail.com>
+In-Reply-To: <CA+8MBbKtQZkp0RzsP366PgzdN2jvX73njFr1avSoE_CFDv=jNg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 2:08 PM, David Ahern <dsahern@gmail.com> wrote:
-> On 2/23/12 11:52 AM, Yuanfang Chen wrote:
->>>
->>>
->>> say my application(not an existing process, so -p<pid>  does not
->>> work.) run for 10 seconds. I want the r03c, r2d4 value during each
->>> second.  So there will be two values for each event in one second.
->>
->>
->> oops, forgot to forward. :-)
->
->
-> you are looking for something like this?
-> http://www.spinics.net/lists/linux-perf-users/msg00211.html
+On 02/24/2012 11:32 PM, Tony Luck wrote:
+> Are these four patches the only things needed to get the kernel
+> running on the simulator?  I've been building sim_defconfig as
+> part of my regular "did things break" cycle. But I haven't tried to
+> boot in well over five years.
 
-Exactly !!
+Yes, it works fine for me. I'm using busybox as userspace. From SLES 11
+SP2. I was using it to test tty patches applied to simserial.
 
-I think I'll settle with perf record for now. Still, unlike trace
-event, sample count is not meaningful for PMU event. Output of "perf
-script" does not include period value. One line of code will do the
-work.
+My .config differs from sim_defconfig though. I didn't know there is a
+defconfig for HP simulator. So I configured the kernel from scratch with
+help of menuconfig.
 
-lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
-__mem_cgroup_commit_char
-lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
-__mem_cgroup_commit_char
-
-86754, 1027634 is the period value. But I'm not sure which is the PMU
-value, is it just period value, or period x sample after. If so, what
-is the sample after value?
-
-thank you,
-yuanfang
-
->
-> David
->
+thanks,
+-- 
+js
+suse labs
