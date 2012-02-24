@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2BXTFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:05:55 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:52142 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752719Ab2BXTFy (ORCPT
+	id S1756757Ab2BXTK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:10:56 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:26340 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753479Ab2BXTKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:05:54 -0500
-Date: Fri, 24 Feb 2012 14:05:49 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, David Windsor <dwindsor@gmail.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-hardening@lists.openwall.com,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        spender@grsecurity.net
-Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
-Message-ID: <20120224190549.GA8034@elliptictech.com>
-References: <20120217002405.GB7746@kroah.com>
- <20120217075945.GA2831@albatros>
- <20120217175445.GC29902@kroah.com>
- <20120217193719.GA4187@albatros>
- <20120217233908.GA24047@dztty>
- <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
- <20120218161849.GA4176@kroah.com>
- <CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
- <20120224183726.GB23284@kroah.com>
- <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
+	Fri, 24 Feb 2012 14:10:54 -0500
+Message-ID: <1330110650.2397.8.camel@bwh-desktop>
+Subject: Re: [PATCH 2/2] enic: Silence Sparse Warning: "dubious: x | !y"
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+CC: <benve@cisco.com>, <roprabhu@cisco.com>, <neepatel@cisco.com>,
+        <nistrive@cisco.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+Date: Fri, 24 Feb 2012 19:10:50 +0000
+In-Reply-To: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18728.006
+X-TM-AS-Result: No--15.118700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-24 10:52 -0800, Kees Cook wrote:
-> On Fri, Feb 24, 2012 at 10:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
-[...]
-> >> diff --git a/include/linux/kref.h b/include/linux/kref.h
-> >> index 9c07dce..fc0756a 100644
-> >> --- a/include/linux/kref.h
-> >> +++ b/include/linux/kref.h
-> >> @@ -38,8 +38,12 @@ static inline void kref_init(struct kref *kref)
-> >>   */
-> >>  static inline void kref_get(struct kref *kref)
-> >>  {
-> >> +   int rc = 0;
-> >>     WARN_ON(!atomic_read(&kref->refcount));
-> >> -   atomic_inc(&kref->refcount);
-> >> +   smp_mb__before_atomic_inc();
-> >> +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
-> >> +   smp_mb__after_atomic_inc();
-> >> +   BUG_ON(!rc);
-> >
-> > So you are guaranteeing to crash a machine here if this fails?  And you
-> > were trying to say this is a "security" based fix?
+On Fri, 2012-02-24 at 22:27 +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
 > 
-> This is the same principle as the stack protector. When something has
-> gone horribly wrong and cannot be sensibly recovered from, crash the
-> machine. Wrapping the refcount would cause all kinds of problems, so
-> that certainly seems worthy of a BUG().
+> Sparse is giving the following warning:
+> "warning: dubious: x | !y"
+> 
+> "enic_are_pp_different" is static and expected to return true or false.
+> Logical or is indended here. With logical or, in best case, execution will be
+> faster because if leftmost operand is true then no need to check other operands.
 
-But in this case, the principle does not apply because we can recover.
-The reason we cannot recover from the stack protector case is because
-the stack protector is reacting after the fact, which is not the case
-here.  Simply peg the reference count at the maximum value, neither
-incrementing it nor decrementing it further.
+The shortcut behaviour of logical-or means more conditional jumps to be
+predicted and more potential for pipeline stalls.  So bitwise-or can in
+some cases be more efficient.  But this function appears to be
+control-path code where micro-optimisation just doesn't matter.  Use of
+logical-or can be justified purely on the grounds of clarity.
 
-Cheers,
+Ben.
+
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  drivers/net/ethernet/cisco/enic/enic_pp.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cisco/enic/enic_pp.c b/drivers/net/ethernet/cisco/enic/enic_pp.c
+> index dafea1e..3a6de22 100644
+> --- a/drivers/net/ethernet/cisco/enic/enic_pp.c
+> +++ b/drivers/net/ethernet/cisco/enic/enic_pp.c
+> @@ -159,10 +159,10 @@ static int enic_unset_port_profile(struct enic *enic, int vf)
+>  static int enic_are_pp_different(struct enic_port_profile *pp1,
+>  		struct enic_port_profile *pp2)
+>  {
+> -	return strcmp(pp1->name, pp2->name) | !!memcmp(pp1->instance_uuid,
+> -		pp2->instance_uuid, PORT_UUID_MAX) |
+> -		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) |
+> -		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
+> +	return strcmp(pp1->name, pp2->name) || !!memcmp(pp1->instance_uuid,
+> +		pp2->instance_uuid, PORT_UUID_MAX) ||
+> +		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) ||
+> +		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
+>  }
+>  
+>  static int enic_pp_preassociate(struct enic *enic, int vf,
+
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
