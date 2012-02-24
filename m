@@ -1,160 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab2BXPqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:46:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755577Ab2BXPqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:46:30 -0500
-Date: Fri, 24 Feb 2012 10:46:13 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: properly _init-annotate NMI selftest code
-Message-ID: <20120224154613.GF26998@redhat.com>
-References: <4F478C010200007800074A3D@nat28.tlf.novell.com>
+	id S1757533Ab2BXPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:49:26 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57717 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab2BXPtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:49:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 00/14] DMA-mapping framework redesign preparation
+Date: Fri, 24 Feb 2012 15:48:59 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F478C010200007800074A3D@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241548.59791.arnd@arndb.de>
+X-Provags-ID: V02:K0:T7az3aeAxJJ2biO5z7hE5jD6TBIYwaYasOrCkwG3CUl
+ vTSpX2XwMIxuIVDPdgwnGbr6FRW8RxQICDQWSWXyApB3pO4U1Q
+ QfBbxFcWfTMxLmF0cS8rtUYp8GDWUNMeNHEJFNLUA2J9ej9uns
+ xhueLubFJiBlXL2eVEch3AkSsFkCZm2ZIbFmpjtY3ulrbChUxy
+ F9hdbMLvUJm6Ap1t7D9RQepxYPTHA/E3xdcAp47h9BphDn/Vz/
+ GObA9B/ql/AkniRF9iYr6C3elm/tPlVwGfOcB6d0EmorDfrZmO
+ DDiJBO2oGhz71dxK7ynoB/fIMas0g3e0kDxsB3jjWc1oSWtHus
+ kqfQlD5ooX2o7Tw051bI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 12:09:21PM +0000, Jan Beulich wrote:
-> After all, this code is being run once at boot only (if configured in
-> at all).
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Cc: Don Zickus <dzickus@redhat.com>
+On Friday 23 December 2011, Marek Szyprowski wrote:
+> The solution we found is to introduce a new public dma mapping functions
+> with additional attributes argument: dma_alloc_attrs and
+> dma_free_attrs(). This way all different kinds of architecture specific
+> buffer mappings can be hidden behind the attributes without the need of
+> creating several versions of dma_alloc_ function.
 
-Heh. Yes, nice catch.
+Since the patches are now in linux-next, we should make sure that they
+can actually get merged into 3.4.
 
-Ingo, I can respin this with my sign-off or just give my ACK.
+I've looked at all the patches again and found them to be straightforward
+and helpful, I hope we can get them merged next time. Please add my
 
-Cheers,
-Don
-
-> 
-> ---
->  arch/x86/kernel/nmi_selftest.c |   37 +++++++++++++++++++------------------
->  1 file changed, 19 insertions(+), 18 deletions(-)
-> 
-> --- 3.3-rc4/arch/x86/kernel/nmi_selftest.c
-> +++ 3.3-rc4-x86-nmi-selftest-init/arch/x86/kernel/nmi_selftest.c
-> @@ -12,6 +12,7 @@
->  #include <linux/smp.h>
->  #include <linux/cpumask.h>
->  #include <linux/delay.h>
-> +#include <linux/init.h>
->  
->  #include <asm/apic.h>
->  #include <asm/nmi.h>
-> @@ -20,35 +21,35 @@
->  #define FAILURE		1
->  #define TIMEOUT		2
->  
-> -static int nmi_fail;
-> +static int __initdata nmi_fail;
->  
->  /* check to see if NMI IPIs work on this machine */
-> -static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __read_mostly;
-> +static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __initdata;
->  
-> -static int testcase_total;
-> -static int testcase_successes;
-> -static int expected_testcase_failures;
-> -static int unexpected_testcase_failures;
-> -static int unexpected_testcase_unknowns;
-> +static int __initdata testcase_total;
-> +static int __initdata testcase_successes;
-> +static int __initdata expected_testcase_failures;
-> +static int __initdata unexpected_testcase_failures;
-> +static int __initdata unexpected_testcase_unknowns;
->  
-> -static int nmi_unk_cb(unsigned int val, struct pt_regs *regs)
-> +static int __init nmi_unk_cb(unsigned int val, struct pt_regs *regs)
->  {
->  	unexpected_testcase_unknowns++;
->  	return NMI_HANDLED;
->  }
->  
-> -static void init_nmi_testsuite(void)
-> +static void __init init_nmi_testsuite(void)
->  {
->  	/* trap all the unknown NMIs we may generate */
->  	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk");
->  }
->  
-> -static void cleanup_nmi_testsuite(void)
-> +static void __init cleanup_nmi_testsuite(void)
->  {
->  	unregister_nmi_handler(NMI_UNKNOWN, "nmi_selftest_unk");
->  }
->  
-> -static int test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
-> +static int __init test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
->  {
->          int cpu = raw_smp_processor_id();
->  
-> @@ -58,7 +59,7 @@ static int test_nmi_ipi_callback(unsigne
->          return NMI_DONE;
->  }
->  
-> -static void test_nmi_ipi(struct cpumask *mask)
-> +static void __init test_nmi_ipi(struct cpumask *mask)
->  {
->  	unsigned long timeout;
->  
-> @@ -86,7 +87,7 @@ static void test_nmi_ipi(struct cpumask 
->  	return;
->  }
->  
-> -static void remote_ipi(void)
-> +static void __init remote_ipi(void)
->  {
->  	cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
->  	cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
-> @@ -94,19 +95,19 @@ static void remote_ipi(void)
->  		test_nmi_ipi(to_cpumask(nmi_ipi_mask));
->  }
->  
-> -static void local_ipi(void)
-> +static void __init local_ipi(void)
->  {
->  	cpumask_clear(to_cpumask(nmi_ipi_mask));
->  	cpumask_set_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
->  	test_nmi_ipi(to_cpumask(nmi_ipi_mask));
->  }
->  
-> -static void reset_nmi(void)
-> +static void __init reset_nmi(void)
->  {
->  	nmi_fail = 0;
->  }
->  
-> -static void dotest(void (*testcase_fn)(void), int expected)
-> +static void __init dotest(void (*testcase_fn)(void), int expected)
->  {
->  	testcase_fn();
->  	/*
-> @@ -131,12 +132,12 @@ static void dotest(void (*testcase_fn)(v
->  	reset_nmi();
->  }
->  
-> -static inline void print_testname(const char *testname)
-> +static inline void __init print_testname(const char *testname)
->  {
->  	printk("%12s:", testname);
->  }
->  
-> -void nmi_selftest(void)
-> +void __init nmi_selftest(void)
->  {
->  	init_nmi_testsuite();
->  
-> 
-> 
-> 
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
