@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab2BXBSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 20:18:32 -0500
-Received: from 124-248-200-59.sunnyvision.com ([124.248.200.59]:45431 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756728Ab2BXBSb (ORCPT
+	id S1757098Ab2BXBWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 20:22:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49985 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab2BXBWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 20:18:31 -0500
-X-Greylist: delayed 34771 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 20:18:30 EST
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 9E751F321D
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 819BE4FB23
-Message-ID: <lmaEShjrUf2s0L@mail.seeder.net.tw>
-From: design@dedicatedserver.com.hk
-Subject: Web Development Service~~~
-X-Mailer: UjhZXKPA9qsSv2D2owhHBykVwXAz
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu, 23 Feb 2012 23:24:07 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 23 Feb 2012 20:22:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of anton.vorontsov@linaro.org designates 10.205.117.141 as permitted sender) smtp.mail=anton.vorontsov@linaro.org
+Date: Fri, 24 Feb 2012 05:22:27 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: memcg: Remove redundant BUG_ON() in
+ mem_cgroup_usage_unregister_event
+Message-ID: <20120224012227.GA32689@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1O1JGVe002496
 
-Dear all,
-Please see below is our general job reference and web design package, 
+In the following code:
 
-Total 12 pages web design service
-- Two language version
-- All the webpage design is included:
-- Theme development;
-- Design Study;
-- Original Layout / Artwork Design;
-- Steady HTML / Flash Web page development;
-- Search Engine Applicable;
-- Basic Graphic Flash Banner x1;
-- All text contents, logos and related product photos should be provided by client
- Product eCatalogue (Product Page)
+	if (type == _MEM)
+		thresholds = &memcg->thresholds;
+	else if (type == _MEMSWAP)
+		thresholds = &memcg->memsw_thresholds;
+	else
+		BUG();
 
-- CMS Function of add /edit Products with Contents & Photos
-- Maximum 10 fields include Photos and Contents
-- Text Editor for Detail Contents (if need)
-- Support text descriptions and photos updating
-- 1 Level categories management
-- Database support with un-limit Products create
-- Not include Data input
-- Standard Admin panel with login function (1 admin account)
-Content management system (Activities page)
+	BUG_ON(!thresholds);
 
-- Basic CMS function of add / edit items
-- Max. 5 fields per item
-- Support photos and text descriptions
-- Front-end support 1 page only (Comapny activities page)
-- Database support with un-limit Products create
-- Not include Data input
-- Integrated Admin Panel
-Enquiry form function (Contact Us)
-- Form to mail
-Package price : $38,000
+The BUG_ON() seems redundant.
 
-Yoy may click the hyperlink to see some of our design reference.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ mm/memcontrol.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-Job reference
-
-http://www.hk-belle.com/
-http://www.mirabell.com.hk/
-http://www.nikijodi.com/
-http://www.joy-peace.com/
-http://www.staccato.com
-http://www.chicks.com.hk/
-
-
-Program reference
-http://www.gloryskygroup.com/index.aspx?lang=big5
-http://www.mydriver.com.hk/
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6728a7a..b423577 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4404,20 +4404,14 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 	if (type == _MEM)
+ 		thresholds = &memcg->thresholds;
+ 	else if (type == _MEMSWAP)
+ 		thresholds = &memcg->memsw_thresholds;
+ 	else
+ 		BUG();
  
-Best Regards,
-Eric Chan
-Senior Sales Executive
-Mobile: 9533 6486
-
-If you do not wish to further receive this event message, email subscriber@dedicatedserver.com.hk to unsubscribe this message
-
-
+-	/*
+-	 * Something went wrong if we trying to unregister a threshold
+-	 * if we don't have thresholds
+-	 */
+-	BUG_ON(!thresholds);
+-
+ 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 
+ 	/* Check if a threshold crossed before removing */
+ 	__mem_cgroup_threshold(memcg, type == _MEMSWAP);
+ 
+ 	/* Calculate new number of threshold */
+ 	size = 0;
+-- 
+1.7.9
