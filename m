@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab2BXDYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:24:52 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32329 "EHLO
+	id S1755787Ab2BXDYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:24:54 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32335 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab2BXDYF (ORCPT
+	with ESMTP id S1755177Ab2BXDYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 22:24:05 -0500
+	Thu, 23 Feb 2012 22:24:06 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Ram Pai <linuxram@us.ibm.com>,
@@ -14,106 +14,76 @@ Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 4/4] PCI: only enable pci realloc when SRIOV bar is not assigned
-Date: Thu, 23 Feb 2012 19:23:32 -0800
-Message-Id: <1330053812-10316-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 1/4] PCI: Retry on type IORESOURCE_IO allocation.
+Date: Thu, 23 Feb 2012 19:23:29 -0800
+Message-Id: <1330053812-10316-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330053812-10316-1-git-send-email-yinghai@kernel.org>
 References: <1330053812-10316-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F4702CD.0015,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090201.4F4702CD.001B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bios does not assign those BAR or wrong address, then kernel will
-try to do pci realloc.
+During reenabling pci reallocating for pci bridge by clean the small size in
+bridge and assign with requested + optional size for first several try,
+Ram mention could have problem with one case
+	https://bugzilla.kernel.org/show_bug.cgi?id=15960
 
-in that case, user still can use pci=realloc=off to override it.
+After checking the booting log in
+	https://lkml.org/lkml/2010/4/19/44
+	[regression, bisected] Xonar DX invalid PCI I/O range since 977d17bb174
 
--v2: According to Jesse, adding one CONFIG option for distribution to
-     disable it or enable it.
+We should not stop too early for io ports.
+	Apr 19 10:19:38 [kernel] pci 0000:04:00.0: BAR 7: can't assign io (size 0x4000)
+	Apr 19 10:19:38 [kernel] pci 0000:05:01.0: BAR 8: assigned [mem 0x80400000-0x805fffff]
+	Apr 19 10:19:38 [kernel] pci 0000:05:01.0: BAR 7: can't assign io (size 0x2000)
+	Apr 19 10:19:38 [kernel] pci 0000:05:02.0: BAR 7: can't assign io (size 0x1000)
+	Apr 19 10:19:38 [kernel] pci 0000:05:03.0: BAR 7: can't assign io (size 0x1000)
+	Apr 19 10:19:38 [kernel] pci 0000:08:00.0: BAR 7: can't assign io (size 0x1000)
+	Apr 19 10:19:38 [kernel] pci 0000:09:04.0: BAR 0: can't assign io (size 0x100)
+and clear 00:1c.0 to retry again.
+
+The patch remove the IORESOUCE_IO checking, and try one more time.
+and we will have chance to get allocation for 00:1c.0 io port range because
+from 0x4000 to 0x8000 could be used.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/Kconfig     |   10 ++++++++++
- drivers/pci/setup-bus.c |   28 ++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ drivers/pci/setup-bus.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 37856f7..771a037 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -31,6 +31,16 @@ config PCI_DEBUG
- 
- 	  When in doubt, say N.
- 
-+config PCI_REALLOC_ENABLE_AUTO
-+	bool "PCI Realloc Enable Auto"
-+	depends on PCI
-+	help
-+	  Say Y here if you want the PCI core to detect if pci realloc
-+	  need to be enabled. You can always use pci=realloc=on or
-+	  pci=realloc=off to override it.
-+
-+	  When in doubt, say N.
-+
- config PCI_STUB
- 	tristate "PCI Stub driver"
- 	depends on PCI
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index e21e1c2..c9214a1 100644
+index 2991a89..162edfb 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -1294,6 +1294,31 @@ static bool __init pci_realloc_enabled(void)
- 	return pci_realloc_enable >= user_enabled;
- }
- 
-+static void __init pci_realloc_detect(void)
-+{
-+#if defined(CONFIG_PCI_IOV) && defined(CONFIG_PCI_REALLOC_ENABLE_AUTO)
-+	struct pci_dev *dev = NULL;
-+
-+	if (pci_realloc_enable != undefined)
-+		return;
-+
-+	for_each_pci_dev(dev) {
-+		int i;
-+
-+		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
-+			struct resource *r = &dev->resource[i];
-+
-+			/* Not assigned, or rejected by kernel ? */
-+			if (r->flags && !r->start) {
-+				pci_realloc_enable = auto_enabled;
-+
-+				return;
-+			}
-+		}
-+	}
-+#endif
-+}
-+
- /*
-  * first try will not touch pci bridge res
-  * second  and later try will clear small leaf bridge res
-@@ -1315,6 +1340,7 @@ pci_assign_unassigned_resources(void)
+@@ -1292,7 +1292,6 @@ pci_assign_unassigned_resources(void)
+ 	struct pci_dev_resource *fail_res;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+ 				  IORESOURCE_PREFETCH;
+-	unsigned long failed_type;
  	int pci_try_num = 1;
  
  	/* don't realloc if asked to do so */
-+	pci_realloc_detect();
- 	if (pci_realloc_enabled()) {
- 		int max_depth = pci_get_max_depth();
+@@ -1327,16 +1326,7 @@ again:
+ 	if (list_empty(&fail_head))
+ 		goto enable_and_dump;
  
-@@ -1349,6 +1375,8 @@ again:
- 	if (tried_times >= pci_try_num) {
- 		if (pci_realloc_enable == undefined)
- 			printk(KERN_INFO "Some PCI device resources are unassigned, try booting with pci=realloc\n");
-+		else if (pci_realloc_enable == auto_enabled)
-+			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
- 
+-	failed_type = 0;
+-	list_for_each_entry(fail_res, &fail_head, list)
+-		failed_type |= fail_res->flags;
+-
+-	/*
+-	 * io port are tight, don't try extra
+-	 * or if reach the limit, don't want to try more
+-	 */
+-	failed_type &= type_mask;
+-	if ((failed_type == IORESOURCE_IO) || (tried_times >= pci_try_num)) {
++	if (tried_times >= pci_try_num) {
  		free_list(&fail_head);
  		goto enable_and_dump;
+ 	}
 -- 
 1.7.7
 
