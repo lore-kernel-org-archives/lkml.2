@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147Ab2BXVi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 16:38:56 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58797 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab2BXViz (ORCPT
+	id S1758159Ab2BXVpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 16:45:36 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64217 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab2BXVpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 16:38:55 -0500
-Message-ID: <4F480326.8070706@linux.vnet.ibm.com>
-Date: Fri, 24 Feb 2012 13:37:42 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	Fri, 24 Feb 2012 16:45:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.218.228 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
+Date: Fri, 24 Feb 2012 13:45:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josef Bacik <josef@redhat.com>
+cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
+In-Reply-To: <20120224151025.GA1848@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1202241342240.22880@chino.kir.corp.google.com>
+References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com> <20120223150238.GA15427@dhcp231-144.rdu.redhat.com> <alpine.DEB.2.00.1202231505080.26362@chino.kir.corp.google.com>
+ <20120224151025.GA1848@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home> <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home> <4F47C800.4090903@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241131400.3726@router.home>
-In-Reply-To: <alpine.DEB.2.00.1202241131400.3726@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022421-3270-0000-0000-0000044C6DF2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 09:32 AM, Christoph Lameter wrote:
-> @@ -1318,10 +1318,10 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
->  	rcu_read_lock();
->  	task = pid ? find_task_by_vpid(pid) : current;
->  	if (!task) {
-> -		rcu_read_unlock();
->  		err = -ESRCH;
->  		goto out;
->  	}
-...
-> +	put_task_struct(task);
-> +	task = NULL;
->  	err = do_migrate_pages(mm, old, new,
->  		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
->  out:
-> +	if (task)
-> +		put_task_struct(task);
-> +
->  	if (mm)
->  		mmput(mm);
->  	NODEMASK_SCRATCH_FREE(scratch);
+On Fri, 24 Feb 2012, Josef Bacik wrote:
 
-Man, patch did not like this for some reason.  I kept throwing most of
-the mempolicy.c hunks away.  I've never seen anything like it.
+> Um well yeah, I'm rewriting a chunk of btrfs which was rapantly leaking memory
+> so the OOM just couldn't keep up with how much I was sucking down.  This is
+> strictly a developer is doing something stupid and needs help pointing out what
+> it is sort of moment, not a day to day OOM.
+>  
 
-Anyway...  This looks fine except I think that rcu_read_unlock() need to
-stay.  There's currently no release of it after out:.
-
+If you're debugging new kernel code and you realize that excessive amount 
+of memory is being consumed so that nothing can even fork, you may want to 
+try cat /proc/slabinfo before you get into that condition the next time 
+around, although I already suspect that you know the cache you're leaking.  
+It doesn't mean we need to add hundreds of lines of code to the kernel.  
+Try kmemleak.
