@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2BXFmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 00:42:09 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49382 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab2BXFmG (ORCPT
+	id S1753558Ab2BXFrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 00:47:51 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58318 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2BXFrs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 00:42:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.180.95.1 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
-Date: Fri, 24 Feb 2012 13:41:50 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v1
-Message-ID: <20120224054150.GA17543@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
- <1329989454.24994.57.camel@twins>
- <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+	Fri, 24 Feb 2012 00:47:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201202231847.55733.vapier@gentoo.org>
+References: <20120222150010.c784b29b.akpm@linux-foundation.org>
+	<1329969811-3997-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<201202231847.55733.vapier@gentoo.org>
+Date: Fri, 24 Feb 2012 11:17:48 +0530
+Message-ID: <CAAHN_R0ihoA6K8w53ToRD1xew9NWk-bJAZ=U0+hgRV3=0FpVDg@mail.gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
-> On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > Why not scheduler_ipi()?
-> 
-> Was trying to avoid irq_enter/exit. As the work here is done in idle
-> thread context, I though we could avoid enter/exit. 
+On Fri, Feb 24, 2012 at 5:17 AM, Mike Frysinger <vapier@gentoo.org> wrote:
+> i don't suppose we could have it say "[tid stack]" rather than "[stack]" ?  or
+> perhaps even "[stack tid:%u]" with replacing %u with the tid ?
 
-It seems we could not.
-At least RCU need it, see commit c5d753a55, otherwise we will get
-warning like 'RCU used illegally from extended quiescent state!'
+Why do we need to differentiate a thread stack from a process stack?
+If someone really wants to know, the main stack is the last one since
+it doesn't look like mmap allocates anything above the stack right
+now.
 
-Thanks,
-Yong
+I like the idea of marking all stack vmas with their task ids but it
+will most likely break procps. Besides, I think it could be done
+within procps with this change rather than having the kernel do it.
+
+-- 
+Siddhesh Poyarekar
+http://siddhesh.in
