@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab2BXWSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:18:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63506 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab2BXWSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:18:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 14:18:07 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bernhard Walle <bernhard@bwalle.de>
-Cc: christoph.mair@gmail.com, arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] misc: bmp085: Handle jiffies overflow correctly
-Message-ID: <20120224221807.GA20680@kroah.com>
-References: <1329672481-19583-1-git-send-email-bernhard@bwalle.de>
+	id S1758191Ab2BXWTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:19:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33708 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab2BXWTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 17:19:15 -0500
+Message-ID: <4F480CDE.8010605@suse.cz>
+Date: Fri, 24 Feb 2012 23:19:10 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1329672481-19583-1-git-send-email-bernhard@bwalle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Kconfig and toolchain dependencies
+References: <4F2C51A5.1040800@zytor.com>
+In-Reply-To: <4F2C51A5.1040800@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 06:28:01PM +0100, Bernhard Walle wrote:
-> By using the time_is_before_jiffies() macro instead of normal
-> arithmetic, the jiffies overflow is handled correctly.
+Dne 3.2.2012 22:29, H. Peter Anvin napsal(a):
+> Right now, we don't have a good way to encode toolchain dependencies in
+> Kconfig.  This makes it hard to add optional features which depend on
+> newer toolchain features.
 > 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  drivers/misc/bmp085.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> If we just add them, then it breaks all*config and randconfig on
+> platforms with the older toolchains unless the user manually adds
+> exclusion rules.  This is bad for testing.
 > 
-> diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
-> index b29a2be..7cfc598 100644
-> --- a/drivers/misc/bmp085.c
-> +++ b/drivers/misc/bmp085.c
-> @@ -234,7 +234,8 @@ static s32 bmp085_get_pressure(struct bmp085_data *data, int *pressure)
->  	int status;
->  
->  	/* alt least every second force an update of the ambient temperature */
-> -	if (data->last_temp_measurement + 1*HZ < jiffies) {
-> +	if (data->last_temp_measurement == 0 ||
-> +			time_is_before_jiffies(data->last_temp_measurement + 1*HZ)) {
+> It seems relatively straightforward to do if we were to manifest some
+> CONFIG_ variables based on the target toolchain, e.g.
+> 
+> CONFIG_GCC=0x040601
 
-This causes a complier warning:
-drivers/misc/bmp085.c: In function ‘bmp085_get_pressure’:
-drivers/misc/bmp085.c:238:4: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+(sorry for the late reply)
 
-Care to send me a follow-on patch that fixes this?
+It would be a bit tricky, because the toolchain version depends also on
+CONFIG_CROSS_COMPILE. So Kconfig would need to know the semantics of
+CONFIG_CROSS_COMPILE and CONFIG_GCC and the dependency of the latter on
+the former.
 
-thanks,
-
-greg k-h
+Michal
