@@ -1,196 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab2BXAFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 19:05:16 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6961 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255Ab2BXAEp (ORCPT
+	id S1757508Ab2BXAFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:05:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54354 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756255Ab2BXAFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 19:04:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 23 Feb 2012 16:04:44 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
-        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
-        <thomas.abraham@linaro.org>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/3] pinctrl: Re-order struct pinctrl_map
-Date: Thu, 23 Feb 2012 17:04:39 -0700
-Message-ID: <1330041880-12406-2-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
-References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 23 Feb 2012 19:05:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.166 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Thu, 23 Feb 2012 16:05:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/10] 3.2.8-stable review
+Message-ID: <20120224000510.GA1005@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lookup key in struct pinctrl_map is (.dev_name, .name). Re-order the
-struct definition to put the lookup key fields first, and the result
-values afterwards. To me at least, this slightly better reflects the
-lookup process.
+Note, this is a "special" review cycle, only containing a single, large
+bugfix for the reported floating point problem reported by some wireless
+users.  It would be VERY good if anyone running a x86-32 machine and a
+wireless driver test this out to verify that it works properly.
 
-Update the documentation in a similar fashion.
+This is the start of the stable review cycle for the 3.2.8 release.
+There are 10 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Note: PIN_MAP*() macros aren't updated; I plan to update this once later
-when enhancing the mapping table format to support pin config to reduce
-churn.
+Responses should be made by Sun Feb 26 00:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- Documentation/pinctrl.txt       |   24 ++++++++++++------------
- include/linux/pinctrl/machine.h |   10 +++++-----
- 2 files changed, 17 insertions(+), 17 deletions(-)
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.8-rc1.gz
+and the diffstat can be found below.
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 8bf46bc..6fe3232 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -781,19 +781,19 @@ spi on the second function mapping:
- 
- static const struct pinctrl_map __initdata mapping[] = {
- 	{
-+		.dev_name = "foo-spi.0",
- 		.ctrl_dev_name = "pinctrl-foo",
- 		.function = "spi0",
--		.dev_name = "foo-spi.0",
- 	},
- 	{
-+		.dev_name = "foo-i2c.0",
- 		.ctrl_dev_name = "pinctrl-foo",
- 		.function = "i2c0",
--		.dev_name = "foo-i2c.0",
- 	},
- 	{
-+		.dev_name = "foo-mmc.0",
- 		.ctrl_dev_name = "pinctrl-foo",
- 		.function = "mmc0",
--		.dev_name = "foo-mmc.0",
- 	},
- };
- 
-@@ -826,18 +826,18 @@ As it is possible to map a function to different groups of pins an optional
- 
- ...
- {
-+	.dev_name = "foo-spi.0",
- 	.name = "spi0-pos-A",
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "spi0",
- 	.group = "spi0_0_grp",
--	.dev_name = "foo-spi.0",
- },
- {
-+	.dev_name = "foo-spi.0",
- 	.name = "spi0-pos-B",
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "spi0",
- 	.group = "spi0_1_grp",
--	.dev_name = "foo-spi.0",
- },
- ...
- 
-@@ -852,45 +852,45 @@ case), we define a mapping like this:
- 
- ...
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "2bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "mmc0",
- 	.group = "mmc0_1_grp",
--	.dev_name = "foo-mmc.0",
- },
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "4bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "mmc0",
- 	.group = "mmc0_1_grp",
--	.dev_name = "foo-mmc.0",
- },
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "4bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "mmc0",
- 	.group = "mmc0_2_grp",
--	.dev_name = "foo-mmc.0",
- },
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "8bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.group = "mmc0_1_grp",
--	.dev_name = "foo-mmc.0",
- },
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "8bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "mmc0",
- 	.group = "mmc0_2_grp",
--	.dev_name = "foo-mmc.0",
- },
- {
-+	.dev_name = "foo-mmc.0",
- 	.name = "8bit"
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "mmc0",
- 	.group = "mmc0_3_grp",
--	.dev_name = "foo-mmc.0",
- },
- ...
- 
-@@ -988,10 +988,10 @@ This is enabled by simply setting the .dev_name field in the map to the name
- of the pin controller itself, like this:
- 
- {
-+	.dev_name = "pinctrl-foo",
- 	.name = PINCTRL_STATE_DEFAULT,
- 	.ctrl_dev_name = "pinctrl-foo",
- 	.function = "power_func",
--	.dev_name = "pinctrl-foo",
- },
- 
- Since it may be common to request the core to hog a few always-applicable
-diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-index 4743f84..20e9735 100644
---- a/include/linux/pinctrl/machine.h
-+++ b/include/linux/pinctrl/machine.h
-@@ -16,6 +16,10 @@
- 
- /**
-  * struct pinctrl_map - boards/machines shall provide this map for devices
-+ * @dev_name: the name of the device using this specific mapping, the name
-+ *	must be the same as in your struct device*. If this name is set to the
-+ *	same name as the pin controllers own dev_name(), the map entry will be
-+ *	hogged by the driver itself upon registration
-  * @name: the name of this specific map entry for the particular machine.
-  *	This is the second parameter passed to pinmux_get() when you want
-  *	to have several mappings to the same device
-@@ -27,17 +31,13 @@
-  * @group: sometimes a function can map to different pin groups, so this
-  *	selects a certain specific pin group to activate for the function, if
-  *	left as NULL, the first applicable group will be used
-- * @dev_name: the name of the device using this specific mapping, the name
-- *	must be the same as in your struct device*. If this name is set to the
-- *	same name as the pin controllers own dev_name(), the map entry will be
-- *	hogged by the driver itself upon registration
-  */
- struct pinctrl_map {
-+	const char *dev_name;
- 	const char *name;
- 	const char *ctrl_dev_name;
- 	const char *function;
- 	const char *group;
--	const char *dev_name;
- };
- 
- /*
--- 
-1.7.0.4
+thanks,
+
+greg k-h
+
+-------------
+ Makefile                           |    4 +-
+ arch/x86/include/asm/i387.h        |  284 +++++++++++++++++++++++++++++-------
+ arch/x86/include/asm/processor.h   |    1 +
+ arch/x86/include/asm/thread_info.h |    2 -
+ arch/x86/kernel/process_32.c       |   25 +---
+ arch/x86/kernel/process_64.c       |   29 +---
+ arch/x86/kernel/traps.c            |   41 +++--
+ arch/x86/kernel/xsave.c            |   12 +-
+ arch/x86/kvm/vmx.c                 |    2 +-
+ 9 files changed, 270 insertions(+), 130 deletions(-)
 
