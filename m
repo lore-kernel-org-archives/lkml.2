@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab2BXOvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 09:51:42 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:41781 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755616Ab2BXOvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 09:51:33 -0500
-Message-ID: <4F47A3F3.5030504@imgtec.com>
-Date: Fri, 24 Feb 2012 14:51:31 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S1756730Ab2BXOvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 09:51:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47119 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755673Ab2BXOvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 09:51:35 -0500
+Date: Fri, 24 Feb 2012 14:51:33 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: Set delay to 0 if set_voltage_time_sel
+ callback returns error
+Message-ID: <20120224145132.GO5450@opensource.wolfsonmicro.com>
+References: <1330067866.27530.1.camel@phoenix>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in
- cond_syscall
-References: <4F47981F.4020305@imgtec.com> <201202241424.07319.arnd@arndb.de>
-In-Reply-To: <201202241424.07319.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Feb 2012 14:51:31.0673 (UTC) FILETIME=[CBCF8C90:01CCF303]
-X-SEF-Processed: 7_3_0_01181__2012_02_24_14_51_32
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ncX6roZrNNHXnAbh"
+Content-Disposition: inline
+In-Reply-To: <1330067866.27530.1.camel@phoenix>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd
 
-Thanks for taking a look.
+--ncX6roZrNNHXnAbh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 24/02/12 14:24, Arnd Bergmann wrote:
-> On Friday 24 February 2012, James Hogan wrote:
->> Some architectures have symbol prefixes and set CONFIG_SYMBOL_PREFIX,
->> but this wasn't taken into account by the generic cond_syscall. It's
->> easy enough to fix in a generic fashion, so add the symbol prefix to
->> symbol names in cond_syscall when CONFIG_SYMBOL_PREFIX is set.
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> ---
->>  include/asm-generic/unistd.h |    9 ++++++++-
->>  1 files changed, 8 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
->> index 2292d1a..c9a5ba4 100644
->> --- a/include/asm-generic/unistd.h
->> +++ b/include/asm-generic/unistd.h
->> @@ -924,7 +924,14 @@ __SYSCALL(__NR_fork, sys_ni_syscall)
->>   * but it doesn't work on all toolchains, so we just do it by hand
->>   */
->>  #ifndef cond_syscall
->> -#define cond_syscall(x) asm(".weak\t" #x "\n\t.set\t" #x ",sys_ni_syscall")
->> +#ifdef CONFIG_SYMBOL_PREFIX
->> +#define __SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
->> +#else
->> +#define __SYMBOL_PREFIX
->> +#endif
->> +#define cond_syscall(x) asm(".weak\t" __SYMBOL_PREFIX #x "\n\t" \
->> +                           ".set\t" __SYMBOL_PREFIX #x "," \
->> +                           __SYMBOL_PREFIX "sys_ni_syscall")
->>  #endif
-> 
-> Our trend is to move away from arch specific Kconfig symbols and __ARCH_HAS_*
-> macros towards just defining whatever you need in the architecture as an
-> override for the generic definition.
-> 
-> Just provide your own unistd.h that does
-> 
-> #define cond_syscall(x) asm(".weak\t." #x "\n\t.set\t." #x ",.sys_ni_syscall")
-> #include <asm-generic/unistd.h>
+On Fri, Feb 24, 2012 at 03:17:46PM +0800, Axel Lin wrote:
 
-Okay, no problem.
+>  			delay = rdev->desc->ops->set_voltage_time_sel(rdev,
+>  						old_selector, selector);
+> +			if (delay < 0)
+> +				delay = 0;
 
-> BTW, are you planning to submit arch/metag for inclusion? I've looked at
-> the code recently and it appears that you are on the right track overall,
-> and it shouldn't be too hard to get to the same quality level as
-> arch/openrisc.
+We should complain if we get an error rather than silently ignore it,
+possibly we'll end up returning prior to the ramp finishing which may
+break things.
 
-At this stage I'm just (in my own time) trying to get it closer to the
-standard required for new architectures so that when the time comes
-there's less to do.
+--ncX6roZrNNHXnAbh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I've been looking at your initial comments for other architecture
-submissions and they've been very helpful, but if you do have any
-arch/metag specific suggestions I'd certainly welcome them.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks
-James
+iQIcBAEBAgAGBQJPR6PuAAoJEBus8iNuMP3dLG8P/RI0IY/xmfJs0maRESbbfKly
+CKvyaqzTYi33ejkNJ1iwe1MtgB/x6cMMhcpuZQWEYElj7c5UVkYPW7hfIF6kao3z
+cpYDukeHE/NaSidqmgQRM7aJTiHU0BFiFSw46DZ5FYA/r3U9Q9JXtGupa9bEdXqD
+XZDQFjwWKIGXwbhe6A9UbuK9vWI+298N2oMYNE4DsVkB72uHPKNICBuljge8KKzT
+x6zbzo07xFN+gZWzkjF0dO+ufRb3+sYI8bTaZkZE2wJ16r1u9JJZi5fNcj6R1ycp
+HzGRSjhbkiFyoB35wsGUz543oC/gfeyBKBDr6+ERYO5DBMbH/M8NBUn5fgW+0B6j
+bKnQwHF8M+2F/rb+QU/Fh66P1GV4L8jai49awXSiPokU0dZhS0e32va7l/3oUcsd
+FutE95dNUtjPfdwwtuMTT+IWNhyoKxeZICGQs1Svq4Je+Cmzn6p8VbuNtVo3ai5q
+wclKKxKrfGbITmQFR3CEmIfmlgUG366Pd8DkuskSK9ylqX07ZcRvSJnJOY7ZCza2
+GY2/+Q5hBVEj8s2WiRs0Zj3qB+jTK1w7b16G7Y8cfXdsWkons54rmJqS1s4X559I
+S0xQN2f2hFjEnXaudNeoKTXd/2vy3keKabFF2v2PPC4JteSmkmiow6jnxRVsbEdw
+zqXjXesEY3MGaQV40tzQ
+=Qr9U
+-----END PGP SIGNATURE-----
 
+--ncX6roZrNNHXnAbh--
