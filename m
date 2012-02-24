@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab2BXIkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 03:40:49 -0500
-Received: from sputnik.urmx.de ([88.198.51.18]:52385 "EHLO sputnik.urmx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143Ab2BXIks convert rfc822-to-8bit (ORCPT
+	id S1756377Ab2BXInk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 03:43:40 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:40532
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755630Ab2BXIni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 03:40:48 -0500
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Feb 2012 03:40:47 EST
-X-Spam-Processed: srv201.gdsys.de, Fri, 24 Feb 2012 09:31:48 +0100
-	(not processed: message from trusted or authenticated source)
-X-Return-Path: Eibach@gdsys.de
-X-Envelope-From: Eibach@gdsys.de
+	Fri, 24 Feb 2012 03:43:38 -0500
+Message-ID: <4F474DAD.1030302@compulab.co.il>
+Date: Fri, 24 Feb 2012 10:43:25 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20120201 Thunderbird/9.0
 MIME-Version: 1.0
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-Subject: Commit 529febe breaks usb on Freescale P1022
-Importance: normal
-Date: Fri, 24 Feb 2012 09:31:49 +0100
-Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BF89@SRV101.gdsys.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Commit 529febe breaks usb on Freescale P1022
-thread-index: Aczyzrz7Op4ygo1gSgGaOHDIktPOMw==
-From: "Eibach, Dirk" <Eibach@gdsys.de>
-To: <Shengzhou.Liu@freescale.com>
-Cc: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <stern@rowland.harvard.edu>
-X-SafeGuard_MailGateway: Version: 5.60.3.11066 SGMG Date: 20120224083150Z
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Content-Class: urn:content-classes:message
-X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.10.8; VDF: 7.11.23.240; host: mailrelay)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: stable@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: ARM: OMAP: patches for stable
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Greg,
 
-This commit introduces a check for the USB PHY clock.
-Problem is that CTRL_PHY_CLK_VALID bit seems not to be present on all
-Freescale ehci implementations, at least P1022 does not have it. So this
-check always fails and the driver never gets loaded. 
+There are several patches already in mainline, that should be also applied to stable:
 
-Cheers
-Dirk
---------------------------------------------------------------------------
-Guntermann & Drunck GmbH Systementwicklung 
-Dortmunder Str. 4a 
-D-57234 Wilnsdorf - Germany 
-Tel: +49 (0) 27 39 / 89 01 - 100  Fax: +49 (0) 27 39 / 89 01 - 120 
-E-Mail: mailto:sales@gdsys.de Web: http://www.gdsys.de
---------------------------------------------------------------------------
-Geschaeftsfuehrer: 
-Udo Guntermann - Martin Drunck - Reiner Ruelmann
-HRB 2884, Amtsgericht Siegen - WEEE-Reg.-Nr. DE30763240
-USt.-Id.-Nr. DE 126575222 - Steuer-Nr. 342 / 5835 / 1041
---------------------------------------------------------------------------
-DQS-zertifiziert nach ISO 9001:2000
---------------------------------------------------------------------------
+40410715 (ARM: omap: fix oops in drivers/video/omap2/dss/dpi.c)				[3.2-stable]
+d980e0f8 (ARM: omap: fix oops in arch/arm/mach-omap2/vp.c when pmic is not found)	[3.2-stable]
 
+Can these, please be applied to stable?
 
+Thanks
+
+-- 
+Regards,
+Igor.
