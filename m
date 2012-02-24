@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab2BXSXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 13:23:49 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55999 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab2BXSXr convert rfc822-to-8bit (ORCPT
+	id S1755751Ab2BXSfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 13:35:33 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:55323 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752714Ab2BXSfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 13:23:47 -0500
+	Fri, 24 Feb 2012 13:35:32 -0500
+Message-ID: <4F47D872.8090501@xenotime.net>
+Date: Fri, 24 Feb 2012 10:35:30 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <201202241112.46337.vapier@gentoo.org>
-References: <20120222150010.c784b29b.akpm@linux-foundation.org>
-	<201202231847.55733.vapier@gentoo.org>
-	<CAAHN_R0ihoA6K8w53ToRD1xew9NWk-bJAZ=U0+hgRV3=0FpVDg@mail.gmail.com>
-	<201202241112.46337.vapier@gentoo.org>
-Date: Fri, 24 Feb 2012 23:53:38 +0530
-Message-ID: <CAAHN_R1Viv5GpJfbvc71OyNG7CdFWei7-3XPTap47MM2e8uEsg@mail.gmail.com>
-Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.3-rc4
+References: <1329769073-10331-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1329769073-10331-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 9:42 PM, Mike Frysinger <vapier@gentoo.org> wrote:
->> I like the idea of marking all stack vmas with their task ids but it
->> will most likely break procps.
+On 02/20/2012 12:17 PM, Geert Uytterhoeven wrote:
+> *** ERRORS ***
 >
-> how ?
+> 61 regressions:
+>    + error: "st_register" [drivers/media/radio/wl128x/fm_drv.ko] undefined!:  =>  N/A
+>    + error: "st_unregister" [drivers/media/radio/wl128x/fm_drv.ko] undefined!:  =>  N/A
 
-I don't know yet, since I haven't looked at the procps code. I intend
-to do that once the patch is stable. But I imagine it would look for
-"[stack]" or something similar in the output. It ought to be easy
-enough to change I guess.
+Fix for that should be in media tree -- patch was posted on 2012-FEB-02.
 
->> Besides, I think it could be done within procps with this change rather than
->> having the kernel do it.
+> *** WARNINGS ***
 >
-> how exactly is procps supposed to figure this out ?  /proc/<pid>/maps shows the
-> pid's main stack, as does /proc/<pid>/tid/*/maps.
+> 1253 regressions:
+>    + src/fs/cifs/connect.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  =>  2171, 2161, 2153, 2146
 
-Since the maps are essentially the same, it would require pmap for
-example, to read through the PID/maps as well as TID/maps and
-associate them. I understand now that this may be a little racy.
+Patch for that one is sitting is the cifs git tree.  Was posted on 
+2012-JAN-30.
 
-I'll include thread ids and see how procps copes with it.
+
+>   + warning: (IMA) selects TCG_TIS which has unmet direct dependencies (TCG_TPM && X86):  => N/A
+
+Will post a possible patch for this one now.
 
 
 -- 
-Siddhesh Poyarekar
-http://siddhesh.in
+~Randy
