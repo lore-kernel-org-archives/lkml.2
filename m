@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab2BXQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:51:57 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51634 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757811Ab2BXQvy (ORCPT
+	id S1757845Ab2BXQwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:52:54 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45964 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab2BXQwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:51:54 -0500
-Date: Fri, 24 Feb 2012 08:51:30 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
-        rostedt@goodmis.org
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-Message-ID: <20120224165130.GB2399@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120222011652.GE23186@zod.bos.redhat.com>
- <20120222013252.GZ2375@linux.vnet.ibm.com>
- <20120222014242.GF23186@zod.bos.redhat.com>
- <20120224144032.GA13903@zod.bos.redhat.com>
- <20120224161743.GA2399@linux.vnet.ibm.com>
- <20120224162745.GC13903@zod.bos.redhat.com>
+	Fri, 24 Feb 2012 11:52:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.102.132 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224162745.GC13903@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022416-5518-0000-0000-0000027B5ECF
+In-Reply-To: <alpine.LRH.2.00.1202241112350.22368@twin.jikos.cz>
+References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
+ <alpine.LRH.2.00.1202241112350.22368@twin.jikos.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 24 Feb 2012 08:52:32 -0800
+X-Google-Sender-Auth: J8py6EpJhEGClcNkMN0NALnlPOY
+Message-ID: <CA+55aFwg4EpUhbymOHrSt88FEmZWniMx4goCkk-xK7dwiKcsZg@mail.gmail.com>
+Subject: Re: Linux 3.3-rc4
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 11:27:46AM -0500, Josh Boyer wrote:
-> On Fri, Feb 24, 2012 at 08:17:43AM -0800, Paul E. McKenney wrote:
-> > On Fri, Feb 24, 2012 at 09:40:32AM -0500, Josh Boyer wrote:
-> > > On Tue, Feb 21, 2012 at 08:42:43PM -0500, Josh Boyer wrote:
-> > > > > And patch #47 in that series has been obsoleted by another series
-> > > > > from Steven Rostedt:
-> > > > > 
-> > > > > 	https://lkml.org/lkml/2012/2/7/231
-> > > > 
-> > > > Ok.
-> > > > 
-> > > > > Hopefully these fix both splats and slowness.
-> > > > 
-> > > > So again, I'm slightly confused on how RCU patches flow.  Eric
-> > > > originally reported the bug for which you created the patch I applied
-> > > > against 3.3.  The giant patch series above seems queued for 3.4.
-> > > > 
-> > > > I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
-> > > > I'd want to go applying the 47-patch series on 3.3 at the moment, and
-> > > > given you have these marked for 3.4 I don't think you do either.
-> > > > However, is there some kind of fix for the original bug report against
-> > > > 3.3?
-> > > 
-> > > I was being sincere when I asked the above questions.  Could you
-> > > describe how you handle RCU patches across releases and if there is a
-> > > fix for the 3.3-rcX issue Eric reported that is going into 3.3?
-> > > 
-> > > I know you're quite busy, but I'd like to understand your thinking so I
-> > > know what to expect going forward.
-> > 
-> > Apologies for being slow, but could you please point me at the original
-> > bug report that the old patch was designed to fix?  My email filing
-> > seems to have failed me in this case.
-> 
-> Same thread I linked in my original email:
-> 
-> https://lkml.org/lkml/2012/1/24/203
+On Fri, Feb 24, 2012 at 2:39 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>
+> I just got the BUG below (with g45196ce being the topmost commit).
+>
+> It happened when trying to start 'gwenview', but I am not able to
+> reproduce it again. Adding a few people to CC just in case someone
+> immediately sees what might be the problem.
 
-Thank you!
+Hmm. That is the code that increments the file counter, afaik:
 
-> > My guess is that the best short-term fix for Fedora is to disable the
-> > warning, but I do need to see the original bug to work out if that really
-> > is a prudent course of action.
-> 
-> Honestly, I don't care from a Fedora perspective.  I can do what I need
-> to do there without too much trouble.  I'm asking because afaik, upstream
-> still has this problem.  The thread gets a bit curvy but from what I can
-> tell it resulted in the patch I highlighted as having issues.  Maybe I
-> overlooked something else that fixed Eric's problem?
+   0:     48 81 63 30 ff df ff ff   andq   $0xffffffffffffdfff,0x30(%rbx)
+   8:     48 c7 43 20 00 00 00 00   movq   $0x0,0x20(%rbx)
+  10:     48 c7 43 18 00 00 00 00   movq   $0x0,0x18(%rbx)
+  18:     48 85 d2                  test   %rdx,%rdx
+  1b:     74 4f                     je     0x6c
+  1d:     48 8b 42 18               mov    0x18(%rdx),%rax
+  21:     4c 8b a2 30 01 00 00      mov    0x130(%rdx),%r12
+  28:*    48 8b 40 30               mov    0x30(%rax),%rax     <--
+trapping instruction
+  2c:     f0 48 ff 42 68            lock incq 0x68(%rdx)
+  31:     f6 43 31 08               testb  $0x8,0x31(%rbx)
+  35:     74 07                     je     0x3e
 
-"A bit curvy" is right -- which is why the fixes ended up at the end of
-my large patch series for 3.4.
+and that preceding test is testing for a NULL "file", and then the
 
-But after looking this over, Steven Rostedt's three-patch set should
-suffice:
+   mov    0x18(%rdx),%rax
 
-	https://lkml.org/lkml/2012/2/7/231
+is "dentry = file->f_path.dentry", while the trapping "mov
+0x30(%rax),%rax" is the continuation of that: "dentry->d_inode" (and
+the "lock incq" is the get_file() - it's incrementing the file
+counter). That "mov 0x130(%rdx),%r12" in between is doing "mapping =
+file->f_mapping"
 
-The reason that mine are not needed is that the problematic code is
-called -only- from idle, not from process context, and also that the
-problematic code is tracing.  My patch #45 is required for code that is
-called from both process context and from idle.  My patch #46 is required
-for non-tracing uses of RCU from within the idle loop -- along with TBD
-patches to wrap those uses of RCU in the RCU_NONIDLE() macro.
+So dentry seems to be NULL for you.
 
-So again, in your particular case of x86's power-tracing features,
-Steven Rostedt's three-patch series called out above should be all
-that you need.
+> The machine has gone through several suspend-resume cycles before this
+> happened, so it might well also be some memory corruption caused by a
+> random driver.
 
-I have CCed Steven in case there is some prerequisite to his patch set.
+I almost think it is, because "file->dentry" should never be NULL in a
+mapping afaik. Especially as your "mapping" certainly isn't NULL (it's
+in %r12, so you can see it in your register dump).
 
-							Thanx, Paul
+This isn't some unusual code sequence either, so I don't see it as
+some random latent bug that is just very unlikely and hard to trigger
+in that code itself.
 
+I'll think about it, but my first reaction is "memory corruption". Do
+you think you could try to run with a kernel that has SLAB debugging
+and poisoning on? If it's a stale pointer dereference that has cleared
+that dentry, that _might_ show it closer to the actual bug (rather
+than a long time later when the NULL dereference happens).
+
+                    Linus
