@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab2BXNQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:16:30 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43944 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755272Ab2BXNQL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:16:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.60.1.230 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
+	id S1756194Ab2BXNXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:23:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53875 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab2BXNXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 08:23:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel.lezcano@linaro.org designates 10.180.102.132 as permitted sender) smtp.mail=daniel.lezcano@linaro.org
+Message-ID: <4F478F40.9030002@linaro.org>
+Date: Fri, 24 Feb 2012 14:23:12 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <5240114.8TkZqEVLeL@fodrek.kar.elf.stuba.sk>
-References: <5240114.8TkZqEVLeL@fodrek.kar.elf.stuba.sk>
-Date: Fri, 24 Feb 2012 15:16:10 +0200
-X-Google-Sender-Auth: TJ0bgPbtisMYcvz9H7qNCeOt7VQ
-Message-ID: <CAOJsxLGcxggrN42urdBxQNPBUSjXtFpT=FfczKiYvQW2+AFJOQ@mail.gmail.com>
-Subject: Re: Resening: KGDB over Ethternet howto patch
-From: Pekka Enberg <penberg@kernel.org>
-To: fodrek@kasr.elf.stuba.sk
-Cc: linux-kernel@vger.kernel.org, Jason Wessel <jason.wessel@windriver.com>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Rickard Andersson <rickard.andersson@stericsson.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        sameo@linux.intel.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][V3] ux500 : decouple/recouple gic from the PRCMU
+References: <1329737426-12855-1-git-send-email-daniel.lezcano@linaro.org> <4F4785D2.8070200@linaro.org> <4F478D4B.6070602@stericsson.com>
+In-Reply-To: <4F478D4B.6070602@stericsson.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 3:01 PM,  <fodrek@kasr.elf.stuba.sk> wrote:
-> I would like to ask you how to debug linux kernel over etherent.
-> We are designing aplication usaig RTAI (Hard realtime extension using kenrel
-> patch too) and we have been found some problems in our Linux kernel module.
+On 02/24/2012 02:14 PM, Rickard Andersson wrote:
+> On 02/24/2012 01:42 PM, Daniel Lezcano wrote:
+>> On 02/20/2012 12:30 PM, Daniel Lezcano wrote:
+>>> This patch allows to decouple and recouple the gic from the PRCMU.
+>>> This is needed to put the A9 core in retention mode with the cpuidle
+>>> driver.
+>>>
+>>> It is based on top of the "DB8500 PRCMU update" patchset.
+>> Hi Linus and Rickard,
+>>
+>> Is it possible you add your acked-by to this patch I sent to Samuel
+>> Ortiz ?
+>>
+>> -- Daniel
+>>
+>>
+> Hi!
 >
-> This module serves a hard realime RTAI application and we are to debug it
-> using Ethernet insatead of RS232/RS485 or other UART port as is  possible
-> out of box. We are familiar to use gdb as weel as for remote debuging of the
-> usewr space application but not debuging kernel.
->
-> Excuse me if I am sending messige to the wrong mailing list, please?
+> It is ok to me.
 
-There's some traces of "kgdboe" in mainline code but I don't think
-that feature was ever merged.
+Thanks Rickard !
 
-                                 Pekka
+Acked-by: Rickard Andersson <rickard.andersson@stericsson.com>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
