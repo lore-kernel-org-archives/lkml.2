@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab2BXQS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:18:29 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44715 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2BXQS2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:18:28 -0500
-Date: Fri, 24 Feb 2012 08:17:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-Message-ID: <20120224161743.GA2399@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120222011652.GE23186@zod.bos.redhat.com>
- <20120222013252.GZ2375@linux.vnet.ibm.com>
- <20120222014242.GF23186@zod.bos.redhat.com>
- <20120224144032.GA13903@zod.bos.redhat.com>
+	id S1757372Ab2BXQTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:19:47 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:34251 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755942Ab2BXQTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:19:45 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
+Date: Fri, 24 Feb 2012 11:19:42 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4F47981F.4020305@imgtec.com> <201202241424.07319.arnd@arndb.de>
+In-Reply-To: <201202241424.07319.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224144032.GA13903@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022416-2398-0000-0000-000004820135
+Content-Type: multipart/signed;
+  boundary="nextPart15680091.6DaiNokvTq";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241119.44480.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 09:40:32AM -0500, Josh Boyer wrote:
-> On Tue, Feb 21, 2012 at 08:42:43PM -0500, Josh Boyer wrote:
-> > > And patch #47 in that series has been obsoleted by another series
-> > > from Steven Rostedt:
-> > > 
-> > > 	https://lkml.org/lkml/2012/2/7/231
-> > 
-> > Ok.
-> > 
-> > > Hopefully these fix both splats and slowness.
-> > 
-> > So again, I'm slightly confused on how RCU patches flow.  Eric
-> > originally reported the bug for which you created the patch I applied
-> > against 3.3.  The giant patch series above seems queued for 3.4.
-> > 
-> > I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
-> > I'd want to go applying the 47-patch series on 3.3 at the moment, and
-> > given you have these marked for 3.4 I don't think you do either.
-> > However, is there some kind of fix for the original bug report against
-> > 3.3?
-> 
-> I was being sincere when I asked the above questions.  Could you
-> describe how you handle RCU patches across releases and if there is a
-> fix for the 3.3-rcX issue Eric reported that is going into 3.3?
-> 
-> I know you're quite busy, but I'd like to understand your thinking so I
-> know what to expect going forward.
+--nextPart15680091.6DaiNokvTq
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Apologies for being slow, but could you please point me at the original
-bug report that the old patch was designed to fix?  My email filing
-seems to have failed me in this case.
+On Friday 24 February 2012 09:24:07 Arnd Bergmann wrote:
+> On Friday 24 February 2012, James Hogan wrote:
+> > Some architectures have symbol prefixes and set CONFIG_SYMBOL_PREFIX,
+> > but this wasn't taken into account by the generic cond_syscall. It's
+> > easy enough to fix in a generic fashion, so add the symbol prefix to
+> > symbol names in cond_syscall when CONFIG_SYMBOL_PREFIX is set.
+> >=20
+> >  include/asm-generic/unistd.h |    9 ++++++++-
+> >  1 files changed, 8 insertions(+), 1 deletions(-)
+> >=20
+> > --- a/include/asm-generic/unistd.h
+> > +++ b/include/asm-generic/unistd.h
+> > =20
+> >  #ifndef cond_syscall
+> > -#define cond_syscall(x) asm(".weak\t" #x "\n\t.set\t" #x
+> > ",sys_ni_syscall")
+> > +#ifdef CONFIG_SYMBOL_PREFIX
+> > +#define __SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+> > +#else
+> > +#define __SYMBOL_PREFIX
+> > +#endif
+> > +#define cond_syscall(x) asm(".weak\t" __SYMBOL_PREFIX #x "\n\t" \
+> > +                           ".set\t" __SYMBOL_PREFIX #x "," \
+> > +                           __SYMBOL_PREFIX "sys_ni_syscall")
+> >=20
+> >  #endif
+>=20
+> Our trend is to move away from arch specific Kconfig symbols and
+> __ARCH_HAS_* macros towards just defining whatever you need in the
+> architecture as an override for the generic definition.
 
-My guess is that the best short-term fix for Fedora is to disable the
-warning, but I do need to see the original bug to work out if that really
-is a prudent course of action.
+i don't see how __ARCH_HAS_xxx would help here.  the symbol prefix is a str=
+ing,=20
+not a bool value.  it's also already used by linux/export.h, asm-
+generic/vmlinux.lds.h, and module code in scripts/.
 
-							Thanx, Paul
+> Just provide your own unistd.h that does
 
+the point of asm-generic is so that arches don't have to keep copying &=20
+pasting things that they really don't care about.  James' proposed patch lo=
+oks=20
+good to me.  it might be nice to go even further and add logic to a core=20
+header so that CONFIG_SYMBOL_PREFIX is always defined ...
+=2Dmike
+
+--nextPart15680091.6DaiNokvTq
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPR7igAAoJEEFjO5/oN/WBNyEQAIAsafkCYO2NqPp5tfzsHa9E
+JsN2hZdzroQuBhESfE16iLxii8cwor2MNnZHYfLWBiKVdle4pUu9cidL7OUQfFQo
+3Zl+PlwYQtPqw5XLl3XyYPeeLOIaC4KKhHhlKP809eyU4KkciXP8MknKgnJ+cyvK
+JcQrn8SlnS9+sFDL7841/L6oTe0CzXx1ekmcv0sXSG8tEPKhlq5nvKJHNAgg6Aef
+sagDOD+nfnQc7c0rawh1zIQKAHlCaK+RNpqIX7+8NcR0HxOfgr3lu5U9oeChnVxY
+p3Ow57S3ZJ7wswwNM6ZBG8Ooly3leM8uvrsGl5BYbbX/vDNaGhWcSdDYeS1PQovN
+6Q9hwCNzWjj5sdSZC/2lApt/qwn2efXpHnrufZlCqF7rTr5bNTLtfjE3RDgFRN5C
+OuN8L816Cks8XZzn/AoRvhWTV/8XI6JfxYkDPk4fGZOfm6Cjd7BzhgHfZPFeEnt9
+gcAG+DzHBfftFfjrYtDb9ohlEOqsRCaj6GL90jk+WRoVpNanqyidbATQkrlrGs3D
+yqhyWmpuBqbumZu7t+4HnuLmC0QnAvTHDSDGmm8RZNu/H3EsFqIUP5YaPjIXOiCS
+urqT0EfmjkN6m+WiqEHcThqlDFkF61a0oBqDaJKV0PKcnhlewD5viU0UBRgZnGZj
+YBDghMkFO75KdcMzWkPH
+=UOag
+-----END PGP SIGNATURE-----
+
+--nextPart15680091.6DaiNokvTq--
