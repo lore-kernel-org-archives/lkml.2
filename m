@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab2BXRiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:38:04 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39733 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab2BXRiC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:38:02 -0500
-Message-ID: <4F47CAF5.4000709@arm.com>
-Date: Fri, 24 Feb 2012 17:37:57 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	id S1757774Ab2BXRtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:49:22 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:60993 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752984Ab2BXRtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 12:49:21 -0500
+Message-ID: <1330105668.23014.152.camel@groeck-laptop>
+Subject: Re: Can we move device drivers into user-space?
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Feb 2012 09:47:48 -0800
+In-Reply-To: <20120224171752.GB9485@kroah.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+	 <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+	 <20120224153811.GA16535@kroah.com>
+	 <1330103229.23014.130.camel@groeck-laptop>
+	 <20120224171752.GB9485@kroah.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] msm: timer: Support sched_clock()
-References: <1329874777-12758-1-git-send-email-sboyd@codeaurora.org> <20120222215533.GA31480@codeaurora.org> <4F476242.2020909@arm.com> <20120224170901.GA9312@codeaurora.org> <4F47C7C5.4090806@arm.com> <4F47C9AA.5060806@codeaurora.org>
-In-Reply-To: <4F47C9AA.5060806@codeaurora.org>
-X-Enigmail-Version: 1.3.4
-X-OriginalArrivalTime: 24 Feb 2012 17:38:15.0499 (UTC) FILETIME=[168E41B0:01CCF31B]
-X-MC-Unique: 112022417380000201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/02/12 17:32, Stephen Boyd wrote:
-> Hi Marc,
+On Fri, 2012-02-24 at 12:17 -0500, Greg KH wrote:
+> On Fri, Feb 24, 2012 at 09:07:09AM -0800, Guenter Roeck wrote:
+> > How about dropping UIO support from the kernel ? That would make more
+> > sense to me.
 > 
-> On 02/24/12 09:24, Marc Zyngier wrote:
->> On 24/02/12 17:09, David Brown wrote:
->>> I'll keep an eye on it then, and push it into the ARM soc tree when
->>> the dependencies are there.
->> The whole thing is that there's no dependency. The sched_clock() stuff
->> has hit mainline during the merge window. This patch could go in right
->> now, without any harm.
->>
->> What Russell pulled is just a cleanup to convert the last two platforms
->> having their own sched_clock() and not relying on our framework.
->>
->>
+> Again, UIO solves a real need, are you to tell the users of that code
+> that somehow we are now not going to support them anymore?
 > 
-> This patch relies on the fact that the HAVE_SCHED_CLOCK config option no
-> longer exists. We could push it in if the patch had that option added to
-> the Kconfig, but then it would conflict with the removal of the Kconfig
-> by 6905a65 (ARM: Make the sched_clock framework mandatory, 2012-01-18).
+> UIO was created when Thomas and I sat in the back of a conference
+> presentation and saw, for the umpteenth time, a presentation by someone
+> who was trying to write userspace drivers, and obviously didn't know
+> what they were doing.
+> 
+> UIO provides a framework that actually works (unlike all of the previous
+> research papers were trying to do), and is used in real systems (laser
+> welding robots!) every day, manufacturing things that you use and rely
+> on.
+> 
+> You remove UIO at the risk of pissing off those robots, the choice is
+> yours, I know I'm not going to do it...
 
-Ah! Indeed, you're perfectly right.
+I understand the background and reasoning, but ...
 
-> So I guess we send it through the arm-soc tree?
+I have seen UIO used for networking drivers, hwmon drivers, I2C bus
+master drivers (with matching I2C client drivers in user-space), mfd
+devices, and so on. I have seen existing kernel drivers re-implemented
+as UIO drivers. I have seen UIO drivers where the kernel part of the
+driver is larger than the entire driver written as kernel driver. I have
+seen UIO drivers using polling instead of interrupts "because it is
+faster than interrupts".
 
-I don't think arm-soc tracks rmk/for-next, so this has to go via
-Russell's tree. I'll take the patch and send Russell another pull
-request then.
+Often, those drivers are then re-written for the next board (to support
+the same chip) because they were not written with HW-independence in
+mind and don't support HW abstraction.
 
-Cheers,
+Yes, there may be real need for UIO in some cases, but all I have seen
+it used for so far is what I would call abuse, resulting in maintenance
+nightmares.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Given the choice, I would be quite happy to piss off some robots. Call
+it a prejudice if you like ;).
+
+Guenter
+
 
