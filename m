@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab2BXTRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:17:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35582 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab2BXTRA (ORCPT
+	id S1757413Ab2BXTSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:18:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36893 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab2BXTSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:17:00 -0500
-Date: Fri, 24 Feb 2012 17:16:41 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: ananth@in.ibm.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] perf - ensure offset provided during probe addition is
- not greater than function length
-Message-ID: <20120224191641.GD27882@infradead.org>
-References: <4F45FABE.90104@linux.vnet.ibm.com>
- <4F473F33.4060409@linux.vnet.ibm.com>
- <4F47673B.6000103@hitachi.com>
- <4F47756F.1020602@linux.vnet.ibm.com>
+	Fri, 24 Feb 2012 14:18:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of segooon@gmail.com designates 10.204.152.145 as permitted sender) smtp.mail=segooon@gmail.com; dkim=pass header.i=segooon@gmail.com
+Date: Fri, 24 Feb 2012 23:13:01 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Kees Cook <keescook@chromium.org>, Greg KH <gregkh@linuxfoundation.org>,
+        David Windsor <dwindsor@gmail.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        kernel-hardening@lists.openwall.com,
+        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
+        spender@grsecurity.net
+Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
+Message-ID: <20120224191300.GA12553@albatros>
+References: <20120217075945.GA2831@albatros>
+ <20120217175445.GC29902@kroah.com>
+ <20120217193719.GA4187@albatros>
+ <20120217233908.GA24047@dztty>
+ <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
+ <20120218161849.GA4176@kroah.com>
+ <CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
+ <20120224183726.GB23284@kroah.com>
+ <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
+ <20120224190549.GA8034@elliptictech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4F47756F.1020602@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120224190549.GA8034@elliptictech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Feb 24, 2012 at 05:03:03PM +0530, Prashanth Nageshappa escreveu:
-> Can you please pick up this patch?
-
-I'll do it, thanks,
-
-- Arnaldo
- 
-> On 02/24/2012 04:02 PM, Masami Hiramatsu wrote:
+On Fri, Feb 24, 2012 at 14:05 -0500, Nick Bowler wrote:
+> On 2012-02-24 10:52 -0800, Kees Cook wrote:
+> > On Fri, Feb 24, 2012 at 10:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
+> [...]
+> > >> diff --git a/include/linux/kref.h b/include/linux/kref.h
+> > >> index 9c07dce..fc0756a 100644
+> > >> --- a/include/linux/kref.h
+> > >> +++ b/include/linux/kref.h
+> > >> @@ -38,8 +38,12 @@ static inline void kref_init(struct kref *kref)
+> > >>   */
+> > >>  static inline void kref_get(struct kref *kref)
+> > >>  {
+> > >> +   int rc = 0;
+> > >>     WARN_ON(!atomic_read(&kref->refcount));
+> > >> -   atomic_inc(&kref->refcount);
+> > >> +   smp_mb__before_atomic_inc();
+> > >> +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
+> > >> +   smp_mb__after_atomic_inc();
+> > >> +   BUG_ON(!rc);
+> > >
+> > > So you are guaranteeing to crash a machine here if this fails?  And you
+> > > were trying to say this is a "security" based fix?
+> > 
+> > This is the same principle as the stack protector. When something has
+> > gone horribly wrong and cannot be sensibly recovered from, crash the
+> > machine. Wrapping the refcount would cause all kinds of problems, so
+> > that certainly seems worthy of a BUG().
 > 
-> > (2012/02/24 16:41), Prashanth Nageshappa wrote:
-> >> perf probe allows kprobe to be inserted at any offset from a function
-> >> start, which results in adding kprobes to unintended location.
-> >> (example: perf probe do_fork+10000 is allowed even though size of
-> >> do_fork is ~904)
-> >>
-> >> This patch will ensure probe addition fails when the offset specified
-> >> is greater than size of the function.
-> >>
-> >>
-> >> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-> > 
-> > This seems good to me.
-> > 
-> > Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > 
-> > Thank you,
-> > 
-> >> ---
-> >>
-> >>  tools/perf/util/probe-finder.c |   12 +++++++++++-
-> >>  1 files changed, 11 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> >> index 5d73262..d298f94 100644
-> >> --- a/tools/perf/util/probe-finder.c
-> >> +++ b/tools/perf/util/probe-finder.c
-> >> @@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
-> >>  static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
-> >>  				  bool retprobe, struct probe_trace_point *tp)
-> >>  {
-> >> -	Dwarf_Addr eaddr;
-> >> +	Dwarf_Addr eaddr, highaddr;
-> >>  	const char *name;
-> >>
-> >>  	/* Copy the name of probe point */
-> >> @@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
-> >>  				   dwarf_diename(sp_die));
-> >>  			return -ENOENT;
-> >>  		}
-> >> +		if (dwarf_highpc(sp_die, &highaddr) != 0) {
-> >> +			pr_warning("Failed to get end address of %s\n",
-> >> +				   dwarf_diename(sp_die));
-> >> +			return -ENOENT;
-> >> +		}
-> >> +		if (paddr > highaddr) {
-> >> +			pr_warning("Offset specified is greater than size of %s\n",
-> >> +				   dwarf_diename(sp_die));
-> >> +			return -EINVAL;
-> >> +		}
-> >>  		tp->symbol = strdup(name);
-> >>  		if (tp->symbol == NULL)
-> >>  			return -ENOMEM;
-> >>
-> > 
-> > 
-> 
+> But in this case, the principle does not apply because we can recover.
+> The reason we cannot recover from the stack protector case is because
+> the stack protector is reacting after the fact, which is not the case
+> here.  Simply peg the reference count at the maximum value, neither
+> incrementing it nor decrementing it further.
+
+...and simply loose one reference, which leads to use-after-free.
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
