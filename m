@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab2BXUzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 15:55:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53736 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab2BXUzV (ORCPT
+	id S1758135Ab2BXU5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 15:57:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33012 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BXU5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 15:55:21 -0500
-Date: Fri, 24 Feb 2012 12:55:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Smith <danms@us.ibm.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com
-Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are
- page-aligned
-Message-Id: <20120224125519.89120828.akpm@linux-foundation.org>
-In-Reply-To: <87obsoxcn6.fsf@danplanet.com>
-References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
-	<alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
-	<87zkcm23az.fsf@caffeine.danplanet.com>
-	<alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
-	<87obsoxcn6.fsf@danplanet.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Feb 2012 15:57:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.233 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 12:56:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224205651.GA13333@kroah.com>
+References: <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+ <20120224153811.GA16535@kroah.com>
+ <1330103229.23014.130.camel@groeck-laptop>
+ <20120224171752.GB9485@kroah.com>
+ <20120224183423.GA23284@kroah.com>
+ <20120224191535.GA4505@polaris.bitmath.org>
+ <20120224192643.GB24120@kroah.com>
+ <20120224201027.GA4859@polaris.bitmath.org>
+ <20120224201655.GA5994@kroah.com>
+ <20120224203715.GA4995@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224203715.GA4995@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012 11:19:25 -0800
-Dan Smith <danms@us.ibm.com> wrote:
+On Fri, Feb 24, 2012 at 09:37:15PM +0100, Henrik Rydberg wrote:
+> On Fri, Feb 24, 2012 at 12:16:55PM -0800, Greg KH wrote:
+> > On Fri, Feb 24, 2012 at 09:10:27PM +0100, Henrik Rydberg wrote:
+> > > I am not complaining about the kernel and its driver structure - on
+> > > the contrary. I do, however, see a reason why constructing lower-level
+> > > interfaces to userspace may be of benefit. The kernel is growing
+> > > tremendously fast. Sooner or later, parts of the present driver
+> > > responsibility will have to be split into smaller chunks. Why not
+> > > place those chunks outside the kernel itself?
+> > 
+> > I fail to understand why you think the growth of the kernel will require
+> > drivers to be split into chunks in the future.  Are we somehow growing
+> > faster than is required / needed / wanted and outstripping the size of
+> > what we are allowed to take up on machines?
+> 
+> How long can one grow and still claim to _be_ a kernel?
 
->
-> ...
->
->     The inner function walk_pte_range() increments "addr" by PAGE_SIZE after
->     each pte is processed, and only exits the loop if the result is equal to
->     "end". Current, if either (or both of) the starting or ending addresses
->     passed to walk_page_range() are not page-aligned, then we will never
->     satisfy that exit condition and begin calling the pte_entry handler with
->     bad data.
->     
->     To be sure that we will land in the right spot, this patch checks that
->     both "addr" and "end" are page-aligned in walk_page_range() before starting
->     the traversal.
->     
-> ...
->
-> --- a/mm/pagewalk.c
-> +++ b/mm/pagewalk.c
-> @@ -196,6 +196,11 @@ int walk_page_range(unsigned long addr, unsigned long end,
->  	if (addr >= end)
->  		return err;
->  
-> +	if (WARN_ONCE((addr & ~PAGE_MASK) || (end & ~PAGE_MASK),
-> +		      "address range is not page-aligned")) {
-> +		return -EINVAL;
-> +	}
-> +
->  	if (!walk->mm)
->  		return -EINVAL;
+You tell me.  I know of lots of "kernels" that are far bigger than
+Linux, and people still consider them a kernel.
 
-Well...  why should we apply the patch?  Is there some buggy code which
-is triggering the problem?  Do you intend to write some buggy code to
-trigger the problem?  ;) 
+> The current
+> (arbitrary) split between kernel and userland was made a long time
+> ago. For a number of reasons, of course, but not least out of
+> convenience. Projecting the current kernel growth ten years into the
+> future, will there still not be another (arbitrary) convenient split?
 
-IOW, what benefit is there to this change?
+Why?  What problems are we having with our existing user/kernel split
+that would drive such a change?
 
-Also, as it's a developer-only thing we should arrange for the overhead
-to vanish when CONFIG_DEBUG_VM=n?
+> Even so, the main point was not whether a secondary split may or may
+> not happen, but what will happen to the quality of the total system
+> when/if that happens. I doubt the fate of userland drivers would be so
+> heatedly discussed if everyone believed that work would be carried out
+> with the same quality currently found in the kernel.
+
+Quality is not the only reason we don't want userspace drivers for some
+types of devices.  Realize what drivers provide to userspace today and
+you will understand that.
+
+thanks,
+
+greg k-h
