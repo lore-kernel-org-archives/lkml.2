@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab2BXJI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 04:08:58 -0500
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:55647 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab2BXJIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 04:08:40 -0500
-X-SENDER-IP: [85.230.168.211]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At94AH9SR09V5qjTPGdsb2JhbABEiW2nZQOBAhkBAQEBNzSBcwEBBAE6HCMQCANGFCUKGogUCbk6E4pDgi4RBAkWCwMPDQIJBhUCAwMCiFljBJU6hW2NBA
-X-IronPort-AV: E=Sophos;i="4.73,475,1325458800"; 
-   d="scan'208";a="271960824"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 24 Feb 2012 10:08:35 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Chung-yih Wang <cywang@chromium.org>,
-        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
- low z values
-Message-ID: <20120224090835.GA2154@polaris.bitmath.org>
-References: <1329896503-28394-1-git-send-email-cywang@chromium.org>
- <20120222083858.GA26570@polaris.bitmath.org>
- <CAGS+omCU9f=DyC442+4HOF=sGhZYXne+E2ephFiOmuj-XKciMA@mail.gmail.com>
- <20120222110459.GA28126@polaris.bitmath.org>
- <CAGS+omB0GCQHOjrb_T6h7DzHrH2sp4Xqb5av6JC-ttJ8HZ5BcQ@mail.gmail.com>
- <20120222152425.GA29436@polaris.bitmath.org>
- <20120224082706.GB18291@core.coreip.homeip.net>
+	id S1756405Ab2BXJLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 04:11:44 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42283 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754939Ab2BXJLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 04:11:42 -0500
+Date: Fri, 24 Feb 2012 10:11:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, a.p.zijlstra@chello.nl,
+        mathieu.desnoyers@efficios.com, davem@davemloft.net,
+        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120224091103.GC814@elte.hu>
+References: <4F43F9F0.4000605@zytor.com>
+ <20120221202019.GB2381@redhat.com>
+ <1329856745.25686.72.camel@gandalf.stny.rr.com>
+ <20120222073251.GB17291@elte.hu>
+ <20120222075334.GA25053@elte.hu>
+ <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+ <20120222081855.GB25318@elte.hu>
+ <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+ <20120223100205.GD24310@elte.hu>
+ <20120223162158.GA2401@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120224082706.GB18291@core.coreip.homeip.net>
+In-Reply-To: <20120223162158.GA2401@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The most striking effect is the ability to better retain a
-> > drag. Although the statement was made in light of possible
-> > (1-strong,1-weak) packets, it should help in the 2-weak case too.
+
+* Jason Baron <jbaron@redhat.com> wrote:
+
+> So, we could get rid of the '&' with something as simple as:
 > 
-> The bigger question is why is this needed in kernel. The original
-> hysteresis with BTN_TOUCH was done for sole benefit of mousedev so that
-> we could allow somewhat better transition from standard PS/2 mode into
-> native Synaptics mode with absolute coordinates at time when barely
-> anyone had Synaptics X driver installed. This was, what, 10 years ago?
+> #define very_unlikely(key) __very_unlikely(&key)
+> 
+> However, it does seem potentially more error prone, b/c if 
+> 'key' is passed to a function, and they we do the 
+> very_unlikely() we end up with the address parameter (due to 
+> pass by value). That said, it doesn't look like anybody is 
+> using very_unlikely() in that manner in the tree, and we could 
+> document the usage.
+> 
+> In any case, I did the conversion, to see what it would look 
+> like, if anybody is interested:
 
-The semi-mt behavior is obviously a special case, where userspace
-relies on the reported number of fingers to transition between one
-touch and two touches. There is no pressure information sent to
-userspace in this case, so the situation is in fact quite similar to
-the ancient mousedev situation.
+I agree that it's still error-prone - it also departs from how 
+we typically use C APIs in the kernel. With the static_key_*() 
+naming there's no desire to make it work like unlikely() anymore 
+and there's no need to pass in the object by value - passing by 
+reference is fine.
 
-Henrik
+So I don't think we need this.
+
+Thanks,
+
+	Ingo
