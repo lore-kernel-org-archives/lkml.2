@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab2BXRJF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:09:05 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:28647 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757862Ab2BXRJD (ORCPT
+	id S1757938Ab2BXRJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:09:54 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11687 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab2BXRJx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:09:03 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6629"; a="163948816"
-Date: Fri, 24 Feb 2012 09:09:01 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] msm: timer: Support sched_clock()
-Message-ID: <20120224170901.GA9312@codeaurora.org>
-References: <1329874777-12758-1-git-send-email-sboyd@codeaurora.org>
- <20120222215533.GA31480@codeaurora.org>
- <4F476242.2020909@arm.com>
+	Fri, 24 Feb 2012 12:09:53 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 24 Feb 2012 09:09:32 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Feb 2012 09:09:32 -0800
+Subject: RE: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
+ and use it
+Thread-Topic: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
+ and use it
+Thread-Index: AczyutSjxyOQsAS/TpeELsM2b+BcwQAW2kXQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCC87@HQMAIL01.nvidia.com>
+References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
+ <CACRpkdZWu_nYkWLxXBUv-VAQTMByDM37qACRf3im7R4GQgZc5A@mail.gmail.com>
+In-Reply-To: <CACRpkdZWu_nYkWLxXBUv-VAQTMByDM37qACRf3im7R4GQgZc5A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F476242.2020909@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:11:14AM +0000, Marc Zyngier wrote:
-> On 22/02/12 21:55, David Brown wrote:
-> > On Tue, Feb 21, 2012 at 05:39:37PM -0800, Stephen Boyd wrote:
-> >> Now that sched_clock is mandatory on ARM it's simple to add
-> >> sched_clock support to the MSM timer code. Add it so that we get
-> >> more accurate sched_clock output than the jiffies based version
-> >> that's provided by default.
-> >>
-> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> >> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> >> Cc: David Brown <davidb@codeaurora.org>
-> > 
-> > Marc, are you able to pull this into your series, so they can all go
-> > in together?  If so:
-> > 
-> >   Acked-by: David Brown <davidb@codeaurora.org>
+Linus Walleij wrote at Thursday, February 23, 2012 11:09 PM:
+> On Fri, Feb 24, 2012 at 1:04 AM, Stephen Warren <swarren@nvidia.com> wrote:
 > 
-> David, Stephen,
+> > This provides a single centralized name for the default state.
+> >
+> > Update PIN_MAP_* macros to use this state name, instead of requiring the
+> > user to pass a state name in.
+> >
+> > Update documentation and mapping tables to use this.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > 
-> Russell already pulled my sched_clock() patch series, so I'm not sure it
-> is actually useful for me to carry it (and there is actually no
-> dependency between this patch and the series). Maybe putting it in the
-> patch system or via armsoc would be best?
-> 
-> Otherwise:
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+> I like the direction this is taking for sure. This is however not
+> working because it break U300, no hogs nor device requests work
+> after this patch so I cannot apply it.
 
-I'll keep an eye on it then, and push it into the ARM soc tree when
-the dependencies are there.
+Ah, I think I see what's happening.
 
-David
+Right now, pinctrl_hog_maps() iterates over every map entry, and when
+it finds a hog entry, it tries to get() and enable() that one entry.
+get() again iterates over the mapping table finding every entry with
+the same name. This all works fine if every hog entry in the mapping
+table for a given pin controller has a different name. However, this
+patch changes the name field to PINCTRL_STATE_DEFAULT in all cases,
+so the first get() finds 3 matching table entries and enables them all,
+then the outer loop in pinctrl_hog_maps() finds the second table entry
+and calls get() again which again finds all 3 entries and tries to
+enable them all.
+
+I think the fix for this is to replace the body of pinctrl_hog_maps()
+with:
+
+static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
+{
+        int ret;
+
+        INIT_LIST_HEAD(&pctldev->pinctrl_hogs);
+
+        mutex_lock(&pinctrl_maps_mutex);
+        ret = pinctrl_hog_map(pctldev, PINCTRL_STATE_DEFAULT);
+        mutex_unlock(&pinctrl_maps_mutex);
+
+        return ret;
+}
+
+Does that work better? If so, I can fold it into the patch and repost,
+or you can fix it up as you apply; whichever you wish.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+nvpublic
+
