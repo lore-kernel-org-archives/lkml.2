@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab2BXGkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 01:40:17 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47245 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab2BXGkP convert rfc822-to-8bit (ORCPT
+	id S1754144Ab2BXGlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 01:41:08 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54290 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab2BXGlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 01:40:15 -0500
+	Fri, 24 Feb 2012 01:41:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of missingsailor@gmail.com designates 10.180.93.232 as permitted sender) smtp.mail=missingsailor@gmail.com; dkim=pass header.i=missingsailor@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <20120223124426.2631b779@jbarnes-desktop>
-References: <1329370832-2253-1-git-send-email-yinghai@kernel.org>
-	<1329370832-2253-2-git-send-email-yinghai@kernel.org>
-	<20120223124426.2631b779@jbarnes-desktop>
-Date: Thu, 23 Feb 2012 22:40:14 -0800
-X-Google-Sender-Auth: I7l6i8fKRYP07H96mV_IXuhKGYE
-Message-ID: <CAE9FiQW74Q+M4YCFzdSgt2bnqRkq+CSXyYL9X0oqJvP0isS8cw@mail.gmail.com>
-Subject: Re: [PATCH -v2 1/4] PCI: Add class support in quirk handling
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 24 Feb 2012 14:41:04 +0800
+X-Google-Sender-Auth: rooPD_qOPHiH43ikjzEldnPTuU0
+Message-ID: <CACwCHpxjhEenzv+H3zK2cNKAA9KyuK=DPythY2UgHTmY_AhqaQ@mail.gmail.com>
+Subject: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
+From: meng zhang <meng.zhang@mediatek.com>
+To: smurf@smurf.noris.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 12:44 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->
-> I like this series, a few comments:
->  - class and class_shift everywhere (in pci_fixup {} and the new
->    macros) for readability
+from: Meng Zhang <meng.zhang@mediatek.com>
 
-ok.
+1. This patch is based on kernel 3.0.0
+2. To declare the product IDs in option.c
 
->  - split the individual quirk fixes into separate patches (makes it
->    easier to revert or identify if one breaks)
+Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+---------------------------------------------------------------------------------------
 
-yes
+--- option.c	2012-02-23 10:42:40.635138657 +0800
++++ option.c.orig	2011-10-07 22:50:04.000000000 +0800
+@@ -416,9 +416,6 @@ static void option_instat_callback(struc
+ #define SAMSUNG_VENDOR_ID                       0x04e8
+ #define SAMSUNG_PRODUCT_GT_B3730                0x6889
 
-will send updated patches shortly.
-
->  - the reassigndev patch looks like a good one independent of the
->    series
-
-yes, you can apply that separately.
-
-Thanks
-
-       Yinghai
-yes.
+-/* MediaTek products */
+-#define MEDIATEK_VENDOR_ID				0x0e8d
+-
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1008,10 +1005,6 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650
+CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID,
+SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /*
+Samsung GT-B3730 LTE USB modem.*/
+-	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
+0x00, 0x00) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
+0x02, 0x01) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+0x00, 0x00) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+0x02, 0x01) },	/* MediaTek MT6276M modem & app port */
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
