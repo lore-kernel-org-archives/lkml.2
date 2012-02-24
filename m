@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2BXAGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 19:06:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54354 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab2BXAGT (ORCPT
+	id S1757558Ab2BXAGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:06:15 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47144 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757540Ab2BXAGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 19:06:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.220.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 23 Feb 2012 19:06:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.132 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120224000220.943618792@linuxfoundation.org>
+Message-Id: <20120224000220.847437980@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 23 Feb 2012 16:02:27 -0800
+Date: Thu, 23 Feb 2012 16:02:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: [ 07/10] i387: do not preload FPU state at task switch time
+Subject: [ 06/10] i387: dont ever touch TS_USEDFPU directly, use helper functions
 In-Reply-To: <20120224000510.GA1005@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,192 +28,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit b3b0870ef3ffed72b92415423da864f440f57ad6 upstream.
+commit 6d59d7a9f5b723a7ac1925c136e93ec83c0c3043 upstream.
 
-Yes, taking the trap to re-load the FPU/MMX state is expensive, but so
-is spending several days looking for a bug in the state save/restore
-code.  And the preload code has some rather subtle interactions with
-both paravirtualization support and segment state restore, so it's not
-nearly as simple as it should be.
+This creates three helper functions that do the TS_USEDFPU accesses, and
+makes everybody that used to do it by hand use those helpers instead.
 
-Also, now that we no longer necessarily depend on a single bit (ie
-TS_USEDFPU) for keeping track of the state of the FPU, we migth be able
-to do better.  If we are really switching between two processes that
-keep touching the FP state, save/restore is inevitable, but in the case
-of having one process that does most of the FPU usage, we may actually
-be able to do much better than the preloading.
+In addition, there's a couple of helper functions for the "change both
+CR0.TS and TS_USEDFPU at the same time" case, and the places that do
+that together have been changed to use those.  That means that we have
+fewer random places that open-code this situation.
 
-In particular, we may be able to keep track of which CPU the process ran
-on last, and also per CPU keep track of which process' FP state that CPU
-has.  For modern CPU's that don't destroy the FPU contents on save time,
-that would allow us to do a lazy restore by just re-enabling the
-existing FPU state - with no restore cost at all!
+The intent is partly to clarify the code without actually changing any
+semantics yet (since we clearly still have some hard to reproduce bug in
+this area), but also to make it much easier to use another approach
+entirely to caching the CR0.TS bit for software accesses.
+
+Right now we use a bit in the thread-info 'status' variable (this patch
+does not change that), but we might want to make it a full field of its
+own or even make it a per-cpu variable.
 
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h  |    1 -
- arch/x86/kernel/process_32.c |   20 --------------------
- arch/x86/kernel/process_64.c |   23 -----------------------
- arch/x86/kernel/traps.c      |   35 +++++++++++------------------------
- 4 files changed, 11 insertions(+), 68 deletions(-)
+ arch/x86/include/asm/i387.h |   75 ++++++++++++++++++++++++++++++++------------
+ arch/x86/kernel/traps.c     |    2 -
+ arch/x86/kernel/xsave.c     |    2 -
+ arch/x86/kvm/vmx.c          |    2 -
+ 4 files changed, 58 insertions(+), 23 deletions(-)
 
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -30,7 +30,6 @@ extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
- extern int init_fpu(struct task_struct *child);
- extern void math_state_restore(void);
--extern void __math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
+@@ -280,6 +280,47 @@ static inline int restore_fpu_checking(s
+ }
  
- extern user_regset_active_fn fpregs_active, xfpregs_active;
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -297,23 +297,11 @@ __switch_to(struct task_struct *prev_p,
- 				 *next = &next_p->thread;
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
--	bool preload_fpu;
+ /*
++ * Software FPU state helpers. Careful: these need to
++ * be preemption protection *and* they need to be
++ * properly paired with the CR0.TS changes!
++ */
++static inline int __thread_has_fpu(struct thread_info *ti)
++{
++	return ti->status & TS_USEDFPU;
++}
++
++/* Must be paired with an 'stts' after! */
++static inline void __thread_clear_has_fpu(struct thread_info *ti)
++{
++	ti->status &= ~TS_USEDFPU;
++}
++
++/* Must be paired with a 'clts' before! */
++static inline void __thread_set_has_fpu(struct thread_info *ti)
++{
++	ti->status |= TS_USEDFPU;
++}
++
++/*
++ * Encapsulate the CR0.TS handling together with the
++ * software flag.
++ *
++ * These generally need preemption protection to work,
++ * do try to avoid using these on their own.
++ */
++static inline void __thread_fpu_end(struct thread_info *ti)
++{
++	__thread_clear_has_fpu(ti);
++	stts();
++}
++
++static inline void __thread_fpu_begin(struct thread_info *ti)
++{
++	clts();
++	__thread_set_has_fpu(ti);
++}
++
++/*
+  * Signal frame handlers...
+  */
+ extern int save_i387_xstate(void __user *buf);
+@@ -287,23 +328,21 @@ extern int restore_i387_xstate(void __us
  
- 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
+ static inline void __unlazy_fpu(struct task_struct *tsk)
+ {
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
++	if (__thread_has_fpu(task_thread_info(tsk))) {
+ 		__save_init_fpu(tsk);
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
++		__thread_fpu_end(task_thread_info(tsk));
+ 	} else
+ 		tsk->fpu_counter = 0;
+ }
  
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
- 	__unlazy_fpu(prev_p);
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
++	if (__thread_has_fpu(task_thread_info(tsk))) {
+ 		/* Ignore delayed exceptions from user space */
+ 		asm volatile("1: fwait\n"
+ 			     "2:\n"
+ 			     _ASM_EXTABLE(1b, 2b));
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
++		__thread_fpu_end(task_thread_info(tsk));
+ 	}
+ }
  
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
--
- 	/*
- 	 * Reload esp0.
- 	 */
-@@ -352,11 +340,6 @@ __switch_to(struct task_struct *prev_p,
- 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
- 		__switch_to_xtra(prev_p, next_p, tss);
+@@ -311,14 +350,14 @@ static inline void __clear_fpu(struct ta
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+  * We can do a kernel_fpu_begin/end() pair *ONLY* if that
+- * pair does nothing at all: TS_USEDFPU must be clear (so
++ * pair does nothing at all: the thread must not have fpu (so
+  * that we don't try to save the FPU state), and TS must
+  * be set (so that the clts/stts pair does nothing that is
+  * visible in the interrupted kernel thread).
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+-	return !(current_thread_info()->status & TS_USEDFPU) &&
++	return !__thread_has_fpu(current_thread_info()) &&
+ 		(read_cr0() & X86_CR0_TS);
+ }
  
--	/* If we're going to preload the fpu context, make sure clts
--	   is run while we're batching the cpu state updates. */
--	if (preload_fpu)
+@@ -356,9 +395,9 @@ static inline void kernel_fpu_begin(void
+ 
+ 	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
+-	if (me->status & TS_USEDFPU) {
++	if (__thread_has_fpu(me)) {
+ 		__save_init_fpu(me->task);
+-		me->status &= ~TS_USEDFPU;
++		__thread_clear_has_fpu(me);
+ 		/* We do 'stts()' in kernel_fpu_end() */
+ 	} else
+ 		clts();
+@@ -422,24 +461,21 @@ static inline void irq_ts_restore(int TS
+  */
+ static inline int user_has_fpu(void)
+ {
+-	return current_thread_info()->status & TS_USEDFPU;
++	return __thread_has_fpu(current_thread_info());
+ }
+ 
+ static inline void user_fpu_end(void)
+ {
+ 	preempt_disable();
+-	current_thread_info()->status &= ~TS_USEDFPU;
+-	stts();
++	__thread_fpu_end(current_thread_info());
+ 	preempt_enable();
+ }
+ 
+ static inline void user_fpu_begin(void)
+ {
+ 	preempt_disable();
+-	if (!user_has_fpu()) {
 -		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -366,9 +349,6 @@ __switch_to(struct task_struct *prev_p,
- 	 */
- 	arch_end_context_switch(next_p);
+-		current_thread_info()->status |= TS_USEDFPU;
+-	}
++	if (!user_has_fpu())
++		__thread_fpu_begin(current_thread_info());
+ 	preempt_enable();
+ }
  
--	if (preload_fpu)
--		__math_state_restore();
--
- 	/*
- 	 * Restore %gs if needed (which is common)
- 	 */
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -381,18 +381,6 @@ __switch_to(struct task_struct *prev_p,
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
- 	unsigned fsindex, gsindex;
--	bool preload_fpu;
--
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
- 
- 	/*
- 	 * Reload esp0, LDT and the page table pointer:
-@@ -425,10 +413,6 @@ __switch_to(struct task_struct *prev_p,
- 	/* Must be after DS reload */
- 	__unlazy_fpu(prev_p);
- 
--	/* Make sure cpu is ready for new context */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -487,13 +471,6 @@ __switch_to(struct task_struct *prev_p,
- 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/*
--	 * Preload the FPU context, now that we've determined that the
--	 * task is likely to be using it. 
--	 */
--	if (preload_fpu)
--		__math_state_restore();
--
- 	return prev_p;
+@@ -448,11 +484,10 @@ static inline void user_fpu_begin(void)
+  */
+ static inline void save_init_fpu(struct task_struct *tsk)
+ {
+-	WARN_ON_ONCE(!(task_thread_info(tsk)->status & TS_USEDFPU));
++	WARN_ON_ONCE(!__thread_has_fpu(task_thread_info(tsk)));
+ 	preempt_disable();
+ 	__save_init_fpu(tsk);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-	stts();
++	__thread_fpu_end(task_thread_info(tsk));
+ 	preempt_enable();
  }
  
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -562,28 +562,6 @@ asmlinkage void __attribute__((weak)) sm
- }
- 
- /*
-- * __math_state_restore assumes that cr0.TS is already clear and the
-- * fpu state is all ready for use.  Used during context switch.
-- */
--void __math_state_restore(void)
--{
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
--
--	/*
--	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
--	 */
--	if (unlikely(restore_fpu_checking(tsk))) {
--		stts();
--		force_sig(SIGSEGV, tsk);
--		return;
--	}
--
--	__thread_set_has_fpu(thread);	/* clts in caller! */
--	tsk->fpu_counter++;
--}
--
--/*
-  * 'math_state_restore()' saves the current math information in the
-  * old math state array, and gets the new ones from the current task
-  *
-@@ -613,9 +591,18 @@ void math_state_restore(void)
- 		local_irq_disable();
+@@ -579,7 +579,7 @@ void __math_state_restore(void)
+ 		return;
  	}
  
--	clts();				/* Allow maths ops (or we recurse) */
-+	__thread_fpu_begin(thread);
- 
--	__math_state_restore();
-+	/*
-+	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
-+	 */
-+	if (unlikely(restore_fpu_checking(tsk))) {
-+		__thread_fpu_end(thread);
-+		force_sig(SIGSEGV, tsk);
-+		return;
-+	}
-+
-+	tsk->fpu_counter++;
+-	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
++	__thread_set_has_fpu(thread);	/* clts in caller! */
+ 	tsk->fpu_counter++;
  }
- EXPORT_SYMBOL_GPL(math_state_restore);
  
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -47,7 +47,7 @@ void __sanitize_i387_state(struct task_s
+ 	if (!fx)
+ 		return;
+ 
+-	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
++	BUG_ON(__thread_has_fpu(task_thread_info(tsk)));
+ 
+ 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
+ 
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1456,7 +1456,7 @@ static void __vmx_load_host_state(struct
+ #ifdef CONFIG_X86_64
+ 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+-	if (current_thread_info()->status & TS_USEDFPU)
++	if (__thread_has_fpu(current_thread_info()))
+ 		clts();
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
 
 
