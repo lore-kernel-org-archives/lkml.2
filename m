@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab2BXQzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:55:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61209 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757808Ab2BXQzi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:55:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dongas86@gmail.com designates 10.68.233.36 as permitted sender) smtp.mail=dongas86@gmail.com; dkim=pass header.i=dongas86@gmail.com
+	id S1757892Ab2BXQ4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:56:07 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:47662 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757875Ab2BXQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:56:05 -0500
+Message-ID: <4F47C123.9050009@imgtec.com>
+Date: Fri, 24 Feb 2012 16:56:03 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <1329720360-23227-17-git-send-email-swarren@nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-17-git-send-email-swarren@nvidia.com>
-Date: Sat, 25 Feb 2012 00:55:37 +0800
-Message-ID: <CAA+hA=QBySeYNoXK1D7DEONc3E_e6bs-6L72hBMxXUdxcWOyjA@mail.gmail.com>
-Subject: Re: [PATCH 16/20] pinctrl: Refactor struct pinctrl handling in core.c
- vs pinmux.c
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Mike Frysinger <vapier@gentoo.org>, <linux-arch@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in
+ cond_syscall
+References: <4F47981F.4020305@imgtec.com> <201202241119.44480.vapier@gentoo.org> <201202241637.30284.arnd@arndb.de> <201202241638.12205.arnd@arndb.de>
+In-Reply-To: <201202241638.12205.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Feb 2012 16:56:03.0447 (UTC) FILETIME=[3155C870:01CCF315]
+X-SEF-Processed: 7_3_0_01181__2012_02_24_16_56_03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 2:45 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> This change separates two aspects of struct pinctrl:
->
-> a) The data representation of the parsed mapping table, into:
->
->   1) The top-level struct pinctrl object, a single entity returned
->      by pinctrl_get().
->
->   2) The parsed version of each mapping table entry, struct
->      pinctrl_setting, of which there is one per mapping table entry.
->
-> b) The code that handles this; the code for (1) above is in core.c, and
->   the code to parse/execute each entry in (2) above is in pinmux.c, while
->   the iteration over multiple settings is lifted to core.c.
->
-> This will allow the following future changes:
->
-> 1) pinctrl_get() API rework, so that struct pinctrl represents all states
->   for the device, and the device can select between them without calling
->   put()/get() again.
->
-> 2) To support that, a struct pinctrl_state object will be inserted into
->   the data model between the struct pinctrl and struct pinctrl_setting.
->
-> 3) The mapping table will be extended to allow specification of pin config
->   settings too. To support this, struct pinctrl_setting will be enhanced
->   to store either mux settings or config settings, and functions will be
->   added to pinconf.c to parse/execute pin configuration settings.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+On 24/02/12 16:38, Arnd Bergmann wrote:
+> On Friday 24 February 2012, Arnd Bergmann wrote:
+>> We actually have MODULE_SYMBOL_PREFIX providing the correct string
+>> under a name that is not appropriate here. We can probably stick with
+>> Jason's patch for now and add a more sophisticated logic if another
+>> user of CONFIG_SYMBOL_PREFIX comes up.
+>>
+>> So for Jason's patch:
+>>
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>
+>> We could put that into the kernel now, but it's probably sufficient if
+>> Jason keeps the patch with his others and submits it at the same time
+>> when we get there.
+> 
+> Sorry, I meant s/Jason/James/g
 
-Looks good to me.
-Please also with my tag.
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+np. Okay, I'll keep hold of it.
 
-BTW, one minor thing, see below:
-...
-> -/**
-> - * pinmux_search_function() - check pin control driver for a certain function
-> - * @pctldev: device to check for function and position
-> - * @map: function map containing the function and position to look for
-> - * @func_selector: returns the applicable function selector if found
-> - * @group_selector: returns the applicable group selector if found
-> - *
-> - * This will search the pinmux driver for an applicable
-> - * function with a specific pin group, returns 0 if these can be mapped
-> - * negative otherwise
-> - */
-> -static int pinmux_search_function(struct pinctrl_dev *pctldev,
-> -                                 struct pinctrl_map const *map,
-> -                                 unsigned *func_selector,
-> -                                 unsigned *group_selector)
-> +int pinmux_func_name_to_selector(struct pinctrl_dev *pctldev,
-> +                                const char *function)
-Static?
+Thanks
+James
 
-Regards
-Dong Aisheng
