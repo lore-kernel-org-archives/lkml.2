@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab2BXMyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 07:54:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61608 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab2BXMyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 07:54:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [PATCH v5 4/5] Extcon: support mutually exclusive relation between cables.
-Date: Fri, 24 Feb 2012 12:53:52 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com> <201202221000.00810.arnd@arndb.de> <CAJ0PZbR+AEpfNcX0wMHdVQfseC+fMxJjyaM25378miLnnfV0+w@mail.gmail.com>
-In-Reply-To: <CAJ0PZbR+AEpfNcX0wMHdVQfseC+fMxJjyaM25378miLnnfV0+w@mail.gmail.com>
+	id S1755996Ab2BXM6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 07:58:50 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:32780
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754625Ab2BXM6t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 07:58:49 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzc89bhzz1202hzz8275bhz2dh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZWEPS-02-7W5-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] bitops: Add missing parentheses to new get_order macro
+Date: Fri, 24 Feb 2012 13:58:15 +0100
+Message-ID: <1330088295-28732-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202241253.52336.arnd@arndb.de>
-X-Provags-ID: V02:K0:J72Bs3fZLFXI0yJkVpbs+AWhFPQ+e9A1MxRkbB3q3qJ
- 2TkmIhlfB7pTli2z5SCfT3VCG/tyVTuaYvgfkhF0bCcy2cWC/L
- KJfv46ZHZnNyodjM9n5tuCJI8v97Uz7ut5XTtX32YbrXEWTB6i
- dQkSZV3LBIj/1PylPJdRAt5M8xOFreK7LUE945zx83DApRghoL
- PvLgJ+UIdLSEJ1tTngdqg5zn7msSe53MvAA1Zdl039jJZ8DOt4
- 0r4Ns8ERKz/JBaVmG6THh1MxLBkYpcQccfi85Vf6s+qiu8vZhM
- D52aYyim0ll1XdW3ilqBqNMit29UpdX34ixToQ7FkA7AIyIzml
- PRzFhX+mIU60kKi+h5WI=
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 February 2012, MyungJoo Ham wrote:
-> Ok, here goes an example how it would look like in the next revision of Extcon.
-> I think this addresses your comments on multistate-support patch (3/5)
-> 
-> /sys/class/extcon/max8997-muic.0/
->         name: "max8997-muic.0"
->         state: 0x00000009                   /* RW. 0xblahblah format
-> for both read and write */
->         mutually_exclusive/
->                 rule.0: 0x3
->                 rule.1: 0x5
->                 rule.2: 0xC
->         cable.0/
->                 name: "VGA"
->                 state: 1            /* RW: 0 or 1 */
->                 mutually_exclusive/
->                         cable.1
->                         cable.2
->         cable.1/
->           ...
-> 
-> 
-> How about this?
-> 
+The new get_order macro introcuded in commit
 
-I would leave out the global mutually_exclusive/ directory because that
-is redundant and I see no benefit in it. Having the redundant "state"
-files is probably a good idea because the global one lets you make
-atomic changes of multiple cables and the other are very convenient.
+	d66acc39c7cee323733c8503b9de1821a56dff7e
 
-What kind of object is /sys/class/extcon/max8997-muic.0/cable.0/mutually_exclusive?
-Is that a file with two lines, a directory with two empty files or
-a directory with symlinks to the other directories?
+does not use parentheses around all uses of the parameter n.
+This causes new compile warnings, for example in the
+amd_iommu_init.c function:
 
-	Arnd
+drivers/iommu/amd_iommu_init.c:561:6: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+drivers/iommu/amd_iommu_init.c:561:6: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+
+Fix those warnings by adding the missing parentheses.
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ include/asm-generic/getorder.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
+index e0fb4bf..65e4468 100644
+--- a/include/asm-generic/getorder.h
++++ b/include/asm-generic/getorder.h
+@@ -49,8 +49,8 @@ int __get_order(unsigned long size)
+ #define get_order(n)						\
+ (								\
+ 	__builtin_constant_p(n) ? (				\
+-		(n == 0UL) ? BITS_PER_LONG - PAGE_SHIFT :	\
+-		((n < (1UL << PAGE_SHIFT)) ? 0 :		\
++		((n) == 0UL) ? BITS_PER_LONG - PAGE_SHIFT :	\
++		(((n) < (1UL << PAGE_SHIFT)) ? 0 :		\
+ 		 ilog2((n) - 1) - PAGE_SHIFT + 1)		\
+ 	) :							\
+ 	__get_order(n)						\
+-- 
+1.7.5.4
+
+
