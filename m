@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab2BXKci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:32:38 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46477 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab2BXKcg (ORCPT
+	id S1756684Ab2BXKdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:33:04 -0500
+Received: from wildebeest.demon.nl ([80.101.103.228]:36062 "EHLO
+	gnu.wildebeest.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab2BXKdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:32:36 -0500
-X-AuditID: b753bd60-9fe84ba000000655-84-4f476741e6b2
-X-AuditID: b753bd60-9fe84ba000000655-84-4f476741e6b2
-Message-ID: <4F47673B.6000103@hitachi.com>
-Date: Fri, 24 Feb 2012 19:32:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: ananth@in.ibm.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com
-Subject: Re: [PATCH] perf - ensure offset provided during probe addition is
- not greater than function length
-References: <4F45FABE.90104@linux.vnet.ibm.com> <4F473F33.4060409@linux.vnet.ibm.com>
-In-Reply-To: <4F473F33.4060409@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 24 Feb 2012 05:33:02 -0500
+From: "Mark J. Wielaard" <mjw@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Wielaard <mjw@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de> (maintainer:X86
+	ARCHITECTURE...),
+        Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE... 
+	,commit_signer:11/25=44%),
+        "H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE... 
+	,commit_signer:4/25=16%),
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
+        Jan Beulich <jbeulich@suse.com> (commit_signer:6/25=24%),
+        Andi Kleen <ak@linux.intel.com> (commit_signer:5/25=20%),
+        Frederic Weisbecker <fweisbec@gmail.com> (commit_signer:4/25=16%)
+Subject: [PATCH] x86-64: Fix CFI data for common_interrupt
+Date: Fri, 24 Feb 2012 11:32:05 +0100
+Message-Id: <1330079527-30711-1-git-send-email-mjw@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <4F476B4E0200007800074936@nat28.tlf.novell.com>
+References: <4F476B4E0200007800074936@nat28.tlf.novell.com>
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/24 16:41), Prashanth Nageshappa wrote:
-> perf probe allows kprobe to be inserted at any offset from a function
-> start, which results in adding kprobes to unintended location.
-> (example: perf probe do_fork+10000 is allowed even though size of
-> do_fork is ~904)
-> 
-> This patch will ensure probe addition fails when the offset specified
-> is greater than size of the function.
-> 
-> 
-> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+From: Mark Wielaard <mjw@redhat.com>
 
-This seems good to me.
+Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
+a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
+the CFA using a simple register+offset rule both register and offset
+need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
+undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
+common_interrupt.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Mark Wielaard <mjw@redhat.com>
+Acked-by: Jan Beulich <jbeulich@suse.com>
+---
+ arch/x86/kernel/entry_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thank you,
-
-> ---
-> 
->  tools/perf/util/probe-finder.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 5d73262..d298f94 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
->  static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
->  				  bool retprobe, struct probe_trace_point *tp)
->  {
-> -	Dwarf_Addr eaddr;
-> +	Dwarf_Addr eaddr, highaddr;
->  	const char *name;
-> 
->  	/* Copy the name of probe point */
-> @@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
->  				   dwarf_diename(sp_die));
->  			return -ENOENT;
->  		}
-> +		if (dwarf_highpc(sp_die, &highaddr) != 0) {
-> +			pr_warning("Failed to get end address of %s\n",
-> +				   dwarf_diename(sp_die));
-> +			return -ENOENT;
-> +		}
-> +		if (paddr > highaddr) {
-> +			pr_warning("Offset specified is greater than size of %s\n",
-> +				   dwarf_diename(sp_die));
-> +			return -EINVAL;
-> +		}
->  		tp->symbol = strdup(name);
->  		if (tp->symbol == NULL)
->  			return -ENOMEM;
-> 
-
-
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 3fe8239..54be36b 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -813,7 +813,7 @@ ret_from_intr:
+ 
+ 	/* Restore saved previous stack */
+ 	popq %rsi
+-	CFI_DEF_CFA_REGISTER	rsi
++	CFI_DEF_CFA rsi,SS+8-RBP	/* reg/off reset after def_cfa_expr */
+ 	leaq ARGOFFSET-RBP(%rsi), %rsp
+ 	CFI_DEF_CFA_REGISTER	rsp
+ 	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.7.6
+
