@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab2BXWTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:19:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33708 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab2BXWTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:19:15 -0500
-Message-ID: <4F480CDE.8010605@suse.cz>
-Date: Fri, 24 Feb 2012 23:19:10 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+	id S932337Ab2BXWUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:20:41 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48180 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab2BXWUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 17:20:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.102 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 14:20:34 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224222034.GB28198@kroah.com>
+References: <20120224183423.GA23284@kroah.com>
+ <20120224191535.GA4505@polaris.bitmath.org>
+ <20120224192643.GB24120@kroah.com>
+ <20120224201027.GA4859@polaris.bitmath.org>
+ <20120224201655.GA5994@kroah.com>
+ <20120224203715.GA4995@polaris.bitmath.org>
+ <20120224205651.GA13333@kroah.com>
+ <20120224212238.GA5178@polaris.bitmath.org>
+ <20120224213027.GB15735@thunk.org>
+ <20120224221459.GA5254@polaris.bitmath.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Kconfig and toolchain dependencies
-References: <4F2C51A5.1040800@zytor.com>
-In-Reply-To: <4F2C51A5.1040800@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224221459.GA5254@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 3.2.2012 22:29, H. Peter Anvin napsal(a):
-> Right now, we don't have a good way to encode toolchain dependencies in
-> Kconfig.  This makes it hard to add optional features which depend on
-> newer toolchain features.
-> 
-> If we just add them, then it breaks all*config and randconfig on
-> platforms with the older toolchains unless the user manually adds
-> exclusion rules.  This is bad for testing.
-> 
-> It seems relatively straightforward to do if we were to manifest some
-> CONFIG_ variables based on the target toolchain, e.g.
-> 
-> CONFIG_GCC=0x040601
+On Fri, Feb 24, 2012 at 11:14:59PM +0100, Henrik Rydberg wrote:
+> The main issue that set me off has been sufficiently diluted in the
+> (selective) discussion so as to no longer make sense as a reply: At
+> some point, in-tree or out-of-tree will no longer be distinguishable,
+> and the question is if/when/why something would/should happen as a
+> consequence. A matter of politics, if you will. It seemed like an
+> honest question starting this thread, and I think it is fair to keep
+> it in mind as such.
 
-(sorry for the late reply)
+If something happens to require such a change in the future, we will
+deal with it, at that time.  Remember the rule, "Linux is evolution, not
+intelligent design."
 
-It would be a bit tricky, because the toolchain version depends also on
-CONFIG_CROSS_COMPILE. So Kconfig would need to know the semantics of
-CONFIG_CROSS_COMPILE and CONFIG_GCC and the dependency of the latter on
-the former.
-
-Michal
+greg k-h
