@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab2BXDwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:52:44 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:37316 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472Ab2BXDtn (ORCPT
+	id S932317Ab2BXDw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:52:57 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:21264 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462Ab2BXDtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Feb 2012 22:49:43 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,90 +12,67 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 07/13] x86, irq: more strict check for register ioapic
-Date: Thu, 23 Feb 2012 19:48:53 -0800
-Message-Id: <1330055339-11662-8-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 13/13] PCI: Disable mem in the ioapic removing path
+Date: Thu, 23 Feb 2012 19:48:59 -0800
+Message-Id: <1330055339-11662-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
 References: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4F4708C7.009E,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090206.4F4708CB.006A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. check overlaping gsi range
-for hotplug ioapic case, BIOS may have some entries in MADT
-and also in pci bus with _GSB.
+For physical hot plug should be ok, but for remove/rescan path will need us
+to disable that.
 
-2. make bad_ioapics take idx instead of nr_ioapics.
-for hotadd ioapic could find spare slot in the middle later.
+otherwise rescan mmio resource for pci ioapic device will not be sized and
+allocated, aka skiped.
+For ioapic_probe:pci_enable_device will not enable the device correctly, and
+will bail out early.
 
-3. check if entries in right range.
+So we can just disable mmio for all removing case. that will hurt real hotplug
+path.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
 ---
- arch/x86/kernel/apic/io_apic.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+ drivers/pci/ioapic.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 527b184..57ffa86 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -4065,11 +4065,11 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
- 	return gsi - gsi_cfg->gsi_base;
+diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
+index 4183a5c..0b2c210 100644
+--- a/drivers/pci/ioapic.c
++++ b/drivers/pci/ioapic.c
+@@ -88,6 +88,17 @@ exit_free:
+ 	return -ENODEV;
  }
  
--static __init int bad_ioapic(unsigned long address)
-+static __init int bad_ioapic(int idx, unsigned long address)
- {
--	if (nr_ioapics >= MAX_IO_APICS) {
-+	if (idx >= MAX_IO_APICS) {
- 		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
--		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
-+		       "(found %d), skipping\n", MAX_IO_APICS, idx);
- 		return 1;
- 	}
- 	if (!address) {
-@@ -4082,14 +4082,17 @@ static __init int bad_ioapic(unsigned long address)
- 
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
--	int idx = 0;
-+	int idx;
- 	int entries;
- 	struct mp_ioapic_gsi *gsi_cfg;
- 
--	if (bad_ioapic(address))
-+	idx = mp_find_ioapic(gsi_base);
-+	if (idx >= 0)
- 		return;
- 
- 	idx = nr_ioapics;
-+	if (bad_ioapic(idx, address))
-+		return;
- 
- 	ioapics[idx].mp_config.type = MP_IOAPIC;
- 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
-@@ -4104,6 +4107,12 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
- 	entries = io_apic_get_redir_entries(idx);
++static void pci_disable_device_mem(struct pci_dev *dev)
++{
++	u16 pci_command;
 +
-+	if (!entries || entries > MP_MAX_IOAPIC_PIN) {
-+		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+		return;
++	pci_read_config_word(dev, PCI_COMMAND, &pci_command);
++	if (pci_command & PCI_COMMAND_MEMORY) {
++		pci_command &= ~PCI_COMMAND_MEMORY;
++		pci_write_config_word(dev, PCI_COMMAND, pci_command);
 +	}
++}
 +
- 	gsi_cfg = mp_ioapic_gsi_routing(idx);
- 	gsi_cfg->gsi_base = gsi_base;
- 	gsi_cfg->gsi_end = gsi_base + entries - 1;
+ static void __devexit ioapic_remove(struct pci_dev *dev)
+ {
+ 	struct ioapic *ioapic = pci_get_drvdata(dev);
+@@ -95,6 +106,8 @@ static void __devexit ioapic_remove(struct pci_dev *dev)
+ 	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
+ 	pci_release_region(dev, 0);
+ 	pci_disable_device(dev);
++	/* need to disable it, otherwise remove/rescan will not work */
++	pci_disable_device_mem(dev);
+ 	kfree(ioapic);
+ }
+ 
 -- 
 1.7.7
 
