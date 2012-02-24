@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2BXT2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:28:08 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:49060 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754905Ab2BXT2G (ORCPT
+	id S1757458Ab2BXTar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:30:47 -0500
+Received: from fep24.mx.upcmail.net ([62.179.121.44]:37416 "EHLO
+	fep24.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2BXTaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:28:06 -0500
-Message-ID: <4F47E4C5.7060706@xenotime.net>
-Date: Fri, 24 Feb 2012 11:28:05 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, Mimi Zohar <zohar@us.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [PATCH] security: fix ima kconfig warning
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Feb 2012 14:30:46 -0500
+X-Greylist: delayed 949 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Feb 2012 14:30:46 EST
+X-SourceIP: 85.216.177.222
+X-Authenticated-Sender: peter.fodrek@chello.sk
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Apple Message framework v1257)
+Subject: Re: Resening: KGDB over Ethternet howto patch
+From: Peter Fodrek <fodrek@kasr.elf.stuba.sk>
+In-Reply-To: <CAJd=RBCdxEv=OATcNw1yugCF7g=Ba8fFLQE0D6QTAkO8BRoqrQ@mail.gmail.com>
+Date: Fri, 24 Feb 2012 20:14:55 +0100
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <F45DDB02-E434-4F32-BBA0-1BB2F2EFD3D6@kasr.elf.stuba.sk>
+References: <5240114.8TkZqEVLeL@fodrek.kar.elf.stuba.sk> <CAJd=RBCdxEv=OATcNw1yugCF7g=Ba8fFLQE0D6QTAkO8BRoqrQ@mail.gmail.com>
+To: linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-
-Fix IMA kconfig warning on non-X86 architectures:
-
-warning: (IMA) selects TCG_TIS which has unmet direct dependencies
-(TCG_TPM && X86)
-
-But why do TCG_TIS and TCG_NSC depend on X86??
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mimi Zohar <zohar@us.ibm.com>
-Cc: James Morris <jmorris@namei.org>
----
-No IMA/TPM builds have been tested with this change...
-
- security/integrity/ima/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- lnx-33-rc4.orig/security/integrity/ima/Kconfig
-+++ lnx-33-rc4/security/integrity/ima/Kconfig
-@@ -10,7 +10,7 @@ config IMA
- 	select CRYPTO_MD5
- 	select CRYPTO_SHA1
- 	select TCG_TPM if !S390 && !UML
--	select TCG_TIS if TCG_TPM
-+	select TCG_TIS if TCG_TPM && X86
- 	help
- 	  The Trusted Computing Group(TCG) runtime Integrity
- 	  Measurement Architecture(IMA) maintains a list of hash
+Dear Linux hackers,
+ 
+Thak you for all your answers. All will be helpfull for us.
+ 
+On Friday 24 February 2012 15:16:10 Pekka Enberg wrote:
+> There's some traces of "kgdboe" in mainline code but I don't think
+> that feature was ever merged.
+ 
+Therefor I am not to find out kdboe anymore.
+ 
+On Friday 24 February 2012 21:47:47 Hillf Danton wrote:
+> Perhaps you could google KGTP, and try to be another user of it.
+ 
+This is something like what  we need as I see via first look
+ 
+On Friday 24 February 2012 13:55:17 Alan Cox wrote: 
+> netconsole is probably what you want as a starting point. It lets you use
+> a ethernet device as a one way console right from early boot
+ 
+ 
+This is something that we need for another work.
+ 
+Thank you one again for your help
+ 
+Kind regards
+ 
+Peter Fodrek
