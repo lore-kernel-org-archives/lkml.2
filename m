@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab2BXTLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:11:20 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:54675 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753234Ab2BXTLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:11:19 -0500
-Message-ID: <4F47E0D0.9030409@fb.com>
-Date: Fri, 24 Feb 2012 11:11:12 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1756679Ab2BXTNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:13:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752981Ab2BXTNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 14:13:52 -0500
+Date: Fri, 24 Feb 2012 20:06:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] signalfd/epoll fixes
+Message-ID: <20120224190651.GA22287@redhat.com>
+References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com> <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com>
 MIME-Version: 1.0
-To: Balbir Singh <bsingharora@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-References: <1326912662-18805-1-git-send-email-asharma@fb.com> <CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com> <4F468888.9090702@fb.com> <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com> <CAKTCnzk7TgDeYRZK0rCugopq0tO7BtM8jM9U0RJUTqNtz42ZKw@mail.gmail.com>
-In-Reply-To: <CAKTCnzk7TgDeYRZK0rCugopq0tO7BtM8jM9U0RJUTqNtz42ZKw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-02-24_06:2012-02-24,2012-02-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/12 6:51 AM, Balbir Singh wrote:
-> On Fri, Feb 24, 2012 at 8:17 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com>  wrote:
->>> They don't have access to each other's VMAs, but if "accidentally" one
->>> of them comes across an uninitialized page with data from another task,
->>> it's not a violation of the security model.
+On 02/23, Linus Torvalds wrote:
 >
-> Can you expand more on the single address space model?
+> On Thu, Feb 23, 2012 at 7:44 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Or we can rely on the fact that sighand_cachep is SLAB_DESTROY_BY_RCU,
+> > and assume that ->whead is always rcu-protected if it can go away.
+> >
+> > In this case we don't need 3/4 (although it makes sense to add the
+> > fat comment), and 4/4 can be simplified, see below.
+>
+> Ok.
+>
+> Can you also get rid of 1/4, because quite frankly, adding that
+> BUG_ON() is just annoying. Either the thing gets fixed or not, but at
+> no point is it ok to say "ok, I'm going to fix it, but before I do
+> I'll just make it much worse".
 
-I haven't thought this through yet. But I know that just adding
+OK. Please see v2.
 
-&& (cgroup_task_count() == 1)
+Other changes:
 
-to page_needs_clearing() is not going to do it. We'll have to design a 
-new mechanism (cgroup_mm_count_all()?) and make sure that it doesn't 
-race with fork() and inadvertently expose pages from the new address 
-space to the existing one.
+	- some comments
 
-A uid based approach such as the one implemented by Davide Libenzi
+	- now that we rely on rcu, ep_poll_callback() can do
+	  remove_wait_queue() outsife of ep->lock
 
-http://thread.gmane.org/gmane.linux.kernel/548928
-http://thread.gmane.org/gmane.linux.kernel/548926
 
-would probably apply the optimization to more use cases - but 
-conceptually a bit more complex. If we go with this more relaxed 
-approach, we'll have to design a race-free cgroup_uid_count() based 
-mechanism.
 
-  -Arun
+Davide, I see the new email, but it is too late for me to reply
+today. Anyway, I think it makes sense to make the "simple" fix
+before anything else. IOW, I'd suggest these changes for now in
+any case (unless, of course, you see some problems).
 
+Oleg.
 
