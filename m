@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab2BXFdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 00:33:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57167 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab2BXFdS convert rfc822-to-8bit (ORCPT
+	id S1752841Ab2BXFmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 00:42:09 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:49382 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2BXFmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 00:33:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.179.8 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <1329945961-29547-1-git-send-email-swarren@nvidia.com>
-References: <1329945961-29547-1-git-send-email-swarren@nvidia.com>
-Date: Fri, 24 Feb 2012 06:33:17 +0100
-Message-ID: <CACRpkdZPNGTG8HvWk4cf+DdJvEpr6o38L6mdvt4v2mEV0mvCzw@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] pinctrl: Rebased/extracted patches
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
+	Fri, 24 Feb 2012 00:42:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.180.95.1 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
+Date: Fri, 24 Feb 2012 13:41:50 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+Message-ID: <20120224054150.GA17543@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+ <1329989454.24994.57.camel@twins>
+ <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 10:25 PM, Stephen Warren <swarren@nvidia.com> wrote:
+On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
+> On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > Why not scheduler_ipi()?
+> 
+> Was trying to avoid irq_enter/exit. As the work here is done in idle
+> thread context, I though we could avoid enter/exit. 
 
-> The first 3 patches were previously ack'd but weren't applied due to earlier
-> patches in the original series not having been applied. These rebased versions
-> can be applied directly on top of the pinctrl for-next branch.
->
-> The last patch is the conceptually ack'd portion of the larger locking rework
-> patch, extracted on its own for commit.
->
-> Stephen Warren (4):
->  pinctrl: Disallow map table entries with NULL dev_name field
->  pinctrl: Use dev_*() instead of pr_*(), add some msgs, minor cleanups
->  pinctrl: Allocate sizeof(*p) instead of sizeof(struct foo)
->  pinctrl: Remove pin and hogs locks from struct pinctrl_dev
+It seems we could not.
+At least RCU need it, see commit c5d753a55, otherwise we will get
+warning like 'RCU used illegally from extended quiescent state!'
 
-Thanks a ton Stephen, all patches applied and pushed to for-next.
-
-Yours,
-Linus Walleij
+Thanks,
+Yong
