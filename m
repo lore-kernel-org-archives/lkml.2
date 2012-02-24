@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2BXJsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 04:48:22 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41442 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab2BXJsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 04:48:20 -0500
-Date: Fri, 24 Feb 2012 10:48:12 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Colin Walters <walters@verbum.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf report: Add a simple GTK2-based 'perf report'
- browser
-Message-ID: <20120224094812.GF814@elte.hu>
-References: <1330013922-3332-1-git-send-email-penberg@kernel.org>
- <1330025802.17301.1.camel@lenny>
- <CAOJsxLEQ0VNsTEApsWQHC4G4199xm31UkWt1n0fqh3tZVa2f8A@mail.gmail.com>
- <1330029238.17301.3.camel@lenny>
- <CAOJsxLEksW5Jn=xF+mFmKswRDny+ZfBTYRYUarzn_fmNcpk_OQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756640Ab2BXJty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 04:49:54 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:15949 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2BXJtx convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Fri, 24 Feb 2012 04:49:53 -0500
+Message-Id: <4F476B4E0200007800074936@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 24 Feb 2012 09:49:50 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Mark Wielaard" <mjw@redhat.com>
+Cc: "Frederic Weisbecker (commit_signer:4/25=16%)" <fweisbec@gmail.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "Thomas Gleixner(maintainer:X86 ARCHITECTURE...)" 
+	<tglx@linutronix.de>,
+        "Andi Kleen(commit_signer:5/25=20%)" <ak@linux.intel.com>,
+        "commit_signer:11/25=44%)Ingo Molnar (maintainer:X86 ARCHITECTURE..." 
+	<mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>,
+        "commit_signer:4/25=16%) H. Peter Anvin(maintainer:X86 ARCHITECTURE..." 
+	<hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: Fix CFI data for common_interrupt
+References: <1329833177-13030-1-git-send-email-mjw@redhat.com>
+ <4F43B78D020000780007435B@nat28.tlf.novell.com>
+ <1329835436.12079.10.camel@springer.wildebeest.org>
+ <4F43C5B60200007800074392@nat28.tlf.novell.com>
+ <20120221220810.GE2590@toonder.wildebeest.org>
+In-Reply-To: <20120221220810.GE2590@toonder.wildebeest.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLEksW5Jn=xF+mFmKswRDny+ZfBTYRYUarzn_fmNcpk_OQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Thu, Feb 23, 2012 at 10:33 PM, Colin Walters <walters@verbum.org> wrote:
-> >> Sure. We don't want to do that for all files. Just for the ones that
-> >> include <gtk/gtk.h>.
-> >
-> > #pragma GCC diagnostic push
-> > #pragma GCC diagnostic ignored "-Wstrict-prototypes"
-> > #include <gtk/gtk.h>
-> > #pragma GCC diagnostic pop
+>>> On 21.02.12 at 23:08, Mark Wielaard <mjw@redhat.com> wrote:
+> On Tue, Feb 21, 2012 at 03:26:30PM +0000, Jan Beulich wrote:
+>> But provided the specification mandates this, I'm okay with the change
+>> in principle. Just that specifying an offset of 0 doesn't look right then.
 > 
-> It's cleaner to do it at Makefile level. We should do 
-> something like sparse.git Makefile does where you can 
-> optionally specify CFLAGS for individual source files.
+> Yeah, I dunno what I was thinking. The offset should be set to the offset
+> that was there before when rsi was pushed. The attached patch does that
+> by using the same value as was used at the start of common_interrupt.
+> Does that look OK?
 
-I actually like the #pragma hack because it only turns off the 
-check for that broken header and keeps our checks in place for 
-the rest of the .c file.
+As written before, it ought to be
 
-Could be turned into a util/gtk.h file that is included instead 
-of <gtk/gtk.h>, so that we don't have to see the #pragma 
-workaround all the time?
+	CFI_DEF_CFA		rsi,SS+8-RBP /* reg/off reset after def_cfa_expr */
 
-Thanks,
+With that, feel free to add
 
-	Ingo
+Acked-by: Jan Beulich <jbeulich@suse.com>
+
+when you re-submit.
+
+Jan
+
