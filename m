@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629Ab2BXP47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:56:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48585 "EHLO mx2.suse.de"
+	id S1757572Ab2BXP46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:56:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48583 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160Ab2BXP45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:56:57 -0500
+	id S1757152Ab2BXP44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:56:56 -0500
 From: Petr Uzel <petr.uzel@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com> (maintainer:SCSI
 	SUBSYSTEM),
         linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
-Subject: [PATCH 2/2] [resend] [SCSI] sd: Adapt comment and printk string after renaming sd_attach to sd_probe
-Date: Fri, 24 Feb 2012 16:56:55 +0100
-Message-Id: <1330099015-26893-2-git-send-email-petr.uzel@suse.cz>
+Subject: [PATCH 1/2] [resend] [SCSI] sd: Adapt comment and printk string after renaming sd_init_command to sd_prep_fn
+Date: Fri, 24 Feb 2012 16:56:54 +0100
+Message-Id: <1330099015-26893-1-git-send-email-petr.uzel@suse.cz>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330099015-26893-1-git-send-email-petr.uzel@suse.cz>
-References: <1330099015-26893-1-git-send-email-petr.uzel@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the comment and printk string match the code.
+Make the comment and string in printk match the code after commit
+7f9a6bc4e9d59e7fcf03ed23f60cd81ca5d80b65.
 
 Signed-off-by: Petr Uzel <petr.uzel@suse.cz>
 Acked-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/scsi/sd.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/sd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 7c0d345..8eea785 100644
+index c691fb5..7c0d345 100644
 --- a/drivers/scsi/sd.c
 +++ b/drivers/scsi/sd.c
-@@ -2562,8 +2562,8 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
-  *	(e.g. /dev/sda). More precisely it is the block device major 
-  *	and minor number that is chosen here.
-  *
-- *	Assume sd_attach is not re-entrant (for time being)
-- *	Also think about sd_attach() and sd_remove() running coincidentally.
-+ *	Assume sd_probe is not re-entrant (for time being)
-+ *	Also think about sd_probe() and sd_remove() running coincidentally.
-  **/
- static int sd_probe(struct device *dev)
- {
-@@ -2578,7 +2578,7 @@ static int sd_probe(struct device *dev)
- 		goto out;
+@@ -634,7 +634,7 @@ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ }
  
- 	SCSI_LOG_HLQUEUE(3, sdev_printk(KERN_INFO, sdp,
--					"sd_attach\n"));
-+					"sd_probe\n"));
+ /**
+- *	sd_init_command - build a scsi (read or write) command from
++ *	sd_prep_fn - build a scsi (read or write) command from
+  *	information in the request structure.
+  *	@SCpnt: pointer to mid-level's per scsi command structure that
+  *	contains request and into which the scsi command is written
+@@ -681,7 +681,7 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+ 	ret = BLKPREP_KILL;
  
- 	error = -ENOMEM;
- 	sdkp = kzalloc(sizeof(*sdkp), GFP_KERNEL);
+ 	SCSI_LOG_HLQUEUE(1, scmd_printk(KERN_INFO, SCpnt,
+-					"sd_init_command: block=%llu, "
++					"sd_prep_fn: block=%llu, "
+ 					"count=%d\n",
+ 					(unsigned long long)block,
+ 					this_count));
 -- 
 1.7.7
 
