@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2BXAJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 19:09:18 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39986 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756255Ab2BXAJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 19:09:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: David Miller <davem@davemloft.net>
-Subject: Re: 3.3-rc4+: Reported regressions from 3.2
-Date: Fri, 24 Feb 2012 01:13:13 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com,
-        florian@mickler.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, kernel-testers@vger.kernel.org,
-        netdev@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
-        linux-wireless@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera> <20120223.182825.1031311733171854243.davem@davemloft.net>
-In-Reply-To: <20120223.182825.1031311733171854243.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202240113.13575.rjw@sisk.pl>
+	id S1756851Ab2BXA3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:29:36 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35879 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab2BXA3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 19:29:35 -0500
+Message-ID: <1330043325.2340.290.camel@work-vm>
+Subject: Re: [tip:timers/core] clocksource: scx200_hrt: Fix the build
+From: John Stultz <john.stultz@linaro.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jim.cromie@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Date: Thu, 23 Feb 2012 16:28:45 -0800
+In-Reply-To: <tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org>
+References: <tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022400-3270-0000-0000-0000044668BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 24, 2012, David Miller wrote:
-> From: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Date: Thu, 23 Feb 2012 23:51:20 +0100 (CET)
+On Wed, 2012-02-22 at 08:13 -0800, tip-bot for Ingo Molnar wrote:
+> Commit-ID:  10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
+> Gitweb:     http://git.kernel.org/tip/10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
+> Author:     Ingo Molnar <mingo@elte.hu>
+> AuthorDate: Wed, 22 Feb 2012 13:19:37 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Wed, 22 Feb 2012 13:25:16 +0100
 > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42776
-> > Subject		: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-> > Submitter	: Meelis Roos <mroos@linux.ee>
-> > Date		: 2012-02-13 7:45 (11 days old)
-> > Message-ID	: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee>
-> > References	: http://marc.info/?l=linux-kernel&m=132911916331615&w=2
+> clocksource: scx200_hrt: Fix the build
 > 
-> Potential workaround/fix at:
+> This commit:
 > 
-> http://marc.info/?l=linux-kernel&m=132993294018762&w=2
+>   12d6d41276de: clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
+> 
+> Breaks the build on x86-32:
+> 
+>   drivers/clocksource/scx200_hrt.c: In function ‘init_hrt_clocksource’:
+>   drivers/clocksource/scx200_hrt.c:95:0: error: unterminated argument list invoking macro "pr_info"
+>   drivers/clocksource/scx200_hrt.c:84:2: error: ‘pr_info’ undeclared (first use in this function)
+> 
+> It could not possibly have been build tested, because it had this mismerge:
+> 
+> 	pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+> 	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+> 		mhz27 ? "27":"1", ppm);
 
-Thanks, updated.
+Yea, looking in my git logs, that was me. Sorry about that.
+Thanks for catching it and fixing it up. 
+-john
 
-Rafael
