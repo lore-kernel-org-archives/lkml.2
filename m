@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab2BXQFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:05:06 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:48814 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932208Ab2BXQFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:05:04 -0500
-Date: Fri, 24 Feb 2012 10:05:05 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        santosh nayak <santoshprasadnayak@gmail.com>
-Cc: elder@kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, xfs-masters@oss.sgi.com
-Subject: Re: [PATCH] xfs: Use memset to initialize structure member.
-Message-ID: <20120224160505.GF7762@sgi.com>
-References: <1330067322-17011-1-git-send-email-santoshprasadnayak@gmail.com> <20120224075354.GA3649@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224075354.GA3649@mwanda>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757662Ab2BXQBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:01:37 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:53178 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757035Ab2BXQBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 11:01:35 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/12] team: check given MAC address, if invalid return -EADDRNOTAVAIL
+Date: Fri, 24 Feb 2012 17:01:15 +0100
+Message-Id: <1330099282-4588-6-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
+References: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330099295;d0020b6f;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Santosh,
+Check if given address is valid in .ndo_set_mac_address, if
+invalid return -EADDRNOTAVAIL as eth_mac_addr() already does
+if is_valid_ether_addr() fails.
 
-On Fri, Feb 24, 2012 at 10:53:54AM +0300, Dan Carpenter wrote:
-> On Fri, Feb 24, 2012 at 12:38:42PM +0530, santosh nayak wrote:
-> > From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> > 
-> > Sparse is giving following warning:
-> > fs/xfs/xfs_bmap.c:4826:41: warning: Using plain integer as NULL pointer.
-> > 
-> 
-> You could just do:
-> 	struct xfs_bmalloca     bma = {};
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/team/team.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-This aggregate initializer seems cleaner than memset.  Do you
-mind resending the patch with Dan's suggestion?                                 
-                                                                                
-Thanks for your contribution.  ;)    
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 8f81805..788650c 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -868,6 +868,9 @@ static int team_set_mac_address(struct net_device *dev, void *p)
+ 	struct team_port *port;
+ 	struct sockaddr *addr = p;
+ 
++	if (!is_valid_ether_addr(addr->sa_data))
++		return -EADDRNOTAVAIL;
++
+ 	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
+ 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
+ 	rcu_read_lock();
+-- 
+1.7.8.3
 
--Ben
