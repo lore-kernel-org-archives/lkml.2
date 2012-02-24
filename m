@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757488Ab2BXNqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:46:40 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43949 "EHLO
+	id S1757514Ab2BXNqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:46:47 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43994 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755195Ab2BXNqh (ORCPT
+	by vger.kernel.org with ESMTP id S1752714Ab2BXNqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:46:37 -0500
+	Fri, 24 Feb 2012 08:46:43 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Grant Grundler <grundler@parisc-linux.org>
-Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/11] dec/tulip/de4x5: print MAC via printk format specifier
-Date: Fri, 24 Feb 2012 14:45:55 +0100
-Message-Id: <1330091162-8141-5-git-send-email-danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Henk de Groot <pe1dnn@amsat.org>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        Marek Belisko <marek.belisko@gmail.com>,
+        Oliver Neukum <oneukum@suse.de>
+Cc: Danny Kukawka <dkukawka@suse.de>, devel@driverdev.osuosl.org,
+        e1000-devel@lists.sourceforge.net,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Pirko <jpirko@redhat.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        Tobias Klauser <tklauser@distanz.ch>
+Subject: [PATCH 00/11] print MAC via printk format specifier
+Date: Fri, 24 Feb 2012 14:45:51 +0100
+Message-Id: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
-References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091197;6c473491;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091203;ea222229;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print MAC/dev_addr via printk extended format specifier %pM
-instead of custom code.
+Print MAC/dev_addr via printk extended format specifier %pm/%pM
+instead of using custom code.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/ethernet/dec/tulip/de4x5.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+These patches are against net-next.
 
-diff --git a/drivers/net/ethernet/dec/tulip/de4x5.c b/drivers/net/ethernet/dec/tulip/de4x5.c
-index 9358340..18b106c 100644
---- a/drivers/net/ethernet/dec/tulip/de4x5.c
-+++ b/drivers/net/ethernet/dec/tulip/de4x5.c
-@@ -5234,11 +5234,7 @@ de4x5_dbg_open(struct net_device *dev)
- 
-     if (de4x5_debug & DEBUG_OPEN) {
- 	printk("%s: de4x5 opening with irq %d\n",dev->name,dev->irq);
--	printk("\tphysical address: ");
--	for (i=0;i<6;i++) {
--	    printk("%2.2x:",(short)dev->dev_addr[i]);
--	}
--	printk("\n");
-+	printk("\tphysical address: %pM\n", dev->dev_addr);
- 	printk("Descriptor head addresses:\n");
- 	printk("\t0x%8.8lx  0x%8.8lx\n",(u_long)lp->rx_ring,(u_long)lp->tx_ring);
- 	printk("Descriptor addresses:\nRX: ");
+Danny Kukawka (11):
+  arch/ia64/hp/sim/simeth.c: print MAC via printk format specifier
+  amd/hplance.c: print MAC via printk format specifier
+  cirrus/mac89x0: print MAC via printk format specifier
+  dec/tulip/de4x5: print MAC via printk format specifier
+  ixgbevf: print MAC via printk format specifier
+  sun/sunqe: print MAC via printk format specifier
+  xscale/ixp2000/ixpdev: print MAC via printk format specifier
+  usb/cdc_ncm: print MAC via printk format specifier
+  usb/kaweth: print MAC via printk format specifier
+  Staging: ft1000-pcmcia: print MAC via printk format specifier
+  Staging: wlags49_h2: print MAC via printk format specifier
+
+ arch/ia64/hp/sim/simeth.c                         |   10 +++-------
+ drivers/net/ethernet/amd/hplance.c                |   10 ++--------
+ drivers/net/ethernet/cirrus/mac89x0.c             |   12 ++++++++----
+ drivers/net/ethernet/dec/tulip/de4x5.c            |    6 +-----
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    8 +-------
+ drivers/net/ethernet/sun/sunqe.c                  |   10 ++--------
+ drivers/net/ethernet/xscale/ixp2000/ixpdev.c      |    7 ++-----
+ drivers/net/usb/cdc_ncm.c                         |    6 +-----
+ drivers/net/usb/kaweth.c                          |    8 +-------
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c  |    7 ++-----
+ drivers/staging/wlags49_h2/wl_cs.c                |    7 ++-----
+ 11 files changed, 25 insertions(+), 66 deletions(-)
+
 -- 
 1.7.8.3
 
