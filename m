@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab2BXFYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 00:24:48 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54213 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab2BXFYr convert rfc822-to-8bit (ORCPT
+	id S1752872Ab2BXFZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 00:25:21 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59312 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2BXFZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 00:24:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.180.85.105 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
-MIME-Version: 1.0
-Date: Fri, 24 Feb 2012 00:24:45 -0500
-Message-ID: <CAG4AFWaLfVy6WhcQSYkO56VsaYUKMpsZLRYF2AitE+bPh93Yog@mail.gmail.com>
-Subject: Re: [PATCH 00/14] RFC: VMCI for Linux
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        vm-crosstalk@vmware.com, dtor@vmware.com, cschamp@vmware.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Feb 2012 00:25:19 -0500
+Date: Fri, 24 Feb 2012 16:25:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyle Moffett <Kyle.D.Moffett@boeing.com>
+Subject: linux-next: manual merge of the irqdomain tree with the powerpc
+ tree
+Message-Id: <20120224162504.49480de981431c3fd95601a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__24_Feb_2012_16_25_04_+1100_8Q22evHa1fQA+kVT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Feb 2012 17:05:41, "Andrew Stiegmann (stieg)"
-<astiegmann@vmware.com> wrote:
-> In an effort to improve the out-of-the-box experience with Linux
-> kernels for VMware users, VMware is working on readying the Virtual
-> Machine Communication Interface (VMCI) and VMCI Sockets (vsock) kernel
-> modules for inclusion in the Linux kernel. The purpose of this initial
-> post is to both show how much we love Linux on Valentine's day and
-> request early feedback on the VMCI kernel module with the
-> intent of addressing any major issues early in the process. The VMCI
-> Socket kernel module will be presented in a later post.
-> VMCI allows virtual machines to communicate with host kernel modules
-> and the VMware hypervisors. User level applications both in a virtual
-> machine and on the host can use VMCI through VMCI Sockets, a socket
-> address family designed to be compatible with UDP and TCP at the
-> interface level. Today, VMCI and VMCI Sockets are used by the VMware
-> shared folders (HGFS) and various VMware Tools components inside the
-> guest for zero-config, network-less access to VMware host services. In
-> addition to this, VMware's users are using VMCI Sockets for various
-> applications, where network access of the virtual machine is
-> restricted or non-existent. Examples of this are VMs communicating
-> with device proxies for proprietary hardware running as host
-> applications and automated testing of applications running within
-> virtual machines.
-> In a virtual machine, VMCI is exposed as a regular PCI device. The
-> primary communication mechanisms supported are a point-to-point
-> bidirectional transport based on a pair of memory-mapped queues, and
-> asynchronous notifications in the form of datagrams and
-> doorbells. These features are available to kernel level components
-> such as HGFS and VMCI Sockets through the VMCI kernel API. In addition
-> to this, the VMCI kernel API provides support for receiving events
-> related to the state of the VMCI communication channels, and the
-> virtual machine itself.
-> Outside the virtual machine, the host side support of the VMCI kernel
-> module makes the same VMCI kernel API available to VMCI endpoints on
-> the host. In addition to this, the host side manages each VMCI device
-> in a virtual machine through a context object. This context object
-> serves to identify the virtual machine for communication, and to track
-> the resource consumption of the given VMCI device. Both operations
-> related to communication between the virtual machine and the host
-> kernel, and those related to the management of the VMCI device state
-> in the host kernel, are invoked by the user level component of the
-> hypervisor through a set of ioctls on the VMCI device node.  To
-> provide seamless support for nested virtualization, where a virtual
-> machine may use both a VMCI PCI device to talk to its hypervisor, and
-> the VMCI host side support to run nested virtual machines, the VMCI
-> host and virtual machine support are combined in a single kernel
-> module.
-> For additional information about the use of VMCI and in particular
-> VMCI Sockets, please refer to the VMCI Socket Programming Guide
-> available at https://www.vmware.com/support/developer/vmci-sdk/.
+--Signature=_Fri__24_Feb_2012_16_25_04_+1100_8Q22evHa1fQA+kVT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi, Andrew,
+Hi Grant,
 
-Are your patches used for communication between a Linux guest OS and
-VMware host? What if I want a Guest OS running on top of Linux/KVM to
-communicate with the Linux/KVM hypervisor? Or two guest OSes running
-on top of Linux/KVM.
+Today's linux-next merge of the irqdomain tree got a conflict in
+arch/powerpc/sysdev/mpic.c between commits 3a7a7176e840 ("powerpc/mpic:
+Fix use of "flags" variable in mpic_alloc()") and c1b8d45db4db
+("powerpc/mpic: Add "last-interrupt-source" property to override
+hardware") from the powerpc tree and commit a8db8cf0d894 ("irq_domain:
+Replace irq_alloc_host() with revmap-specific initializers") from the
+irqdomain tree.
 
-Regards
-Jidong
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/powerpc/sysdev/mpic.c
+index b9b989d,c83a512..0000000
+--- a/arch/powerpc/sysdev/mpic.c
++++ b/arch/powerpc/sysdev/mpic.c
+@@@ -1351,9 -1345,9 +1351,8 @@@ struct mpic * __init mpic_alloc(struct=20
+  	mpic->isu_shift =3D 1 + __ilog2(mpic->isu_size - 1);
+  	mpic->isu_mask =3D (1 << mpic->isu_shift) - 1;
+ =20
+- 	mpic->irqhost =3D irq_alloc_host(mpic->node, IRQ_HOST_MAP_LINEAR,
+- 				       mpic->isu_size, &mpic_host_ops,
+- 				       intvec_top + 1);
++ 	mpic->irqhost =3D irq_domain_add_linear(mpic->node,
+ -				       isu_size ? isu_size : mpic->num_sources,
+ -				       &mpic_host_ops, mpic);
+++				       mpic->isu_size, &mpic_host_ops, mpic);
+ =20
+  	/*
+  	 * FIXME: The code leaks the MPIC object and mappings here; this
+
+--Signature=_Fri__24_Feb_2012_16_25_04_+1100_8Q22evHa1fQA+kVT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPRx8wAAoJEECxmPOUX5FE97UP/3iKdDLLhELVMIZPQMigQ9nl
+yoixmEGTZf0DIT8B1JDSIeV+gyE1D7/fFUEZvJ5MrDhS1z/d8Z4DWuTmLMv5frJ0
+Il7aiG9kuObzlBf3ZnRiwQnuZnWSSUKQ0j5mcCgAJt/oqJWD3rAESW1toGdGSyv7
+JHkDeYrIXP3tFzF9F7t9ojZbqN9kRsi2cxcvBa+TccTqNupy+/M6KrzFmM3ERi63
+B41mGcaRIOV/MBTgNUSLoTUueuAs3Oo9GqM4x16ugYqUvqja8AmqlV+rsPyJtSJq
+ZUvZslkCoNkHsei4iScNY1DJJeYB4K5R1nh2dwMbnm7Xwqc9FgGgLYgdmSh2kfxk
+ButjV4LFGOnDrcjt+zhxbN3Cghm6CCo6e1xZMT86Gx1RBka2r9bYeCcbiU7ABjjc
+YhvI+0qwxvRQTUBgeI63NbdmaptOGz+2EYTSght4nIuTy3ypH7aMkFRNN/pI+H+O
+93wl20K+BJ70rPf8hr4vJnX1aLAQl7mNyIDRAqao/pWkesUqnFIpMSlOhtd/6NPc
+hERa348sl1ksHAnuee8pt/ve3N6zVl9XAI40xGafD4zHaE36n+0SxqDofeGC3Oeh
+3hcEo8IkDxELkEUB0NsaAbHrATeTcdp1z0P0By2yBIOjudwP3XA7m2FgEuQSWOQf
+OpMM2wOHat5gtwKzfRw6
+=E/Yy
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Feb_2012_16_25_04_+1100_8Q22evHa1fQA+kVT--
