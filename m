@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab2BXNsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:48:42 -0500
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:55146 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756508Ab2BXNsj (ORCPT
+	id S1757600Ab2BXNs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:48:59 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43966 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757435Ab2BXNqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:48:39 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
-	b=DQdNASB0hrWVeFCeGOvFqn78eHsYLW75KC1ClJvlvRQi7QRHtWa59Y59tDw1Iv1gXCVFurKkyB3inkUXxhyyKNY0XO8/6WQ9EdJ/a9AhtdOU94akQ9H+HFEoYIWIii/j;
-From: Przemo Firszt <przemo@firszt.eu>
-To: jkosina@suse.cz, pinglinux@gmail.com, chris@cnpbagwell.com
-Cc: linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH 1/2] HID: wacom: set ABS_MISC bit for Intuos4 WL
-Date: Fri, 24 Feb 2012 13:47:48 +0000
-Message-Id: <1330091269-8765-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.6.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	Fri, 24 Feb 2012 08:46:39 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/11] arch/ia64/hp/sim/simeth.c: print MAC via printk format specifier
+Date: Fri, 24 Feb 2012 14:45:52 +0100
+Message-Id: <1330091162-8141-2-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
+References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091198;055059f7;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ABS_MISC has to be set for Intuos4 WL otherwise xorg driver won't use proper
-protocol and the information about tool id and serial is lost.
+Print MAC/dev_addr via printk extended format specifier %pm
+instead of custom code.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/hid/hid-wacom.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/ia64/hp/sim/simeth.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 696b907..a793753 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -471,6 +471,7 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
- 		break;
- 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
-+		__set_bit(ABS_MISC, input->absbit);
- 		input_set_abs_params(input, ABS_X, 0, 40640, 4, 0);
- 		input_set_abs_params(input, ABS_Y, 0, 25400, 4, 0);
- 		input_set_abs_params(input, ABS_PRESSURE, 0, 2047, 0, 0);
+diff --git a/arch/ia64/hp/sim/simeth.c b/arch/ia64/hp/sim/simeth.c
+index 47afcc6..440001e 100644
+--- a/arch/ia64/hp/sim/simeth.c
++++ b/arch/ia64/hp/sim/simeth.c
+@@ -193,7 +193,7 @@ simeth_probe1(void)
+ 	unsigned char mac_addr[ETH_ALEN];
+ 	struct simeth_local *local;
+ 	struct net_device *dev;
+-	int fd, i, err, rc;
++	int fd, err, rc;
+ 
+ 	/*
+ 	 * XXX Fix me
+@@ -236,12 +236,8 @@ simeth_probe1(void)
+ 	 */
+ 	netdev_connect(dev->irq);
+ 
+-	printk(KERN_INFO "%s: hosteth=%s simfd=%d, HwAddr",
+-	       dev->name, simeth_device, local->simfd);
+-	for(i = 0; i < ETH_ALEN; i++) {
+-		printk(" %2.2x", dev->dev_addr[i]);
+-	}
+-	printk(", IRQ %d\n", dev->irq);
++	printk(KERN_INFO "%s: hosteth=%s simfd=%d, HwAddr=%pm, IRQ %d\n",
++	       dev->name, simeth_device, local->simfd, dev->dev_addr, dev->irq);
+ 
+ 	return 0;
+ }
 -- 
-1.7.6.4
+1.7.8.3
 
