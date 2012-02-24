@@ -1,120 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2BXE4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 23:56:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63075 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab2BXE4H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 23:56:07 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.50.156.225 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <201202221000.00810.arnd@arndb.de>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
-	<20120220022729.GJ3194@opensource.wolfsonmicro.com>
-	<CAJ0PZbTRRsyF4tGSYPagVmZQ495bmduYZ+FfPjn=Kp9hhcmhxQ@mail.gmail.com>
-	<201202221000.00810.arnd@arndb.de>
-Date: Fri, 24 Feb 2012 13:56:06 +0900
-Message-ID: <CAJ0PZbR+AEpfNcX0wMHdVQfseC+fMxJjyaM25378miLnnfV0+w@mail.gmail.com>
-Subject: Re: [PATCH v5 4/5] Extcon: support mutually exclusive relation
- between cables.
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+	id S1751322Ab2BXFRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 00:17:04 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39140 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab2BXFRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 00:17:02 -0500
+Date: Thu, 23 Feb 2012 21:16:49 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while
+ event queue is not empty
+Message-ID: <20120224051649.GB7666@count0.beaverton.ibm.com>
+References: <201202070200.55505.rjw@sisk.pl>
+ <201202220031.46219.rjw@sisk.pl>
+ <201202220034.58836.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201202220034.58836.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022405-5930-0000-0000-000005803491
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 7:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 22 February 2012, MyungJoo Ham wrote:
->>
->> On Mon, Feb 20, 2012 at 11:27 AM, Mark Brown
->> <broonie@opensource.wolfsonmicro.com> wrote:
->> > On Fri, Feb 10, 2012 at 03:40:37PM +0900, MyungJoo Ham wrote:
->> >
->> >> +What: † † † † † † † †/sys/class/extcon/.../mutually_exclusive
->> >> +Date: † † † † † † † †December 2011
->> >> +Contact: † † MyungJoo Ham <myungjoo.ham@samsung.com>
->> >> +Description:
->> >> + † † † † † † Shows the relations of mutually exclusiveness. For example,
->> >> + † † † † † † if the mutually_exclusive array of extcon_dev is
->> >> + † † † † † † {0x3, 0x5, 0xC, 0x0}, the, the output is:
->> >> + † † † † † † # cat mutually_exclusive
->> >> + † † † † † † 0x3
->> >> + † † † † † † 0x5
->> >> + † † † † † † 0xC
->> >> + † † † † † † #
->> >
->> > sysfs really isn't supposed to have more than one value per file so this
->> > should be something like a directory with one array element per file.
->> > It'd kind of be cheating but the values could be used as the filenames,
->> > though serial numbers would be more idiomatic.
->>
->> Hmm.. I'll either use multiple files with a sub-directory or bin-attr
->> to inhabit the values. Or I'll search for any other convinient way to
->> express such an array thru sysfs.
->
-> How about having one file for each cable and list the ones that it
-> cannot coexist with. In the above example, that would become
->
-> mutually_exclusive/0: "0x6"
-> mutually_exclusive/1: "0x1"
-> mutually_exclusive/2: "0x9"
-> mutually_exclusive/3: "0x4"
->
-> The information here is a bit redundant, but this would be much easier
-> to understand for human readers. I also wouldn't mind having a list
-> of exclusive cable names in each file, while would make it slightly
-> harder to parse but very easy for humans:
->
-> mutually_exclusive/Video-in: "VGA"
-> mutually_exclusive/Video-out: "VGA"
-> mutually_exclusive/VGA: "Video-out Video-in"
->
-> † † † †Arnd
+On Wed, Feb 22, 2012 at 12:34:58AM +0100, Rafael J. Wysocki wrote:
+> From: Arve Hj√∏nnev√•g <arve@android.com>
+> 
+> Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
+> an evdev client event queue, such that it will be active whenever the
+> queue is not empty.  Then, all events in the queue will be regarded
+> as wakeup events in progress and pm_get_wakeup_count() will block (or
+> return false if woken up by a signal) until they are removed from the
+> queue.  In consequence, if the checking of wakeup events is enabled
+> (e.g. throught the /sys/power/wakeup_count interface), the system
+> won't be able to go into a sleep state until the queue is empty.
+> 
+> This allows user space processes to handle situations in which they
+> want to do a select() on an evdev descriptor, so they go to sleep
+> until there are some events to read from the device's queue, and then
+> they don't want the system to go into a sleep state until all the
+> events are read (presumably for further processing).  Of course, if
+> they don't want the system to go into a sleep state _after_ all the
+> events have been read from the queue, they have to use a separate
+> mechanism that will prevent the system from doing that and it has
+> to be activated before reading the first event (that also may be the
+> last one).
 
-Ok, here goes an example how it would look like in the next revision of Extcon.
-I think this addresses your comments on multistate-support patch (3/5)
+I haven't seen this idea mentioned before but I must admit I haven't
+been following this thread too closely so apologies (and don't bother
+rehashing) if it has:
 
-/sys/class/extcon/max8997-muic.0/
-        name: "max8997-muic.0"
-        state: 0x00000009                   /* RW. 0xblahblah format
-for both read and write */
-        mutually_exclusive/
-                rule.0: 0x3
-                rule.1: 0x5
-                rule.2: 0xC
-        cable.0/
-                name: "VGA"
-                state: 1            /* RW: 0 or 1 */
-                mutually_exclusive/
-                        cable.1
-                        cable.2
-        cable.1/
-          ...
+Could you just add this to epoll so that any fd userspace chooses would be
+capable of doing this without introducing potentially ecclectic ioctl
+interfaces?
 
+struct epoll_event ev;
 
-How about this?
+epfd = epoll_create1(EPOLL_STAY_AWAKE_SET);
+ev.data.ptr = foo;
+epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
 
+Which could be useful because you can put one epollfd in another's epoll
+set. Or maybe as an EPOLLKEEPAWAKE flag in the event struct sort of like
+EPOLLET:
 
+epfd = epoll_create1(0);
+ev.events = EPOLLIN|EPOLLKEEPAWAKE;
+epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
 
+> 
+> [rjw: Removed unnecessary checks, changed the names of the new ioctls
+>  and the names of the functions that add/remove wakeup source objects
+>  to/from evdev clients, modified the changelog.
+> Signed-off-by: Arve Hj√∏nnev√•g <arve@android.com>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/input/evdev.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/input.h |    3 ++
+>  2 files changed, 58 insertions(+)
+> 
+> Index: linux/drivers/input/evdev.c
+> ===================================================================
+> --- linux.orig/drivers/input/evdev.c
+> +++ linux/drivers/input/evdev.c
+> @@ -43,6 +43,7 @@ struct evdev_client {
+>  	unsigned int tail;
+>  	unsigned int packet_head; /* [future] position of the first element of next packet */
+>  	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
+> +	struct wakeup_source *wakeup_source;
+>  	struct fasync_struct *fasync;
+>  	struct evdev *evdev;
+>  	struct list_head node;
+> @@ -75,10 +76,12 @@ static void evdev_pass_event(struct evde
+>  		client->buffer[client->tail].value = 0;
+> 
+>  		client->packet_head = client->tail;
+> +		__pm_relax(client->wakeup_source);
+>  	}
+> 
+>  	if (event->type == EV_SYN && event->code == SYN_REPORT) {
+>  		client->packet_head = client->head;
+> +		__pm_stay_awake(client->wakeup_source);
+>  		kill_fasync(&client->fasync, SIGIO, POLL_IN);
+>  	}
+> 
+> @@ -255,6 +258,8 @@ static int evdev_release(struct inode *i
+>  	mutex_unlock(&evdev->mutex);
+> 
+>  	evdev_detach_client(evdev, client);
+> +	wakeup_source_unregister(client->wakeup_source);
+> +
+>  	kfree(client);
+> 
+>  	evdev_close_device(evdev);
+> @@ -373,6 +378,8 @@ static int evdev_fetch_next_event(struct
+>  	if (have_event) {
+>  		*event = client->buffer[client->tail++];
+>  		client->tail &= client->bufsize - 1;
+> +		if (client->packet_head == client->tail)
+> +			__pm_relax(client->wakeup_source);
+>  	}
+> 
+>  	spin_unlock_irq(&client->buffer_lock);
+> @@ -623,6 +630,45 @@ static int evdev_handle_set_keycode_v2(s
+>  	return input_set_keycode(dev, &ke);
+>  }
+> 
+> +static int evdev_attach_wakeup_source(struct evdev *evdev,
+> +				      struct evdev_client *client)
+> +{
+> +	struct wakeup_source *ws;
+> +	char name[28];
+> +
+> +	if (client->wakeup_source)
+> +		return 0;
+> +
+> +	snprintf(name, sizeof(name), "%s-%d",
+> +		 dev_name(&evdev->dev), task_tgid_vnr(current));
 
-Cheers!
-MyungJoo.
+This does not look like it will work well with tasks in different pid
+namespaces. What should happen, I think, is the wakeup_source should hold a
+reference to either the struct pid of current or current itself. Then
+when someone reads the file you should get the pid vnr in the reader's
+pid namespace. That way instead of a bogus pid vnr 0 would show up if
+"current" here is not in the reader's pid namepsace.
 
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+Cheers,
+	-Matt Helsley
+
