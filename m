@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab2BXWtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:49:33 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:49851 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2BXWtc (ORCPT
+	id S932432Ab2BXWuN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:50:13 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40874 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab2BXWuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:49:32 -0500
-X-SENDER-IP: [85.230.168.211]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvuEAH4TSE9V5qjTPGdsb2JhbABDiW2oGwOBBBkBAQEBNzSBcwEBBTocIxAIAxguFCUKGogdt3sTikqCYgsDDw0CDxUCAwMChS0OAwyDD2MElTqFbY0E
-X-IronPort-AV: E=Sophos;i="4.73,478,1325458800"; 
-   d="scan'208";a="50181498"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 24 Feb 2012 23:49:30 +0100
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120224224930.GA5684@polaris.bitmath.org>
-References: <20120224191535.GA4505@polaris.bitmath.org>
- <20120224192643.GB24120@kroah.com>
- <20120224201027.GA4859@polaris.bitmath.org>
- <20120224201655.GA5994@kroah.com>
- <20120224203715.GA4995@polaris.bitmath.org>
- <20120224205651.GA13333@kroah.com>
- <20120224212238.GA5178@polaris.bitmath.org>
- <20120224213027.GB15735@thunk.org>
- <20120224221459.GA5254@polaris.bitmath.org>
- <20120224222034.GB28198@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224222034.GB28198@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Feb 2012 17:50:11 -0500
+Date: Fri, 24 Feb 2012 17:50:06 -0500 (EST)
+Message-Id: <20120224.175006.1161090053765926485.davem@davemloft.net>
+To: santoshprasadnayak@gmail.com
+Cc: benve@cisco.com, roprabhu@cisco.com, neepatel@cisco.com,
+        nistrive@cisco.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/2] enic: Silence Sparse Warning: "dubious: x | !y"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 24 Feb 2012 14:50:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 02:20:34PM -0800, Greg KH wrote:
-> On Fri, Feb 24, 2012 at 11:14:59PM +0100, Henrik Rydberg wrote:
-> > The main issue that set me off has been sufficiently diluted in the
-> > (selective) discussion so as to no longer make sense as a reply: At
-> > some point, in-tree or out-of-tree will no longer be distinguishable,
-> > and the question is if/when/why something would/should happen as a
-> > consequence. A matter of politics, if you will. It seemed like an
-> > honest question starting this thread, and I think it is fair to keep
-> > it in mind as such.
+From: santosh nayak <santoshprasadnayak@gmail.com>
+Date: Fri, 24 Feb 2012 22:27:34 +0530
+
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
 > 
-> If something happens to require such a change in the future, we will
-> deal with it, at that time.  Remember the rule, "Linux is evolution, not
-> intelligent design."
+> Sparse is giving the following warning:
+> "warning: dubious: x | !y"
+> 
+> "enic_are_pp_different" is static and expected to return true or false.
+> Logical or is indended here. With logical or, in best case, execution will be
+> faster because if leftmost operand is true then no need to check other operands.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-Who "we" is is exactly the point.
-
-For the not-so-important record, evolution does actually create
-intelligent designs.
-
-Thanks,
-Henrik
+As others have explained, this code is intentional.  It's faster because
+the resulting code has less branches and therefore less potential
+branch mispredictions.
