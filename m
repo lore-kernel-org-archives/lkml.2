@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab2BWX6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 18:58:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:41748 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab2BWX6K (ORCPT
+	id S1757389Ab2BXAD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:03:29 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54224 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab2BXAD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 18:58:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.229.77.79 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 0/5] x86: Cleanup and simplify cpu-specific data
-Date: Thu, 23 Feb 2012 19:57:51 -0400
-Message-Id: <1330041476-719-1-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.9.1
+	Thu, 23 Feb 2012 19:03:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.211.102 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Thu, 23 Feb 2012 16:03:17 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Spencer Krum <nibz@cat.pdx.edu>
+Cc: nab@linux-iscsi.org, rdunlap@xenotime.net, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        MostAwesomeDude@gmail.com, Spencer O Krum <krum.spencer@gmail.com>
+Subject: Re: [PATCH] Changed alocate to allocate in
+ Documentation/target/tcm_mod_builder.py
+Message-ID: <20120224000317.GA1055@kroah.com>
+References: <1330041039-26284-1-git-send-email-nibz@cat.pdx.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330041039-26284-1-git-send-email-nibz@cat.pdx.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various per-cpu fields are define in arch/x86/kernel/smpboot.c that are
-basically equivalent to the cpu-specific data in struct cpuinfo_x86.
-By moving these fields into the structure, a number of codepaths can be
-simplified since they no longer need to care about those fields not
-existing on !SMP builds.
+On Thu, Feb 23, 2012 at 03:50:39PM -0800, Spencer Krum wrote:
+> From: Spencer O Krum <krum.spencer@gmail.com>
+> 
+> Signed-off-by: Spencer Krum <nibz@cat.pdx.edu>
+> ---
+>  Documentation/target/tcm_mod_builder.py |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-The size effects on allno (UP) and allyes (MAX_SMP) kernels are as
-follows:
+<formletter>
 
-   text	   	data	    	bss	    	dec	    	hex	filename
-1586721	 	304864	 	506208		2397793	 	249661	vmlinux.allno
-1588517	 	304928	 	505920		2399365	 	249c85	vmlinux.allno.after
-84706053	13212311	42434560	140352924	85d9d9c	vmlinux.allyes
-84705333	13213799	42434560	140353692	85da09c	vmlinux.allyes.afte
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-As can be seen, the kernels get slighly larger, but the code reduction/
-simplification should be enough to compensate for it.
-
-Kevin Winchester (5):
-  x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
-  x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
-  x86: Move per cpu cpu_sibling_map to a field in struct cpuinfo_x86
-  x86: Move per cpu cpu_core_map to a field in struct cpuinfo_x86
-  x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings
-    into common.c
-
- arch/x86/include/asm/perf_event_p4.h  |   14 +----
- arch/x86/include/asm/processor.h      |   10 ++++
- arch/x86/include/asm/smp.h            |   26 +---------
- arch/x86/include/asm/topology.h       |   10 ++--
- arch/x86/kernel/apic/apic_numachip.c  |    2 +-
- arch/x86/kernel/cpu/amd.c             |   18 ++-----
- arch/x86/kernel/cpu/common.c          |    7 ++-
- arch/x86/kernel/cpu/intel_cacheinfo.c |   19 ++-----
- arch/x86/kernel/cpu/mcheck/mce_amd.c  |    9 ++--
- arch/x86/kernel/cpu/perf_event_p4.c   |    4 +-
- arch/x86/kernel/cpu/proc.c            |    8 +--
- arch/x86/kernel/cpu/topology.c        |    2 -
- arch/x86/kernel/process.c             |    3 +-
- arch/x86/kernel/smpboot.c             |   95 +++++++++++++--------------------
- arch/x86/kernel/tsc_sync.c            |    2 +-
- arch/x86/oprofile/nmi_int.c           |    6 --
- arch/x86/oprofile/op_model_p4.c       |   11 +----
- arch/x86/xen/smp.c                    |    6 --
- drivers/cpufreq/acpi-cpufreq.c        |    2 +-
- drivers/cpufreq/p4-clockmod.c         |    4 +-
- drivers/cpufreq/powernow-k8.c         |   13 +----
- drivers/cpufreq/speedstep-ich.c       |    6 +-
- drivers/hwmon/coretemp.c              |    6 +--
- 23 files changed, 92 insertions(+), 191 deletions(-)
-
--- 
-1.7.9.1
-
+</formletter>
