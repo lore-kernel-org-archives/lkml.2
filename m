@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2BXTdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:33:09 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37817 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab2BXTdH (ORCPT
+	id S1757595Ab2BXTgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:36:03 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:61768 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754435Ab2BXTgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:33:07 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.135.34 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 11:26:43 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120224192643.GB24120@kroah.com>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
- <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
- <20120224153811.GA16535@kroah.com>
- <1330103229.23014.130.camel@groeck-laptop>
- <20120224171752.GB9485@kroah.com>
- <20120224183423.GA23284@kroah.com>
- <20120224191535.GA4505@polaris.bitmath.org>
+	Fri, 24 Feb 2012 14:36:00 -0500
+Date: Fri, 24 Feb 2012 14:35:57 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Kees Cook <keescook@chromium.org>, Greg KH <gregkh@linuxfoundation.org>,
+        David Windsor <dwindsor@gmail.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        kernel-hardening@lists.openwall.com,
+        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
+        spender@grsecurity.net
+Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
+Message-ID: <20120224193557.GB8140@elliptictech.com>
+References: <20120217175445.GC29902@kroah.com>
+ <20120217193719.GA4187@albatros>
+ <20120217233908.GA24047@dztty>
+ <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
+ <20120218161849.GA4176@kroah.com>
+ <CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
+ <20120224183726.GB23284@kroah.com>
+ <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
+ <20120224190549.GA8034@elliptictech.com>
+ <20120224191300.GA12553@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120224191535.GA4505@polaris.bitmath.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120224191300.GA12553@albatros>
+Organization: Elliptic Technologies Inc.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 08:15:35PM +0100, Henrik Rydberg wrote:
-> > > Given the choice, I would be quite happy to piss off some robots. Call
-> > > it a prejudice if you like ;).
+On 2012-02-24 23:13 +0400, Vasiliy Kulikov wrote:
+> On Fri, Feb 24, 2012 at 14:05 -0500, Nick Bowler wrote:
+> > On 2012-02-24 10:52 -0800, Kees Cook wrote:
+> > > On Fri, Feb 24, 2012 at 10:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
+> > [...]
+> > > >> diff --git a/include/linux/kref.h b/include/linux/kref.h
+> > > >> index 9c07dce..fc0756a 100644
+> > > >> --- a/include/linux/kref.h
+> > > >> +++ b/include/linux/kref.h
+> > > >> @@ -38,8 +38,12 @@ static inline void kref_init(struct kref *kref)
+> > > >>   */
+> > > >>  static inline void kref_get(struct kref *kref)
+> > > >>  {
+> > > >> +   int rc = 0;
+> > > >>     WARN_ON(!atomic_read(&kref->refcount));
+> > > >> -   atomic_inc(&kref->refcount);
+> > > >> +   smp_mb__before_atomic_inc();
+> > > >> +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
+> > > >> +   smp_mb__after_atomic_inc();
+> > > >> +   BUG_ON(!rc);
+> > > >
+> > > > So you are guaranteeing to crash a machine here if this fails?  And you
+> > > > were trying to say this is a "security" based fix?
+> > > 
+> > > This is the same principle as the stack protector. When something has
+> > > gone horribly wrong and cannot be sensibly recovered from, crash the
+> > > machine. Wrapping the refcount would cause all kinds of problems, so
+> > > that certainly seems worthy of a BUG().
 > > 
-> > You can't control how people use an interface.  You will note that there
-> > are no stupid users of the UIO interface in the kernel today, we can't
-> > control what people do in the privacy of their own companies/homes,
-> > despite numerous governments trying to do so in the past.
-> > 
-> > So yes, people will always do stupid, foolish things.  And they were
-> > doing them before UIO came along, now they just have the chance to at
-> > least do those foolish things in a way that interfaces with the kernel
-> > in a semi-sane manner, not messing anything else in the kernel up.
+> > But in this case, the principle does not apply because we can recover.
+> > The reason we cannot recover from the stack protector case is because
+> > the stack protector is reacting after the fact, which is not the case
+> > here.  Simply peg the reference count at the maximum value, neither
+> > incrementing it nor decrementing it further.
 > 
-> So the question is; can the uio example be repeated in other areas, to
-> bring more kernel power to userspace?
+> ...and simply loose one reference, which leads to use-after-free.
 
-What exactly do you mean by "more kernel power"?  You can write
-userspace char drivers, filesystems, usb drivers, usb gadget drivers,
-and lots of other things today with the interfaces we provide from the
-kernel.
+Please explain how a use-after-free could possibly occur if the
+reference count is never incremented or decremented again?
 
-And even better yet, please show what you mean with patches.
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
-greg k-h
