@@ -1,182 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab2BXKA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 05:00:59 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:52929 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756690Ab2BXKA6 (ORCPT
+	id S1756751Ab2BXKDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 05:03:53 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37695 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab2BXKDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 05:00:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of balbi@ti.com designates 10.152.144.39 as permitted sender) smtp.mail=balbi@ti.com
-Date: Fri, 24 Feb 2012 12:00:53 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: balbi@ti.com, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, andiry.xu@amd.com, clemens@ladisch.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] usb: enable pci MSI/MSIX in usb core
-Message-ID: <20120224100051.GF17178@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1329728733-32419-1-git-send-email-alex.shi@intel.com>
- <1329728733-32419-2-git-send-email-alex.shi@intel.com>
- <1329728733-32419-3-git-send-email-alex.shi@intel.com>
- <20120223034147.GD27250@xanatos>
- <20120223124147.GL18463@legolas.emea.dhcp.ti.com>
- <1330048028.21053.1176.camel@debian>
+	Fri, 24 Feb 2012 05:03:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.74.197 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
+Date: Fri, 24 Feb 2012 02:03:49 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
+        Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
+In-Reply-To: <alpine.LFD.2.02.1202240856370.1917@tux.localdomain>
+Message-ID: <alpine.DEB.2.00.1202240200380.24971@chino.kir.corp.google.com>
+References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com> <20120223152226.GA2014@x61.redhat.com> <alpine.DEB.2.00.1202231509510.26362@chino.kir.corp.google.com>
+ <alpine.LFD.2.02.1202240856370.1917@tux.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhtSGe8h3+lMyY1M"
-Content-Disposition: inline
-In-Reply-To: <1330048028.21053.1176.camel@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 24 Feb 2012, Pekka Enberg wrote:
 
---zhtSGe8h3+lMyY1M
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Right. We should drop the sysctl and make it into a kernel command line 
+> debugging option instead.
+> 
 
-On Fri, Feb 24, 2012 at 09:47:08AM +0800, Alex,Shi wrote:
->=20
-> > > Felipe, can you please review this patch for the effects on non-PCI
-> > > hosts?  I think nothing will change, since this patchset just modifies
-> > > the USB core PCI initialization flow, but I need your eyes on this. :)
-> >=20
-> > Sure thing :-)
->=20
-> Thanks a lot!
->=20
-> > > > +/* Check for buggy HCD devices, and driver's expectation for MSI.
-> >=20
-> > please use the preferred multi-line comment style.
->=20
-> See and thanks!
->=20
-> > > > +			retval =3D request_irq(hcd->msix_entries[i].vector,
-> > > > +					(irq_handler_t)hcd->driver->msix_irq,
-> >=20
-> > do you really need this cast here ?
->=20
-> Yes, otherwise the complain like here:
-> drivers/usb/core/hcd-pci.c:330: warning: passing argument 2 of =E2=80=98r=
-equest_irq=E2=80=99 from incompatible pointer type
-> include/linux/interrupt.h:134: note: expected =E2=80=98irq_handler_t=E2=
-=80=99 but argument is of type =E2=80=98enum irqreturn_t (* const)(int,  st=
-ruct usb_hcd *)=E2=80=99
-
-Alan, Sarah, is the definition of the IRQ handler wrong on the hc_driver
-structure ?
-
-Alex, I think you should fix your definition for the msix_irq handler.
-
-> > > > +int usb_hcd_request_irqs(struct usb_hcd *hcd, unsigned int irqnum,
-> > > > +		unsigned long irqflags)
-> > > > +{
-> > > > +	int retval =3D 1;
-> > > > +
-> > > > +#ifdef CONFIG_PCI
-> > > > +	retval =3D usb_hcd_request_msi_msix_irqs(hcd, irqnum, irqflags);
-> > > > +#endif
-> >=20
-> > I would like it better if the #ifdef is in the function body, something
-> > like:
-> >=20
-> > int usb_hcd_request_msi_msix_irqs(struct hcd *hcd, int irqnum, int irqf=
-lags)
-> > {
-> > #ifdef CONFIG_PCI
-> > 	/* blablabla */
-> > #else
-> > 	return -ENODEV;
-> > #endif
-> > }
->=20
-> The function usb_hcd_request_msi_msix_irqs() is defined in hcd-pci.c. If
-> you don't like to see '#ifdef CONFIG_PCI' in hcd.c, maybe we can add a
-> same name function usb_hcd_request_msi_msix_irqs() in hcd.h for non-pci
-> environment.  Is that ok of the following?=20
-> ------
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index 579cbd3..9bc6568 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -2365,12 +2365,9 @@ static int usb_hcd_request_default_irqs(struct usb=
-_hcd *hcd,
->  int usb_hcd_request_irqs(struct usb_hcd *hcd, unsigned int irqnum,
->                 unsigned long irqflags)
->  {
-> -       int retval =3D 1;
-> +       int retval =3D 0;
-> =20
-> -#ifdef CONFIG_PCI
-> -       retval =3D usb_hcd_request_msi_msix_irqs(hcd, irqnum, irqflags);
-> -#endif
-> -       if (retval)
-> +       if (usb_hcd_request_msi_msix_irqs(hcd, irqnum, irqflags))
->                 retval =3D usb_hcd_request_default_irqs(hcd, irqnum, irqf=
-lags);
-> =20
->         return retval;
-> diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-> index 5253c02..6743ed8 100644
-> --- a/include/linux/usb/hcd.h
-> +++ b/include/linux/usb/hcd.h
-> @@ -413,6 +413,13 @@ extern int usb_hcd_register_msi_msix_irqs(struct usb=
-_hcd *hcd);
->  #ifdef CONFIG_PM_SLEEP
->  extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
->  #endif
-> +
-> +#else
-> +extern int usb_hcd_request_msi_msix_irqs(struct usb_hcd *hcd,
-> +               unsigned int irqnum, unsigned long irqflags)
-> +{
-> +       return -ENODEV;
-> +}
->  #endif /* CONFIG_PCI */
-
-sure, makes sense, but that should be static inline I guess.
-
->  /* pci-ish (pdev null is ok) buffer alloc/mapping support */
->=20
-> > Yeah, I don't think this will break anything for my non-PCI stuff, but
-> > the very fact that usbcore knows so much about PCI is quite a bummer. I
-> > think usbcore should know about USB Devices and HCDs, no matter if it's
-> > PCI or platform BUS or whatever else, but that's just me and changing
-> > that would be quite a big re-work.
-> >=20
->=20
-> Thanks again for all comments!
-
-np.
-
---=20
-balbi
-
---zhtSGe8h3+lMyY1M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPR1/TAAoJEIaOsuA1yqREo2UQAKItllZ4wqW+SnWK37R4rnvt
-LxZPp93x70yljftFtkrbpDvvreTFvEJ4hbuOw6uOwCITG7P4FOt7967ln+c1c80U
-n8ortmq52dSuMuKiZJ3QyEJPRNAZpQuyCFnixD9iuNbhuLmXmPGedS3jmkM8f4AS
-o1wuvnq2gRSpbFD96hCeioKALILHrmak90UBZ25yMm6VrvKG6mhi7FUZ+jgL6mZl
-5rEN5RHKYaXDFRfWBKbZfV9B8eCFKkFB8os4AeSSV2IuBiEp5QMVmfQbg3wO3+jo
-h5E9Zaj3yFC8MA1qKSdWHV7QzPjIfj3VZylVLU/OisccrD8nDp5Kv68sANwNnv3l
-OoK16Qw+ms/qXFeyxpw6YaiJVKnLUJCe9lI0xJRdF+q3PD7XAV12QDUwVkr7xF28
-PfaHr/9VOXA/lKVXzQ0XsusnmL1KR/tV1IJ0k422Vk1LZ7gfpNvZKHXfSY/TwCuR
-UXSp6MdyojwkvDScrd+/GAuidUtsYLSqcydYlRh7wt4wPuQBrwbEzkUTaGu5GohC
-F412u7W/kuBY/NFIndXBP/Okdy3XkcamJkPonWvgLt3/sC8Ucd5hRXulqrTIrhx1
-si5iH9hN2+7ZizbKv3iZ3dQiKzY2EiEFNOxRp0IQmWbdhsfzvzxAeGJP9Wt5hhQE
-JeDYRYrXuLl3ybPlCt3h
-=y8yU
------END PGP SIGNATURE-----
-
---zhtSGe8h3+lMyY1M--
+I like how slub handles this when it can't allocate more slab with 
+slab_out_of_memory() and has the added benefit of still warning even with 
+__GFP_NORETRY that the oom killer is never called for.  If there's really 
+a slab leak happening, there's a good chance that this diagnostic 
+information is going to be emitted by the offending cache at some point in 
+time if you're using slub.  This could easily be extended to slab.c, so 
+it's even more reason not to include this type of information in the oom 
+killer.
