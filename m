@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab2BXQwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:52:54 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45964 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab2BXQwx (ORCPT
+	id S1757843Ab2BXQyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:54:19 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:48201 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753007Ab2BXQyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:52:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.102.132 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Fri, 24 Feb 2012 11:54:18 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HY2XSCMVM1mz2pUuj4Ep8LTuGTQFI1vq7nWxFHYvcjzxTSd
+ D48oJaKvhEvJLkiP2M.r3W1bFoMoYzPhYI8Kc3Jf9IYz2kkHKN.6lGu3MFnT
+ YB.sv4Suf8w12Mn9W2rtS993QsctaZ5jvDycY_ecWl9xNI1Q7k570m3Q8ZQK
+ tZ9mWf4khSMPNYMvSNAqrQwq_wyw9YcaZOAYT.h9lkUvrCR9TVblaQZ9pDbZ
+ Iyb7jOtpWsZ3JyoSy5D0JeLeLDkDga4O2zYRV809OeS0tl0IeKqnJViQ0JSR
+ GOdXqKGAc.Pd8XGxTdBrIQsGiqpBdQtUJM0tznjy7UfM565puNuZSSpqSIoN
+ oUGUWFX6cf4I7ok1j_Nkq5oYvbZpVAUe0kVR.SEAP4t4uasRmFaW4Ykix5DB
+ 4
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 24 Feb 2012 10:54:15 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+In-Reply-To: <4F47BF56.6010602@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1202241053220.3726@router.home>
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home>
+ <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1202241112350.22368@twin.jikos.cz>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
- <alpine.LRH.2.00.1202241112350.22368@twin.jikos.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 24 Feb 2012 08:52:32 -0800
-X-Google-Sender-Auth: J8py6EpJhEGClcNkMN0NALnlPOY
-Message-ID: <CA+55aFwg4EpUhbymOHrSt88FEmZWniMx4goCkk-xK7dwiKcsZg@mail.gmail.com>
-Subject: Re: Linux 3.3-rc4
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 2:39 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+On Fri, 24 Feb 2012, Dave Hansen wrote:
+
+> On 02/24/2012 07:20 AM, Christoph Lameter wrote:
+> > Subject: migration: Do not do rcu_read_unlock until the last time we need the task_struct pointer
+> >
+> > Migration functions perform the rcu_read_unlock too early. As a result the
+> > task pointed to may change. Bugs were introduced when adding security checks
+> > because rcu_unlock/lock sequences were inserted. Plus the security checks
+> > and do_move_pages used the task_struct pointer after rcu_unlock.
+> >
+> > Fix those issues by removing the unlock/lock sequences and moving the
+> > rcu_read_unlock after the last use of the task struct pointer.
+> >
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
 >
-> I just got the BUG below (with g45196ce being the topmost commit).
->
-> It happened when trying to start 'gwenview', but I am not able to
-> reproduce it again. Adding a few people to CC just in case someone
-> immediately sees what might be the problem.
+> It doesn't fix the code duplication, but it definitely does fix the bug
 
-Hmm. That is the code that increments the file counter, afaik:
+Yes I did not want to override all your good work.
 
-   0:     48 81 63 30 ff df ff ff   andq   $0xffffffffffffdfff,0x30(%rbx)
-   8:     48 c7 43 20 00 00 00 00   movq   $0x0,0x20(%rbx)
-  10:     48 c7 43 18 00 00 00 00   movq   $0x0,0x18(%rbx)
-  18:     48 85 d2                  test   %rdx,%rdx
-  1b:     74 4f                     je     0x6c
-  1d:     48 8b 42 18               mov    0x18(%rdx),%rax
-  21:     4c 8b a2 30 01 00 00      mov    0x130(%rdx),%r12
-  28:*    48 8b 40 30               mov    0x30(%rax),%rax     <--
-trapping instruction
-  2c:     f0 48 ff 42 68            lock incq 0x68(%rdx)
-  31:     f6 43 31 08               testb  $0x8,0x31(%rbx)
-  35:     74 07                     je     0x3e
+Could you do another patch that removed the duplication?
 
-and that preceding test is testing for a NULL "file", and then the
-
-   mov    0x18(%rdx),%rax
-
-is "dentry = file->f_path.dentry", while the trapping "mov
-0x30(%rax),%rax" is the continuation of that: "dentry->d_inode" (and
-the "lock incq" is the get_file() - it's incrementing the file
-counter). That "mov 0x130(%rdx),%r12" in between is doing "mapping =
-file->f_mapping"
-
-So dentry seems to be NULL for you.
-
-> The machine has gone through several suspend-resume cycles before this
-> happened, so it might well also be some memory corruption caused by a
-> random driver.
-
-I almost think it is, because "file->dentry" should never be NULL in a
-mapping afaik. Especially as your "mapping" certainly isn't NULL (it's
-in %r12, so you can see it in your register dump).
-
-This isn't some unusual code sequence either, so I don't see it as
-some random latent bug that is just very unlikely and hard to trigger
-in that code itself.
-
-I'll think about it, but my first reaction is "memory corruption". Do
-you think you could try to run with a kernel that has SLAB debugging
-and poisoning on? If it's a stale pointer dereference that has cleared
-that dentry, that _might_ show it closer to the actual bug (rather
-than a long time later when the NULL dereference happens).
-
-                    Linus
