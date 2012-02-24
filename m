@@ -1,32 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab2BXRM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:12:26 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:32857 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754041Ab2BXRMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:12:24 -0500
-Message-ID: <4F47C333.3060002@linux.vnet.ibm.com>
-Date: Fri, 24 Feb 2012 09:04:51 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1757950Ab2BXRSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:18:05 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35430 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041Ab2BXRSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 12:18:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.222.194 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 09:13:44 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jidong Xiao <jidong.xiao@gmail.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224171344.GA9485@kroah.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+ <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+ <20120224153811.GA16535@kroah.com>
+ <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+ <20120224165448.GA8751@kroah.com>
+ <CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home> <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home>
-In-Reply-To: <alpine.DEB.2.00.1202241053220.3726@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022417-5112-0000-0000-00000592E599
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 08:54 AM, Christoph Lameter wrote:
-> Could you do another patch that removed the duplication?
+On Fri, Feb 24, 2012 at 12:06:54PM -0500, Jidong Xiao wrote:
+> On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> As to "Linux isn't a microkernel", even though the debate between
+> >> Linux and microkernel have never stopped,
+> >
+> > Um, who is having such a debate?  We aren't, so I don't think the debate
+> > has ever started.
+> >
+> 
+> Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
+> http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
 
-Yup, working on it already.
+That was 20 years ago, to assume that anyone rational was still having
+that debate today is insane.
 
