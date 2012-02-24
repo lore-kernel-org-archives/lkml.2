@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab2BXGOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 01:14:10 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:32869 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab2BXGOI (ORCPT
+	id S1754937Ab2BXGOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 01:14:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39186 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab2BXGOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 01:14:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.180.80.40 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
-Date: Fri, 24 Feb 2012 14:13:50 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venki Pallipadi <venki@google.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v1
-Message-ID: <20120224061350.GB17543@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
- <1329989454.24994.57.camel@twins>
- <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
- <20120224054150.GA17543@zhy>
+	Fri, 24 Feb 2012 01:14:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.42.18.195 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120224054150.GA17543@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1330041880-12406-2-git-send-email-swarren@nvidia.com>
+References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
+	<1330041880-12406-2-git-send-email-swarren@nvidia.com>
+Date: Fri, 24 Feb 2012 07:14:48 +0100
+Message-ID: <CACRpkdYjtKqNiOUn4ydS1bgw93BgKK-7nMA59ZGNL-ohsXshvA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pinctrl: Re-order struct pinctrl_map
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 01:41:50PM +0800, Yong Zhang wrote:
-> On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
-> > On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > Why not scheduler_ipi()?
-> > 
-> > Was trying to avoid irq_enter/exit. As the work here is done in idle
-> > thread context, I though we could avoid enter/exit. 
-> 
-> It seems we could not.
-> At least RCU need it, see commit c5d753a55, otherwise we will get
-> warning like 'RCU used illegally from extended quiescent state!'
+On Fri, Feb 24, 2012 at 1:04 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-[Off topic]
-This remind me that we should have moved the irq_enter()/irq_exit() to
-each arch's related irq handler.
-see: http://marc.info/?l=linux-kernel&m=130709505700821&w=2
+> The lookup key in struct pinctrl_map is (.dev_name, .name). Re-order the
+> struct definition to put the lookup key fields first, and the result
+> values afterwards. To me at least, this slightly better reflects the
+> lookup process.
+>
+> Update the documentation in a similar fashion.
+>
+> Note: PIN_MAP*() macros aren't updated; I plan to update this once later
+> when enhancing the mapping table format to support pin config to reduce
+> churn.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-So Peter, is there someone alread on it? or it still worth doing now?
+Rebased and applied with Dong's ACK.
 
 Thanks,
-Yong
+Linus Walleij
