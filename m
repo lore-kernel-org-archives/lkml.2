@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab2BXLdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 06:33:22 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38970 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab2BXLdU (ORCPT
+	id S1757395Ab2BXLdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 06:33:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37514 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab2BXLdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 06:33:20 -0500
-Message-ID: <4F47756F.1020602@linux.vnet.ibm.com>
-Date: Fri, 24 Feb 2012 17:03:03 +0530
-From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: acme@infradead.org
-CC: ananth@in.ibm.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] perf - ensure offset provided during probe addition is
- not greater than function length
-References: <4F45FABE.90104@linux.vnet.ibm.com> <4F473F33.4060409@linux.vnet.ibm.com> <4F47673B.6000103@hitachi.com>
-In-Reply-To: <4F47673B.6000103@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022411-2398-0000-0000-00000480393B
+	Fri, 24 Feb 2012 06:33:32 -0500
+Message-ID: <1330083196.11248.24.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Date: Fri, 24 Feb 2012 12:33:16 +0100
+In-Reply-To: <20120223213847.GK19691@redhat.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120222163858.GB4128@redhat.com> <20120222165714.GC4128@redhat.com>
+	 <1329990094.24994.64.camel@twins> <20120223213847.GK19691@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you please pick up this patch?
+On Thu, 2012-02-23 at 16:38 -0500, Vivek Goyal wrote:
+> > > Again, it does not mean I am advocating flat hiearchy. I am just wondering
+> > > in case of fully nested hierarchies (task at same level as groups), how
+> > > does one explain it to a layman user who understands things in terms of
+> > > % of resources. 
+> > 
+> > If your complete control is % based then I would assume its a % of a %.
+> > Simple enough.
+> 
+> But % of % will vary dynamically and not be static. So if root has got
+> 100% of resources and we want 25% of that for a group, then hierarchy
+> might look as follows.
+> 
+>                                 root
+>                                 / | \
+>                                T1 T2 g1
+> 
+> T1, T2 are tasks and g1 is the group needing 25% of root's resources. Now
+> number of tasks running in parallel to g1 will determine its effective %
+> and tasks come and go. So the only way to do this would be that move T1
+> and T2 in a child group under root and make sure new tasks don't show up
+> in root. 
 
-On 02/24/2012 04:02 PM, Masami Hiramatsu wrote:
+Which is exactly that the scheduler stuff does.. so tough luck for the
+sysad who can't grasp it.
 
-> (2012/02/24 16:41), Prashanth Nageshappa wrote:
->> perf probe allows kprobe to be inserted at any offset from a function
->> start, which results in adding kprobes to unintended location.
->> (example: perf probe do_fork+10000 is allowed even though size of
->> do_fork is ~904)
->>
->> This patch will ensure probe addition fails when the offset specified
->> is greater than size of the function.
->>
->>
->> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-> 
-> This seems good to me.
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> Thank you,
-> 
->> ---
->>
->>  tools/perf/util/probe-finder.c |   12 +++++++++++-
->>  1 files changed, 11 insertions(+), 1 deletions(-)
->>
->> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
->> index 5d73262..d298f94 100644
->> --- a/tools/perf/util/probe-finder.c
->> +++ b/tools/perf/util/probe-finder.c
->> @@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
->>  static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
->>  				  bool retprobe, struct probe_trace_point *tp)
->>  {
->> -	Dwarf_Addr eaddr;
->> +	Dwarf_Addr eaddr, highaddr;
->>  	const char *name;
->>
->>  	/* Copy the name of probe point */
->> @@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
->>  				   dwarf_diename(sp_die));
->>  			return -ENOENT;
->>  		}
->> +		if (dwarf_highpc(sp_die, &highaddr) != 0) {
->> +			pr_warning("Failed to get end address of %s\n",
->> +				   dwarf_diename(sp_die));
->> +			return -ENOENT;
->> +		}
->> +		if (paddr > highaddr) {
->> +			pr_warning("Offset specified is greater than size of %s\n",
->> +				   dwarf_diename(sp_die));
->> +			return -EINVAL;
->> +		}
->>  		tp->symbol = strdup(name);
->>  		if (tp->symbol == NULL)
->>  			return -ENOMEM;
->>
-> 
-> 
+> Otherwise creating a group under root does not ensure that you get minimum
+> % of resource. It just makes sure that you can't get more than 25% of
+> % resources when things are tight. 
 
-
+You never said anything about minimum resource guarantees in the initial
+problem statement.
