@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab2BXLzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 06:55:06 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:20746 "EHLO
+	id S1756064Ab2BXMGs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 07:06:48 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41885 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332Ab2BXLzD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752282Ab2BXMGr convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 24 Feb 2012 06:55:03 -0500
-Message-Id: <4F4788A50200007800074A26@nat28.tlf.novell.com>
+	Fri, 24 Feb 2012 07:06:47 -0500
+Message-Id: <4F478B630200007800074A31@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 24 Feb 2012 11:55:01 +0000
+Date: Fri, 24 Feb 2012 12:06:43 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <ak@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] x86-64: improve insn scheduling in
- SAVE_ARGS_IRQ
+Cc: <srostedt@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix CFI annotations for NMI nesting code
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,44 +22,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one case, use an address register that was computed earlier (and
-with a simpler instruction), thus reducing the risk of a stall.
+The saving and restoring of %rdx wasn't annotated at all, and the
+jumping over sections where state gets partly restored wasn't handled
+either.
 
-In the second case, eliminate a branch by using a conditional move (as
-is already done in call_softirq and xen_do_hypervisor_callback).
+Further, by folding the pushing of the previous frame in repeat_nmi
+into that which so far was immediately preceding restart_nmi (after
+moving the restore of %rdx ahead of that, since it doesn't get used
+anymore when pushing prior frames), annotations of the replicated
+frame creations can be made consistent too.
+
+Finally, the END()/CFI_ENDPROC marker of nmi should be at the very
+end, rather than giving repeat_nmi its own frame (as this isn't a
+separate function).
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
 
 ---
- arch/x86/kernel/entry_64.S |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/kernel/entry_64.S |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 --- 3.3-rc4/arch/x86/kernel/entry_64.S
-+++ 3.3-rc4-x86_64-entry-sched/arch/x86/kernel/entry_64.S
-@@ -320,7 +320,7 @@ ENDPROC(native_usergs_sysret64)
- 	movq %rsp, %rsi
++++ 3.3-rc4-x86_64-nmi-cfi/arch/x86/kernel/entry_64.S
+@@ -1530,6 +1530,7 @@ ENTRY(nmi)
  
- 	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
--	testl $3, CS(%rdi)
-+	testl $3, CS-RBP(%rsi)
- 	je 1f
- 	SWAPGS
+ 	/* Use %rdx as out temp variable throughout */
+ 	pushq_cfi %rdx
++	CFI_REL_OFFSET rdx, 0
+ 
  	/*
-@@ -330,11 +330,10 @@ ENDPROC(native_usergs_sysret64)
- 	 * moving irq_enter into assembly, which would be too much work)
+ 	 * Check the special variable on the stack to see if NMIs are
+@@ -1547,6 +1548,7 @@ ENTRY(nmi)
  	 */
- 1:	incl PER_CPU_VAR(irq_count)
--	jne 2f
--	mov PER_CPU_VAR(irq_stack_ptr),%rsp
-+	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
- 	CFI_DEF_CFA_REGISTER	rsi
+ 	lea 6*8(%rsp), %rdx
+ 	test_in_nmi rdx, 4*8(%rsp), nested_nmi, first_nmi
++	CFI_REMEMBER_STATE
  
--2:	/* Store previous stack value */
-+	/* Store previous stack value */
- 	pushq %rsi
- 	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
- 			0x77 /* DW_OP_breg7 */, 0, \
+ nested_nmi:
+ 	/*
+@@ -1578,10 +1580,12 @@ nested_nmi:
+ 
+ nested_nmi_out:
+ 	popq_cfi %rdx
++	CFI_RESTORE rdx
+ 
+ 	/* No need to check faults here */
+ 	INTERRUPT_RETURN
+ 
++	CFI_RESTORE_STATE
+ first_nmi:
+ 	/*
+ 	 * Because nested NMIs will use the pushed location that we
+@@ -1617,6 +1621,10 @@ first_nmi:
+ 	 * NMI may zero out. The original stack frame and the temp storage
+ 	 * is also used by nested NMIs and can not be trusted on exit.
+ 	 */
++	/* Do not pop rdx, nested NMIs will corrupt it */
++	movq (%rsp), %rdx
++	CFI_RESTORE rdx
++
+ 	/* Set the NMI executing variable on the stack. */
+ 	pushq_cfi $1
+ 
+@@ -1624,14 +1632,14 @@ first_nmi:
+ 	.rept 5
+ 	pushq_cfi 6*8(%rsp)
+ 	.endr
++	CFI_DEF_CFA_OFFSET SS+8-RIP
+ 
++restart_nmi:
+ 	/* Make another copy, this one may be modified by nested NMIs */
+ 	.rept 5
+ 	pushq_cfi 4*8(%rsp)
+ 	.endr
+-
+-	/* Do not pop rdx, nested NMIs will corrupt it */
+-	movq 11*8(%rsp), %rdx
++	CFI_DEF_CFA_OFFSET SS+8-RIP
+ 
+ 	/*
+ 	 * Everything below this point can be preempted by a nested
+@@ -1639,7 +1647,6 @@ first_nmi:
+ 	 * caused by an exception and nested NMI will start here, and
+ 	 * can still be preempted by another NMI.
+ 	 */
+-restart_nmi:
+ 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
+ 	subq $ORIG_RAX-R15, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+@@ -1665,8 +1672,6 @@ nmi_restore:
+ 	/* Clear the NMI executing stack variable */
+ 	movq $0, 10*8(%rsp)
+ 	jmp irq_return
+-	CFI_ENDPROC
+-END(nmi)
+ 
+ 	/*
+ 	 * If an NMI hit an iret because of an exception or breakpoint,
+@@ -1675,18 +1680,12 @@ END(nmi)
+ 	 * stack to jump to here when it does the final iret.
+ 	 */
+ repeat_nmi:
+-	INTR_FRAME
+ 	/* Update the stack variable to say we are still in NMI */
+ 	movq $1, 5*8(%rsp)
+-
+-	/* copy the saved stack back to copy stack */
+-	.rept 5
+-	pushq_cfi 4*8(%rsp)
+-	.endr
+-
+ 	jmp restart_nmi
+-	CFI_ENDPROC
+ end_repeat_nmi:
++	CFI_ENDPROC
++END(nmi)
+ 
+ ENTRY(ignore_sysret)
+ 	CFI_STARTPROC
 
 
 
