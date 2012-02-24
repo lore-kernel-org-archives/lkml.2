@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab2BXTVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:21:18 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8913 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab2BXTVR convert rfc822-to-8bit (ORCPT
+	id S1757091Ab2BXT1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:27:08 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:54868 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754135Ab2BXT1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:21:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 24 Feb 2012 11:20:52 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 24 Feb 2012 11:20:51 -0800
-Subject: RE: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
- and use it
-Thread-Topic: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
- and use it
-Thread-Index: AczyutSjxyOQsAS/TpeELsM2b+BcwQAW2kXQAASrJFA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCD1D@HQMAIL01.nvidia.com>
-References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
- <CACRpkdZWu_nYkWLxXBUv-VAQTMByDM37qACRf3im7R4GQgZc5A@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCC87@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCC87@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Feb 2012 14:27:07 -0500
+Message-ID: <4F47E47B.3000409@fb.com>
+Date: Fri, 24 Feb 2012 11:26:51 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
+References: <1326912662-18805-1-git-send-email-asharma@fb.com> <CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com> <4F468888.9090702@fb.com> <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-02-24_06:2012-02-24,2012-02-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Friday, February 24, 2012 10:10 AM:
-> Linus Walleij wrote at Thursday, February 23, 2012 11:09 PM:
-> > On Fri, Feb 24, 2012 at 1:04 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> >
-> > > This provides a single centralized name for the default state.
-> > >
-> > > Update PIN_MAP_* macros to use this state name, instead of requiring the
-> > > user to pass a state name in.
-> > >
-> > > Update documentation and mapping tables to use this.
-...
-> > I like the direction this is taking for sure. This is however not
-> > working because it break U300, no hogs nor device requests work
-> > after this patch so I cannot apply it.
-...
-> I think the fix for this is to replace the body of pinctrl_hog_maps()
-> with:
-> 
-> static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
-> {
->         int ret;
-> 
->         INIT_LIST_HEAD(&pctldev->pinctrl_hogs);
-> 
->         mutex_lock(&pinctrl_maps_mutex);
->         ret = pinctrl_hog_map(pctldev, PINCTRL_STATE_DEFAULT);
->         mutex_unlock(&pinctrl_maps_mutex);
-> 
->         return ret;
-> }
+On 2/23/12 6:47 PM, KAMEZAWA Hiroyuki wrote:
+>>
+>> In a distributed computing environment, a user submits a job to the
+>> cluster job scheduler. The job might involve multiple related
+>> executables and might involve multiple address spaces. But they're
+>> performing one logical task, have a single resource limit enforced by a
+>> cgroup.
+>>
+>> They don't have access to each other's VMAs, but if "accidentally" one
+>> of them comes across an uninitialized page with data from another task,
+>> it's not a violation of the security model.
+>>
+> How do you handle shared resouce, file-cache ?
+>
 
-Oh, that won't work; the second parameter to pinctrl_hog_map() is a
-map entry, not a state name.
+ From a security perspective or a resource limit perspective?
 
-Fixing this requires removing pctldev->pinctrl_hogs, and removing the hog
-debugfs files (since that all relies on storing a list of mapping entries
-that were hogged) and just doing a single pinctrl_get()/pinctrl_enable(),
-and storing the one resulting struct pinctrl. I already did that as part
-of my later patch for the API rework. I can extract that part into this
-patch, and couple it with introducing define PINCTRL_STATE_DEFAULT, and
-repost.
+Security: all processes in the cgroup run with the same uid and have the 
+same access to the filesystem. Multiple address spaces in a cgroup can 
+be thought of as an implementation detail.
 
--- 
-nvpublic
+Resource limit: We don't have strict enforcement right now. There is a 
+desire to include everything (file cache, slab memory) in the job's 
+memory resource limit.
 
+  -Arun
