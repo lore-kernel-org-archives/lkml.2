@@ -1,206 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2BXHVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 02:21:23 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45974 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270Ab2BXHUK (ORCPT
+	id S1755326Ab2BXHYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 02:24:12 -0500
+Received: from hulk.biessmann.org ([62.75.166.25]:53170 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab2BXHYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 02:20:10 -0500
-From: Santosh Y <santoshsy@gmail.com>
-To: James.Bottomley@hansenpartnership.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        yejin.moon@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, stephen.doel@linaro.org, sreekumar.c@samsung.com,
-        Santosh Yaraganavi <santoshsy@gmail.com>,
-        Vinayak Holikatti <vinholikatti@gmail.com>
-Subject: [PATCH v2 3/5] [SCSI] ufshcd: UFSHCI error handling
-Date: Fri, 24 Feb 2012 12:49:03 +0530
-Message-Id: <1330067945-9128-4-git-send-email-santoshsy@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
-References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
+	Fri, 24 Feb 2012 02:24:10 -0500
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jochen Friedrich <jochen@scram.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH v2] mod/file2alias: make modpost compile on darwin again
+Date: Fri, 24 Feb 2012 08:23:53 +0100
+Message-Id: <1330068233-12713-1-git-send-email-andreas@biessmann.de>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+References: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: 5a958f099c064083eb0a51d7412b49e7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Yaraganavi <santoshsy@gmail.com>
+commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
+the linux kernel on darwin hosts.
+This fix introduce some minimal glue to adopt linker section handling
+for darwin hosts.
 
-UFSHCI error handling includes support for:
- - UFS host controller errors
- - System bus errors
- - Unipro errors
-
-Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
-Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
-Reviewed-by: Arnd Bergmann <arnd@linaro.org>
-Reviewed-by: Vishak G <vishak.g@samsung.com>
-Reviewed-by: Girish K S <girish.shivananjappa@linaro.org>
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jochen Friedrich <jochen@scram.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>
+CC: "K. Y. Srinivasan" <kys@microsoft.com>
 ---
-v1 -> v2:
-	- ufshcd_do_reset(): change return value to SUCCESS/FAILED,
-	  since the function can also be called from UFSHCD registered
-	  SCSI midlayer error handling routines.
-	  Ex: .eh_host_reset_handler which expects return value
-	  SUCCESS/FAILED
-	- ufshcd_do_reset(): aquire spin_lock_irqsave only for
-	  instructions which share common data structure.
+since v1:
+ * change 'checkpatch' whitespace fixews back
 
- drivers/scsi/ufs/ufshcd.c |   97 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 97 insertions(+), 0 deletions(-)
+ scripts/mod/file2alias.c |   35 +++++++++++++++++++++++++++++++----
+ 1 files changed, 31 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index e4335f5..1c6a9ed 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -139,6 +139,8 @@ struct uic_command {
-  * @ufshcd_state: UFSHCD states
-  * @int_enable_mask: Interrupt Mask Bits
-  * @uic_workq: Work queue for UIC completion handling
-+ * @feh_workq: Work queue for fatal controller error handling
-+ * @errors: HBA errors
-  */
- struct ufs_hba {
- 	void __iomem *mmio_base;
-@@ -172,6 +174,10 @@ struct ufs_hba {
- 
- 	/* Work Queues */
- 	struct work_struct uic_workq;
-+	struct work_struct feh_workq;
-+
-+	/* HBA Errors */
-+	u32 errors;
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index d0de2a2..b89efe6 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -46,11 +46,37 @@ struct devtable {
+ 	void *function;
  };
  
- /**
-@@ -896,6 +902,9 @@ static int ufshcd_make_hba_operational(struct ufs_hba *hba)
- 	/* Configure interrupt aggregation */
- 	ufshcd_config_int_aggr(hba, INT_AGGR_CONFIG);
++#define ___cat(a,b) a ## b
++#define __cat(a,b) ___cat(a,b)
++
++/* we need some special handling for this host tool running eventually on
++ * Darwin. The Mach-O section handling is a bit different than ELF section
++ * handling. The differnces in detail are:
++ *  a) we have segments which have sections
++ *  b) we need a API call to get the respective section symbols */
++#if defined(__MACH__)
++#include <mach-o/getsect.h>
++
++#define INIT_SECTION(name)  do {					\
++		unsigned long name ## _len;				\
++		char *__cat(pstart_,name) = getsectdata("__TEXT",	\
++			#name, &__cat(name,_len));			\
++		char *__cat(pstop_,name) = __cat(pstart_,name) +	\
++			__cat(name, _len);				\
++		__cat(__start_,name) = (void *)__cat(pstart_,name);	\
++		__cat(__stop_,name) = (void *)__cat(pstop_,name);	\
++	} while (0)
++#define SECTION(name)   __attribute__((section("__TEXT, " #name)))
++
++struct devtable **__start___devtable, **__stop___devtable;
++#else
++#define INIT_SECTION(name) /* no-op for ELF */
++#define SECTION(name)   __attribute__((section(#name)))
++
+ /* We construct a table of pointers in an ELF section (pointers generally
+  * go unpadded by gcc).  ld creates boundary syms for us. */
+ extern struct devtable *__start___devtable[], *__stop___devtable[];
+-#define ___cat(a,b) a ## b
+-#define __cat(a,b) ___cat(a,b)
++#endif /* __MACH__ */
  
-+	if (hba->ufshcd_state == UFSHCD_STATE_RESET)
-+		scsi_unblock_requests(hba->host);
-+
- 	hba->ufshcd_state = UFSHCD_STATE_OPERATIONAL;
- 	scsi_scan_host(hba->host);
- out:
-@@ -997,6 +1006,51 @@ static int ufshcd_initialize_hba(struct ufs_hba *hba)
- }
+ #if __GNUC__ == 3 && __GNUC_MINOR__ < 3
+ # define __used			__attribute__((__unused__))
+@@ -65,8 +91,8 @@ extern struct devtable *__start___devtable[], *__stop___devtable[];
+ 						(type *)NULL,		\
+ 						(char *)NULL)),		\
+ 		sizeof(type), (function) };				\
+-	static struct devtable *__attribute__((section("__devtable"))) \
+-		__used __cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
++	static struct devtable *SECTION(__devtable) __used \
++		__cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
  
- /**
-+ * ufshcd_do_reset - reset the host controller
-+ * @hba: per adapter instance
-+ *
-+ * Returns SUCCESS/FAILED
-+ */
-+static int ufshcd_do_reset(struct ufs_hba *hba)
-+{
-+	struct ufshcd_lrb *lrbp;
-+	unsigned long flags;
-+	int tag;
-+
-+	/* block commands from midlayer */
-+	scsi_block_requests(hba->host);
-+
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	hba->ufshcd_state = UFSHCD_STATE_RESET;
-+
-+	/* send controller to reset state */
-+	ufshcd_hba_stop(hba);
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	/* abort outstanding commands */
-+	for (tag = 0; tag < hba->nutrs; tag++) {
-+		if (test_bit(tag, &hba->outstanding_reqs)) {
-+			lrbp = &hba->lrb[tag];
-+			scsi_dma_unmap(lrbp->cmd);
-+			lrbp->cmd->result = DID_RESET << 16;
-+			lrbp->cmd->scsi_done(lrbp->cmd);
-+			lrbp->cmd = NULL;
-+		}
-+	}
-+
-+	/* clear outstanding request bit maps */
-+	hba->outstanding_reqs = 0;
-+
-+	/* start the initialization process */
-+	if (ufshcd_initialize_hba(hba)) {
-+		dev_err(&hba->pdev->dev,
-+			"Reset: Controller initialization failed\n");
-+		return FAILED;
-+	}
-+	return SUCCESS;
-+}
-+
-+/**
-  * ufshcd_slave_alloc - handle initial SCSI device configurations
-  * @sdev: pointer to SCSI device
-  *
-@@ -1248,12 +1302,54 @@ static void ufshcd_uic_cc_handler (struct work_struct *work)
- }
+ #define ADD(str, sep, cond, field)                              \
+ do {                                                            \
+@@ -1080,6 +1106,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 		do_pnp_card_entries(symval, sym->st_size, mod);
+ 	else {
+ 		struct devtable **p;
++		INIT_SECTION(__devtable);
  
- /**
-+ * ufshcd_fatal_err_handler - handle fatal errors
-+ * @hba: per adapter instance
-+ */
-+static void ufshcd_fatal_err_handler(struct work_struct *work)
-+{
-+	struct ufs_hba *hba;
-+	hba = container_of(work, struct ufs_hba, feh_workq);
-+
-+	/* check if reset is already in progress */
-+	if (hba->ufshcd_state != UFSHCD_STATE_RESET)
-+		ufshcd_do_reset(hba);
-+}
-+
-+/**
-+ * ufshcd_err_handler - Check for fatal errors
-+ * @work: pointer to a work queue structure
-+ */
-+static void ufshcd_err_handler(struct ufs_hba *hba)
-+{
-+	u32 reg;
-+
-+	if (hba->errors & INT_FATAL_ERRORS)
-+		goto fatal_eh;
-+
-+	if (hba->errors & UIC_ERROR) {
-+
-+		reg = readl(hba->mmio_base +
-+			    REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
-+		if (reg & UIC_DATA_LINK_LAYER_ERROR_PA_INIT)
-+			goto fatal_eh;
-+	}
-+	return;
-+fatal_eh:
-+	hba->ufshcd_state = UFSHCD_STATE_ERROR;
-+	schedule_work(&hba->feh_workq);
-+}
-+
-+/**
-  * ufshcd_sl_intr - Interrupt service routine
-  * @hba: per adapter instance
-  * @intr_status: contains interrupts generated by the controller
-  */
- static void ufshcd_sl_intr(struct ufs_hba *hba, u32 intr_status)
- {
-+	hba->errors = UFSHCD_ERROR_MASK & intr_status;
-+	if (hba->errors)
-+		ufshcd_err_handler(hba);
-+
- 	if (intr_status & UIC_COMMAND_COMPL)
- 		schedule_work(&hba->uic_workq);
- 
-@@ -1499,6 +1595,7 @@ ufshcd_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 
- 	/* Initialize work queues */
- 	INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
-+	INIT_WORK(&hba->feh_workq, ufshcd_fatal_err_handler);
- 
- 	/* IRQ registration */
- 	err = request_irq(pdev->irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
+ 		for (p = __start___devtable; p < __stop___devtable; p++) {
+ 			if (sym_is(name, namelen, (*p)->device_id)) {
 -- 
-1.7.5.4
+1.7.9.1
 
