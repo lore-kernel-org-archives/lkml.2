@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab2BXVag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 16:30:36 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:56326 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab2BXVaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 16:30:35 -0500
-Date: Fri, 24 Feb 2012 16:30:27 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120224213027.GB15735@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Henrik Rydberg <rydberg@euromail.se>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Guenter Roeck <guenter.roeck@ericsson.com>,
-	Jidong Xiao <jidong.xiao@gmail.com>,
-	Kernel development list <linux-kernel@vger.kernel.org>
-References: <1330103229.23014.130.camel@groeck-laptop>
- <20120224171752.GB9485@kroah.com>
- <20120224183423.GA23284@kroah.com>
- <20120224191535.GA4505@polaris.bitmath.org>
- <20120224192643.GB24120@kroah.com>
- <20120224201027.GA4859@polaris.bitmath.org>
- <20120224201655.GA5994@kroah.com>
- <20120224203715.GA4995@polaris.bitmath.org>
- <20120224205651.GA13333@kroah.com>
- <20120224212238.GA5178@polaris.bitmath.org>
+	id S1758142Ab2BXVfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 16:35:21 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5449 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2BXVfT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 16:35:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 24 Feb 2012 13:35:09 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Liam Girdwood (lrg@ti.com)" <lrg@ti.com>, Chris Ball <cjb@laptop.org>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Feb 2012 13:35:08 -0800
+Subject: sdmmc controllers without vmmc regulator
+Thread-Topic: sdmmc controllers without vmmc regulator
+Thread-Index: AczzOybObEspSMPRQWyxiS6LFfMK8w==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCD8C@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224212238.GA5178@polaris.bitmath.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:22:38PM +0100, Henrik Rydberg wrote:
-> 
-> Maintenance. Sure, as soon as an area grows too large for a single
-> person, the current structure will ensure it divides so that the patch
-> stream becomes manageable. We have already seen ample examples of
-> that. But the overall structure of the kernel will become less and
-> less manageable, and the likelihood of duplicates and maintenance
-> problems will increase.
+sdhci_add_host() calls regulator_get(..., "vmmc"), which under device-
+tree calls of_get_regulator(), which contains:
 
-Not necessarily.  The primary area of growth has been hardware support
-(i.e., drivers), and that scales quite well.
+	regnode = of_parse_phandle(dev->of_node, prop_name, 0);
 
-The main issue is the grown of intra-system interfaces, and you
-haven't shown that this has happened in anything approaching the
-levels where we need to worry.  If we add a new file system, like
-btrfs, that doesn't add a whole new set of VFS interfaces, and it's
-not like we need to worry about communication interfaces between btrfs
-and ext4....
+	if (!regnode) {
+		dev_warn(dev, "%s property in node %s references invalid phandle",
+				prop_name, dev->of_node->full_name);
+		return NULL;
+	}
 
-						- Ted
+Thus if the vmmc-supply property is missing, because a board has no
+regulator for a particular SD controller (power is always on), then
+the warning is printed.
+
+Can we eliminate this warning in of_get_regulator(), and let clients
+Control whether they warn when a regulator isn't found, if they think
+one is mandatory? I think I'd prefer this option; it's consistent with
+the non-DT path in regulator_dev_lookup().
+
+Or, should I set up dummy regulators in device tree to cover this case,
+such that an SD controller's vmmc-supply always points at a valid phandle.
+In which case, I'd have to add DT support to the dummy regulator.
+
+Thanks.
+
+-- 
+nvpublic
+
