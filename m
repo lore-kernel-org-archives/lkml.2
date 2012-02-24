@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab2BXR1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:27:54 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:35100 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121Ab2BXR1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:27:53 -0500
-Message-ID: <4F47C897.8020505@bfs.de>
-Date: Fri, 24 Feb 2012 18:27:51 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S932319Ab2BXR2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:28:04 -0500
+Received: from 5.mo5.mail-out.ovh.net ([87.98.173.103]:37873 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932121Ab2BXR17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 12:27:59 -0500
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Feb 2012 12:27:59 EST
+Date: Fri, 24 Feb 2012 17:54:43 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v3 17/21] ARM: at91: merge SRAM Memory banks thanks to
+ mirroring
+Message-ID: <20120224165443.GA21556@game.jcrosoft.org>
+References: <cover.1330006537.git.nicolas.ferre@atmel.com>
+ <c9b1e3ffbc322a1d1e1272062a9361abe536a33a.1330006537.git.nicolas.ferre@atmel.com>
+ <4F46B3DF.7010402@gmail.com>
 MIME-Version: 1.0
-To: santosh nayak <santoshprasadnayak@gmail.com>
-CC: benve@cisco.com, roprabhu@cisco.com, neepatel@cisco.com,
-        nistrive@cisco.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/2] enic: Silence Sparse Warning: "dubious: x | !y"
-References: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
-In-Reply-To: <1330102654-2474-1-git-send-email-santoshprasadnayak@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F46B3DF.7010402@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 14034905288799005453
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdegucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 24.02.2012 17:57, schrieb santosh nayak:
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On 08:47 Fri 24 Feb     , Ryan Mallon wrote:
+> On 24/02/12 01:26, Nicolas Ferre wrote:
 > 
-> Sparse is giving the following warning:
-> "warning: dubious: x | !y"
+> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > 
+> > On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
+> > merge them together to be able to have bigger and continuous
+> > internal RAM.
 > 
-> "enic_are_pp_different" is static and expected to return true or false.
-> Logical or is indended here. With logical or, in best case, execution will be
-> faster because if leftmost operand is true then no need to check other operands.
+> I think this patch needs some comments in the code. As mentioned in the
+> last round, this functionality is not documented, so it is not obvious
+> how/why this works. This is especially true for any user who has
+> problems with this code and then tries to look up those addresses in
+> their at91 manual only to find the regions are reserved.
 > 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> ---
->  drivers/net/ethernet/cisco/enic/enic_pp.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+> Nicolas, are you able to give an official Atmel stance on this?
+you have the ack from Nico and he send the e-mail
+
+Best Regards,
+J.
 > 
-> diff --git a/drivers/net/ethernet/cisco/enic/enic_pp.c b/drivers/net/ethernet/cisco/enic/enic_pp.c
-> index dafea1e..3a6de22 100644
-> --- a/drivers/net/ethernet/cisco/enic/enic_pp.c
-> +++ b/drivers/net/ethernet/cisco/enic/enic_pp.c
-> @@ -159,10 +159,10 @@ static int enic_unset_port_profile(struct enic *enic, int vf)
->  static int enic_are_pp_different(struct enic_port_profile *pp1,
->  		struct enic_port_profile *pp2)
->  {
-> -	return strcmp(pp1->name, pp2->name) | 
-                !!memcmp(pp1->instance_uuid,pp2->instance_uuid, PORT_UUID_MAX) |
-> -		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) |
-> -		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
-> +	return  strcmp(pp1->name, pp2->name) || 
-	        !!memcmp(pp1->instance_uuid,pp2->instance_uuid, PORT_UUID_MAX) ||
-> +		!!memcmp(pp1->host_uuid, pp2->host_uuid, PORT_UUID_MAX) ||
-> +		!!memcmp(pp1->mac_addr, pp2->mac_addr, ETH_ALEN);
->  }
->  
-
-to be fair, this is next to unreadable (not your fault of cause).
-Instead of squeezing this into a one statement i would suggest more statements.
-
-just my 2 cents,
-re,
- wh
-
-
-
->  static int enic_pp_preassociate(struct enic *enic, int vf,
+> ~Ryan
+> 
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > ---
+> >  arch/arm/mach-at91/at91sam9260.c              |   13 +++++--------
+> >  arch/arm/mach-at91/include/mach/at91sam9260.h |    4 ++++
+> >  2 files changed, 9 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+> > index 14882ae..4ade265 100644
+> > --- a/arch/arm/mach-at91/at91sam9260.c
+> > +++ b/arch/arm/mach-at91/at91sam9260.c
+> > @@ -310,15 +310,12 @@ static void __init at91sam9xe_map_io(void)
+> >  
+> >  static void __init at91sam9260_map_io(void)
+> >  {
+> > -	if (cpu_is_at91sam9xe()) {
+> > +	if (cpu_is_at91sam9xe())
+> >  		at91sam9xe_map_io();
+> > -	} else if (cpu_is_at91sam9g20()) {
+> > -		at91_init_sram(0, AT91SAM9G20_SRAM0_BASE, AT91SAM9G20_SRAM0_SIZE);
+> > -		at91_init_sram(1, AT91SAM9G20_SRAM1_BASE, AT91SAM9G20_SRAM1_SIZE);
+> > -	} else {
+> > -		at91_init_sram(0, AT91SAM9260_SRAM0_BASE, AT91SAM9260_SRAM0_SIZE);
+> > -		at91_init_sram(1, AT91SAM9260_SRAM1_BASE, AT91SAM9260_SRAM1_SIZE);
+> > -	}
+> > +	else if (cpu_is_at91sam9g20())
+> > +		at91_init_sram(0, AT91SAM9G20_SRAM_BASE, AT91SAM9G20_SRAM_SIZE);
+> > +	else
+> > +		at91_init_sram(0, AT91SAM9260_SRAM_BASE, AT91SAM9260_SRAM_SIZE);
+> >  }
+> >  
+> >  static void __init at91sam9260_ioremap_registers(void)
+> > diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
+> > index 2e47b6d..08ae9af 100644
+> > --- a/arch/arm/mach-at91/include/mach/at91sam9260.h
+> > +++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
+> > @@ -113,6 +113,8 @@
+> >  #define AT91SAM9260_SRAM0_SIZE	SZ_4K		/* Internal SRAM 0 size (4Kb) */
+> >  #define AT91SAM9260_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+> >  #define AT91SAM9260_SRAM1_SIZE	SZ_4K		/* Internal SRAM 1 size (4Kb) */
+> > +#define AT91SAM9260_SRAM_BASE	0x002FF000	/* Internal SRAM base address */
+> > +#define AT91SAM9260_SRAM_SIZE	SZ_8K		/* Internal SRAM size (8Kb) */
+> >  
+> >  #define AT91SAM9260_UHP_BASE	0x00500000	/* USB Host controller */
+> >  
+> > @@ -126,6 +128,8 @@
+> >  #define AT91SAM9G20_SRAM0_SIZE	SZ_16K		/* Internal SRAM 0 size (16Kb) */
+> >  #define AT91SAM9G20_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+> >  #define AT91SAM9G20_SRAM1_SIZE	SZ_16K		/* Internal SRAM 1 size (16Kb) */
+> > +#define AT91SAM9G20_SRAM_BASE	0x002FC000	/* Internal SRAM base address */
+> > +#define AT91SAM9G20_SRAM_SIZE	SZ_32K		/* Internal SRAM size (32Kb) */
+> >  
+> >  #define AT91SAM9G20_UHP_BASE	0x00500000	/* USB Host controller */
+> >  
+> 
+> 
