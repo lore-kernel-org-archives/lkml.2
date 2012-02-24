@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab2BXUqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 15:46:18 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:39943 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758029Ab2BXUqQ (ORCPT
+	id S1758116Ab2BXUv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 15:51:58 -0500
+Received: from sender1.zohomail.com ([72.5.230.103]:39814 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350Ab2BXUv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 15:46:16 -0500
-Date: Fri, 24 Feb 2012 15:42:24 -0500 (EST)
-Message-Id: <20120224.154224.992364563810018486.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: grundler@parisc-linux.org, gregkh@linuxfoundation.org, pe1dnn@amsat.org,
-        kernel@wantstofly.org, marek.belisko@gmail.com, oneukum@suse.de,
-        dkukawka@suse.de, devel@driverdev.osuosl.org,
-        e1000-devel@lists.sourceforge.net, geert@linux-m68k.org,
-        grant.likely@secretlab.ca, jkosina@suse.cz, jpirko@redhat.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org, tklauser@distanz.ch
-Subject: Re: [PATCH 00/11] print MAC via printk format specifier
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
-References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 24 Feb 2012 15:51:57 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; 
+  s=zapps768; d=zoho.com; 
+  h=date:from:to:cc:subject:message-id:in-reply-to:references:mime-version:content-type; 
+  b=aV8rsG3PyR1mZAgkAbOzAzpVqEkqC2M/gQauIvk9JQ/e0eJ+t7Hkk/DD5YjNIVYmOO4zFnQJziC3
+    kHHnB1jren+wVGdTGy3IFwMev+vR0DrmxTzATpuF87LKyIafkTaG  
+Date: Fri, 24 Feb 2012 21:34:22 +0100
+From: Torsten Schenk <torsten.schenk@zoho.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Torsten Schenk <torsten.schenk@zoho.com>, linux-next@vger.kernel.org
+Subject: Re: [alsa-devel] linux-next: Tree for Feb 24 (sound/usb/6fire)
+Message-Id: <20120224213422.3693943c2dad148b35e26d21@zoho.com>
+In-Reply-To: <4F47DBD4.4090803@xenotime.net>
+References: <20120224170548.a9a338d64712f06f1b39b7bd@canb.auug.org.au>
+	<4F47DBD4.4090803@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 24 Feb 2012 12:42:34 -0800 (PST)
+X-ZohoMail: Ss  CHF_MF_NL SS_10 UW UB UW UB  SGR3_15022_212
+X-ZohoMail-Sender: 92.193.78.133
+X-ZohoMailClient: External
+X-Zoho-Virus-Status: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Fri, 24 Feb 2012 14:45:51 +0100
+On Fri, 24 Feb 2012 10:49:56 -0800
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-> Print MAC/dev_addr via printk extended format specifier %pm/%pM
-> instead of using custom code.
+> On 02/23/2012 10:05 PM, Stephen Rothwell wrote:
+> > Hi all,
+> >
+> > Changes since 20120223:
 > 
-> These patches are against net-next.
+> 
+> on x86_64:
+> 
+> ERROR: "_snd_ctl_add_slave" [sound/usb/6fire/snd-usb-6fire.ko]
+> undefined! ERROR:
+> "snd_ctl_make_virtual_master" [sound/usb/6fire/snd-usb-6fire.ko]
+> undefined!
+> 
+> 
+> Full randconfig file is attached.
+> 
+> CONFIG_SND_VMASTER is not enabled.  Looks like this driver should
+> either depend on or select SND_VMASTER.
+> 
 
-All applied, but you absolutely have to start posting patch series
-correctly.
+Sorry, I was unaware that this option needs to be selected.
+Patch is attached below that selects SND_VMASTER.
 
-If it's a series for net-next, then every single patch must be
-CC:'d to netdev so it gets queued up properly in patchwork.
+Regards,
+Torsten
+
+
+Select missing SND_VMASTER option in Kconfig.
+
+Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
+
+diff -Nur a/sound/usb/Kconfig b/sound/usb/Kconfig
+--- a/sound/usb/Kconfig	2012-02-24 21:17:09.543884187 +0100
++++ b/sound/usb/Kconfig	2012-02-24 21:19:16.160372882 +0100
+@@ -106,6 +106,7 @@
+         select BITREVERSE
+         select SND_RAWMIDI
+         select SND_PCM
++        select SND_VMASTER
+         help
+           Say Y here to include support for TerraTec 6fire DMX USB interface.
+ 
+
