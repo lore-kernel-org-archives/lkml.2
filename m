@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2BXV7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 16:59:43 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60156 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab2BXV7m (ORCPT
+	id S1758153Ab2BXWHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:07:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55759 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab2BXWHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 16:59:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.228 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 13:57:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] TTY: fix PTY hangup vs close race
-Message-ID: <20120224215732.GD25330@kroah.com>
-References: <1329683796.10124.21.camel@lappy>
- <1329686346-16752-1-git-send-email-jslaby@suse.cz>
- <4F416C9D.3030302@gmail.com>
- <CA+1xoqfEUkVjRdE3BYnUVhvuPGCLhgbraZAEE9A9tfCKAXg9sQ@mail.gmail.com>
- <4F422B53.5060001@suse.cz>
+	Fri, 24 Feb 2012 17:07:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.68.213.136 as permitted sender) smtp.mail=glikely@secretlab.ca
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F422B53.5060001@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH] devicetree: Add empty of_platform_populate() for !CONFIG_OF_ADDRESS (sparc)
+Date: Fri, 24 Feb 2012 15:06:58 -0700
+Message-Id: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 12:15:31PM +0100, Jiri Slaby wrote:
-> On 02/20/2012 11:20 AM, Sasha Levin wrote:
-> >> [*] Your dump reveals that the code fetches tty->driver_data (mov
-> >> 0x428(%rdi),%rbx) and traps at a fetch of inode->i_sbm because inode is
-> >> NULL (mov    0x28(%rbx),%rax).
-> > 
-> > It actually looks even more complex than that. I reverted the patch
-> > above, but still got the error. A quick bisection pointed me to
-> > a50f724a432997321cabb6c9e665c28e34850f78.
-> 
-> > Looks like reverting both actually solves the problem. Reverting just
-> > one of them doesn't.
-> 
-> Ah, I see. I suppose you have CONFIG_LEGACY_PTYS=y. I somehow overlooked
-> that case.
-> 
-> So both of them should be reverted in upstream:
-> d3bda5298aad98c7a27678bdd0dd9d008ab9e685
-> a50f724a432997321cabb6c9e665c28e34850f78
+Sparc has its own helpers for translating address ranges when the device
+tree is parsed at boot time, and it isn't able to use of_platform_populate().
+However, there are some device drivers that want to use that function on
+other DT enabled platforms (ie. TWL4030).  This patch adds an empty
+of_platform_populate() implementation that returns an error when
+CONFIG_OF_ADDRESS is not selected.
 
-Both now reverted, thanks.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/twl-core.c      |    5 ++---
+ drivers/of/platform.c       |    4 ++--
+ include/linux/of_platform.h |   12 ++++++++++--
+ 3 files changed, 14 insertions(+), 7 deletions(-)
 
-greg k-h
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 66f9bff..4970d43 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -1305,11 +1305,10 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		twl_i2c_write_u8(TWL4030_MODULE_INTBR, temp, REG_GPPUPDCTR1);
+ 	}
+ 
+-#ifdef CONFIG_OF_DEVICE
++	status = -ENODEV;
+ 	if (node)
+ 		status = of_platform_populate(node, NULL, NULL, &client->dev);
+-	else
+-#endif
++	if (status)
+ 		status = add_children(pdata, id->driver_data);
+ 
+ fail:
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 63b3ec4..20fbebd 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -55,7 +55,7 @@ EXPORT_SYMBOL(of_find_device_by_node);
+ #include <asm/dcr.h>
+ #endif
+ 
+-#if !defined(CONFIG_SPARC)
++#ifdef CONFIG_OF_ADDRESS
+ /*
+  * The following routines scan a subtree and registers a device for
+  * each applicable node.
+@@ -462,4 +462,4 @@ int of_platform_populate(struct device_node *root,
+ 	of_node_put(root);
+ 	return rc;
+ }
+-#endif /* !CONFIG_SPARC */
++#endif /* CONFIG_OF_ADDRESS */
+diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+index 040ce2f..242fa35 100644
+--- a/include/linux/of_platform.h
++++ b/include/linux/of_platform.h
+@@ -81,7 +81,7 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
+ 					 struct device *parent);
+ extern struct platform_device *of_find_device_by_node(struct device_node *np);
+ 
+-#if !defined(CONFIG_SPARC) /* SPARC has its own device registration method */
++#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
+ /* Platform devices and busses creation */
+ extern struct platform_device *of_platform_device_create(struct device_node *np,
+ 						   const char *bus_id,
+@@ -94,7 +94,15 @@ extern int of_platform_populate(struct device_node *root,
+ 				const struct of_device_id *matches,
+ 				const struct of_dev_auxdata *lookup,
+ 				struct device *parent);
+-#endif /* !CONFIG_SPARC */
++#else
++static inline int of_platform_populate(struct device_node *root,
++					const struct of_device_id *matches,
++					const struct of_dev_auxdata *lookup,
++					struct device *parent)
++{
++	return -ENODEV;
++}
++#endif /* !CONFIG_OF_ADDRESS */
+ 
+ #endif /* CONFIG_OF_DEVICE */
+ 
+-- 
+1.7.9
+
