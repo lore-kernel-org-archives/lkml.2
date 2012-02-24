@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2BXLIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 06:08:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756536Ab2BXLIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 06:08:00 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Remove missed ->fds_bits from cessation use of fd_set structs
- internally
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Ralf =?utf-8?q?B=C3=A4chle?= <ralf@linux-mips.org>,
-        Arve =?utf-8?b?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Date: Fri, 24 Feb 2012 10:57:07 +0000
-Message-ID: <20120224105707.32170.11550.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	id S1756536Ab2BXLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 06:10:29 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:44131 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab2BXLK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 06:10:26 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: tony.luck@intel.com
+Cc: fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 1/4] IA64: hpsim, fix SAL handling in fw-emu
+Date: Fri, 24 Feb 2012 12:10:15 +0100
+Message-Id: <1330081818-15517-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix places where ->fds_bits needed to be removed as the core kernel no longer
-uses fd_set internally for file descriptor table management.  There are two
-places:
+The switch-cases of SAL_FREQ_BASE generate non-relocatable code. The
+same as for the ifs one level upper. This causes oopses early in boot
+because the kernel jumps to the hell instead of the offset in sal
+callback.
 
- (1) drivers/staging/android/binder.c
+So use ifs here for SAL_FREQ_BASE decision too.
 
- (2) arch/mips/kernel/kspd.c
+Isn't there any compiler directive or settings to solve that cleanly?
 
-     Question: Should sp_cleanup() in the MIPS arch be using find_next_bit()
-     or fls()?
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Ralf Bächle <ralf@linux-mips.org>
-cc: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
+ arch/ia64/hp/sim/boot/fw-emu.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
- arch/mips/kernel/kspd.c          |    2 +-
- drivers/staging/android/binder.c |    3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+diff --git a/arch/ia64/hp/sim/boot/fw-emu.c b/arch/ia64/hp/sim/boot/fw-emu.c
+index bf6d9d8..0216e28 100644
+--- a/arch/ia64/hp/sim/boot/fw-emu.c
++++ b/arch/ia64/hp/sim/boot/fw-emu.c
+@@ -160,28 +160,19 @@ sal_emulator (long index, unsigned long in1, unsigned long in2,
+ 	 */
+ 	status = 0;
+ 	if (index == SAL_FREQ_BASE) {
+-		switch (in1) {
+-		      case SAL_FREQ_BASE_PLATFORM:
++		if (in1 == SAL_FREQ_BASE_PLATFORM)
+ 			r9 = 200000000;
+-			break;
+-
+-		      case SAL_FREQ_BASE_INTERVAL_TIMER:
++		else if (in1 == SAL_FREQ_BASE_INTERVAL_TIMER) {
+ 			/*
+ 			 * Is this supposed to be the cr.itc frequency
+ 			 * or something platform specific?  The SAL
+ 			 * doc ain't exactly clear on this...
+ 			 */
+ 			r9 = 700000000;
+-			break;
+-
+-		      case SAL_FREQ_BASE_REALTIME_CLOCK:
++		} else if (in1 == SAL_FREQ_BASE_REALTIME_CLOCK)
+ 			r9 = 1;
+-			break;
+-
+-		      default:
++		else
+ 			status = -1;
+-			break;
+-		}
+ 	} else if (index == SAL_SET_VECTORS) {
+ 		;
+ 	} else if (index == SAL_GET_STATE_INFO) {
+-- 
+1.7.9
 
-diff --git a/arch/mips/kernel/kspd.c b/arch/mips/kernel/kspd.c
-index 29811f0..84d0639 100644
---- a/arch/mips/kernel/kspd.c
-+++ b/arch/mips/kernel/kspd.c
-@@ -326,7 +326,7 @@ static void sp_cleanup(void)
- 		i = j * __NFDBITS;
- 		if (i >= fdt->max_fds)
- 			break;
--		set = fdt->open_fds->fds_bits[j++];
-+		set = fdt->open_fds[j++];
- 		while (set) {
- 			if (set & 1) {
- 				struct file * file = xchg(&fdt->fd[i], NULL);
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 347bd6e..eeaa9b8 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -380,8 +380,7 @@ int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
- 
- repeat:
- 	fdt = files_fdtable(files);
--	fd = find_next_zero_bit(fdt->open_fds->fds_bits, fdt->max_fds,
--				files->next_fd);
-+	fd = find_next_zero_bit(fdt->open_fds, fdt->max_fds, files->next_fd);
- 
- 	/*
- 	 * N.B. For clone tasks sharing a files structure, this test
 
