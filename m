@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab2BXNCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:02:04 -0500
-Received: from info.elf.stuba.sk ([147.175.111.14]:1837 "EHLO
-	info.elf.stuba.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab2BXNCD (ORCPT
+	id S1756342Ab2BXNFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:05:43 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41979 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755393Ab2BXNFl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:02:03 -0500
-X-Greylist: delayed 8147 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Feb 2012 08:02:02 EST
-From: fodrek@kasr.elf.stuba.sk
-To: linux-kernel@vger.kernel.org
-Subject: Resening: KGDB over Ethternet howto patch
-Date: Fri, 24 Feb 2012 14:01:58 +0100
-Message-ID: <5240114.8TkZqEVLeL@fodrek.kar.elf.stuba.sk>
-User-Agent: KMail/4.8.0 (Linux/3.1.9-1.4-desktop; KDE/4.8.0; x86_64; ; )
+	Fri, 24 Feb 2012 08:05:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Scanned: by AntiVirus filter AVilter (msg.3TNuwhmx@mail2.elf.stuba.sk)
+In-Reply-To: <20120223122215.d280b090.akpm@linux-foundation.org>
+References: <20120222150010.c784b29b.akpm@linux-foundation.org>
+	<1329969811-3997-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<20120223122215.d280b090.akpm@linux-foundation.org>
+Date: Fri, 24 Feb 2012 18:35:40 +0530
+Message-ID: <CAAHN_R3zjh-xQ9yW57JhQ=AiJG+DV6D_ppveh3BvUYy8NWU3Lg@mail.gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
+        Mike Frysinger <vapier@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linux kernel developpers,
+On Fri, Feb 24, 2012 at 1:52 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> Looks OK to me, thanks.  I doubt if those interface changes will cause
+> significant disruption.
+>
 
-I would like to ask you how to debug linux kernel over etherent.
-We are designing aplication usaig RTAI (Hard realtime extension using kenrel 
-patch too) and we have been found some problems in our Linux kernel module.
+I just found one breakage due to this patch: `cat /proc/self/maps`
+does not always get the stack marked right. I think this is because it
+gets the $esp a little to early, even before the vma is sent to its
+randomized space. That is why /proc/self/smaps works just ok as it
+always wins the race due to the sheer volume of data it prints.
+Similarly numa_maps always fails since its write volume is lower than
+maps. I'll try to fix this.
 
-This module serves a hard realime RTAI application and we are to debug it 
-using Ethernet insatead of RS232/RS485 or other UART port as is  possible
-out of box. We are familiar to use gdb as weel as for remote debuging of the 
-usewr space application but not debuging kernel.
-
-Excuse me if I am sending messige to the wrong mailing list, please?
-
-I look forward hearing from you
-
-Yours faithfully
-
-Peter Fodrek
-Institute of Control and Industrial Informatics
-Faculty of Electrical Enginering and Information Technology
-Slovak University of Technology at Bratislava
-
+-- 
+Siddhesh Poyarekar
+http://siddhesh.in
