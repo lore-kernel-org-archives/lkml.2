@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2BXNqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:46:05 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41961 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab2BXNqD (ORCPT
+	id S1757488Ab2BXNqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:46:40 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43949 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755195Ab2BXNqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:46:03 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Fri, 24 Feb 2012 14:45:56 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-In-reply-to: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
-To: pullip.cho@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>
-Message-id: <014601ccf2fa$a25c8560$e7159020$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AczGJMkQSC3xCF3PRT6v7FM7y8tKXgszhwyQ
-References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
+	Fri, 24 Feb 2012 08:46:37 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Grant Grundler <grundler@parisc-linux.org>
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/11] dec/tulip/de4x5: print MAC via printk format specifier
+Date: Fri, 24 Feb 2012 14:45:55 +0100
+Message-Id: <1330091162-8141-5-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
+References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330091197;6c473491;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Print MAC/dev_addr via printk extended format specifier %pM
+instead of custom code.
 
-On Thursday, December 29, 2011 1:24 PM KyongHo Cho wrote:
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/ethernet/dec/tulip/de4x5.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-> Changes since v7:
-> - Rebased with the recent commits of the following git branches
->   * git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git/next
->   * git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git/for-next
-> - Changed magic numbers into macros
-> - Setting owner of a System MMU in 'iommu' field of dev_archdata
-> - Verbose message in the default fault handler
-> - Some bug fixes.
-
-(snipped)
-
-The time is flying away and v3.4 merge windows will open soon. Do you plan to
-send an updated version of the SYSMMU driver anytime soon? It will be really 
-nice to have it finally merged to v3.4.
-
-Best regards
+diff --git a/drivers/net/ethernet/dec/tulip/de4x5.c b/drivers/net/ethernet/dec/tulip/de4x5.c
+index 9358340..18b106c 100644
+--- a/drivers/net/ethernet/dec/tulip/de4x5.c
++++ b/drivers/net/ethernet/dec/tulip/de4x5.c
+@@ -5234,11 +5234,7 @@ de4x5_dbg_open(struct net_device *dev)
+ 
+     if (de4x5_debug & DEBUG_OPEN) {
+ 	printk("%s: de4x5 opening with irq %d\n",dev->name,dev->irq);
+-	printk("\tphysical address: ");
+-	for (i=0;i<6;i++) {
+-	    printk("%2.2x:",(short)dev->dev_addr[i]);
+-	}
+-	printk("\n");
++	printk("\tphysical address: %pM\n", dev->dev_addr);
+ 	printk("Descriptor head addresses:\n");
+ 	printk("\t0x%8.8lx  0x%8.8lx\n",(u_long)lp->rx_ring,(u_long)lp->tx_ring);
+ 	printk("Descriptor addresses:\nRX: ");
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+1.7.8.3
 
