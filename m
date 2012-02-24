@@ -1,125 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab2BXDLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:11:51 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:38527 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab2BXDLt (ORCPT
+	id S1755001Ab2BXDRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:17:30 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:52428
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754525Ab2BXDR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 22:11:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-References: <20120223180740.C4EC4156@kernel>
-	<alpine.DEB.2.00.1202231240590.9878@router.home>
-	<4F468F09.5050200@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202231334290.10914@router.home>
-	<4F469BC7.50705@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202231536240.13554@router.home>
-Date: Thu, 23 Feb 2012 19:14:50 -0800
-In-Reply-To: <alpine.DEB.2.00.1202231536240.13554@router.home> (Christoph
-	Lameter's message of "Thu, 23 Feb 2012 15:41:50 -0600 (CST)")
-Message-ID: <m1ehtkapn9.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 23 Feb 2012 22:17:29 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 24 Feb 2012 11:24:52 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
+ and use it
+Message-ID: <20120224032451.GA25789@shlinux2.ap.freescale.net>
+References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+Tk7xCtB7pBcuurhanPN7xpW5H0ubW6Aw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Christoph Lameter <cl@linux.com>
-X-Spam-Relay-Country: **
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
+On Fri, Feb 24, 2012 at 08:04:38AM +0800, Stephen Warren wrote:
+> This provides a single centralized name for the default state.
+> 
+> Update PIN_MAP_* macros to use this state name, instead of requiring the
+> user to pass a state name in.
+> 
+> Update documentation and mapping tables to use this.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> These 3 patches are small cleanup/fixes triggered by review comments from
+> the 20-long series I posted a few days ago.
+> 
+> These patches are based on the 4-long series that I posted yesterday.
+> 
+>  Documentation/pinctrl.txt       |    8 ++++----
+>  arch/arm/mach-u300/core.c       |    6 +++---
+>  include/linux/pinctrl/machine.h |   13 ++++++++-----
+>  include/linux/pinctrl/pinctrl.h |    2 ++
+>  4 files changed, 17 insertions(+), 12 deletions(-)
+> 
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index fa9163a..8bf46bc 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -814,7 +814,7 @@ it even more compact which assumes you want to use pinctrl-foo and position
+>  0 for mapping, for example:
+>  
+>  static struct pinctrl_map __initdata mapping[] = {
+> -       PIN_MAP("I2CMAP", "pinctrl-foo", "i2c0", "foo-i2c.0"),
+> +	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "foo-i2c.0"),
+To keep align with the following
+PIN_MAP_SYS_HOG("pinmux-u300", "power"),
+Maybe PIN_MAP("pinctrl-foo", "i2c0", "foo-i2c.0") is better, right?
 
-> On Thu, 23 Feb 2012, Dave Hansen wrote:
->
->> > We may at this point be getting a reference to a task struct from another
->> > process not only from the current process (where the above procedure is
->> > valid). You rightly pointed out that the slab rcu free mechanism allows a
->> > free and a reallocation within the RCU period.
->>
->> I didn't _mean_ to point that out, but I think I realize what you're
->> talking about.  What we have before this patch is this:
->>
->>         rcu_read_lock();
->>         task = pid ? find_task_by_vpid(pid) : current;
->
-> We take a refcount here on the mm ... See the code. We could simply take a
-> refcount on the task as well if this is considered safe enough. If we have
-> a refcount on the task then we do not need the refcount on the mm. Thats
-> was your approach...
->
->>         rcu_read_unlock();
->
->> > Is that a real difference or are you just playing with words?
->>
->> I think we're talking about two different things:
->> 1. does RCU protect the pid->task lookup sufficiently?
->
-> I dont know
+And we may want to add a PIN_MAP_STAT macro, as well as PIN_MAP_SYS_HOG_STAT.
 
-Yes.  See below.
+Regards
+Dong Aisheng
 
->> 2. Can the task simply go away in the move/migrate_pages() calls?
->
-> The task may go away but we need the mm to stay for migration.
-> That is why a refcount is taken on the mm.
->
-> The bug in migrate_pages() is that we do a rcu_unlock and a rcu_lock. If
-> we drop those then we should be safe if the use of a task pointer within a
-> rcu section is safe without taking a refcount.
+>  };
+>  
+>  
+> @@ -930,7 +930,7 @@ foo_probe()
+>  	/* Allocate a state holder named "state" etc */
+>  	struct pinctrl p;
+>  
+> -	p = pinctrl_get(&device, NULL);
+> +	p = pinctrl_get(&device, PINCTRL_STATE_DEFAULT);
+>  	if IS_ERR(p)
+>  		return PTR_ERR(p);
+>  	pinctrl_enable(p);
+> @@ -988,7 +988,7 @@ This is enabled by simply setting the .dev_name field in the map to the name
+>  of the pin controller itself, like this:
+>  
+>  {
+> -	.name = "POWERMAP"
+> +	.name = PINCTRL_STATE_DEFAULT,
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "power_func",
+>  	.dev_name = "pinctrl-foo",
+> @@ -998,7 +998,7 @@ Since it may be common to request the core to hog a few always-applicable
+>  mux settings on the primary pin controller, there is a convenience macro for
+>  this:
+>  
+> -PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
+> +PIN_MAP_SYS_HOG("pinctrl-foo", "power_func")
+>  
+>  This gives the exact same result as the above construction.
+>  
+> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+> index d66bc97..2388dc2 100644
+> --- a/arch/arm/mach-u300/core.c
+> +++ b/arch/arm/mach-u300/core.c
+> @@ -1554,9 +1554,9 @@ static struct platform_device pinmux_device = {
+>  /* Pinmux settings */
+>  static struct pinctrl_map __initdata u300_pinmux_map[] = {
+>  	/* anonymous maps for chip power and EMIFs */
+> -	PIN_MAP_SYS_HOG("POWER", "pinmux-u300", "power"),
+> -	PIN_MAP_SYS_HOG("EMIF0", "pinmux-u300", "emif0"),
+> -	PIN_MAP_SYS_HOG("EMIF1", "pinmux-u300", "emif1"),
+> +	PIN_MAP_SYS_HOG("pinmux-u300", "power"),
+> +	PIN_MAP_SYS_HOG("pinmux-u300", "emif0"),
+> +	PIN_MAP_SYS_HOG("pinmux-u300", "emif1"),
+>  	/* per-device maps for MMC/SD, SPI and UART */
+>  	PIN_MAP("MMCSD", "pinmux-u300", "mmc0", "mmci"),
+>  	PIN_MAP("SPI", "pinmux-u300", "spi0", "pl022"),
+> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+> index 400f192..4743f84 100644
+> --- a/include/linux/pinctrl/machine.h
+> +++ b/include/linux/pinctrl/machine.h
+> @@ -12,6 +12,8 @@
+>  #ifndef __LINUX_PINCTRL_MACHINE_H
+>  #define __LINUX_PINCTRL_MACHINE_H
+>  
+> +#include "pinctrl.h"
+> +
+>  /**
+>   * struct pinctrl_map - boards/machines shall provide this map for devices
+>   * @name: the name of this specific map entry for the particular machine.
+> @@ -49,17 +51,18 @@ struct pinctrl_map {
+>   * Convenience macro to map a system function onto a certain pinctrl device,
+>   * to be hogged by the pin control core until the system shuts down.
+>   */
+> -#define PIN_MAP_SYS_HOG(a, b, c) \
+> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, }
+> +#define PIN_MAP_SYS_HOG(a, b) \
+> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+> +	  .function = b, }
+>  
+>  /*
+>   * Convenience macro to map a system function onto a certain pinctrl device
+>   * using a specified group, to be hogged by the pin control core until the
+>   * system shuts down.
+>   */
+> -#define PIN_MAP_SYS_HOG_GROUP(a, b, c, d)		\
+> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, \
+> -	  .group = d, }
+> +#define PIN_MAP_SYS_HOG_GROUP(a, b, c) \
+> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+> +	  .function = b, .group = c, }
+>  
+>  #ifdef CONFIG_PINMUX
+>  
+> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+> index 8bd22ee..411fe23 100644
+> --- a/include/linux/pinctrl/pinctrl.h
+> +++ b/include/linux/pinctrl/pinctrl.h
+> @@ -19,6 +19,8 @@
+>  #include <linux/list.h>
+>  #include <linux/seq_file.h>
+>  
+> +#define PINCTRL_STATE_DEFAULT "default"
+> +
+>  struct pinctrl_dev;
+>  struct pinmux_ops;
+>  struct pinconf_ops;
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Yes the user of a task_struct pointer found via a userspace pid is valid
-for the life of an rcu critical section, and the bug is indeed that we
-drop the rcu_lock and somehow expect the task to remain valid.
-
-The guarantee comes from release_task.  In release_task we call
-__exit_signal which calls __unhash_process, and then we call
-delayed_put_task to guarantee that the task lives until the end
-of the rcu interval.
-
-
-
-In migrate_pages we have a lot of task accesses outside of the
-rcu critical section, and without a reference count on task.
-
-I tell you the truth trying to figure out what that code needs to be
-correct if task != current makes my head hurt.
-
-I think we need to grab a reference on task_struct, to stop the task
-from going away, and in addition we need to hold task_lock.  To keep
-task->mm from changing (see exec_mmap).  But we can't do that and sleep
-so I think the entire function needs to be rewritten, and the need for
-task deep in the migrate_pages path needs to be removed as even with the
-reference count held we can race with someone calling exec.
-
-The only easy fix I see is to add:
-if (pid)
-	return -EINVAL;
-
-Then we are working with current and only current change it's mm making
-things much, much, much simpler.
-
-Eric
