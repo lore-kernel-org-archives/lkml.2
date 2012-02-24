@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2BXIEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 03:04:05 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39787 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab2BXIEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 03:04:04 -0500
+	id S1756220Ab2BXIEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 03:04:44 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60817 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755545Ab2BXIEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 03:04:43 -0500
+Date: Fri, 24 Feb 2012 09:04:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120224080423.GA814@elte.hu>
+References: <1329856745.25686.72.camel@gandalf.stny.rr.com>
+ <20120222073251.GB17291@elte.hu>
+ <20120222075334.GA25053@elte.hu>
+ <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+ <20120222081855.GB25318@elte.hu>
+ <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+ <20120223100205.GD24310@elte.hu>
+ <CA+55aFwwV3GsqHue8oUsx-XbvSQXSawJ0w5z=wL8ue=EH4ifzw@mail.gmail.com>
+ <20120223223348.GA25513@elte.hu>
+ <CA+55aFyc+C4YjfMvS5EKrL1JD4oMBLM58Zn+FfcWevNZO9vSKA@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 24 Feb 2012 16:04:02 +0800
-X-Google-Sender-Auth: vL9pk9mA2OZLRyfhpKlWFW4jN-U
-Message-ID: <CACwCHpwfJtKwt1LiGBsvEPfvUfDdDDTUvVWXJCEMoqYx0Cn7Dg@mail.gmail.com>
-Subject: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
-From: meng zhang <meng.zhang@mediatek.com>
-To: smurf@smurf.noris.de
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyc+C4YjfMvS5EKrL1JD4oMBLM58Zn+FfcWevNZO9vSKA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from: Meng Zhang <meng.zhang@mediatek.com>
 
-1. This patch is based on kernel 3.0.0
-2. To declare the product IDs in option.c
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
----------------------------------------------------------------------------------------
+> Seriously, I don't understand why you don't just use the 
+> obvious name. The data structure is named "static_key". The 
+> things that change it are named "static_key_inc()" or 
+> something. So a name like "static_key_true()" is simply 
+> *better*, isn't it?
 
---- option.c.orig	2011-10-07 22:50:04.000000000 +0800
-+++ option.c	2012-02-23 10:42:40.635138657 +0800
-@@ -416,6 +416,9 @@ static void option_instat_callback(struc
- #define SAMSUNG_VENDOR_ID                       0x04e8
- #define SAMSUNG_PRODUCT_GT_B3730                0x6889
+Yes, you are right, in hindsight it's indeed obviously and 
+trivially better :-/
 
-+/* MediaTek products */
-+#define MEDIATEK_VENDOR_ID				0x0e8d
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1005,6 +1008,10 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650
-CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID,
-SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /*
-Samsung GT-B3730 LTE USB modem.*/
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-0x02, 0x01) },	/* MediaTek MT6276M modem & app port */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+> It's not just about less confusion, it's actually about just 
+> having consistent naming.
+
+Okay. I sent out the slightly reworked patch that gets rid of 
+this confusion and makes it all consistent.
+
+Thanks,
+
+	Ingo
