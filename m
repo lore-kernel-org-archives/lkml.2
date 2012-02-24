@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab2BXQPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:15:00 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37089 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2BXQO5 (ORCPT
+	id S1757273Ab2BXQS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:18:29 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44715 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab2BXQS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:14:57 -0500
-Message-ID: <4F47B781.2050300@gmail.com>
-Date: Fri, 24 Feb 2012 11:14:57 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+	Fri, 24 Feb 2012 11:18:28 -0500
+Date: Fri, 24 Feb 2012 08:17:43 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
+Message-ID: <20120224161743.GA2399@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120222011652.GE23186@zod.bos.redhat.com>
+ <20120222013252.GZ2375@linux.vnet.ibm.com>
+ <20120222014242.GF23186@zod.bos.redhat.com>
+ <20120224144032.GA13903@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
-        vapier@gentoo.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
-References: <4F32B776.6070007@gmail.com> <1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com> <CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com> <CAAHN_R2Awa5X3B09541grAPLkm9RzL9DnixUKFJXpz=1ZkPTFg@mail.gmail.com>
-In-Reply-To: <CAAHN_R2Awa5X3B09541grAPLkm9RzL9DnixUKFJXpz=1ZkPTFg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224144032.GA13903@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022416-2398-0000-0000-000004820135
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Sigh. No, I missed one thing. If application use
->> makecontext()/swapcontext() pair,
->> ESP is not reliable way to detect pthread stack. At that time the
->> stack is still marked
->> as anonymous memory.
->
-> This is not wrong, because it essentially gives the correct picture of
-> the state of that task -- the task is using another vma as a stack
-> during that point and not the one it was allotted by pthreads during
-> thread creation.
->
-> I don't think we can successfully stick to the idea of trying to mark
-> stack space allocated by pthreads but not used by any task *currently*
-> as stack as long as the allocation happens outside the kernel space.
-> The only way to mark this is either by marking the stack as
-> VM_GROWSDOWN (which will make the stack grow and break some pthreads
-> functions) or create a new flag, which a simple display such as this
-> does not deserve. So it's best that this sticks to what the kernel
-> *knows* is being used as stack.
+On Fri, Feb 24, 2012 at 09:40:32AM -0500, Josh Boyer wrote:
+> On Tue, Feb 21, 2012 at 08:42:43PM -0500, Josh Boyer wrote:
+> > > And patch #47 in that series has been obsoleted by another series
+> > > from Steven Rostedt:
+> > > 
+> > > 	https://lkml.org/lkml/2012/2/7/231
+> > 
+> > Ok.
+> > 
+> > > Hopefully these fix both splats and slowness.
+> > 
+> > So again, I'm slightly confused on how RCU patches flow.  Eric
+> > originally reported the bug for which you created the patch I applied
+> > against 3.3.  The giant patch series above seems queued for 3.4.
+> > 
+> > I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
+> > I'd want to go applying the 47-patch series on 3.3 at the moment, and
+> > given you have these marked for 3.4 I don't think you do either.
+> > However, is there some kind of fix for the original bug report against
+> > 3.3?
+> 
+> I was being sincere when I asked the above questions.  Could you
+> describe how you handle RCU patches across releases and if there is a
+> fix for the 3.3-rcX issue Eric reported that is going into 3.3?
+> 
+> I know you're quite busy, but I'd like to understand your thinking so I
+> know what to expect going forward.
 
-Oh, maybe generically you are right. but you missed one thing. Before
-your patch, stack or not stack are address space property. thus, using
-/proc/pid/maps makes sense. but after your patch, it's no longer memory
-property. applications can use heap or mapped file as a stack. then, at
-least, current your code is wrong. the code assume each memory property
-are exclusive.
+Apologies for being slow, but could you please point me at the original
+bug report that the old patch was designed to fix?  My email filing
+seems to have failed me in this case.
 
-Moreover, if pthread stack is unimportant, I wonder why we need this patch
-at all. Which application does need it? and When?
+My guess is that the best short-term fix for Fedora is to disable the
+warning, but I do need to see the original bug to work out if that really
+is a prudent course of action.
+
+							Thanx, Paul
 
