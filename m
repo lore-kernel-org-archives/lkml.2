@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab2BXHYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 02:24:12 -0500
-Received: from hulk.biessmann.org ([62.75.166.25]:53170 "EHLO
-	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab2BXHYK (ORCPT
+	id S1753632Ab2BXHly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 02:41:54 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53052 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab2BXHlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 02:24:10 -0500
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jochen Friedrich <jochen@scram.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH v2] mod/file2alias: make modpost compile on darwin again
-Date: Fri, 24 Feb 2012 08:23:53 +0100
-Message-Id: <1330068233-12713-1-git-send-email-andreas@biessmann.de>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
-References: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+	Fri, 24 Feb 2012 02:41:53 -0500
+Message-ID: <4F473F33.4060409@linux.vnet.ibm.com>
+Date: Fri, 24 Feb 2012 13:11:39 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SPAM_bar: --
-X-SPAM_score: -28
-X-ChkData-Signature: 5a958f099c064083eb0a51d7412b49e7
+To: masami.hiramatsu.pt@hitachi.com, ananth@in.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+CC: jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com
+Subject: [PATCH] perf - ensure offset provided during probe addition is not
+ greater than function length
+References: <4F45FABE.90104@linux.vnet.ibm.com>
+In-Reply-To: <4F45FABE.90104@linux.vnet.ibm.com>
+X-Forwarded-Message-Id: <4F45FABE.90104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022407-2398-0000-0000-0000047F5CDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
-the linux kernel on darwin hosts.
-This fix introduce some minimal glue to adopt linker section handling
-for darwin hosts.
+perf probe allows kprobe to be inserted at any offset from a function
+start, which results in adding kprobes to unintended location.
+(example: perf probe do_fork+10000 is allowed even though size of
+do_fork is ~904)
 
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jochen Friedrich <jochen@scram.de>
-CC: Samuel Ortiz <sameo@linux.intel.com>
-CC: "K. Y. Srinivasan" <kys@microsoft.com>
+This patch will ensure probe addition fails when the offset specified
+is greater than size of the function.
+
+
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
 ---
-since v1:
- * change 'checkpatch' whitespace fixews back
 
- scripts/mod/file2alias.c |   35 +++++++++++++++++++++++++++++++----
- 1 files changed, 31 insertions(+), 4 deletions(-)
+ tools/perf/util/probe-finder.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index d0de2a2..b89efe6 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -46,11 +46,37 @@ struct devtable {
- 	void *function;
- };
- 
-+#define ___cat(a,b) a ## b
-+#define __cat(a,b) ___cat(a,b)
-+
-+/* we need some special handling for this host tool running eventually on
-+ * Darwin. The Mach-O section handling is a bit different than ELF section
-+ * handling. The differnces in detail are:
-+ *  a) we have segments which have sections
-+ *  b) we need a API call to get the respective section symbols */
-+#if defined(__MACH__)
-+#include <mach-o/getsect.h>
-+
-+#define INIT_SECTION(name)  do {					\
-+		unsigned long name ## _len;				\
-+		char *__cat(pstart_,name) = getsectdata("__TEXT",	\
-+			#name, &__cat(name,_len));			\
-+		char *__cat(pstop_,name) = __cat(pstart_,name) +	\
-+			__cat(name, _len);				\
-+		__cat(__start_,name) = (void *)__cat(pstart_,name);	\
-+		__cat(__stop_,name) = (void *)__cat(pstop_,name);	\
-+	} while (0)
-+#define SECTION(name)   __attribute__((section("__TEXT, " #name)))
-+
-+struct devtable **__start___devtable, **__stop___devtable;
-+#else
-+#define INIT_SECTION(name) /* no-op for ELF */
-+#define SECTION(name)   __attribute__((section(#name)))
-+
- /* We construct a table of pointers in an ELF section (pointers generally
-  * go unpadded by gcc).  ld creates boundary syms for us. */
- extern struct devtable *__start___devtable[], *__stop___devtable[];
--#define ___cat(a,b) a ## b
--#define __cat(a,b) ___cat(a,b)
-+#endif /* __MACH__ */
- 
- #if __GNUC__ == 3 && __GNUC_MINOR__ < 3
- # define __used			__attribute__((__unused__))
-@@ -65,8 +91,8 @@ extern struct devtable *__start___devtable[], *__stop___devtable[];
- 						(type *)NULL,		\
- 						(char *)NULL)),		\
- 		sizeof(type), (function) };				\
--	static struct devtable *__attribute__((section("__devtable"))) \
--		__used __cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
-+	static struct devtable *SECTION(__devtable) __used \
-+		__cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
- 
- #define ADD(str, sep, cond, field)                              \
- do {                                                            \
-@@ -1080,6 +1106,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		do_pnp_card_entries(symval, sym->st_size, mod);
- 	else {
- 		struct devtable **p;
-+		INIT_SECTION(__devtable);
- 
- 		for (p = __start___devtable; p < __stop___devtable; p++) {
- 			if (sym_is(name, namelen, (*p)->device_id)) {
--- 
-1.7.9.1
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 5d73262..d298f94 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
+ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+ 				  bool retprobe, struct probe_trace_point *tp)
+ {
+-	Dwarf_Addr eaddr;
++	Dwarf_Addr eaddr, highaddr;
+ 	const char *name;
+
+ 	/* Copy the name of probe point */
+@@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+ 				   dwarf_diename(sp_die));
+ 			return -ENOENT;
+ 		}
++		if (dwarf_highpc(sp_die, &highaddr) != 0) {
++			pr_warning("Failed to get end address of %s\n",
++				   dwarf_diename(sp_die));
++			return -ENOENT;
++		}
++		if (paddr > highaddr) {
++			pr_warning("Offset specified is greater than size of %s\n",
++				   dwarf_diename(sp_die));
++			return -EINVAL;
++		}
+ 		tp->symbol = strdup(name);
+ 		if (tp->symbol == NULL)
+ 			return -ENOMEM;
 
