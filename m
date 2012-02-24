@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab2BXEGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 23:06:16 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:60535 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab2BXEGO (ORCPT
+	id S1755686Ab2BXEIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 23:08:07 -0500
+Received: from ozlabs.org ([203.10.76.45]:58979 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754959Ab2BXEIF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 23:06:14 -0500
-Message-ID: <4F470CB3.2010800@garzik.org>
-Date: Thu, 23 Feb 2012 23:06:11 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Thu, 23 Feb 2012 23:08:05 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andreas =?utf-8?Q?Bie=C3=9Fmann?= <andreas@biessmann.de>
+Cc: Andreas =?utf-8?Q?Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        Jochen Friedrich <jochen@scram.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: Re: [PATCH] mod/file2alias: make modpost compile on darwin again
+In-Reply-To: <4F45DC99.1050405@biessmann.de>
+References: <1329947735-4331-1-git-send-email-andreas@biessmann.de> <874nui5uv2.fsf@rustcorp.com.au> <4F45DC99.1050405@biessmann.de>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 24 Feb 2012 14:34:59 +1030
+Message-ID: <877gzc511w.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: linux-next: build warning after merge of the libata tree
-References: <20120213162740.9e3cb47a39da19ed89edea49@canb.auug.org.au> <20120224140814.c134151d30e3f32b36360d5d@canb.auug.org.au>
-In-Reply-To: <20120224140814.c134151d30e3f32b36360d5d@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 10:08 PM, Stephen Rothwell wrote:
-> Hi Jeff, Matthew,
->
-> On Mon, 13 Feb 2012 16:27:40 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
->>
->> After merging the libata tree, today's linux-next build (powerpc
->> ppc64_defconfig) produced this warning:
->>
->> drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not used [-Wunused-function]
->> drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but not used [-Wunused-function]
->>
->> Introduced by commits 75d22cd567ca ("libata: Bind the Linux device tree
->> to the ACPI device tree") and c9df614ade0e ("libata: Add links between
->> removable devices and docks").
->
-> Ping?
+On Thu, 23 Feb 2012 07:28:41 +0100, Andreas Bießmann <andreas@biessmann.de> wrote:
+> > Oh, and checkpatch.pl is wrong, the code was fine.
+> 
+> Sorry for that. I was running checkpatch.pl as dutiful patch submitter
+> and that complained.
 
-A build fix and oops fix were both just pushed out.
+In the Olden Days, we could easily spot code which needed auditing
+simply by looking at the (lack of) coding style.  But then someone
+decided that the most important attribute of good code was the nature of
+the whitespace within it.  And they wrote a tool.
 
-	Jeff
+For a while, this made it really hard for us maintainers to tell which
+incoming patches we should actually read!  Fortunately, the
+Anti-whitespace crusaders have come full circle: we can now tell newbie
+coders by the fact that they obey checkpatch.pl.
 
+> Should I provide another version with 'checkpatch' adoptions changed
+> back?
 
+Please :)
+
+Thanks,
+Rusty.
