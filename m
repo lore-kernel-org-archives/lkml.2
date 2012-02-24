@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab2BXRG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:06:56 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64078 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755912Ab2BXRGz convert rfc822-to-8bit (ORCPT
+	id S932295Ab2BXRHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:07:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50421 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265Ab2BXRHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:06:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.180.87.8 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
+	Fri, 24 Feb 2012 12:07:01 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kosaki.motohiro@gmail.com designates 10.68.129.162 as permitted sender) smtp.mail=kosaki.motohiro@gmail.com; dkim=pass header.i=kosaki.motohiro@gmail.com
+Message-ID: <4F47C3B7.20109@gmail.com>
+Date: Fri, 24 Feb 2012 12:07:03 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120224165448.GA8751@kroah.com>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
-	<CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
-	<20120224153811.GA16535@kroah.com>
-	<CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
-	<20120224165448.GA8751@kroah.com>
-Date: Fri, 24 Feb 2012 12:06:54 -0500
-Message-ID: <CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
-Subject: Re: Can we move device drivers into user-space?
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kosaki.motohiro@gmail.com
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home> <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home>
+In-Reply-To: <alpine.DEB.2.00.1202240859340.2621@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Feb 24, 2012 at 11:38:54AM -0500, Jidong Xiao wrote:
->> On Fri, Feb 24, 2012 at 10:38 AM, Greg KH <greg@kroah.com> wrote:
->> > On Fri, Feb 24, 2012 at 10:19:36AM -0500, Jidong Xiao wrote:
->> >> On Wed, Feb 22, 2012 at 11:56 PM, Jidong Xiao <jidong.xiao@gmail.com> wrote:
->> >> > Hi,
->> >> >
->> >> > I am just curious. Since the concept user-space device drivers has
->> >> > been proposed for several years, and some related projects and
->> >> > research papers have demonstrated the feasibility of of moving device
->> >> > drivers into use space. In particular, this paper:
->> >> >
->> >> > Tolerating Malicious Device Drivers in Linux.
->> >> > http://pdos.csail.mit.edu/papers/sud:usenix10.pdf
->> >> >
->> >> > In this paper, existing device driver code need not to be changed,
->> >> > which should help the idea to be applied in practice.
+(2/24/12 10:20 AM), Christoph Lameter wrote:
+> On Thu, 23 Feb 2012, Eric W. Biederman wrote:
 >
-> Please note, that one of the strengths of Linux is that we CAN change
-> driver code, and we do, which makes implementations like this nice from
-> an academic point of view, but unrealistic from a real-world point of
-> view.
+>>> The bug in migrate_pages() is that we do a rcu_unlock and a rcu_lock. If
+>>> we drop those then we should be safe if the use of a task pointer within a
+>>> rcu section is safe without taking a refcount.
+>>
+>> Yes the user of a task_struct pointer found via a userspace pid is valid
+>> for the life of an rcu critical section, and the bug is indeed that we
+>> drop the rcu_lock and somehow expect the task to remain valid.
+>>
+>> The guarantee comes from release_task.  In release_task we call
+>> __exit_signal which calls __unhash_process, and then we call
+>> delayed_put_task to guarantee that the task lives until the end of the
+>> rcu interval.
 >
->> >> Actually, my major concern is, since UIO has been accepted, then why
->> >> don't we move all the rest device drivers into user space as well. As
->> >> I understand, currently, some of device drivers are running on user
->> >> space, while the other (or say the majority of) device drivers are
->> >> running on kernel space, so why don't we maintain a consistent device
->> >> drivers infrastructure, say, either all in user space, or all in
->> >> kernel space. (Sure some critical device drivers still need to be kept
->> >> in kernel space.)
->> >
->> > Feel free to create patches to do so, and handle all of the userspace
->> > changes needed in order to implement this.
->> >
->> > I think you haven't thought through the true reason we have device
->> > drivers, and why Linux isn't a microkernel...
->> >
->> > And I'd take exception to your "advantage:" line above, I don't believe
->> > that is true at all.
->> >
->> > Best of luck with your work,
->> >
->> Although I was asking "can we" do something, I am not actually
->> strongly in favor of either move or not move, as indeed it costs too
->> much to do the moving job.
+> Ah. Ok. Great.
 >
-> Then why even discuss this at all?  What is your goal here?  If it is to
-> have others do work based on an idea you pointed out, you are in the
-> wrong place.
+>> In migrate_pages we have a lot of task accesses outside of the rcu
+>> critical section, and without a reference count on task.
 >
->> But when you say "handle all of the userspace changes needed in order
->> to implement this", if the device driver can be moved without
->> modification (like the paper above shows), there should not be much
->> changes required for user space applications.
+> Yes but that is only of interesting for setup and verification of
+> permissions. What matters during migration is that the mm_struct does not
+> go away and we take a refcount on that one.
 >
-> The paper shows one such implementation that purports to not need
-> userspace changes.  As we have yet to see any code, I remain
-> unconvinced.
+>> I tell you the truth trying to figure out what that code needs to be
+>> correct if task != current makes my head hurt.
 >
->> Also, if user space device drivers is a bad idea, why drivers/uio has
->> been created and merged into mainline kernel?
+> Hmm...
 >
-> UIO fits a real need for some types of devices, why wouldn't it be
-> merged?  You are trying to say it is to be used for all drivers, which
-> is totally missing the point.
+>> I think we need to grab a reference on task_struct, to stop the task
+>> from going away, and in addition we need to hold task_lock.  To keep
+>> task->mm from changing (see exec_mmap).  But we can't do that and sleep
+>> so I think the entire function needs to be rewritten, and the need for
+>> task deep in the migrate_pages path needs to be removed as even with the
+>> reference count held we can race with someone calling exec.
 >
->> Regarding "And I'd take exception to your "advantage:" line above, I
->> don't believe that is true at all", do you agree that a significant
->> portion of kernel crash incidents are due to bugs in drivers?
+> We dont need the task during migration. We only need the mm. The task
+> is safe until rcu_read_unlock therefore maybe the following should fix
+> migrate pages:
 >
-> No I do not.  If you refer to the references from the paper where they
-> make that claim, they are talking about a different operating system
-> than Linux.  But, by virtue of the fact that the majority of the code
-> running in your kernel is drivers, yes, odds are drivers will have a
-> small majority of the bugs overall, given the percentages involved.
-> However, the bugs-per-line-of-code for Linux drivers is _much_ less than
-> other operating systems, especially given the fact that Linux drivers
-> require much less lines of code overall than other operating systems
-> (30% at the most for the majority of device types.)  So I would like to
-> see real numbers backing up your claim before I agree with it.
 >
->> As to "Linux isn't a microkernel", even though the debate between
->> Linux and microkernel have never stopped,
+> Subject: migration: Do not do rcu_read_unlock until the last time we need the task_struct pointer
 >
-> Um, who is having such a debate?  We aren't, so I don't think the debate
-> has ever started.
+> Migration functions perform the rcu_read_unlock too early. As a result the
+> task pointed to may change. Bugs were introduced when adding security checks
+> because rcu_unlock/lock sequences were inserted. Plus the security checks
+> and do_move_pages used the task_struct pointer after rcu_unlock.
+>
+> Fix those issues by removing the unlock/lock sequences and moving the
+> rcu_read_unlock after the last use of the task struct pointer.
+>
+> Signed-off-by: Christoph Lameter<cl@linux.com>
+>
 >
 
-Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
-http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
+	Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Regards
-Jidong
+
