@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab2BXSwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 13:52:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53262 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695Ab2BXSwb convert rfc822-to-8bit (ORCPT
+	id S1756232Ab2BXS6m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 13:58:42 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:43461 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755613Ab2BXS6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 13:52:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.60.28.10 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
+	Fri, 24 Feb 2012 13:58:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120224183726.GB23284@kroah.com>
-References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
-	<20120216204515.GH20420@outflux.net>
-	<20120217002405.GB7746@kroah.com>
-	<20120217075945.GA2831@albatros>
-	<20120217175445.GC29902@kroah.com>
-	<20120217193719.GA4187@albatros>
-	<20120217233908.GA24047@dztty>
-	<CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
-	<20120218161849.GA4176@kroah.com>
-	<CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
-	<20120224183726.GB23284@kroah.com>
-Date: Fri, 24 Feb 2012 10:52:30 -0800
-X-Google-Sender-Auth: MyuUfVR-L5ICa1XC8HzBqfzahEQ
-Message-ID: <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
-From: Kees Cook <keescook@chromium.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: David Windsor <dwindsor@gmail.com>, Roland Dreier <roland@purestorage.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-hardening@lists.openwall.com,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        spender@grsecurity.net
+In-Reply-To: <4F47B781.2050300@gmail.com>
+References: <4F32B776.6070007@gmail.com>
+	<1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
+	<CAAHN_R2Awa5X3B09541grAPLkm9RzL9DnixUKFJXpz=1ZkPTFg@mail.gmail.com>
+	<4F47B781.2050300@gmail.com>
+Date: Sat, 25 Feb 2012 00:28:38 +0530
+Message-ID: <CAAHN_R3-Rh1_vQAH5DHxw56Ukhif0Oq91qghrYoQ04nx=adUyQ@mail.gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
+        vapier@gentoo.org, Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
->> <snip>
->>
->> >> Greg, I'm not sure why you're opposed to adding this checking...
->> >> it's pretty clear that buggy error paths that forget to do a put are
->> >> pretty common and will continue to be common in new code, and
->> >> making them harder to exploit seems pretty sane to me.
->> >>
->> >> What's the downside?
->> >
->> > The downside is that there has not even been a patch sent for any of
->> > this.  Combine that with a lack of understanding about reference
->> > counting and atomic_t usages in the kernel, and the whole thing is ripe
->> > for misunderstanding and confusion.
->> >
->> > greg k-h
->>
->> This approach to adding overflow protection to kref uses
->> atomic_add_unless to increment the refcounter only if it is not
->> already at INT_MAX.  This
->> leaks the internal representation of atomic_t, which is defined as an
->> int in linux/types.h, into kref.
->>
->> If we can agree on an approach to adding overflow protection, if it is
->> indeed desired, we can then discuss adding a Kconfig option and/or a
->> sysctl for this protection.
->>
->> Thanks,
->> David
->>
->>
->> Signed-off-by: David Windsor <dwindsor@gmail.com>
->> ---
->>  include/linux/kref.h |    6 +++++-
->>  1 files changed, 5 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/kref.h b/include/linux/kref.h
->> index 9c07dce..fc0756a 100644
->> --- a/include/linux/kref.h
->> +++ b/include/linux/kref.h
->> @@ -38,8 +38,12 @@ static inline void kref_init(struct kref *kref)
->>   */
->>  static inline void kref_get(struct kref *kref)
->>  {
->> +   int rc = 0;
->>     WARN_ON(!atomic_read(&kref->refcount));
->> -   atomic_inc(&kref->refcount);
->> +   smp_mb__before_atomic_inc();
->> +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
->> +   smp_mb__after_atomic_inc();
->> +   BUG_ON(!rc);
->
-> So you are guaranteeing to crash a machine here if this fails?  And you
-> were trying to say this is a "security" based fix?
+On Fri, Feb 24, 2012 at 9:44 PM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+> Oh, maybe generically you are right. but you missed one thing. Before
+> your patch, stack or not stack are address space property. thus, using
+> /proc/pid/maps makes sense. but after your patch, it's no longer memory
+> property. applications can use heap or mapped file as a stack. then, at
+> least, current your code is wrong. the code assume each memory property
+> are exclusive.
 
-This is the same principle as the stack protector. When something has
-gone horribly wrong and cannot be sensibly recovered from, crash the
-machine. Wrapping the refcount would cause all kinds of problems, so
-that certainly seems worthy of a BUG().
+Right, but I cannot think of any other alternative that does not
+involve touching some sensitive code.
 
--Kees
+The setcontext family of functions where any heap, stack or even data
+area portion could be used as stack, break the very concept of an
+entire vma being used as a stack. In such a scenario the kernel can
+only show what it knows, which is that a specific vma is being used as
+a stack. I agree that it is not correct to show the entire vma as
+stack, but there doesn't seem to be a better way right now in that
+implementation. FWIW, if the stack space is allocated in heap, it will
+show up as heap and not stack since the former gets preference.
+
+> Moreover, if pthread stack is unimportant, I wonder why we need this patch
+> at all. Which application does need it? and When?
+
+Right, my original intent was to mark stack vmas allocated by
+pthreads, which included those vmas that are in the pthreads cache.
+However, this means that the kernel does not have any real control
+over what it marks as stack. Also, the concept is very specific to the
+glibc pthreads implementation and we're essentially just making the
+kernel spit out some data blindly for glibc.
+
+The other solution I can think of is to have stack_start as a task
+level property so that each task knows their stack vma start (obtained
+from its sys_clone call and not from mmap). This however means
+increasing the size of task_struct by sizeof(unsigned long). Is that
+overhead acceptable?
 
 -- 
-Kees Cook
-ChromeOS Security
+Siddhesh Poyarekar
+http://siddhesh.in
