@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2BXMRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 07:17:41 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:40872 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2BXMRk (ORCPT
+	id S1755341Ab2BXMSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 07:18:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44072 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab2BXMSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 07:17:40 -0500
-X-IronPort-AV: E=Sophos;i="4.73,475,1325462400"; 
-   d="scan'208";a="10917704"
-Date: Fri, 24 Feb 2012 12:23:33 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH-WIP 07/13] xen/arm: receive xen events on arm
-In-Reply-To: <4F4770AD.6040703@citrix.com>
-Message-ID: <alpine.DEB.2.00.1202241221440.23091@kaball-desktop>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>  <1330019314-20865-7-git-send-email-stefano.stabellini@eu.citrix.com> <4F4770AD.6040703@citrix.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 24 Feb 2012 07:18:05 -0500
+Date: Fri, 24 Feb 2012 13:17:53 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Feng Tang <feng.tang@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to
+ reduce wait time
+Message-ID: <20120224121753.GE2479@pengutronix.de>
+References: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uTRFFR9qmiCqR05s"
+Content-Disposition: inline
+In-Reply-To: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012, David Vrabel wrote:
-> On 23/02/12 17:48, Stefano Stabellini wrote:
-> > Compile events.c and use IRQ 32 to receive events notifications.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> > +#ifdef CONFIG_ARM
-> > +#define IRQ_EVTCHN_CALLBACK 63
-> > +irqreturn_t xen_arm_callback(int irq, void *arg)
-> > +{
-> > +	__xen_evtchn_do_upcall();
-> > +	return 0;
-> > +}
-> > +
-> > +int __init xen_init_IRQ_arm(void)
-> > +{
-> > +	int rc;
-> > +	xen_init_IRQ();
-> > +	rc = request_irq(IRQ_EVTCHN_CALLBACK, xen_arm_callback,
-> > +			IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
-> > +			"events", "events");	
-> > +	if (rc) {
-> > +		printk(KERN_ERR "Error requesting IRQ %d\n", IRQ_EVTCHN_CALLBACK);
-> > +	}
-> > +	return rc;
-> > +}
-> > +core_initcall(xen_init_IRQ_arm);
-> > +#endif
-> 
-> You should (eventually) have a device tree binding for the event channel
-> and use a OF (device tree) device driver instead of this core_initcall()
-> to register the handler etc.
- 
-Yes, that is the idea, once we have better device tree support in Xen.
-We should also pass the IRQ number to be used as event injection
-mechanism through the device tree.
+
+--uTRFFR9qmiCqR05s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Feb 20, 2012 at 09:14:16AM +0100, Alexander Stein wrote:
+> If you insert several i2c transfers, the driver might start the next one
+> while the STOP bit of the previous transfer is still on the bus, marking
+> the bus as busy.
+> pch_i2c_wait_for_bus_idle does an msleep(20) delaying the next transfer
+> by >=3D20ms. Reduce wait time by actively waiting 5 us once, then using
+> usleep_range.
+>=20
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+
+Tomoya, are you happy with it? (I hope he reads the list, since his
+companies mailserver doesn't seem to accept my mails).
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--uTRFFR9qmiCqR05s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk9Hf/EACgkQD27XaX1/VRsJBwCfQcJt+ZL0iuZoBYyAOdvX4CiQ
+sO4An3T1JN+rCq+8KmpM22VrMrEWrfc7
+=cnOu
+-----END PGP SIGNATURE-----
+
+--uTRFFR9qmiCqR05s--
