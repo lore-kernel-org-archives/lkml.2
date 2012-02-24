@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2BXMGs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 07:06:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41885 "EHLO
+	id S1756677Ab2BXMJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 07:09:24 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:63012 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2BXMGr convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755332Ab2BXMJW convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 24 Feb 2012 07:06:47 -0500
-Message-Id: <4F478B630200007800074A31@nat28.tlf.novell.com>
+	Fri, 24 Feb 2012 07:09:22 -0500
+Message-Id: <4F478C010200007800074A3D@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 24 Feb 2012 12:06:43 +0000
+Date: Fri, 24 Feb 2012 12:09:21 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <srostedt@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: fix CFI annotations for NMI nesting code
+Cc: <dzickus@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: properly _init-annotate NMI selftest code
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -22,125 +22,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The saving and restoring of %rdx wasn't annotated at all, and the
-jumping over sections where state gets partly restored wasn't handled
-either.
-
-Further, by folding the pushing of the previous frame in repeat_nmi
-into that which so far was immediately preceding restart_nmi (after
-moving the restore of %rdx ahead of that, since it doesn't get used
-anymore when pushing prior frames), annotations of the replicated
-frame creations can be made consistent too.
-
-Finally, the END()/CFI_ENDPROC marker of nmi should be at the very
-end, rather than giving repeat_nmi its own frame (as this isn't a
-separate function).
+After all, this code is being run once at boot only (if configured in
+at all).
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
 
 ---
- arch/x86/kernel/entry_64.S |   27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ arch/x86/kernel/nmi_selftest.c |   37 +++++++++++++++++++------------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
 
---- 3.3-rc4/arch/x86/kernel/entry_64.S
-+++ 3.3-rc4-x86_64-nmi-cfi/arch/x86/kernel/entry_64.S
-@@ -1530,6 +1530,7 @@ ENTRY(nmi)
+--- 3.3-rc4/arch/x86/kernel/nmi_selftest.c
++++ 3.3-rc4-x86-nmi-selftest-init/arch/x86/kernel/nmi_selftest.c
+@@ -12,6 +12,7 @@
+ #include <linux/smp.h>
+ #include <linux/cpumask.h>
+ #include <linux/delay.h>
++#include <linux/init.h>
  
- 	/* Use %rdx as out temp variable throughout */
- 	pushq_cfi %rdx
-+	CFI_REL_OFFSET rdx, 0
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
+@@ -20,35 +21,35 @@
+ #define FAILURE		1
+ #define TIMEOUT		2
  
+-static int nmi_fail;
++static int __initdata nmi_fail;
+ 
+ /* check to see if NMI IPIs work on this machine */
+-static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __read_mostly;
++static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __initdata;
+ 
+-static int testcase_total;
+-static int testcase_successes;
+-static int expected_testcase_failures;
+-static int unexpected_testcase_failures;
+-static int unexpected_testcase_unknowns;
++static int __initdata testcase_total;
++static int __initdata testcase_successes;
++static int __initdata expected_testcase_failures;
++static int __initdata unexpected_testcase_failures;
++static int __initdata unexpected_testcase_unknowns;
+ 
+-static int nmi_unk_cb(unsigned int val, struct pt_regs *regs)
++static int __init nmi_unk_cb(unsigned int val, struct pt_regs *regs)
+ {
+ 	unexpected_testcase_unknowns++;
+ 	return NMI_HANDLED;
+ }
+ 
+-static void init_nmi_testsuite(void)
++static void __init init_nmi_testsuite(void)
+ {
+ 	/* trap all the unknown NMIs we may generate */
+ 	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk");
+ }
+ 
+-static void cleanup_nmi_testsuite(void)
++static void __init cleanup_nmi_testsuite(void)
+ {
+ 	unregister_nmi_handler(NMI_UNKNOWN, "nmi_selftest_unk");
+ }
+ 
+-static int test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
++static int __init test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
+ {
+         int cpu = raw_smp_processor_id();
+ 
+@@ -58,7 +59,7 @@ static int test_nmi_ipi_callback(unsigne
+         return NMI_DONE;
+ }
+ 
+-static void test_nmi_ipi(struct cpumask *mask)
++static void __init test_nmi_ipi(struct cpumask *mask)
+ {
+ 	unsigned long timeout;
+ 
+@@ -86,7 +87,7 @@ static void test_nmi_ipi(struct cpumask 
+ 	return;
+ }
+ 
+-static void remote_ipi(void)
++static void __init remote_ipi(void)
+ {
+ 	cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
+@@ -94,19 +95,19 @@ static void remote_ipi(void)
+ 		test_nmi_ipi(to_cpumask(nmi_ipi_mask));
+ }
+ 
+-static void local_ipi(void)
++static void __init local_ipi(void)
+ {
+ 	cpumask_clear(to_cpumask(nmi_ipi_mask));
+ 	cpumask_set_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
+ 	test_nmi_ipi(to_cpumask(nmi_ipi_mask));
+ }
+ 
+-static void reset_nmi(void)
++static void __init reset_nmi(void)
+ {
+ 	nmi_fail = 0;
+ }
+ 
+-static void dotest(void (*testcase_fn)(void), int expected)
++static void __init dotest(void (*testcase_fn)(void), int expected)
+ {
+ 	testcase_fn();
  	/*
- 	 * Check the special variable on the stack to see if NMIs are
-@@ -1547,6 +1548,7 @@ ENTRY(nmi)
- 	 */
- 	lea 6*8(%rsp), %rdx
- 	test_in_nmi rdx, 4*8(%rsp), nested_nmi, first_nmi
-+	CFI_REMEMBER_STATE
+@@ -131,12 +132,12 @@ static void dotest(void (*testcase_fn)(v
+ 	reset_nmi();
+ }
  
- nested_nmi:
- 	/*
-@@ -1578,10 +1580,12 @@ nested_nmi:
+-static inline void print_testname(const char *testname)
++static inline void __init print_testname(const char *testname)
+ {
+ 	printk("%12s:", testname);
+ }
  
- nested_nmi_out:
- 	popq_cfi %rdx
-+	CFI_RESTORE rdx
+-void nmi_selftest(void)
++void __init nmi_selftest(void)
+ {
+ 	init_nmi_testsuite();
  
- 	/* No need to check faults here */
- 	INTERRUPT_RETURN
- 
-+	CFI_RESTORE_STATE
- first_nmi:
- 	/*
- 	 * Because nested NMIs will use the pushed location that we
-@@ -1617,6 +1621,10 @@ first_nmi:
- 	 * NMI may zero out. The original stack frame and the temp storage
- 	 * is also used by nested NMIs and can not be trusted on exit.
- 	 */
-+	/* Do not pop rdx, nested NMIs will corrupt it */
-+	movq (%rsp), %rdx
-+	CFI_RESTORE rdx
-+
- 	/* Set the NMI executing variable on the stack. */
- 	pushq_cfi $1
- 
-@@ -1624,14 +1632,14 @@ first_nmi:
- 	.rept 5
- 	pushq_cfi 6*8(%rsp)
- 	.endr
-+	CFI_DEF_CFA_OFFSET SS+8-RIP
- 
-+restart_nmi:
- 	/* Make another copy, this one may be modified by nested NMIs */
- 	.rept 5
- 	pushq_cfi 4*8(%rsp)
- 	.endr
--
--	/* Do not pop rdx, nested NMIs will corrupt it */
--	movq 11*8(%rsp), %rdx
-+	CFI_DEF_CFA_OFFSET SS+8-RIP
- 
- 	/*
- 	 * Everything below this point can be preempted by a nested
-@@ -1639,7 +1647,6 @@ first_nmi:
- 	 * caused by an exception and nested NMI will start here, and
- 	 * can still be preempted by another NMI.
- 	 */
--restart_nmi:
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
-@@ -1665,8 +1672,6 @@ nmi_restore:
- 	/* Clear the NMI executing stack variable */
- 	movq $0, 10*8(%rsp)
- 	jmp irq_return
--	CFI_ENDPROC
--END(nmi)
- 
- 	/*
- 	 * If an NMI hit an iret because of an exception or breakpoint,
-@@ -1675,18 +1680,12 @@ END(nmi)
- 	 * stack to jump to here when it does the final iret.
- 	 */
- repeat_nmi:
--	INTR_FRAME
- 	/* Update the stack variable to say we are still in NMI */
- 	movq $1, 5*8(%rsp)
--
--	/* copy the saved stack back to copy stack */
--	.rept 5
--	pushq_cfi 4*8(%rsp)
--	.endr
--
- 	jmp restart_nmi
--	CFI_ENDPROC
- end_repeat_nmi:
-+	CFI_ENDPROC
-+END(nmi)
- 
- ENTRY(ignore_sysret)
- 	CFI_STARTPROC
 
 
 
