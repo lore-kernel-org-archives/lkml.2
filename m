@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab2BXWu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:50:56 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40882 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2BXWuz (ORCPT
+	id S932437Ab2BXWyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:54:47 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50457 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756907Ab2BXWyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:50:55 -0500
-Date: Fri, 24 Feb 2012 17:50:51 -0500 (EST)
-Message-Id: <20120224.175051.1564143307942470904.davem@davemloft.net>
-To: santoshprasadnayak@gmail.com
-Cc: benve@cisco.com, roprabhu@cisco.com, neepatel@cisco.com,
-        nistrive@cisco.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/2] enic: Fix endianness bug.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330102599-1245-1-git-send-email-santoshprasadnayak@gmail.com>
-References: <1330102599-1245-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 24 Feb 2012 14:50:53 -0800 (PST)
+	Fri, 24 Feb 2012 17:54:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.101 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 14:54:37 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224225437.GA15695@kroah.com>
+References: <20120224192643.GB24120@kroah.com>
+ <20120224201027.GA4859@polaris.bitmath.org>
+ <20120224201655.GA5994@kroah.com>
+ <20120224203715.GA4995@polaris.bitmath.org>
+ <20120224205651.GA13333@kroah.com>
+ <20120224212238.GA5178@polaris.bitmath.org>
+ <20120224213027.GB15735@thunk.org>
+ <20120224221459.GA5254@polaris.bitmath.org>
+ <20120224222034.GB28198@kroah.com>
+ <20120224224930.GA5684@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224224930.GA5684@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: santosh nayak <santoshprasadnayak@gmail.com>
-Date: Fri, 24 Feb 2012 22:26:39 +0530
-
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Fri, Feb 24, 2012 at 11:49:30PM +0100, Henrik Rydberg wrote:
+> On Fri, Feb 24, 2012 at 02:20:34PM -0800, Greg KH wrote:
+> > On Fri, Feb 24, 2012 at 11:14:59PM +0100, Henrik Rydberg wrote:
+> > > The main issue that set me off has been sufficiently diluted in the
+> > > (selective) discussion so as to no longer make sense as a reply: At
+> > > some point, in-tree or out-of-tree will no longer be distinguishable,
+> > > and the question is if/when/why something would/should happen as a
+> > > consequence. A matter of politics, if you will. It seemed like an
+> > > honest question starting this thread, and I think it is fair to keep
+> > > it in mind as such.
+> > 
+> > If something happens to require such a change in the future, we will
+> > deal with it, at that time.  Remember the rule, "Linux is evolution, not
+> > intelligent design."
 > 
-> Sparse complaints the endian bug.
-> 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> Who "we" is is exactly the point.
 
-I'll apply this, thanks.
+The kernel development community will handle it.
+
+> For the not-so-important record, evolution does actually create
+> intelligent designs.
+
+For some things yes, for others (like your tailbone), perhaps not :)
+
+greg k-h
