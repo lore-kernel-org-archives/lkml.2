@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab2BXLcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 06:32:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59082 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab2BXLcv (ORCPT
+	id S1757252Ab2BXLdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 06:33:22 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38970 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab2BXLdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 06:32:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of sshtylyov@mvista.com designates 10.204.156.5 as permitted sender) smtp.mail=sshtylyov@mvista.com
-Message-ID: <4F477515.1040303@mvista.com>
-Date: Fri, 24 Feb 2012 15:31:33 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 24 Feb 2012 06:33:20 -0500
+Message-ID: <4F47756F.1020602@linux.vnet.ibm.com>
+Date: Fri, 24 Feb 2012 17:03:03 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: meng zhang <meng.zhang@mediatek.com>
-CC: smurf@smurf.noris.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
-References: <CACwCHpxjhEenzv+H3zK2cNKAA9KyuK=DPythY2UgHTmY_AhqaQ@mail.gmail.com>
-In-Reply-To: <CACwCHpxjhEenzv+H3zK2cNKAA9KyuK=DPythY2UgHTmY_AhqaQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: acme@infradead.org
+CC: ananth@in.ibm.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH] perf - ensure offset provided during probe addition is
+ not greater than function length
+References: <4F45FABE.90104@linux.vnet.ibm.com> <4F473F33.4060409@linux.vnet.ibm.com> <4F47673B.6000103@hitachi.com>
+In-Reply-To: <4F47673B.6000103@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022411-2398-0000-0000-00000480393B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Can you please pick up this patch?
 
-On 24-02-2012 10:41, meng zhang wrote:
+On 02/24/2012 04:02 PM, Masami Hiramatsu wrote:
 
-> from: Meng Zhang<meng.zhang@mediatek.com>
+> (2012/02/24 16:41), Prashanth Nageshappa wrote:
+>> perf probe allows kprobe to be inserted at any offset from a function
+>> start, which results in adding kprobes to unintended location.
+>> (example: perf probe do_fork+10000 is allowed even though size of
+>> do_fork is ~904)
+>>
+>> This patch will ensure probe addition fails when the offset specified
+>> is greater than size of the function.
+>>
+>>
+>> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+> 
+> This seems good to me.
+> 
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> Thank you,
+> 
+>> ---
+>>
+>>  tools/perf/util/probe-finder.c |   12 +++++++++++-
+>>  1 files changed, 11 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+>> index 5d73262..d298f94 100644
+>> --- a/tools/perf/util/probe-finder.c
+>> +++ b/tools/perf/util/probe-finder.c
+>> @@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
+>>  static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+>>  				  bool retprobe, struct probe_trace_point *tp)
+>>  {
+>> -	Dwarf_Addr eaddr;
+>> +	Dwarf_Addr eaddr, highaddr;
+>>  	const char *name;
+>>
+>>  	/* Copy the name of probe point */
+>> @@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
+>>  				   dwarf_diename(sp_die));
+>>  			return -ENOENT;
+>>  		}
+>> +		if (dwarf_highpc(sp_die, &highaddr) != 0) {
+>> +			pr_warning("Failed to get end address of %s\n",
+>> +				   dwarf_diename(sp_die));
+>> +			return -ENOENT;
+>> +		}
+>> +		if (paddr > highaddr) {
+>> +			pr_warning("Offset specified is greater than size of %s\n",
+>> +				   dwarf_diename(sp_die));
+>> +			return -EINVAL;
+>> +		}
+>>  		tp->symbol = strdup(name);
+>>  		if (tp->symbol == NULL)
+>>  			return -ENOMEM;
+>>
+> 
+> 
 
-> 1. This patch is based on kernel 3.0.0
 
-    You should base on the recent kernel instead.
-
-> 2. To declare the product IDs in option.c
-
-> Signed-off-by: Meng Zhang<meng.zhang@mediatek.com>
-> ---------------------------------------------------------------------------------------
-
-    This line is not needed here.
-
-> --- option.c	2012-02-23 10:42:40.635138657 +0800
-> +++ option.c.orig	2011-10-07 22:50:04.000000000 +0800
-
-    The patch should be applicablke with -p1 switch, i.e. based on the linux 
-source root.
-
-[...]
-> @@ -1008,10 +1005,6 @@ static const struct usb_device_id option
->   	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650
-> CDMA 450 1xEVDO modem */
->   	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
->   	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID,
-> SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /*
-> Samsung GT-B3730 LTE USB modem.*/
-> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-> 0x00, 0x00) },
-
-    You're not adding the device IDs, you're removing them.
-
-> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-> 0x02, 0x01) },
-> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-> 0x00, 0x00) },
-> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-> 0x02, 0x01) },	/* MediaTek MT6276M modem&  app port */
-
-    The patch is line wrapped.
-
-WBR, Sergei
