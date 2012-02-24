@@ -1,48 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2BXInk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 03:43:40 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:40532
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755630Ab2BXIni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 03:43:38 -0500
-Message-ID: <4F474DAD.1030302@compulab.co.il>
-Date: Fri, 24 Feb 2012 10:43:25 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20120201 Thunderbird/9.0
+	id S1756349Ab2BXJIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 04:08:41 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38857 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755561Ab2BXJIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 04:08:36 -0500
+Date: Fri, 24 Feb 2012 10:08:11 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, a.p.zijlstra@chello.nl,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120224090811.GB814@elte.hu>
+References: <20120222075334.GA25053@elte.hu>
+ <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+ <20120222081855.GB25318@elte.hu>
+ <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+ <20120223100205.GD24310@elte.hu>
+ <CA+55aFwwV3GsqHue8oUsx-XbvSQXSawJ0w5z=wL8ue=EH4ifzw@mail.gmail.com>
+ <20120223223348.GA25513@elte.hu>
+ <20120223223933.GA7942@elte.hu>
+ <20120223231842.GA31030@Krystal>
+ <20120224022512.GA3777@redhat.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: stable@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: ARM: OMAP: patches for stable
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224022512.GA3777@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-There are several patches already in mainline, that should be also applied to stable:
+* Jason Baron <jbaron@redhat.com> wrote:
 
-40410715 (ARM: omap: fix oops in drivers/video/omap2/dss/dpi.c)				[3.2-stable]
-d980e0f8 (ARM: omap: fix oops in arch/arm/mach-omap2/vp.c when pmic is not found)	[3.2-stable]
+> On Thu, Feb 23, 2012 at 06:18:42PM -0500, Mathieu Desnoyers wrote:
+> > * Ingo Molnar (mingo@elte.hu) wrote:
+> > > 
+> > > * Ingo Molnar <mingo@elte.hu> wrote:
+> > > 
+> > > > So, a modified scheme would be:
+> > > > 
+> > > >         #include <linux/static_key.h>
+> > > > 
+> > > >         struct static_key key = STATIC_KEY_INIT_TRUE;
+> > > > 
+> > > >         if (static_key_false(&key))
+> > > >                 do unlikely code
+> > > >         else
+> > > >                 do likely code
+> > > > 
+> > > > Or:
+> > > > 
+> > > >         if (static_key_true(&key))
+> > > >                 do likely code
+> > > >         else
+> > > >                 do unlikely code
+> > > > 
+> > > > The static key is modified via:
+> > > > 
+> > > >         static_key_slow_inc(&key);
+> > > >         ...
+> > > >         static_key_slow_dec(&key);
+> > > > 
+> > > > Is that API fine? I'll rework the series to such an effect if 
+> > > > everyone agrees.
+> > > 
+> > > I.e. something like the patch below on top of 
+> > > tip:perf/jump-labels.
+> > > 
+> > > Untested - will test it and will refactor the series if 
+> > > everyone's happy.
+> > 
+> > Hi Ingo,
+> > 
+> > Reading your documentation updates makes me realise that adding the
+> > "inline" keyword in there would make the whole thing even clearer:
+> > 
+> > struct static_key key = STATIC_KEY_INLINE_TRUE_INIT;
+> > struct static_key key = STATIC_KEY_INLINE_FALSE_INIT;
+> > 
+> > static_key_inline_true() / static_key_inline_false()
+> > 
+> > to show that the "true/false" in there does not mean that the key will
+> > always be true or false (the key value can indeed by changed by calling
+> > static_key_slow_inc/dec), but that the inlined path is either the true
+> > of false branch.
+> > 
+> 
+> Also, as part of the API, there is a test to check the branch 
+> direction - which was 'jump_label_true(key)', but is now also 
+> 'static_key_true(key)', [...]
 
-Can these, please be applied to stable?
+Yeah, there is such an overlap - I've renamed it to 
+static_key_enabled(), which makes sense anyway as the original 
+was jump_label_enabled()..
 
-Thanks
+Btw., shouldnt it be an inline function? Currently it's:
 
--- 
-Regards,
-Igor.
+bool static_key_enabled(struct static_key *key)
+{
+        return (atomic_read(&key->enabled) > 0);
+}
+
+which is the perfect candidate for inlining. The difference to 
+static_key_true() is the lack of the jump label patching and the 
+lack of an unlikely() hint.
+
+> [...] so we are going to have to change either the branch site 
+> or the test for true/false name. The above 
+> 'static_key_inline_true/false' solves that.
+
+It's generally good practice to make the mostly commonly used 
+method names the simplest/shortest names - i.e. I don't think we 
+should make it longer via adding an _inline to every use.
+
+In that sense static_key_true() has pretty optimal length - we'd 
+like these tests to also be visually unintrusive.
+
+So in the latest patch (still under testing, will push it out 
+soon) we have:
+
+	static_key_true()
+	static_key_false()
+	static_key_enabled()
+
+> Also, I do like having a consistent 'static_key_*' prefix for 
+> the entire API - definitely an improvement for me.
+
+Yeah.
+
+Thanks,
+
+	Ingo
