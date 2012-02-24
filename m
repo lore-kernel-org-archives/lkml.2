@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2BXXC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 18:02:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35441 "EHLO mx2.suse.de"
+	id S1756623Ab2BXXLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 18:11:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35639 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264Ab2BXXC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 18:02:26 -0500
-Date: Sat, 25 Feb 2012 00:02:25 +0100
+	id S1754050Ab2BXXLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 18:11:31 -0500
+Message-ID: <4F481921.9070609@suse.cz>
+Date: Sat, 25 Feb 2012 00:11:29 +0100
 From: Michal Marek <mmarek@suse.cz>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: linux-kernel@vger.kernel.org, maximilian attems <max@stro.at>,
-        Ben Hutchings <ben@decadent.org.uk>, debian-kernel@lists.debian.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Fix out-of-tree build for 'make deb-pkg'
-Message-ID: <20120224230225.GD19992@sepie.suse.cz>
-References: <1329418597-1654-1-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329418597-1654-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/coccinelle: semantic patch converting 0 test
+ to null test
+References: <1327696888-8186-3-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1327696888-8186-3-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 07:56:37PM +0100, Joerg Roedel wrote:
-> The out-of-tree build is broken in 'make deb-pkg'. The
-> header checks and the header install works on the source and
-> not on the object tree.
-> While fixing this also replace the direct 'make' invocations
-> with the $MAKE variable to be consistent within the script.
+Dne 27.1.2012 21:41, Julia Lawall napsal(a):
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: maximilian attems <max@stro.at>
-> Cc: Ben Hutchings <ben@decadent.org.uk>
-> Cc: debian-kernel@lists.debian.org
-> Cc: linux-kbuild@vger.kernel.org
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  scripts/package/builddeb |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Applied to kbuild.git#misc, thanks.
+I applied the whole series to kbuild.git#misc.
 
 Michal
+
