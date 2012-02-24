@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2BXHty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 02:49:54 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38129 "EHLO
+	id S1755513Ab2BXHv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 02:51:59 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:21330 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888Ab2BXHrZ (ORCPT
+	with ESMTP id S1754559Ab2BXHv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 02:47:25 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/11] PCI: Use class quirk for intel fix_transparent_bridge
-Date: Thu, 23 Feb 2012 23:46:51 -0800
-Message-Id: <1330069619-14446-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330069619-14446-1-git-send-email-yinghai@kernel.org>
-References: <1330069619-14446-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F47408C.00C8,ss=1,re=0.000,fgs=0
+	Fri, 24 Feb 2012 02:51:58 -0500
+Date: Fri, 24 Feb 2012 10:53:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: bpm@sgi.com, elder@kernel.org, xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] xfs: Use memset to initialize structure member.
+Message-ID: <20120224075354.GA3649@mwanda>
+References: <1330067322-17011-1-git-send-email-santoshprasadnayak@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
+Content-Disposition: inline
+In-Reply-To: <1330067322-17011-1-git-send-email-santoshprasadnayak@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090209.4F47419A.0047,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/pci/fixup.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 6dd8955..24172ff 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -164,11 +164,11 @@ DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8367_0, pci_fixup_
-  */
- static void __devinit pci_fixup_transparent_bridge(struct pci_dev *dev)
- {
--	if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
--	    (dev->device & 0xff00) == 0x2400)
-+	if ((dev->device & 0xff00) == 0x2400)
- 		dev->transparent = 1;
- }
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_fixup_transparent_bridge);
-+DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
-+			 PCI_CLASS_BRIDGE_PCI, 8, pci_fixup_transparent_bridge);
- 
- /*
-  * Fixup for C1 Halt Disconnect problem on nForce2 systems.
--- 
-1.7.7
+--8t9RHnE3ZwKMSgU+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Fri, Feb 24, 2012 at 12:38:42PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>=20
+> Sparse is giving following warning:
+> fs/xfs/xfs_bmap.c:4826:41: warning: Using plain integer as NULL pointer.
+>=20
+
+You could just do:
+	struct xfs_bmalloca     bma =3D {};
+
+But honestly, I'd just leave this one as is.  The xfs people are
+grumpy sorts and it's best to not send them these kinds of patches
+that don't address a real bug.
+
+regards,
+dan
+
+
+--8t9RHnE3ZwKMSgU+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPR0IRAAoJEOnZkXI/YHqR/84P/j4f0CsYWMeZkm06V4vIICwt
+6yDTBYrqgzegoWrWOO1R4PM3htN4+Pjl2sOhv8lykMiC4gA0Fx7ZhI4F0F4iu/NG
+oVWT9zgh321PwZbJMgXIkYdbJfFFToi++c5mLPV6zoEZb0cA5yxWKbXygcxACExx
+975KtBZRjoLOK5jqChNL0ZMdE4xCM2n1cXchL7ym8R7WWzroFVKIlFaZxN8MjiR6
+nXcqLPIICjyGl5ZmE2LRquL+es2bxlSBwTPOsgzic7fpDkanyBM3BGZBCbtfjoUN
+E5k08dJ8DOr4YV1TGIatoekDSuDXGSzlLdUWXGd27L0E+MOv1XM479abDq/YtWxL
+EqDyD5yXaebbJ36iYWyM/ydMwvHiJtnAlNYnezG04iJK0KDn1EkWKaBkWhXJ2yMO
+ZWASCbZDkFNDesMgaoYtLhmPsSC8CCAo49U4h9TEo4XXKIq1CiF/3/3a2vbE1FhS
+YJ2PsCMcAozWW4eLf6r6cIVEwxbm5N/kCLgPO0c//CC542RqkrZu7TNWvarej9Md
+Lq65YgjkOeCQI3cXw3NESbbbTnKg6+bnNWWLAdAGtEQMA9lxMqWtvYPJnUWXP84q
+TmpdODip7eVkmKfcaO9Dk1J/AUMILuakRvg5lLUaiipOdjrO3w8Kp/a6s1jBkF7D
++Ci39unsMJKpfpjCY/bO
+=oEhI
+-----END PGP SIGNATURE-----
+
+--8t9RHnE3ZwKMSgU+--
