@@ -1,44 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab2BXWon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:44:43 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35897 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755583Ab2BXWom (ORCPT
+	id S932406Ab2BXWrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:47:51 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49582 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab2BXWrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:44:42 -0500
-Message-ID: <4F4812D5.7060606@suse.cz>
-Date: Fri, 24 Feb 2012 23:44:37 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	Fri, 24 Feb 2012 17:47:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.195.99 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 24 Feb 2012 14:47:43 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC] USB: create module_usb_serial_driver macro
+Message-ID: <20120224224743.GA15460@kroah.com>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, fenghua.yu@intel.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] IA64: hpsim, fix SAL handling in fw-emu
-References: <1330081818-15517-1-git-send-email-jslaby@suse.cz> <CA+8MBbKtQZkp0RzsP366PgzdN2jvX73njFr1avSoE_CFDv=jNg@mail.gmail.com>
-In-Reply-To: <CA+8MBbKtQZkp0RzsP366PgzdN2jvX73njFr1avSoE_CFDv=jNg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 11:32 PM, Tony Luck wrote:
-> Are these four patches the only things needed to get the kernel
-> running on the simulator?  I've been building sim_defconfig as
-> part of my regular "did things break" cycle. But I haven't tried to
-> boot in well over five years.
+Now that Alan Stern has cleaned up the usb serial driver registration,
+we have the ability to create a module_usb_serial_driver macro to make
+things a bit simpler, like the other *_driver macros created.
 
-Yes, it works fine for me. I'm using busybox as userspace. From SLES 11
-SP2. I was using it to test tty patches applied to simserial.
+But, as we need two functions here, we can't reuse the existing
+module_driver() macro, so we need to roll our own.
 
-My .config differs from sim_defconfig though. I didn't know there is a
-defconfig for HP simulator. So I configured the kernel from scratch with
-help of menuconfig.
+Lars-Peter, or anyone else, am I missing something here and we can use
+module_driver() somehow, or even modify it, to work for subsystems that
+need 2 parameters for their function calls to register/deregister?
+
+Actually, if we want to be tricky, we can go back to assigning the
+usb_driver in the usb_serial_driver structure, and just use that pointer
+in the first structure in the list as that option, but that's getting
+pretty opaque just to reuse a single macro...
+
+Thoughts anyone?
 
 thanks,
--- 
-js
-suse labs
+
+greg k-h
+
+
+Here's a patch implementing module_usb_serial_driver() and it converts
+the pl2303 driver to use it, showing a nice cleanup.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -855,23 +855,7 @@ static struct usb_serial_driver * const serial_drivers[] = {
+ 	&pl2303_device, NULL
+ };
+ 
+-static int __init pl2303_init(void)
+-{
+-	int retval;
+-
+-	retval = usb_serial_register_drivers(&pl2303_driver, serial_drivers);
+-	if (retval == 0)
+-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
+-	return retval;
+-}
+-
+-static void __exit pl2303_exit(void)
+-{
+-	usb_serial_deregister_drivers(&pl2303_driver, serial_drivers);
+-}
+-
+-module_init(pl2303_init);
+-module_exit(pl2303_exit);
++module_usb_serial_driver(pl2303_driver, serial_drivers);
+ 
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
+index 34c06a7..7b1db84 100644
+--- a/include/linux/usb/serial.h
++++ b/include/linux/usb/serial.h
+@@ -406,5 +406,33 @@ do {									\
+ 	}								\
+ } while (0)
+ 
++/*
++ * module_usb_serial_driver() - Helper macro for registering a USB Serial driver
++ * @__usb_driver: usb_driver struct to register
++ * @__serial_drivers: list of usb_serial drivers to register
++ *
++ * Helper macro for USB serial drivers which do not do anything special
++ * in module init/exit. This eliminates a lot of boilerplate. Each
++ * module may only use this macro once, and calling it replaces
++ * module_init() and module_exit()
++ *
++ * Note, we can't use the generic module_driver() call here, due to the
++ * two parameters in the usb_serial_* functions, so we roll our own here
++ * :(
++ */
++#define module_usb_serial_driver(__usb_driver, __serial_drivers)	\
++static int __init usb_serial_driver_init(void)				\
++{									\
++	return usb_serial_register_drivers(&(__usb_driver),		\
++					   (__serial_drivers));		\
++}									\
++module_init(usb_serial_driver_init);					\
++static void __exit usb_serial_driver_exit(void)				\
++{									\
++	return usb_serial_deregister_drivers(&(__usb_driver),		\
++					     (__serial_drivers));	\
++}									\
++module_exit(usb_serial_driver_exit);
++
+ #endif /* __LINUX_USB_SERIAL_H */
+ 
