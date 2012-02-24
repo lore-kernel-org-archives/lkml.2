@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab2BXEr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 23:47:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59061 "EHLO mail.zytor.com"
+	id S1756197Ab2BXEs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 23:48:58 -0500
+Received: from linux-sh.org ([111.68.239.195]:51620 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755752Ab2BXEr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 23:47:26 -0500
-Message-ID: <4F471651.3080609@zytor.com>
-Date: Thu, 23 Feb 2012 20:47:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: matt.fleming@intel.com, mingo@redhat.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
-        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32
- oops
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org> <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org> <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com> <4F45B35D.1010702@zytor.com> <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
-In-Reply-To: <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755825Ab2BXEs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 23:48:56 -0500
+Date: Fri, 24 Feb 2012 13:48:53 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] rmobile fixes for 3.3-rc5
+Message-ID: <20120224044853.GA3112@linux-sh.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 02:36 AM, Yinghai Lu wrote:
-> On Wed, Feb 22, 2012 at 7:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 02/22/2012 06:20 PM, Yinghai Lu wrote:
->>>
->>> Why is MAXMEM used here?
->>>
->>> EFI reserved area could be above 4G?
->>>
->>> if that is the case, you will map all mmio hole below 4g.
->>>
->>
->> OK, dropping this patch for now, at least from -urgent.
->>
->> We really need to restrict the memory types we map, at least without
->> ioremap() called on them.  In theory, on x86-64, we could have a
->> dedicated "1:1" address for each physical address, but there is no good
->> reason we should ever map memory types other than RAM, ACPI and EFI by
->> default -- with the possible exception of the low 1 MiB legacy area.
-> 
-> please check attach patch for tip/efi branch.
+The following changes since commit bb4c7e9a9908548b458f34afb2fee74dc0d49f90:
 
-That doesn't do anything like what I noted above.
+  Merge branch 'for-linus' of git://oss.sgi.com/xfs/xfs (2012-02-23 15:38:57 -0800)
 
-We should get rid of dependencies on legacy PC memory layouts, not add
-more hacks.  What is so hard about "when we create the initial mappings,
-only create for RAM/ACPI/EFI regions" (if we even need to do so for
-ACPI, I think ACPI might use ioremap() already)?
+are available in the git repository at:
 
-	-hpa
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+  git://github.com/pmundt/linux-sh.git rmobile-for-linus
 
+for you to fetch changes up to 7372a4cd6c6fe07ae9d7d0340717736fba863580:
+
+  arch/arm/mach-shmobile/board-ag5evm.c: included linux/dma-mapping.h twice (2012-02-24 13:32:17 +0900)
+
+----------------------------------------------------------------
+SH/R-Mobile fixes for 3.3-rc5
+
+----------------------------------------------------------------
+Danny Kukawka (1):
+      arch/arm/mach-shmobile/board-ag5evm.c: included linux/dma-mapping.h twice
+
+Guennadi Liakhovetski (2):
+      ARM: mach-shmobile: simplify MMCIF DMA configuration
+      ARM: mach-shmobile: add GPIO-to-IRQ translation to sh7372
+
+Kuninori Morimoto (3):
+      ARM: mach-shmobile: mackerel: use renesas_usbhs instead of r8a66597_hcd
+      ARM: mach-shmobile: mackerel: add ak4642 amixer settings on comment
+      ARM: mach-shmobile: clock-sh73a0: add DSIxPHY clock support
+
+Magnus Damm (5):
+      ARM: mach-shmobile: sh73a0 PINT IRQ base fix
+      ARM: mach-shmobile: sh73a0 IRQ sparse alloc fix
+      ARM: mach-shmobile: IRQ driven GPIO key support for Kota2
+      ARM: mach-shmobile: sh73a0 PSTR 32-bit access fix
+      ARM: mach-shmobile: r8a7779 PFC IPSR4 fix
+
+Paul Gortmaker (1):
+      arm: fix compile failure in mach-shmobile/board-ag5evm.c
+
+Paul Mundt (4):
+      Merge branch 'rmobile/kota2' into rmobile-fixes-for-linus
+      Merge branch 'rmobile/mackerel' into rmobile-fixes-for-linus
+      Merge branch 'rmobile/urgent' into rmobile-fixes-for-linus
+      Merge git://git.kernel.org/.../torvalds/linux into rmobile-fixes-for-linus
+
+ arch/arm/mach-shmobile/board-ag5evm.c        |   29 ++++---
+ arch/arm/mach-shmobile/board-ap4evb.c        |   12 +---
+ arch/arm/mach-shmobile/board-kota2.c         |    3 +-
+ arch/arm/mach-shmobile/board-mackerel.c      |   95 +++++-----------------
+ arch/arm/mach-shmobile/clock-sh73a0.c        |  113 ++++++++++++++++++++++++++
+ arch/arm/mach-shmobile/include/mach/sh73a0.h |    6 +-
+ arch/arm/mach-shmobile/intc-sh73a0.c         |    2 +
+ arch/arm/mach-shmobile/pfc-r8a7779.c         |    2 +-
+ arch/arm/mach-shmobile/pfc-sh7372.c          |   41 +++++++++
+ arch/arm/mach-shmobile/smp-sh73a0.c          |    2 +-
+ 10 files changed, 200 insertions(+), 105 deletions(-)
