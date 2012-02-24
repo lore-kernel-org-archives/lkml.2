@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab2BXRUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:20:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5330 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab2BXRUr (ORCPT
+	id S1757979Ab2BXRVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:21:30 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:65534 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab2BXRV2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:20:47 -0500
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=C9Pls-Yy-XAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=D19gQVrFAAAA:8 a=rzU8vT6vYBVgyffaZr4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330104044.25686.165.camel@gandalf.stny.rr.com>
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-team@fedoraproject.org
-Date: Fri, 24 Feb 2012 12:20:44 -0500
-In-Reply-To: <20120224165130.GB2399@linux.vnet.ibm.com>
-References: <20120222011652.GE23186@zod.bos.redhat.com>
-	 <20120222013252.GZ2375@linux.vnet.ibm.com>
-	 <20120222014242.GF23186@zod.bos.redhat.com>
-	 <20120224144032.GA13903@zod.bos.redhat.com>
-	 <20120224161743.GA2399@linux.vnet.ibm.com>
-	 <20120224162745.GC13903@zod.bos.redhat.com>
-	 <20120224165130.GB2399@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 24 Feb 2012 12:21:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.181.13.113 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120224171344.GA9485@kroah.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+	<CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+	<20120224153811.GA16535@kroah.com>
+	<CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+	<20120224165448.GA8751@kroah.com>
+	<CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
+	<20120224171344.GA9485@kroah.com>
+Date: Fri, 24 Feb 2012 12:21:27 -0500
+Message-ID: <CAG4AFWYJj8BJq=QiNixb+tmWskgBzoPwGbREqn_s+bQkBO25ng@mail.gmail.com>
+Subject: Re: Can we move device drivers into user-space?
+From: Jidong Xiao <jidong.xiao@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-24 at 08:51 -0800, Paul E. McKenney wrote:
+On Fri, Feb 24, 2012 at 12:13 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Feb 24, 2012 at 12:06:54PM -0500, Jidong Xiao wrote:
+>> On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> As to "Linux isn't a microkernel", even though the debate between
+>> >> Linux and microkernel have never stopped,
+>> >
+>> > Um, who is having such a debate?  We aren't, so I don't think the debate
+>> > has ever started.
+>> >
+>>
+>> Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
+>> http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
+>
+> That was 20 years ago, to assume that anyone rational was still having
+> that debate today is insane.
+>
 
-> But after looking this over, Steven Rostedt's three-patch set should
-> suffice:
-> 
-> 	https://lkml.org/lkml/2012/2/7/231
-> 
-> The reason that mine are not needed is that the problematic code is
-> called -only- from idle, not from process context, and also that the
-> problematic code is tracing.  My patch #45 is required for code that is
-> called from both process context and from idle.  My patch #46 is required
-> for non-tracing uses of RCU from within the idle loop -- along with TBD
-> patches to wrap those uses of RCU in the RCU_NONIDLE() macro.
-> 
-> So again, in your particular case of x86's power-tracing features,
-> Steven Rostedt's three-patch series called out above should be all
-> that you need.
-> 
-> I have CCed Steven in case there is some prerequisite to his patch set.
+You probably missed the second paragraph.
 
-The above link is the RFC, it probably still suffices, but the patches
-that are going into mainline are here:
-
-https://lkml.org/lkml/2012/2/13/530
-https://lkml.org/lkml/2012/2/13/525
-https://lkml.org/lkml/2012/2/13/524
-
-The above is the order to apply them, (patch 3, 4, and 5) even though
-they arrived to LKML out of order.
-
--- Steve
-
-
+"This subject was revisited in 2006 after Tanenbaum wrote a cover
+story for Computer magazine titled "Can We Make Operating Systems
+Reliable and Secure?".[3] While Tanenbaum himself has mentioned that
+he did not write the article to renew the debate on kernel design,[4]
+the juxtaposition of the article and an archived copy of the 1992
+debate on the technology site Slashdot caused the subject to be
+rekindled.[5] Torvalds posted a rebuttal of Tanenbaum's arguments via
+an online discussion forum,[6] and several technology news sites began
+reporting the issue.[7] This prompted Jonathan Shapiro to respond that
+most of the field-proven reliable and secure computer systems use a
+more microkernel-like approach.[8]"
