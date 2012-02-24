@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2BXA3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 19:29:36 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35879 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab2BXA3f (ORCPT
+	id S1757416Ab2BXA3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:29:37 -0500
+Received: from jonshouse.co.uk ([91.84.151.33]:54645 "EHLO
+	mail.jonshouse.co.uk" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756114Ab2BXA3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Feb 2012 19:29:35 -0500
-Message-ID: <1330043325.2340.290.camel@work-vm>
-Subject: Re: [tip:timers/core] clocksource: scx200_hrt: Fix the build
-From: John Stultz <john.stultz@linaro.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jim.cromie@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Date: Thu, 23 Feb 2012 16:28:45 -0800
-In-Reply-To: <tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org>
-References: <tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org>
+X-Greylist: delayed 1783 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Feb 2012 19:29:35 EST
+Subject: Random process lockup on ARM board: alsa-lib-1.0.25,
+ FUTEX_WAIT_PRIVATE
+From: Jonathan Andrews <jon@jonshouse.co.uk>
+Reply-To: jon@jonshouse.co.uk
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <4F45167A.6080706@ladisch.de>
+References: <1329393691.6830.20.camel@jonspc>
+	 <1329512682.29051.1.camel@jonspc> <1329570128.6670.0.camel@jonspc>
+	 <4F400BBF.9020707@ladisch.de> <1329603022.1089.57.camel@jonspc>
+	 <4F41FC28.1070605@ladisch.de> <1329926198.22918.10.camel@jonspc>
+	 <4F45167A.6080706@ladisch.de>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+Date: Fri, 24 Feb 2012 00:29:57 +0000
+Message-ID: <1330043397.4669.44.camel@jonspc>
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022400-3270-0000-0000-0000044668BB
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 08:13 -0800, tip-bot for Ingo Molnar wrote:
-> Commit-ID:  10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
-> Gitweb:     http://git.kernel.org/tip/10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
-> Author:     Ingo Molnar <mingo@elte.hu>
-> AuthorDate: Wed, 22 Feb 2012 13:19:37 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Wed, 22 Feb 2012 13:25:16 +0100
-> 
-> clocksource: scx200_hrt: Fix the build
-> 
-> This commit:
-> 
->   12d6d41276de: clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
-> 
-> Breaks the build on x86-32:
-> 
->   drivers/clocksource/scx200_hrt.c: In function ‘init_hrt_clocksource’:
->   drivers/clocksource/scx200_hrt.c:95:0: error: unterminated argument list invoking macro "pr_info"
->   drivers/clocksource/scx200_hrt.c:84:2: error: ‘pr_info’ undeclared (first use in this function)
-> 
-> It could not possibly have been build tested, because it had this mismerge:
-> 
-> 	pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n",
-> 	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
-> 		mhz27 ? "27":"1", ppm);
+Using kernel 3.2.5 with alsa-lib 1.0.25, all compiled with generic
+Debian arm-linux-gnueabi toolchain.
 
-Yea, looking in my git logs, that was me. Sorry about that.
-Thanks for catching it and fixing it up. 
--john
+arm-linux-gnueabi-gcc (Debian 4.3.2-1.1) 4.3.2
+Was used to build kernel, alsa-lib and application.
+
+Changing gcc version, kernel version or alsa-lib version makes the
+problem worse or better, but ALL versions seem to suffer this problem. I
+have also seen it once on Intel (but only once so far).
+
+Something seeks broken at a lower layer than im using.  I simply don't
+have the skill to debug it.
+
+The hardware is a USB cm109 audio adapter, but the problem seems to show
+on more than this one driver.
+
+The audio application writing to alsa will freezes at random intervals,
+infrequent at the moment, last one was after runtime 20H 37M 29S.  Two
+processes are running, one reading from the sound device and one writing
+to the sound device. I am not using threading or anything very clever
+just generic alsa functions.
+
+This is the only diagnostic I can generate so far as running the
+application under strace slows it to the point it no longer functions
+enough to generate the problem.
+
+ARM / # strace -p 417
+Process 417 attached - interrupt to quit
+futex(0x175734, FUTEX_WAIT_PRIVATE, 2, NULL^C <unfinished ...>
+Process 417 detached
+
+ARM / # uname -a
+Linux (none) 3.2.5 #2 Wed Feb 22 17:11:52 GMT 2012 armv4tl GNU/Linux
+ARM / # uptime
+ 22:36:19 up 22:36,  0 users,  load average: 0.15, 0.16, 0.18
+ARM / # cat /proc/cpuinfo 
+Processor       : ARM920T rev 0 (v4l)
+BogoMIPS        : 199.06
+Features        : swp half thumb crunch 
+CPU implementer : 0x41
+CPU architecture: 4T
+CPU variant     : 0x1
+CPU part        : 0x920
+CPU revision    : 0
+
+
+Any help welcome.
+
+Thanks,
+Jon
+
 
