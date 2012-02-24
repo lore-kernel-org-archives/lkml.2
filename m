@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757009Ab2BXTPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:15:39 -0500
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:59953 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab2BXTPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:15:38 -0500
-X-SENDER-IP: [85.230.168.211]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqZ+AEnhR09V5qjTPGdsb2JhbABDiX+oFoEGGQEBAQE3NIFzAQEEATocIxAIA0YUJQoaiBQJtx0TikqCJAoGDxUKCwMPDQIPFQUDAoUtDgMMgw9jBJU6hW2NBA
-X-IronPort-AV: E=Sophos;i="4.73,477,1325458800"; 
-   d="scan'208";a="54559073"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 24 Feb 2012 20:15:35 +0100
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120224191535.GA4505@polaris.bitmath.org>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
- <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
- <20120224153811.GA16535@kroah.com>
- <1330103229.23014.130.camel@groeck-laptop>
- <20120224171752.GB9485@kroah.com>
- <20120224183423.GA23284@kroah.com>
+	id S1757396Ab2BXTPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:15:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757091Ab2BXTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 14:15:42 -0500
+Message-ID: <4F47E1DA.9040407@redhat.com>
+Date: Fri, 24 Feb 2012 17:15:38 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224183423.GA23284@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for 3.3-rc5] media fixes
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Given the choice, I would be quite happy to piss off some robots. Call
-> > it a prejudice if you like ;).
-> 
-> You can't control how people use an interface.  You will note that there
-> are no stupid users of the UIO interface in the kernel today, we can't
-> control what people do in the privacy of their own companies/homes,
-> despite numerous governments trying to do so in the past.
-> 
-> So yes, people will always do stupid, foolish things.  And they were
-> doing them before UIO came along, now they just have the chance to at
-> least do those foolish things in a way that interfaces with the kernel
-> in a semi-sane manner, not messing anything else in the kernel up.
+Latest commit at the branch: 
+fda27874de91d5a8b9a018b3bc74b14578994908 [media] hdpvr: update picture controls to support firmware versions > 0.15
+The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
 
-So the question is; can the uio example be repeated in other areas, to
-bring more kernel power to userspace?
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
 
-No doubt, the kernel has fostered an unprecedented code-quality view,
-which, IMHO, is the bottom line. As long as that quality remains
-unchallenged, having all drivers in-kernel will remain the best
-choice. But, suppose some entity managed to keep that quality in
-userspace, would there be any reason to think of it as a bad idea? I
-think not.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-Henrik
+Janne Grunau (1):
+      [media] hdpvr: fix race conditon during start of streaming
+
+Jarod Wilson (1):
+      [media] imon: don't wedge hardware after early callbacks
+
+Laurent Pinchart (1):
+      [media] omap3isp: Fix crash caused by subdevs now having a pointer to devnodes
+
+Randy Dunlap (1):
+      [media] wl128x: fix build errors when GPIOLIB is not enabled
+
+Taylor Ralph (1):
+      [media] hdpvr: update picture controls to support firmware versions > 0.15
+
+ drivers/media/radio/wl128x/Kconfig      |    4 +-
+ drivers/media/rc/imon.c                 |   26 +++++++++++++++---
+ drivers/media/video/hdpvr/hdpvr-core.c  |   18 ++++++++++--
+ drivers/media/video/hdpvr/hdpvr-video.c |   46 ++++++++++++++++++++++---------
+ drivers/media/video/hdpvr/hdpvr.h       |    1 +
+ drivers/media/video/omap3isp/ispccdc.c  |    2 +-
+ 6 files changed, 74 insertions(+), 23 deletions(-)
+
