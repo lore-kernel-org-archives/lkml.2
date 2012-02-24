@@ -1,74 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988Ab2BXRY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 12:24:28 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:59146 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab2BXRY1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 12:24:27 -0500
-Message-ID: <4F47C7C5.4090806@arm.com>
-Date: Fri, 24 Feb 2012 17:24:21 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	id S932267Ab2BXRZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 12:25:40 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57672 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755964Ab2BXRZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 12:25:39 -0500
+Message-ID: <4F47C800.4090903@linux.vnet.ibm.com>
+Date: Fri, 24 Feb 2012 09:25:20 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
 MIME-Version: 1.0
-To: David Brown <davidb@codeaurora.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] msm: timer: Support sched_clock()
-References: <1329874777-12758-1-git-send-email-sboyd@codeaurora.org> <20120222215533.GA31480@codeaurora.org> <4F476242.2020909@arm.com> <20120224170901.GA9312@codeaurora.org>
-In-Reply-To: <20120224170901.GA9312@codeaurora.org>
-X-Enigmail-Version: 1.3.4
-X-OriginalArrivalTime: 24 Feb 2012 17:24:39.0655 (UTC) FILETIME=[30465770:01CCF319]
-X-MC-Unique: 112022417242500401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home> <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home>
+In-Reply-To: <alpine.DEB.2.00.1202241105280.3726@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022417-7182-0000-0000-000000E21CCF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/02/12 17:09, David Brown wrote:
-> On Fri, Feb 24, 2012 at 10:11:14AM +0000, Marc Zyngier wrote:
->> On 22/02/12 21:55, David Brown wrote:
->>> On Tue, Feb 21, 2012 at 05:39:37PM -0800, Stephen Boyd wrote:
->>>> Now that sched_clock is mandatory on ARM it's simple to add
->>>> sched_clock support to the MSM timer code. Add it so that we get
->>>> more accurate sched_clock output than the jiffies based version
->>>> that's provided by default.
->>>>
->>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>>> Cc: David Brown <davidb@codeaurora.org>
->>>
->>> Marc, are you able to pull this into your series, so they can all go
->>> in together?  If so:
->>>
->>>   Acked-by: David Brown <davidb@codeaurora.org>
->>
->> David, Stephen,
->>
->> Russell already pulled my sched_clock() patch series, so I'm not sure it
->> is actually useful for me to carry it (and there is actually no
->> dependency between this patch and the series). Maybe putting it in the
->> patch system or via armsoc would be best?
->>
->> Otherwise:
->> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+On 02/24/2012 09:08 AM, Christoph Lameter wrote:
+> cpuset_mems_allowed takes a mutex. Hmmm... Under rcu?
 > 
-> I'll keep an eye on it then, and push it into the ARM soc tree when
-> the dependencies are there.
+> security_task_movememory does some kind of security hook.
+> 
+> Is that all safe? If not then we need to take a refcount on the task
+> struct after all.
 
-The whole thing is that there's no dependency. The sched_clock() stuff
-has hit mainline during the merge window. This patch could go in right
-now, without any harm.
-
-What Russell pulled is just a cleanup to convert the last two platforms
-having their own sched_clock() and not relying on our framework.
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Urg, no we can't sleep under an rcu_read_lock().
 
