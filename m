@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2BXF3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 00:29:07 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53008 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284Ab2BXF3F (ORCPT
+	id S1753343Ab2BXFa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 00:30:59 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:46663 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab2BXFa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 00:29:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
-References: <4F32B776.6070007@gmail.com>
-	<1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
-Date: Fri, 24 Feb 2012 10:59:03 +0530
-Message-ID: <CAAHN_R2Awa5X3B09541grAPLkm9RzL9DnixUKFJXpz=1ZkPTFg@mail.gmail.com>
-Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
-        vapier@gentoo.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Feb 2012 00:30:57 -0500
+Date: Fri, 24 Feb 2012 16:30:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: manual merge of the irqdomain tree with the powerpc
+ tree
+Message-Id: <20120224163042.4cc2633945c9799b997ff4e7@canb.auug.org.au>
+In-Reply-To: <20120224162504.49480de981431c3fd95601a2@canb.auug.org.au>
+References: <20120224162504.49480de981431c3fd95601a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__24_Feb_2012_16_30_42_+1100_rry5wsoH8ZSGPnTX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 4:47 AM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
-> How protect this loop from task exiting? AFAIK, while_each_thread
-> require rcu_read_lock or task_list_lock.
+--Signature=_Fri__24_Feb_2012_16_30_42_+1100_rry5wsoH8ZSGPnTX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I missed this, thanks. I'll send a patch for this on top of my earlier
-patch since Andrew has already included the earlier patch.
+[Just adding the PPC guys]
 
-> Sigh. No, I missed one thing. If application use
-> makecontext()/swapcontext() pair,
-> ESP is not reliable way to detect pthread stack. At that time the
-> stack is still marked
-> as anonymous memory.
+On Fri, 24 Feb 2012 16:25:04 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi Grant,
+>=20
+> Today's linux-next merge of the irqdomain tree got a conflict in
+> arch/powerpc/sysdev/mpic.c between commits 3a7a7176e840 ("powerpc/mpic:
+> Fix use of "flags" variable in mpic_alloc()") and c1b8d45db4db
+> ("powerpc/mpic: Add "last-interrupt-source" property to override
+> hardware") from the powerpc tree and commit a8db8cf0d894 ("irq_domain:
+> Replace irq_alloc_host() with revmap-specific initializers") from the
+> irqdomain tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary.
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc arch/powerpc/sysdev/mpic.c
+> index b9b989d,c83a512..0000000
+> --- a/arch/powerpc/sysdev/mpic.c
+> +++ b/arch/powerpc/sysdev/mpic.c
+> @@@ -1351,9 -1345,9 +1351,8 @@@ struct mpic * __init mpic_alloc(struct=20
+>   	mpic->isu_shift =3D 1 + __ilog2(mpic->isu_size - 1);
+>   	mpic->isu_mask =3D (1 << mpic->isu_shift) - 1;
+>  =20
+> - 	mpic->irqhost =3D irq_alloc_host(mpic->node, IRQ_HOST_MAP_LINEAR,
+> - 				       mpic->isu_size, &mpic_host_ops,
+> - 				       intvec_top + 1);
+> + 	mpic->irqhost =3D irq_domain_add_linear(mpic->node,
+>  -				       isu_size ? isu_size : mpic->num_sources,
+>  -				       &mpic_host_ops, mpic);
+> ++				       mpic->isu_size, &mpic_host_ops, mpic);
+>  =20
+>   	/*
+>   	 * FIXME: The code leaks the MPIC object and mappings here; this
 
-This is not wrong, because it essentially gives the correct picture of
-the state of that task -- the task is using another vma as a stack
-during that point and not the one it was allotted by pthreads during
-thread creation.
+--Signature=_Fri__24_Feb_2012_16_30_42_+1100_rry5wsoH8ZSGPnTX
+Content-Type: application/pgp-signature
 
-I don't think we can successfully stick to the idea of trying to mark
-stack space allocated by pthreads but not used by any task *currently*
-as stack as long as the allocation happens outside the kernel space.
-The only way to mark this is either by marking the stack as
-VM_GROWSDOWN (which will make the stack grow and break some pthreads
-functions) or create a new flag, which a simple display such as this
-does not deserve. So it's best that this sticks to what the kernel
-*knows* is being used as stack.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
+iQIcBAEBCAAGBQJPRyCCAAoJEECxmPOUX5FEtHAP/iUKG3bxrEgZBOX26nxQFsKH
+44vzuO6jahrDV9c4cwKaCXrFxzt2Qj8fXaqDFvfVNaEGZsxmE+rr7rE4DUpky0r/
+278qQiSTj3r0VB8HG+lnxNL8mf+Ml1wcs1avefwY/Oxdrm8Gpc+BZBnyFmrG3y/l
+/PWuTs3Z7w0cdDh6a9Ljr1L8sl73/cab4cc3WHK9M2HKdPihsj1h50K4BSMpObBV
+p3AP6NHFfVI0E1DGmAwtWkOPgYoqSm7KsorcLTVkh5xtn5onVrnTsILRcjRNXM3C
+2PdqkCuPtavPSRyCXVUO8kUGvdna7mwJE/5krvfqFY4gPsMm7ZPKrooyz5ZRTZ6j
+bEmM4LCYBDUIoaMo+5od4cXIMDYSxu1GgmRtmHYc6seSUYwktQPMKRPrAvzZcXlD
+Yfo5rEvZUWpDGLcQ11RwBL5atLAa9LtPmHICr9Ftkaz4qVcVil6s4tUwntBJWEHo
+xo0SAr84FytUU96d01Fdqbmw+vNkbpvVk9zbVzGTxkRO4r3KELmOH00TQJDy7mM2
+oy2+6d8NMLkItKimvNbHdhyRWcbzG2Je72kilwkTDE9g17ZxJA1hv13mcWkJzLiY
+tkPWpLGnvTQf/nOjS/NbIMlJH3RbCnWgLLeaEZAUGVmdaYOvVb+bcqqWKOnVH6fT
+acaC0KILN9PpLb7Q+0mN
+=KWLG
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Feb_2012_16_30_42_+1100_rry5wsoH8ZSGPnTX--
