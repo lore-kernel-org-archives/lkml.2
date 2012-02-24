@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2BXBjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 20:39:35 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:48576 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab2BXBjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755590Ab2BXBjd (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Feb 2012 20:39:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of djpohly@gmail.com designates 10.229.134.194 as permitted sender) smtp.mail=djpohly@gmail.com; dkim=pass header.i=djpohly@gmail.com
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60391 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2BXBj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 20:39:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of djpohly@gmail.com designates 10.229.106.17 as permitted sender) smtp.mail=djpohly@gmail.com; dkim=pass header.i=djpohly@gmail.com
 From: "Devin J. Pohly" <djpohly@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, "Devin J. Pohly" <djpohly@gmail.com>
-Subject: [PATCH 8/9] mei: reduce indentation in read_client_message
-Date: Thu, 23 Feb 2012 20:38:55 -0500
-Message-Id: <1330047536-3827-9-git-send-email-djpohly@gmail.com>
+Subject: [PATCH 2/9] mei: factor some bits of code outside if blocks
+Date: Thu, 23 Feb 2012 20:38:49 -0500
+Message-Id: <1330047536-3827-3-git-send-email-djpohly@gmail.com>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330047536-3827-1-git-send-email-djpohly@gmail.com>
 References: <1330047536-3827-1-git-send-email-djpohly@gmail.com>
@@ -23,100 +23,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Devin J. Pohly" <djpohly@gmail.com>
 
-Removes the empty check since that's handled by foreach.  Moves a big
-chunk of code out of the foreach since it's followed by a break anyway.
-
 Signed-off-by: Devin J. Pohly <djpohly@gmail.com>
 ---
- drivers/staging/mei/interrupt.c |   67 ++++++++++++++++++---------------------
- 1 file changed, 30 insertions(+), 37 deletions(-)
+ drivers/staging/mei/interrupt.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
-index 6ae7a0e..f2c864e 100644
+index 4914589..d1291ae 100644
 --- a/drivers/staging/mei/interrupt.c
 +++ b/drivers/staging/mei/interrupt.c
-@@ -193,51 +193,44 @@ static int mei_irq_thread_read_client_message(struct mei_io_list *complete_list,
- 	unsigned char *buffer = NULL;
- 
- 	dev_dbg(&dev->pdev->dev, "start client msg\n");
--	if (list_empty(&dev->read_list.mei_cb.cb_list))
--		goto out;
- 
- 	list_for_each_entry_safe(cb_pos, cb_next,
- 			&dev->read_list.mei_cb.cb_list, cb_list) {
- 		cl = (struct mei_cl *)cb_pos->file_private;
--		if (cl && _mei_irq_thread_state_ok(cl, mei_hdr)) {
--			cl->reading_state = MEI_READING;
--			buffer = (unsigned char *)
--				(cb_pos->response_buffer.data +
--				cb_pos->information);
+@@ -1336,9 +1336,6 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
+ 			}
+ 			ret = _mei_irq_thread_cmpl(dev, slots, pos, cl,
+ 					cmpl_list);
+-			if (ret)
+-				return ret;
 -
--			if (cb_pos->response_buffer.size <
--					mei_hdr->length + cb_pos->information) {
--				dev_dbg(&dev->pdev->dev, "message overflow.\n");
--				list_del(&cb_pos->cb_list);
--				return -ENOMEM;
--			}
--			if (buffer)
--				mei_read_slots(dev, buffer, mei_hdr->length);
-+		if (cl && _mei_irq_thread_state_ok(cl, mei_hdr))
-+			break;
-+	}
- 
--			cb_pos->information += mei_hdr->length;
--			if (mei_hdr->msg_complete) {
--				cl->status = 0;
--				list_del(&cb_pos->cb_list);
--				dev_dbg(&dev->pdev->dev,
--					"completed read host client = %d,"
--					"ME client = %d, "
--					"data length = %lu\n",
--					cl->host_client_id,
--					cl->me_client_id,
--					cb_pos->information);
+ 		} else if (cl == &dev->iamthif_cl) {
+ 			/* IAMTHIF IOCTL */
+ 			dev_dbg(&dev->pdev->dev, "complete amthi write cb.\n");
+@@ -1352,11 +1349,9 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
+ 			}
+ 			ret = _mei_irq_thread_cmpl_iamthif(dev, slots, pos, cl,
+ 						cmpl_list);
+-			if (ret)
+-				return ret;
 -
--				*(cb_pos->response_buffer.data +
--					cb_pos->information) = '\0';
--				dev_dbg(&dev->pdev->dev, "cb_pos->res_buffer - %s\n",
--					cb_pos->response_buffer.data);
--				list_add_tail(&cb_pos->cb_list,
--					&complete_list->mei_cb.cb_list);
--			}
-+	/* List empty, or client not found */
-+	if (&cb_pos->cb_list == &dev->read_list.mei_cb.cb_list)
-+		goto out;
- 
--			break;
--		}
-+	cl->reading_state = MEI_READING;
-+	buffer = cb_pos->response_buffer.data + cb_pos->information;
- 
-+	if (cb_pos->response_buffer.size <
-+			mei_hdr->length + cb_pos->information) {
-+		dev_dbg(&dev->pdev->dev, "message overflow.\n");
-+		list_del(&cb_pos->cb_list);
-+		return -ENOMEM;
+ 		}
+-
++		if (ret)
++			return ret;
  	}
-+	if (buffer)
-+		mei_read_slots(dev, buffer, mei_hdr->length);
-+
-+	cb_pos->information += mei_hdr->length;
-+	if (!mei_hdr->msg_complete)
-+		goto out;
-+
-+	cl->status = 0;
-+	list_del(&cb_pos->cb_list);
-+	dev_dbg(&dev->pdev->dev, "completed read host client = %d, "
-+		"ME client = %d, data length = %lu\n",
-+		cl->host_client_id, cl->me_client_id, cb_pos->information);
-+
-+	cb_pos->response_buffer.data[cb_pos->information] = '\0';
-+	dev_dbg(&dev->pdev->dev, "cb_pos->res_buffer - %s\n",
-+		cb_pos->response_buffer.data);
-+	list_add_tail(&cb_pos->cb_list, &complete_list->mei_cb.cb_list);
- 
- out:
- 	dev_dbg(&dev->pdev->dev, "message read\n");
+ 	return 0;
+ }
+@@ -1523,13 +1518,11 @@ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
+ 			 * start sending messages.
+ 			 */
+ 			mei_host_start_message(dev);
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
+ 		} else {
+ 			dev_dbg(&dev->pdev->dev, "FW not ready.\n");
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
+ 		}
++		mutex_unlock(&dev->device_lock);
++		return IRQ_HANDLED;
+ 	}
+ 	/* check slots avalable for reading */
+ 	slots = mei_count_full_read_slots(dev);
 -- 
 1.7.9.2
 
