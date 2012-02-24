@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2BXAsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 19:48:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58369 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756359Ab2BXAsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 19:48:00 -0500
-Message-ID: <4F46DE35.60503@zytor.com>
-Date: Thu, 23 Feb 2012 16:47:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756928Ab2BXAuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 19:50:07 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58122 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756359Ab2BXAuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Feb 2012 19:50:06 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
-        Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-References: <CA+55aFz0pOO6j9s3Gs2UJLM4zm8SuPgi5iUiVAaPCp9Xh2Pvjw@mail.gmail.com> <20120222213253.GA25150@kroah.com> <20120223200905.GA5475@kroah.com> <4F46A1C4.90506@zytor.com> <20120223204832.GA30322@kroah.com> <4F46A6EC.8050804@zytor.com> <20120223211016.GA16275@kroah.com> <4F46C63C.4040602@zytor.com> <20120223231605.GA15329@kroah.com> <4F46C92B.4090508@zytor.com> <20120223235450.GA22345@kroah.com>
-In-Reply-To: <20120223235450.GA22345@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
+References: <4F32B776.6070007@gmail.com> <1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
+ <CAHGf_=oi8_s0Bxn4qSD7S_FBSgp29BPXor4hCf5-kekGnf3qEw@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 23 Feb 2012 19:49:45 -0500
+Message-ID: <CAHGf_=q7epQdxRMpQGhZ+734dZRPbM+wdAP74NwJrKLvkxZKuQ@mail.gmail.com>
+Subject: Re: [PATCH] Mark thread stack correctly in proc/<pid>/maps
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
+        vapier@gentoo.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2012 03:54 PM, Greg Kroah-Hartman wrote:
-> On Thu, Feb 23, 2012 at 03:18:03PM -0800, H. Peter Anvin wrote:
->> On 02/23/2012 03:16 PM, Greg Kroah-Hartman wrote:
->>>
->>> And a "clean" 3.2.7 doesn't have that problem?
->>>
->>> Does the same thing happen in Linus's tree at the moment?
->>>
->>
->> Clean 3.2.7 I don't think has that problem, although of course when I
->> run the stress test it fails on other ways so it's hard to 100% rule out.
->>
->> Linus' tree doesn't have that problems.
+2012/2/23 KOSAKI Motohiro <kosaki.motohiro@gmail.com>:
+> Hi
 >
-> Ugh.
->
-> So, we need more testers, so let me release a -rc kernel with just these
-> changes in it, to get a wider testing range, and make an easy "this
-> kernel worked, but this one didn't" for people to work with.
->
-> I don't suppose that 'git bisect' would work for this, as it's really a
-> "all or nothing" type thing with this series from what I can tell,
-> right?
->
+> This version makes sense to me. and I verified this change don't break
+> procps tools.
 
-So far, disabling AES-NI works as expected, so I definitely don't think 
-it's a driver issue.
-
-	-hpa
-
+Sigh. No, I missed one thing. If application use
+makecontext()/swapcontext() pair,
+ESP is not reliable way to detect pthread stack. At that time the
+stack is still marked
+as anonymous memory.
