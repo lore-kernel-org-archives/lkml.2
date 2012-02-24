@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab2BXJQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 04:16:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51626 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529Ab2BXJQG (ORCPT
+	id S1756528Ab2BXJTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 04:19:03 -0500
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:38535 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939Ab2BXJTA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 04:16:06 -0500
-Date: Fri, 24 Feb 2012 01:16:02 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, Chung-yih Wang <cywang@chromium.org>,
-        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
- low z values
-Message-ID: <20120224091602.GE10763@core.coreip.homeip.net>
-References: <1329896503-28394-1-git-send-email-cywang@chromium.org>
- <20120222083858.GA26570@polaris.bitmath.org>
- <CAGS+omCU9f=DyC442+4HOF=sGhZYXne+E2ephFiOmuj-XKciMA@mail.gmail.com>
- <20120222110459.GA28126@polaris.bitmath.org>
- <CAGS+omB0GCQHOjrb_T6h7DzHrH2sp4Xqb5av6JC-ttJ8HZ5BcQ@mail.gmail.com>
- <20120222152425.GA29436@polaris.bitmath.org>
- <20120224082706.GB18291@core.coreip.homeip.net>
- <20120224090835.GA2154@polaris.bitmath.org>
- <20120224091452.GD10763@core.coreip.homeip.net>
-MIME-Version: 1.0
+	Fri, 24 Feb 2012 04:19:00 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 2/2] [trivial] ntfs: Fix typo in mft.c
+Mime-Version: 1.0 (Apple Message framework v1257)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224091452.GD10763@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <1327339776-3560-1-git-send-email-standby24x7@gmail.com>
+Date: Fri, 24 Feb 2012 09:18:49 +0000
+Cc: linux-ntfs-dev@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <14E4B14D-DD30-4098-8AD8-87B4E362E519@tuxera.com>
+References: <1327339776-3560-1-git-send-email-standby24x7@gmail.com>
+To: Masanari Iida <standby24x7@gmail.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 01:14:52AM -0800, Dmitry Torokhov wrote:
-> On Fri, Feb 24, 2012 at 10:08:35AM +0100, Henrik Rydberg wrote:
-> > > > The most striking effect is the ability to better retain a
-> > > > drag. Although the statement was made in light of possible
-> > > > (1-strong,1-weak) packets, it should help in the 2-weak case too.
-> > > 
-> > > The bigger question is why is this needed in kernel. The original
-> > > hysteresis with BTN_TOUCH was done for sole benefit of mousedev so that
-> > > we could allow somewhat better transition from standard PS/2 mode into
-> > > native Synaptics mode with absolute coordinates at time when barely
-> > > anyone had Synaptics X driver installed. This was, what, 10 years ago?
-> > 
-> > The semi-mt behavior is obviously a special case, where userspace
-> > relies on the reported number of fingers to transition between one
-> > touch and two touches. There is no pressure information sent to
-> > userspace in this case, so the situation is in fact quite similar to
-> > the ancient mousedev situation.
-> 
-> We still report ABS_PRESSURE but maybe we should report ABS_MT_PRESSURE
-> as well?
+Hi,
 
-BTW, the reason I do not like this in kernel is because it dos not allow
-users control touchpad sensitivity.
+Thanks for the patch.  I have applied it.
+
+Best regards,
+
+	Anton
+
+On 23 Jan 2012, at 17:29, Masanari Iida wrote:
+
+> Correct two spelling errors "dealocate" to "deallocate"
+> in fs/ntfs/mft.c
+> ---
+> fs/ntfs/mft.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ntfs/mft.c b/fs/ntfs/mft.c
+> index 382857f..862f7ff 100644
+> --- a/fs/ntfs/mft.c
+> +++ b/fs/ntfs/mft.c
+> @@ -1367,7 +1367,7 @@ static int ntfs_mft_bitmap_extend_allocation_nolock(ntfs_volume *vol)
+> 			ntfs_error(vol->sb, "Failed to merge runlists for mft "
+> 					"bitmap.");
+> 			if (ntfs_cluster_free_from_rl(vol, rl2)) {
+> -				ntfs_error(vol->sb, "Failed to dealocate "
+> +				ntfs_error(vol->sb, "Failed to deallocate "
+> 						"allocated cluster.%s", es);
+> 				NVolSetErrors(vol);
+> 			}
+> @@ -1805,7 +1805,7 @@ static int ntfs_mft_data_extend_allocation_nolock(ntfs_volume *vol)
+> 		ntfs_error(vol->sb, "Failed to merge runlists for mft data "
+> 				"attribute.");
+> 		if (ntfs_cluster_free_from_rl(vol, rl2)) {
+> -			ntfs_error(vol->sb, "Failed to dealocate clusters "
+> +			ntfs_error(vol->sb, "Failed to deallocate clusters "
+> 					"from the mft data attribute.%s", es);
+> 			NVolSetErrors(vol);
+> 		}
 
 -- 
-Dmitry
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
