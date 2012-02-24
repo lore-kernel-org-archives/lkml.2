@@ -1,185 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab2BXDRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:17:30 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:52428
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754525Ab2BXDR3 (ORCPT
+	id S1755041Ab2BXDX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:23:59 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:17595 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab2BXDX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 22:17:29 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+	Thu, 23 Feb 2012 22:23:58 -0500
+X-SpamScore: -1
+X-BigFish: VS-1(z4256lz1432N98dKa706lzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 24 Feb 2012 11:24:52 +0800
+Date: Fri, 24 Feb 2012 11:31:07 +0800
 From: Dong Aisheng <aisheng.dong@freescale.com>
 To: Stephen Warren <swarren@nvidia.com>
 CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] pinctrl: Introduce PINCTRL_STATE_DEFAULT define,
- and use it
-Message-ID: <20120224032451.GA25789@shlinux2.ap.freescale.net>
+        Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] pinctrl: Re-order struct pinctrl_map
+Message-ID: <20120224033106.GB25789@shlinux2.ap.freescale.net>
 References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
+ <1330041880-12406-2-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1330041880-12406-2-git-send-email-swarren@nvidia.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 08:04:38AM +0800, Stephen Warren wrote:
-> This provides a single centralized name for the default state.
+On Thu, Feb 23, 2012 at 05:04:39PM -0700, Stephen Warren wrote:
+> The lookup key in struct pinctrl_map is (.dev_name, .name). Re-order the
+> struct definition to put the lookup key fields first, and the result
+> values afterwards. To me at least, this slightly better reflects the
+> lookup process.
 > 
-> Update PIN_MAP_* macros to use this state name, instead of requiring the
-> user to pass a state name in.
-> 
-> Update documentation and mapping tables to use this.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> These 3 patches are small cleanup/fixes triggered by review comments from
-> the 20-long series I posted a few days ago.
-> 
-> These patches are based on the 4-long series that I posted yesterday.
-> 
->  Documentation/pinctrl.txt       |    8 ++++----
->  arch/arm/mach-u300/core.c       |    6 +++---
->  include/linux/pinctrl/machine.h |   13 ++++++++-----
->  include/linux/pinctrl/pinctrl.h |    2 ++
->  4 files changed, 17 insertions(+), 12 deletions(-)
-> 
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> index fa9163a..8bf46bc 100644
-> --- a/Documentation/pinctrl.txt
-> +++ b/Documentation/pinctrl.txt
-> @@ -814,7 +814,7 @@ it even more compact which assumes you want to use pinctrl-foo and position
->  0 for mapping, for example:
->  
->  static struct pinctrl_map __initdata mapping[] = {
-> -       PIN_MAP("I2CMAP", "pinctrl-foo", "i2c0", "foo-i2c.0"),
-> +	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "foo-i2c.0"),
-To keep align with the following
-PIN_MAP_SYS_HOG("pinmux-u300", "power"),
-Maybe PIN_MAP("pinctrl-foo", "i2c0", "foo-i2c.0") is better, right?
 
-And we may want to add a PIN_MAP_STAT macro, as well as PIN_MAP_SYS_HOG_STAT.
+Not only better reflects the llokup process, i think the map name meaning
+is a litlle different as before since it represents states now rather than
+a map name, right?
+And a map entry becomes a specific device's map entry, here the device
+becomes the main entity, so it's reasonable to me to put it in the first.
+
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
 Regards
 Dong Aisheng
 
+> Update the documentation in a similar fashion.
+> 
+> Note: PIN_MAP*() macros aren't updated; I plan to update this once later
+> when enhancing the mapping table format to support pin config to reduce
+> churn.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  Documentation/pinctrl.txt       |   24 ++++++++++++------------
+>  include/linux/pinctrl/machine.h |   10 +++++-----
+>  2 files changed, 17 insertions(+), 17 deletions(-)
+> 
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index 8bf46bc..6fe3232 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -781,19 +781,19 @@ spi on the second function mapping:
+>  
+>  static const struct pinctrl_map __initdata mapping[] = {
+>  	{
+> +		.dev_name = "foo-spi.0",
+>  		.ctrl_dev_name = "pinctrl-foo",
+>  		.function = "spi0",
+> -		.dev_name = "foo-spi.0",
+>  	},
+>  	{
+> +		.dev_name = "foo-i2c.0",
+>  		.ctrl_dev_name = "pinctrl-foo",
+>  		.function = "i2c0",
+> -		.dev_name = "foo-i2c.0",
+>  	},
+>  	{
+> +		.dev_name = "foo-mmc.0",
+>  		.ctrl_dev_name = "pinctrl-foo",
+>  		.function = "mmc0",
+> -		.dev_name = "foo-mmc.0",
+>  	},
 >  };
 >  
+> @@ -826,18 +826,18 @@ As it is possible to map a function to different groups of pins an optional
 >  
-> @@ -930,7 +930,7 @@ foo_probe()
->  	/* Allocate a state holder named "state" etc */
->  	struct pinctrl p;
+>  ...
+>  {
+> +	.dev_name = "foo-spi.0",
+>  	.name = "spi0-pos-A",
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "spi0",
+>  	.group = "spi0_0_grp",
+> -	.dev_name = "foo-spi.0",
+>  },
+>  {
+> +	.dev_name = "foo-spi.0",
+>  	.name = "spi0-pos-B",
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "spi0",
+>  	.group = "spi0_1_grp",
+> -	.dev_name = "foo-spi.0",
+>  },
+>  ...
 >  
-> -	p = pinctrl_get(&device, NULL);
-> +	p = pinctrl_get(&device, PINCTRL_STATE_DEFAULT);
->  	if IS_ERR(p)
->  		return PTR_ERR(p);
->  	pinctrl_enable(p);
-> @@ -988,7 +988,7 @@ This is enabled by simply setting the .dev_name field in the map to the name
+> @@ -852,45 +852,45 @@ case), we define a mapping like this:
+>  
+>  ...
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "2bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "mmc0",
+>  	.group = "mmc0_1_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "4bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "mmc0",
+>  	.group = "mmc0_1_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "4bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "mmc0",
+>  	.group = "mmc0_2_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "8bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.group = "mmc0_1_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "8bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "mmc0",
+>  	.group = "mmc0_2_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  {
+> +	.dev_name = "foo-mmc.0",
+>  	.name = "8bit"
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "mmc0",
+>  	.group = "mmc0_3_grp",
+> -	.dev_name = "foo-mmc.0",
+>  },
+>  ...
+>  
+> @@ -988,10 +988,10 @@ This is enabled by simply setting the .dev_name field in the map to the name
 >  of the pin controller itself, like this:
 >  
 >  {
-> -	.name = "POWERMAP"
-> +	.name = PINCTRL_STATE_DEFAULT,
+> +	.dev_name = "pinctrl-foo",
+>  	.name = PINCTRL_STATE_DEFAULT,
 >  	.ctrl_dev_name = "pinctrl-foo",
 >  	.function = "power_func",
->  	.dev_name = "pinctrl-foo",
-> @@ -998,7 +998,7 @@ Since it may be common to request the core to hog a few always-applicable
->  mux settings on the primary pin controller, there is a convenience macro for
->  this:
+> -	.dev_name = "pinctrl-foo",
+>  },
 >  
-> -PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
-> +PIN_MAP_SYS_HOG("pinctrl-foo", "power_func")
->  
->  This gives the exact same result as the above construction.
->  
-> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-> index d66bc97..2388dc2 100644
-> --- a/arch/arm/mach-u300/core.c
-> +++ b/arch/arm/mach-u300/core.c
-> @@ -1554,9 +1554,9 @@ static struct platform_device pinmux_device = {
->  /* Pinmux settings */
->  static struct pinctrl_map __initdata u300_pinmux_map[] = {
->  	/* anonymous maps for chip power and EMIFs */
-> -	PIN_MAP_SYS_HOG("POWER", "pinmux-u300", "power"),
-> -	PIN_MAP_SYS_HOG("EMIF0", "pinmux-u300", "emif0"),
-> -	PIN_MAP_SYS_HOG("EMIF1", "pinmux-u300", "emif1"),
-> +	PIN_MAP_SYS_HOG("pinmux-u300", "power"),
-> +	PIN_MAP_SYS_HOG("pinmux-u300", "emif0"),
-> +	PIN_MAP_SYS_HOG("pinmux-u300", "emif1"),
->  	/* per-device maps for MMC/SD, SPI and UART */
->  	PIN_MAP("MMCSD", "pinmux-u300", "mmc0", "mmci"),
->  	PIN_MAP("SPI", "pinmux-u300", "spi0", "pl022"),
+>  Since it may be common to request the core to hog a few always-applicable
 > diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-> index 400f192..4743f84 100644
+> index 4743f84..20e9735 100644
 > --- a/include/linux/pinctrl/machine.h
 > +++ b/include/linux/pinctrl/machine.h
-> @@ -12,6 +12,8 @@
->  #ifndef __LINUX_PINCTRL_MACHINE_H
->  #define __LINUX_PINCTRL_MACHINE_H
+> @@ -16,6 +16,10 @@
 >  
-> +#include "pinctrl.h"
-> +
 >  /**
 >   * struct pinctrl_map - boards/machines shall provide this map for devices
+> + * @dev_name: the name of the device using this specific mapping, the name
+> + *	must be the same as in your struct device*. If this name is set to the
+> + *	same name as the pin controllers own dev_name(), the map entry will be
+> + *	hogged by the driver itself upon registration
 >   * @name: the name of this specific map entry for the particular machine.
-> @@ -49,17 +51,18 @@ struct pinctrl_map {
->   * Convenience macro to map a system function onto a certain pinctrl device,
->   * to be hogged by the pin control core until the system shuts down.
+>   *	This is the second parameter passed to pinmux_get() when you want
+>   *	to have several mappings to the same device
+> @@ -27,17 +31,13 @@
+>   * @group: sometimes a function can map to different pin groups, so this
+>   *	selects a certain specific pin group to activate for the function, if
+>   *	left as NULL, the first applicable group will be used
+> - * @dev_name: the name of the device using this specific mapping, the name
+> - *	must be the same as in your struct device*. If this name is set to the
+> - *	same name as the pin controllers own dev_name(), the map entry will be
+> - *	hogged by the driver itself upon registration
 >   */
-> -#define PIN_MAP_SYS_HOG(a, b, c) \
-> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, }
-> +#define PIN_MAP_SYS_HOG(a, b) \
-> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
-> +	  .function = b, }
+>  struct pinctrl_map {
+> +	const char *dev_name;
+>  	const char *name;
+>  	const char *ctrl_dev_name;
+>  	const char *function;
+>  	const char *group;
+> -	const char *dev_name;
+>  };
 >  
 >  /*
->   * Convenience macro to map a system function onto a certain pinctrl device
->   * using a specified group, to be hogged by the pin control core until the
->   * system shuts down.
->   */
-> -#define PIN_MAP_SYS_HOG_GROUP(a, b, c, d)		\
-> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, \
-> -	  .group = d, }
-> +#define PIN_MAP_SYS_HOG_GROUP(a, b, c) \
-> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
-> +	  .function = b, .group = c, }
->  
->  #ifdef CONFIG_PINMUX
->  
-> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-> index 8bd22ee..411fe23 100644
-> --- a/include/linux/pinctrl/pinctrl.h
-> +++ b/include/linux/pinctrl/pinctrl.h
-> @@ -19,6 +19,8 @@
->  #include <linux/list.h>
->  #include <linux/seq_file.h>
->  
-> +#define PINCTRL_STATE_DEFAULT "default"
-> +
->  struct pinctrl_dev;
->  struct pinmux_ops;
->  struct pinconf_ops;
 > -- 
 > 1.7.0.4
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
