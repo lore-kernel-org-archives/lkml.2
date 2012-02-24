@@ -1,215 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2BXDX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 22:23:59 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:17595 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab2BXDX6 (ORCPT
+	id S1755398Ab2BXDYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 22:24:34 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49518 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755133Ab2BXDYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 22:23:58 -0500
-X-SpamScore: -1
-X-BigFish: VS-1(z4256lz1432N98dKa706lzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 24 Feb 2012 11:31:07 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
-        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
-        <thomas.abraham@linaro.org>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] pinctrl: Re-order struct pinctrl_map
-Message-ID: <20120224033106.GB25789@shlinux2.ap.freescale.net>
-References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
- <1330041880-12406-2-git-send-email-swarren@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1330041880-12406-2-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Thu, 23 Feb 2012 22:24:03 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 2/4] PCI: Make pci bridge reallocating enabled/disabled
+Date: Thu, 23 Feb 2012 19:23:30 -0800
+Message-Id: <1330053812-10316-3-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330053812-10316-1-git-send-email-yinghai@kernel.org>
+References: <1330053812-10316-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F4702CB.009B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 05:04:39PM -0700, Stephen Warren wrote:
-> The lookup key in struct pinctrl_map is (.dev_name, .name). Re-order the
-> struct definition to put the lookup key fields first, and the result
-> values afterwards. To me at least, this slightly better reflects the
-> lookup process.
-> 
+Let the user could enable and disable with pci=realloc=on or pci=realloc=off
 
-Not only better reflects the llokup process, i think the map name meaning
-is a litlle different as before since it represents states now rather than
-a map name, right?
-And a map entry becomes a specific device's map entry, here the device
-becomes the main entity, so it's reasonable to me to put it in the first.
+Also
+1. move variable and functions near the place they are used.
+2. change macro to function
+3. change related functions and variable to static and _init
+4. update parameter description accordingly.
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+-v2: still honor pci=realloc, and treat it as pci=realloc=on
+     also use enum instead of ...
+-v3: update kernel-paramenters.txt according to Jesse.
 
-Regards
-Dong Aisheng
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ Documentation/kernel-parameters.txt |    9 +++++++--
+ drivers/pci/pci.c                   |    4 +++-
+ drivers/pci/pci.h                   |    2 +-
+ drivers/pci/setup-bus.c             |   34 +++++++++++++++++++++++++++-------
+ 4 files changed, 38 insertions(+), 11 deletions(-)
 
-> Update the documentation in a similar fashion.
-> 
-> Note: PIN_MAP*() macros aren't updated; I plan to update this once later
-> when enhancing the mapping table format to support pin config to reduce
-> churn.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  Documentation/pinctrl.txt       |   24 ++++++++++++------------
->  include/linux/pinctrl/machine.h |   10 +++++-----
->  2 files changed, 17 insertions(+), 17 deletions(-)
-> 
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> index 8bf46bc..6fe3232 100644
-> --- a/Documentation/pinctrl.txt
-> +++ b/Documentation/pinctrl.txt
-> @@ -781,19 +781,19 @@ spi on the second function mapping:
->  
->  static const struct pinctrl_map __initdata mapping[] = {
->  	{
-> +		.dev_name = "foo-spi.0",
->  		.ctrl_dev_name = "pinctrl-foo",
->  		.function = "spi0",
-> -		.dev_name = "foo-spi.0",
->  	},
->  	{
-> +		.dev_name = "foo-i2c.0",
->  		.ctrl_dev_name = "pinctrl-foo",
->  		.function = "i2c0",
-> -		.dev_name = "foo-i2c.0",
->  	},
->  	{
-> +		.dev_name = "foo-mmc.0",
->  		.ctrl_dev_name = "pinctrl-foo",
->  		.function = "mmc0",
-> -		.dev_name = "foo-mmc.0",
->  	},
->  };
->  
-> @@ -826,18 +826,18 @@ As it is possible to map a function to different groups of pins an optional
->  
->  ...
->  {
-> +	.dev_name = "foo-spi.0",
->  	.name = "spi0-pos-A",
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "spi0",
->  	.group = "spi0_0_grp",
-> -	.dev_name = "foo-spi.0",
->  },
->  {
-> +	.dev_name = "foo-spi.0",
->  	.name = "spi0-pos-B",
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "spi0",
->  	.group = "spi0_1_grp",
-> -	.dev_name = "foo-spi.0",
->  },
->  ...
->  
-> @@ -852,45 +852,45 @@ case), we define a mapping like this:
->  
->  ...
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "2bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "mmc0",
->  	.group = "mmc0_1_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "4bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "mmc0",
->  	.group = "mmc0_1_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "4bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "mmc0",
->  	.group = "mmc0_2_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "8bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.group = "mmc0_1_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "8bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "mmc0",
->  	.group = "mmc0_2_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  {
-> +	.dev_name = "foo-mmc.0",
->  	.name = "8bit"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "mmc0",
->  	.group = "mmc0_3_grp",
-> -	.dev_name = "foo-mmc.0",
->  },
->  ...
->  
-> @@ -988,10 +988,10 @@ This is enabled by simply setting the .dev_name field in the map to the name
->  of the pin controller itself, like this:
->  
->  {
-> +	.dev_name = "pinctrl-foo",
->  	.name = PINCTRL_STATE_DEFAULT,
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "power_func",
-> -	.dev_name = "pinctrl-foo",
->  },
->  
->  Since it may be common to request the core to hog a few always-applicable
-> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-> index 4743f84..20e9735 100644
-> --- a/include/linux/pinctrl/machine.h
-> +++ b/include/linux/pinctrl/machine.h
-> @@ -16,6 +16,10 @@
->  
->  /**
->   * struct pinctrl_map - boards/machines shall provide this map for devices
-> + * @dev_name: the name of the device using this specific mapping, the name
-> + *	must be the same as in your struct device*. If this name is set to the
-> + *	same name as the pin controllers own dev_name(), the map entry will be
-> + *	hogged by the driver itself upon registration
->   * @name: the name of this specific map entry for the particular machine.
->   *	This is the second parameter passed to pinmux_get() when you want
->   *	to have several mappings to the same device
-> @@ -27,17 +31,13 @@
->   * @group: sometimes a function can map to different pin groups, so this
->   *	selects a certain specific pin group to activate for the function, if
->   *	left as NULL, the first applicable group will be used
-> - * @dev_name: the name of the device using this specific mapping, the name
-> - *	must be the same as in your struct device*. If this name is set to the
-> - *	same name as the pin controllers own dev_name(), the map entry will be
-> - *	hogged by the driver itself upon registration
->   */
->  struct pinctrl_map {
-> +	const char *dev_name;
->  	const char *name;
->  	const char *ctrl_dev_name;
->  	const char *function;
->  	const char *group;
-> -	const char *dev_name;
->  };
->  
->  /*
-> -- 
-> 1.7.0.4
-> 
-> 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 7fb7a4b..7dc523e 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2109,8 +2109,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				the default.
+ 				off: Turn ECRC off
+ 				on: Turn ECRC on.
+-		realloc		reallocate PCI resources if allocations done by BIOS
+-				are erroneous.
++		realloc=	Enable/disable reallocating PCI bridge resources
++				if allocations done by BIOS are too small to
++				accommodate resources required by all child
++				devices.
++				off: Turn realloc off
++				on: Turn realloc on
++		realloc		same as realloc=on
+ 
+ 	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+ 			Management.
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 8f30736..e9f9dc1 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3772,8 +3772,10 @@ static int __init pci_setup(char *str)
+ 				pci_no_msi();
+ 			} else if (!strcmp(str, "noaer")) {
+ 				pci_no_aer();
++			} else if (!strncmp(str, "realloc=", 8)) {
++				pci_realloc_get_opt(str + 8);
+ 			} else if (!strncmp(str, "realloc", 7)) {
+-				pci_realloc();
++				pci_realloc_get_opt("on");
+ 			} else if (!strcmp(str, "nodomains")) {
+ 				pci_no_domains();
+ 			} else if (!strncmp(str, "cbiosize=", 9)) {
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 586ac9b..1fc63b3 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -149,7 +149,7 @@ static inline void pci_no_msi(void) { }
+ static inline void pci_msi_init_pci_dev(struct pci_dev *dev) { }
+ #endif
+ 
+-extern void pci_realloc(void);
++void pci_realloc_get_opt(char *);
+ 
+ static inline int pci_no_d1d2(struct pci_dev *dev)
+ {
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 162edfb..219722d 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -48,13 +48,6 @@ static void free_list(struct list_head *head)
+ 	}
+ }
+ 
+-int pci_realloc_enable = 0;
+-#define pci_realloc_enabled() pci_realloc_enable
+-void pci_realloc(void)
+-{
+-	pci_realloc_enable = 1;
+-}
+-
+ /**
+  * add_to_list() - add a new resource tracker to the list
+  * @head:	Head of the list
+@@ -1273,6 +1266,33 @@ static int __init pci_get_max_depth(void)
+ 	return depth;
+ }
+ 
++/*
++ * -1: undefined, will auto detect later
++ *  0: disabled by user
++ *  1: disabled by auto detect
++ *  2: enabled by user
++ *  3: enabled by auto detect
++ */
++enum enable_type {
++	undefined = -1,
++	user_disabled,
++	auto_disabled,
++	user_enabled,
++	auto_enabled,
++};
++
++static enum enable_type pci_realloc_enable __initdata = undefined;
++void __init pci_realloc_get_opt(char *str)
++{
++	if (!strncmp(str, "off", 3))
++		pci_realloc_enable = user_disabled;
++	else if (!strncmp(str, "on", 2))
++		pci_realloc_enable = user_enabled;
++}
++static bool __init pci_realloc_enabled(void)
++{
++	return pci_realloc_enable >= user_enabled;
++}
+ 
+ /*
+  * first try will not touch pci bridge res
+-- 
+1.7.7
 
