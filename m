@@ -1,87 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab2BXTnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:43:03 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55764 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756743Ab2BXTnB (ORCPT
+	id S932152Ab2BXTz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:55:29 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:39404 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab2BXTz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:43:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.132 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 11:41:50 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: David Windsor <dwindsor@gmail.com>, Roland Dreier <roland@purestorage.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        spender@grsecurity.net
-Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
-Message-ID: <20120224194150.GE24120@kroah.com>
-References: <20120217002405.GB7746@kroah.com>
- <20120217075945.GA2831@albatros>
- <20120217175445.GC29902@kroah.com>
- <20120217193719.GA4187@albatros>
- <20120217233908.GA24047@dztty>
- <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
- <20120218161849.GA4176@kroah.com>
- <CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
- <20120224183726.GB23284@kroah.com>
- <20120224185825.GA11818@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224185825.GA11818@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Feb 2012 14:55:28 -0500
+Date: Fri, 24 Feb 2012 14:53:13 -0500 (EST)
+Message-Id: <20120224.145313.1945472951961198905.davem@davemloft.net>
+To: danny.kukawka@bisect.de
+Cc: marek.belisko@gmail.com, dkukawka@suse.de, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/11] Staging: ft1000-pcmcia: print MAC via printk
+ format specifier
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330091162-8141-11-git-send-email-danny.kukawka@bisect.de>
+References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de>
+	<1330091162-8141-11-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 24 Feb 2012 11:53:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:58:25PM +0400, Vasiliy Kulikov wrote:
-> On Fri, Feb 24, 2012 at 10:37 -0800, Greg KH wrote:
-> > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
-> > >  static inline void kref_get(struct kref *kref)
-> > >  {
-> > > +   int rc = 0;
-> > >     WARN_ON(!atomic_read(&kref->refcount));
-> > > -   atomic_inc(&kref->refcount);
-> > > +   smp_mb__before_atomic_inc();
-> > > +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
-> > > +   smp_mb__after_atomic_inc();
-> > > +   BUG_ON(!rc);
-> > 
-> > So you are guaranteeing to crash a machine here if this fails?  And you
-> > were trying to say this is a "security" based fix?
-> > 
-> > And people wonder why I no longer have any hair...
-> 
-> If a refcounter overflows there is NO WAY to recover.  The choise is to BUG()
-> and not allow any security harm to the system (privilege escalation, etc.)
-> or to try to do some more CPU cycles until actual use after free, privilege
-> escalation, etc.  The former is a _guarantee_ that nothing bad (in security
-> sense) doesn't happen.  The latter is an opportunistic approach, which
-> doesn't work with security.
 
-The only way you could legimitaly get a real use-after-free problem if
-you were overflowing the reference counter and pegged it at the max
-value, was if you had code that could decrement the reference count as
-many times as you incremented it.  So far, all bugs we've seen are
-one-off where on an error path, we forgot to decrement the count.  So
-how could the decrement ever happen?
+Danny, please don't do this.
 
-> Do you claim that a refcounter overflow is a recoverable state?  I'd want to
-> know what you can do with it.
+If you are posting a "patch series" that you want me to apply, then
+that entire series must be posted to netdev for review.
 
-I'm not saying it is a "recoverable" state, but to crash the machine is
-not acceptable.  At the very least, let the user know something went
-wrong, and stick around long enough to let them know and do something,
-before shutting the thing down.
-
-But before people start micro-engineering this whole thing, remember,
-I'm still not sold on this type of change at all.
-
-greg k-h
-
-p.s. Has anyone ever tried an endless open() loop on a sysfs file to see
-     what happens today?...
+Otherwise I get a partial patch series recorded in patchwork which
+screws up my work flow completely.
