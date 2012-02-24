@@ -1,116 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab2BXPkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:40:42 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64758 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab2BXPkl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:40:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.112.100.169 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
+	id S1757077Ab2BXPlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:41:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753695Ab2BXPlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:41:16 -0500
+Date: Fri, 24 Feb 2012 10:35:37 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>, a.p.zijlstra@chello.nl,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120224153537.GB2395@redhat.com>
+References: <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+ <20120222081855.GB25318@elte.hu>
+ <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
+ <20120223100205.GD24310@elte.hu>
+ <CA+55aFwwV3GsqHue8oUsx-XbvSQXSawJ0w5z=wL8ue=EH4ifzw@mail.gmail.com>
+ <20120223223348.GA25513@elte.hu>
+ <20120223223933.GA7942@elte.hu>
+ <20120223231842.GA31030@Krystal>
+ <20120224022512.GA3777@redhat.com>
+ <20120224090811.GB814@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <4F47AD6A.6080609@gmail.com>
-References: <20120224094048.GA7952@quad>
-	<4F47ABAD.9080408@gmail.com>
-	<CABPqkBT1R_SJiQkjujS4dN5yQZPakjOmmCLNR3DmNxTmVT_p9A@mail.gmail.com>
-	<4F47AD6A.6080609@gmail.com>
-Date: Fri, 24 Feb 2012 16:40:39 +0100
-Message-ID: <CABPqkBQyBtxO3ytcZKHyGNAiwYzmqODy+C-EY5gQTENKtngBFw@mail.gmail.com>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        mingo@elte.hu, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
-        asharma@fb.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        vweaver1@eecs.utk.edu, andi@firstfloor.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224090811.GB814@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 4:31 PM, David Ahern <dsahern@gmail.com> wrote:
-> On 2/24/12 8:28 AM, Stephane Eranian wrote:
->>
->> On Fri, Feb 24, 2012 at 4:24 PM, David Ahern<dsahern@gmail.com>  wrote:
->>>
->>> On 2/24/12 2:40 AM, Stephane Eranian wrote:
->>>>
->>>>
->>>>
->>>> This patch adds auto-detection of samples with taken branch stacks.
->>>> The auto-detection avoids having to specify the -b or --branch-stack
->>>> option on the cmdline.
->>>>
->>>> The patch adds a new feature bit HEADER_BRANCH_STACK to mark the
->>>> presence of branch stacks in samples.
->>>>
->>>> You can now do:
->>>> $ perf record -b any noploop 2
->>>> $ perf report
->>>> # Events: 8K cycles
->>>> #
->>>> # Overhead  Command  Source Shared Object        Source Symbol  Target
->>>> Shared Object       Target Symbol
->>>> # ........  .......  ....................  ...................
->>>>  ....................  ..................
->>>> #
->>>>     91.56%  noploop  noploop               [.] noploop
->>>>   noploop  [.] noploop
->>>>      0.42%  noploop  [kernel.kallsyms]     [k] __lock_acquire
->>>>  [kernel.kallsyms]  [k] __lock_acquire
->>>>
->>>>
->>>> To force regular reporting based on the instruction address:
->>>> $ perf report --no-branch-stack
->>>> #
->>>> # Events: 2K cycles
->>>> #
->>>> # Overhead  Command      Shared Object                           Symbol
->>>> # ........  .......  .................  ...............................
->>>> #
->>>>     92.03%  noploop  noploop            [.] noploop
->>>>      1.00%  noploop  [kernel.kallsyms]  [k] lock_acquire
->>>>
->>>>
->>>> Signed-off-by: Stephane Eranian<eranian@google.com>
->>>> ---
->>>>
->>>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
->>>> index 1c49d4e..5e833a2 100644
->>>> --- a/tools/perf/builtin-record.c
->>>> +++ b/tools/perf/builtin-record.c
->>>> @@ -473,6 +473,9 @@ static int __cmd_record(struct perf_record *rec, int
->>>> argc, const char **argv)
->>>>        if (!have_tracepoints(&evsel_list->entries))
->>>>                perf_header__clear_feat(&session->header,
->>>> HEADER_TRACE_INFO);
->>>>
->>>> +       if (!rec->opts.branch_stack)
->>>> +               perf_header__clear_feat(&session->header,
->>>> HEADER_BRANCH_STACK);
->>>
->>>
->>>
->>> branch tracing is user requested on, so shouldn't feature default off and
->>> only be enabled when requested?
->>>
->> Well, what Ingo was suggesting is that perf report auto-detects whether or
->> not branch mode is necessary by looking at the perf.data file. Most likely
->> if you've recorded with -b, you are interested in a branch mode view
->> rather
->> that the instruction view (default). So all this does is elimintate the
->> need
->> to pass -b to perf report to enable branch mode.
->
->
-> Right. My point is that HEADER_BRANCH_STACK feature should be off by default
-> and only enabled by builtin-record when branch stack is requested. You have
-> the reverse -- enabled by default and off in record if not requested.
->
-No, I don't. Read the code carefully. The for loop sets all known feature bits.
-Then, the ones not necessary or unused are turned off individually.
+On Fri, Feb 24, 2012 at 10:08:11AM +0100, Ingo Molnar wrote:
+> * Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > On Thu, Feb 23, 2012 at 06:18:42PM -0500, Mathieu Desnoyers wrote:
+> > > * Ingo Molnar (mingo@elte.hu) wrote:
+> > > > 
+> > > > * Ingo Molnar <mingo@elte.hu> wrote:
+> > > > 
+> > > > > So, a modified scheme would be:
+> > > > > 
+> > > > >         #include <linux/static_key.h>
+> > > > > 
+> > > > >         struct static_key key = STATIC_KEY_INIT_TRUE;
+> > > > > 
+> > > > >         if (static_key_false(&key))
+> > > > >                 do unlikely code
+> > > > >         else
+> > > > >                 do likely code
+> > > > > 
+> > > > > Or:
+> > > > > 
+> > > > >         if (static_key_true(&key))
+> > > > >                 do likely code
+> > > > >         else
+> > > > >                 do unlikely code
+> > > > > 
+> > > > > The static key is modified via:
+> > > > > 
+> > > > >         static_key_slow_inc(&key);
+> > > > >         ...
+> > > > >         static_key_slow_dec(&key);
+> > > > > 
+> > > > > Is that API fine? I'll rework the series to such an effect if 
+> > > > > everyone agrees.
+> > > > 
+> > > > I.e. something like the patch below on top of 
+> > > > tip:perf/jump-labels.
+> > > > 
+> > > > Untested - will test it and will refactor the series if 
+> > > > everyone's happy.
+> > > 
+> > > Hi Ingo,
+> > > 
+> > > Reading your documentation updates makes me realise that adding the
+> > > "inline" keyword in there would make the whole thing even clearer:
+> > > 
+> > > struct static_key key = STATIC_KEY_INLINE_TRUE_INIT;
+> > > struct static_key key = STATIC_KEY_INLINE_FALSE_INIT;
+> > > 
+> > > static_key_inline_true() / static_key_inline_false()
+> > > 
+> > > to show that the "true/false" in there does not mean that the key will
+> > > always be true or false (the key value can indeed by changed by calling
+> > > static_key_slow_inc/dec), but that the inlined path is either the true
+> > > of false branch.
+> > > 
+> > 
+> > Also, as part of the API, there is a test to check the branch 
+> > direction - which was 'jump_label_true(key)', but is now also 
+> > 'static_key_true(key)', [...]
+> 
+> Yeah, there is such an overlap - I've renamed it to 
+> static_key_enabled(), which makes sense anyway as the original 
+> was jump_label_enabled()..
+> 
+> Btw., shouldnt it be an inline function? Currently it's:
+> 
 
-> David
->
+Yes. I've had thought that too. In fact, it is already 'static inline' for the
+!JUMP_LABEL case. So we can probably just remove the function from the
+.c and move the 'static inline' such that its defined for all cases.
+
+> bool static_key_enabled(struct static_key *key)
+> {
+>         return (atomic_read(&key->enabled) > 0);
+> }
+> 
+> which is the perfect candidate for inlining. The difference to 
+> static_key_true() is the lack of the jump label patching and the 
+> lack of an unlikely() hint.
+> 
+> > [...] so we are going to have to change either the branch site 
+> > or the test for true/false name. The above 
+> > 'static_key_inline_true/false' solves that.
+> 
+> It's generally good practice to make the mostly commonly used 
+> method names the simplest/shortest names - i.e. I don't think we 
+> should make it longer via adding an _inline to every use.
+> 
+> In that sense static_key_true() has pretty optimal length - we'd 
+> like these tests to also be visually unintrusive.
+> 
+> So in the latest patch (still under testing, will push it out 
+> soon) we have:
+> 
+> 	static_key_true()
+> 	static_key_false()
+> 	static_key_enabled()
+> 
+
+Ok. Looks good. 
+
+Acked-by: Jason Baron <jbaron@redhat.com>
+
+Thanks,
+
+-Jason
