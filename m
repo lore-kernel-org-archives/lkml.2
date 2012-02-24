@@ -1,172 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2BXGM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 01:12:57 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:46793 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754033Ab2BXGM4 (ORCPT
+	id S1754753Ab2BXGOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 01:14:10 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:32869 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab2BXGOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 01:12:56 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Input: usbtouchscreen: add support for Data Modul EasyTouch TP 72037
-Date: Fri, 24 Feb 2012 11:22:38 +0530
-Message-ID: <1df92b173fb58c4b6d3091c3eb94d53bf03cfa9e.1330061754.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.8.110.g4cb5d
+	Fri, 24 Feb 2012 01:14:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.180.80.40 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
+Date: Fri, 24 Feb 2012 14:13:50 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Venki Pallipadi <venki@google.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+Message-ID: <20120224061350.GB17543@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+ <1329989454.24994.57.camel@twins>
+ <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+ <20120224054150.GA17543@zhy>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120224054150.GA17543@zhy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Armando Visconti <armando.visconti@st.com>
+On Fri, Feb 24, 2012 at 01:41:50PM +0800, Yong Zhang wrote:
+> On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
+> > On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > Why not scheduler_ipi()?
+> > 
+> > Was trying to avoid irq_enter/exit. As the work here is done in idle
+> > thread context, I though we could avoid enter/exit. 
+> 
+> It seems we could not.
+> At least RCU need it, see commit c5d753a55, otherwise we will get
+> warning like 'RCU used illegally from extended quiescent state!'
 
-The Data Modul TP 72037 EasyTouch controller is derived from EGALAX
-controller and is capable of detecting dual contacts. Packets can be 5
-bytes or 10 bytes long, depending whether one or two contacts are
-detected. Format is same as EGALAX touch controller, but with x and y
-coordinates inverted.
+[Off topic]
+This remind me that we should have moved the irq_enter()/irq_exit() to
+each arch's related irq handler.
+see: http://marc.info/?l=linux-kernel&m=130709505700821&w=2
 
-Signed-off-by: Armando Visconti <armando.visconti@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/input/touchscreen/Kconfig          |    9 ++++
- drivers/input/touchscreen/usbtouchscreen.c |   59 ++++++++++++++++++++++++++++
- 2 files changed, 68 insertions(+), 0 deletions(-)
+So Peter, is there someone alread on it? or it still worth doing now?
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 2b21a70..2acf16f 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -607,6 +607,7 @@ config TOUCHSCREEN_USB_COMPOSITE
- 	  - JASTEC USB Touch Controller/DigiTech DTR-02U
- 	  - Zytronic controllers
- 	  - Elo TouchSystems 2700 IntelliTouch
-+	  - EasyTouch USB Touch Controller from Data Modul
- 
- 	  Have a look at <http://linux.chapter7.ch/touchkit/> for
- 	  a usage description and the required user-space stuff.
-@@ -711,6 +712,14 @@ config TOUCHSCREEN_USB_NEXIO
- 	bool "NEXIO/iNexio device support" if EXPERT
- 	depends on TOUCHSCREEN_USB_COMPOSITE
- 
-+config TOUCHSCREEN_USB_EASYTOUCH
-+	default y
-+	bool "EasyTouch USB Touch controller device support" if EMBEDDED
-+	depends on TOUCHSCREEN_USB_COMPOSITE
-+	help
-+	  Say Y here if you have a EasyTouch USB Touch controller device support.
-+	  If unsure, say N.
-+
- config TOUCHSCREEN_TOUCHIT213
- 	tristate "Sahara TouchIT-213 touchscreen"
- 	select SERIO
-diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
-index 3a5ebf4..39350cc 100644
---- a/drivers/input/touchscreen/usbtouchscreen.c
-+++ b/drivers/input/touchscreen/usbtouchscreen.c
-@@ -17,6 +17,7 @@
-  *  - Zytronic capacitive touchscreen
-  *  - NEXIO/iNexio
-  *  - Elo TouchSystems 2700 IntelliTouch
-+ *  - EasyTouch USB Dual/Multi touch controller from Data Modul
-  *
-  * Copyright (C) 2004-2007 by Daniel Ritz <daniel.ritz@gmx.ch>
-  * Copyright (C) by Todd E. Johnson (mtouchusb.c)
-@@ -140,6 +141,7 @@ enum {
- 	DEVTYPE_TC45USB,
- 	DEVTYPE_NEXIO,
- 	DEVTYPE_ELO,
-+	DEVTYPE_ETOUCH,
- };
- 
- #define USB_DEVICE_HID_CLASS(vend, prod) \
-@@ -245,6 +247,10 @@ static const struct usb_device_id usbtouch_devices[] = {
- 	{USB_DEVICE(0x04e7, 0x0020), .driver_info = DEVTYPE_ELO},
- #endif
- 
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+	{USB_DEVICE(0x7374, 0x0001), .driver_info = DEVTYPE_ETOUCH},
-+#endif
-+
- 	{}
- };
- 
-@@ -326,6 +332,47 @@ static int egalax_get_pkt_len(unsigned char *buf, int len)
- }
- #endif
- 
-+/*****************************************************************************
-+ * EasyTouch part
-+ */
-+
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+
-+#define EGALAX_PKT_TYPE_MASK		0xFE
-+#define EGALAX_PKT_TYPE_REPT		0x80
-+#define EGALAX_PKT_TYPE_REPT2		0xB0
-+#define EGALAX_PKT_TYPE_DIAG		0x0A
-+
-+static int etouch_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
-+{
-+	if ((pkt[0] & EGALAX_PKT_TYPE_MASK) != EGALAX_PKT_TYPE_REPT &&
-+		(pkt[0] & EGALAX_PKT_TYPE_MASK) != EGALAX_PKT_TYPE_REPT2)
-+		return 0;
-+
-+	dev->x = ((pkt[1] & 0x1F) << 7) | (pkt[2] & 0x7F);
-+	dev->y = ((pkt[3] & 0x1F) << 7) | (pkt[4] & 0x7F);
-+	dev->touch = pkt[0] & 0x01;
-+
-+	return 1;
-+}
-+
-+static int etouch_get_pkt_len(unsigned char *buf, int len)
-+{
-+	switch (buf[0] & EGALAX_PKT_TYPE_MASK) {
-+	case EGALAX_PKT_TYPE_REPT:
-+	case EGALAX_PKT_TYPE_REPT2:
-+		return 5;
-+
-+	case EGALAX_PKT_TYPE_DIAG:
-+		if (len < 2)
-+			return -1;
-+
-+		return buf[1] + 2;
-+	}
-+
-+	return 0;
-+}
-+#endif
- 
- /*****************************************************************************
-  * PanJit Part
-@@ -1175,6 +1222,18 @@ static struct usbtouch_device_info usbtouch_dev_info[] = {
- 		.exit		= nexio_exit,
- 	},
- #endif
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+	[DEVTYPE_ETOUCH] = {
-+		.min_xc		= 0x0,
-+		.max_xc		= 0x07ff,
-+		.min_yc		= 0x0,
-+		.max_yc		= 0x07ff,
-+		.rept_size	= 16,
-+		.process_pkt	= usbtouch_process_multi,
-+		.get_pkt_len	= etouch_get_pkt_len,
-+		.read_data	= etouch_read_data,
-+	},
-+#endif
- };
- 
- 
--- 
-1.7.8.110.g4cb5d
-
+Thanks,
+Yong
