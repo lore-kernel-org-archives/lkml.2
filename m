@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab2BXGOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 01:14:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39186 "EHLO
+	id S1754864Ab2BXGSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 01:18:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40124 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab2BXGOt (ORCPT
+	with ESMTP id S1753422Ab2BXGSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 01:14:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.42.18.195 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Fri, 24 Feb 2012 01:18:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.202.97 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-In-Reply-To: <1330041880-12406-2-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1330041880-12406-3-git-send-email-swarren@nvidia.com>
 References: <1330041880-12406-1-git-send-email-swarren@nvidia.com>
-	<1330041880-12406-2-git-send-email-swarren@nvidia.com>
-Date: Fri, 24 Feb 2012 07:14:48 +0100
-Message-ID: <CACRpkdYjtKqNiOUn4ydS1bgw93BgKK-7nMA59ZGNL-ohsXshvA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pinctrl: Re-order struct pinctrl_map
+	<1330041880-12406-3-git-send-email-swarren@nvidia.com>
+Date: Fri, 24 Feb 2012 07:18:32 +0100
+Message-ID: <CACRpkdZarAxuJv=qpHd3aLAf99Lyw88F1KCwSjg2z04Tftdx7w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] pinctrl: Move pinctrl-maps debugfs file to top-level
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Stephen Warren <swarren@nvidia.com>
 Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
@@ -28,20 +28,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Feb 24, 2012 at 1:04 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> The lookup key in struct pinctrl_map is (.dev_name, .name). Re-order the
-> struct definition to put the lookup key fields first, and the result
-> values afterwards. To me at least, this slightly better reflects the
-> lookup process.
+> The debugfs file pinctrl-maps is a system-wide file, not specific to any
+> pin controller, so place it in the top-level directory.
 >
-> Update the documentation in a similar fashion.
->
-> Note: PIN_MAP*() macros aren't updated; I plan to update this once later
-> when enhancing the mapping table format to support pin config to reduce
-> churn.
+> Also, move the code implementing the file to keep the order of all the
+> functions matching the order they're created in pinctrl_init_*debugfs().
+> The only non-obvious change here is no private data is passed to
+> debugfs_create_file() or single_open().
 >
 > Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Rebased and applied with Dong's ACK.
+Obviously correct, thanks, applied with Dong's ACK.
 
-Thanks,
+Yours,
 Linus Walleij
