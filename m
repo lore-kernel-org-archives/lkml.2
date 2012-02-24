@@ -1,146 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab2BXPlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 10:41:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab2BXPlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 10:41:16 -0500
-Date: Fri, 24 Feb 2012 10:35:37 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>, a.p.zijlstra@chello.nl,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120224153537.GB2395@redhat.com>
-References: <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
- <20120222081855.GB25318@elte.hu>
- <20120222213343.GA19758@bloggs.ozlabs.ibm.com>
- <20120223100205.GD24310@elte.hu>
- <CA+55aFwwV3GsqHue8oUsx-XbvSQXSawJ0w5z=wL8ue=EH4ifzw@mail.gmail.com>
- <20120223223348.GA25513@elte.hu>
- <20120223223933.GA7942@elte.hu>
- <20120223231842.GA31030@Krystal>
- <20120224022512.GA3777@redhat.com>
- <20120224090811.GB814@elte.hu>
+	id S1757423Ab2BXPl6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 10:41:58 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:59528 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab2BXPl5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 10:41:57 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Christoph Lameter <cl@linux.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+References: <20120223180740.C4EC4156@kernel>
+	<alpine.DEB.2.00.1202231240590.9878@router.home>
+	<4F468F09.5050200@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1202231334290.10914@router.home>
+	<4F469BC7.50705@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1202231536240.13554@router.home>
+	<m1ehtkapn9.fsf@fess.ebiederm.org>
+	<alpine.DEB.2.00.1202240859340.2621@router.home>
+Date: Fri, 24 Feb 2012 07:41:49 -0800
+In-Reply-To: <alpine.DEB.2.00.1202240859340.2621@router.home> (Christoph
+	Lameter's message of "Fri, 24 Feb 2012 09:20:54 -0600 (CST)")
+Message-ID: <87sji0fdc2.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224090811.GB814@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19ep5kgWU2pE5BaywH4o9SKMGT5oaJiu7w=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Christoph Lameter <cl@linux.com>
+X-Spam-Relay-Country: **
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:08:11AM +0100, Ingo Molnar wrote:
-> * Jason Baron <jbaron@redhat.com> wrote:
-> 
-> > On Thu, Feb 23, 2012 at 06:18:42PM -0500, Mathieu Desnoyers wrote:
-> > > * Ingo Molnar (mingo@elte.hu) wrote:
-> > > > 
-> > > > * Ingo Molnar <mingo@elte.hu> wrote:
-> > > > 
-> > > > > So, a modified scheme would be:
-> > > > > 
-> > > > >         #include <linux/static_key.h>
-> > > > > 
-> > > > >         struct static_key key = STATIC_KEY_INIT_TRUE;
-> > > > > 
-> > > > >         if (static_key_false(&key))
-> > > > >                 do unlikely code
-> > > > >         else
-> > > > >                 do likely code
-> > > > > 
-> > > > > Or:
-> > > > > 
-> > > > >         if (static_key_true(&key))
-> > > > >                 do likely code
-> > > > >         else
-> > > > >                 do unlikely code
-> > > > > 
-> > > > > The static key is modified via:
-> > > > > 
-> > > > >         static_key_slow_inc(&key);
-> > > > >         ...
-> > > > >         static_key_slow_dec(&key);
-> > > > > 
-> > > > > Is that API fine? I'll rework the series to such an effect if 
-> > > > > everyone agrees.
-> > > > 
-> > > > I.e. something like the patch below on top of 
-> > > > tip:perf/jump-labels.
-> > > > 
-> > > > Untested - will test it and will refactor the series if 
-> > > > everyone's happy.
-> > > 
-> > > Hi Ingo,
-> > > 
-> > > Reading your documentation updates makes me realise that adding the
-> > > "inline" keyword in there would make the whole thing even clearer:
-> > > 
-> > > struct static_key key = STATIC_KEY_INLINE_TRUE_INIT;
-> > > struct static_key key = STATIC_KEY_INLINE_FALSE_INIT;
-> > > 
-> > > static_key_inline_true() / static_key_inline_false()
-> > > 
-> > > to show that the "true/false" in there does not mean that the key will
-> > > always be true or false (the key value can indeed by changed by calling
-> > > static_key_slow_inc/dec), but that the inlined path is either the true
-> > > of false branch.
-> > > 
-> > 
-> > Also, as part of the API, there is a test to check the branch 
-> > direction - which was 'jump_label_true(key)', but is now also 
-> > 'static_key_true(key)', [...]
-> 
-> Yeah, there is such an overlap - I've renamed it to 
-> static_key_enabled(), which makes sense anyway as the original 
-> was jump_label_enabled()..
-> 
-> Btw., shouldnt it be an inline function? Currently it's:
-> 
+Christoph Lameter <cl@linux.com> writes:
 
-Yes. I've had thought that too. In fact, it is already 'static inline' for the
-!JUMP_LABEL case. So we can probably just remove the function from the
-.c and move the 'static inline' such that its defined for all cases.
+> On Thu, 23 Feb 2012, Eric W. Biederman wrote:
+>
+>> > The bug in migrate_pages() is that we do a rcu_unlock and a rcu_lock. If
+>> > we drop those then we should be safe if the use of a task pointer within a
+>> > rcu section is safe without taking a refcount.
+>>
+>> Yes the user of a task_struct pointer found via a userspace pid is valid
+>> for the life of an rcu critical section, and the bug is indeed that we
+>> drop the rcu_lock and somehow expect the task to remain valid.
+>>
+>> The guarantee comes from release_task.  In release_task we call
+>> __exit_signal which calls __unhash_process, and then we call
+>> delayed_put_task to guarantee that the task lives until the end of the
+>> rcu interval.
+>
+> Ah. Ok. Great.
+>
+>> In migrate_pages we have a lot of task accesses outside of the rcu
+>> critical section, and without a reference count on task.
+>
+> Yes but that is only of interesting for setup and verification of
+> permissions. What matters during migration is that the mm_struct does not
+> go away and we take a refcount on that one.
+>
+>> I tell you the truth trying to figure out what that code needs to be
+>> correct if task != current makes my head hurt.
+>
+> Hmm...
 
-> bool static_key_enabled(struct static_key *key)
-> {
->         return (atomic_read(&key->enabled) > 0);
-> }
-> 
-> which is the perfect candidate for inlining. The difference to 
-> static_key_true() is the lack of the jump label patching and the 
-> lack of an unlikely() hint.
-> 
-> > [...] so we are going to have to change either the branch site 
-> > or the test for true/false name. The above 
-> > 'static_key_inline_true/false' solves that.
-> 
-> It's generally good practice to make the mostly commonly used 
-> method names the simplest/shortest names - i.e. I don't think we 
-> should make it longer via adding an _inline to every use.
-> 
-> In that sense static_key_true() has pretty optimal length - we'd 
-> like these tests to also be visually unintrusive.
-> 
-> So in the latest patch (still under testing, will push it out 
-> soon) we have:
-> 
-> 	static_key_true()
-> 	static_key_false()
-> 	static_key_enabled()
-> 
+Especially because I was looking at move_pages...
 
-Ok. Looks good. 
+>> I think we need to grab a reference on task_struct, to stop the task
+>> from going away, and in addition we need to hold task_lock.  To keep
+>> task->mm from changing (see exec_mmap).  But we can't do that and sleep
+>> so I think the entire function needs to be rewritten, and the need for
+>> task deep in the migrate_pages path needs to be removed as even with the
+>> reference count held we can race with someone calling exec.
+>
+> We dont need the task during migration. We only need the mm. The task
+> is safe until rcu_read_unlock therefore maybe the following should fix
+> migrate pages:
+>
+>
+> Subject: migration: Do not do rcu_read_unlock until the last time we need the task_struct pointer
+>
+> Migration functions perform the rcu_read_unlock too early. As a result the
+> task pointed to may change. Bugs were introduced when adding security checks
+> because rcu_unlock/lock sequences were inserted. Plus the security checks
+> and do_move_pages used the task_struct pointer after rcu_unlock.
+>
+> Fix those issues by removing the unlock/lock sequences and moving the
+> rcu_read_unlock after the last use of the task struct pointer.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Acked-by: Jason Baron <jbaron@redhat.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Thanks,
+Somehow in my skimming through the code earlier I thought the
+situation was worse.  On the assumption there are not any
+sleeping functions along the path this looks like a good fix.
 
--Jason
+> ---
+>  mm/mempolicy.c |   22 +++++++++++-----------
+>  mm/migrate.c   |   28 +++++++++++++++-------------
+>  2 files changed, 26 insertions(+), 24 deletions(-)
+>
+> Index: linux-2.6/mm/mempolicy.c
+> ===================================================================
+> --- linux-2.6.orig/mm/mempolicy.c	2012-01-13 04:04:36.229807226 -0600
+> +++ linux-2.6/mm/mempolicy.c	2012-02-24 03:11:44.913710625 -0600
+> @@ -1318,16 +1318,14 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+>  	rcu_read_lock();
+>  	task = pid ? find_task_by_vpid(pid) : current;
+>  	if (!task) {
+> -		rcu_read_unlock();
+>  		err = -ESRCH;
+> -		goto out;
+> +		goto unlock_out;
+>  	}
+>  	mm = get_task_mm(task);
+> -	rcu_read_unlock();
+>
+>  	err = -EINVAL;
+>  	if (!mm)
+> -		goto out;
+> +		goto unlock_out;
+>
+>  	/*
+>  	 * Check if this process has the right to modify the specified
+> @@ -1335,33 +1333,31 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+>  	 * capabilities, superuser privileges or the same
+>  	 * userid as the target process.
+>  	 */
+> -	rcu_read_lock();
+>  	tcred = __task_cred(task);
+>  	if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
+>  	    cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
+>  	    !capable(CAP_SYS_NICE)) {
+> -		rcu_read_unlock();
+>  		err = -EPERM;
+> -		goto out;
+> +		goto unlock_out;
+>  	}
+> -	rcu_read_unlock();
+>
+>  	task_nodes = cpuset_mems_allowed(task);
+>  	/* Is the user allowed to access the target nodes? */
+>  	if (!nodes_subset(*new, task_nodes) && !capable(CAP_SYS_NICE)) {
+>  		err = -EPERM;
+> -		goto out;
+> +		goto unlock_out;
+>  	}
+>
+>  	if (!nodes_subset(*new, node_states[N_HIGH_MEMORY])) {
+>  		err = -EINVAL;
+> -		goto out;
+> +		goto unlock_out;
+>  	}
+>
+>  	err = security_task_movememory(task);
+>  	if (err)
+> -		goto out;
+> +		goto unlock_out;
+>
+> +	rcu_read_unlock();
+>  	err = do_migrate_pages(mm, old, new,
+>  		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+>  out:
+> @@ -1370,6 +1366,10 @@ out:
+>  	NODEMASK_SCRATCH_FREE(scratch);
+>
+>  	return err;
+> +
+> +unlock_out:
+> +	rcu_read_unlock();
+> +	goto out;
+>  }
+>
+>
+> Index: linux-2.6/mm/migrate.c
+> ===================================================================
+> --- linux-2.6.orig/mm/migrate.c	2012-02-06 04:25:35.857094372 -0600
+> +++ linux-2.6/mm/migrate.c	2012-02-24 03:18:55.569698851 -0600
+> @@ -1176,20 +1176,17 @@ set_status:
+>   * Migrate an array of page address onto an array of nodes and fill
+>   * the corresponding array of status.
+>   */
+> -static int do_pages_move(struct mm_struct *mm, struct task_struct *task,
+> +static int do_pages_move(struct mm_struct *mm, nodemask_t task_nodes,
+>  			 unsigned long nr_pages,
+>  			 const void __user * __user *pages,
+>  			 const int __user *nodes,
+>  			 int __user *status, int flags)
+>  {
+>  	struct page_to_node *pm;
+> -	nodemask_t task_nodes;
+>  	unsigned long chunk_nr_pages;
+>  	unsigned long chunk_start;
+>  	int err;
+>
+> -	task_nodes = cpuset_mems_allowed(task);
+> -
+>  	err = -ENOMEM;
+>  	pm = (struct page_to_node *)__get_free_page(GFP_KERNEL);
+>  	if (!pm)
+> @@ -1351,6 +1348,7 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+>  	struct task_struct *task;
+>  	struct mm_struct *mm;
+>  	int err;
+> +	nodemask_t task_nodes;
+>
+>  	/* Check flags */
+>  	if (flags & ~(MPOL_MF_MOVE|MPOL_MF_MOVE_ALL))
+> @@ -1367,10 +1365,11 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+>  		return -ESRCH;
+>  	}
+>  	mm = get_task_mm(task);
+> -	rcu_read_unlock();
+>
+> -	if (!mm)
+> +	if (!mm) {
+> +		rcu_read_unlock();
+>  		return -EINVAL;
+> +	}
+>
+>  	/*
+>  	 * Check if this process has the right to modify the specified
+> @@ -1378,24 +1377,23 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+>  	 * capabilities, superuser privileges or the same
+>  	 * userid as the target process.
+>  	 */
+> -	rcu_read_lock();
+>  	tcred = __task_cred(task);
+>  	if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
+>  	    cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
+>  	    !capable(CAP_SYS_NICE)) {
+> -		rcu_read_unlock();
+>  		err = -EPERM;
+> -		goto out;
+> +		goto unlock_out;
+>  	}
+> -	rcu_read_unlock();
+>
+>   	err = security_task_movememory(task);
+>   	if (err)
+> -		goto out;
+> +		goto unlock_out;
+>
+> +	task_nodes = cpuset_mems_allowed(task);
+> +	rcu_read_unlock();
+>  	if (nodes) {
+> -		err = do_pages_move(mm, task, nr_pages, pages, nodes, status,
+> -				    flags);
+> +		err = do_pages_move(mm, task_nodes, nr_pages, pages, nodes,
+> +				status, flags);
+>  	} else {
+>  		err = do_pages_stat(mm, nr_pages, pages, status);
+>  	}
+> @@ -1403,6 +1401,10 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+>  out:
+>  	mmput(mm);
+>  	return err;
+> +
+> +unlock_out:
+> +	rcu_read_unlock();
+> +	goto out;
+>  }
+>
+>  /*
