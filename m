@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab2BXQvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 11:51:54 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:33622 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754135Ab2BXQvw (ORCPT
+	id S932236Ab2BXQv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 11:51:57 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51634 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757811Ab2BXQvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 11:51:52 -0500
-Date: Fri, 24 Feb 2012 08:51:48 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/13] x86, irq: support ioapic device hotplug for x86
-Message-ID: <20120224085148.138c08d8@jbarnes-desktop>
-In-Reply-To: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
-References: <1330055339-11662-1-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/0jLPwBR1=+eYBrk81wtCGXN"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 24 Feb 2012 11:51:54 -0500
+Date: Fri, 24 Feb 2012 08:51:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org,
+        rostedt@goodmis.org
+Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
+Message-ID: <20120224165130.GB2399@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120222011652.GE23186@zod.bos.redhat.com>
+ <20120222013252.GZ2375@linux.vnet.ibm.com>
+ <20120222014242.GF23186@zod.bos.redhat.com>
+ <20120224144032.GA13903@zod.bos.redhat.com>
+ <20120224161743.GA2399@linux.vnet.ibm.com>
+ <20120224162745.GC13903@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224162745.GC13903@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022416-5518-0000-0000-0000027B5ECF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0jLPwBR1=+eYBrk81wtCGXN
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 24, 2012 at 11:27:46AM -0500, Josh Boyer wrote:
+> On Fri, Feb 24, 2012 at 08:17:43AM -0800, Paul E. McKenney wrote:
+> > On Fri, Feb 24, 2012 at 09:40:32AM -0500, Josh Boyer wrote:
+> > > On Tue, Feb 21, 2012 at 08:42:43PM -0500, Josh Boyer wrote:
+> > > > > And patch #47 in that series has been obsoleted by another series
+> > > > > from Steven Rostedt:
+> > > > > 
+> > > > > 	https://lkml.org/lkml/2012/2/7/231
+> > > > 
+> > > > Ok.
+> > > > 
+> > > > > Hopefully these fix both splats and slowness.
+> > > > 
+> > > > So again, I'm slightly confused on how RCU patches flow.  Eric
+> > > > originally reported the bug for which you created the patch I applied
+> > > > against 3.3.  The giant patch series above seems queued for 3.4.
+> > > > 
+> > > > I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
+> > > > I'd want to go applying the 47-patch series on 3.3 at the moment, and
+> > > > given you have these marked for 3.4 I don't think you do either.
+> > > > However, is there some kind of fix for the original bug report against
+> > > > 3.3?
+> > > 
+> > > I was being sincere when I asked the above questions.  Could you
+> > > describe how you handle RCU patches across releases and if there is a
+> > > fix for the 3.3-rcX issue Eric reported that is going into 3.3?
+> > > 
+> > > I know you're quite busy, but I'd like to understand your thinking so I
+> > > know what to expect going forward.
+> > 
+> > Apologies for being slow, but could you please point me at the original
+> > bug report that the old patch was designed to fix?  My email filing
+> > seems to have failed me in this case.
+> 
+> Same thread I linked in my original email:
+> 
+> https://lkml.org/lkml/2012/1/24/203
 
-On Thu, 23 Feb 2012 19:48:46 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+Thank you!
 
-> Hi, Thomas
->=20
-> Current x86 code does not support iapic hotplug yet.
->=20
-> This patcheset will try to pre-reserve irq block in allocated_irqs bitmap.
-> for hot add ioapic controller. also record irq_base in gsi_config, so lat=
-er
-> could use it to convert gsi to irq for pci device using that ioapic contr=
-oller.
->=20
-> need to update x86/irq to support realloc_irq after those bit are pre-res=
-erved.
->=20
-> It is tested with pci remove/rescan method plus some test stubs.
->=20
-> Please review them.
+> > My guess is that the best short-term fix for Fedora is to disable the
+> > warning, but I do need to see the original bug to work out if that really
+> > is a prudent course of action.
+> 
+> Honestly, I don't care from a Fedora perspective.  I can do what I need
+> to do there without too much trouble.  I'm asking because afaik, upstream
+> still has this problem.  The thread gets a bit curvy but from what I can
+> tell it resulted in the patch I highlighted as having issues.  Maybe I
+> overlooked something else that fixed Eric's problem?
 
-Suresh or Matthew may be interested in this patchset as well, and it
-should go via -tip.
+"A bit curvy" is right -- which is why the fixes ended up at the end of
+my large patch series for 3.4.
 
-Thanks,
---=20
-Jesse Barnes, Intel Open Source Technology Center
+But after looking this over, Steven Rostedt's three-patch set should
+suffice:
 
---Sig_/0jLPwBR1=+eYBrk81wtCGXN
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+	https://lkml.org/lkml/2012/2/7/231
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The reason that mine are not needed is that the problematic code is
+called -only- from idle, not from process context, and also that the
+problematic code is tracing.  My patch #45 is required for code that is
+called from both process context and from idle.  My patch #46 is required
+for non-tracing uses of RCU from within the idle loop -- along with TBD
+patches to wrap those uses of RCU in the RCU_NONIDLE() macro.
 
-iQIcBAEBAgAGBQJPR8AkAAoJEIEoDkX4Qk9hN28P/3oMqvAMXEnRiKecgcLiPJno
-Ft1mRoAXHWiedYCEIaUt+3FkKS5xRu0nQHymfAx/Tlv4H6by3Sbzp8ryGwFQUVFR
-4vDugHr7A+4heQbjQWl4iIH4kElWfwme8zAT45F/sLChQ1ztmc0kxsiUPoqcUiUG
-vU/GRe+mNS+zuDSGgvYp0PuOe5EETHkAOhVaHvuqQ4e85JAgSTbkYX/dqF4cT078
-mlc2S5100cu7/z6BOVaw1fH7j/yJcEfQTotVeHPkxh1FvZ5giPT7v6N7zkAPKWkB
-EIhPl2cG4/TuMdGvyS8Z3VowBVlz6+4XZiZsjpD4cNfrirONfytVJ8BO0xatwFrO
-vSgZ37RH2OBVDg+tgfMK3fI5zPLdiMiQlYx/p8UxLBCiiesSOPWTfvLpHOfu4ilF
-AFyGObSwdLCUYQ6fzoIuQpz/DoUMIChzZ/f0tbpf6kq5YCAkAwW3KbOXQywJoJfG
-Rt6oa/5a5VzaTTttj8NTkm9woYdp+9v1hwkP2Vnd1YGSBuuNNErQzC24wAqBhuNa
-ZsMxuU3RuA1mRAIfxVplF6gDIpzi8bAbtGJtmttTuw1d0pFbgBlsnulWoY//TQLb
-radbV/vPcADzudupISRZ+QJzWd43PLB86K/ilbER/hK8MygbHgdQsSR4lEGFUlLJ
-s6ZQmLjjxCalNLfwbxPQ
-=mjMm
------END PGP SIGNATURE-----
+So again, in your particular case of x86's power-tracing features,
+Steven Rostedt's three-patch series called out above should be all
+that you need.
 
---Sig_/0jLPwBR1=+eYBrk81wtCGXN--
+I have CCed Steven in case there is some prerequisite to his patch set.
+
+							Thanx, Paul
+
