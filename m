@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab2BXUEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 15:04:15 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47489 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab2BXUEN convert rfc822-to-8bit (ORCPT
+	id S1757885Ab2BXUKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 15:10:31 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:44647 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab2BXUKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 15:04:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.60.13.1 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
-MIME-Version: 1.0
-In-Reply-To: <20120224194150.GE24120@kroah.com>
-References: <20120217002405.GB7746@kroah.com>
-	<20120217075945.GA2831@albatros>
-	<20120217175445.GC29902@kroah.com>
-	<20120217193719.GA4187@albatros>
-	<20120217233908.GA24047@dztty>
-	<CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
-	<20120218161849.GA4176@kroah.com>
-	<CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
-	<20120224183726.GB23284@kroah.com>
-	<20120224185825.GA11818@albatros>
-	<20120224194150.GE24120@kroah.com>
-Date: Fri, 24 Feb 2012 12:04:12 -0800
-X-Google-Sender-Auth: SMLYf6WYc4JsXR3I2lybWgHtyoI
-Message-ID: <CAGXu5j+qm6OR5m6RJS87Ahr5_pEzaJkHGcdWwjkxOMywkB1Ahg@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
-From: Kees Cook <keescook@chromium.org>
+	Fri, 24 Feb 2012 15:10:30 -0500
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiiIAAbuR09V5qjTPGdsb2JhbABDiW2oFwOBBBkBAQEBNzSBcwEBBAE6HCMFCwgDRhQlChqIFAm4GxOKSoIfDxUfCwMPDQIPFQUDAoUtDgMMgw9jBJU6hW2NBA
+X-IronPort-AV: E=Sophos;i="4.73,477,1325458800"; 
+   d="scan'208";a="54575107"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 24 Feb 2012 21:10:27 +0100
 To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, David Windsor <dwindsor@gmail.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        kernel-hardening@lists.openwall.com,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        spender@grsecurity.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120224201027.GA4859@polaris.bitmath.org>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+ <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+ <20120224153811.GA16535@kroah.com>
+ <1330103229.23014.130.camel@groeck-laptop>
+ <20120224171752.GB9485@kroah.com>
+ <20120224183423.GA23284@kroah.com>
+ <20120224191535.GA4505@polaris.bitmath.org>
+ <20120224192643.GB24120@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120224192643.GB24120@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 11:41 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Feb 24, 2012 at 10:58:25PM +0400, Vasiliy Kulikov wrote:
->> On Fri, Feb 24, 2012 at 10:37 -0800, Greg KH wrote:
->> > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
->> > >  static inline void kref_get(struct kref *kref)
->> > >  {
->> > > +   int rc = 0;
->> > >     WARN_ON(!atomic_read(&kref->refcount));
->> > > -   atomic_inc(&kref->refcount);
->> > > +   smp_mb__before_atomic_inc();
->> > > +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
->> > > +   smp_mb__after_atomic_inc();
->> > > +   BUG_ON(!rc);
->> >
->> > So you are guaranteeing to crash a machine here if this fails?  And you
->> > were trying to say this is a "security" based fix?
->> >
->> > And people wonder why I no longer have any hair...
->>
->> If a refcounter overflows there is NO WAY to recover.  The choise is to BUG()
->> and not allow any security harm to the system (privilege escalation, etc.)
->> or to try to do some more CPU cycles until actual use after free, privilege
->> escalation, etc.  The former is a _guarantee_ that nothing bad (in security
->> sense) doesn't happen.  The latter is an opportunistic approach, which
->> doesn't work with security.
->
-> The only way you could legimitaly get a real use-after-free problem if
-> you were overflowing the reference counter and pegged it at the max
-> value, was if you had code that could decrement the reference count as
-> many times as you incremented it.  So far, all bugs we've seen are
-> one-off where on an error path, we forgot to decrement the count.  So
-> how could the decrement ever happen?
+> > > So yes, people will always do stupid, foolish things.  And they were
+> > > doing them before UIO came along, now they just have the chance to at
+> > > least do those foolish things in a way that interfaces with the kernel
+> > > in a semi-sane manner, not messing anything else in the kernel up.
+> > 
+> > So the question is; can the uio example be repeated in other areas, to
+> > bring more kernel power to userspace?
+> 
+> What exactly do you mean by "more kernel power"?  You can write
+> userspace char drivers, filesystems, usb drivers, usb gadget drivers,
+> and lots of other things today with the interfaces we provide from the
+> kernel.
 
-Based on what I've seen, the "normal" exploit follows this pattern:
+This is all good, but the thread was started for some generic reason
+not covered by those examples. The uio interface was pointed out
+because it brings pci(e) to userland, which was not (readily)
+accessible before. However, every driver that cannot be implemented in
+userspace is another example.
 
-user1: alloc(), inc
-user2: inc
-user2: fail to dec
-*repeat user2's actions until wrap*
-user3: inc
-user3: dec, free()
-user1: operate on freed memory zomg
+I am not complaining about the kernel and its driver structure - on
+the contrary. I do, however, see a reason why constructing lower-level
+interfaces to userspace may be of benefit. The kernel is growing
+tremendously fast. Sooner or later, parts of the present driver
+responsibility will have to be split into smaller chunks. Why not
+place those chunks outside the kernel itself?
 
-We could avoid the BUG by locking the counter to INT_MAX if it ever
-reaches it (i.e. the put path would need to be modified too), and then
-a WARN could be added to the get. Is that what was being suggested as
-the alternative to the BUG patch?
+> And even better yet, please show what you mean with patches.
 
->> Do you claim that a refcounter overflow is a recoverable state?  I'd want to
->> know what you can do with it.
->
-> I'm not saying it is a "recoverable" state, but to crash the machine is
-> not acceptable.  At the very least, let the user know something went
-> wrong, and stick around long enough to let them know and do something,
-> before shutting the thing down.
->
-> But before people start micro-engineering this whole thing, remember,
-> I'm still not sold on this type of change at all.
->
-> greg k-h
->
-> p.s. Has anyone ever tried an endless open() loop on a sysfs file to see
->     what happens today?...
+Sure. This particular thread seems to transcend patches, though. It
+does not hurt to vent public opinion every now and then.
 
-AIUI, you'd hit nrfile well before wrapping the counter. To test this,
-we'd need to simulate a failed decrement.
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+Henrik
