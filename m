@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab2BXWyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:54:47 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50457 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756907Ab2BXWyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:54:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.101 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 14:54:37 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120224225437.GA15695@kroah.com>
-References: <20120224192643.GB24120@kroah.com>
- <20120224201027.GA4859@polaris.bitmath.org>
- <20120224201655.GA5994@kroah.com>
- <20120224203715.GA4995@polaris.bitmath.org>
- <20120224205651.GA13333@kroah.com>
- <20120224212238.GA5178@polaris.bitmath.org>
- <20120224213027.GB15735@thunk.org>
- <20120224221459.GA5254@polaris.bitmath.org>
- <20120224222034.GB28198@kroah.com>
- <20120224224930.GA5684@polaris.bitmath.org>
+	id S932452Ab2BXW5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:57:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35345 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757142Ab2BXW5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 17:57:35 -0500
+Date: Fri, 24 Feb 2012 23:56:47 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+        maximilian attems <max@stro.at>, debian-kernel@lists.debian.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/2] kbuild: Fix link to headers in 'make deb-pkg'
+Message-ID: <20120224225647.GC19992@sepie.suse.cz>
+References: <1329323907-7696-1-git-send-email-joerg.roedel@amd.com>
+ <1329367521.3048.165.camel@deadeye>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120224224930.GA5684@polaris.bitmath.org>
+In-Reply-To: <1329367521.3048.165.camel@deadeye>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 11:49:30PM +0100, Henrik Rydberg wrote:
-> On Fri, Feb 24, 2012 at 02:20:34PM -0800, Greg KH wrote:
-> > On Fri, Feb 24, 2012 at 11:14:59PM +0100, Henrik Rydberg wrote:
-> > > The main issue that set me off has been sufficiently diluted in the
-> > > (selective) discussion so as to no longer make sense as a reply: At
-> > > some point, in-tree or out-of-tree will no longer be distinguishable,
-> > > and the question is if/when/why something would/should happen as a
-> > > consequence. A matter of politics, if you will. It seemed like an
-> > > honest question starting this thread, and I think it is fair to keep
-> > > it in mind as such.
+On Thu, Feb 16, 2012 at 04:45:21AM +0000, Ben Hutchings wrote:
+> On Wed, 2012-02-15 at 17:38 +0100, Joerg Roedel wrote:
+> > The Link to the kernel header files in the debian packages
+> > point to the original build directory. This is a bad choice
+> > if the packages were installed on a different machine. Fix
+> > this in by manually re-creating the link in the builddeb
+> > script.
 > > 
-> > If something happens to require such a change in the future, we will
-> > deal with it, at that time.  Remember the rule, "Linux is evolution, not
-> > intelligent design."
-> 
-> Who "we" is is exactly the point.
+> > Cc: Michal Marek <mmarek@suse.cz>
+> > Cc: maximilian attems <max@stro.at>
+> > Cc: Ben Hutchings <ben@decadent.org.uk>
+> > Cc: debian-kernel@lists.debian.org
+> > Cc: linux-kbuild@vger.kernel.org
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> [...]
+> Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
 
-The kernel development community will handle it.
+Applied to kbuild.git#misc.
 
-> For the not-so-important record, evolution does actually create
-> intelligent designs.
-
-For some things yes, for others (like your tailbone), perhaps not :)
-
-greg k-h
+Michal
