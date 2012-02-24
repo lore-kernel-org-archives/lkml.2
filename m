@@ -1,132 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab2BXNeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 08:34:19 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60065 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab2BXNeR (ORCPT
+	id S1757370Ab2BXNi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 08:38:27 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47040 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752135Ab2BXNiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 08:34:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel@ffwll.ch designates 10.180.104.4 as permitted sender) smtp.mail=daniel@ffwll.ch; dkim=pass header.i=daniel@ffwll.ch
-Date: Fri, 24 Feb 2012 14:34:31 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
- PAGE_SIZE
-Message-ID: <20120224133431.GA3913@phenom.ffwll.local>
-Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-References: <1329393696-4802-1-git-send-email-daniel.vetter@ffwll.ch>
- <1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
- <20120223143658.0e318ce2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120223143658.0e318ce2.akpm@linux-foundation.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Feb 2012 08:38:25 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] regmap: Supply ranges to the sync operations
+Date: Fri, 24 Feb 2012 13:38:20 +0000
+Message-Id: <1330090702-22160-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 02:36:58PM -0800, Andrew Morton wrote:
-> On Thu, 16 Feb 2012 13:01:36 +0100
-> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> 
-> > drm/i915 wants to read/write more than one page in its fastpath
-> > and hence needs to prefault more than PAGE_SIZE bytes.
-> > 
-> > I've checked the callsites and they all already clamp size when
-> > calling fault_in_pages_* to the same as for the subsequent
-> > __copy_to|from_user and hence don't rely on the implicit clamping
-> > to PAGE_SIZE.
-> > 
-> > Also kill a copy&pasted spurious space in both functions while at it.
-> >
-> > ...
-> >
-> > --- a/include/linux/pagemap.h
-> > +++ b/include/linux/pagemap.h
-> > @@ -408,6 +408,7 @@ extern void add_page_wait_queue(struct page *page, wait_queue_t *waiter);
-> >  static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-> >  {
-> >  	int ret;
-> > +	char __user *end = uaddr + size - 1;
-> >  
-> >  	if (unlikely(size == 0))
-> >  		return 0;
-> > @@ -416,17 +417,20 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-> >  	 * Writing zeroes into userspace here is OK, because we know that if
-> >  	 * the zero gets there, we'll be overwriting it.
-> >  	 */
-> > -	ret = __put_user(0, uaddr);
-> > +	while (uaddr <= end) {
-> > +		ret = __put_user(0, uaddr);
-> > +		if (ret != 0)
-> > +			return ret;
-> > +		uaddr += PAGE_SIZE;
-> > +	}
-> 
-> The callsites in filemap.c are pretty hot paths, which is why this
-> thing remains explicitly inlined.  I think it would be worth adding a
-> bit of code here to avoid adding a pointless test-n-branch and larger
-> cache footprint to read() and write().
-> 
-> A way of doing that is to add another argument to these functions, say
-> "bool multipage".  Change the code to do
-> 
-> 	if (multipage) {
-> 		while (uaddr <= end) {
-> 			...
-> 		}
-> 	}
-> 
-> and change the callsites to pass in constant "true" or "false".  Then
-> compile it up and manually check that the compiler completely removed
-> the offending code from the filemap.c callsites.
-> 
-> Wanna have a think about that?  If it all looks OK then please be sure
-> to add code comments explaining why we did this.
+In order to allow us to support partial sync operations add minimum and
+maximum register arguments to the sync operation and update the rbtree
+and lzo caches to use this new information. The LZO implementation is
+obviously not good, we could exit the iteration earlier, but there may
+be room for more wide reaching optimisation there.
 
-I wasn't really happy with the added branch either, but failed to come up
-with a trick to avoid it. Imho adding new _multipage variants of these
-functions instead of adding a constant argument is simpler because the
-functions don't really share much thanks to the block below. I'll see what
-it looks like (and obviously add a comment explaining what's going on).
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/internal.h        |    2 +-
+ drivers/base/regmap/regcache-lzo.c    |   10 ++++++++--
+ drivers/base/regmap/regcache-rbtree.c |   25 ++++++++++++++++++++++---
+ drivers/base/regmap/regcache.c        |    2 +-
+ 4 files changed, 32 insertions(+), 7 deletions(-)
 
-> >  	if (ret == 0) {
-> > -		char __user *end = uaddr + size - 1;
-> > -
-> >  		/*
-> >  		 * If the page was already mapped, this will get a cache miss
-> >  		 * for sure, so try to avoid doing it.
-> >  		 */
-> > -		if (((unsigned long)uaddr & PAGE_MASK) !=
-> > +		if (((unsigned long)uaddr & PAGE_MASK) ==
-> >  				((unsigned long)end & PAGE_MASK))
-> 
-> Maybe I'm having a dim day, but I don't immediately see why != got
-> turned into ==.
-
-Because of the loop uaddr will now point one page beyond the last
-prefaulted page. To check whether end spilled into a new page we therefore
-need to check whether uaddr and end are in the same pfn. Before uaddr
-wasn't changed and hence the checking for a different pfn worked
-correctly.
-
-> Once we have this settled I'd suggest that the patch be carried in
-> whatever-git-tree-needs-it.
-
-Thanks for the comments.
-
-Yours, Daniel
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index abd7667..fcafc5b 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -88,7 +88,7 @@ struct regcache_ops {
+ 	int (*exit)(struct regmap *map);
+ 	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
+ 	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
+-	int (*sync)(struct regmap *map);
++	int (*sync)(struct regmap *map, unsigned int min, unsigned int max);
+ };
+ 
+ bool regmap_writeable(struct regmap *map, unsigned int reg);
+diff --git a/drivers/base/regmap/regcache-lzo.c b/drivers/base/regmap/regcache-lzo.c
+index 3025cf9..77dc532 100644
+--- a/drivers/base/regmap/regcache-lzo.c
++++ b/drivers/base/regmap/regcache-lzo.c
+@@ -331,7 +331,8 @@ out:
+ 	return ret;
+ }
+ 
+-static int regcache_lzo_sync(struct regmap *map)
++static int regcache_lzo_sync(struct regmap *map, unsigned int min,
++			     unsigned int max)
+ {
+ 	struct regcache_lzo_ctx **lzo_blocks;
+ 	unsigned int val;
+@@ -339,7 +340,12 @@ static int regcache_lzo_sync(struct regmap *map)
+ 	int ret;
+ 
+ 	lzo_blocks = map->cache;
+-	for_each_set_bit(i, lzo_blocks[0]->sync_bmp, lzo_blocks[0]->sync_bmp_nbits) {
++	i = min;
++	for_each_set_bit_from(i, lzo_blocks[0]->sync_bmp,
++			      lzo_blocks[0]->sync_bmp_nbits) {
++		if (i > max)
++			continue;
++
+ 		ret = regcache_read(map, i, &val);
+ 		if (ret)
+ 			return ret;
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 32620c4..bae183c 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -357,7 +357,8 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
+ 	return 0;
+ }
+ 
+-static int regcache_rbtree_sync(struct regmap *map)
++static int regcache_rbtree_sync(struct regmap *map, unsigned int min,
++				unsigned int max)
+ {
+ 	struct regcache_rbtree_ctx *rbtree_ctx;
+ 	struct rb_node *node;
+@@ -365,12 +366,30 @@ static int regcache_rbtree_sync(struct regmap *map)
+ 	unsigned int regtmp;
+ 	unsigned int val;
+ 	int ret;
+-	int i;
++	int i, base, end;
+ 
+ 	rbtree_ctx = map->cache;
+ 	for (node = rb_first(&rbtree_ctx->root); node; node = rb_next(node)) {
+ 		rbnode = rb_entry(node, struct regcache_rbtree_node, node);
+-		for (i = 0; i < rbnode->blklen; i++) {
++
++		if (rbnode->base_reg < min)
++			continue;
++		if (rbnode->base_reg > max)
++			break;
++		if (rbnode->base_reg + rbnode->blklen < min)
++			continue;
++
++		if (min < rbnode->base_reg + rbnode->blklen)
++			base = min - rbnode->base_reg;
++		else
++			base = 0;
++
++		if (max < rbnode->base_reg + rbnode->blklen)
++			end = rbnode->base_reg + rbnode->blklen - max;
++		else
++			end = rbnode->blklen;
++
++		for (i = base; i < end; i++) {
+ 			regtmp = rbnode->base_reg + i;
+ 			val = regcache_rbtree_get_register(rbnode, i,
+ 							   map->cache_word_size);
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 11198e4..002916e 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -286,7 +286,7 @@ int regcache_sync(struct regmap *map)
+ 	}
+ 	map->cache_bypass = 0;
+ 
+-	ret = map->cache_ops->sync(map);
++	ret = map->cache_ops->sync(map, 0, map->max_register);
+ 
+ 	if (ret == 0)
+ 		map->cache_dirty = false;
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.9.1
+
