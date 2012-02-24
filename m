@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2BXCtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Feb 2012 21:49:14 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54323 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab2BXCtN (ORCPT
+	id S1754560Ab2BXCwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Feb 2012 21:52:06 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:42299 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753952Ab2BXCwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Feb 2012 21:49:13 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 24 Feb 2012 11:47:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Balbir Singh <bsingharora@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-Message-Id: <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4F468888.9090702@fb.com>
-References: <1326912662-18805-1-git-send-email-asharma@fb.com>
-	<CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com>
-	<4F468888.9090702@fb.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Feb 2012 21:52:05 -0500
+X-Sasl-enc: L7Vea3OsV6WOgJHVGoTTnqhc/E92sxmvwqU85FZPo8Hb 1330051923
+Date: Thu, 23 Feb 2012 18:51:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Devin J. Pohly" <djpohly@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] mei: cosmetic cleanup in interrupt.c
+Message-ID: <20120224025126.GA13685@kroah.com>
+References: <1330047536-3827-1-git-send-email-djpohly@gmail.com>
+ <1330047536-3827-2-git-send-email-djpohly@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330047536-3827-2-git-send-email-djpohly@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 10:42:16 -0800
-Arun Sharma <asharma@fb.com> wrote:
+On Thu, Feb 23, 2012 at 08:38:48PM -0500, Devin J. Pohly wrote:
+> From: "Devin J. Pohly" <djpohly@gmail.com>
+> 
+> Tabs, spaces, long lines, lines that could be combined, superfluous
+> parentheses, etc.  Also uses DIV_ROUND_UP and sizeof(*ptr) where
+> appropriate.
 
-> Hi Balbir,
-> 
-> Thanks for reviewing. Would you change your position if I limit the 
-> scope of the patch to a cgroup with a single address space?
-> 
-> The moment the cgroup sees more than one address space (either due to 
-> tasks getting created or being added), this optimization would be turned 
-> off.
-> 
-> More details below:
-> 
-> On 2/22/12 11:45 PM, Balbir Singh wrote:
-> >
-> > So the assumption is that only apps that have access to each others
-> > VMA's will run in this cgroup?
-> >
-> 
-> In a distributed computing environment, a user submits a job to the 
-> cluster job scheduler. The job might involve multiple related 
-> executables and might involve multiple address spaces. But they're 
-> performing one logical task, have a single resource limit enforced by a 
-> cgroup.
-> 
-> They don't have access to each other's VMAs, but if "accidentally" one 
-> of them comes across an uninitialized page with data from another task, 
-> it's not a violation of the security model.
-> 
-How do you handle shared resouce, file-cache ?
+That's a lot of different things all in one patch.
 
-Thanks,
--Kame
+Please only do one thing per patch.
 
+Also, please cc: the maintainers of this patch, I'm sure they would also
+have comments on it, use the scripts/get_maintainer.pl tool to figure
+out who to send it to (hint, you also should copy the driverdevel
+mailing list.)
+
+Care to redo these please?
+
+thanks,
+
+greg k-h
