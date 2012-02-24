@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2BXOmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 09:42:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57486 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab2BXOmx convert rfc822-to-8bit (ORCPT
+	id S1756819Ab2BXOol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 09:44:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26728 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab2BXOok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 09:42:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rabin.vincent@gmail.com designates 10.50.156.166 as permitted sender) smtp.mail=rabin.vincent@gmail.com; dkim=pass header.i=rabin.vincent@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAOh2x=kDxqddm8EdRKp0+38Efs2QX33TtofLgLxe6auex0YZWQ@mail.gmail.com>
-References: <2f2b55523b707d514a15d822ff812cfae654510a.1330079584.git.viresh.kumar@st.com>
- <CAH+eYFAEnWdvzojefix_iAefUK3BnLQNcwP2xY0vLHf5RLj5eg@mail.gmail.com> <CAOh2x=kDxqddm8EdRKp0+38Efs2QX33TtofLgLxe6auex0YZWQ@mail.gmail.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Fri, 24 Feb 2012 20:12:11 +0530
-X-Google-Sender-Auth: ra_d5mLAACQOyPJmgBLnJT6-ycs
-Message-ID: <CAH+eYFCzL5bmnjDMvT5sH=gcDjnStYWCWWeVq_hMjUk9g=+-9w@mail.gmail.com>
-Subject: Re: [PATCH] gpio/gpio-stmpe: Fix the value returned by _get_value routine
-To: viresh kumar <viresh.linux@gmail.com>
-Cc: salvatore.dedominicis@st.com, bhavna.yadav@st.com, rajeev-dlh.kumar@st.com,
-        Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
-        shiraz.hashim@st.com, grant.likely@secretlab.ca, deepak.sikri@st.com,
-        mirko.gardi@st.com, vipulkumar.samar@st.com,
-        linus.walleij@stericsson.com, armando.visconti@st.com,
-        amit.virdi@st.com, vincenzo.frascino@st.com, vipin.kumar@st.com,
-        linux-kernel@vger.kernel.org, bhupesh.sharma@st.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Feb 2012 09:44:40 -0500
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=IHAw7iiUZm0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=vn4zg5DhqP2yOTB0WkEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1330094677.25686.161.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] x86-64: fix CFI annotations for NMI nesting code
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, mingo@elte.hu, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Date: Fri, 24 Feb 2012 09:44:37 -0500
+In-Reply-To: <4F47AE7D0200007800074ABB@nat28.tlf.novell.com>
+References: <4F478B630200007800074A31@nat28.tlf.novell.com>
+	 <1330092690.3306.18.camel@fedora>
+	 <4F47AE7D0200007800074ABB@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 19:59, viresh kumar <viresh.linux@gmail.com> wrote:
-> On Feb 24, 2012 7:46 PM, "Rabin Vincent" <rabin@rab.in> wrote:
->> On Fri, Feb 24, 2012 at 16:04, Viresh Kumar <viresh.kumar@st.com> wrote:
->> > The present _get_value routine returns the contents of the GPIO
->> > Monitor Pin Status Register(GPMR) starting from the bit whose value
->> > is requested to BIT 0.
->> >
->> > For e.g. if we request the value of GPIO 6 in the earlier
->> > implementation the value returned is:
->> >
->> >        BIT6 to BIT0
->> >
->> > whereas it should just return BIT6.
->>
->> The current implementation just returns (ret & mask) where mask
->> would have only BIT6 set, so how can it return "BIT6 to BIT0" ?
->
-> Oops! I gave same comment when i saw this patch
-> on our internal list and i forgot to fix log while applying.
->
-> It actually returns 0b1000000 for example. And we need 1 here.
+On Fri, 2012-02-24 at 14:36 +0000, Jan Beulich wrote:
+>  
+> > Would that work for you?
+> 
+> Of course, thanks for spotting this oversight of mine. I assume you
+> meant the end_repeat_nmi to go after the .endr though, not before.
 
-According to the documentation, gpio_get_value() (i.e. this function)
-can return zero or non-zero, not necessarily zero or one.
+oops, yeah, cut and paste error ;-)
+
+> I'll get a fixed patch sent out soon.
+> 
+
+Thanks!
+
+-- Steve
+
+
