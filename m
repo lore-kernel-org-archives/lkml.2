@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab2BXHly (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 02:41:54 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53052 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab2BXHlx (ORCPT
+	id S1754244Ab2BXHp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 02:45:29 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:16929 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2BXHp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 02:41:53 -0500
-Message-ID: <4F473F33.4060409@linux.vnet.ibm.com>
-Date: Fri, 24 Feb 2012 13:11:39 +0530
-From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Fri, 24 Feb 2012 02:45:28 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz1432Nea8N98dKzz1202hzz8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Fri, 24 Feb 2012 15:52:43 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl: make the pinmux-pins more helpful
+Message-ID: <20120224075243.GE25789@shlinux2.ap.freescale.net>
+References: <1330062969-25016-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-To: masami.hiramatsu.pt@hitachi.com, ananth@in.ibm.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-CC: jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com
-Subject: [PATCH] perf - ensure offset provided during probe addition is not
- greater than function length
-References: <4F45FABE.90104@linux.vnet.ibm.com>
-In-Reply-To: <4F45FABE.90104@linux.vnet.ibm.com>
-X-Forwarded-Message-Id: <4F45FABE.90104@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022407-2398-0000-0000-0000047F5CDF
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1330062969-25016-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf probe allows kprobe to be inserted at any offset from a function
-start, which results in adding kprobes to unintended location.
-(example: perf probe do_fork+10000 is allowed even though size of
-do_fork is ~904)
+On Fri, Feb 24, 2012 at 06:56:09AM +0100, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> The debugfs file pinmux-pins used to tell which function was
+> enabled but now states simply which device owns the pin. Being
+> owned by the pinctrl driver itself means just that it's hogged
+> so be a bit more helpful by printing that.
+> 
+It's useful.
 
-This patch will ensure probe addition fails when the offset specified
-is greater than size of the function.
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
+BTW, one question below although it's not relatd to this patch itself.
 
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
----
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> I somewhat mourn the loss of being able to tell from the debugfs
+> which function is using a certain pin, does anyone have ideas on
+> how to go about fixing this properly? The root file
+> pinctrl-handles does tell it, but requires cross-referencing
+> which isn't helpful.
+> ---
+>  drivers/pinctrl/pinmux.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 98b89d6..db5ed86 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -626,8 +626,8 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+>  
+>  	/* The pin number can be retrived from the pin controller descriptor */
+>  	for (i = 0; i < pctldev->desc->npins; i++) {
+> -
+>  		struct pin_desc *desc;
+> +		const char *owner;
+>  
+>  		pin = pctldev->desc->pins[i].number;
+>  		desc = pin_desc_get(pctldev, pin);
+> @@ -635,9 +635,16 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+>  		if (desc == NULL)
+>  			continue;
+>  
+> +		if (!desc->owner)
+> +			owner = "UNCLAIMED";
+> +		else if (!strcmp(desc->owner, pinctrl_dev_get_name(pctldev)))
+> +			owner = "HOG";
+> +		else
+> +			owner = desc->owner;
+> +
+>  		seq_printf(s, "pin %d (%s): %s\n", pin,
+>  			   desc->name ? desc->name : "unnamed",
+Is there a little issue?
+For this line, i see some code:
+static int pinctrl_register_one_pin(struct pinctrl_dev *pctldev,
+                                    unsigned number, const char *name)
+{
+...
+        pindesc = kzalloc(sizeof(*pindesc), GFP_KERNEL);
+        if (pindesc == NULL)
+                return -ENOMEM;
+...
+        /* Copy basic pin info */
+        if (name) {
+                pindesc->name = name;
+        } else {
+                pindesc->name = kasprintf(GFP_KERNEL, "PIN%u", number);
+                if (pindesc->name == NULL)
+                        return -ENOMEM;
+                pindesc->dynamic_name = true;
+        }
+...
+}
+So is it possible the desc->name is NULL?
 
- tools/perf/util/probe-finder.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+> -			   desc->owner ? desc->owner : "UNCLAIMED");
+> +			   owner);
+>  	}
+>  
+>  	return 0;
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 5d73262..d298f94 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
- 				  bool retprobe, struct probe_trace_point *tp)
- {
--	Dwarf_Addr eaddr;
-+	Dwarf_Addr eaddr, highaddr;
- 	const char *name;
-
- 	/* Copy the name of probe point */
-@@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
- 				   dwarf_diename(sp_die));
- 			return -ENOENT;
- 		}
-+		if (dwarf_highpc(sp_die, &highaddr) != 0) {
-+			pr_warning("Failed to get end address of %s\n",
-+				   dwarf_diename(sp_die));
-+			return -ENOENT;
-+		}
-+		if (paddr > highaddr) {
-+			pr_warning("Offset specified is greater than size of %s\n",
-+				   dwarf_diename(sp_die));
-+			return -EINVAL;
-+		}
- 		tp->symbol = strdup(name);
- 		if (tp->symbol == NULL)
- 			return -ENOMEM;
+Regards
+Dong Aisheng
 
