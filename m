@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab2BXLco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 06:32:44 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21246 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab2BXLcK (ORCPT
+	id S1757339Ab2BXLcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 06:32:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59082 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab2BXLcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 06:32:10 -0500
-Date: Fri, 24 Feb 2012 14:31:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] epoll: remove unneeded variable in reverse_path_check()
-Message-ID: <20120224113158.GA17641@elgon.mountain>
+	Fri, 24 Feb 2012 06:32:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of sshtylyov@mvista.com designates 10.204.156.5 as permitted sender) smtp.mail=sshtylyov@mvista.com
+Message-ID: <4F477515.1040303@mvista.com>
+Date: Fri, 24 Feb 2012 15:31:33 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F477539.003C,ss=1,re=0.000,fgs=0
+To: meng zhang <meng.zhang@mediatek.com>
+CC: smurf@smurf.noris.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
+References: <CACwCHpxjhEenzv+H3zK2cNKAA9KyuK=DPythY2UgHTmY_AhqaQ@mail.gmail.com>
+In-Reply-To: <CACwCHpxjhEenzv+H3zK2cNKAA9KyuK=DPythY2UgHTmY_AhqaQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We never use the length variable.
+Hello.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On 24-02-2012 10:41, meng zhang wrote:
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index c636fc8..997a6d2 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1042,13 +1042,11 @@ static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
-  */
- static int reverse_path_check(void)
- {
--	int length = 0;
- 	int error = 0;
- 	struct file *current_file;
- 
- 	/* let's call this for all tfiles */
- 	list_for_each_entry(current_file, &tfile_check_list, f_tfile_llink) {
--		length++;
- 		path_count_init();
- 		error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
- 					reverse_path_check_proc, current_file,
+> from: Meng Zhang<meng.zhang@mediatek.com>
+
+> 1. This patch is based on kernel 3.0.0
+
+    You should base on the recent kernel instead.
+
+> 2. To declare the product IDs in option.c
+
+> Signed-off-by: Meng Zhang<meng.zhang@mediatek.com>
+> ---------------------------------------------------------------------------------------
+
+    This line is not needed here.
+
+> --- option.c	2012-02-23 10:42:40.635138657 +0800
+> +++ option.c.orig	2011-10-07 22:50:04.000000000 +0800
+
+    The patch should be applicablke with -p1 switch, i.e. based on the linux 
+source root.
+
+[...]
+> @@ -1008,10 +1005,6 @@ static const struct usb_device_id option
+>   	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650
+> CDMA 450 1xEVDO modem */
+>   	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+>   	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID,
+> SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /*
+> Samsung GT-B3730 LTE USB modem.*/
+> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
+> 0x00, 0x00) },
+
+    You're not adding the device IDs, you're removing them.
+
+> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
+> 0x02, 0x01) },
+> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+> 0x00, 0x00) },
+> -	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+> 0x02, 0x01) },	/* MediaTek MT6276M modem&  app port */
+
+    The patch is line wrapped.
+
+WBR, Sergei
