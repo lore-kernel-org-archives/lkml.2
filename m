@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab2BXVpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 16:45:36 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64217 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766Ab2BXVpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 16:45:35 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.218.228 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
-Date: Fri, 24 Feb 2012 13:45:32 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Josef Bacik <josef@redhat.com>
-cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
-In-Reply-To: <20120224151025.GA1848@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1202241342240.22880@chino.kir.corp.google.com>
-References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202221640420.14213@chino.kir.corp.google.com> <20120223150238.GA15427@dhcp231-144.rdu.redhat.com> <alpine.DEB.2.00.1202231505080.26362@chino.kir.corp.google.com>
- <20120224151025.GA1848@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758155Ab2BXVwV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 16:52:21 -0500
+Received: from zfrontend1.aha.ru ([195.2.83.147]:40430 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754862Ab2BXVwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 16:52:20 -0500
+From: "werner" <w.landgraf@ru.ru>
+Subject: Re: [Bug #42669] 3.3-rc1: compiling problems nvme , l2cap_sock
+ , mc13892-regulator , and snd-pcsp don't work
+To: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com,
+        florian@mickler.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Fri, 24 Feb 2012 17:55:07 -0400
+Message-ID: <web-701939672@zbackend1.aha.ru>
+In-Reply-To: <20120224.145737.662334352795127267.davem@davemloft.net>
+References: <qCQH7HfZS8E.A.FVG.M9rRPB@chimera>
+ 	<20120223.181904.501214130038312055.davem@davemloft.net>
+ 	<web-701709481@zbackend1.aha.ru>
+ <20120224.145737.662334352795127267.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012, Josef Bacik wrote:
 
-> Um well yeah, I'm rewriting a chunk of btrfs which was rapantly leaking memory
-> so the OOM just couldn't keep up with how much I was sucking down.  This is
-> strictly a developer is doing something stupid and needs help pointing out what
-> it is sort of moment, not a day to day OOM.
->  
+> 
+>> This things happens, because people, after changes, nor 
+>>compile them
+>> subroutines ...  :( Much less, test them ...
+> 
 
-If you're debugging new kernel code and you realize that excessive amount 
-of memory is being consumed so that nothing can even fork, you may want to 
-try cat /proc/slabinfo before you get into that condition the next time 
-around, although I already suspect that you know the cache you're leaking.  
-It doesn't mean we need to add hundreds of lines of code to the kernel.  
-Try kmemleak.
+
+In -rc1 were compilation errors in several subroutines, 
+and almost none of them was fixed until -rc4 .
+
+And:  that's a steady problem (although I bacame tired ond 
+report only exceptionally about this).
+
+Generally, people, after patching something, at least 
+should try to compile the subroutine !!!!!!!!!!!!!!
+
+
+W.Landgraf
+---
+Professional hosting for everyone - http://www.host.ru
