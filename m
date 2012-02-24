@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab2BXWj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 17:39:27 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39229 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932238Ab2BXWj0 (ORCPT
+	id S932390Ab2BXWlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 17:41:07 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53749 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab2BXWlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 17:39:26 -0500
-Date: Fri, 24 Feb 2012 14:39:18 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 4/4] PCI: quirk print dev name with duration
-Message-ID: <20120224143918.06424688@jbarnes-desktop>
-In-Reply-To: <1329370832-2253-5-git-send-email-yinghai@kernel.org>
-References: <1329370832-2253-1-git-send-email-yinghai@kernel.org>
-	<1329370832-2253-5-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/z3TtCThwpRA9wTaFax38zap"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 24 Feb 2012 17:41:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.229.78.159 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <4F468EBB.9000209@gmail.com>
+References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
+	<4F4484AC.9050500@lge.com>
+	<87ehtnhz9w.fsf@gmail.com>
+	<CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com>
+	<4F45E9C5.4020900@lge.com>
+	<CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
+	<CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
+	<4F468EBB.9000209@gmail.com>
+Date: Fri, 24 Feb 2012 17:41:04 -0500
+Message-ID: <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
+Subject: Re: perf record: can I specify multiple events and use different
+ sample-after value
+From: Yuanfang Chen <cyfmxc@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/z3TtCThwpRA9wTaFax38zap
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 23, 2012 at 2:08 PM, David Ahern <dsahern@gmail.com> wrote:
+> On 2/23/12 11:52 AM, Yuanfang Chen wrote:
+>>>
+>>>
+>>> say my application(not an existing process, so -p<pid>  does not
+>>> work.) run for 10 seconds. I want the r03c, r2d4 value during each
+>>> second.  So there will be two values for each event in one second.
+>>
+>>
+>> oops, forgot to forward. :-)
+>
+>
+> you are looking for something like this?
+> http://www.spinics.net/lists/linux-perf-users/msg00211.html
 
-On Wed, 15 Feb 2012 21:40:32 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+Exactly !!
 
-> So could find out which device is involved with the calling
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Arjan van de Ven <arjan@infradead.org>
+I think I'll settle with perf record for now. Still, unlike trace
+event, sample count is not meaningful for PMU event. Output of "perf
+script" does not include period value. One line of code will do the
+work.
 
-Applied, thanks.
+lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
+__mem_cgroup_commit_char
+lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
+__mem_cgroup_commit_char
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+86754, 1027634 is the period value. But I'm not sure which is the PMU
+value, is it just period value, or period x sample after. If so, what
+is the sample after value?
 
---Sig_/z3TtCThwpRA9wTaFax38zap
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+thank you,
+yuanfang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPSBGWAAoJEIEoDkX4Qk9hUcwQAIzqXJZKD0jC5X/FPxGwXlhX
-COjDAFKFyMDrA+C71w+hFRjsBglvs5UhvUSaakS/6K7sXZ1FnrQjzTEkeigUfUBr
-60RHUDfj6dSVduoy7tcWps/WqTPI1o3jW/OUAdmMWYKJC0CQM6NZbKojlnIUNvZQ
-hXlBcq1pqHj0VFnqMCXB66/wF6Bap1N1Q1p2WxiLcrAVVQpB80RYqWLqqjaWbAK6
-YAyN3qbjvK2FTJZpKaMOI1BkETmN+yjm0wiBZMHErFEl78iDbdTmW4+1z2hRtr4f
-ig0D2/UyXRbBGCVmrXd+h1THYQNUXl4MI1wOiib+le+cBW2dFsl3p+9rETHkw2gw
-eAsewWYm9sL3WAn1RsgXD43xTGF0GXC+XH5NR9MRzAWu22ouZjaGp2k2lMh0lpu6
-sHvLKSdUI5j4Fdr+dIbSf71NsKjrAqqyJYANkMr4UXwqxIJCFK0IWWPx7FV2LGuB
-ugMuCw8Oob17e8rIWAsp8nIcRYkHfw+6mGNsbLsWUwg5Akc9DXOYveK5azdFzAFK
-jGsxQvq1M4c8VjSdxKMUm8+zMzaH4sqnvqo3/04YPpcxbw6Cx3lmQHoLWJTR3KNs
-kMc/LBR7pS8993/iq+CMici4Qkf6HUCgGw0eonfcZe03dum2y5jaYJKfcXQph8VB
-TjlCD9cTMqTiGCAQ3yJl
-=KkFf
------END PGP SIGNATURE-----
-
---Sig_/z3TtCThwpRA9wTaFax38zap--
+>
+> David
+>
