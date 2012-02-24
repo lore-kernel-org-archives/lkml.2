@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2BXTSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 14:18:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36893 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab2BXTSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 14:18:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of segooon@gmail.com designates 10.204.152.145 as permitted sender) smtp.mail=segooon@gmail.com; dkim=pass header.i=segooon@gmail.com
-Date: Fri, 24 Feb 2012 23:13:01 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Kees Cook <keescook@chromium.org>, Greg KH <gregkh@linuxfoundation.org>,
-        David Windsor <dwindsor@gmail.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        kernel-hardening@lists.openwall.com,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        spender@grsecurity.net
-Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
-Message-ID: <20120224191300.GA12553@albatros>
-References: <20120217075945.GA2831@albatros>
- <20120217175445.GC29902@kroah.com>
- <20120217193719.GA4187@albatros>
- <20120217233908.GA24047@dztty>
- <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
- <20120218161849.GA4176@kroah.com>
- <CAEXv5_jYj=cHsePJEf4f08KsBOfU+MVMnV0DucmVKQbg+KbxrQ@mail.gmail.com>
- <20120224183726.GB23284@kroah.com>
- <CAGXu5jJGQgDSueZeZfSAVoSJLPEybmE_7csQA8dK4T0GwDe-Dg@mail.gmail.com>
- <20120224190549.GA8034@elliptictech.com>
+	id S1757300Ab2BXTT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 14:19:29 -0500
+Received: from gw.danplanet.com ([50.43.125.66]:45296 "EHLO mail.danplanet.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750709Ab2BXTT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 14:19:28 -0500
+From: Dan Smith <danms@us.ibm.com>
+To: akpm@linux-foundation.org
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave@linux.vnet.ibm.com
+Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are page-aligned
+References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
+	<alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
+	<87zkcm23az.fsf@caffeine.danplanet.com>
+	<alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
+Date: Fri, 24 Feb 2012 11:19:25 -0800
+Message-ID: <87obsoxcn6.fsf@danplanet.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120224190549.GA8034@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 14:05 -0500, Nick Bowler wrote:
-> On 2012-02-24 10:52 -0800, Kees Cook wrote:
-> > On Fri, Feb 24, 2012 at 10:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > On Fri, Feb 24, 2012 at 12:58:35PM -0500, David Windsor wrote:
-> [...]
-> > >> diff --git a/include/linux/kref.h b/include/linux/kref.h
-> > >> index 9c07dce..fc0756a 100644
-> > >> --- a/include/linux/kref.h
-> > >> +++ b/include/linux/kref.h
-> > >> @@ -38,8 +38,12 @@ static inline void kref_init(struct kref *kref)
-> > >>   */
-> > >>  static inline void kref_get(struct kref *kref)
-> > >>  {
-> > >> +   int rc = 0;
-> > >>     WARN_ON(!atomic_read(&kref->refcount));
-> > >> -   atomic_inc(&kref->refcount);
-> > >> +   smp_mb__before_atomic_inc();
-> > >> +   rc = atomic_add_unless(&kref->refcount, 1, INT_MAX);
-> > >> +   smp_mb__after_atomic_inc();
-> > >> +   BUG_ON(!rc);
-> > >
-> > > So you are guaranteeing to crash a machine here if this fails?  And you
-> > > were trying to say this is a "security" based fix?
-> > 
-> > This is the same principle as the stack protector. When something has
-> > gone horribly wrong and cannot be sensibly recovered from, crash the
-> > machine. Wrapping the refcount would cause all kinds of problems, so
-> > that certainly seems worthy of a BUG().
-> 
-> But in this case, the principle does not apply because we can recover.
-> The reason we cannot recover from the stack protector case is because
-> the stack protector is reacting after the fact, which is not the case
-> here.  Simply peg the reference count at the maximum value, neither
-> incrementing it nor decrementing it further.
+DR> but it doesn't "ensure" walk_page_range() always has start and end
+DR> addresses that are page aligned
 
-...and simply loose one reference, which leads to use-after-free.
+Below is a changed version of the patch which always does the
+check. Since failing that condition indicates a kernel bug, WARN_ON()
+makes sure it gets some visibility.
+
+Andrew, can you take this?
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Dan Smith
+IBM Linux Technology Center
+email: danms@us.ibm.com
+
+commit b06c2032d63f20d5a5513b3890776aeead397aa5
+Author: Dan Smith <danms@us.ibm.com>
+Date:   Fri Feb 24 11:07:05 2012 -0800
+
+    Ensure that walk_page_range()'s start and end are page-aligned
+    
+    The inner function walk_pte_range() increments "addr" by PAGE_SIZE after
+    each pte is processed, and only exits the loop if the result is equal to
+    "end". Current, if either (or both of) the starting or ending addresses
+    passed to walk_page_range() are not page-aligned, then we will never
+    satisfy that exit condition and begin calling the pte_entry handler with
+    bad data.
+    
+    To be sure that we will land in the right spot, this patch checks that
+    both "addr" and "end" are page-aligned in walk_page_range() before starting
+    the traversal.
+    
+    Signed-off-by: Dan Smith <danms@us.ibm.com>
+    Cc: linux-mm@kvack.org
+    Cc: linux-kernel@vger.kernel.org
+
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index 2f5cf10..97ee963 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -196,6 +196,11 @@ int walk_page_range(unsigned long addr, unsigned long end,
+ 	if (addr >= end)
+ 		return err;
+ 
++	if (WARN_ONCE((addr & ~PAGE_MASK) || (end & ~PAGE_MASK),
++		      "address range is not page-aligned")) {
++		return -EINVAL;
++	}
++
+ 	if (!walk->mm)
+ 		return -EINVAL;
+ 
