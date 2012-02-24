@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab2BXOYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 09:24:18 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48411 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab2BXOYQ convert rfc822-to-8bit (ORCPT
+	id S1754565Ab2BXOYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 09:24:12 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50226 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab2BXOYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 09:24:16 -0500
-Date: Fri, 24 Feb 2012 14:26:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Fuzhou Chen <fuzhouch@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, jgarzik@redhat.com, mjg@redhat.com
-Subject: Re: linux-next: pata_acpi.ko crashes at ata_ap_acpi_handle()
-Message-ID: <20120224142609.2c7e519d@pyramind.ukuu.org.uk>
-In-Reply-To: <6689D53B948ACF469C8E9C8CCD48EBE1114EFE01@SINEX14MBXC415.southpacific.corp.microsoft.com>
-References: <6689D53B948ACF469C8E9C8CCD48EBE1114EFE01@SINEX14MBXC415.southpacific.corp.microsoft.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Feb 2012 09:24:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Hogan <james.hogan@imgtec.com>
+Subject: Re: [RFC] [PATCH] asm-generic/unistd.h: handle symbol prefixes in cond_syscall
+Date: Fri, 24 Feb 2012 14:23:19 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4F47981F.4020305@imgtec.com>
+In-Reply-To: <4F47981F.4020305@imgtec.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202241423.19775.arnd@arndb.de>
+X-Provags-ID: V02:K0:MdzQe9xB43DXlQjdgKlIlE8ICMl6UBiaIKe127QsTLM
+ rmei+gj6Ze6pZXujq91eLupYphHch7gI7Tn8jDjOwsYaMVA1Qz
+ 1bbIodL1gjIwg7TxDSX9yVJlgDbzqDx3nXeAvcIC51+trx/2ET
+ GEODJUmzetUseDOki5DprXHrJHC5l8+QFkJnrRTfqisX4Scfxh
+ 0U21ThNaTtnsBLygHazVs9Tc9kmxg1/rZvY4nnkvhlVrx1mihd
+ 6c+rtv5dwjqrLtH/HOUtMalh1P8zRxtgxcOedgO2jx+G4k/CMe
+ o0T8+uo0Mc5zxhLGlZOkMOZU29wLbxwVhQ1vGypMMu/8378otP
+ NXvdn3Zlq2/Jp18wBm8A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->        We can see the code in ata_ap_acpi_handle()accesses ap->scsi_host filed without checking if it’s initialized, which causes NULL pointer panic. Meanwhile, ata_pci_sff_activate_host() calls ata_host_register(), which calls ata_scsi_add_hosts() to initialize scsi_host field. Both calls are after ata_host_start() in a must-visit code path. I believe ata_scsi_add_hosts() is the first place for initialization because it does not check if scsi_host field is NULL either. So it makes no sense to access ap->scsi_host in ata_ap_acpi_handle().
+On Friday 24 February 2012, James Hogan wrote:
+> Some architectures have symbol prefixes and set CONFIG_SYMBOL_PREFIX,
+> but this wasn't taken into account by the generic cond_syscall. It's
+> easy enough to fix in a generic fashion, so add the symbol prefix to
+> symbol names in cond_syscall when CONFIG_SYMBOL_PREFIX is set.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> ---
+>  include/asm-generic/unistd.h |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+> index 2292d1a..c9a5ba4 100644
+> --- a/include/asm-generic/unistd.h
+> +++ b/include/asm-generic/unistd.h
+> @@ -924,7 +924,14 @@ __SYSCALL(__NR_fork, sys_ni_syscall)
+>   * but it doesn't work on all toolchains, so we just do it by hand
+>   */
+>  #ifndef cond_syscall
+> -#define cond_syscall(x) asm(".weak\t" #x "\n\t.set\t" #x ",sys_ni_syscall")
+> +#ifdef CONFIG_SYMBOL_PREFIX
+> +#define __SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+> +#else
+> +#define __SYMBOL_PREFIX
+> +#endif
+> +#define cond_syscall(x) asm(".weak\t" __SYMBOL_PREFIX #x "\n\t" \
+> +                           ".set\t" __SYMBOL_PREFIX #x "," \
+> +                           __SYMBOL_PREFIX "sys_ni_syscall")
+>  #endif
 
-This appears to be caused by broken changes to the libata code from
-Matthew Garrett and others who introduced a dependancy on scsi_host which
-isn't safe to do because drivers can touch the ACPI earlier than the
-scsi registration and in fact *NEED* to do so.
+Our trend is to move away from arch specific Kconfig symbols and __ARCH_HAS_*
+macros towards just defining whatever you need in the architecture as an
+override for the generic definition.
 
-Jeff - can we get these patches dropped back out for the moment - they
-cause a regression and boot crash in pata_acpi.
+Just provide your own unistd.h that does
 
-The stack from 75d22cd567cac6fe2af8acb33f6ebcd16876d250 needs to get
-punted and the scsi_host indirection removed and fixed up for it to work
-safely with existing libata drivers.
+#define cond_syscall(x) asm(".weak\t." #x "\n\t.set\t." #x ",.sys_ni_syscall")
+#include <asm-generic/unistd.h>
 
-I don't see an obvious way to fix up the existing ordering dependancies,
-especially on the pata_acpi side but if someone has bright ideas there
-that would probably be the best choice. Right now these patches stop any
-ACPI querying being done during the port setup. We need to do those
-queries in order to know if the port can be driven by ACPI and what modes
-we can make work.
+BTW, are you planning to submit arch/metag for inclusion? I've looked at
+the code recently and it appears that you are on the right track overall,
+and it shouldn't be too hard to get to the same quality level as
+arch/openrisc.
 
-Alan
+	Arnd
