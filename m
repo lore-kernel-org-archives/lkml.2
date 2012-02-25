@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab2BYJD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 04:03:59 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:39843 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab2BYJD4 (ORCPT
+	id S1755760Ab2BYJ2X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 04:28:23 -0500
+Received: from smtprelay04.ispgateway.de ([80.67.31.32]:45807 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453Ab2BYJ2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 04:03:56 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 10/11] Staging: ft1000-pcmcia: print MAC via printk format specifier
-Date: Sat, 25 Feb 2012 10:02:50 +0100
-User-Agent: KMail/1.9.10
-Cc: marek.belisko@gmail.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de> <1330091162-8141-11-git-send-email-danny.kukawka@bisect.de> <20120224.145313.1945472951961198905.davem@davemloft.net>
-In-Reply-To: <20120224.145313.1945472951961198905.davem@davemloft.net>
+	Sat, 25 Feb 2012 04:28:20 -0500
+From: Bernhard Walle <bernhard@bwalle.de>
+To: gregkh@linuxfoundation.org
+Cc: christoph.mair@gmail.com, arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: [PATCH] misc: bmp085: Use unsigned long to store jiffies
+Date: Sat, 25 Feb 2012 10:28:12 +0100
+Message-Id: <1330162092-30053-1-git-send-email-bernhard@bwalle.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20120224221807.GA20680@kroah.com>
+References: <20120224221807.GA20680@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201202251002.51436.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330160636;4a71922c;
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Df-Sender: MTIyNzgwNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Freitag, 24. Februar 2012, David Miller wrote:
-> Danny, please don't do this.
->
-> If you are posting a "patch series" that you want me to apply, then
-> that entire series must be posted to netdev for review.
->
-> Otherwise I get a partial patch series recorded in patchwork which
-> screws up my work flow completely.
+This fixes following compilation warning:
 
-Okay, I'll keep this in mind for the next time.
+drivers/misc/bmp085.c: In function ‘bmp085_get_pressure’:
+drivers/misc/bmp085.c:238:4: warning: comparison of distinct pointer
+         types lacks a cast [enabled by default]
 
-Danny
+Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+---
+ drivers/misc/bmp085.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+index b088abc..76c3064 100644
+--- a/drivers/misc/bmp085.c
++++ b/drivers/misc/bmp085.c
+@@ -87,7 +87,7 @@ struct bmp085_data {
+ 	u32 raw_temperature;
+ 	u32 raw_pressure;
+ 	unsigned char oversampling_setting;
+-	u32 last_temp_measurement;
++	unsigned long last_temp_measurement;
+ 	s32 b6; /* calculated temperature correction coefficient */
+ };
+ 
+-- 
+1.7.5.4
+
