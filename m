@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab2BYA4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 19:56:07 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:58414
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755396Ab2BYA4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 19:56:05 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F48318E.8070902@am.sony.com>
-Date: Fri, 24 Feb 2012 16:55:42 -0800
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>,
-        linux kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <eric.dumazet@gmail.com>
-Subject: RFC: memory leak in udp_table_init
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S932268Ab2BYA40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 19:56:26 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:41655 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756055Ab2BYA4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 19:56:06 -0500
+Date: Fri, 24 Feb 2012 16:56:02 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tags: fix use of parenthesis in regex
+Message-ID: <20120224165602.6fe303d3@nehalam.linuxnetplumber.net>
+In-Reply-To: <20120225003411.GA27390@sepie.suse.cz>
+References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
+	<4F2C38BD.1060109@codeaurora.org>
+	<20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+	<c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>
+	<20120206124058.1cf1a23e@s6510.linuxnetplumber.net>
+	<4F305CB6.7050603@codeaurora.org>
+	<20120206151543.1bb1d869@s6510.linuxnetplumber.net>
+	<20120225003411.GA27390@sepie.suse.cz>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've uncovered an obscure memory leak in the routine udp_table_init(),
-in the file: net/ipv4/udp.c
+On Sat, 25 Feb 2012 01:34:12 +0100
+Michal Marek <mmarek@suse.cz> wrote:
 
-The allocation sequence is a bit weird, and I've got some questions
-about the best way to fix it.
+> On Mon, Feb 06, 2012 at 03:15:43PM -0800, Stephen Hemminger wrote:
+> > Several of the regular expressions passed to etags and ctags where incorrect
+> > and missing the backslash before the closing paren, and matching the wrong
+> > part of the start of the function causing warning:
+> >   etags: Unmatched ( or \( while compiling pattern
+> 
+> But your patch introduces another imbalances, e.g.
+> 
+> 
+> > @@ -129,31 +129,31 @@ exuberant()
+> ...
+> > -	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
+> ...
+> > +	--regex-c++='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
+> 
+> The old version had left paren, start of group, ..., end of group
+> The new version has start of group, left paren, ..., right paren
+> 
+> Where left / right paren means the character without any special
+> meaning. I actually can't see anything wrong with the old TRACE_EVENT matching, the regular expression is correct and I think it does what it should do (turn
+> TRACE_EVENT(foo) into trace_foo).
+> 
+> Below is the full list of warnings I get from
+> 
+> Exuberant Ctags 5.8, Copyright (C) 1996-2009 Darren Hiebert
+>   Addresses: <dhiebert@users.sourceforge.net>, http://ctags.sourceforge.net
+>   Optional compiled features: +wildcards, +regex
+> 
+> 
+>   GEN     tags
+> ctags: Warning: regcomp ^SYSCALL_DEFINE[[:digit:]]?(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp ^TRACE_EVENT(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp ^DEFINE_EVENT\([^,)]*, *([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTSETFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp SETPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __SETPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTCLEARFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __TESTCLEARFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp CLEARPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __CLEARPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp PAGEFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTSCFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTSCFLAG(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp SETPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp CLEARPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __CLEARPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp TESTCLEARFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+> ctags: Warning: regcomp __TESTCLEARFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+> 
+> The same list repeats, as ctags is called multiple times.
+> 
+> Michal
 
-Here's the code:
+The problem is that in proper regex each start of sub-expression \(
+needs to have a matching end of sub-expression \)
+The old version had no matching-end of sub-expression and therefore was technically
+malformed, probably old tools just ignored it.
 
-void __init udp_table_init(struct udp_table *table, const char *name)
-{
-	unsigned int i;
+   --regex='/PAGEFLAG\(([^,)]*).*/Page\1/'
+                      ^
+                      start but no end?
 
-	if (!CONFIG_BASE_SMALL)
-		table->hash = alloc_large_system_hash(name,
-			2 * sizeof(struct udp_hslot),
-			uhash_entries,
-			21, /* one slot per 2 MB */
-			0,
-			&table->log,
-			&table->mask,
-			64 * 1024);
-	/*
-	 * Make sure hash table has the minimum size
-	 */
-	if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
-		table->hash = kmalloc(UDP_HTABLE_SIZE_MIN *
-				      2 * sizeof(struct udp_hslot), GFP_KERNEL);
-		if (!table->hash)
-			panic(name);
-		table->log = ilog2(UDP_HTABLE_SIZE_MIN);
-		table->mask = UDP_HTABLE_SIZE_MIN - 1;
-	}
-	...
+My initial patch just fixed those, but others kept wanting more.
 
-We've seen instances where the second allocation of table->hash
-is performed, wiping out the first hash table allocation, without a
-free.  This ends up leaking the previously allocated hash table.
-
-That is, if we are !CONFIG_BASE_SMALL and for some reason
-the alloc_large_system_hash() operation returns less than UDP_HTABLE_SIZE_MIN
-hash slots, then it will trigger this.
-
-There's no complementary "free_large_system_hash()" which can be used to
-back out of the first allocation, that I can find.
-
-We are currently doing the following to avoid the memory leak, but this
-seems like it defeats the purpose of checking for the minimum size
-(that is, if the first allocation was too small, we don't re-allocate).
-
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 5d075b5..2524af4 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -2194,7 +2194,8 @@ void __init udp_table_init(struct udp_table *table, const char *name)
- 	/*
- 	 * Make sure hash table has the minimum size
- 	 */
--	if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
-+	if ((CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1)
-+		&& !table->hash) {
- 		table->hash = kmalloc(UDP_HTABLE_SIZE_MIN *
- 				      2 * sizeof(struct udp_hslot), GFP_KERNEL);
- 		if (!table->hash)
-
-Any suggestions for a way to correct for a too-small first allocation, without
-a memory leak?
-
-Alternatively - how critical is this UDP_HTABLE_SIZE_MIN for correct operation
-of the stack?
-
-Thanks for any information you can provide.
-
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
+  
 
