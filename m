@@ -1,126 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab2BYGPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 01:15:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57197 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab2BYGPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 01:15:07 -0500
-Message-ID: <4F487BB5.1060706@cn.fujitsu.com>
-Date: Sat, 25 Feb 2012 14:12:05 +0800
-From: Liu Bo <liubo2009@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753444Ab2BYGyP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 01:54:15 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40218 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab2BYGyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 01:54:14 -0500
+Date: Sat, 25 Feb 2012 12:24:03 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120225065403.GB12313@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1321495153.5100.7.camel@marge.simson.net>
+ <1321544313.6308.25.camel@marge.simson.net>
+ <1321545376.2495.1.camel@laptop>
+ <1321547917.6308.48.camel@marge.simson.net>
+ <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+ <1321629267.7080.13.camel@marge.simson.net>
+ <1329748861.2293.345.camel@twins>
+ <1329761661.6276.146.camel@marge.simpson.net>
+ <20120223104959.GA8454@linux.vnet.ibm.com>
+ <1329996064.7411.106.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chris.mason@oracle.com, kamalesh@linux.vnet.ibm.com
-Subject: Re: [BUG] Kernel Bug at fs/btrfs/volumes.c:3638
-References: <4F476959.2010400@linux.vnet.ibm.com>
-In-Reply-To: <4F476959.2010400@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-25 14:13:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-25 14:13:19,
-	Serialize complete at 2012-02-25 14:13:19
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1329996064.7411.106.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022420-0260-0000-0000-0000009938AF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 06:41 PM, Nageswara R Sastry wrote:
-> Hello,
-> 
-> While working with 'fsfuzz - file system fuzzing tool' on 'btrfs'
-> encountered the following kernel bug.
-> 
-> Environment:
-> Kernel Version: 3.3.0-rc4
-> Architecture: s390, x86
-> 
-> Providing the kernel trace from 's390' arch.
-> 
-> Btrfs loaded
-> device fsid 346683e8-0fcc-4440-b421-4535e73d60d6 devid 1 transid 4
-> /dev/loop0
-> btrfs: disk space caching is enabled
-> unable to find logical 131072 len 4096
-> ------------[ cut here ]------------
-> kernel BUG at fs/btrfs/volumes.c:3638!
-> illegal operation: 0001 [#1] SMP
-> Modules linked in: btrfs zlib_deflate crc32c libcrc32c loop dm_multipath
-> dm_mod qeth_l3 ipv6 vmur dasd_eckd_mod dasd_mod scsi_dh_hp_sw
-> scsi_dh_alua scsi_dh_rdac scsi_dh_emc scsi_dh scsi_mod qeth qdio
-> ccwgroup ext3 mbcache jbd
-> CPU: 0 Not tainted 3.3.0-rc4-0.27-default #1
-> Process mount (pid: 2396, task: 000000003f176738, ksp: 0000000002ab7648)
-> Krnl PSW : 0704300180000000 000003e004c10e08
-> (__btrfs_map_block+0x794/0x8cc [btrfs])
->            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:3 PM:0 EA:3
-> Krnl GPRS: 0000000000010000 0700000000000008 000000000000002d
-> 0400000000000000
->            00000000004d3f26 00000000004e21a8 0000000002ab7828
-> 0000000002130d00
->            000000003ee5ed90 000000003e962108 0000000000020000
-> 000000003e962110
->            000003e004bb0000 000003e004c4c990 000003e004c10e04
-> 0000000002ab7620
-> Krnl Code: 000003e004c10df8: e34050000004       lg      %r4,0(%r5)
->            000003e004c10dfe: c0e5fffcfb87       brasl   %r14,3e004bb050c
->           #000003e004c10e04: a7f40001           brc     15,3e004c10e06
->>000003e004c10e08: a7f40000           brc     15,3e004c10e08
->            000003e004c10e0c: 12bb               ltr     %r11,%r11
->            000003e004c10e0e: a7c4ffb7           brc     12,3e004c10d7c
->            000003e004c10e12: e31090200004       lg      %r1,32(%r9)
->            000003e004c10e18: d507d0001078       clc     0(8,%r13),120(%r1)
-> Call Trace:
-> ([<000003e004c10e04>] __btrfs_map_block+0x790/0x8cc [btrfs])
->  [<000003e004c10f6e>] btrfs_map_block+0x2e/0x3c [btrfs]
->  [<000003e004c11db4>] btrfs_map_bio+0x74/0x2ac [btrfs]
->  [<000003e004be13c6>] btree_submit_bio_hook+0xd6/0xf0 [btrfs]
->  [<000003e004c06b4c>] submit_one_bio+0xb4/0xf8 [btrfs]
->  [<000003e004c0e292>] read_extent_buffer_pages+0x292/0x630 [btrfs]
->  [<000003e004bddd0c>] btree_read_extent_buffer_pages+0xc8/0xfc [btrfs]
->  [<000003e004bdf488>] read_tree_block+0x48/0x7c [btrfs]
->  [<000003e004be30d6>] open_ctree+0xec6/0x15f8 [btrfs]
->  [<000003e004bbb7d8>] btrfs_fill_super+0x90/0x170 [btrfs]
->  [<000003e004bbbefa>] btrfs_mount+0x3ea/0x3f8 [btrfs]
->  [<0000000000260b96>] mount_fs+0x5a/0x188
->  [<00000000002852e6>] vfs_kern_mount+0x6e/0x11c
->  [<0000000000285442>] do_kern_mount+0x52/0x114
->  [<000000000028573c>] do_mount+0x238/0x288
->  [<000000000028584e>] SyS_mount+0xc2/0xf0
->  [<00000000004d7d88>] sysc_noemu+0x22/0x28
->  [<000003fffd1fab1e>] 0x3fffd1fab1e
-> Last Breaking-Event-Address:
->  [<000003e004c10e04>] __btrfs_map_block+0x790/0x8cc [btrfs]
-> 
-> ---[ end trace 1e786b24696895a8 ]---
-> 
-> 
-> Steps to reproduce:
-> # mount <mangled file system image> <mount point> -t btrfs -o loop
-> 
-> Please let me know if you need more information. Thanks in advance.
-> 
+* Mike Galbraith <efault@gmx.de> [2012-02-23 12:21:04]:
 
-Hi,
+> Unpinned netperf TCP_RR and/or tbench pairs?  Anything that's wakeup
+> heavy should tell the tail.
 
-I guess you're mounting a quite small partition.
+Here are some tbench numbers:
 
-Given that this oops is in such an early stage,
-could you please show 1) your mkfs.btrfs options and 2) the log of "btrfs-debug-tree /dev/loop0"?
+Machine : 2 Intel Xeon X5650 (Westmere) CPUs (6 core/package)
+Kernel  : tip (HEAD at ebe97fa)
+dbench  : v4.0
 
-thanks,
-liubo
+One tbench server/client pair was run on same host 5 times (with
+fs-cache being purged each time) and avg of 5 run for various cases
+noted below:
 
-> Regards
-> R.Nageswara Sastry
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Case A : HT enabled (24 logical CPUs)
+
+Thr'put	 : 168.166 MB/s (SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
+Thr'put	 : 169.564 MB/s (SD_SHARE_PKG_RESOURCES + SD_BALANCE_WAKE at mc/smt)
+Thr'put	 : 173.151 MB/s (!SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
+
+Case B : HT disabled (12 logical CPUs)
+
+Thr'put	 : 167.977 MB/s (SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
+Thr'put	 : 167.891 MB/s (SD_SHARE_PKG_RESOURCES + SD_BALANCE_WAKE at mc)
+Thr'put	 : 173.801 MB/s (!SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
+
+Observations:
+
+a. ~3% improvement seen with SD_SHARE_PKG_RESOURCES disabled, which I guess 
+  reflects the cost of waking to a cold L2 cache.
+
+b. No degradation seen with SD_BALANCE_WAKE enabled at mc/smt domains
+
+IMO we need to detect tbench type paired wakeups as synchronous case, in
+which case blindly wakeup the task to cur_cpu (as cost of L2 cache miss
+could outweight the cost of any reduced scheduling latencies).
+
+IOW select_task_rq_fair() needs to be given better hint as to whether L2
+cache has been made warm by someone (interrupt handler or a producer
+task), in which case (consumer) task needs to be woken in the same L2 cache
+domain (i.e on cur_cpu itself)?
+
+- vatsa
 
