@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab2BYPyN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 10:54:13 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:44494 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab2BYPyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 10:54:12 -0500
-Date: Sat, 25 Feb 2012 07:52:02 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.3-rc5
-Message-ID: <20120225155202.GA21187@ericsson.com>
+	id S1756998Ab2BYQCZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 11:02:25 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:42160
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755050Ab2BYQCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 11:02:24 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Shengzhou Liu <Shengzhou.Liu@freescale.com>
+To: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Shengzhou Liu <Shengzhou.Liu@freescale.com>
+Subject: [PATCH] powerpc/usb: fix usb CTRL_PHY_CLK_VALID breaks on some platform
+Date: Sat, 25 Feb 2012 23:56:30 +0800
+Message-ID: <1330185390-30614-1-git-send-email-Shengzhou.Liu@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Fix checking of CTRL_PHY_CLK_VALID bit break on some platform on which
+there is not USB CTRL_PHY_CLK_VALID bit.
+  - P1023/P3041/P5020 etc,have this bit
+  - P3060/4080/PSC913x do have this bit, but not mentioned in RM.
+  - P1022(perhaps and other) has no this bit
 
-Hi Linus,
+Signed-off-by: Shengzhou Liu <Shengzhou.Liu@freescale.com>
+---
+ drivers/usb/host/ehci-fsl.c |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
 
-Please pull hwmon fixes for Linux 3.3-rc5 from tag:
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index c26a82e..5ba3ea4 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -244,7 +244,11 @@ static int ehci_fsl_usb_setup(struct ehci_hcd *ehci)
+ 	struct usb_hcd *hcd = ehci_to_hcd(ehci);
+ 	struct fsl_usb2_platform_data *pdata;
+ 	void __iomem *non_ehci = hcd->regs;
+-	u32 temp;
++	u32 temp, chip, rev, svr;
++
++	svr = mfspr(SPRN_SVR);
++	chip = svr >> 16;
++	rev = (svr >> 4) & 0xf;
+ 
+ 	pdata = hcd->self.controller->platform_data;
+ 
+@@ -273,12 +277,6 @@ static int ehci_fsl_usb_setup(struct ehci_hcd *ehci)
+ 		ehci_fsl_setup_phy(ehci, pdata->phy_mode, 0);
+ 
+ 	if (pdata->operating_mode == FSL_USB2_MPH_HOST) {
+-		unsigned int chip, rev, svr;
+-
+-		svr = mfspr(SPRN_SVR);
+-		chip = svr >> 16;
+-		rev = (svr >> 4) & 0xf;
+-
+ 		/* Deal with USB Erratum #14 on MPC834x Rev 1.0 & 1.1 chips */
+ 		if ((rev == 1) && (chip >= 0x8050) && (chip <= 0x8055))
+ 			ehci->has_fsl_port_bug = 1;
+@@ -300,9 +298,15 @@ static int ehci_fsl_usb_setup(struct ehci_hcd *ehci)
+ 		out_be32(non_ehci + FSL_SOC_USB_SICTRL, 0x00000001);
+ 	}
+ 
+-	if (!(in_be32(non_ehci + FSL_SOC_USB_CTRL) & CTRL_PHY_CLK_VALID)) {
+-		printk(KERN_WARNING "fsl-ehci: USB PHY clock invalid\n");
+-		return -ENODEV;
++	/* There is no CTRL_PHY_CLK_VALID bit on some platforms, e.g. P1022 */
++#define SVR_P1022_N_ID 0x80E6
++#define SVR_P1022_S_ID 0x80EE
++	if (chip != SVR_P1022_N_ID && chip != SVR_P1022_S_ID) {
++		if (!(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
++					CTRL_PHY_CLK_VALID)) {
++			printk(KERN_WARNING "fsl-ehci: USB PHY clock invalid\n");
++			return -ENODEV;
++		}
+ 	}
+ 	return 0;
+ }
+-- 
+1.7.0.4
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-Thanks,
-Guenter
-
-------
-
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
-
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Chris D Schimp (2):
-      hwmon: (max6639) Fix FAN_FROM_REG calculation
-      hwmon: (max6639) Fix PPR register initialization to set both channels
-
-Guenter Roeck (2):
-      hwmon: (ads1015) Fix file leak in probe function
-      hwmon: (max34440) Fix resetting temperature history
-
-Nikolaus Schulz (1):
-      hwmon: (f75375s) Fix register write order when setting fans to full speed
-
- drivers/hwmon/ads1015.c        |    3 +--
- drivers/hwmon/f75375s.c        |    7 +++----
- drivers/hwmon/max6639.c        |   22 ++++++++++++----------
- drivers/hwmon/pmbus/max34440.c |    2 +-
- 4 files changed, 17 insertions(+), 17 deletions(-)
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPSQOhAAoJEMsfJm/On5mBIoMQAK2gNQGx1SpzhAyKM9wL9LNo
-BYZhMOfC63GPd/V/KkQd31C+Z5NgE9z/6R9aBN0u8xg2ZSZJY6/ccRNyLjc7yqxc
-OSE4CUzP5iQO36bUl6tX1B2TgfYBwbvVNUsShjsq/hoAzICIyk4UAVgmnRNN4iX5
-JNLjxwhX7jXSJem8bvGVLkGkfIS6g/dYd1vqFvSZ0NlKxuB+5s0JVkB+xagBsl/+
-YOMk4fqn0nIbPTffXs21khzvtZJTIr0LpVy3xb9BIx9Qwjc+KFBfLQEwwT/wniP8
-RmO+5vq6n7pmm7lkbe2Wn9ta4JPSbXF5xe376GXjc6rUEcjllmIZghlKb6KSjZdC
-Pd7CaWxAK5rrDCbrx7PqIvtXNWQ9xA9JyGqdlGTbGW/GW/Fd2W7srj2sUh9Rl1AV
-fbXb7Iea6JgUnTRqAD1fao5FvYZLu//XHimo8xE6V4EyzR56OOc/JP50EaLQnh2s
-AEoe4fWIjsp5zLzE+jQwSuEJgwDikfweV8InX57hnCJi7y3QU3jWCoZfEXumqY64
-HIwQW13q2Rlb65eUlr4GnHrLTh307tyXypWm9cS4XCCOXvuHPhxiobkNLNHo44r5
-XaWv87tu6nx8PE4I1INw9S/uj5PcRdzDS/DUX5GRMxv4fFfV17u3dyEm1zm7E59m
-SE+vhU2BTYyoICggUl1E
-=1ocM
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
