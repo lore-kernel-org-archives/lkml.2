@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab2BYFX7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 00:23:59 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59159 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab2BYFX6 convert rfc822-to-8bit (ORCPT
+	id S1752416Ab2BYFbI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 00:31:08 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36764 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2BYFbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 00:23:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jorgyano@gmail.com designates 10.101.72.16 as permitted sender) smtp.mail=jorgyano@gmail.com; dkim=pass header.i=jorgyano@gmail.com
+	Sat, 25 Feb 2012 00:31:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.141.10 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F487215.7000307@openvz.org>
+Date: Sat, 25 Feb 2012 09:31:01 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-In-Reply-To: <20120224194929.GA24613@kroah.com>
-References: <1329603020-5302-1-git-send-email-jorgyano@gmail.com>
-	<20120224194929.GA24613@kroah.com>
-Date: Sat, 25 Feb 2012 03:23:57 -0200
-Message-ID: <CABRD5hKZHs6jO=TuosxsQ0fJOEczvUnEj-ZMkN7syF5TnLWYKQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3 v2] Staging: crystalhd: Replace the BCMLOG_ERR macro
- with pr_err
-From: Jorgyano vieira <jorgyano@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        nsankar@broadcom.com, jarod@wilsonet.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 00/21] mm: lru_lock splitting
+References: <20120223133728.12988.5432.stgit@zurg> <20120225111515.1275e04c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120225111515.1275e04c.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 5:49 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> This is nice, but, as this is a driver, I really prefer the use of
-> dev_err() instead, which allows us to properly identify the device and
-> driver that spit out the error message.  Care to redo this patch in that
-> style instead?
+KAMEZAWA Hiroyuki wrote:
+> On Thu, 23 Feb 2012 17:51:36 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
 >
-> thanks,
+>> v3 changes:
+>> * inactive-ratio reworked again, now it always calculated from from scratch
+>> * hierarchical pte reference bits filter in memory-cgroup reclaimer
+>> * fixed two bugs in locking, found by Hugh Dickins
+>> * locking functions slightly simplified
+>> * new patch for isolated pages accounting
+>> * new patch with lru interleaving
+>>
+>> This patchset is based on next-20120210
+>>
+>> git: https://github.com/koct9i/linux/commits/lruvec-v3
+>>
 >
-> greg k-h
+> I wonder.... I just wonder...if we can split a lruvec in a zone into small
+> pieces of lruvec and have splitted LRU-lock per them, do we need per-memcg-lrulock ?
 
-sure, I can do this.
-but first, there is something wrong about the structure dependencies
-on the headers:
-now, the usage of the dev_err() breaks the build.
-for example:
- dev_err(&ctx->adp->pdev->dev, " ...");  on crystalhd_cmds.c returns
-the error: dereferencing pointer to incomplete type.
+What per-memcg-lrulock? I don't have it.
+last patch splits lruvecs in memcg with the same factor.
 
-I will fix this and send it all on another series.
+>
+> It seems per-memcg-lrulock can be much bigger lock than small-lruvec-lock.
+> (depends on configuraton) and much more complicated..and have to take care
+> of many things.. If unit of splitting can be specified by boot option,
+> it seems admins can split a big memcg's per-memcg-lru lock into more small pieces.
 
--- 
-Regards,
-Jorgyano Vieira
+lruvec count per memcg can be arbitrary and changeable if cgroup is empty.
+This is not in this patch, but it's really easy.
+
+>
+> BTW, how to think of default size of splitting ? I wonder splitting lru into
+> the number of cpus per a node can be a choice. Each cpu may have a chance to
+> set prefered-pfn-range at page allocation with additional patches.
+
+If we rework page to memcg linking and add direct lruvec-id into page->flags,
+we will able to change lruvec before inserting page to lru.
+Thus each cpu will always insert pages into its own lruvec in zone.
+I have not thought about races yet, but this would be perfect solution.
+
+>
+> Thanks,
+> -Kame
+>
+>
+>> ---
+>>
+>> Konstantin Khlebnikov (21):
+>>        memcg: unify inactive_ratio calculation
+>>        memcg: make mm_match_cgroup() hirarchical
+>>        memcg: fix page_referencies cgroup filter on global reclaim
+>>        memcg: use vm_swappiness from target memory cgroup
+>>        mm: rename lruvec->lists into lruvec->pages_lru
+>>        mm: lruvec linking functions
+>>        mm: add lruvec->pages_count
+>>        mm: unify inactive_list_is_low()
+>>        mm: add lruvec->reclaim_stat
+>>        mm: kill struct mem_cgroup_zone
+>>        mm: move page-to-lruvec translation upper
+>>        mm: push lruvec into update_page_reclaim_stat()
+>>        mm: push lruvecs from pagevec_lru_move_fn() to iterator
+>>        mm: introduce lruvec locking primitives
+>>        mm: handle lruvec relocks on lumpy reclaim
+>>        mm: handle lruvec relocks in compaction
+>>        mm: handle lruvec relock in memory controller
+>>        mm: add to lruvec isolated pages counters
+>>        memcg: check lru vectors emptiness in pre-destroy
+>>        mm: split zone->lru_lock
+>>        mm: zone lru vectors interleaving
+>>
+>>
+>>   include/linux/huge_mm.h    |    3
+>>   include/linux/memcontrol.h |   75 ------
+>>   include/linux/mm.h         |   66 +++++
+>>   include/linux/mm_inline.h  |   19 +-
+>>   include/linux/mmzone.h     |   39 ++-
+>>   include/linux/swap.h       |    6
+>>   mm/Kconfig                 |   16 +
+>>   mm/compaction.c            |   31 +--
+>>   mm/huge_memory.c           |   14 +
+>>   mm/internal.h              |  204 +++++++++++++++++
+>>   mm/ksm.c                   |    2
+>>   mm/memcontrol.c            |  343 +++++++++++-----------------
+>>   mm/migrate.c               |    2
+>>   mm/page_alloc.c            |   70 +-----
+>>   mm/rmap.c                  |    2
+>>   mm/swap.c                  |  217 ++++++++++--------
+>>   mm/vmscan.c                |  534 ++++++++++++++++++++++++--------------------
+>>   mm/vmstat.c                |    6
+>>   18 files changed, 932 insertions(+), 717 deletions(-)
+>>
+>> --
+>> Signature
+>>
+>
+
