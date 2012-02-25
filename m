@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2B0IB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 03:01:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2B0IB6 (ORCPT
+	id S1752300Ab2B0IKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 03:10:24 -0500
+Received: from host227-54-98-165.movistar.com.ni ([165.98.54.227]:53064 "EHLO
+	server.fomav.gob.ni" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2B0IKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 03:01:58 -0500
-Date: Mon, 27 Feb 2012 00:03:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Travis <travis@sgi.com>, David Woodhouse <dwmw2@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>, Daniel Rahn <drahn@suse.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jack Steiner <steiner@sgi.com>, Tony Ernst <tee@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, pci: Increase the number of iommus supported
- to be MAX_IO_APICS v2
-Message-Id: <20120227000310.a7e36dd9.akpm@linux-foundation.org>
-In-Reply-To: <20120227075741.GD3397@elte.hu>
-References: <20120223004930.817124691@gulag1.americas.sgi.com>
-	<20120223004931.121722197@gulag1.americas.sgi.com>
-	<20120223123011.cfe4ae35.akpm@linux-foundation.org>
-	<20120227075741.GD3397@elte.hu>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Feb 2012 03:10:23 -0500
+X-Greylist: delayed 4160 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Feb 2012 03:10:23 EST
+Message-ID: <ba9bbc6288fe980693ce7eba2033f6ae.squirrel@www.fomav.gob.ni>
+Date: Sat, 25 Feb 2012 10:56:46 +0600
+Subject: PICK UP YOUR FUNDS NOW
+From: "Western Union Agent Announcer" <unitednationandecowas@gmail.com>
+Reply-To: western-union@pkuit.com
+User-Agent: SquirrelMail/1.4.19
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Feb 2012 08:57:41 +0100 Ingo Molnar <mingo@elte.hu> wrote:
 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > Also we can tweak the code flow and the message to avoid dorky
-> > 80-column games:
-> 
-> > +		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
-> >  			  IOMMU_UNITS_SUPPORTED);
-> 
-> Not to mention the use of pr_err():
-> 
-> 		pr_err("intel-iommu: exceeded %d IOMMUs\n", IOMMU_UNITS_SUPPORTED);
 
-Where's my pr_err_once() ;)
+Attn,
+
+This is to inform you that we have already sent you $5000.00 USD through
+Western union as we have been mandated by United Nations and ECOWAS which
+are are supporting individual due to the worldwide economy meltdown, to
+transfer to you the full compensation sum payment of $5,000,000.00 USD via
+western union by this government.
+
+In this regards, We decided to email the relevant details for you to be
+able to pick up this $5000.00 USD to enable us send another $5000.00 USD
+by tomorrow as you know we will be sending you only $5000.00 USD per
+day.You can track at
+https://wumt.westernunion.com/asp/orderStatus.asp?country=global  before
+going to pick it up.
+
+Mr. Oteni Donald
+Funds Remmitance
+Western Union®
+Tell: +234-8173411914
+Email: western-union@pkuit.com
+
+call or email the above details once you picked up this $5000.00 USD
+
+Money Transfer Control Number:MTCN: 4342140463
+Senders First Name: MARCEL ONWUJEKWE
+Last Name: ONWUJEKWE
+Text question: When
+Text Answer: Today
+
+I am waiting for your call once you pick up this transfer
+
+Regards
+Mrs Bourdain  Douglas
+Western Union Agent Announcer
+
+
