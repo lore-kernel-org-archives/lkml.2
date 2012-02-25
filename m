@@ -1,98 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab2BYD31 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 22:29:27 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56614 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491Ab2BYD30 (ORCPT
+	id S1757580Ab2BYDcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 22:32:11 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:42390 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab2BYDcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 22:29:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.184.8 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
-MIME-Version: 1.0
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v11 11/12] x86: Enable HAVE_ARCH_SECCOMP_FILTER
-Date: Fri, 24 Feb 2012 21:21:50 -0600
-Message-Id: <1330140111-17201-11-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1330140111-17201-1-git-send-email-wad@chromium.org>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	Fri, 24 Feb 2012 22:32:10 -0500
+Date: Fri, 24 Feb 2012 22:31:59 -0500 (EST)
+Message-Id: <20120224.223159.1413120046309101641.davem@davemloft.net>
+To: andrey.warkentin@gmail.com
+Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, andreiw@vmware.com
+Subject: Re: [PATCH 1/2] NETPOLL: Extend rx_hook support.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330136109-2518-2-git-send-email-andrey.warkentin@gmail.com>
+References: <1330136109-2518-1-git-send-email-andrey.warkentin@gmail.com>
+	<1330136109-2518-2-git-send-email-andrey.warkentin@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 24 Feb 2012 19:32:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable support for seccomp filter on x86:
-- asm/tracehook.h exists
-- syscall_get_arguments() works
-- syscall_rollback() works
-- ptrace_report_syscall() works
-- secure_computing() return value is honored (see below)
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+Date: Fri, 24 Feb 2012 21:15:08 -0500
 
-This also adds support for honoring the return
-value from secure_computing().
+> From: Andrei Warkentin <andreiw@vmware.com>
+> 
+> Pass down source information to rx_hook, useful
+> for accepting connections from unspecified clients.
+> 
+> Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
 
-SECCOMP_RET_TRACE and SECCOMP_RET_TRAP may result in seccomp needing to
-skip a system call without killing the process.  This is done by
-returning a non-zero (-1) value from secure_computing.  This change
-makes x86 respect that return value.
-
-To ensure that minimal kernel code is exposed, a non-zero return value
-results in an immediate return to user space (with an invalid syscall
-number).
-
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- arch/x86/Kconfig         |    1 +
- arch/x86/kernel/ptrace.c |    7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4c9012b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -82,6 +82,7 @@ config X86
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
-+	select HAVE_ARCH_SECCOMP_FILTER
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5026738..90d465a 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1380,7 +1380,11 @@ long syscall_trace_enter(struct pt_regs *regs)
- 		regs->flags |= X86_EFLAGS_TF;
- 
- 	/* do the secure computing check first */
--	secure_computing(regs->orig_ax);
-+	if (secure_computing(regs->orig_ax)) {
-+		/* seccomp failures shouldn't expose any additional code. */
-+		ret = -1L;
-+		goto out;
-+	}
- 
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
- 		ret = -1L;
-@@ -1405,6 +1409,7 @@ long syscall_trace_enter(struct pt_regs *regs)
- 				    regs->dx, regs->r10);
- #endif
- 
-+out:
- 	return ret ?: regs->orig_ax;
- }
- 
--- 
-1.7.5.4
-
+This needs to be submitted to netdev for review, not linux-kernel
+and your kgdb list.
