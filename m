@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453Ab2BYLx4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 06:53:56 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54988 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753416Ab2BYLxz (ORCPT
+	id S1756411Ab2BYL6G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 06:58:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57108 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752964Ab2BYL6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 06:53:55 -0500
-Message-ID: <4F48CBCF.7060004@metafoo.de>
-Date: Sat, 25 Feb 2012 12:53:51 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Sat, 25 Feb 2012 06:58:04 -0500
+Date: Sat, 25 Feb 2012 11:57:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "Liam Girdwood (lrg@ti.com)" <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sdmmc controllers without vmmc regulator
+Message-ID: <20120225115759.GE3167@opensource.wolfsonmicro.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCD8C@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] USB: create module_usb_serial_driver macro
-References: <20120224233814.GA16588@kroah.com>
-In-Reply-To: <20120224233814.GA16588@kroah.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TD8GDToEDw0WLGOL"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCD8C@HQMAIL01.nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2012 12:38 AM, Greg KH wrote:
-> Now that Alan Stern has cleaned up the usb serial driver registration,
-> we have the ability to create a module_usb_serial_driver macro to make
-> things a bit simpler, like the other *_driver macros created.
-> 
-> But, as we need two functions here, we can't reuse the existing
-> module_driver() macro, so we need to roll our own.
-> 
-> Lars-Peter, or anyone else, am I missing something here and we can use
-> module_driver() somehow, or even modify it, to work for subsystems that
-> need 2 parameters for their function calls to register/deregister?
-> 
 
-I suppose we can make module_driver a variadic macro and pass any additional
-parameters to the register and unregister functions. Patch attached.
+--TD8GDToEDw0WLGOL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- Lars
+On Fri, Feb 24, 2012 at 01:35:08PM -0800, Stephen Warren wrote:
 
-8<-------------------------------------------------------------------->8
->From 0d731970249b787748eccd6e81890c012a44e5a6 Mon Sep 17 00:00:00 2001
-From: Lars-Peter Clausen <lars@metafoo.de>
-Date: Sat, 25 Feb 2012 11:25:58 +0100
-Subject: [PATCH] driver-core: Allow additional parameters for module_driver
+> Can we eliminate this warning in of_get_regulator(), and let clients
+> Control whether they warn when a regulator isn't found, if they think
+> one is mandatory? I think I'd prefer this option; it's consistent with
+> the non-DT path in regulator_dev_lookup().
 
-Allow module_driver take additional parameters which will be passed to the
-register and unregister function calls. This allows it to be used in cases
-where additional parameters are required (e.g. usb_serial_register_drivers).
+This would be sensible but...
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- include/linux/device.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+> Or, should I set up dummy regulators in device tree to cover this case,
+> such that an SD controller's vmmc-supply always points at a valid phandle.
+> In which case, I'd have to add DT support to the dummy regulator.
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index b63fb39..bccccef 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -1007,19 +1007,20 @@ extern long sysfs_deprecated;
-  * @__driver: driver name
-  * @__register: register function for this driver type
-  * @__unregister: unregister function for this driver type
-+ * @...: Additional arguments to be passed to __register and __unregister.
-  *
-  * Use this macro to construct bus specific macros for registering
-  * drivers, and do not use it on its own.
-  */
--#define module_driver(__driver, __register, __unregister) \
-+#define module_driver(__driver, __register, __unregister, ...) \
- static int __init __driver##_init(void) \
- { \
--	return __register(&(__driver)); \
-+	return __register(&(__driver) , ##__VA_ARGS__); \
- } \
- module_init(__driver##_init); \
- static void __exit __driver##_exit(void) \
- { \
--	__unregister(&(__driver)); \
-+	__unregister(&(__driver) , ##__VA_ARGS__); \
- } \
- module_exit(__driver##_exit);
+...you really ought to be doing this anyway (except with the fixed
+voltage regulator, the dummy regulator is for stubbing out regulator
+support entirely on systems with just one or two software controlled
+regulators or where you don't have any information on the board design).
+The MMC regulator usage is a bit of a mess for historical reasons, it
+shouldn't really be conditional.
 
--- 
-1.7.2.5
+--TD8GDToEDw0WLGOL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPSMzAAAoJEBus8iNuMP3dEfkP/00SUHHju2cxrwsy7ToNGRV0
+7jBSfVYvbfbHz39KPiQS62Q+9CkoKzONCZP0M+n1b7pLbOuJ9MLx9nyZ4Z4BLwrq
+/aHPC+dyX2oCKD4fqJLBHa9t2AWlaUwbY5uIcogxraf8SV0czKVjXNcCNVfVq+mH
+iBrTsSOdNePmXdnJ4iFMFIP/v7idqXedhenzICWDyYi2MdJKjxYukB22Fc+rLpBk
+nCCfrhF/2XhgZ7wJGPqtzBNS5mRMcmjUFjFqPBFH9LsaHHP2WeB7EUfqRiulq1KR
+6XhkRsZH+Ea98j+KUBjN8wEWRy2hV4yx5Lv+DrPljVgg5km07+jFS2F3zRklL/4C
+QwHDlp5EKA/1sAIdynMgU/M4w+Pne7OVg7kmgQctVq7b1K2swtWqzjI+rAOmgRQx
+mW/gEusVcz0K1B9wWLF4hIqJOI+4zuKsn21l1rXkzyuQn6mwRj8u+dYLCwF9VcLp
+TVFAyD3VTgz6pdR4+OhEX8G2z0jIDEdpv6b9tR8gWxIrbqbxHjWDfxz8PqiJWG37
+40FCspbQFzhMPQ8AFa2GF6HnxJj0SUAVotQWraj9eBwONqqfZZiddft/ZArDY5rN
+lwiPdDuvLs6Z3wrB/iTbxyY/lUkNebYcfMDX38gTtCx38hodhiv3VQfN1SLgiq7I
+I7OJVncn0qF5pJ/KDGIU
+=l0lU
+-----END PGP SIGNATURE-----
+
+--TD8GDToEDw0WLGOL--
