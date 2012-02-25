@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab2BYDXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 22:23:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63739 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407Ab2BYDW7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932420Ab2BYDW7 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 24 Feb 2012 22:22:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.101.152.34 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64083 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932288Ab2BYDWv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 22:22:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.79.202 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -21,9 +21,9 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
         keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-Date: Fri, 24 Feb 2012 21:21:49 -0600
-Message-Id: <1330140111-17201-10-git-send-email-wad@chromium.org>
+Subject: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+Date: Fri, 24 Feb 2012 21:21:45 -0600
+Message-Id: <1330140111-17201-6-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1330140111-17201-1-git-send-email-wad@chromium.org>
 References: <1330140111-17201-1-git-send-email-wad@chromium.org>
@@ -31,207 +31,707 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds support for a new ptrace option, PTRACE_O_TRACESECCOMP,
-and a new return value for seccomp BPF programs, SECCOMP_RET_TRACE.
+[This patch depends on luto@mit.edu's no_new_privs patch:
+ https://lkml.org/lkml/2012/1/30/264
+]
 
-When a tracer specifies PTRACE_O_TRACESECCOMP while using
-PTRACE_SYSCALL, system call notification will _only_ occur when
-a seccomp BPF program returns SECCOMP_RET_TRACE.  No other system
-calls will notify the tracer.
+This patch adds support for seccomp mode 2.  Mode 2 introduces the
+ability for unprivileged processes to install system call filtering
+policy expressed in terms of a Berkeley Packet Filter (BPF) program.
+This program will be evaluated in the kernel for each system call
+the task makes and computes a result based on data in the format
+of struct seccomp_data.
 
-If the subordinate process is not using seccomp filter, then no
-system call notifications will occur.
+A filter program may be installed by calling:
+  struct sock_fprog fprog = { ... };
+  ...
+  prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &fprog);
 
-If there is no attached tracer when SECCOMP_RET_TRACE is returned,
-the system call will not be executed and an -ENOSYS errno will be
-returned to userspace.
+The return value of the filter program determines if the system call is
+allowed to proceed or denied.  If the first filter program installed
+allows prctl(2) calls, then the above call may be made repeatedly
+by a task to further reduce its access to the kernel.  All attached
+programs must be evaluated before a system call will be allowed to
+proceed.
 
-Interestingly, this change does not add a dependency on the system
-call slow path.  Instead, seccomp will only interact with ptrace
-if TIF_SYSCALL_TRACE is enabled which also means the task is in
-the system call slow path already and the requisite registers
-are populated.
+Filter programs will be inherited across fork/clone and execve.
+However, if the task attaching the filter is unprivileged
+(!CAP_SYS_ADMIN) the no_new_privs bit will be set on the task.  This
+ensures that unprivileged tasks cannot attach filters that affect
+privileged tasks (e.g., setuid binary).
 
-I realize that there are pending patches for cleaning up ptrace events.
-I can either reintegrate with those when they are available or vice
-versa. That's assuming these changes make sense and are viable.  It's
-also possible to use ptrace_event(PTRACE_EVENT_SECCOMP) instead, but it
-seemed sane to share the syscall path.
+There are a number of benefits to this approach. A few of which are
+as follows:
+- BPF has been exposed to userland for a long time
+- BPF optimization (and JIT'ing) are well understood
+- Userland already knows its ABI: system call numbers and desired
+  arguments
+- No time-of-check-time-of-use vulnerable data accesses are possible.
+- system call arguments are loaded on access only to minimize copying
+  required for system call policy decisions.
 
-v11: - invert the logic to just make it a PTRACE_SYSCALL accelerator
-       (indan@nul.nu)
-v10: - moved to PTRACE_O_SECCOMP / PT_TRACE_SECCOMP
-v9:  - n/a
-v8:  - guarded PTRACE_SECCOMP use with an ifdef
-v7:  - introduced
+Mode 2 support is restricted to architectures that enable
+HAVE_ARCH_SECCOMP_FILTER.  In this patch, the primary dependency is on
+syscall_get_arguments().  The full desired scope of this feature will
+add a few minor additional requirements expressed later in this series.
+Based on discussion, SECCOMP_RET_ERRNO and SECCOMP_RET_TRACE seem to be
+the desired additional functionality.
+
+No architectures are enabled in this patch.
+
+v11: - reorder struct seccomp_data to allow future args expansion (hpa@zytor.com)
+     - style clean up, @compat dropped, compat_sock_fprog32 (indan@nul.nu)
+     - do_exit(SIGSYS) (keescook@chromium.org, luto@mit.edu)
+     - pare down Kconfig doc reference.
+     - extra comment clean up
+v10: - seccomp_data has changed again to be more aesthetically pleasing
+       (hpa@zytor.com)
+     - calling convention is noted in a new u32 field using syscall_get_arch.
+       This allows for cross-calling convention tasks to use seccomp filters.
+       (hpa@zytor.com)
+     - lots of clean up (thanks, Indan!)
+ v9: - n/a
+ v8: - use bpf_chk_filter, bpf_run_filter. update load_fns
+     - Lots of fixes courtesy of indan@nul.nu:
+     -- fix up load behavior, compat fixups, and merge alloc code,
+     -- renamed pc and dropped __packed, use bool compat.
+     -- Added a hidden CONFIG_SECCOMP_FILTER to synthesize non-arch
+        dependencies
+ v7:  (massive overhaul thanks to Indan, others)
+     - added CONFIG_HAVE_ARCH_SECCOMP_FILTER
+     - merged into seccomp.c
+     - minimal seccomp_filter.h
+     - no config option (part of seccomp)
+     - no new prctl
+     - doesn't break seccomp on systems without asm/syscall.h
+       (works but arg access always fails)
+     - dropped seccomp_init_task, extra free functions, ...
+     - dropped the no-asm/syscall.h code paths
+     - merges with network sk_run_filter and sk_chk_filter
+ v6: - fix memory leak on attach compat check failure
+     - require no_new_privs || CAP_SYS_ADMIN prior to filter
+       installation. (luto@mit.edu)
+     - s/seccomp_struct_/seccomp_/ for macros/functions (amwang@redhat.com)
+     - cleaned up Kconfig (amwang@redhat.com)
+     - on block, note if the call was compat (so the # means something)
+ v5: - uses syscall_get_arguments
+       (indan@nul.nu,oleg@redhat.com, mcgrathr@chromium.org)
+      - uses union-based arg storage with hi/lo struct to
+        handle endianness.  Compromises between the two alternate
+        proposals to minimize extra arg shuffling and account for
+        endianness assuming userspace uses offsetof().
+        (mcgrathr@chromium.org, indan@nul.nu)
+      - update Kconfig description
+      - add include/seccomp_filter.h and add its installation
+      - (naive) on-demand syscall argument loading
+      - drop seccomp_t (eparis@redhat.com)
+ v4:  - adjusted prctl to make room for PR_[SG]ET_NO_NEW_PRIVS
+      - now uses current->no_new_privs
+        (luto@mit.edu,torvalds@linux-foundation.com)
+      - assign names to seccomp modes (rdunlap@xenotime.net)
+      - fix style issues (rdunlap@xenotime.net)
+      - reworded Kconfig entry (rdunlap@xenotime.net)
+ v3:  - macros to inline (oleg@redhat.com)
+      - init_task behavior fixed (oleg@redhat.com)
+      - drop creator entry and extra NULL check (oleg@redhat.com)
+      - alloc returns -EINVAL on bad sizing (serge.hallyn@canonical.com)
+      - adds tentative use of "always_unprivileged" as per
+        torvalds@linux-foundation.org and luto@mit.edu
+ v2:  - (patch 2 only)
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- arch/Kconfig              |    1 +
- include/linux/ptrace.h    |    7 +++++--
- include/linux/seccomp.h   |    4 +++-
- include/linux/tracehook.h |    6 ++++++
- kernel/ptrace.c           |    4 ++++
- kernel/seccomp.c          |   18 ++++++++++++++++++
- 6 files changed, 37 insertions(+), 3 deletions(-)
+ arch/Kconfig            |   17 +++
+ include/linux/Kbuild    |    1 +
+ include/linux/seccomp.h |   74 ++++++++++-
+ kernel/fork.c           |    3 +
+ kernel/seccomp.c        |  328 ++++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sys.c            |    2 +-
+ 6 files changed, 402 insertions(+), 23 deletions(-)
 
 diff --git a/arch/Kconfig b/arch/Kconfig
-index d92a78e..bceced5 100644
+index 4f55c73..7c6bd48 100644
 --- a/arch/Kconfig
 +++ b/arch/Kconfig
-@@ -203,6 +203,7 @@ config HAVE_ARCH_SECCOMP_FILTER
+@@ -199,4 +199,21 @@ config HAVE_CMPXCHG_LOCAL
+ config HAVE_CMPXCHG_DOUBLE
  	bool
- 	help
- 	  This symbol should be selected by an architecure if it provides:
-+	  linux/tracehook.h, for TIF_SYSCALL_TRACE and ptrace_report_syscall
- 	  asm/syscall.h:
- 	  - syscall_get_arch()
- 	  - syscall_get_arguments()
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index c2f1f6a..2fccdbc 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -62,8 +62,9 @@
- #define PTRACE_O_TRACEEXEC	0x00000010
- #define PTRACE_O_TRACEVFORKDONE	0x00000020
- #define PTRACE_O_TRACEEXIT	0x00000040
-+#define PTRACE_O_TRACESECCOMP	0x00000080
  
--#define PTRACE_O_MASK		0x0000007f
-+#define PTRACE_O_MASK		0x000000ff
- 
- /* Wait extended result codes for the above trace options.  */
- #define PTRACE_EVENT_FORK	1
-@@ -73,6 +74,7 @@
- #define PTRACE_EVENT_VFORK_DONE	5
- #define PTRACE_EVENT_EXIT	6
- #define PTRACE_EVENT_STOP	7
-+#define PTRACE_EVENT_SECCOMP	8	/* never directly delivered */
- 
- #include <asm/ptrace.h>
- 
-@@ -101,8 +103,9 @@
- #define PT_TRACE_EXEC		PT_EVENT_FLAG(PTRACE_EVENT_EXEC)
- #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
- #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
-+#define PT_TRACE_SECCOMP	PT_EVENT_FLAG(PTRACE_EVENT_SECCOMP)
- 
--#define PT_TRACE_MASK	0x000003f4
-+#define PT_TRACE_MASK	0x00000ff4
- 
- /* single stepping state bits (used on ARM and PA-RISC) */
- #define PT_SINGLESTEP_BIT	31
++config HAVE_ARCH_SECCOMP_FILTER
++	bool
++	help
++	  This symbol should be selected by an architecure if it provides
++	  asm/syscall.h, specifically syscall_get_arguments() and
++	  syscall_get_arch().
++
++config SECCOMP_FILTER
++	def_bool y
++	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
++	help
++	  Enable tasks to build secure computing environments defined
++	  in terms of Berkeley Packet Filter programs which implement
++	  task-defined system call filtering polices.
++
++	  See Documentation/prctl/seccomp_filter.txt for details.
++
+ source "kernel/gcov/Kconfig"
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index c94e717..d41ba12 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -330,6 +330,7 @@ header-y += scc.h
+ header-y += sched.h
+ header-y += screen_info.h
+ header-y += sdla.h
++header-y += seccomp.h
+ header-y += securebits.h
+ header-y += selinux_netlink.h
+ header-y += sem.h
 diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
-index b44d038..b53104b 100644
+index d61f27f..6e69274 100644
 --- a/include/linux/seccomp.h
 +++ b/include/linux/seccomp.h
-@@ -21,6 +21,7 @@
- #define SECCOMP_RET_KILL	0x00000000U /* kill the task immediately */
- #define SECCOMP_RET_TRAP	0x00020000U /* disallow and force a SIGSYS */
- #define SECCOMP_RET_ERRNO	0x00030000U /* returns an errno */
-+#define SECCOMP_RET_TRACE	0x7ffe0000U /* pass to a tracer or disallow */
- #define SECCOMP_RET_ALLOW	0x7fff0000U /* allow */
+@@ -1,14 +1,67 @@
+ #ifndef _LINUX_SECCOMP_H
+ #define _LINUX_SECCOMP_H
  
- /* Masks for the return value sections. */
-@@ -55,6 +56,7 @@ struct seccomp_filter;
-  *
-  * @mode:  indicates one of the valid values above for controlled
-  *         system calls available to a process.
-+ * @trace: tells tracehook to notify for the current syscall.
-  * @filter: The metadata and ruleset for determining what system calls
-  *          are allowed for a task.
-  *
-@@ -63,6 +65,7 @@ struct seccomp_filter;
-  */
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++
++/* Valid values for seccomp.mode and prctl(PR_SET_SECCOMP, <mode>) */
++#define SECCOMP_MODE_DISABLED	0 /* seccomp is not in use. */
++#define SECCOMP_MODE_STRICT	1 /* uses hard-coded filter. */
++#define SECCOMP_MODE_FILTER	2 /* uses user-supplied filter. */
++
++/*
++ * All BPF programs must return a 32-bit value.
++ * The bottom 16-bits are reserved for future use.
++ * The upper 16-bits are ordered from least permissive values to most.
++ *
++ * The ordering ensures that a min_t() over composed return values always
++ * selects the least permissive choice.
++ */
++#define SECCOMP_RET_KILL	0x00000000U /* kill the task immediately */
++#define SECCOMP_RET_ALLOW	0x7fff0000U /* allow */
++
++/* Masks for the return value sections. */
++#define SECCOMP_RET_ACTION	0xffff0000U
++#define SECCOMP_RET_DATA	0x0000ffffU
++
++/**
++ * struct seccomp_data - the format the BPF program executes over.
++ * @nr: the system call number
++ * @arch: indicates system call convention as an AUDIT_ARCH_* value
++ *        as defined in <linux/audit.h>.
++ * @instruction_pointer: at the time of the system call.
++ * @args: up to 6 system call arguments always stored as 64-bit values
++ *        regardless of the architecture.
++ */
++struct seccomp_data {
++	int nr;
++	__u32 arch;
++	__u64 instruction_pointer;
++	__u64 args[6];
++};
+ 
++#ifdef __KERNEL__
+ #ifdef CONFIG_SECCOMP
+ 
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
++struct seccomp_filter;
++/**
++ * struct seccomp - the state of a seccomp'ed process
++ *
++ * @mode:  indicates one of the valid values above for controlled
++ *         system calls available to a process.
++ * @filter: The metadata and ruleset for determining what system calls
++ *          are allowed for a task.
++ *
++ *          @filter must only be accessed from the context of current as there
++ *          is no locking.
++ */
  struct seccomp {
  	int mode;
-+	int trace;
- 	struct seccomp_filter *filter;
++	struct seccomp_filter *filter;
  };
  
-@@ -118,7 +121,6 @@ extern void copy_seccomp(struct seccomp *child, const struct seccomp *parent);
- #else  /* CONFIG_SECCOMP_FILTER */
- /* The macro consumes the ->filter reference. */
- #define put_seccomp_filter(_s) do { } while (0)
--
- static inline void copy_seccomp(struct seccomp *c, const struct seccomp *p)
- {
- 	return;
-diff --git a/include/linux/tracehook.h b/include/linux/tracehook.h
-index a71a292..68e9478 100644
---- a/include/linux/tracehook.h
-+++ b/include/linux/tracehook.h
-@@ -48,6 +48,7 @@
- 
- #include <linux/sched.h>
- #include <linux/ptrace.h>
-+#include <linux/seccomp.h>
- #include <linux/security.h>
- struct linux_binprm;
- 
-@@ -61,6 +62,11 @@ static inline void ptrace_report_syscall(struct pt_regs *regs)
- 	if (!(ptrace & PT_PTRACED))
- 		return;
- 
-+#ifdef CONFIG_SECCOMP_FILTER
-+	if ((ptrace & PT_TRACE_SECCOMP) && !current->seccomp.trace)
-+		return;
-+#endif
-+
- 	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
- 
- 	/*
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 00ab2ca..61e5ac4 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -19,6 +19,7 @@
- #include <linux/signal.h>
- #include <linux/audit.h>
- #include <linux/pid_namespace.h>
-+#include <linux/seccomp.h>
- #include <linux/syscalls.h>
- #include <linux/uaccess.h>
- #include <linux/regset.h>
-@@ -551,6 +552,9 @@ static int ptrace_setoptions(struct task_struct *child, unsigned long data)
- 	if (data & PTRACE_O_TRACEEXIT)
- 		child->ptrace |= PT_TRACE_EXIT;
- 
-+	if (data & PTRACE_O_TRACESECCOMP)
-+		child->ptrace |= PT_TRACE_SECCOMP;
-+
- 	return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
+ extern void __secure_computing(int);
+@@ -19,7 +72,7 @@ static inline void secure_computing(int this_syscall)
  }
  
+ extern long prctl_get_seccomp(void);
+-extern long prctl_set_seccomp(unsigned long);
++extern long prctl_set_seccomp(unsigned long, char __user *);
+ 
+ static inline int seccomp_mode(struct seccomp *s)
+ {
+@@ -31,15 +84,16 @@ static inline int seccomp_mode(struct seccomp *s)
+ #include <linux/errno.h>
+ 
+ struct seccomp { };
++struct seccomp_filter { };
+ 
+-#define secure_computing(x) do { } while (0)
++#define secure_computing(x) 0
+ 
+ static inline long prctl_get_seccomp(void)
+ {
+ 	return -EINVAL;
+ }
+ 
+-static inline long prctl_set_seccomp(unsigned long arg2)
++static inline long prctl_set_seccomp(unsigned long arg2, char __user *arg3)
+ {
+ 	return -EINVAL;
+ }
+@@ -48,7 +102,19 @@ static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return 0;
+ }
+-
+ #endif /* CONFIG_SECCOMP */
+ 
++#ifdef CONFIG_SECCOMP_FILTER
++extern void put_seccomp_filter(struct seccomp_filter *);
++extern void copy_seccomp(struct seccomp *child, const struct seccomp *parent);
++#else  /* CONFIG_SECCOMP_FILTER */
++/* The macro consumes the ->filter reference. */
++#define put_seccomp_filter(_s) do { } while (0)
++
++static inline void copy_seccomp(struct seccomp *c, const struct seccomp *p)
++{
++	return;
++}
++#endif /* CONFIG_SECCOMP_FILTER */
++#endif /* __KERNEL__ */
+ #endif /* _LINUX_SECCOMP_H */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b77fd55..a5187b7 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -34,6 +34,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/security.h>
+ #include <linux/hugetlb.h>
++#include <linux/seccomp.h>
+ #include <linux/swap.h>
+ #include <linux/syscalls.h>
+ #include <linux/jiffies.h>
+@@ -169,6 +170,7 @@ void free_task(struct task_struct *tsk)
+ 	free_thread_info(tsk->stack);
+ 	rt_mutex_debug_task_free(tsk);
+ 	ftrace_graph_exit_task(tsk);
++	put_seccomp_filter(tsk->seccomp.filter);
+ 	free_task_struct(tsk);
+ }
+ EXPORT_SYMBOL(free_task);
+@@ -1113,6 +1115,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto fork_out;
+ 
+ 	ftrace_graph_init_task(p);
++	copy_seccomp(&p->seccomp, &current->seccomp);
+ 
+ 	rt_mutex_init_task(p);
+ 
 diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index d2e173e..5aabc3c 100644
+index e8d76c5..25e8296 100644
 --- a/kernel/seccomp.c
 +++ b/kernel/seccomp.c
-@@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
- 			seccomp_send_sigsys(this_syscall, reason_code);
- 			return -1;
- 		}
-+		case SECCOMP_RET_TRACE: {
-+			int ret;
-+			struct pt_regs *regs = task_pt_regs(current);
-+			if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
-+			    !(current->ptrace & PT_TRACE_SECCOMP))
-+				return -1;
-+			/*
-+			 * PT_TRACE_SECCOMP and seccomp.trace indicate whether
-+			 * tracehook_report_syscall_entry needs to signal the
-+			 * tracer.  This avoids race conditions in hand off and
-+			 * the requirement for TIF_SYSCALL_TRACE ensures that
-+			 * we are in the syscall slow path.
-+			 */
-+			current->seccomp.trace = 1;
-+			ret = tracehook_report_syscall_entry(regs);
-+			current->seccomp.trace = 0;
-+			return ret;
-+		}
- 		case SECCOMP_RET_ALLOW:
- 			return 0;
- 		case SECCOMP_RET_KILL:
+@@ -3,16 +3,275 @@
+  *
+  * Copyright 2004-2005  Andrea Arcangeli <andrea@cpushare.com>
+  *
+- * This defines a simple but solid secure-computing mode.
++ * Copyright (C) 2012 Google, Inc.
++ * Will Drewry <wad@chromium.org>
++ *
++ * This defines a simple but solid secure-computing facility.
++ *
++ * Mode 1 uses a fixed list of allowed system calls.
++ * Mode 2 allows user-defined system call filters in the form
++ *        of Berkeley Packet Filters/Linux Socket Filters.
+  */
+ 
++#include <linux/atomic.h>
+ #include <linux/audit.h>
+-#include <linux/seccomp.h>
+-#include <linux/sched.h>
+ #include <linux/compat.h>
++#include <linux/filter.h>
++#include <linux/sched.h>
++#include <linux/seccomp.h>
++#include <linux/security.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++
++#include <linux/tracehook.h>
++#include <asm/syscall.h>
+ 
+ /* #define SECCOMP_DEBUG 1 */
+-#define NR_SECCOMP_MODES 1
++
++#ifdef CONFIG_SECCOMP_FILTER
++/**
++ * struct seccomp_filter - container for seccomp BPF programs
++ *
++ * @usage: reference count to manage the object liftime.
++ *         get/put helpers should be used when accessing an instance
++ *         outside of a lifetime-guarded section.  In general, this
++ *         is only needed for handling filters shared across tasks.
++ * @prev: points to a previously installed, or inherited, filter
++ * @insns: the BPF program instructions to evaluate
++ * @len: the number of instructions in the program
++ *
++ * seccomp_filter objects are organized in a tree linked via the @prev
++ * pointer.  For any task, it appears to be a singly-linked list starting
++ * with current->seccomp.filter, the most recently attached or inherited filter.
++ * However, multiple filters may share a @prev node, by way of fork(), which
++ * results in a unidirectional tree existing in memory.  This is similar to
++ * how namespaces work.
++ *
++ * seccomp_filter objects should never be modified after being attached
++ * to a task_struct (other than @usage).
++ */
++struct seccomp_filter {
++	atomic_t usage;
++	struct seccomp_filter *prev;
++	unsigned short len;  /* Instruction count */
++	struct sock_filter insns[];
++};
++
++static void seccomp_filter_log_failure(int syscall)
++{
++	int compat = 0;
++#ifdef CONFIG_COMPAT
++	compat = is_compat_task();
++#endif
++	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
++		current->comm, task_pid_nr(current),
++		(compat ? "compat " : ""),
++		syscall, KSTK_EIP(current));
++}
++
++/**
++ * get_u32 - returns a u32 offset into data
++ * @data: a unsigned 64 bit value
++ * @index: 0 or 1 to return the first or second 32-bits
++ *
++ * This inline exists to hide the length of unsigned long.
++ * If a 32-bit unsigned long is passed in, it will be extended
++ * and the top 32-bits will be 0. If it is a 64-bit unsigned
++ * long, then whatever data is resident will be properly returned.
++ */
++static inline u32 get_u32(u64 data, int index)
++{
++	return ((u32 *)&data)[index];
++}
++
++/* Helper for bpf_load below. */
++#define BPF_DATA(_name) offsetof(struct seccomp_data, _name)
++/**
++ * bpf_load: checks and returns a pointer to the requested offset
++ * @nr: int syscall passed as a void * to bpf_run_filter
++ * @off: offset into struct seccomp_data to load from
++ * @size: number of bytes to load (must be 4)
++ * @buffer: temporary storage supplied by bpf_run_filter (4 bytes)
++ *
++ * Returns a pointer to the loaded data (usually @buf).
++ * On failure, returns NULL.
++ */
++static void *bpf_load(const void *nr, int off, unsigned int size, void *buf)
++{
++	unsigned long value;
++	u32 *A = buf;
++
++	if (size != sizeof(u32) || off % sizeof(u32))
++		return NULL;
++
++	if (off >= BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
++		struct pt_regs *regs = task_pt_regs(current);
++		int arg = (off - BPF_DATA(args[0])) / sizeof(u64);
++		int index = (off % sizeof(u64)) ? 1 : 0;
++		syscall_get_arguments(current, regs, arg, 1, &value);
++		*A = get_u32(value, index);
++	} else if (off == BPF_DATA(nr)) {
++		*A = (u32)(uintptr_t)nr;
++	} else if (off == BPF_DATA(arch)) {
++		struct pt_regs *regs = task_pt_regs(current);
++		*A = syscall_get_arch(current, regs);
++	} else if (off == BPF_DATA(instruction_pointer)) {
++		*A = get_u32(KSTK_EIP(current), 0);
++	} else if (off == BPF_DATA(instruction_pointer) + sizeof(u32)) {
++		*A = get_u32(KSTK_EIP(current), 1);
++	} else {
++		return NULL;
++	}
++	return buf;
++}
++
++/**
++ * seccomp_run_filters - evaluates all seccomp filters against @syscall
++ * @syscall: number of the current system call
++ *
++ * Returns valid seccomp BPF response codes.
++ */
++static u32 seccomp_run_filters(int syscall)
++{
++	struct seccomp_filter *f;
++	u32 ret = SECCOMP_RET_KILL;
++	static const struct bpf_load_fn fns = {
++		bpf_load,
++		sizeof(struct seccomp_data),
++	};
++	const void *sc_ptr = (const void *)(uintptr_t)syscall;
++
++	/*
++	 * All filters are evaluated in order of youngest to oldest. The lowest
++	 * BPF return value always takes priority.
++	 */
++	for (f = current->seccomp.filter; f; f = f->prev) {
++		ret = bpf_run_filter(sc_ptr, f->insns, &fns);
++		if (ret != SECCOMP_RET_ALLOW)
++			break;
++	}
++	return ret;
++}
++
++/**
++ * seccomp_attach_filter: Attaches a seccomp filter to current.
++ * @fprog: BPF program to install
++ *
++ * Returns 0 on success or an errno on failure.
++ */
++static long seccomp_attach_filter(struct sock_fprog *fprog)
++{
++	struct seccomp_filter *filter;
++	unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
++	long ret;
++
++	if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
++		return -EINVAL;
++
++	/* Allocate a new seccomp_filter */
++	filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
++	if (!filter)
++		return -ENOMEM;
++	atomic_set(&filter->usage, 1);
++	filter->len = fprog->len;
++
++	/* Copy the instructions from fprog. */
++	ret = -EFAULT;
++	if (copy_from_user(filter->insns, fprog->filter, fp_size))
++		goto out;
++
++	/* Check the fprog */
++	ret = bpf_chk_filter(filter->insns, filter->len, BPF_CHK_FLAGS_NO_SKB);
++	if (ret)
++		goto out;
++
++	/*
++	 * Installing a seccomp filter requires that the task have
++	 * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
++	 * This avoids scenarios where unprivileged tasks can affect the
++	 * behavior of privileged children.
++	 */
++	ret = -EACCES;
++	if (!current->no_new_privs &&
++	    security_capable_noaudit(current_cred(), current_user_ns(),
++				     CAP_SYS_ADMIN) != 0)
++		goto out;
++
++	/*
++	 * If there is an existing filter, make it the prev and don't drop its
++	 * task reference.
++	 */
++	filter->prev = current->seccomp.filter;
++	current->seccomp.filter = filter;
++	return 0;
++out:
++	put_seccomp_filter(filter);  /* for get or task, on err */
++	return ret;
++}
++
++/**
++ * seccomp_attach_user_filter - attaches a user-supplied sock_fprog
++ * @user_filter: pointer to the user data containing a sock_fprog.
++ *
++ * Returns 0 on success and non-zero otherwise.
++ */
++long seccomp_attach_user_filter(char __user *user_filter)
++{
++	struct sock_fprog fprog;
++	long ret = -EFAULT;
++
++	if (!user_filter)
++		goto out;
++#ifdef CONFIG_COMPAT
++	if (is_compat_task()) {
++		struct compat_sock_fprog fprog32;
++		if (copy_from_user(&fprog32, user_filter, sizeof(fprog32)))
++			goto out;
++		fprog.len = fprog32.len;
++		fprog.filter = compat_ptr(fprog32.filter);
++	} else /* falls through to the if below. */
++#endif
++	if (copy_from_user(&fprog, user_filter, sizeof(fprog)))
++		goto out;
++	ret = seccomp_attach_filter(&fprog);
++out:
++	return ret;
++}
++
++/* get_seccomp_filter - increments the reference count of @orig. */
++static struct seccomp_filter *get_seccomp_filter(struct seccomp_filter *orig)
++{
++	if (!orig)
++		return NULL;
++	/* Reference count is bounded by the number of total processes. */
++	atomic_inc(&orig->usage);
++	return orig;
++}
++
++/* put_seccomp_filter - decrements the ref count of @orig and may free. */
++void put_seccomp_filter(struct seccomp_filter *orig)
++{
++	/* Clean up single-reference branches iteratively. */
++	while (orig && atomic_dec_and_test(&orig->usage)) {
++		struct seccomp_filter *freeme = orig;
++		orig = orig->prev;
++		kfree(freeme);
++	}
++}
++
++/**
++ * copy_seccomp: manages inheritance on fork
++ * @child: forkee's seccomp
++ * @parent: forker's seccomp
++ *
++ * Ensures that @child inherits filters if in use.
++ */
++void copy_seccomp(struct seccomp *child, const struct seccomp *parent)
++{
++	/* Other fields are handled by dup_task_struct. */
++	child->filter = get_seccomp_filter(parent->filter);
++}
++#endif	/* CONFIG_SECCOMP_FILTER */
+ 
+ /*
+  * Secure computing mode 1 allows only read/write/exit/sigreturn.
+@@ -34,10 +293,11 @@ static int mode1_syscalls_32[] = {
+ void __secure_computing(int this_syscall)
+ {
+ 	int mode = current->seccomp.mode;
+-	int * syscall;
++	int exit_code = SIGKILL;
++	int *syscall;
+ 
+ 	switch (mode) {
+-	case 1:
++	case SECCOMP_MODE_STRICT:
+ 		syscall = mode1_syscalls;
+ #ifdef CONFIG_COMPAT
+ 		if (is_compat_task())
+@@ -48,6 +308,14 @@ void __secure_computing(int this_syscall)
+ 				return;
+ 		} while (*++syscall);
+ 		break;
++#ifdef CONFIG_SECCOMP_FILTER
++	case SECCOMP_MODE_FILTER:
++		if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
++			return;
++		seccomp_filter_log_failure(this_syscall);
++		exit_code = SIGSYS;
++		break;
++#endif
+ 	default:
+ 		BUG();
+ 	}
+@@ -56,7 +324,7 @@ void __secure_computing(int this_syscall)
+ 	dump_stack();
+ #endif
+ 	audit_seccomp(this_syscall);
+-	do_exit(SIGKILL);
++	do_exit(exit_code);
+ }
+ 
+ long prctl_get_seccomp(void)
+@@ -64,25 +332,49 @@ long prctl_get_seccomp(void)
+ 	return current->seccomp.mode;
+ }
+ 
+-long prctl_set_seccomp(unsigned long seccomp_mode)
++/**
++ * prctl_set_seccomp: configures current->seccomp.mode
++ * @seccomp_mode: requested mode to use
++ * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
++ *
++ * This function may be called repeatedly with a @seccomp_mode of
++ * SECCOMP_MODE_FILTER to install additional filters.  Every filter
++ * successfully installed will be evaluated (in reverse order) for each system
++ * call the task makes.
++ *
++ * It is not possible to transition change the current->seccomp.mode after
++ * one has been set on a task.
++ *
++ * Returns 0 on success or -EINVAL on failure.
++ */
++long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+ {
+-	long ret;
++	long ret = -EINVAL;
+ 
+-	/* can set it only once to be even more secure */
+-	ret = -EPERM;
+-	if (unlikely(current->seccomp.mode))
++	if (current->seccomp.mode &&
++	    current->seccomp.mode != seccomp_mode)
+ 		goto out;
+ 
+-	ret = -EINVAL;
+-	if (seccomp_mode && seccomp_mode <= NR_SECCOMP_MODES) {
+-		current->seccomp.mode = seccomp_mode;
+-		set_thread_flag(TIF_SECCOMP);
++	switch (seccomp_mode) {
++	case SECCOMP_MODE_STRICT:
++		ret = 0;
+ #ifdef TIF_NOTSC
+ 		disable_TSC();
+ #endif
+-		ret = 0;
++		break;
++#ifdef CONFIG_SECCOMP_FILTER
++	case SECCOMP_MODE_FILTER:
++		ret = seccomp_attach_user_filter(filter);
++		if (ret)
++			goto out;
++		break;
++#endif
++	default:
++		goto out;
+ 	}
+ 
+- out:
++	current->seccomp.mode = seccomp_mode;
++	set_thread_flag(TIF_SECCOMP);
++out:
+ 	return ret;
+ }
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 4070153..905031e 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1899,7 +1899,7 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			error = prctl_get_seccomp();
+ 			break;
+ 		case PR_SET_SECCOMP:
+-			error = prctl_set_seccomp(arg2);
++			error = prctl_set_seccomp(arg2, (char __user *)arg3);
+ 			break;
+ 		case PR_GET_TSC:
+ 			error = GET_TSC_CTL(arg2);
 -- 
 1.7.5.4
 
