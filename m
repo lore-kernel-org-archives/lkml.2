@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab2BYVon (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 16:44:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34803 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab2BYVol (ORCPT
+	id S1755044Ab2BYVrA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 16:47:00 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34328 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab2BYVq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 16:44:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.132.74 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Sun, 26 Feb 2012 06:44:21 +0900
+	Sat, 25 Feb 2012 16:46:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.132.102 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Sun, 26 Feb 2012 06:46:41 +0900
 From: Tejun Heo <tj@kernel.org>
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
@@ -17,36 +17,36 @@ Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
  and remove stats_lock
-Message-ID: <20120225214421.GA3401@dhcp-172-17-108-109.mtv.corp.google.com>
+Message-ID: <20120225214641.GB3401@dhcp-172-17-108-109.mtv.corp.google.com>
 References: <1330036246-21633-1-git-send-email-tj@kernel.org>
  <20120223144336.58742e1b.akpm@linux-foundation.org>
  <20120223230123.GL22536@google.com>
  <20120223231204.GM22536@google.com>
- <20120224142033.GA5095@redhat.com>
+ <20120225034432.GA18391@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120224142033.GA5095@redhat.com>
+In-Reply-To: <20120225034432.GA18391@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+Hello,
 
-On Fri, Feb 24, 2012 at 09:20:33AM -0500, Vivek Goyal wrote:
-> Ok. I will write a patch. Things have changed a lot since last time.
-> I think there is only one tricky part and that is waiting for any
-> scheduled work to finish during blkg destruction.  Because group destruction
-> happens under both queue and blkcg spin locks, I think I will have to take
-> the group off list, drop locks, wait for worker thread to finish and then
-> take locks again and walk through list again to kill remaining groups.
+On Fri, Feb 24, 2012 at 10:44:32PM -0500, Vivek Goyal wrote:
+> Booting with blkcg-stacking branch and changing io scheduler from cfq to
+> deadline oopsed.
+> 
+> login: [   67.382768] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> [   67.383037] CPU 1 
+> [   67.383037] Modules linked in: floppy [last unloaded: scsi_wait_scan]
+> [   67.383037] 
+> [   67.383037] Pid: 4763, comm: bash Not tainted 3.3.0-rc3-tejun-misc+ #6 Hewlett-Packard HP xw6600 Workstation/0A9Ch
+> [   67.383037] RIP: 0010:[<ffffffff81311793>]  [<ffffffff81311793>] cfq_put_queue+0xb3/0x1d0
 
-Rather than embedding work_struct into blkg and tying work and blkg
-destruction, why not just create a spinlock protected alloc-pending
-list?  On blkg creation, link blkg onto that list and kick shared work
-item and on destruction, just unlink it.  Worker function can walk the
-list and try to alloc for all and reschedule if alloc fails.
+Hmmm... weird.  Looking into it.  I'm away from office for a week and
+will probably be slow.
 
 Thanks.
 
