@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2BYDgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 22:36:46 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:52399 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753888Ab2BYDgp (ORCPT
+	id S1757649Ab2BYDhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 22:37:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48190 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757367Ab2BYDhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 22:36:45 -0500
-Date: Fri, 24 Feb 2012 19:36:44 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: David Miller <davem@davemloft.net>
-Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        jason wessel <jason.wessel@windriver.com>, andreiw@vmware.com,
-        andrey warkentin <andrey.warkentin@gmail.com>
-Message-ID: <1637853914.1554314.1330141004752.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <20120224.223159.1413120046309101641.davem@davemloft.net>
-Subject: Re: [PATCH 1/2] NETPOLL: Extend rx_hook support.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Fri, 24 Feb 2012 22:37:04 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.195.71 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330141014.10677.0.camel@phoenix>
+Subject: [PATCH 1/2] mfd: include linux/mfd/pcf50633/pmic.h in
+ pcf50633-gpio.c
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Balaji Rao <balajirrao@openmoko.org>, Harald Welte <laforge@openmoko.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Sat, 25 Feb 2012 11:36:54 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Include linux/mfd/pcf50633/pmic.h instead of duplicating the same defines.
 
------ Original Message -----
-> From: "David Miller" <davem@davemloft.net>
-> To: "andrey warkentin" <andrey.warkentin@gmail.com>
-> Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org, "jason wessel" <jason.wessel@windriver.com>,
-> andreiw@vmware.com
-> Sent: Friday, February 24, 2012 10:31:59 PM
-> Subject: Re: [PATCH 1/2] NETPOLL: Extend rx_hook support.
-> 
-> This needs to be submitted to netdev for review, not linux-kernel
-> and your kgdb list.
-> 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/pcf50633-gpio.c |   27 +--------------------------
+ 1 files changed, 1 insertions(+), 26 deletions(-)
 
-Thanks for pointing me to the right place. I'll send this patch set over there as well.
+diff --git a/drivers/mfd/pcf50633-gpio.c b/drivers/mfd/pcf50633-gpio.c
+index 9ab19a8..d02ddf2 100644
+--- a/drivers/mfd/pcf50633-gpio.c
++++ b/drivers/mfd/pcf50633-gpio.c
+@@ -19,32 +19,7 @@
+ 
+ #include <linux/mfd/pcf50633/core.h>
+ #include <linux/mfd/pcf50633/gpio.h>
+-
+-enum pcf50633_regulator_id {
+-	PCF50633_REGULATOR_AUTO,
+-	PCF50633_REGULATOR_DOWN1,
+-	PCF50633_REGULATOR_DOWN2,
+-	PCF50633_REGULATOR_LDO1,
+-	PCF50633_REGULATOR_LDO2,
+-	PCF50633_REGULATOR_LDO3,
+-	PCF50633_REGULATOR_LDO4,
+-	PCF50633_REGULATOR_LDO5,
+-	PCF50633_REGULATOR_LDO6,
+-	PCF50633_REGULATOR_HCLDO,
+-	PCF50633_REGULATOR_MEMLDO,
+-};
+-
+-#define PCF50633_REG_AUTOOUT	0x1a
+-#define PCF50633_REG_DOWN1OUT	0x1e
+-#define PCF50633_REG_DOWN2OUT	0x22
+-#define PCF50633_REG_MEMLDOOUT	0x26
+-#define PCF50633_REG_LDO1OUT	0x2d
+-#define PCF50633_REG_LDO2OUT	0x2f
+-#define PCF50633_REG_LDO3OUT	0x31
+-#define PCF50633_REG_LDO4OUT	0x33
+-#define PCF50633_REG_LDO5OUT	0x35
+-#define PCF50633_REG_LDO6OUT	0x37
+-#define PCF50633_REG_HCLDOOUT	0x39
++#include <linux/mfd/pcf50633/pmic.h>
+ 
+ static const u8 pcf50633_regulator_registers[PCF50633_NUM_REGULATORS] = {
+ 	[PCF50633_REGULATOR_AUTO]	= PCF50633_REG_AUTOOUT,
+-- 
+1.7.5.4
 
-A
+
+
