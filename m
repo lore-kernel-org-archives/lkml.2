@@ -1,93 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab2BYQPr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 11:15:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab2BYQPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 11:15:46 -0500
-Date: Sat, 25 Feb 2012 17:08:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
-        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
-        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] signalfd/epoll fixes
-Message-ID: <20120225160845.GA13324@redhat.com>
-References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com> <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com> <20120224190651.GA22287@redhat.com> <CA+55aFz6EoiKjzisFmU0j4aezXsPinDyfv3DdKeeKQibkaO6DQ@mail.gmail.com> <CA+55aFyPCHiESkfGMLOA7vNYz46FOnTrvQFJhwCFz9wAehP=7w@mail.gmail.com>
+	id S1757201Ab2BYQSV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 11:18:21 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38744 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab2BYQST convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 11:18:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.180.107.67 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyPCHiESkfGMLOA7vNYz46FOnTrvQFJhwCFz9wAehP=7w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1330155147-15118-1-git-send-email-yinghai@kernel.org>
+References: <1330155147-15118-1-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 25 Feb 2012 09:17:58 -0700
+Message-ID: <CAErSpo6wSmWBEr4-pKLUPwJAHE0FUFt1O+QzQHrJVdDpaHVq0A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: Separate host_bridge code out from probe.c
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24, Linus Torvalds wrote:
+On Sat, Feb 25, 2012 at 12:32 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 >
-> On Fri, Feb 24, 2012 at 12:23 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > I'm *really* conflicted, because I have this really strong feeling
-> > that it's just papering over a symptom, and we damn well shouldn't be
-> > doing that.
-
-Heh. This is even documented in the changelog.
-
-> I really think that what we really should do is allow
-> > "poll()" to have a "poll_remove" callback (so each "add_poll_wait()"
-> > will have a callback when it gets remove).
-
-Yes. I also thought about this. In fact I think this probably makes
-sense even ignoring epoll problems. Although I was thinking about
-file_operations::poll_v2(file, poll_table, poll_table_entry, mode)
-which could could replace the old ->poll() eventually. But perhaps
-the explicit poll_rm() is better.
-
-However, speaking about epoll/sigfd, imho this hides the problem too.
-
-> +static void signalfd_poll_rm(struct file *file, wait_queue_head_t *p)
-> +{
-> +	struct sighand_struct *sighand;
+> ---
+>  drivers/pci/Makefile      |    2
+>  drivers/pci/host-bridge.c |   93 ++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/pci/pci.h         |    2
+>  drivers/pci/probe.c       |   81 ----------------------------------------
+>  4 files changed, 97 insertions(+), 81 deletions(-)
+>
+> Index: linux-2.6/drivers/pci/host-bridge.c
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6/drivers/pci/host-bridge.c
+> @@ -0,0 +1,93 @@
+> +/*
+> + * host_bridge.c - host bridge related code
+> + */
 > +
-> +	sighand = container_of(p, struct sighand_struct, signalfd_wqh);
-> +	__cleanup_sighand(sighand);
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/pci.h>
+> +#include <linux/module.h>
+> +
+> +#include "pci.h"
+> +
+> +static LIST_HEAD(pci_host_bridges);
+> +
+> +void add_to_pci_host_bridges(struct list_head *list)
+
+I'd prefer to pass a "struct pci_host_bridge *" here instead of a
+"struct list_head *".  That way the compiler can check a little more.
+
+> +{
+> +       list_add_tail(list, &pci_host_bridges);
 > +}
 > +
->  static unsigned int signalfd_poll(struct file *file, poll_table *wait)
->  {
->  	struct signalfd_ctx *ctx = file->private_data;
->  	unsigned int events = 0;
+> +static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
+> +{
+> +       struct pci_bus *bus;
+> +       struct pci_host_bridge *bridge;
+> +
+> +       bus = dev->bus;
+> +       while (bus->parent)
+> +               bus = bus->parent;
+> +
+> +       list_for_each_entry(bridge, &pci_host_bridges, list) {
+> +               if (bridge->bus == bus)
+> +                       return bridge;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +
+> +static bool resource_contains(struct resource *res1, struct resource *res2)
+> +{
+> +       return res1->start <= res2->start && res1->end >= res2->end;
+> +}
+> +
+> +void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+> +                            struct resource *res)
+> +{
+> +       struct pci_host_bridge *bridge = pci_host_bridge(dev);
+> +       struct pci_host_bridge_window *window;
+> +       resource_size_t offset = 0;
+> +
+> +       list_for_each_entry(window, &bridge->windows, list) {
+> +               if (resource_type(res) != resource_type(window->res))
+> +                       continue;
+> +
+> +               if (resource_contains(window->res, res)) {
+> +                       offset = window->offset;
+> +                       break;
+> +               }
+> +       }
+> +
+> +       region->start = res->start - offset;
+> +       region->end = res->end - offset;
+> +}
+> +EXPORT_SYMBOL(pcibios_resource_to_bus);
+> +
+> +static bool region_contains(struct pci_bus_region *region1,
+> +                           struct pci_bus_region *region2)
+> +{
+> +       return region1->start <= region2->start && region1->end >= region2->end;
+> +}
+> +
+> +void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+> +                            struct pci_bus_region *region)
+> +{
+> +       struct pci_host_bridge *bridge = pci_host_bridge(dev);
+> +       struct pci_host_bridge_window *window;
+> +       struct pci_bus_region bus_region;
+> +       resource_size_t offset = 0;
+> +
+> +       list_for_each_entry(window, &bridge->windows, list) {
+> +               if (resource_type(res) != resource_type(window->res))
+> +                       continue;
+> +
+> +               bus_region.start = window->res->start - window->offset;
+> +               bus_region.end = window->res->end - window->offset;
+> +
+> +               if (region_contains(&bus_region, region)) {
+> +                       offset = window->offset;
+> +                       break;
+> +               }
+> +       }
+> +
+> +       res->start = region->start + offset;
+> +       res->end = region->end + offset;
+> +}
+> +EXPORT_SYMBOL(pcibios_bus_to_resource);
+> Index: linux-2.6/drivers/pci/pci.h
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci.h
+> +++ linux-2.6/drivers/pci/pci.h
+> @@ -231,6 +231,8 @@ static inline int pci_ari_enabled(struct
+>  void pci_reassigndev_resource_alignment(struct pci_dev *dev);
+>  extern void pci_disable_bridge_window(struct pci_dev *dev);
 >
-> -	poll_wait(file, &current->sighand->signalfd_wqh, wait);
-> +	if (poll_wait(file, &current->sighand->signalfd_wqh, wait))
-> +		atomic_inc(&current->sighand->count);
-
-Yes, this fixes use-after-free. But suppose the the application does:
-
-	sigfd = signalfd(...);
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, sigfd);
-	execve();
-
-de_thread() unshares ->sighand because of atomic_inc() above and
-epollfd no longer works after exec, and the application can't know
-this. (yes, currently we have the same problem with CLONE_SIGHAND'ed
-apps, but still).
-
-We can turn ->signalfd_wqh into the pointer to the refcountable
-memory, or add another counter, but this is not nice.
-
-And in any case. If the task exits, to me it looks simply pointless
-to keep its ->sighand until __fput(). This only makes poll_rm() or
-whatever safe, it can't report a signal. OK, OK, I am not arguing,
-POLLFREE is equally ugly or even worse.
-
-I _think_ that the right fix should move wait_queue_head_t from
-sighand_struct to signalfd_ctx (file->private_data) somehow...
-
-Oleg.
-
+> +void add_to_pci_host_bridges(struct list_head *list);
+> +
+>  /* Single Root I/O Virtualization */
+>  struct pci_sriov {
+>        int pos;                /* capability position */
+> Index: linux-2.6/drivers/pci/probe.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/probe.c
+> +++ linux-2.6/drivers/pci/probe.c
+> @@ -15,13 +15,10 @@
+>  #define CARDBUS_LATENCY_TIMER  176     /* secondary latency timer */
+>  #define CARDBUS_RESERVE_BUSNR  3
+>
+> -static LIST_HEAD(pci_host_bridges);
+> -
+>  /* Ugh.  Need to stop exporting this to modules. */
+>  LIST_HEAD(pci_root_buses);
+>  EXPORT_SYMBOL(pci_root_buses);
+>
+> -
+>  static int find_anything(struct device *dev, void *data)
+>  {
+>        return 1;
+> @@ -44,82 +41,6 @@ int no_pci_devices(void)
+>  }
+>  EXPORT_SYMBOL(no_pci_devices);
+>
+> -static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
+> -{
+> -       struct pci_bus *bus;
+> -       struct pci_host_bridge *bridge;
+> -
+> -       bus = dev->bus;
+> -       while (bus->parent)
+> -               bus = bus->parent;
+> -
+> -       list_for_each_entry(bridge, &pci_host_bridges, list) {
+> -               if (bridge->bus == bus)
+> -                       return bridge;
+> -       }
+> -
+> -       return NULL;
+> -}
+> -
+> -static bool resource_contains(struct resource *res1, struct resource *res2)
+> -{
+> -       return res1->start <= res2->start && res1->end >= res2->end;
+> -}
+> -
+> -void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+> -                            struct resource *res)
+> -{
+> -       struct pci_host_bridge *bridge = pci_host_bridge(dev);
+> -       struct pci_host_bridge_window *window;
+> -       resource_size_t offset = 0;
+> -
+> -       list_for_each_entry(window, &bridge->windows, list) {
+> -               if (resource_type(res) != resource_type(window->res))
+> -                       continue;
+> -
+> -               if (resource_contains(window->res, res)) {
+> -                       offset = window->offset;
+> -                       break;
+> -               }
+> -       }
+> -
+> -       region->start = res->start - offset;
+> -       region->end = res->end - offset;
+> -}
+> -EXPORT_SYMBOL(pcibios_resource_to_bus);
+> -
+> -static bool region_contains(struct pci_bus_region *region1,
+> -                           struct pci_bus_region *region2)
+> -{
+> -       return region1->start <= region2->start && region1->end >= region2->end;
+> -}
+> -
+> -void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+> -                            struct pci_bus_region *region)
+> -{
+> -       struct pci_host_bridge *bridge = pci_host_bridge(dev);
+> -       struct pci_host_bridge_window *window;
+> -       struct pci_bus_region bus_region;
+> -       resource_size_t offset = 0;
+> -
+> -       list_for_each_entry(window, &bridge->windows, list) {
+> -               if (resource_type(res) != resource_type(window->res))
+> -                       continue;
+> -
+> -               bus_region.start = window->res->start - window->offset;
+> -               bus_region.end = window->res->end - window->offset;
+> -
+> -               if (region_contains(&bus_region, region)) {
+> -                       offset = window->offset;
+> -                       break;
+> -               }
+> -       }
+> -
+> -       res->start = region->start + offset;
+> -       res->end = region->end + offset;
+> -}
+> -EXPORT_SYMBOL(pcibios_bus_to_resource);
+> -
+>  /*
+>  * PCI Bus Class
+>  */
+> @@ -1731,7 +1652,7 @@ struct pci_bus *pci_create_root_bus(stru
+>        }
+>
+>        down_write(&pci_bus_sem);
+> -       list_add_tail(&bridge->list, &pci_host_bridges);
+> +       add_to_pci_host_bridges(&bridge->list);
+>        list_add_tail(&b->node, &pci_root_buses);
+>        up_write(&pci_bus_sem);
+>
+> Index: linux-2.6/drivers/pci/Makefile
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/Makefile
+> +++ linux-2.6/drivers/pci/Makefile
+> @@ -2,7 +2,7 @@
+>  # Makefile for the PCI bus specific drivers.
+>  #
+>
+> -obj-y          += access.o bus.o probe.o remove.o pci.o \
+> +obj-y          += access.o bus.o probe.o host-bridge.o remove.o pci.o \
+>                        pci-driver.o search.o pci-sysfs.o rom.o setup-res.o \
+>                        irq.o vpd.o
+>  obj-$(CONFIG_PROC_FS) += proc.o
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
