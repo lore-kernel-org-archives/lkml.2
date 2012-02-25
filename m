@@ -1,164 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab2BYLjd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 06:39:33 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35606 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756453Ab2BYLja convert rfc822-to-8bit (ORCPT
+	id S1756453Ab2BYLx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 06:53:56 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54988 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753416Ab2BYLxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 06:39:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.180.78.6 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
+	Sat, 25 Feb 2012 06:53:55 -0500
+Message-ID: <4F48CBCF.7060004@metafoo.de>
+Date: Sat, 25 Feb 2012 12:53:51 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
-References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
-Date: Sat, 25 Feb 2012 17:09:28 +0530
-Message-ID: <CAKYAXd-N1bO6ru2Xt91oNi7Dw7SW-G6kcqv7=RKfSLNf5SJweA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] [SCSI] ufshcd: UFS Host Controller Driver
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Santosh Y <santoshsy@gmail.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        yejin.moon@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, stephen.doel@linaro.org, sreekumar.c@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] USB: create module_usb_serial_driver macro
+References: <20120224233814.GA16588@kroah.com>
+In-Reply-To: <20120224233814.GA16588@kroah.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Santosh.
+On 02/25/2012 12:38 AM, Greg KH wrote:
+> Now that Alan Stern has cleaned up the usb serial driver registration,
+> we have the ability to create a module_usb_serial_driver macro to make
+> things a bit simpler, like the other *_driver macros created.
+> 
+> But, as we need two functions here, we can't reuse the existing
+> module_driver() macro, so we need to roll our own.
+> 
+> Lars-Peter, or anyone else, am I missing something here and we can use
+> module_driver() somehow, or even modify it, to work for subsystems that
+> need 2 parameters for their function calls to register/deregister?
+> 
 
-The whole patch-set looks good to me.
+I suppose we can make module_driver a variadic macro and pass any additional
+parameters to the register and unregister functions. Patch attached.
 
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+- Lars
 
-2012/2/24 Santosh Y <santoshsy@gmail.com>:
-> From: Santosh Yaraganavi <santoshsy@gmail.com>
->
-> UFS:
-> Universal Flash Storage is a storage specification for flash devices.
-> It is aimed to provide a universal storage interface for both
-> embedded and removable flash memory based storage in mobile
-> devices such as smart phones and tablet computers. The specification
-> is defined by JEDEC Solid State Technology Association. UFS is based
-> on MIPI M-PHY physical layer standard. UFS uses MIPI M-PHY as the
-> physical layer and MIPI Unipro as the link layer.
->
-> The main goals of UFS is to provide,
->  - Optimized performance:
->   For UFS version 1.0 and 1.1 the target performance is as follows,
->   Support for Gear1 is mandatory (rate A: 1248Mbps, rate B: 1457.6Mbps)
->   Support for Gear2 is optional (rate A: 2496Mbps, rate B: 2915.2Mbps)
->   Future version of the standard,
->   Gear3 (rate A: 4992Mbps, rate B: 5830.4Mbps)
->  - Low power consumption
->  - High random IOPs and low latency
->
-> UFS Architecture Overview:
-> UFS has a layered communication architecture which is based on SCSI
-> SAM-5 architectural model.
->
-> UFS communication architecture consists of following layers,
->
-> * Application Layer: It is composed of UFS command set layer(UCS),
->  Task Manager and Device manager. The UFS interface is designed to be
->  protocol agnostic, however SCSI has been selected as a baseline
->  protocol for versions 1.0 and 1.1 of UFS protocol  layer.
->  UFS supports subset of SCSI commands defined by SPC-4 and SBC-3.
->  - UCS: It handles SCSI commands supported by UFS specification.
->  - Task manager: It handles task management functions defined by the
->    UFS which are meant for command queue control.
->  - Device manager: It handles device level operations and device
->    configuration operations. Device level operations mainly involve
->    device power management operations and commands to Interconnect
->    layers. Device level configurations involve handling of query
->    requests which are used to modify and retrieve configuration
->    information of the device.
->
-> * UFS Transport Protocol(UTP) layer: UTP layer provides services for
->  the higher layers through Service Access Points. UTP defines 3
->  service access points for higher layers.
->  - UDM_SAP: Device manager service access point is exposed to device
->    manager for device level operations. These device level operations
->    are done through query requests.
->  - UTP_CMD_SAP: Command service access point is exposed to UFS command
->    set layer(UCS) to transport commands.
->  - UTP_TM_SAP: Task management service access point is exposed to task
->    manager to transport task management functions.
->  UTP transports messages through UFS protocol information unit(UPIU).
->
-> * UFS Interconnect Layer(UIC): This is the lowest layer of UFS layered
->  architecture. It handles connection between UFS host and UFS device.
->  UIC consists of MIPI UniPro and MIPI M-PHY. UIC provides 2 service
->  access points to upper layer,
->  - UIC_SAP: To transport UPIU between UFS host and UFS device.
->  - UIO_SAP: To issue commands to Unipro layers.
->
-> UFSHCD:
-> The UFS host controller driver is based on Linux SCSI Framework.
-> UFSHCD is a low level device driver which acts as an interface between
-> SCSI Midlayer and PCIe based UFS host controllers.
->
-> The current UFSHCD implementation supports following functionality,
->  - UFS controller initialization: The initialization module brings UFS
->   host controller to active state and prepares the controller to
->   transfer commands/response between UFSHCD and UFS device.
->  - UTP Transfer requests: Transfer request handling module of UFSHCD
->   receives SCSI commands from SCSI Midlayer, forms UPIUs and issues
->   the UPIUs to UFS Host controller. Also, the module decodes responses
->   received from UFS host controller in the form of UPIUs and intimates
->   the SCSI Midlayer of the status of the command.
->  - UFS error handling: Error handling module handles Host controller
->   fatal errors, Device fatal errors and UIC interconnect layer related
->   errors.
->  - SCSI Error handling: This is done through UFSHCD SCSI error handling
->   routines registered with SCSI Midlayer. Examples of some of the error
->   handling commands issues by SCSI Midlayer are Abort task, Lun reset
->   and host reset. UFSHCD Routines to perform these tasks are registered
->   with SCSI Midlayer through .eh_abort_handler, .eh_device_reset_handler
->   and .eh_host_reset_handler.
->
-> In this version of UFSHCD Query requests and power management
-> functionality are not implemented.
->
-> This patchset is successfully applied on 3.3-rc4
->
-> UFS Specifications can be found at,
-> UFS - http://www.jedec.org/sites/default/files/docs/JESD220.pdf
-> UFSHCI - http://www.jedec.org/sites/default/files/docs/JESD223.pdf
->
-> Santosh Yaraganavi (5):
->  [SCSI] ufshcd: UFS Host controller driver
->  [SCSI] ufshcd: UFS UTP Transfer requests handling
->  [SCSI] ufshcd: UFSHCI error handling
->  [SCSI] ufshcd: SCSI error handling
->  Documentation: UFS Host Controller Driver
->
->  Documentation/scsi/00-INDEX |    2 +
->  Documentation/scsi/ufs.txt  |   89 ++
->  drivers/scsi/Kconfig        |    1 +
->  drivers/scsi/Makefile       |    1 +
->  drivers/scsi/ufs/Kconfig    |   49 ++
->  drivers/scsi/ufs/Makefile   |    2 +
->  drivers/scsi/ufs/ufs.h      |  207 +++++
->  drivers/scsi/ufs/ufshcd.c   | 1985 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/scsi/ufs/ufshci.h   |  376 ++++++++
->  9 files changed, 2712 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/scsi/ufs.txt
->  create mode 100644 drivers/scsi/ufs/Kconfig
->  create mode 100644 drivers/scsi/ufs/Makefile
->  create mode 100644 drivers/scsi/ufs/ufs.h
->  create mode 100644 drivers/scsi/ufs/ufshcd.c
->  create mode 100644 drivers/scsi/ufs/ufshci.h
->
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+8<-------------------------------------------------------------------->8
+>From 0d731970249b787748eccd6e81890c012a44e5a6 Mon Sep 17 00:00:00 2001
+From: Lars-Peter Clausen <lars@metafoo.de>
+Date: Sat, 25 Feb 2012 11:25:58 +0100
+Subject: [PATCH] driver-core: Allow additional parameters for module_driver
+
+Allow module_driver take additional parameters which will be passed to the
+register and unregister function calls. This allows it to be used in cases
+where additional parameters are required (e.g. usb_serial_register_drivers).
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ include/linux/device.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index b63fb39..bccccef 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -1007,19 +1007,20 @@ extern long sysfs_deprecated;
+  * @__driver: driver name
+  * @__register: register function for this driver type
+  * @__unregister: unregister function for this driver type
++ * @...: Additional arguments to be passed to __register and __unregister.
+  *
+  * Use this macro to construct bus specific macros for registering
+  * drivers, and do not use it on its own.
+  */
+-#define module_driver(__driver, __register, __unregister) \
++#define module_driver(__driver, __register, __unregister, ...) \
+ static int __init __driver##_init(void) \
+ { \
+-	return __register(&(__driver)); \
++	return __register(&(__driver) , ##__VA_ARGS__); \
+ } \
+ module_init(__driver##_init); \
+ static void __exit __driver##_exit(void) \
+ { \
+-	__unregister(&(__driver)); \
++	__unregister(&(__driver) , ##__VA_ARGS__); \
+ } \
+ module_exit(__driver##_exit);
+
+-- 
+1.7.2.5
