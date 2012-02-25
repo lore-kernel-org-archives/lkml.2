@@ -1,145 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab2BYHda (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 02:33:30 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:30593 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab2BYHd3 (ORCPT
+	id S1754580Ab2BYHr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 02:47:29 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38184 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab2BYHr1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 02:33:29 -0500
+	Sat, 25 Feb 2012 02:47:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120224142430.58f5e5ef@jbarnes-desktop>
+References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
+	<1328425088-6562-10-git-send-email-yinghai@kernel.org>
+	<CAErSpo6BwznWf3rq4J2Ao+rrgR4yWqQ0mQGygkd2KmBuA1OD8g@mail.gmail.com>
+	<1328738567.2903.45.camel@pasglop>
+	<CAErSpo7ekGn-+Mnyz7KL=fVFH3Ed19AeE3MKkZWJ4bd0Jo7kCw@mail.gmail.com>
+	<1328823358.2903.77.camel@pasglop>
+	<20120223122536.6a2a7a6b@jbarnes-desktop>
+	<CAErSpo7_WGjitDZz4XH+77f65Uz1ynd5_USN+D17D09Eux1iQQ@mail.gmail.com>
+	<20120224142430.58f5e5ef@jbarnes-desktop>
+Date: Fri, 24 Feb 2012 23:47:26 -0800
+X-Google-Sender-Auth: ncqOodMQvnbhXs1tmNNmwYChJXM
+Message-ID: <CAE9FiQXx6wXaes1pbpM7SAHzndgr=N2D2g6LEWsB2_pf8+mgSA@mail.gmail.com>
+Subject: Re: [PATCH 09/24] PCI, powerpc: Register busn_res for root buses
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH] x86, PCI: Fix memleak in theory with get_current_resources
-Date: Fri, 24 Feb 2012 23:33:03 -0800
-Message-Id: <1330155183-15201-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F488EC7.003B,ss=1,re=0.000,fgs=0
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in pci_scan_acpi_root, when pci_use_crs is set, get_current_resources is used
-to get pci_root_info, and it will allocate name and res array.
+On Fri, Feb 24, 2012 at 2:24 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Thu, 23 Feb 2012 12:51:30 -0800
+> Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> 2) We already have a way to add resources to a root bus: the
+>> pci_add_resource() used to add I/O port and MMIO apertures.  I think
+>> it'd be a lot simpler to just use that same interface for the bus
+>> number aperture, e.g.,
+>>
+>>     pci_add_resource(&resources, hose->io_space);
+>>     pci_add_resource(&resources, hose->mem_space);
+>>     pci_add_resource(&resources, hose->busnr_space);
+>>     bus = pci_scan_root_bus(dev, next_busno, pci_ops, sysdata, &resources);
+>>
+>> This is actually a bit redundant, since "next_busno" should be the
+>> same as hose->busnr_space->start.  So if we adopted this approach, we
+>> might want to eventually drop the "next_busno" argument.
+>
+> Yeah that would be nice, the call would certainly make more sense that
+> way.
 
-later if pci_create_root_bus can not create bus (could be already there...)
-it will only free bus res list. but the name and res array is not freed.
+no, I don't think so.
 
-let get_current_resource take info pointer instead have local info.
+using pci_add_resource will need to create dummy resource abut bus range.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+there is lots of pci_scan_root_bus(),  and those user does not bus end
+yet before scan.
+so could just hide pci_insert_busn_res in pci_scan_root_bus, and
+update busn_res end there.
 
----
- arch/x86/pci/acpi.c |   49 ++++++++++++++++++++++++++++++-------------------
- 1 file changed, 30 insertions(+), 19 deletions(-)
+other arch like x86, ia64, powerpc, sparc, will insert exact bus range
+between pci_create_root_bus and
+pci_scan_child_bus, will not need to update busn_res end.
 
-Index: linux-2.6/arch/x86/pci/acpi.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -305,49 +305,55 @@ static void add_resources(struct pci_roo
- 	}
- }
- 
-+static void free_pci_root_info(struct pci_root_info *info)
-+{
-+	kfree(info->name);
-+	kfree(info->res);
-+	memset(info, 0, sizeof(struct pci_root_info));
-+}
-+
- static void
--get_current_resources(struct acpi_device *device, int busnum,
-+get_current_resources(struct pci_root_info *info,
-+		      struct acpi_device *device, int busnum,
- 		      int domain, struct list_head *resources)
- {
--	struct pci_root_info info;
- 	size_t size;
- 
--	info.bridge = device;
--	info.res_num = 0;
--	info.resources = resources;
-+	info->bridge = device;
-+	info->res_num = 0;
-+	info->resources = resources;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
--				&info);
--	if (!info.res_num)
-+				info);
-+	if (!info->res_num)
- 		return;
- 
--	size = sizeof(*info.res) * info.res_num;
--	info.res = kmalloc(size, GFP_KERNEL);
--	if (!info.res)
-+	size = sizeof(*info->res) * info->res_num;
-+	info->res = kmalloc(size, GFP_KERNEL);
-+	if (!info->res)
- 		return;
- 
--	info.name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
--	if (!info.name)
-+	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
-+	if (!info->name)
- 		goto name_alloc_fail;
- 
--	info.res_num = 0;
-+	info->res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
--				&info);
-+				info);
- 
- 	if (pci_use_crs) {
--		add_resources(&info);
-+		add_resources(info);
- 
- 		return;
- 	}
- 
--	kfree(info.name);
--
- name_alloc_fail:
--	kfree(info.res);
-+	free_pci_root_info(info);
- }
- 
- struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- {
- 	struct acpi_device *device = root->device;
-+	struct pci_root_info info;
- 	int domain = root->segment;
- 	int busnum = root->secondary.start;
- 	LIST_HEAD(resources);
-@@ -392,6 +398,7 @@ struct pci_bus * __devinit pci_acpi_scan
- 
- 	sd->domain = domain;
- 	sd->node = node;
-+	memset(&info, 0, sizeof(struct pci_root_info));
- 	/*
- 	 * Maybe the desired pci bus has been already scanned. In such case
- 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
-@@ -405,7 +412,8 @@ struct pci_bus * __devinit pci_acpi_scan
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(sd);
- 	} else {
--		get_current_resources(device, busnum, domain, &resources);
-+		get_current_resources(&info, device, busnum, domain,
-+					&resources);
- 
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
-@@ -419,6 +427,9 @@ struct pci_bus * __devinit pci_acpi_scan
- 			bus->subordinate = pci_scan_child_bus(bus);
- 		else
- 			pci_free_resource_list(&resources);
-+
-+		if (!bus && pci_use_crs)
-+			free_pci_root_info(&info);
- 	}
- 
- 	/* After the PCI-E bus has been walked and all devices discovered,
+please check v7 of this patchset.
+
+    	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-pci-busn-alloc
+
+It should be clean and have minimum lines of change.
+
+Thanks
+
+      Yinghai
