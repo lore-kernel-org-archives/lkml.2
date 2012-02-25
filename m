@@ -1,136 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2BYUjz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 15:39:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42228 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080Ab2BYUjx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 15:39:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
-Date: Sat, 25 Feb 2012 21:43:52 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202250021.36738.rjw@sisk.pl> <CAMP5Xge1=4QJOq7tVJNvrXopYVBRuPE0yq4yDtcutp7RJkuUNg@mail.gmail.com>
-In-Reply-To: <CAMP5Xge1=4QJOq7tVJNvrXopYVBRuPE0yq4yDtcutp7RJkuUNg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202252143.53271.rjw@sisk.pl>
+	id S1756933Ab2BYUl2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 15:41:28 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39864 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752117Ab2BYUl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 15:41:27 -0500
+Message-ID: <1330202485.18464.56.camel@joe2Laptop>
+Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
+        alexander.h.duyck@intel.com, eilong@broadcom.com,
+        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+Date: Sat, 25 Feb 2012 12:41:25 -0800
+In-Reply-To: <1330201304-24037-1-git-send-email-stigge@antcom.de>
+References: <1330201304-24037-1-git-send-email-stigge@antcom.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 25, 2012, Arve Hjønnevåg wrote:
-> On Fri, Feb 24, 2012 at 3:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Friday, February 24, 2012, Srivatsa S. Bhat wrote:
-> >> On 02/24/2012 03:02 AM, Rafael J. Wysocki wrote:
-> >>
-> >> > On Thursday, February 23, 2012, Rafael J. Wysocki wrote:
-> >> >> On Thursday, February 23, 2012, Srivatsa S. Bhat wrote:
-> >> >>> On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
-> > [...]
-> >> >>>
-> >> >>> By the way, I am just curious.. how difficult will this make it for userspace
-> >> >>> to disable autosleep? I mean, would a trylock mean that the user has to keep
-> >> >>> fighting until he finally gets a chance to disable autosleep?
-> >> >>
-> >> >> That's a good point, so I think it may be a good idea to do
-> >> >> mutex_lock_interruptible() in pm_autosleep_set_state() instead.
-> >> >
-> >> > Now that I think of it, perhaps it's a good idea to just make
-> >> > pm_autosleep_lock() do mutex_lock_interruptible() _and_ make
-> >> > pm_autosleep_set_state() use pm_autosleep_lock().
-> >> >
-> >> > What do you think?
-> >> >
-> >>
-> >>
-> >> Well, I don't think mutex_lock_interruptible() would help us much..
-> >> Consider what would happen, if we use it:
-> >>
-> >> * pm-suspend got initiated as part of autosleep. Acquired autosleep lock.
-> >> * Userspace is about to get frozen.
-> >> * Now, the user tries to write "off" to autosleep. And hence, he is waiting
-> >>   for autosleep lock, interruptibly.
-> >> * The freezer sent a fake signal to all userspace processes and hence
-> >>   this process also got interrupted.. it is no longer waiting on autosleep
-> >>   lock - it got the signal and returned, and got frozen.
-> >>   (And when the userspace gets thawed later, this process won't have the
-> >>    autosleep lock - which is a different (but yet another) problem).
-> >>
-> >> So ultimately the only thing we achieved is to ensure that freezing of
-> >> userspace goes smoothly. But the user process could not succeed in
-> >> disabling autosleep. Of course we can work around that by having the
-> >> mutex_lock_interruptible() in a loop and so on, but that gets very
-> >> ugly pretty soon.
-> >>
-> >> So, I would suggest the following solution:
-> >>
-> >> We want to achieve 2 things here:
-> >>  a. A user process trying to write to /sys/power/state or
-> >>     /sys/power/autosleep should not cause freezing failures.
-> >>  b. When a user process writes "off" to autosleep, the suspend/hibernate
-> >>     attempt that is on-going, if any, must be immediately aborted, to give
-> >>     the user the feeling that his preference has been noticed and respected.
-> >>
-> >> And to achieve this, we note that a user process can write "off" to autosleep
-> >> only until the userspace gets frozen. No chance after that.
-> >>
-> >> So, let's do this:
-> >> 1. Drop the autosleep lock before entering pm-suspend/hibernate.
-> >> 2. This means, a user process can get hold of this lock and successfully
-> >>    disable autosleep a moment after we initiated suspend, but before userspace
-> >>    got frozen fully.
-> >> 3. So, to respect the user's wish, we add a check immediately after the
-> >>    freezing of userspace is complete - we check if the user disabled autosleep
-> >>    and bail out, if he did. Otherwise, we continue and suspend the machine.
-> >>
-> >> IOW, this is like hitting 2 birds with one stone ;-)
-> >> We don't hold autosleep lock throughout suspend/hibernate, but still react
-> >> instantly when the user disables autosleep. And of course, freezing of tasks
-> >> won't fail, ever! :-)
-> >
-> > Well, you essentially are postulating to restore the "interface" wakeup source
-> > that was present in the previous version of this patch and that I dropped in
-> > order to simplify the code.
-> >
-> > I guess I can do that ...
-> >
-> 
-> If this wakeup source is reported as active whenever user-space has
-> not requested suspend that would be useful in the stats. It does not
-> look like your original patch did this however,
+On Sat, 2012-02-25 at 21:21 +0100, Roland Stigge wrote:
+> This patch adds an ethernet driver for the LPC32xx ARM SoC.
 
-No, it didn't.
+Just some style notes:
 
-> but you could have a
-> main wakeup-source that you release when any form of suspend is
-> requested and activate when turning off auto suspend or returning from
-> a one-shot suspend operation.
+> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
 
-I honestly don't think I can do that and handle the /sys/power/wakeup_count
- -> /sys/power/state handoff (which is used by OLPC, as we've learnt recently)
-sanely at the same time.  OTOH, I don't want CONFIG_AUTOSLEEP to disable that
-interface entirely, because things like that basically prevent people from
-trying alternative features, which is essential to us for "interesting
-feedback" reasons.
+[]
 
-So, my "main" wakeup source is only going to register the number of times user
-space has (successfully) written to /sysp/power/autosleep (please have a look
-at the updated patch I'm going to send in a reply to Srivatsa in a little
-while).
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-Thanks,
-Rafael
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/errno.h>
+> +#include <linux/ioport.h>
+> +#include <linux/crc32.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/ethtool.h>
+> +#include <linux/mii.h>
+> +#include <linux/clk.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/netdevice.h>
+> +#include <linux/etherdevice.h>
+> +#include <linux/skbuff.h>
+> +#include <linux/phy.h>
+> +#include <linux/dma-mapping.h>
+> +
+> +#include <linux/delay.h>
+> +#include <linux/io.h>
+> +#include <mach/board.h>
+> +#include <mach/platform.h>
+> +#include <mach/hardware.h>
+> +#include "lpc_eth.h"
+> +
+> +#define MODNAME "lpc-net"
+
+lpc-net or lpc_eth?
+[]
+> +/*
+> + * MAC address is provided as a boot parameter (ethaddr)
+> + */
+> +static u8 mac_address[6] = {0, 0, 0, 0, 0, 0};
+[]
+> +static void __lpc_set_mac(struct netdata_local *pldat, u8 *mac)
+[]
+> +	pr_debug("Ethernet MAC address %02x:%02x:%02x:%02x:%02x:%02x\n",
+> +		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+> +}
+
+	pr_debug("MAC address: %pM\n", mac)
+
+[]
+> +static int lpc_mii_probe(struct net_device *ndev)
+> +{
+[]
+> +	if (!phydev) {
+> +		pr_err("%s: no PHY found\n", ndev->name);
+
+It looks like most of these pr_<level>(...) uses
+should be netdev_<level>(ndev, ...)
+
+[]
+> +static void __lpc_handle_recv(struct net_device *ndev)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	struct sk_buff *skb;
+> +	int rxconsidx, len, ethst;
+> +	struct rx_status_t *prxstat;
+> +	u8 *prdbuf;
+> +
+> +	/* Get the current RX buffer indexes */
+> +	rxconsidx = (int) readl(LPC_ENET_RXCONSUMEINDEX(pldat->net_base));
+
+Please try to be consistent with space or no space after cast.
+I think no space is better.
+
+> +	while (rxconsidx !=
+> +			(int)readl(LPC_ENET_RXPRODUCEINDEX(pldat->net_base))) {
+
+> +		/* Get pointer to receive status */
+> +		prxstat = (struct rx_status_t *) pldat->rx_stat_v[rxconsidx];
+> +		len = (prxstat->statusinfo & 0x7FF) + 1;
+> +
+> +		/* Status error? */
+> +		ethst = prxstat->statusinfo;
+> +		if ((ethst & 0xBF800000) == 0x84000000)
+> +			ethst &= ~0x80000000;
+> +
+> +		if (ethst & 0x80000000) {
+> +			/* Check statuses */
+> +			if (prxstat->statusinfo & (1 << 28)) {
+
+Might be better to use a temporary for prxstat->statusinfo
+
+> +				/* Overrun error */
+> +				ndev->stats.rx_fifo_errors++;
+> +			} else if (prxstat->statusinfo & (1 << 23)) {
+> +				/* CRC error */
+> +				ndev->stats.rx_crc_errors++;
+> +			} else if (prxstat->statusinfo & (1 << 25)) {
+> +				/* Length error */
+> +				ndev->stats.rx_length_errors++;
+> +			} else if (prxstat->statusinfo & 0x80000000) {
+> +				/* Other error */
+> +				ndev->stats.rx_length_errors++;
+> +			}
+> +			ndev->stats.rx_errors++;
+> +		} else {
+> +			/* Packet is good */
+> +			skb = dev_alloc_skb(len + 8);
+> +			if (!skb)
+> +				ndev->stats.rx_dropped++;
+> +			else {
+> +				skb_reserve(skb, 8);
+> +				prdbuf = skb_put(skb, (len - 0));
+> +
+> +				/* Copy packer from buffer */
+> +				memcpy(prdbuf,
+> +					(void *)pldat->rx_buff_v[rxconsidx],
+
+Probably don't need the cast to (void *)
+> +					len);
+> +
+[]
+> +static irqreturn_t __lpc_eth_interrupt(int irq, void *dev_id)
+> +{
+[]
+> +	/* Get the interrupt status */
+> +	tmp = readl(LPC_ENET_INTSTATUS(pldat->net_base));
+> +
+> +	while (tmp) {
+
+probably better as
+
+	while ((tmp = readl(...)) {
+[...]
+
+> +		/* Recheck the interrupt status */
+> +		tmp = readl(LPC_ENET_INTSTATUS(pldat->net_base));
+> +	}
+[]
+> +static int lpc_net_close(struct net_device *ndev)
+> +{
+> +	unsigned long flags;
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +
+> +	if (netif_msg_ifdown(pldat))
+> +		dev_dbg(&pldat->pdev->dev, "shutting down %s\n", ndev->name);
+
+	netif_dbg(pltdat, ifdown, ndev, ...)
+[]
+> +static int lpc_net_drv_probe(struct platform_device *pdev)
+[]
+> +	if (use_iram_for_net()) {
+> +		dma_handle = (dma_addr_t) LPC32XX_IRAM_BASE;
+> +		if (pldat->dma_buff_size <= lpc32xx_return_iram_size())
+> +			pldat->dma_buff_base_v =
+> +				(u32) io_p2v(LPC32XX_IRAM_BASE);
+> +		else
+> +			pr_err("%s: IRAM not big enough for net buffers, "
+> +				"using SDRAM instead.\n", MODNAME);
+
+Please coalesce formats and ignore 80 column limits
+to make grep easier.
+
+
