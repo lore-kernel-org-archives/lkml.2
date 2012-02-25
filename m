@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2BYAxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 19:53:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58047 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab2BYAxo (ORCPT
+	id S932218Ab2BYA4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 19:56:07 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:58414
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755396Ab2BYA4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 19:53:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.220.7 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 24 Feb 2012 16:40:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: federico.vaga@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: How to make a bus with heterogeneous devices?
-Message-ID: <20120225004008.GA3973@kroah.com>
-References: <20120224152051.GA23232@mail.gnudd.com>
+	Fri, 24 Feb 2012 19:56:05 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F48318E.8070902@am.sony.com>
+Date: Fri, 24 Feb 2012 16:55:42 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120224152051.GA23232@mail.gnudd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>, <kuznet@ms2.inr.ac.ru>,
+        linux kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <eric.dumazet@gmail.com>
+Subject: RFC: memory leak in udp_table_init
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 04:20:51PM +0100, Alessandro Rubini wrote:
-> Hello Greg. 
-> 
-> Federico Vaga and me are working on the ZIO framework
-> (ohwr.org/projects/zio) and he's currently adding the bus abstraction,
-> so we can support several cards of the same type.  Under ZIO,
-> different devices may have different attributes: an SPI ADC chip may
-> allow to choose from two voltage references while a PCI digital-output
-> device may have a device-wide clocking rate.
-> 
-> But the list of attributes associated to a device is only known when
-> the driver is matched. In other workds, the "device" part is only
-> claiming "here I am and I'm called <sth>", then the probe method of the
-> <sth> driver will instantiate the device with its attributes.
+We've uncovered an obscure memory leak in the routine udp_table_init(),
+in the file: net/ipv4/udp.c
 
-That's fine, it is what happens with lots of drivers, you can do this
-with the default attribute group assigned to that driver, right?
+The allocation sequence is a bit weird, and I've got some questions
+about the best way to fix it.
 
-> However, the device appears in sysfs whether or not there is a driver
-> for it (which we agree is correct), but the list of attributes is only
-> known when the driver is matched -- because the list is known to the
-> driver, not to the device.
-> 
-> Here are some paths we evaluated:
-> 
-> 1- /sys/bus/zio/devices may include place-holders, while a successful
-> match and probe will create real stuff is in /sys/zio/devices/<sth>-0/
-> But this would mean kobjects and you mandated us to only use devices
-> instead.
-> 
-> 2- Like above, but falling in /sys/devices/virtual/zio/ ?
-> 
-> 3- Attributes may be added after match succeeds, before calling probe.
-> This cam be done with a "raw" call to sysfs_create_group(); then
-> groups cna be added to dev->groups so they will be removed on
-> device_unregister().
-> 
-> 4- Attributes may be added to the device before drv->probe is called
-> (or after it succeeds), using FIXMEFEDE. But .... FIXMEFEDE
-> 
-> 5- The real attributes may live in another device, which is a child of
-> the one used within the bus abstraction.  Here the drawback is using
-> an additional device and directory level for no reason.
-> 
-> 6- We may use a fake (almost empty) device for the match function, and
-> then register the real one, with full attributes, when the match
-> succeeds (so match is called again and must be worked around). This
-> would work but is clearly a horrible hack.
+Here's the code:
 
-Ick, don't do that...
+void __init udp_table_init(struct udp_table *table, const char *name)
+{
+	unsigned int i;
 
-> We looked at other bus abstractions, and all of them host homogeneous
-> devices (they may have sub-devices, but none of them has different
-> attributes).  Even the platform bus has no per-device attribute list
-> instantiated by the driver.  In the cases where the attribute list is
-> different for each device, the list is known to the device, before the
-> match function is called.
+	if (!CONFIG_BASE_SMALL)
+		table->hash = alloc_large_system_hash(name,
+			2 * sizeof(struct udp_hslot),
+			uhash_entries,
+			21, /* one slot per 2 MB */
+			0,
+			&table->log,
+			&table->mask,
+			64 * 1024);
+	/*
+	 * Make sure hash table has the minimum size
+	 */
+	if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
+		table->hash = kmalloc(UDP_HTABLE_SIZE_MIN *
+				      2 * sizeof(struct udp_hslot), GFP_KERNEL);
+		if (!table->hash)
+			panic(name);
+		table->log = ilog2(UDP_HTABLE_SIZE_MIN);
+		table->mask = UDP_HTABLE_SIZE_MIN - 1;
+	}
+	...
 
-I think you need to look at how the system bus is handled.  It just went
-into 3.3-rc and allows for "different" types of devices to all be on the
-same bus, with different drivers and attributes.  Let me know if how
-that works does not work out for you.
+We've seen instances where the second allocation of table->hash
+is performed, wiping out the first hash table allocation, without a
+free.  This ends up leaking the previously allocated hash table.
 
-thanks,
+That is, if we are !CONFIG_BASE_SMALL and for some reason
+the alloc_large_system_hash() operation returns less than UDP_HTABLE_SIZE_MIN
+hash slots, then it will trigger this.
 
-greg k-h
+There's no complementary "free_large_system_hash()" which can be used to
+back out of the first allocation, that I can find.
+
+We are currently doing the following to avoid the memory leak, but this
+seems like it defeats the purpose of checking for the minimum size
+(that is, if the first allocation was too small, we don't re-allocate).
+
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 5d075b5..2524af4 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -2194,7 +2194,8 @@ void __init udp_table_init(struct udp_table *table, const char *name)
+ 	/*
+ 	 * Make sure hash table has the minimum size
+ 	 */
+-	if (CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1) {
++	if ((CONFIG_BASE_SMALL || table->mask < UDP_HTABLE_SIZE_MIN - 1)
++		&& !table->hash) {
+ 		table->hash = kmalloc(UDP_HTABLE_SIZE_MIN *
+ 				      2 * sizeof(struct udp_hslot), GFP_KERNEL);
+ 		if (!table->hash)
+
+Any suggestions for a way to correct for a too-small first allocation, without
+a memory leak?
+
+Alternatively - how critical is this UDP_HTABLE_SIZE_MIN for correct operation
+of the stack?
+
+Thanks for any information you can provide.
+
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
