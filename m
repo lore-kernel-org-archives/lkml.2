@@ -1,191 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab2BYSaN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 13:30:13 -0500
-Received: from uucp.gnuu.de ([83.246.114.63]:2836 "EHLO uucp.gnuu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757385Ab2BYSaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 13:30:10 -0500
-Date: Sat, 25 Feb 2012 15:51:16 +0100
-From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-To: Alexander Graf <agraf@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+	id S1757582Ab2BYSsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 13:48:08 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:22566 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757482Ab2BYSsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 13:48:07 -0500
+Date: Sat, 25 Feb 2012 21:49:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Message-ID: <20120225145115.GB22460@alea.gnuu.de>
-References: <20111107194838.GA23558@alea.gnuu.de>
- <20111122200414.GA28205@alea.gnuu.de>
- <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de>
- <20120220173844.GA2546@alea.gnuu.de>
- <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de>
- <20120221083213.GA19059@alea.gnuu.de>
+Subject: Re: [PATCH 2/2] staging: r8712u: Fix regression caused by commit
+ 8c213fa
+Message-ID: <20120225184954.GA4763@mwanda>
+References: <1330190235-511-1-git-send-email-Larry.Finger@lwfinger.net>
+ <1330190235-511-3-git-send-email-Larry.Finger@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
 Content-Disposition: inline
-In-Reply-To: <20120221083213.GA19059@alea.gnuu.de>
+In-Reply-To: <1330190235-511-3-git-send-email-Larry.Finger@lwfinger.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4F492CE0.00B7,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---LyciRD1jyfeSSjG0
-Content-Type: text/plain; charset=utf-8
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-J=C3=B6rg Sommer hat am Tue 21. Feb, 09:32 (+0100) geschrieben:
-> Alexander Graf hat am Mon 20. Feb, 22:27 (+0100) geschrieben:
-> > On 20.02.2012, at 18:38, J=C3=B6rg Sommer wrote:
-> > > Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
-> > >> On 22.11.2011, at 21:04, J=C3=B6rg Sommer wrote:
-> > >>> [1] =C2=BBkernel BUG at include/linux/kvm_host.h:603!=C2=AB
-> > >>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
-> > >>=20
-> > >> This is unfortunately still there. It's because of preemption being
-> > >> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
-> > >=20
-> > > This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getti=
-ng
-> > > this Oops, when I start qemu.
-> >=20
-> > Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I
-> > fixed a bunch of things with preemption since then and it definitely
-> > worked for me. If it still fails in that tree, I can try again to
-> > reproduce it :).
+On Sat, Feb 25, 2012 at 11:17:15AM -0600, Larry Finger wrote:
+> In commit 8c213fa, the command to release the firmware was placed
+> in the wrong routine. With NetworkManager, problems were rare, but
+> when using wicd as the network control, there is a problem as shown
+> in https://bugs.archlinux.org/task/27996#comment89833.
 >=20
-> This kernel (e9badff4b38a3f8b2c20aa8a30db210caf85a497) fails to build:
->=20
->   CC [M]  arch/powerpc/kvm/book3s_pr.o
-> arch/powerpc/kvm/book3s_pr.c: In function =E2=80=98kvm_vcpu_ioctl_get_one=
-_reg=E2=80=99:
-> arch/powerpc/kvm/book3s_pr.c:883:45: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:80: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:284: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:327: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:459: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:748: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:1112: error: cast to pointer from intege=
-r of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:1476: error: cast to pointer from intege=
-r of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:883:1867: error: cast to pointer from intege=
-r of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c: In function =E2=80=98kvm_vcpu_ioctl_set_one=
-_reg=E2=80=99:
-> arch/powerpc/kvm/book3s_pr.c:898:79: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:114: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:319: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:364: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:502: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:591: error: cast to pointer from integer=
- of different size [-Werror=3Dint-to-pointer-cast]
-> arch/powerpc/kvm/book3s_pr.c:898:2061: error: cast to pointer from intege=
-r of different size [-Werror=3Dint-to-pointer-cast]
-> cc1: all warnings being treated as errors
-> make[3]: *** [arch/powerpc/kvm/book3s_pr.o] Fehler 1
-> make[2]: *** [arch/powerpc/kvm] Fehler 2
-> make[2]: *** Warte auf noch nicht beendete Prozesse...
 
-The culprit is this patch:
+This changelog is pretty rubbish.
 
-commit 784f1782e3c9cab310d6c513df966c547c3f17aa
-Author: Alexander Graf <agraf@suse.de>
-Date:   Wed Sep 14 21:45:23 2011 +0200
+1) The subject is rubbish.
+2) Which commit was 8c213fa?  Write it as 8c213fa "staging: r8712u:
+Use asynchronous firmware loading".  Some of us are really old and
+our memory is not good anymore, so we don't know what you're talking
+about if you only use the commit id.
+3) A link to the bug is good, but please at least put a basic
+description of the bug into the changelog itself.
 
-    KVM: PPC: Add support for explicit HIOR setting
-   =20
-    Until now, we always set HIOR based on the PVR, but this is just wrong.
-    Instead, we should be setting HIOR explicitly, so user space can decide
-    what the initial HIOR value is - just like on real hardware.
-   =20
-    We keep the old PVR based way around for backwards compatibility, but
-    once user space uses the SET_ONE_REG based method, we drop the PVR logi=
-c.
-   =20
-    Signed-off-by: Alexander Graf <agraf@suse.de>
+regards,
+dan carpenter
 
-diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-index 089c61b..5985209 100644
---- a/arch/powerpc/kvm/powerpc.c
-+++ b/arch/powerpc/kvm/powerpc.c
-@@ -212,6 +212,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-        case KVM_CAP_PPC_BOOKE_SREGS:
- #else
-        case KVM_CAP_PPC_SEGSTATE:
-+       case KVM_CAP_PPC_HIOR:
-        case KVM_CAP_PPC_PAPR:
- #endif
-        case KVM_CAP_PPC_UNSET_IRQ:
-@@ -652,6 +653,11 @@ static int kvm_vcpu_ioctl_get_one_reg(struct kvm_vcpu =
-*vcpu,
-        int r =3D -EINVAL;
-=20
-        switch (reg->id) {
-+#ifdef CONFIG_PPC_BOOK3S
-+       case KVM_REG_PPC_HIOR:
-+               r =3D put_user(to_book3s(vcpu)->hior, (u64 __user *)reg->ad=
-dr);
-+               break;
-+#endif
-        default:
-                break;
-        }
-@@ -665,6 +671,13 @@ static int kvm_vcpu_ioctl_set_one_reg(struct kvm_vcpu =
-*vcpu,
-        int r =3D -EINVAL;
-=20
-        switch (reg->id) {
-+#ifdef CONFIG_PPC_BOOK3S
-+       case KVM_ONE_REG_PPC_HIOR:
-+               r =3D get_user(to_book3s(vcpu)->hior, (u64 __user *)reg->ad=
-dr);
-+               if (!r)
-+                       to_book3s(vcpu)->hior_explicit =3D true;
-+               break;
-+#endif
-        default:
-                break;
-        }
 
-Later, this code was moved to arch/powerpc/kvm/book3s_pr.c by
 
-commit c6afb78d175ae6cf99f4191fbb258e54478b0371
-Author: Paul Mackerras <paulus@samba.org>
-Date:   Mon Dec 12 12:26:50 2011 +0000
-
-    KVM: PPC: Move kvm_vcpu_ioctl_[gs]et_one_reg down to platform-specific =
-code
-
-Regards, J=C3=B6rg.
---=20
-Es gibt nichts sch=C3=B6neres als dem Schweigen eines Dummkopfes zuzuh=C3=
-=B6ren.
-                                                        (Helmut Quatlinger)
-
---LyciRD1jyfeSSjG0
+--BOKacYhQ+x31HxR3
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAk9I9WMACgkQwe0mZwH1VID9dgCeKkd+fY505FbwxFhwmndb6o/D
-l+0AnR9xUKCc3Wt4/e1NDz61svMZvXFr
-=5Eb3
+iQIcBAEBAgAGBQJPSS1RAAoJEOnZkXI/YHqRa9cP/1/8zf5dYIw0S35qxApO2DvD
+7qAj4I+0mGJxTBR4FR5CzWygec63yX9BAVoJfv6zmJk/ORj49JDs2S4FHd7Nk1Lb
+/ItpjqtfWIBcaR2LsBYy/Fm/tFDzTI7ZKl68oTp5JpGAR3RMRcj0Td2byn9pvWdQ
+7hArUI696ZG7TMe15j6I4wbvlRZ8mU9BSmH/gEPjgGoIfunnTZ9c67kfcCME9fJv
+zIBnijTGgwDh/v8ZpI6tM7+tyTj3fQY+5huNiJbQTHJgKtJd7zVPZZ36ON53Hi8n
+uzzC1IKhVTToB5ECz/DnsFO4Mdais5FkcrLRlZUg3Mg167MI3yg+7/JGLDCdK1Aa
+l521BCqWnYAtAMoCO72wz9RnJ9rwmcr2DA6Gub4G3n8b3ZKRi5SzZBDjwAW1SkPC
+NWFX9ZZ9pbHG0Kx9tJFQbzNB6aHs97kALO/rHJQLEQdN1tGbdEnSLUJ94WAMTwx1
+iZsIx8Mg24x4GnNDN2/BppDDTodShLOtERifNySrwDvRDhNl7Fl36GcMYrmGM1n6
+rjidTwDhpZrtyGxXD5YIDBXh9sjHcbf64Ff1BdrQYSO/oQigXu+4x8vStumU+bxy
+iJuFmKiTC99c8jXJ5I08UH9r/1SgwfLyin1QgaBDjFBNEjtk1gEnzoO28jEKAil8
+bYQFLSY2ZWCcVwPQv+zT
+=2O3/
 -----END PGP SIGNATURE-----
 
---LyciRD1jyfeSSjG0--
+--BOKacYhQ+x31HxR3--
