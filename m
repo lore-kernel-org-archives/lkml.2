@@ -1,46 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2BYODv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 09:03:51 -0500
-Received: from antcom.de ([188.40.178.216]:37368 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755768Ab2BYODu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 09:03:50 -0500
-Message-ID: <4F48EA42.70408@antcom.de>
-Date: Sat, 25 Feb 2012 15:03:46 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120104 Icedove/8.0
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
-References: <1330030639-3796-1-git-send-email-stigge@antcom.de> <4F46AA06.30502@antcom.de> <20120224063521.GA16412@pengutronix.de> <201202241503.27406.arnd@arndb.de> <20120225035128.GA4455@pengutronix.de>
-In-Reply-To: <20120225035128.GA4455@pengutronix.de>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756752Ab2BYOEe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 09:04:34 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60551 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756697Ab2BYOEQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 09:04:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of danielcestari1978@gmail.com designates 10.236.192.138 as permitted sender) smtp.mail=danielcestari1978@gmail.com; dkim=pass header.i=danielcestari1978@gmail.com
+Date: Sat, 25 Feb 2012 12:04:17 -0200
+Mime-version: 1.0
+Subject: =?ISO-8859-1?Q?DATA_STUDIO_-_EST=DADIO_DE_GRAVA=C7=C3O_DE_BANDAS,_JINGLES_E_SPOTS_PUBLICIT=C1RIOS.?=
+From: Data Studio <danielcestari1978@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Message-Id: <225124.LKSUPDFA@gmail.com>
+Content-type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/02/12 04:51, Wolfram Sang wrote:
->> Unfortunately, the way that ohci handles the abstraction between
->> the various implementations is backwards, it would be much easier
->> if the main driver was following that model to start with.
-> 
-> ... exactly for that reason I didn't suggest it. Looking at other
-> ohci-sources (e.g. ohci-omap.c), machine_is_* seems to be the
-> consistent use-case.
+OLÁ, VENHO ATRAVÉS DESTE E-MAIL APRESENTAR O DATA STUDIO:
 
-OK, considering this, I for now used machine_is_*() to get rid of the
-#ifdefs.
+www.datastudio.com.br
 
-Using platform_device_id.driver_data as Arnd suggested is also a good
-idea, and switching to it will be easy when it is due.
+PARA CONSULTAS DE ORÇAMENTOS DE JINGLES, SPOTS, VINHETAS, LOCUÇÕES, BASTA ENTRAR EM CONTATO POR ESTE E-MAIL OU PELO SITE.
 
-Thanks in advance,
+QUEM TIVER INTERESSE TENHO UM PORTIFÓLIO DE AUDIO PARA ENVIO.
 
-Roland
+GRATO PELA ATENÇÃO.
+
+
