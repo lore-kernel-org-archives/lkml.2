@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2BYSsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 13:48:08 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22566 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab2BYSsH (ORCPT
+	id S1757618Ab2BYTAc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 14:00:32 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55436 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757545Ab2BYTAb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 13:48:07 -0500
-Date: Sat, 25 Feb 2012 21:49:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: r8712u: Fix regression caused by commit
- 8c213fa
-Message-ID: <20120225184954.GA4763@mwanda>
-References: <1330190235-511-1-git-send-email-Larry.Finger@lwfinger.net>
- <1330190235-511-3-git-send-email-Larry.Finger@lwfinger.net>
+	Sat, 25 Feb 2012 14:00:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.107.68 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <1330190235-511-3-git-send-email-Larry.Finger@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F492CE0.00B7,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120225160845.GA13324@redhat.com>
+References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com>
+ <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com>
+ <20120224190651.GA22287@redhat.com> <CA+55aFz6EoiKjzisFmU0j4aezXsPinDyfv3DdKeeKQibkaO6DQ@mail.gmail.com>
+ <CA+55aFyPCHiESkfGMLOA7vNYz46FOnTrvQFJhwCFz9wAehP=7w@mail.gmail.com> <20120225160845.GA13324@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 25 Feb 2012 11:00:10 -0800
+X-Google-Sender-Auth: husLeg2_jAtSzAODCBP2AxWELOU
+Message-ID: <CA+55aFzvMjTsiwL2zNwtxwOPNr5DB9Dn8LNTMM=ciC2VByJeqA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] signalfd/epoll fixes
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 25, 2012 at 8:08 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Yes, this fixes use-after-free. But suppose the the application does:
+>
+>        sigfd = signalfd(...);
+>        epoll_ctl(epollfd, EPOLL_CTL_ADD, sigfd);
+>        execve();
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Well, that can't work anyway. We're adding to the wrong sighand.
 
-On Sat, Feb 25, 2012 at 11:17:15AM -0600, Larry Finger wrote:
-> In commit 8c213fa, the command to release the firmware was placed
-> in the wrong routine. With NetworkManager, problems were rare, but
-> when using wicd as the network control, there is a problem as shown
-> in https://bugs.archlinux.org/task/27996#comment89833.
->=20
+Sure, we can force a wakeup for it at execve(), but that's not the old
+behavior either, so why would we care about the above case? It's not a
+sane thing to do, and it has never worked before either, so why
+bother? My patch should make it "work" as well as it ever did.
 
-This changelog is pretty rubbish.
+Quite frankly, if you wanted to make signalfd work sanely with
+eventpoll, you'd need to change the semantics entirely, and just say
+"signalfd works in the context it was creared in, no other". Those
+aren't the semantics we have, though, and there's no point in trying
+to make up some *new* semantics for "if you execve() we'll still
+follow it"
 
-1) The subject is rubbish.
-2) Which commit was 8c213fa?  Write it as 8c213fa "staging: r8712u:
-Use asynchronous firmware loading".  Some of us are really old and
-our memory is not good anymore, so we don't know what you're talking
-about if you only use the commit id.
-3) A link to the bug is good, but please at least put a basic
-description of the bug into the changelog itself.
+> And in any case. If the task exits, to me it looks simply pointless
+> to keep its ->sighand until __fput(). This only makes poll_rm() or
+> whatever safe, it can't report a signal. OK, OK, I am not arguing,
+> POLLFREE is equally ugly or even worse.
 
-regards,
-dan carpenter
+That's my point. POLLFREE really does look worse, and doesn't really
+give any saner behaviors.
 
+> I _think_ that the right fix should move wait_queue_head_t from
+> sighand_struct to signalfd_ctx (file->private_data) somehow...
 
+I looked at it - and it requires the same "poll_rm()" callback, and
+then instead you have to make allocations in poll() (for the list) and
+de-allocate in "poll_rm()".
 
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I do agree that in many ways it would be the "right" thing to do, but
+it does require the same infrastructure, and the advantage is dubious
+for this case. The main advantage is that we can extend the signalfd +
+epoll interaction in new directions (like the "across execve" or other
+cases), but I'd argue that we don't *want* to do that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+So your POLLFREE patches are merged, and I think they work. The reason
+I like the poll_rm() thing is that I think it's conceptually the right
+solution, and while our "poll_wait()" interface has really worked very
+well, the fact that you cannot do anything stateful in it (because
+there is never any way to undo anything except for the "remove from
+wait queue" action) is very rigid and inflexible.
 
-iQIcBAEBAgAGBQJPSS1RAAoJEOnZkXI/YHqRa9cP/1/8zf5dYIw0S35qxApO2DvD
-7qAj4I+0mGJxTBR4FR5CzWygec63yX9BAVoJfv6zmJk/ORj49JDs2S4FHd7Nk1Lb
-/ItpjqtfWIBcaR2LsBYy/Fm/tFDzTI7ZKl68oTp5JpGAR3RMRcj0Td2byn9pvWdQ
-7hArUI696ZG7TMe15j6I4wbvlRZ8mU9BSmH/gEPjgGoIfunnTZ9c67kfcCME9fJv
-zIBnijTGgwDh/v8ZpI6tM7+tyTj3fQY+5huNiJbQTHJgKtJd7zVPZZ36ON53Hi8n
-uzzC1IKhVTToB5ECz/DnsFO4Mdais5FkcrLRlZUg3Mg167MI3yg+7/JGLDCdK1Aa
-l521BCqWnYAtAMoCO72wz9RnJ9rwmcr2DA6Gub4G3n8b3ZKRi5SzZBDjwAW1SkPC
-NWFX9ZZ9pbHG0Kx9tJFQbzNB6aHs97kALO/rHJQLEQdN1tGbdEnSLUJ94WAMTwx1
-iZsIx8Mg24x4GnNDN2/BppDDTodShLOtERifNySrwDvRDhNl7Fl36GcMYrmGM1n6
-rjidTwDhpZrtyGxXD5YIDBXh9sjHcbf64Ff1BdrQYSO/oQigXu+4x8vStumU+bxy
-iJuFmKiTC99c8jXJ5I08UH9r/1SgwfLyin1QgaBDjFBNEjtk1gEnzoO28jEKAil8
-bYQFLSY2ZWCcVwPQv+zT
-=2O3/
------END PGP SIGNATURE-----
+Of course, aside from signalfd, that inflexibility has never really
+mattered. So..
 
---BOKacYhQ+x31HxR3--
+                  Linus
