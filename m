@@ -1,103 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2BYL2d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 06:28:33 -0500
-Received: from www17.your-server.de ([213.133.104.17]:37128 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab2BYL2b (ORCPT
+	id S1756350Ab2BYLaN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 06:30:13 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43429 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab2BYLaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 06:28:31 -0500
-Message-ID: <1330169301.1380.2.camel@localhost.localdomain>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Ian Kent <raven@themaw.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Sat, 25 Feb 2012 12:28:21 +0100
-In-Reply-To: <1329890251.2193.50.camel@perseus.themaw.net>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Sat, 25 Feb 2012 06:30:10 -0500
+Date: Sat, 25 Feb 2012 12:30:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [RFC PATCH 2/2] CPUfreq ondemand: handle QoS request on DVFS
+ response latency
+Message-ID: <20120225113005.GC16932@elf.ucw.cz>
+References: <CAJ0PZbSODSJvV-_Gje9Hm9Ek22Z9m+PAcsf071OCmAOtsnKzyg@mail.gmail.com>
+ <1329897815-15871-1-git-send-email-myungjoo.ham@samsung.com>
+ <1329897815-15871-3-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329897815-15871-3-git-send-email-myungjoo.ham@samsung.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 22.02.2012, 13:57 +0800 schrieb Ian Kent:
-> On Wed, 2012-02-22 at 13:53 +0800, Ian Kent wrote:
-> > On Wed, 2012-02-22 at 13:43 +0800, Ian Kent wrote:
-> > > On Tue, 2012-02-21 at 20:56 -0800, Linus Torvalds wrote:
-> > 
-> > Ahh ... forgot to set the file_operations structure member .. oops
-> > 
-> > >  
-> > > +static int autofs4_root_dir_open(struct inode *inode, struct file *file)
-> > > +{
-> > > +	struct autofs_sb_info *sbi= autofs4_sbi(file->f_path.dentry->d_sb);
-> > > +	if (sbi->compat_daemon < 0)
-> > > +		sbi->compat_daemon = is_compat_task();
-> > > +	return dcache_dir_open(inode, file);
-> > > +}
-> > > +
-> > 
+On Wed 2012-02-22 17:03:35, MyungJoo Ham wrote:
+> With QoS class, DVFS_RESPONSE_LATENCY, users (device drivers and
+> userspace processes) may express the desired maximum response latency
+> from DVFS mechanisms such as CPUfreq's ondemand governors. Based on such
+> QoS requests, the ondemand governor may flexibly adjust sampling rate
+> accordingly unless it goes below the min_sampling_rate.
 > 
-> Lets try that again.
+> The benefit of having DVFS_RESPONSE_LATENCY is to have faster response
+> from user inputs (mouse clicks, keyboard inputs, touchscreen touches,
+> and others) without increasing frequency unconditionally. Because some
+> input events may not require any performance increases, increasing the
+> frequency unconditionally for inputs may simply consume too much energy.
+> Adjusting sampling rate based on user inputs enabled to increase
+> frequency with less latency if it requires and not to increase frequency
+> if it does not require.
 > 
-> autofs: work around unhappy compat problem on x86-64
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> From: Ian Kent <raven@themaw.net>
-> 
-> When the autofs protocol version 5 packet type was added in commit
-> 5c0a32fc2cd0 ("autofs4: add new packet type for v5 communications"), it
-> obvously tried quite hard to be word-size agnostic, and uses explicitly
-> sized fields that are all correctly aligned.
-> 
-> However, with the final "char name[NAME_MAX+1]" array at the end, the
-> actual size of the structure ends up being not very well defined:
-> because the struct isn't marked 'packed', doing a "sizeof()" on it will
-> align the size of the struct up to the biggest alignment of the members
-> it has.
-> 
-> And despite all the members being the same, the alignment of them is
-> different: a "__u64" has 4-byte alignment on x86-32, but native 8-byte
-> alignment on x86-64.  And while 'NAME_MAX+1' ends up being a nice round
-> number (256), the name[] array starts out a 4-byte aligned.
-> 
-> End result: the "packed" size of the structure is 300 bytes: 4-byte, but
-> not 8-byte aligned.
-> 
-> As a result, despite all the fields being in the same place on all
-> architectures, sizeof() will round up that size to 304 bytes on
-> architectures that have 8-byte alignment for u64.
-> 
-> Note that this is *not* a problem for 32-bit compat mode on POWER, since
-> there __u64 is 8-byte aligned even in 32-bit mode.  But on x86, 32-bit
-> and 64-bit alignment is different for 64-bit entities, and as a result
-> the structure that has exactly the same layout has different sizes.
-> 
-> So on x86-64, but no other architecture, we will just subtract 4 from
-> the size of the structure when running in a compat task.  That way we
-> will write the properly sized packet that user mode expects.
-> 
-> Not pretty.  Sadly, this very subtle, and unnecessary, size difference
-> has been encoded in user space that wants to read packets of *exactly*
-> the right size, and will refuse to touch anything else.
-> 
-> Reported-and-tested-by: Thomas Meyer <thomas@m3y3r.de>
-> Cc: Ian Kent <raven@themaw.net>
+> --
+> This patch depends on the patch
+> "PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency".
+> and the patch
+> "CPUfreq ondemand: update sampling rate without waiting for next
+> sampling"
 > ---
+>  drivers/cpufreq/cpufreq_ondemand.c |  108 ++++++++++++++++++++++++++++++++----
+>  1 files changed, 96 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index 2d66649..b9188f1 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/tick.h>
+>  #include <linux/ktime.h>
+>  #include <linux/sched.h>
+> +#include <linux/pm_qos.h>
+>  
+>  /*
+>   * dbs is used in this file as a shortform for demandbased switching
+> @@ -93,6 +94,7 @@ struct cpu_dbs_info_s {
+>  	 * when user is changing the governor or limits.
+>  	 */
+>  	struct mutex timer_mutex;
+> +	bool activated; /* dbs_timer_init is in effect */
+>  };
+>  static DEFINE_PER_CPU(struct cpu_dbs_info_s, od_cpu_dbs_info);
+>  
+> @@ -111,6 +113,8 @@ static struct dbs_tuners {
+>  	unsigned int sampling_down_factor;
+>  	unsigned int powersave_bias;
+>  	unsigned int io_is_busy;
+> +	struct notifier_block dvfs_lat_qos_db;
+> +	unsigned int dvfs_lat_qos_wants;
+>  } dbs_tuners_ins = {
+>  	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+>  	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
+> @@ -164,6 +168,23 @@ static inline cputime64_t get_cpu_iowait_time(unsigned int cpu, cputime64_t *wal
+>  }
+>  
+>  /*
+> + * Find right sampling rate based on sampling_rate and
+> + * QoS requests on dvfs latency.
+> + */
+> +static unsigned int effective_sampling_rate(void)
+> +{
+> +	unsigned int effective;
+> +
+> +	if (dbs_tuners_ins.dvfs_lat_qos_wants)
+> +		effective = min(dbs_tuners_ins.dvfs_lat_qos_wants,
+> +				dbs_tuners_ins.sampling_rate);
+> +	else
+> +		effective = dbs_tuners_ins.sampling_rate;
+> +
+> +	return max(effective, min_sampling_rate);
+> +}
+> +
+> +/*
+>   * Find right freq to be set now with powersave_bias on.
+>   * Returns the freq_hi to be used right now and will set freq_hi_jiffies,
+>   * freq_lo, and freq_lo_jiffies in percpu area for averaging freqs.
+> @@ -207,7 +228,7 @@ static unsigned int powersave_bias_target(struct cpufreq_policy *policy,
+>  		dbs_info->freq_lo_jiffies = 0;
+>  		return freq_lo;
+>  	}
+> -	jiffies_total = usecs_to_jiffies(dbs_tuners_ins.sampling_rate);
+> +	jiffies_total = usecs_to_jiffies(effective_sampling_rate());
+>  	jiffies_hi = (freq_avg - freq_lo) * jiffies_total;
+>  	jiffies_hi += ((freq_hi - freq_lo) / 2);
+>  	jiffies_hi /= (freq_hi - freq_lo);
+> @@ -259,7 +280,8 @@ show_one(powersave_bias, powersave_bias);
+>  
+>  /**
+>   * update_sampling_rate - update sampling rate effective immediately if needed.
+> - * @new_rate: new sampling rate
+> + * @new_rate: new sampling rate. if it is 0, regard sampling rate is not
+> + *		changed and assume that qos request value is changed.
+>   *
+>   * If new rate is smaller than the old, simply updaing
+>   * dbs_tuners_int.sampling_rate might not be appropriate. For example,
+> @@ -273,9 +295,13 @@ show_one(powersave_bias, powersave_bias);
+>  static void update_sampling_rate(unsigned int new_rate)
+>  {
+>  	int cpu;
+> +	unsigned int effective;
+> +
+> +
+> +	if (new_rate)
+> +		dbs_tuners_ins.sampling_rate = max(new_rate, min_sampling_rate);
+>  
+> -	dbs_tuners_ins.sampling_rate = new_rate
+> -				     = max(new_rate, min_sampling_rate);
+> +	effective = effective_sampling_rate();
+>  
+>  	for_each_online_cpu(cpu) {
+>  		struct cpufreq_policy *policy;
+> @@ -283,21 +309,31 @@ static void update_sampling_rate(unsigned int new_rate)
+>  		struct timer_list *timer;
+>  		unsigned long appointed_at;
+>  
+> +		/*
+> +		 * mutex_destory(&dbs_info->timer_mutex) should not happen
+> +		 * in this context.
+> +		 */
+> +		mutex_lock(&dbs_mutex);
+> +
+>  		policy = cpufreq_cpu_get(cpu);
+>  		if (!policy)
+> -			continue;
+> +			goto next;
+>  		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
+>  		cpufreq_cpu_put(policy);
+>  
+> +		/* timer_mutex destroyed or will be destoyed soon */
+> +		if (!dbs_info->activated)
+> +			goto next;
+> +
+>  		mutex_lock(&dbs_info->timer_mutex);
+>  
+>  		if (!delayed_work_pending(&dbs_info->work))
+> -			goto next;
+> +			goto next_timer_mutex;
+>  
+>  		timer = &dbs_info->work.timer;
+>  		appointed_at = timer->expires;
+>  
+> -		if (time_before(jiffies + usecs_to_jiffies(new_rate),
+> +		if (time_before(jiffies + usecs_to_jiffies(effective),
+>  				appointed_at)) {
+>  
+>  			mutex_unlock(&dbs_info->timer_mutex);
+> @@ -305,12 +341,15 @@ static void update_sampling_rate(unsigned int new_rate)
+>  			mutex_lock(&dbs_info->timer_mutex);
+>  
+>  			schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
+> -						 usecs_to_jiffies(new_rate));
+> +						 usecs_to_jiffies(effective));
+>  
+>  		}
+> -next:
+> +next_timer_mutex:
+>  		mutex_unlock(&dbs_info->timer_mutex);
+> +next:
+> +		mutex_unlock(&dbs_mutex);
+>  	}
+> +
+>  }
 
-works for me on top of 3.2.7.
-
-
+I don't think gotos are helpful here. Can you use normal program
+structure or move it to subroutine...?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
