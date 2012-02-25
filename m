@@ -1,267 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab2BYHcy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 02:32:54 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:30515 "EHLO
+	id S1754899Ab2BYHda (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 02:33:30 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:30593 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2BYHcx (ORCPT
+	with ESMTP id S1752926Ab2BYHd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 02:32:53 -0500
+	Sat, 25 Feb 2012 02:33:29 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 1/2] PCI: Separate host_bridge code out from probe.c
-Date: Fri, 24 Feb 2012 23:32:26 -0800
-Message-Id: <1330155147-15118-1-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH] x86, PCI: Fix memleak in theory with get_current_resources
+Date: Fri, 24 Feb 2012 23:33:03 -0800
+Message-Id: <1330155183-15201-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F488EA2.0031,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090209.4F488EC7.003B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+in pci_scan_acpi_root, when pci_use_crs is set, get_current_resources is used
+to get pci_root_info, and it will allocate name and res array.
+
+later if pci_create_root_bus can not create bus (could be already there...)
+it will only free bus res list. but the name and res array is not freed.
+
+let get_current_resource take info pointer instead have local info.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
 
 ---
- drivers/pci/Makefile      |    2 
- drivers/pci/host-bridge.c |   93 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/pci.h         |    2 
- drivers/pci/probe.c       |   81 ----------------------------------------
- 4 files changed, 97 insertions(+), 81 deletions(-)
+ arch/x86/pci/acpi.c |   49 ++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 30 insertions(+), 19 deletions(-)
 
-Index: linux-2.6/drivers/pci/host-bridge.c
+Index: linux-2.6/arch/x86/pci/acpi.c
 ===================================================================
---- /dev/null
-+++ linux-2.6/drivers/pci/host-bridge.c
-@@ -0,0 +1,93 @@
-+/*
-+ * host_bridge.c - host bridge related code
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/pci.h>
-+#include <linux/module.h>
-+
-+#include "pci.h"
-+
-+static LIST_HEAD(pci_host_bridges);
-+
-+void add_to_pci_host_bridges(struct list_head *list)
-+{
-+	list_add_tail(list, &pci_host_bridges);
-+}
-+
-+static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
-+{
-+	struct pci_bus *bus;
-+	struct pci_host_bridge *bridge;
-+
-+	bus = dev->bus;
-+	while (bus->parent)
-+		bus = bus->parent;
-+
-+	list_for_each_entry(bridge, &pci_host_bridges, list) {
-+		if (bridge->bus == bus)
-+			return bridge;
-+	}
-+
-+	return NULL;
-+}
-+
-+static bool resource_contains(struct resource *res1, struct resource *res2)
-+{
-+	return res1->start <= res2->start && res1->end >= res2->end;
-+}
-+
-+void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-+			     struct resource *res)
-+{
-+	struct pci_host_bridge *bridge = pci_host_bridge(dev);
-+	struct pci_host_bridge_window *window;
-+	resource_size_t offset = 0;
-+
-+	list_for_each_entry(window, &bridge->windows, list) {
-+		if (resource_type(res) != resource_type(window->res))
-+			continue;
-+
-+		if (resource_contains(window->res, res)) {
-+			offset = window->offset;
-+			break;
-+		}
-+	}
-+
-+	region->start = res->start - offset;
-+	region->end = res->end - offset;
-+}
-+EXPORT_SYMBOL(pcibios_resource_to_bus);
-+
-+static bool region_contains(struct pci_bus_region *region1,
-+			    struct pci_bus_region *region2)
-+{
-+	return region1->start <= region2->start && region1->end >= region2->end;
-+}
-+
-+void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-+			     struct pci_bus_region *region)
-+{
-+	struct pci_host_bridge *bridge = pci_host_bridge(dev);
-+	struct pci_host_bridge_window *window;
-+	struct pci_bus_region bus_region;
-+	resource_size_t offset = 0;
-+
-+	list_for_each_entry(window, &bridge->windows, list) {
-+		if (resource_type(res) != resource_type(window->res))
-+			continue;
-+
-+		bus_region.start = window->res->start - window->offset;
-+		bus_region.end = window->res->end - window->offset;
-+
-+		if (region_contains(&bus_region, region)) {
-+			offset = window->offset;
-+			break;
-+		}
-+	}
-+
-+	res->start = region->start + offset;
-+	res->end = region->end + offset;
-+}
-+EXPORT_SYMBOL(pcibios_bus_to_resource);
-Index: linux-2.6/drivers/pci/pci.h
-===================================================================
---- linux-2.6.orig/drivers/pci/pci.h
-+++ linux-2.6/drivers/pci/pci.h
-@@ -231,6 +231,8 @@ static inline int pci_ari_enabled(struct
- void pci_reassigndev_resource_alignment(struct pci_dev *dev);
- extern void pci_disable_bridge_window(struct pci_dev *dev);
- 
-+void add_to_pci_host_bridges(struct list_head *list);
-+
- /* Single Root I/O Virtualization */
- struct pci_sriov {
- 	int pos;		/* capability position */
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -15,13 +15,10 @@
- #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
- #define CARDBUS_RESERVE_BUSNR	3
- 
--static LIST_HEAD(pci_host_bridges);
--
- /* Ugh.  Need to stop exporting this to modules. */
- LIST_HEAD(pci_root_buses);
- EXPORT_SYMBOL(pci_root_buses);
- 
--
- static int find_anything(struct device *dev, void *data)
- {
- 	return 1;
-@@ -44,82 +41,6 @@ int no_pci_devices(void)
+--- linux-2.6.orig/arch/x86/pci/acpi.c
++++ linux-2.6/arch/x86/pci/acpi.c
+@@ -305,49 +305,55 @@ static void add_resources(struct pci_roo
+ 	}
  }
- EXPORT_SYMBOL(no_pci_devices);
  
--static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
--{
--	struct pci_bus *bus;
--	struct pci_host_bridge *bridge;
--
--	bus = dev->bus;
--	while (bus->parent)
--		bus = bus->parent;
--
--	list_for_each_entry(bridge, &pci_host_bridges, list) {
--		if (bridge->bus == bus)
--			return bridge;
--	}
--
--	return NULL;
--}
--
--static bool resource_contains(struct resource *res1, struct resource *res2)
--{
--	return res1->start <= res2->start && res1->end >= res2->end;
--}
--
--void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
--			     struct resource *res)
--{
--	struct pci_host_bridge *bridge = pci_host_bridge(dev);
--	struct pci_host_bridge_window *window;
--	resource_size_t offset = 0;
--
--	list_for_each_entry(window, &bridge->windows, list) {
--		if (resource_type(res) != resource_type(window->res))
--			continue;
--
--		if (resource_contains(window->res, res)) {
--			offset = window->offset;
--			break;
--		}
--	}
--
--	region->start = res->start - offset;
--	region->end = res->end - offset;
--}
--EXPORT_SYMBOL(pcibios_resource_to_bus);
--
--static bool region_contains(struct pci_bus_region *region1,
--			    struct pci_bus_region *region2)
--{
--	return region1->start <= region2->start && region1->end >= region2->end;
--}
--
--void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
--			     struct pci_bus_region *region)
--{
--	struct pci_host_bridge *bridge = pci_host_bridge(dev);
--	struct pci_host_bridge_window *window;
--	struct pci_bus_region bus_region;
--	resource_size_t offset = 0;
--
--	list_for_each_entry(window, &bridge->windows, list) {
--		if (resource_type(res) != resource_type(window->res))
--			continue;
--
--		bus_region.start = window->res->start - window->offset;
--		bus_region.end = window->res->end - window->offset;
--
--		if (region_contains(&bus_region, region)) {
--			offset = window->offset;
--			break;
--		}
--	}
--
--	res->start = region->start + offset;
--	res->end = region->end + offset;
--}
--EXPORT_SYMBOL(pcibios_bus_to_resource);
--
- /*
-  * PCI Bus Class
-  */
-@@ -1731,7 +1652,7 @@ struct pci_bus *pci_create_root_bus(stru
++static void free_pci_root_info(struct pci_root_info *info)
++{
++	kfree(info->name);
++	kfree(info->res);
++	memset(info, 0, sizeof(struct pci_root_info));
++}
++
+ static void
+-get_current_resources(struct acpi_device *device, int busnum,
++get_current_resources(struct pci_root_info *info,
++		      struct acpi_device *device, int busnum,
+ 		      int domain, struct list_head *resources)
+ {
+-	struct pci_root_info info;
+ 	size_t size;
+ 
+-	info.bridge = device;
+-	info.res_num = 0;
+-	info.resources = resources;
++	info->bridge = device;
++	info->res_num = 0;
++	info->resources = resources;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
+-				&info);
+-	if (!info.res_num)
++				info);
++	if (!info->res_num)
+ 		return;
+ 
+-	size = sizeof(*info.res) * info.res_num;
+-	info.res = kmalloc(size, GFP_KERNEL);
+-	if (!info.res)
++	size = sizeof(*info->res) * info->res_num;
++	info->res = kmalloc(size, GFP_KERNEL);
++	if (!info->res)
+ 		return;
+ 
+-	info.name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+-	if (!info.name)
++	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
++	if (!info->name)
+ 		goto name_alloc_fail;
+ 
+-	info.res_num = 0;
++	info->res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+-				&info);
++				info);
+ 
+ 	if (pci_use_crs) {
+-		add_resources(&info);
++		add_resources(info);
+ 
+ 		return;
  	}
  
- 	down_write(&pci_bus_sem);
--	list_add_tail(&bridge->list, &pci_host_bridges);
-+	add_to_pci_host_bridges(&bridge->list);
- 	list_add_tail(&b->node, &pci_root_buses);
- 	up_write(&pci_bus_sem);
+-	kfree(info.name);
+-
+ name_alloc_fail:
+-	kfree(info.res);
++	free_pci_root_info(info);
+ }
  
-Index: linux-2.6/drivers/pci/Makefile
-===================================================================
---- linux-2.6.orig/drivers/pci/Makefile
-+++ linux-2.6/drivers/pci/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the PCI bus specific drivers.
- #
+ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ {
+ 	struct acpi_device *device = root->device;
++	struct pci_root_info info;
+ 	int domain = root->segment;
+ 	int busnum = root->secondary.start;
+ 	LIST_HEAD(resources);
+@@ -392,6 +398,7 @@ struct pci_bus * __devinit pci_acpi_scan
  
--obj-y		+= access.o bus.o probe.o remove.o pci.o \
-+obj-y		+= access.o bus.o probe.o host-bridge.o remove.o pci.o \
- 			pci-driver.o search.o pci-sysfs.o rom.o setup-res.o \
- 			irq.o vpd.o
- obj-$(CONFIG_PROC_FS) += proc.o
+ 	sd->domain = domain;
+ 	sd->node = node;
++	memset(&info, 0, sizeof(struct pci_root_info));
+ 	/*
+ 	 * Maybe the desired pci bus has been already scanned. In such case
+ 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
+@@ -405,7 +412,8 @@ struct pci_bus * __devinit pci_acpi_scan
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(sd);
+ 	} else {
+-		get_current_resources(device, busnum, domain, &resources);
++		get_current_resources(&info, device, busnum, domain,
++					&resources);
+ 
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+@@ -419,6 +427,9 @@ struct pci_bus * __devinit pci_acpi_scan
+ 			bus->subordinate = pci_scan_child_bus(bus);
+ 		else
+ 			pci_free_resource_list(&resources);
++
++		if (!bus && pci_use_crs)
++			free_pci_root_info(&info);
+ 	}
+ 
+ 	/* After the PCI-E bus has been walked and all devices discovered,
