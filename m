@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2BYOEe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 09:04:34 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60551 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab2BYOEQ convert rfc822-to-8bit (ORCPT
+	id S1756789Ab2BYOvm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 09:51:42 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43450 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691Ab2BYOvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 09:04:16 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of danielcestari1978@gmail.com designates 10.236.192.138 as permitted sender) smtp.mail=danielcestari1978@gmail.com; dkim=pass header.i=danielcestari1978@gmail.com
-Date: Sat, 25 Feb 2012 12:04:17 -0200
-Mime-version: 1.0
-Subject: =?ISO-8859-1?Q?DATA_STUDIO_-_EST=DADIO_DE_GRAVA=C7=C3O_DE_BANDAS,_JINGLES_E_SPOTS_PUBLICIT=C1RIOS.?=
-From: Data Studio <danielcestari1978@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Message-Id: <225124.LKSUPDFA@gmail.com>
-Content-type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-transfer-encoding: 8BIT
+	Sat, 25 Feb 2012 09:51:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of morbidrsa@googlemail.com designates 10.14.97.70 as permitted sender) smtp.mail=morbidrsa@googlemail.com; dkim=pass header.i=morbidrsa@googlemail.com
+From: Johannes Thumshirn <morbidrsa@googlemail.com>
+To: gregkh@linuxfoundation.org
+Cc: olof@lixom.net, cjb@laptop.org, vrao@broadcom.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Johannes Thumshirn <morbidrsa@googlemail.com>
+Subject: [PATCH] Staging: android: timed_gpio: Removed spaces before tabs
+Date: Sat, 25 Feb 2012 15:51:13 +0100
+Message-Id: <1330181473-16600-1-git-send-email-morbidrsa@googlemail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OLÁ, VENHO ATRAVÉS DESTE E-MAIL APRESENTAR O DATA STUDIO:
 
-www.datastudio.com.br
+Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
+---
+ drivers/staging/android/timed_gpio.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-PARA CONSULTAS DE ORÇAMENTOS DE JINGLES, SPOTS, VINHETAS, LOCUÇÕES, BASTA ENTRAR EM CONTATO POR ESTE E-MAIL OU PELO SITE.
-
-QUEM TIVER INTERESSE TENHO UM PORTIFÓLIO DE AUDIO PARA ENVIO.
-
-GRATO PELA ATENÇÃO.
-
+diff --git a/drivers/staging/android/timed_gpio.h b/drivers/staging/android/timed_gpio.h
+index a0e15f8..d29e169 100644
+--- a/drivers/staging/android/timed_gpio.h
++++ b/drivers/staging/android/timed_gpio.h
+@@ -20,13 +20,13 @@
+ 
+ struct timed_gpio {
+ 	const char *name;
+-	unsigned 	gpio;
++	unsigned	gpio;
+ 	int		max_timeout;
+-	u8 		active_low;
++	u8		active_low;
+ };
+ 
+ struct timed_gpio_platform_data {
+-	int 		num_gpios;
++	int		num_gpios;
+ 	struct timed_gpio *gpios;
+ };
+ 
+-- 
+1.7.5.4
 
