@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab2BYDYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 22:24:42 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64083 "EHLO
+	id S932350Ab2BYDZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 22:25:10 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55760 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab2BYDWs (ORCPT
+	with ESMTP id S932191Ab2BYDWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 22:22:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.200.230 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	Fri, 24 Feb 2012 22:22:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.170.193 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -21,9 +21,9 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
         keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v11 05/12] arch/x86: add syscall_get_arch to syscall.h
-Date: Fri, 24 Feb 2012 21:21:44 -0600
-Message-Id: <1330140111-17201-5-git-send-email-wad@chromium.org>
+Subject: [PATCH v11 04/12] asm/syscall.h: add syscall_get_arch
+Date: Fri, 24 Feb 2012 21:21:43 -0600
+Message-Id: <1330140111-17201-4-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1330140111-17201-1-git-send-email-wad@chromium.org>
 References: <1330140111-17201-1-git-send-email-wad@chromium.org>
@@ -31,62 +31,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall_get_arch() to export the current AUDIT_ARCH_* based on system call
-entry path.
+Adds a stub for a function that will return the AUDIT_ARCH_*
+value appropriate to the supplied task based on the system
+call convention.
 
+For audit's use, the value can generally be hard-coded at the
+audit-site.  However, for other functionality not inlined into
+syscall entry/exit, this makes that information available.
+seccomp_filter is the first planned consumer and, as such,
+the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
+is probably an unneeded detail.
+
+Suggested-by: Roland McGrath <mcgrathr@chromium.org>
 Signed-off-by: Will Drewry <wad@chromium.org>
----
- arch/x86/include/asm/syscall.h |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index d962e56..1d713e4 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -13,6 +13,7 @@
- #ifndef _ASM_X86_SYSCALL_H
- #define _ASM_X86_SYSCALL_H
+v11: fixed improper return type (mcgrathr@chromium.org)
+v10: introduced
+---
+ include/asm-generic/syscall.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
+index 5c122ae..a2c13dc 100644
+--- a/include/asm-generic/syscall.h
++++ b/include/asm-generic/syscall.h
+@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
+ 			   unsigned int i, unsigned int n,
+ 			   const unsigned long *args);
  
-+#include <linux/audit.h>
- #include <linux/sched.h>
- #include <linux/err.h>
- #include <asm/asm-offsets.h>	/* For NR_syscalls */
-@@ -87,6 +88,12 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 	memcpy(&regs->bx + i, args, n * sizeof(args[0]));
- }
- 
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+	return AUDIT_ARCH_I386;
-+}
-+
- #else	 /* CONFIG_X86_64 */
- 
- static inline void syscall_get_arguments(struct task_struct *task,
-@@ -211,6 +218,22 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 		}
- }
- 
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+#ifdef CONFIG_IA32_EMULATION
-+	/*
-+	 * TS_COMPAT is set for 32-bit syscall entries and then
-+	 * remains set until we return to user mode.
-+	 *
-+	 * TIF_IA32 tasks should always have TS_COMPAT set at
-+	 * system call time.
-+	 */
-+	if (task_thread_info(task)->status & TS_COMPAT)
-+		return AUDIT_ARCH_I386;
-+#endif
-+	return AUDIT_ARCH_X86_64;
-+}
- #endif	/* CONFIG_X86_32 */
- 
- #endif	/* _ASM_X86_SYSCALL_H */
++/**
++ * syscall_get_arch - return the AUDIT_ARCH for the current system call
++ * @task:	task of interest, must be in system call entry tracing
++ * @regs:	task_pt_regs() of @task
++ *
++ * Returns the AUDIT_ARCH_* based on the system call convention in use.
++ *
++ * It's only valid to call this when @task is stopped on entry to a system
++ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
++ *
++ * Note, at present this function is only required with
++ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
++ */
++int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
+ #endif	/* _ASM_SYSCALL_H */
 -- 
 1.7.5.4
 
