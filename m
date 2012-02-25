@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab2BYAZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 19:25:17 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:20631 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab2BYAZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 19:25:14 -0500
-Date: Fri, 24 Feb 2012 19:21:36 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>, davej@redhat.com, cpufreq@vger.kernel.org
-Cc: ke.yu@intel.com, kevin.tian@intel.com, lenb@kernel.org,
-        xen-devel@lists.xensource.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] processor passthru - upload _Cx and _Pxx data to
- hypervisor (v5).
-Message-ID: <20120225002136.GB26913@phenom.dumpdata.com>
-References: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
- <4F47733E020000780007497D@nat28.tlf.novell.com>
+	id S1757063Ab2BYAeO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 19:34:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37638 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755396Ab2BYAeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Feb 2012 19:34:13 -0500
+Date: Sat, 25 Feb 2012 01:34:12 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tags: fix use of parenthesis in regex
+Message-ID: <20120225003411.GA27390@sepie.suse.cz>
+References: <20120203112701.1c12b12c@s6510.linuxnetplumber.net>
+ <4F2C38BD.1060109@codeaurora.org>
+ <20120203121847.1b01f4b5@s6510.linuxnetplumber.net>
+ <c1f3d71b6001dfc42ded4ee651e9a82c.squirrel@www.codeaurora.org>
+ <20120206124058.1cf1a23e@s6510.linuxnetplumber.net>
+ <4F305CB6.7050603@codeaurora.org>
+ <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F47733E020000780007497D@nat28.tlf.novell.com>
+In-Reply-To: <20120206151543.1bb1d869@s6510.linuxnetplumber.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F482A60.009F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 10:23:42AM +0000, Jan Beulich wrote:
-> >>> On 23.02.12 at 23:31, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > This module (processor-passthru)  collects the information that the cpufreq
-> > drivers and the ACPI processor code save in the 'struct acpi_processor' and
-> > then uploads it to the hypervisor.
-> 
-> Thus looks conceptually wrong to me - there shouldn't be a need for a
-> CPUFreq driver to be loaded in Dom0 (or your module should masquerade
-> as the one and only suitable one).
+On Mon, Feb 06, 2012 at 03:15:43PM -0800, Stephen Hemminger wrote:
+> Several of the regular expressions passed to etags and ctags where incorrect
+> and missing the backslash before the closing paren, and matching the wrong
+> part of the start of the function causing warning:
+>   etags: Unmatched ( or \( while compiling pattern
 
-So before your email I had been thinking that b/c of the cpuidle rework
-by Len it meant that when the cpufreq drivers are active - they would be started
-from the cpu_idle call - and since  cpu_idle call ends up being default_idle on
-pvops (which calls safe_halt) that would be fine. This is the work that Len did
-"cpuidle: replace xen access to x86 pm_idle and default_idle" and
-"cpuidle: stop depending on pm_idle" 
+But your patch introduces another imbalances, e.g.
 
-But cpufreq != cpuidle != cpufreq governor, and they all are run by different rules.
-The ondemand cpufreq governor for example runs a timer and calls the appropiate cpufreq
-driver. So with these patches I posted we end up with a cpufreq driver in the kernel
-and in Xen hypervisor - both of them trying to change Pstates. Not good (to be fair,
-if powernow-k8/acpi-cpufreq would try it via WRMSR -  those would up being trapped and
-ignored by the hypervisor. I am not sure about the outw though).
 
-The pre-RFC version of this posted driver implemented a cpufreq governor that was
-nop and for future work was going to make a hypercall to get the true cpufreq value
-to report properly in /proc/cpuinfo - but I hadn't figured out a way to make it be
-the default one dynamically.
+> @@ -129,31 +129,31 @@ exuberant()
+...
+> -	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
+...
+> +	--regex-c++='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
 
-Perhaps having xencommons do 
-echo "xen" > /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+The old version had left paren, start of group, ..., end of group
+The new version has start of group, left paren, ..., right paren
 
-And s/processor-passthru/cpufreq-xen/ would do it? That would eliminate the [performance,
-ondemand,powersave,etc] cpufreq governors from calling into the cpufreq drivers to alter P-states.
+Where left / right paren means the character without any special
+meaning. I actually can't see anything wrong with the old TRACE_EVENT matching, the regular expression is correct and I think it does what it should do (turn
+TRACE_EVENT(foo) into trace_foo).
 
-Let me CC Dave Jones and the cpufreq mailing list - perhaps they might have
-some ideas?
-[The patch is http://lwn.net/Articles/483668/]
+Below is the full list of warnings I get from
+
+Exuberant Ctags 5.8, Copyright (C) 1996-2009 Darren Hiebert
+  Addresses: <dhiebert@users.sourceforge.net>, http://ctags.sourceforge.net
+  Optional compiled features: +wildcards, +regex
+
+
+  GEN     tags
+ctags: Warning: regcomp ^SYSCALL_DEFINE[[:digit:]]?(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp ^TRACE_EVENT(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp ^DEFINE_EVENT\([^,)]*, *([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTSETFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp SETPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __SETPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTCLEARFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __TESTCLEARFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp CLEARPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __CLEARPAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __PAGEFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp PAGEFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTSCFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTSCFLAG(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp SETPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp CLEARPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __CLEARPAGEFLAG_NOOP(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp TESTCLEARFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+ctags: Warning: regcomp __TESTCLEARFLAG_FALSE(\([^,)]*\).*: Unmatched ( or \(
+
+The same list repeats, as ctags is called multiple times.
+
+Michal
