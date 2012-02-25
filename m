@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab2BYPqz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 10:46:55 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:48166 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755050Ab2BYPqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 10:46:54 -0500
-Date: Sat, 25 Feb 2012 10:46:53 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Wolfram Sang <w.sang@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kevin.wells@nxp.com>
-Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
-In-Reply-To: <201202250845.44427.arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1202251033550.4173-100000@netrider.rowland.org>
+	id S1756923Ab2BYPyN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 10:54:13 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:44494 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755050Ab2BYPyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 10:54:12 -0500
+Date: Sat, 25 Feb 2012 07:52:02 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.3-rc5
+Message-ID: <20120225155202.GA21187@ericsson.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Feb 2012, Arnd Bergmann wrote:
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Saturday 25 February 2012, Wolfram Sang wrote:
-> > > Unfortunately, the way that ohci handles the abstraction between the
-> > > various implementations is backwards, it would be much easier if the
-> > > main driver was following that model to start with.
-> > 
-> > ... exactly for that reason I didn't suggest it. Looking at other ohci-sources
-> > (e.g. ohci-omap.c), machine_is_* seems to be the consistent use-case.
-> 
-> I still hope that someone takes the time to convert ohci and ehci into
-> something more regular, building the .c files separately instead of the
-> conditional #include "foo.c" inside of the main file.
-> 
-> Alan and Greg, do you know if anyone is working on that, and if not do you
-> think someone should do it?
+Hi Linus,
 
-You are talking about two separate issues.  One is the way the various
-bus-glue files get built into the driver, and the other is the way it
-#includes .c files.
+Please pull hwmon fixes for Linux 3.3-rc5 from tag:
 
-I don't view the second as a big deal.  A few people have complained
-about it, but I don't see the point.  Sure, it has the disadvantage
-that you have to recompile the entire driver any time one of the files
-is changed.  I can live with that.  It has the advantage that symbols
-shared among the source files can be static; they don't have to get
-merged into the overall kernel namespace when the driver isn't build as
-a module.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-The first issue is more serious.  There are long-term plans to
-restructure both of those drivers so that the bus glue resides in a
-separate module from the main core of the driver.  However I have not
-started to work on that yet; there are other more pressing matters to
-do first.
+Thanks,
+Guenter
 
-It doesn't seem extremely urgent.  Things are working the way they are.  
-The main advantage to restructuring is that it would allow distributors
-to build bus glue for multiple platforms in a single distribution
-image.  Currently that's not possible (except that any one of the
-platform glues can be enabled along with the PCI glue).
+------
 
-A little progress has been made already.  We just received a submission
-for a "generic" platform bus glue file that will be able to take over
-the jobs of several of the existiing files.  If anyone wants to take
-this further I won't object, but I don't plan to work on it myself
-soon.
+The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
 
-Alan Stern
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Chris D Schimp (2):
+      hwmon: (max6639) Fix FAN_FROM_REG calculation
+      hwmon: (max6639) Fix PPR register initialization to set both channels
+
+Guenter Roeck (2):
+      hwmon: (ads1015) Fix file leak in probe function
+      hwmon: (max34440) Fix resetting temperature history
+
+Nikolaus Schulz (1):
+      hwmon: (f75375s) Fix register write order when setting fans to full speed
+
+ drivers/hwmon/ads1015.c        |    3 +--
+ drivers/hwmon/f75375s.c        |    7 +++----
+ drivers/hwmon/max6639.c        |   22 ++++++++++++----------
+ drivers/hwmon/pmbus/max34440.c |    2 +-
+ 4 files changed, 17 insertions(+), 17 deletions(-)
+
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPSQOhAAoJEMsfJm/On5mBIoMQAK2gNQGx1SpzhAyKM9wL9LNo
+BYZhMOfC63GPd/V/KkQd31C+Z5NgE9z/6R9aBN0u8xg2ZSZJY6/ccRNyLjc7yqxc
+OSE4CUzP5iQO36bUl6tX1B2TgfYBwbvVNUsShjsq/hoAzICIyk4UAVgmnRNN4iX5
+JNLjxwhX7jXSJem8bvGVLkGkfIS6g/dYd1vqFvSZ0NlKxuB+5s0JVkB+xagBsl/+
+YOMk4fqn0nIbPTffXs21khzvtZJTIr0LpVy3xb9BIx9Qwjc+KFBfLQEwwT/wniP8
+RmO+5vq6n7pmm7lkbe2Wn9ta4JPSbXF5xe376GXjc6rUEcjllmIZghlKb6KSjZdC
+Pd7CaWxAK5rrDCbrx7PqIvtXNWQ9xA9JyGqdlGTbGW/GW/Fd2W7srj2sUh9Rl1AV
+fbXb7Iea6JgUnTRqAD1fao5FvYZLu//XHimo8xE6V4EyzR56OOc/JP50EaLQnh2s
+AEoe4fWIjsp5zLzE+jQwSuEJgwDikfweV8InX57hnCJi7y3QU3jWCoZfEXumqY64
+HIwQW13q2Rlb65eUlr4GnHrLTh307tyXypWm9cS4XCCOXvuHPhxiobkNLNHo44r5
+XaWv87tu6nx8PE4I1INw9S/uj5PcRdzDS/DUX5GRMxv4fFfV17u3dyEm1zm7E59m
+SE+vhU2BTYyoICggUl1E
+=1ocM
+-----END PGP SIGNATURE-----
+
+--7AUc2qLy4jB3hD7Z--
