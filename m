@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab2BYCkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 21:40:52 -0500
-Received: from edge1.cs.stonybrook.edu ([130.245.9.210]:39711 "EHLO
-	edge1.cs.stonybrook.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab2BYCkv (ORCPT
+	id S1757192Ab2BYDP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 22:15:26 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41711 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab2BYDPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 21:40:51 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Feb 2012 21:40:51 EST
-Message-ID: <4F48488D.30501@cs.stonybrook.edu>
-Date: Fri, 24 Feb 2012 21:33:49 -0500
-From: Richard Yao <ryao@cs.stonybrook.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120214 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com> <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com> <20120224153811.GA16535@kroah.com> <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com> <20120224165448.GA8751@kroah.com> <CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com> <20120224171344.GA9485@kroah.com>
-In-Reply-To: <20120224171344.GA9485@kroah.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [72.89.250.247]
+	Fri, 24 Feb 2012 22:15:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of andrey.warkentin@gmail.com designates 10.229.136.77 as permitted sender) smtp.mail=andrey.warkentin@gmail.com; dkim=pass header.i=andrey.warkentin@gmail.com
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+To: kgdb-bugreport@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
+        andreiw@vmware.com
+Subject: NetKGDB support.
+Date: Fri, 24 Feb 2012 21:15:07 -0500
+Message-Id: <1330136109-2518-1-git-send-email-andrey.warkentin@gmail.com>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is tentative patch set I am sending for feedback. It
+implements a network I/O backend for KDB/KGDB, the kernel
+debugger.
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Very similar to netconsole, on which it is based, but with
+a crucial difference - netkgdb is designed to accept connections
+from any hosts, i.e. it is not necessary to specify these ahead
+of time. This makes it that much more useful in a "this host crashed
+and a I want a developer to take a look at it" scenario, common to
+large scale test/QA farms and automated testing harnesses. This
+involves a minor change to the netpoll rx_hook, namely, to provide
+source connection information.
 
-On 02/24/12 12:13, Greg KH wrote:
-> On Fri, Feb 24, 2012 at 12:06:54PM -0500, Jidong Xiao wrote:
->> On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org>
-wrote:
->>>> As to "Linux isn't a microkernel", even though the debate between
->>>> Linux and microkernel have never stopped,
->>>
->>> Um, who is having such a debate? We aren't, so I don't think the debate
->>> has ever started.
->>>
->>
->> Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
->> http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
->
-> That was 20 years ago, to assume that anyone rational was still having
-> that debate today is insane.
-Jidong Xiao was correct in saying that there was a debate. It continues
-much like the Korean war does today.
+[PATCH 1/2] NETPOLL: Extend rx_hook support.
+[PATCH 2/2] NETKGDB: Ethernet/UDP/IP KDB transport.
 
-With that said, I suggest that Jidong Xiao switch to MINIX, GNU or his
-own OS based on one of the L4 kernels (SEL4 maybe?).
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPSEiMAAoJELFAT5FmjZuE2fgP/jSLP8a1bloTJAuQhZScXaWS
-7A9GOYKbtGE6WFaYvzzTNuEON+jK9hQqFAaVpW/GvIJLaQC5agdTzawVi1It/nIk
-281FXUrFdZiQtEOArwb3sSxLcUgcPeEWaEG798wqM2Vc2LDAgKEaNh01RasH4di1
-v78NRXxCsOfPtszlFbA6u3g/+sjNK2KXKjCPKayN8uzpihvIal+JQx8iunen/TbT
-3kENQiT6mA1oP/r3/z19ayL0piKpm4YKZI4UwtGWT0QzwpPD69sVrcCS1ddF58O6
-CVl+vsQl/8ptUnLZ115XujXas2y1CioUfkTiKezkGpz/roJoquKwUejamyBc+JHa
-0Ph5cJBNg/tfiOcQDeM1GYsolfFVBy5Wvn4uh5R24bBi1nLl/YeAe/0eHY43cdoT
-mbusYNbBHYr9Bx6B+1Ehy0c+/hd5949kQqWLchi8INYsRUakXqnYQNEt3Jznkpr8
-sj4Ga9iayEa3OnwLolLDvBmgLFAF4ZUDBiIFsV6QMrGosvm2DC3Cmk/+ZBwOhZkw
-lmLor34YJdVQ/0GivwxoGX12HlMQB7IBQiAnQUX5z+a9BOQTcNf4muXM/rs5cDk1
-jbztbT9BbTKQVKeQMkZLewct+qEfBHuRA5KimoKL+jxmfZw5UqjBRhtR+U4T+C6A
-WTJMtPUD4Z08trnWHxRU
-=H2R7
------END PGP SIGNATURE-----
-
+Thanks,
+A
