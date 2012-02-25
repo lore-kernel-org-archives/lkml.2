@@ -1,87 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2BYE2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 23:28:49 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34302 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab2BYE2s (ORCPT
+	id S1756632Ab2BYEnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 23:43:32 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35065 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2BYEn3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 23:28:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.181.13.113 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
+	Fri, 24 Feb 2012 23:43:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of arve@android.com designates 10.224.195.135 as permitted sender) smtp.mail=arve@android.com
 MIME-Version: 1.0
-In-Reply-To: <4F48488D.30501@cs.stonybrook.edu>
-References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
-	<CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
-	<20120224153811.GA16535@kroah.com>
-	<CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
-	<20120224165448.GA8751@kroah.com>
-	<CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
-	<20120224171344.GA9485@kroah.com>
-	<4F48488D.30501@cs.stonybrook.edu>
-Date: Fri, 24 Feb 2012 23:28:46 -0500
-Message-ID: <CAG4AFWYxc8FP5yCoEekOnD6nNNqF0X8+VVgXF8zoksTd9RT_Ow@mail.gmail.com>
-Subject: Re: Can we move device drivers into user-space?
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: Richard Yao <ryao@cs.stonybrook.edu>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
+In-Reply-To: <201202250021.36738.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201202232232.59114.rjw@sisk.pl>
+	<4F4715A7.2030401@linux.vnet.ibm.com>
+	<201202250021.36738.rjw@sisk.pl>
+Date: Fri, 24 Feb 2012 20:43:28 -0800
+Message-ID: <CAMP5Xge1=4QJOq7tVJNvrXopYVBRuPE0yq4yDtcutp7RJkuUNg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you everyone! I opened this thread mainly because I was
-wondering whether it makes sense to move device drivers into user
-space. I had no clear idea, but I learnt a lot from the whole
-discussion between everyone, and I think I am not the only one who
-benefits from this discussion.
-
-Regards
-Jidong
-
-On Fri, Feb 24, 2012 at 9:33 PM, Richard Yao <ryao@cs.stonybrook.edu> wrote:
->
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 02/24/12 12:13, Greg KH wrote:
->> On Fri, Feb 24, 2012 at 12:06:54PM -0500, Jidong Xiao wrote:
->>> On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org>
-> wrote:
->>>>> As to "Linux isn't a microkernel", even though the debate between
->>>>> Linux and microkernel have never stopped,
->>>>
->>>> Um, who is having such a debate? We aren't, so I don't think the debate
->>>> has ever started.
->>>>
->>>
->>> Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
->>> http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
+On Fri, Feb 24, 2012 at 3:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, February 24, 2012, Srivatsa S. Bhat wrote:
+>> On 02/24/2012 03:02 AM, Rafael J. Wysocki wrote:
 >>
->> That was 20 years ago, to assume that anyone rational was still having
->> that debate today is insane.
-> Jidong Xiao was correct in saying that there was a debate. It continues
-> much like the Korean war does today.
+>> > On Thursday, February 23, 2012, Rafael J. Wysocki wrote:
+>> >> On Thursday, February 23, 2012, Srivatsa S. Bhat wrote:
+>> >>> On 02/23/2012 03:40 AM, Rafael J. Wysocki wrote:
+> [...]
+>> >>>
+>> >>> By the way, I am just curious.. how difficult will this make it for userspace
+>> >>> to disable autosleep? I mean, would a trylock mean that the user has to keep
+>> >>> fighting until he finally gets a chance to disable autosleep?
+>> >>
+>> >> That's a good point, so I think it may be a good idea to do
+>> >> mutex_lock_interruptible() in pm_autosleep_set_state() instead.
+>> >
+>> > Now that I think of it, perhaps it's a good idea to just make
+>> > pm_autosleep_lock() do mutex_lock_interruptible() _and_ make
+>> > pm_autosleep_set_state() use pm_autosleep_lock().
+>> >
+>> > What do you think?
+>> >
+>>
+>>
+>> Well, I don't think mutex_lock_interruptible() would help us much..
+>> Consider what would happen, if we use it:
+>>
+>> * pm-suspend got initiated as part of autosleep. Acquired autosleep lock.
+>> * Userspace is about to get frozen.
+>> * Now, the user tries to write "off" to autosleep. And hence, he is waiting
+>>   for autosleep lock, interruptibly.
+>> * The freezer sent a fake signal to all userspace processes and hence
+>>   this process also got interrupted.. it is no longer waiting on autosleep
+>>   lock - it got the signal and returned, and got frozen.
+>>   (And when the userspace gets thawed later, this process won't have the
+>>    autosleep lock - which is a different (but yet another) problem).
+>>
+>> So ultimately the only thing we achieved is to ensure that freezing of
+>> userspace goes smoothly. But the user process could not succeed in
+>> disabling autosleep. Of course we can work around that by having the
+>> mutex_lock_interruptible() in a loop and so on, but that gets very
+>> ugly pretty soon.
+>>
+>> So, I would suggest the following solution:
+>>
+>> We want to achieve 2 things here:
+>>  a. A user process trying to write to /sys/power/state or
+>>     /sys/power/autosleep should not cause freezing failures.
+>>  b. When a user process writes "off" to autosleep, the suspend/hibernate
+>>     attempt that is on-going, if any, must be immediately aborted, to give
+>>     the user the feeling that his preference has been noticed and respected.
+>>
+>> And to achieve this, we note that a user process can write "off" to autosleep
+>> only until the userspace gets frozen. No chance after that.
+>>
+>> So, let's do this:
+>> 1. Drop the autosleep lock before entering pm-suspend/hibernate.
+>> 2. This means, a user process can get hold of this lock and successfully
+>>    disable autosleep a moment after we initiated suspend, but before userspace
+>>    got frozen fully.
+>> 3. So, to respect the user's wish, we add a check immediately after the
+>>    freezing of userspace is complete - we check if the user disabled autosleep
+>>    and bail out, if he did. Otherwise, we continue and suspend the machine.
+>>
+>> IOW, this is like hitting 2 birds with one stone ;-)
+>> We don't hold autosleep lock throughout suspend/hibernate, but still react
+>> instantly when the user disables autosleep. And of course, freezing of tasks
+>> won't fail, ever! :-)
 >
-> With that said, I suggest that Jidong Xiao switch to MINIX, GNU or his
-> own OS based on one of the L4 kernels (SEL4 maybe?).
+> Well, you essentially are postulating to restore the "interface" wakeup source
+> that was present in the previous version of this patch and that I dropped in
+> order to simplify the code.
 >
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.18 (GNU/Linux)
-> Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+> I guess I can do that ...
 >
-> iQIcBAEBAgAGBQJPSEiMAAoJELFAT5FmjZuE2fgP/jSLP8a1bloTJAuQhZScXaWS
-> 7A9GOYKbtGE6WFaYvzzTNuEON+jK9hQqFAaVpW/GvIJLaQC5agdTzawVi1It/nIk
-> 281FXUrFdZiQtEOArwb3sSxLcUgcPeEWaEG798wqM2Vc2LDAgKEaNh01RasH4di1
-> v78NRXxCsOfPtszlFbA6u3g/+sjNK2KXKjCPKayN8uzpihvIal+JQx8iunen/TbT
-> 3kENQiT6mA1oP/r3/z19ayL0piKpm4YKZI4UwtGWT0QzwpPD69sVrcCS1ddF58O6
-> CVl+vsQl/8ptUnLZ115XujXas2y1CioUfkTiKezkGpz/roJoquKwUejamyBc+JHa
-> 0Ph5cJBNg/tfiOcQDeM1GYsolfFVBy5Wvn4uh5R24bBi1nLl/YeAe/0eHY43cdoT
-> mbusYNbBHYr9Bx6B+1Ehy0c+/hd5949kQqWLchi8INYsRUakXqnYQNEt3Jznkpr8
-> sj4Ga9iayEa3OnwLolLDvBmgLFAF4ZUDBiIFsV6QMrGosvm2DC3Cmk/+ZBwOhZkw
-> lmLor34YJdVQ/0GivwxoGX12HlMQB7IBQiAnQUX5z+a9BOQTcNf4muXM/rs5cDk1
-> jbztbT9BbTKQVKeQMkZLewct+qEfBHuRA5KimoKL+jxmfZw5UqjBRhtR+U4T+C6A
-> WTJMtPUD4Z08trnWHxRU
-> =H2R7
-> -----END PGP SIGNATURE-----
->
+
+If this wakeup source is reported as active whenever user-space has
+not requested suspend that would be useful in the stats. It does not
+look like your original patch did this however, but you could have a
+main wakeup-source that you release when any form of suspend is
+requested and activate when turning off auto suspend or returning from
+a one-shot suspend operation.
+
+-- 
+Arve Hjønnevåg
