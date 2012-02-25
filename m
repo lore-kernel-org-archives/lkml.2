@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab2BYIqW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 03:46:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52342 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab2BYIqU (ORCPT
+	id S1755531Ab2BYJD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 04:03:59 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:39843 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754480Ab2BYJD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 03:46:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
-Date: Sat, 25 Feb 2012 08:45:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Roland Stigge <stigge@antcom.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, Alan Stern <stern@rowland.harvard.edu>
-References: <1330030639-3796-1-git-send-email-stigge@antcom.de> <201202241503.27406.arnd@arndb.de> <20120225035128.GA4455@pengutronix.de>
-In-Reply-To: <20120225035128.GA4455@pengutronix.de>
+	Sat, 25 Feb 2012 04:03:56 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 10/11] Staging: ft1000-pcmcia: print MAC via printk format specifier
+Date: Sat, 25 Feb 2012 10:02:50 +0100
+User-Agent: KMail/1.9.10
+Cc: marek.belisko@gmail.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org
+References: <1330091162-8141-1-git-send-email-danny.kukawka@bisect.de> <1330091162-8141-11-git-send-email-danny.kukawka@bisect.de> <20120224.145313.1945472951961198905.davem@davemloft.net>
+In-Reply-To: <20120224.145313.1945472951961198905.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202250845.44427.arnd@arndb.de>
-X-Provags-ID: V02:K0:I4AZM9KNkvtxuSUDnIBzyChkK9RvdGVJb8isZn9596a
- 8mvHg1KNEbuuhvEeAr8oPdVnrbPjrKSUdGsSujIdP7CD/YpQH+
- XAXEt7CxSZOlQCBIdqZ2Jumt2775hSl2QsICEKlL0eKrXb5FN1
- IfQls+awppNEPzDiJ+v+jlUdDq8X6oZg9la5wzvyCBEZolhiHf
- kLcHCd0Y3xK/GtM5mme8XcJtg0+wUOAgUmtG1cxJEpwY4jrR+G
- k4dTZXU+eqpVuhKaWXxs7h6zubhRwFqcVdSYEAomudAw9ZdriT
- hpqkJQQnRoEM4Y9K2PEIXmuNloTcSN904FiQom+ryzrNWLBQkW
- 31a7fssFm1u1H7hebGmE=
+Content-Disposition: inline
+Message-Id: <201202251002.51436.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330160636;4a71922c;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 25 February 2012, Wolfram Sang wrote:
-> > Unfortunately, the way that ohci handles the abstraction between the
-> > various implementations is backwards, it would be much easier if the
-> > main driver was following that model to start with.
-> 
-> ... exactly for that reason I didn't suggest it. Looking at other ohci-sources
-> (e.g. ohci-omap.c), machine_is_* seems to be the consistent use-case.
+On Freitag, 24. Februar 2012, David Miller wrote:
+> Danny, please don't do this.
+>
+> If you are posting a "patch series" that you want me to apply, then
+> that entire series must be posted to netdev for review.
+>
+> Otherwise I get a partial patch series recorded in patchwork which
+> screws up my work flow completely.
 
-I still hope that someone takes the time to convert ohci and ehci into
-something more regular, building the .c files separately instead of the
-conditional #include "foo.c" inside of the main file.
+Okay, I'll keep this in mind for the next time.
 
-Alan and Greg, do you know if anyone is working on that, and if not do you
-think someone should do it?
-
-	Arnd
+Danny
