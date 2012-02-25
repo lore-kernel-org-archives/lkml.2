@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2BYEZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Feb 2012 23:25:33 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55791 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888Ab2BYEZb convert rfc822-to-8bit (ORCPT
+	id S932239Ab2BYE2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Feb 2012 23:28:49 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34302 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab2BYE2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Feb 2012 23:25:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of arve@android.com designates 10.229.102.88 as permitted sender) smtp.mail=arve@android.com
+	Fri, 24 Feb 2012 23:28:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jidong.xiao@gmail.com designates 10.181.13.113 as permitted sender) smtp.mail=jidong.xiao@gmail.com; dkim=pass header.i=jidong.xiao@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <20120224051649.GB7666@count0.beaverton.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl>
-	<201202220031.46219.rjw@sisk.pl>
-	<201202220034.58836.rjw@sisk.pl>
-	<20120224051649.GB7666@count0.beaverton.ibm.com>
-Date: Fri, 24 Feb 2012 20:25:30 -0800
-Message-ID: <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
-Subject: Re: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while
- event queue is not empty
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+In-Reply-To: <4F48488D.30501@cs.stonybrook.edu>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+	<CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+	<20120224153811.GA16535@kroah.com>
+	<CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+	<20120224165448.GA8751@kroah.com>
+	<CAG4AFWY1a5SGA4AF9hpFrY6VE60OZUFtWmuVH92Ak_KZWs9Xtw@mail.gmail.com>
+	<20120224171344.GA9485@kroah.com>
+	<4F48488D.30501@cs.stonybrook.edu>
+Date: Fri, 24 Feb 2012 23:28:46 -0500
+Message-ID: <CAG4AFWYxc8FP5yCoEekOnD6nNNqF0X8+VVgXF8zoksTd9RT_Ow@mail.gmail.com>
+Subject: Re: Can we move device drivers into user-space?
+From: Jidong Xiao <jidong.xiao@gmail.com>
+To: Richard Yao <ryao@cs.stonybrook.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 9:16 PM, Matt Helsley <matthltc@us.ibm.com> wrote:
-> On Wed, Feb 22, 2012 at 12:34:58AM +0100, Rafael J. Wysocki wrote:
->> From: Arve Hjønnevåg <arve@android.com>
+Thank you everyone! I opened this thread mainly because I was
+wondering whether it makes sense to move device drivers into user
+space. I had no clear idea, but I learnt a lot from the whole
+discussion between everyone, and I think I am not the only one who
+benefits from this discussion.
+
+Regards
+Jidong
+
+On Fri, Feb 24, 2012 at 9:33 PM, Richard Yao <ryao@cs.stonybrook.edu> wrote:
+>
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 02/24/12 12:13, Greg KH wrote:
+>> On Fri, Feb 24, 2012 at 12:06:54PM -0500, Jidong Xiao wrote:
+>>> On Fri, Feb 24, 2012 at 11:54 AM, Greg KH <gregkh@linuxfoundation.org>
+> wrote:
+>>>>> As to "Linux isn't a microkernel", even though the debate between
+>>>>> Linux and microkernel have never stopped,
+>>>>
+>>>> Um, who is having such a debate? We aren't, so I don't think the debate
+>>>> has ever started.
+>>>>
+>>>
+>>> Here is the classic debate between Andrew S. Tanenbaum and Linus Torvalds:
+>>> http://en.wikipedia.org/wiki/Tanenbaum%E2%80%93Torvalds_debate
 >>
->> Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
->> an evdev client event queue, such that it will be active whenever the
->> queue is not empty.  Then, all events in the queue will be regarded
->> as wakeup events in progress and pm_get_wakeup_count() will block (or
->> return false if woken up by a signal) until they are removed from the
->> queue.  In consequence, if the checking of wakeup events is enabled
->> (e.g. throught the /sys/power/wakeup_count interface), the system
->> won't be able to go into a sleep state until the queue is empty.
->>
->> This allows user space processes to handle situations in which they
->> want to do a select() on an evdev descriptor, so they go to sleep
->> until there are some events to read from the device's queue, and then
->> they don't want the system to go into a sleep state until all the
->> events are read (presumably for further processing).  Of course, if
->> they don't want the system to go into a sleep state _after_ all the
->> events have been read from the queue, they have to use a separate
->> mechanism that will prevent the system from doing that and it has
->> to be activated before reading the first event (that also may be the
->> last one).
+>> That was 20 years ago, to assume that anyone rational was still having
+>> that debate today is insane.
+> Jidong Xiao was correct in saying that there was a debate. It continues
+> much like the Korean war does today.
 >
-> I haven't seen this idea mentioned before but I must admit I haven't
-> been following this thread too closely so apologies (and don't bother
-> rehashing) if it has:
+> With that said, I suggest that Jidong Xiao switch to MINIX, GNU or his
+> own OS based on one of the L4 kernels (SEL4 maybe?).
 >
-> Could you just add this to epoll so that any fd userspace chooses would be
-> capable of doing this without introducing potentially ecclectic ioctl
-> interfaces?
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v2.0.18 (GNU/Linux)
+> Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 >
-
-This is an interesting idea, but I'm not sure how well it would work.
-
-I looked at the epoll code and it looks like it is possible to
-activate the wakeup-source from the wait queue function it uses. The
-epoll callback will happen without holding evdev client buffer_lock,
-so the wakeup-source and buffer state will not always be in sync (this
-may be OK, but require more thought). This callback is also called if
-no data was added to the queue we are polling on because another
-client has grabbed the input device (is this a bug or intended?).
-
-There is no call into the epoll code when input queue is emptied, so
-we can't deactivate the wakeup-source until epoll_wait is called
-again. This also should be workable, but result in different stats.
-
-It does not look like the normal poll and select interfaces can be
-extended the same way (since they remove themselves from the
-wait-queue before returning to user-space), so user-space has to be
-changed to use epoll even if select or poll would be a better fit.
-
-I don't know how many other drivers this would work for. The input
-driver will wake up user-space from the same thread or interrupt
-handler that queued the event, but other drivers may defer this to
-another thread which makes an epoll wakeup-source insufficient.
-
-...
->> +     snprintf(name, sizeof(name), "%s-%d",
->> +              dev_name(&evdev->dev), task_tgid_vnr(current));
+> iQIcBAEBAgAGBQJPSEiMAAoJELFAT5FmjZuE2fgP/jSLP8a1bloTJAuQhZScXaWS
+> 7A9GOYKbtGE6WFaYvzzTNuEON+jK9hQqFAaVpW/GvIJLaQC5agdTzawVi1It/nIk
+> 281FXUrFdZiQtEOArwb3sSxLcUgcPeEWaEG798wqM2Vc2LDAgKEaNh01RasH4di1
+> v78NRXxCsOfPtszlFbA6u3g/+sjNK2KXKjCPKayN8uzpihvIal+JQx8iunen/TbT
+> 3kENQiT6mA1oP/r3/z19ayL0piKpm4YKZI4UwtGWT0QzwpPD69sVrcCS1ddF58O6
+> CVl+vsQl/8ptUnLZ115XujXas2y1CioUfkTiKezkGpz/roJoquKwUejamyBc+JHa
+> 0Ph5cJBNg/tfiOcQDeM1GYsolfFVBy5Wvn4uh5R24bBi1nLl/YeAe/0eHY43cdoT
+> mbusYNbBHYr9Bx6B+1Ehy0c+/hd5949kQqWLchi8INYsRUakXqnYQNEt3Jznkpr8
+> sj4Ga9iayEa3OnwLolLDvBmgLFAF4ZUDBiIFsV6QMrGosvm2DC3Cmk/+ZBwOhZkw
+> lmLor34YJdVQ/0GivwxoGX12HlMQB7IBQiAnQUX5z+a9BOQTcNf4muXM/rs5cDk1
+> jbztbT9BbTKQVKeQMkZLewct+qEfBHuRA5KimoKL+jxmfZw5UqjBRhtR+U4T+C6A
+> WTJMtPUD4Z08trnWHxRU
+> =H2R7
+> -----END PGP SIGNATURE-----
 >
-> This does not look like it will work well with tasks in different pid
-> namespaces. What should happen, I think, is the wakeup_source should hold a
-> reference to either the struct pid of current or current itself. Then
-> when someone reads the file you should get the pid vnr in the reader's
-> pid namespace. That way instead of a bogus pid vnr 0 would show up if
-> "current" here is not in the reader's pid namepsace.
->
-
-The pid here is only used for debugging purposes, and used less than
-the dev_name. I don't think tracking pid namespaces is worth the
-trouble here, so if this is a real problem we can just drop the pid
-from the name for now.
-
--- 
-Arve Hjønnevåg
