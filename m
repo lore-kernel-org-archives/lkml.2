@@ -1,84 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab2BYGyP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 01:54:15 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40218 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab2BYGyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 01:54:14 -0500
-Date: Sat, 25 Feb 2012 12:24:03 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120225065403.GB12313@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1321495153.5100.7.camel@marge.simson.net>
- <1321544313.6308.25.camel@marge.simson.net>
- <1321545376.2495.1.camel@laptop>
- <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <1329761661.6276.146.camel@marge.simpson.net>
- <20120223104959.GA8454@linux.vnet.ibm.com>
- <1329996064.7411.106.camel@marge.simpson.net>
+	id S1753504Ab2BYHDn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 02:03:43 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20452 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469Ab2BYHDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 02:03:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.182.231.41 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1329996064.7411.106.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12022420-0260-0000-0000-0000009938AF
+In-Reply-To: <alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
+References: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
+	<alpine.LRH.2.02.1202241913400.30742@tundra.namei.org>
+	<alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
+Date: Sat, 25 Feb 2012 09:03:40 +0200
+Message-ID: <CADjiTvBr9Y7vPHahpdggzAwySCLHRjNDR4Tn4qDFfU6oeZ-DpQ@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1P74WtQ010808
 
-* Mike Galbraith <efault@gmx.de> [2012-02-23 12:21:04]:
+Hi Hugh,
 
-> Unpinned netperf TCP_RR and/or tbench pairs?  Anything that's wakeup
-> heavy should tell the tail.
+On Sat, Feb 25, 2012 at 5:19 AM, Hugh Dickins <hughd@google.com> wrote:
+> Thanks a lot for doing this, Jarkko: I knew nothing about it.
+> And thank you James for reviewing, I felt much happier seeing that.
+>
+> I did fiddle around with it slightly, to reduce the added textsize,
+> and eliminate it when CONFIG_TMPFS_XATTR is off.  Please, Jarkko
+> and James, complain bitterly if I've messed up the good work.
 
-Here are some tbench numbers:
+Thank you for the nice feedback :) LGTM.
 
-Machine : 2 Intel Xeon X5650 (Westmere) CPUs (6 core/package)
-Kernel  : tip (HEAD at ebe97fa)
-dbench  : v4.0
+>
+> [PATCH] tmpfs: security xattr setting on inode creation
+>
+> From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+>
+> Adds to generic xattr support introduced in Linux 3.0 by
+> implementing initxattrs callback. This enables consulting
+> of security attributes from LSM and EVM when inode is created.
+>
+> [hughd: moved under CONFIG_TMPFS_XATTR, with memcpy in shmem_xattr_alloc]
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+> Reviewed-by: James Morris <james.l.morris@oracle.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  mm/shmem.c |   88 +++++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 72 insertions(+), 16 deletions(-)
+>
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1178,6 +1178,12 @@ static struct inode *shmem_get_inode(str
+>  static const struct inode_operations shmem_symlink_inode_operations;
+>  static const struct inode_operations shmem_short_symlink_operations;
+>
+> +#ifdef CONFIG_TMPFS_XATTR
+> +static int shmem_initxattrs(struct inode *, const struct xattr *, void *);
+> +#else
+> +#define shmem_initxattrs NULL
+> +#endif
+> +
+>  static int
+>  shmem_write_begin(struct file *file, struct address_space *mapping,
+>                        loff_t pos, unsigned len, unsigned flags,
+> @@ -1490,7 +1496,7 @@ shmem_mknod(struct inode *dir, struct de
+>        if (inode) {
+>                error = security_inode_init_security(inode, dir,
+>                                                     &dentry->d_name,
+> -                                                    NULL, NULL);
+> +                                                    shmem_initxattrs, NULL);
+>                if (error) {
+>                        if (error != -EOPNOTSUPP) {
+>                                iput(inode);
+> @@ -1630,7 +1636,7 @@ static int shmem_symlink(struct inode *d
+>                return -ENOSPC;
+>
+>        error = security_inode_init_security(inode, dir, &dentry->d_name,
+> -                                            NULL, NULL);
+> +                                            shmem_initxattrs, NULL);
+>        if (error) {
+>                if (error != -EOPNOTSUPP) {
+>                        iput(inode);
+> @@ -1704,6 +1710,66 @@ static void shmem_put_link(struct dentry
+>  * filesystem level, though.
+>  */
+>
+> +/*
+> + * Allocate new xattr and copy in the value; but leave the name to callers.
+> + */
+> +static struct shmem_xattr *shmem_xattr_alloc(const void *value, size_t size)
+> +{
+> +       struct shmem_xattr *new_xattr;
+> +       size_t len;
+> +
+> +       /* wrap around? */
+> +       len = sizeof(*new_xattr) + size;
+> +       if (len <= sizeof(*new_xattr))
+> +               return NULL;
+> +
+> +       new_xattr = kmalloc(len, GFP_KERNEL);
+> +       if (!new_xattr)
+> +               return NULL;
+> +
+> +       new_xattr->size = size;
+> +       memcpy(new_xattr->value, value, size);
+> +       return new_xattr;
+> +}
+> +
+> +/*
+> + * Callback for security_inode_init_security() for acquiring xattrs.
+> + */
+> +static int shmem_initxattrs(struct inode *inode,
+> +                           const struct xattr *xattr_array,
+> +                           void *fs_info)
+> +{
+> +       struct shmem_inode_info *info = SHMEM_I(inode);
+> +       const struct xattr *xattr;
+> +       struct shmem_xattr *new_xattr;
+> +       size_t len;
+> +
+> +       for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> +               new_xattr = shmem_xattr_alloc(xattr->value, xattr->value_len);
+> +               if (!new_xattr)
+> +                       return -ENOMEM;
+> +
+> +               len = strlen(xattr->name) + 1;
+> +               new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
+> +                                         GFP_KERNEL);
+> +               if (!new_xattr->name) {
+> +                       kfree(new_xattr);
+> +                       return -ENOMEM;
+> +               }
+> +
+> +               memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
+> +                      XATTR_SECURITY_PREFIX_LEN);
+> +               memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
+> +                      xattr->name, len);
+> +
+> +               spin_lock(&info->lock);
+> +               list_add(&new_xattr->list, &info->xattr_list);
+> +               spin_unlock(&info->lock);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+>  static int shmem_xattr_get(struct dentry *dentry, const char *name,
+>                           void *buffer, size_t size)
+>  {
+> @@ -1731,24 +1797,17 @@ static int shmem_xattr_get(struct dentry
+>        return ret;
+>  }
+>
+> -static int shmem_xattr_set(struct dentry *dentry, const char *name,
+> +static int shmem_xattr_set(struct inode *inode, const char *name,
+>                           const void *value, size_t size, int flags)
+>  {
+> -       struct inode *inode = dentry->d_inode;
+>        struct shmem_inode_info *info = SHMEM_I(inode);
+>        struct shmem_xattr *xattr;
+>        struct shmem_xattr *new_xattr = NULL;
+> -       size_t len;
+>        int err = 0;
+>
+>        /* value == NULL means remove */
+>        if (value) {
+> -               /* wrap around? */
+> -               len = sizeof(*new_xattr) + size;
+> -               if (len <= sizeof(*new_xattr))
+> -                       return -ENOMEM;
+> -
+> -               new_xattr = kmalloc(len, GFP_KERNEL);
+> +               new_xattr = shmem_xattr_alloc(value, size);
+>                if (!new_xattr)
+>                        return -ENOMEM;
+>
+> @@ -1757,9 +1816,6 @@ static int shmem_xattr_set(struct dentry
+>                        kfree(new_xattr);
+>                        return -ENOMEM;
+>                }
+> -
+> -               new_xattr->size = size;
+> -               memcpy(new_xattr->value, value, size);
+>        }
+>
+>        spin_lock(&info->lock);
+> @@ -1858,7 +1914,7 @@ static int shmem_setxattr(struct dentry
+>        if (size == 0)
+>                value = "";  /* empty EA, do not remove */
+>
+> -       return shmem_xattr_set(dentry, name, value, size, flags);
+> +       return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
+>
+>  }
+>
+> @@ -1878,7 +1934,7 @@ static int shmem_removexattr(struct dent
+>        if (err)
+>                return err;
+>
+> -       return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
+> +       return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
+>  }
+>
+>  static bool xattr_is_trusted(const char *name)
 
-One tbench server/client pair was run on same host 5 times (with
-fs-cache being purged each time) and avg of 5 run for various cases
-noted below:
-
-Case A : HT enabled (24 logical CPUs)
-
-Thr'put	 : 168.166 MB/s (SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
-Thr'put	 : 169.564 MB/s (SD_SHARE_PKG_RESOURCES + SD_BALANCE_WAKE at mc/smt)
-Thr'put	 : 173.151 MB/s (!SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
-
-Case B : HT disabled (12 logical CPUs)
-
-Thr'put	 : 167.977 MB/s (SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
-Thr'put	 : 167.891 MB/s (SD_SHARE_PKG_RESOURCES + SD_BALANCE_WAKE at mc)
-Thr'put	 : 173.801 MB/s (!SD_SHARE_PKG_RESOURCES + !SD_BALANCE_WAKE)
-
-Observations:
-
-a. ~3% improvement seen with SD_SHARE_PKG_RESOURCES disabled, which I guess 
-  reflects the cost of waking to a cold L2 cache.
-
-b. No degradation seen with SD_BALANCE_WAKE enabled at mc/smt domains
-
-IMO we need to detect tbench type paired wakeups as synchronous case, in
-which case blindly wakeup the task to cur_cpu (as cost of L2 cache miss
-could outweight the cost of any reduced scheduling latencies).
-
-IOW select_task_rq_fair() needs to be given better hint as to whether L2
-cache has been made warm by someone (interrupt handler or a producer
-task), in which case (consumer) task needs to be woken in the same L2 cache
-domain (i.e on cur_cpu itself)?
-
-- vatsa
-
+/Jarkko
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
