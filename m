@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2BYFbI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 00:31:08 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36764 "EHLO
+	id S1752793Ab2BYFeK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 00:34:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62397 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab2BYFbG (ORCPT
+	with ESMTP id S1751206Ab2BYFeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 00:31:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.141.10 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F487215.7000307@openvz.org>
-Date: Sat, 25 Feb 2012 09:31:01 +0400
+	Sat, 25 Feb 2012 00:34:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.117.4 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F4872CC.1000702@openvz.org>
+Date: Sat, 25 Feb 2012 09:34:04 +0400
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
 CC: Hugh Dickins <hughd@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andi Kleen <andi@firstfloor.org>
 Subject: Re: [PATCH v3 00/21] mm: lru_lock splitting
-References: <20120223133728.12988.5432.stgit@zurg> <20120225111515.1275e04c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120225111515.1275e04c.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <20120223133728.12988.5432.stgit@zurg> <1330128354.13358.43.camel@schen9-DESK>
+In-Reply-To: <1330128354.13358.43.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 23 Feb 2012 17:51:36 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
+Tim Chen wrote:
+> On Thu, 2012-02-23 at 17:51 +0400, Konstantin Khlebnikov wrote:
 >> v3 changes:
 >> * inactive-ratio reworked again, now it always calculated from from scratch
 >> * hierarchical pte reference bits filter in memory-cgroup reclaimer
@@ -45,85 +44,20 @@ KAMEZAWA Hiroyuki wrote:
 >>
 >> git: https://github.com/koct9i/linux/commits/lruvec-v3
 >>
->
-> I wonder.... I just wonder...if we can split a lruvec in a zone into small
-> pieces of lruvec and have splitted LRU-lock per them, do we need per-memcg-lrulock ?
-
-What per-memcg-lrulock? I don't have it.
-last patch splits lruvecs in memcg with the same factor.
-
->
-> It seems per-memcg-lrulock can be much bigger lock than small-lruvec-lock.
-> (depends on configuraton) and much more complicated..and have to take care
-> of many things.. If unit of splitting can be specified by boot option,
-> it seems admins can split a big memcg's per-memcg-lru lock into more small pieces.
-
-lruvec count per memcg can be arbitrary and changeable if cgroup is empty.
-This is not in this patch, but it's really easy.
-
->
-> BTW, how to think of default size of splitting ? I wonder splitting lru into
-> the number of cpus per a node can be a choice. Each cpu may have a chance to
-> set prefered-pfn-range at page allocation with additional patches.
-
-If we rework page to memcg linking and add direct lruvec-id into page->flags,
-we will able to change lruvec before inserting page to lru.
-Thus each cpu will always insert pages into its own lruvec in zone.
-I have not thought about races yet, but this would be perfect solution.
-
->
-> Thanks,
-> -Kame
->
->
 >> ---
->>
->> Konstantin Khlebnikov (21):
->>        memcg: unify inactive_ratio calculation
->>        memcg: make mm_match_cgroup() hirarchical
->>        memcg: fix page_referencies cgroup filter on global reclaim
->>        memcg: use vm_swappiness from target memory cgroup
->>        mm: rename lruvec->lists into lruvec->pages_lru
->>        mm: lruvec linking functions
->>        mm: add lruvec->pages_count
->>        mm: unify inactive_list_is_low()
->>        mm: add lruvec->reclaim_stat
->>        mm: kill struct mem_cgroup_zone
->>        mm: move page-to-lruvec translation upper
->>        mm: push lruvec into update_page_reclaim_stat()
->>        mm: push lruvecs from pagevec_lru_move_fn() to iterator
->>        mm: introduce lruvec locking primitives
->>        mm: handle lruvec relocks on lumpy reclaim
->>        mm: handle lruvec relocks in compaction
->>        mm: handle lruvec relock in memory controller
->>        mm: add to lruvec isolated pages counters
->>        memcg: check lru vectors emptiness in pre-destroy
->>        mm: split zone->lru_lock
->>        mm: zone lru vectors interleaving
->>
->>
->>   include/linux/huge_mm.h    |    3
->>   include/linux/memcontrol.h |   75 ------
->>   include/linux/mm.h         |   66 +++++
->>   include/linux/mm_inline.h  |   19 +-
->>   include/linux/mmzone.h     |   39 ++-
->>   include/linux/swap.h       |    6
->>   mm/Kconfig                 |   16 +
->>   mm/compaction.c            |   31 +--
->>   mm/huge_memory.c           |   14 +
->>   mm/internal.h              |  204 +++++++++++++++++
->>   mm/ksm.c                   |    2
->>   mm/memcontrol.c            |  343 +++++++++++-----------------
->>   mm/migrate.c               |    2
->>   mm/page_alloc.c            |   70 +-----
->>   mm/rmap.c                  |    2
->>   mm/swap.c                  |  217 ++++++++++--------
->>   mm/vmscan.c                |  534 ++++++++++++++++++++++++--------------------
->>   mm/vmstat.c                |    6
->>   18 files changed, 932 insertions(+), 717 deletions(-)
->>
->> --
->> Signature
->>
+>
+> I am seeing an improvement of about 7% in throughput in a workload where
+> I am doing parallel reading of files that are mmaped. The contention on
+> lru_lock used to be 13% in the cpu profile on the __pagevec_lru_add code
+> path. Now lock contention on this path drops to about 0.6%.  I have 40
+> hyper-threaded enabled cpu cores running 80 mmaped file reading
+> processes.
+>
+> So initial testing of this patch set looks encouraging.
+
+That's great!
+
+>
+> Tim
 >
 
