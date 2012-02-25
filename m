@@ -1,126 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab2BYX36 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 18:29:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42353 "EHLO ogre.sisk.pl"
+	id S1751408Ab2BYXjx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 18:39:53 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:42364 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab2BYX35 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 18:29:57 -0500
+	id S1750801Ab2BYXjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 18:39:51 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while event queue is not empty
-Date: Sun, 26 Feb 2012 00:33:55 +0100
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: Re: [RFC PATCH] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
+Date: Sun, 26 Feb 2012 00:43:50 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Matt Helsley <matthltc@us.ibm.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <20120224051649.GB7666@count0.beaverton.ibm.com> <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
-In-Reply-To: <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com
+References: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com> <CAJ0PZbT4Sux6a8keUrDvinkQ9Q9L+99qbyDda04TKTc0VXEq4A@mail.gmail.com>
+In-Reply-To: <CAJ0PZbT4Sux6a8keUrDvinkQ9Q9L+99qbyDda04TKTc0VXEq4A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202260033.55556.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202260043.51118.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 25, 2012, Arve Hjønnevåg wrote:
-> On Thu, Feb 23, 2012 at 9:16 PM, Matt Helsley <matthltc@us.ibm.com> wrote:
-> > On Wed, Feb 22, 2012 at 12:34:58AM +0100, Rafael J. Wysocki wrote:
-> >> From: Arve Hjønnevåg <arve@android.com>
-> >>
-> >> Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
-> >> an evdev client event queue, such that it will be active whenever the
-> >> queue is not empty.  Then, all events in the queue will be regarded
-> >> as wakeup events in progress and pm_get_wakeup_count() will block (or
-> >> return false if woken up by a signal) until they are removed from the
-> >> queue.  In consequence, if the checking of wakeup events is enabled
-> >> (e.g. throught the /sys/power/wakeup_count interface), the system
-> >> won't be able to go into a sleep state until the queue is empty.
-> >>
-> >> This allows user space processes to handle situations in which they
-> >> want to do a select() on an evdev descriptor, so they go to sleep
-> >> until there are some events to read from the device's queue, and then
-> >> they don't want the system to go into a sleep state until all the
-> >> events are read (presumably for further processing).  Of course, if
-> >> they don't want the system to go into a sleep state _after_ all the
-> >> events have been read from the queue, they have to use a separate
-> >> mechanism that will prevent the system from doing that and it has
-> >> to be activated before reading the first event (that also may be the
-> >> last one).
+On Tuesday, February 14, 2012, MyungJoo Ham wrote:
+> On Tue, Feb 14, 2012 at 11:26 AM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> > 1. CPU_DMA_THROUGHPUT
 > >
-> > I haven't seen this idea mentioned before but I must admit I haven't
-> > been following this thread too closely so apologies (and don't bother
-> > rehashing) if it has:
+> > This might look simliar to CPU_DMA_LATENCY. However, there are H/W
+> > blocks that creates QoS requirement based on DMA throughput, not
+> > latency, while their (those QoS requester H/W blocks) services are
+> > short-term bursts that cannot be effectively responsed by DVFS
+> > mechanisms (CPUFreq and Devfreq).
 > >
-> > Could you just add this to epoll so that any fd userspace chooses would be
-> > capable of doing this without introducing potentially ecclectic ioctl
-> > interfaces?
+> > In the Exynos4412 systems that are being tested, such H/W blocks include
+> > MFC (multi-function codec)'s decoding and enconding features, TV-out
+> > (including HDMI), and Cameras. When the display is operated at 60Hz,
+> > each chunk of task should be done within 16ms and the workload on DMA is
+> > not well spread and fluctuates between frames; some frame requires more
+> > and some do not and within a frame, the workload also fluctuates
+> > heavily and the tasks within a frame are usually not parallelized; they
+> > are processed through specific H/W blocks, not CPU cores. They often
+> > have PPMU capabilities; however, they need to be polled very frequently
+> > in order to let DVFS mechanisms react properly. (less than 5ms).
 > >
-> 
-> This is an interesting idea, but I'm not sure how well it would work.
-> 
-> I looked at the epoll code and it looks like it is possible to
-> activate the wakeup-source from the wait queue function it uses.
-
-I'm not sure I'm following you here.  How exactly would you like to do that?
-
-In particular, what data structure would the wakeup source object be
-associated with?
-
-> The epoll callback will happen without holding evdev client buffer_lock,
-> so the wakeup-source and buffer state will not always be in sync (this
-> may be OK, but require more thought). This callback is also called if
-> no data was added to the queue we are polling on because another
-> client has grabbed the input device (is this a bug or intended?).
-> 
-> There is no call into the epoll code when input queue is emptied, so
-> we can't deactivate the wakeup-source until epoll_wait is called
-> again. This also should be workable, but result in different stats.
-> 
-> It does not look like the normal poll and select interfaces can be
-> extended the same way (since they remove themselves from the
-> wait-queue before returning to user-space), so user-space has to be
-> changed to use epoll even if select or poll would be a better fit.
-
-Well, epoll without EPOLLET is equivalent to poll, so the only potential
-issue is select.  How serious may the problem with that be?
-
-> I don't know how many other drivers this would work for. The input
-> driver will wake up user-space from the same thread or interrupt
-> handler that queued the event, but other drivers may defer this to
-> another thread which makes an epoll wakeup-source insufficient.
-
-If we go for new ioctls insread, we'll have to add them to all of those
-drivers, so I would prefer the epoll-based approach if that's viable at
-least for a subset of the relevant drivers.
-
-> ...
-> >> +     snprintf(name, sizeof(name), "%s-%d",
-> >> +              dev_name(&evdev->dev), task_tgid_vnr(current));
+> > For such specific tasks, allowing them to request QoS requirements seems
+> > adequete because DVFS mechanisms (as long as the polling rate is 5ms or
+> > longer) cannot follow up with them. Besides, the device drivers know
+> > when to request and cancel QoS exactly.
 > >
-> > This does not look like it will work well with tasks in different pid
-> > namespaces. What should happen, I think, is the wakeup_source should hold a
-> > reference to either the struct pid of current or current itself. Then
-> > when someone reads the file you should get the pid vnr in the reader's
-> > pid namespace. That way instead of a bogus pid vnr 0 would show up if
-> > "current" here is not in the reader's pid namepsace.
+> > 2. DVFS_LATENCY
 > >
+> > Both CPUFreq and Devfreq have response latency to a sudden workload
+> > increase. With near-100% (e.g., 95%) up-threshold, the average response
+> > latency is approximately 1.5 x polling-rate.
+> >
+> > A specific polling rate (e.g., 100ms) may generally fit for its system;
+> > however, there could be exceptions for that. For example,
+> > - When a user input suddenly starts: typing, clicking, moving cursors, and
+> >  such, the user might need the full performance immediately. However,
+> >  we do not know whether the full performance is actually needed or not
+> >  until we calculate the utilization; thus, we need to calculate it
+> >  faster with user inputs or any similar events. Specifying QoS on CPU
+> >  processing power or Memory bandwidth at every user input is an
+> >  overkill because there are many cases where such speed-up isn't
+> >  necessary.
+> > - When a device driver needs a faster performance response from DVFS
+> >  mechanism. This could be addressed by simply putting QoS requests.
+> >  However, such QoS requests may keep the system running fast
+> >  unnecessary in some cases, especially if a) the device's resource
+> >  usage bursts with some duration (e.g., 100ms-long bursts) and
+> >  b) the driver doesn't know when such burst come. MMC/WiFi often had
+> >  such behaviors although there are possibilities that part (b) might
+> >  be addressed with further efforts.
+> >
+> > The cases shown above can be tackled with putting QoS requests on the
+> > response time or latency of DVFS mechanism, which is directly related to
+> > its polling interval (if the DVFS mechanism is polling based).
+> >
+> > Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> The pid here is only used for debugging purposes, and used less than
-> the dev_name. I don't think tracking pid namespaces is worth the
-> trouble here, so if this is a real problem we can just drop the pid
-> from the name for now.
+> In this PM-QoS patch, register_pm_qos_misc() for the new classes in
+> pm_qos_power_init() is missing.
+> 
+> Those will be included in the next version of the patch.
 
-OK
+Has the new version been posted already?  I seem to have missed it if so.
 
 Thanks,
 Rafael
