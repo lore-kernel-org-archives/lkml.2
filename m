@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab2BYWVc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 17:21:32 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50775 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700Ab2BYWVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 17:21:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.190.8 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Sun, 26 Feb 2012 07:21:13 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120225222113.GE3401@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1330036246-21633-1-git-send-email-tj@kernel.org>
- <20120223144336.58742e1b.akpm@linux-foundation.org>
- <20120223230123.GL22536@google.com>
- <20120223231204.GM22536@google.com>
- <20120225034432.GA18391@redhat.com>
- <20120225214641.GB3401@dhcp-172-17-108-109.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120225214641.GB3401@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756947Ab2BYWsL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 17:48:11 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:50174 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756186Ab2BYWsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 17:48:10 -0500
+Date: Sat, 25 Feb 2012 23:48:04 +0100
+From: Florian Mickler <florian@mickler.org>
+To: "werner" <w.landgraf@ru.ru>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel-testers@vger.kernel.org, maciej.rutecki@gmail.com
+Subject: Re: [Bug #42669] 3.3-rc1: compiling problems nvme , l2cap_sock ,
+ mc13892-regulator , and snd-pcsp don't work
+Message-ID: <20120225234804.5461de60@schatten.dmk.lab>
+In-Reply-To: <web-701939672@zbackend1.aha.ru>
+References: <qCQH7HfZS8E.A.FVG.M9rRPB@chimera>
+	<20120223.181904.501214130038312055.davem@davemloft.net>
+	<web-701709481@zbackend1.aha.ru>
+	<20120224.145737.662334352795127267.davem@davemloft.net>
+	<web-701939672@zbackend1.aha.ru>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 06:46:41AM +0900, Tejun Heo wrote:
-> Hello,
+On Fri, 24 Feb 2012 17:55:07 -0400
+"werner" <w.landgraf@ru.ru> wrote:
+
 > 
-> On Fri, Feb 24, 2012 at 10:44:32PM -0500, Vivek Goyal wrote:
-> > Booting with blkcg-stacking branch and changing io scheduler from cfq to
-> > deadline oopsed.
 > > 
-> > login: [   67.382768] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-> > [   67.383037] CPU 1 
-> > [   67.383037] Modules linked in: floppy [last unloaded: scsi_wait_scan]
-> > [   67.383037] 
-> > [   67.383037] Pid: 4763, comm: bash Not tainted 3.3.0-rc3-tejun-misc+ #6 Hewlett-Packard HP xw6600 Workstation/0A9Ch
-> > [   67.383037] RIP: 0010:[<ffffffff81311793>]  [<ffffffff81311793>] cfq_put_queue+0xb3/0x1d0
+> >> This things happens, because people, after changes, nor 
+> >>compile them
+> >> subroutines ...  :( Much less, test them ...
+> > 
 > 
-> Hmmm... weird.  Looking into it.  I'm away from office for a week and
-> will probably be slow.
+> 
+> In -rc1 were compilation errors in several subroutines, 
+> and almost none of them was fixed until -rc4 .
+> 
+> And:  that's a steady problem (although I bacame tired ond 
+> report only exceptionally about this).
+> 
+> Generally, people, after patching something, at least 
+> should try to compile the subroutine !!!!!!!!!!!!!!
 
-It won't reproduce here.  Can you please explain how to trigger it?
-Can you please also run addr2line on the oops address?
+And as David just told you, it compiles fine for him without the fix.
 
-Thanks.
+Should every developer test every available toolchain combination?
 
--- 
-tejun
+> 
+> 
+> W.Landgraf
+> ---
+> Professional hosting for everyone - http://www.host.ru
