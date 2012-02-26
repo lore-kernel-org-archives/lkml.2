@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab2BZUFR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 15:05:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57841 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab2BZUFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 15:05:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.175.36 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
+	id S1752857Ab2BZUUv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 15:20:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752430Ab2BZUUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 15:20:49 -0500
+Date: Sun, 26 Feb 2012 15:20:10 -0500
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        n-horiguchi@ah.jp.nec.com, kamezawa.hiroyu@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org
+Subject: Re: Regression: Bad page map in process xyz
+Message-ID: <20120226202010.GA7353@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Jiri Slaby <jslaby@suse.cz>, n-horiguchi@ah.jp.nec.com,
+	kamezawa.hiroyu@jp.fujitsu.com,
+	Andrew Morton <akpm@linux-foundation.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org
+References: <4F421A29.6060303@suse.cz>
+ <201202261027.48029.maciej.rutecki@gmail.com>
+ <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
 MIME-Version: 1.0
-Date: Sun, 26 Feb 2012 21:05:15 +0100
-Message-ID: <CAKL7Q7o9HYjw-C4JK9JHwMC-k6uM373UkfxT5D5nv_k07SY-Bw@mail.gmail.com>
-Subject: [PATCH] Use BIOS Keyboard variable to set Numlock
-From: "Joshua C." <joshuacov@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a discussion back in 2007 about using a BIOS Keyboard
-variable to set the Numlock state. It's available here:
-http://lkml.indiana.edu/hypermail/linux/kernel/0707.1/1834.html. I
-know the pros and cons that were mentioned back then and decided to
-modified the porposed patch so that it provies a kernel parameter
-"numlock" which allows to manually disable the NumLock state even if
-it is set by the bios. In this case all users without a separeta block
-can just pass the parameter in grub and won't be affected by the
-change. I know that windows doesn't override the state set by the bios
-and would like to see the same behavoir also in linux. Here is the
-modified patch by Bodo Eggert rebased on the current kernel-3.2.7:
+On Sun, Feb 26, 2012 at 05:10:31AM -0800, Hugh Dickins wrote:
+ > On Sun, 26 Feb 2012, Maciej Rutecki wrote:
+ > > On poniedziałek, 20 lutego 2012 o 11:02:17 Jiri Slaby wrote:
+ > > > Hi,
+ > > > 
+ > > > I'm getting a ton of
+ > > > BUG: Bad page map in process zypper  pte:676b700029736c6f pmd:44967067
+ > > > when trying to upgrade the system by:
+ > > > zypper dup
+ > > > 
+ > > > I bisected that to:
+ > > > commit afb1c03746aa940374b73a7d5750ee05a2376077
+ > > > Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+ > > > Date:   Fri Feb 17 10:57:58 2012 +1100
+ > > > 
+ > > >     thp: optimize away unnecessary page table locking
+ > > > 
+ > > > thanks,
+ > > 
+ > > I created a Bugzilla entry at 
+ > > https://bugzilla.kernel.org/show_bug.cgi?id=42820
+ > > for your bug/regression report, please add your address to the CC list in 
+ > > there, thanks!
+ > 
+ > No, thanks for spotting it, but please remove from the regressions
+ > report: it's not a regression in 3.3-rc but in linux-next - don't take
+ > my word for it, check the commit and you'll not find it in 3.3-rc.
+ > 
+ > We do still need to get the fix into linux-next: Horiguchi-san, has
+ > akpm put your fix in mm-commits yet?  Please send it again if not.
 
-----------------
+FWIW, we've been getting a bunch of these since 3.0 in Fedora.
+I've been trying to come up with some way of trying to reproduce them
+myself, without any luck. Some of our users seem to hit them surprisingly easily.
 
---- a/drivers/tty/vt/keyboard.c	2012-02-26 20:30:14.895899072 +0100
-+++ b/drivers/tty/vt/keyboard.c	2012-02-26 20:29:24.359896510 +0100
-@@ -24,6 +24,7 @@
+At first I started wondering if it was just bad hardware, but the frequency
+that we've been getting reports seems to suggest something more screwed up.
 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=MODIFIED&bug_status=ON_DEV&bug_status=ON_QA&bug_status=VERIFIED&bug_status=RELEASE_PENDING&bug_status=POST&classification=Fedora&component=kernel&product=Fedora&query_format=advanced&short_desc=bug+page+map&short_desc_type=allwordssubstr&version=15&version=16&version=rawhide&order=bug_id&query_based_on=
 
-+#include <asm/io.h>
- #include <linux/consolemap.h>
- #include <linux/module.h>
- #include <linux/sched.h>
-@@ -59,7 +60,13 @@
-  * to be used for numbers.
-  */
+Until last week, we only had reports up until 3.2, but now that the F17 alpha
+is getting tested, people are starting to hit it on 3.3rc too
 
--#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
-defined(CONFIG_KEYBOARD_HIL_OLD))
-+#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
-+/* KBD_DEFLEDS is a variable */
-+#undef KBD_DEFLEDS
-+	static int numlock = 1;
-+	MODULE_PARM_DESC(numlock, "Toggle Numlock (1 = enable, 0 = disable)");
-+	module_param_named(numlock, numlock, int, 0400);
-+#elif defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
-defined(CONFIG_KEYBOARD_HIL_OLD))
- #define KBD_DEFLEDS (1 << VC_NUMLOCK)
- #else
- #define KBD_DEFLEDS 0
-@@ -1432,7 +1439,17 @@
- {
- 	int i;
- 	int error;
--
-+	
-+#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
-+	int KBD_DEFLEDS = 0;
-+	/* address 0x40:0x17 */
-+	char * bios_kbd_status=xlate_dev_mem_ptr(0x417);
-+	
-+	/* Numlock status bit set? */
-+	if ((*bios_kbd_status & 0x20) && numlock)
-+	KBD_DEFLEDS = 1 << VC_NUMLOCK;
-+#endif
-+	
-         for (i = 0; i < MAX_NR_CONSOLES; i++) {
- 		kbd_table[i].ledflagstate = KBD_DEFLEDS;
- 		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
---- a/drivers/input/keyboard/Kconfig	2012-02-26 20:35:38.941915542 +0100
-+++ b/drivers/input/keyboard/Kconfig	2012-02-26 20:38:40.890924803 +0100
-@@ -84,6 +84,20 @@
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called atkbd.
+I'll try a test build with that commit backed out for our users to try out
+next week.
 
-+config KBD_DEFLEDS_PCBIOS
-+	bool "Enable Num-Lock based on BIOS settings"
-+	depends on KEYBOARD_ATKBD && X86
-+	default y
-+	help
-+	  Turns on Numlock depending on the BIOS settings.
-+	  This works by reading the BIOS data area as defined for IBM PCs (1981).
-+	  You can also controll the NumLock state with the kernel parameter
-+	  numlock (1 = enable, 0 = disable).
-+
-+	  If you have an alternative firmware like OpenFirmware or LinuxBios,
-+	  this flag might not be set correctly, which results in a random state
-+	  of the Numlock key.
-+
- config KEYBOARD_ATKBD_HP_KEYCODES
- 	bool "Use HP keyboard scancodes"
- 	depends on PARISC && KEYBOARD_ATKBD
+	Dave
 
-------
