@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab2BZPaU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 10:30:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab2BZP3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 10:29:44 -0500
-Date: Sun, 26 Feb 2012 16:29:39 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ian Kent <raven@themaw.net>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] autofs: MAINTAINERS: change mailing list
-Message-ID: <20120226152938.GB14324@redhat.com>
+	id S1751294Ab2BZP3m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 10:29:42 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:47005 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2BZP3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 10:29:41 -0500
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Alq2ACpPSk9V5qjTPGdsb2JhbABDiX6oJwOBBRkBAQEBNzSBcwEBBAE6HCMQCANGFCUKGogUCbZsE4pXgjgpAgoBBgsCBgcMFAMDAwKEQwgBATsKCRIKgw5jBJU8hW2NAw
+X-IronPort-AV: E=Sophos;i="4.73,485,1325458800"; 
+   d="scan'208";a="274601569"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 26 Feb 2012 16:29:48 +0100
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: Richard Yao <ryao@cs.stonybrook.edu>, Bobby Powers <bobbypowers@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120226152948.GA19463@polaris.bitmath.org>
+References: <20120224201655.GA5994@kroah.com>
+ <20120224203715.GA4995@polaris.bitmath.org>
+ <20120224205651.GA13333@kroah.com>
+ <20120224212238.GA5178@polaris.bitmath.org>
+ <20120224213027.GB15735@thunk.org>
+ <20120224221459.GA5254@polaris.bitmath.org>
+ <CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
+ <20120226104701.GA18152@polaris.bitmath.org>
+ <CABDyM6R72WW6YnpNs+EQktaXN_Z_7cxPmABv7ojoLGbmS=+23w@mail.gmail.com>
+ <1330266224.616.48.camel@thorin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1330266224.616.48.camel@thorin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 716305073524cb03760d83374661d9d1f1a20c30 Mon Sep 17 00:00:00 2001
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-Date: Sun, 26 Feb 2012 16:25:29 +0100
-Subject: [PATCH] autofs: MAINTAINERS: change mailing list
+> > > changed, is unimportant. Maybe code, like so many other things,
+> > > arranges itself in a scale-free critical fashion, which would forever
+> 
+> "Code arranges" not itself, but people arrange code the best they see
+> fit.
 
-autofs@linux.kernel.org does not work, replace it by linux-fsdevel
+You seem to have missed the point of that sentence. Go pick on
+somebody else.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > > userspace join the same tree as well. There is however a frofoundly
+> > > political aspect here, which cannot be expressed in terms of
+> > > code. Also, in practise, breaking things down into manageable chunks
+> > > is usually a good idea in the end.
+> 
+> Yes, everybody learns that in the first lecture on programming. Please
+> sent patches to make actually things better and not just talk. Thank
+> you.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 75a9a5f..0d6159e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3780,7 +3780,7 @@ F:	Documentation/kdump/
- 
- KERNEL AUTOMOUNTER v4 (AUTOFS4)
- M:	Ian Kent <raven@themaw.net>
--L:	autofs@linux.kernel.org
-+L:	linux-fsdevel@vger.kernel.org
- S:	Maintained
- F:	fs/autofs4/
- 
--- 
-1.7.1
+I actually do on a regular basis. I wish everybody did.
 
+Thanks.
+Henrik
