@@ -1,187 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab2BZN6r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 08:58:47 -0500
-Received: from mail.windriver.com ([147.11.1.11]:53139 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2BZN6q (ORCPT
+	id S1752366Ab2BZOYI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 09:24:08 -0500
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1395 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751561Ab2BZOYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 08:58:46 -0500
-Message-ID: <4F4A3A8D.7030700@windriver.com>
-Date: Sun, 26 Feb 2012 07:58:37 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Andrei Warkentin <andreiw@vmware.com>
-CC: <kgdb-bugreport@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
-References: <1329522773-21359-1-git-send-email-andreiw@vmware.com> <4F4A2F60.1060700@windriver.com>
-In-Reply-To: <4F4A2F60.1060700@windriver.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/mixed;
-	boundary="------------050806090300030907070201"
+	Sun, 26 Feb 2012 09:24:05 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q1QENfvr015817
+Subject: Re: Can we move device drivers into user-space?
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Richard Yao <ryao@cs.stonybrook.edu>, Bobby Powers <bobbypowers@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Sun, 26 Feb 2012 15:23:42 +0100
+In-Reply-To: <CABDyM6R72WW6YnpNs+EQktaXN_Z_7cxPmABv7ojoLGbmS=+23w@mail.gmail.com>
+References: <20120224191535.GA4505@polaris.bitmath.org>
+	 <20120224192643.GB24120@kroah.com>
+	 <20120224201027.GA4859@polaris.bitmath.org>
+	 <20120224201655.GA5994@kroah.com>
+	 <20120224203715.GA4995@polaris.bitmath.org>
+	 <20120224205651.GA13333@kroah.com>
+	 <20120224212238.GA5178@polaris.bitmath.org>
+	 <20120224213027.GB15735@thunk.org>
+	 <20120224221459.GA5254@polaris.bitmath.org>
+	 <CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
+	 <20120226104701.GA18152@polaris.bitmath.org>
+	 <CABDyM6R72WW6YnpNs+EQktaXN_Z_7cxPmABv7ojoLGbmS=+23w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1330266224.616.48.camel@thorin>
+Mime-Version: 1.0
+X-DCC--Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------050806090300030907070201
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+On Son, 2012-02-26 at 07:26 -0500, Richard Yao wrote:
+> On Sun, Feb 26, 2012 at 5:47 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+[...]
+> > changed, is unimportant. Maybe code, like so many other things,
+> > arranges itself in a scale-free critical fashion, which would forever
 
-On 02/26/2012 07:10 AM, Jason Wessel wrote:
-> On 02/17/2012 05:52 PM, Andrei Warkentin wrote:
->> This fixes the following problems:
->> 1) Typematic-repeat of 'enter' gives warning message.
->> 2) Use of 'keypad enter' gives warning message.
->> 3) Lag on the order of seconds between "break" and "make" when
->>    expecting the enter "break" code. Seen under virtualized
->>    environments such as VMware ESX.
->>
->> Explanations:
->> 1) Holding down 'enter' will not set a repeating sequence
->>    of 0x1c(make)-0x9c(make), but a repeating sequence
->>    of make codes, followed by one break code when the key
->>    is released. Thus, it's wrong to expect the break code
->>    after seeing the 'enter' make code.
->> 2) Keypad enter generates different make/break, namely
->>    0xe0 0x1c and 0xe0 0x9c. The 'generic' logic handles
->>    the 0xe0 escape already, but the special 'enter' logic
->>    always expects '0x9c' and not '0xe0 0x9c', so you get
->>    a warning message, again.
->> 3) When expecting the 'enter' break code, the code polls
->>    the status register in a tight loop, like so -
->>    >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0);
->>
->>    However, it really should do something like -
->>    >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
->>    >     cpu_relax(); /* pause */
->>
->>    Basically, it's a common optimization to have a fast
->>    path for accessing often accessed and slow changing I/O
->>    in a virtualized environment. The tight spinning in KDB
->>    seems to run against the logic by ESX keyboard virtualization
->>    code to detect when the fast path or the slow path should
->>    be used to satisfy the keyboard status read, leading to
->>    multi-second timeouts before the 'real' status comes through.
->>    Without knowing ESX internals, it's hard to say if this is
->>    an ESX bug or not, but letting the VM be explicitely descheduled
->>    seems to resolve the problem. I've seen something similar with
->>    shared MMIO buffers with VMs on Hyper-V.
->>
->>    Anyway, given (3), (2) and (1), we might as well blow away the
->>    entire special casing for 'enter'. The break codes will already
->>    be handled correctly, and we get rid of the bugs with repeat
->>    enters and keypad enter key. And of course, there is no
->>    need to AND with 0x7f when checking for 'enter', because we'll
->>    never ever get to this code with a break code (checked for much
->>    earlier).
->>
->>    I tried to figure out the history behind the 'enter' key special
->>    casing code, and it seems to have come from whatever the original
->>    KDB patch was. Perhaps someone can chime in.
->>
-> 
+"Code arranges" not itself, but people arrange code the best they see
+fit.
 
+> > warrant a monolithic approach. Maybe it would even make sense to have
 
-Andrei, if you agree with the attached patch, I'll put it in the merge queue.  If you find problems we can go another iteration. :-)
+And the Linux kernel is BTW not really that monolitic in the spirit of
+the definition of Tanenbaums book. It's just the category that sucks the
+least there.
 
-Cheers,
-Jason.
+> > userspace join the same tree as well. There is however a frofoundly
+> > political aspect here, which cannot be expressed in terms of
+> > code. Also, in practise, breaking things down into manageable chunks
+> > is usually a good idea in the end.
 
---------------050806090300030907070201
-Content-Type: text/x-diff;
-	name="0001-From-Andrei-Warkentin-andreiw-vmware.com.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="0001-From-Andrei-Warkentin-andreiw-vmware.com.patch"
+Yes, everybody learns that in the first lecture on programming. Please
+sent patches to make actually things better and not just talk. Thank
+you.
 
->From 797a228abdd5d560dddf217572d984b1dce97154 Mon Sep 17 00:00:00 2001
-From: Jason Wessel <jason.wessel@windriver.com>
-Date: Sun, 26 Feb 2012 07:49:16 -0600
-Subject: [PATCH 1/1] From: Andrei Warkentin <andreiw@vmware.com> Subject:
- [PATCH] KDB: Fix usability issues relating to the
- 'enter' key. Date: Sun Feb 26 07:51:01 CST 2012
+> I do not see what prevents an in-kernel context switch into a ring 3
+> context with a different process address space. Is it necessary to
+> remove the code from the kernel tree before someone can do this?
 
-This fixes the following problems:
-1) Typematic-repeat of 'enter' gives warning message.
-2) Use of 'keypad enter' gives warning message.
-3) Lag on the order of seconds between "break" and "make" when
-   expecting the enter "break" code. Seen under virtualized
-   environments such as VMware ESX.
+No, and that's the real problem here: Everybody who might think it's a
+good idea may please implement - and thus propose - something concrete,
+try it out and comeback with experience and performance numbers - and
+not just try to come up with some theory and other misleading points
+(what political aspect?!) and ideas what others should do and why it
+might be better.
 
-Explanations:
-1) Holding down 'enter' will not set a repeating sequence
-   of 0x1c(make)-0x9c(make), but a repeating sequence
-   of make codes, followed by one break code when the key
-   is released. Thus, it's wrong to expect the break code
-   after seeing the 'enter' make code.
-2) Keypad enter generates different make/break, namely
-   0xe0 0x1c and 0xe0 0x9c. The 'generic' logic handles
-   the 0xe0 escape already, but the special 'enter' logic
-   always expects '0x9c' and not '0xe0 0x9c', so you get
-   a warning message, again.
-3) When expecting the 'enter' break code, the code polls
-   the status register in a tight loop, like so -
-   >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0);
-
-   However, it really should do something like -
-   >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
-   >     cpu_relax(); /* pause */
-
-   Basically, it's a common optimization to have a fast
-   path for accessing often accessed and slow changing I/O
-   in a virtualized environment. The tight spinning in KDB
-   seems to run against the logic by ESX keyboard virtualization
-   code to detect when the fast path or the slow path should
-   be used to satisfy the keyboard status read, leading to
-   multi-second timeouts before the 'real' status comes through.
-   Without knowing ESX internals, it's hard to say if this is
-   an ESX bug or not, but letting the VM be explicitely descheduled
-   seems to resolve the problem. I've seen something similar with
-   shared MMIO buffers with VMs on Hyper-V.
-
-Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
-[jason.wessel@windriver.com: use cpu_relax() and remove expected msg]
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_keyboard.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_keyboard.c b/kernel/debug/kdb/kdb_keyboard.c
-index 4bca634..0351d0c 100644
---- a/kernel/debug/kdb/kdb_keyboard.c
-+++ b/kernel/debug/kdb/kdb_keyboard.c
-@@ -183,7 +183,7 @@ int kdb_get_kbd_char(void)
- 		 * enter key.  All done.  Absorb the release scancode.
- 		 */
- 		while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
--			;
-+			cpu_relax();
- 
- 		/*
- 		 * Fetch the scancode
-@@ -192,18 +192,11 @@ int kdb_get_kbd_char(void)
- 		scanstatus = inb(KBD_STATUS_REG);
- 
- 		while (scanstatus & KBD_STAT_MOUSE_OBF) {
-+			cpu_relax();
- 			scancode = inb(KBD_DATA_REG);
- 			scanstatus = inb(KBD_STATUS_REG);
- 		}
- 
--		if (scancode != 0x9c) {
--			/*
--			 * Wasn't an enter-release,  why not?
--			 */
--			kdb_printf("kdb: expected enter got 0x%x status 0x%x\n",
--			       scancode, scanstatus);
--		}
--
- 		return 13;
- 	}
- 
+	Bernd
 -- 
-1.7.5.4
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
-
---------------050806090300030907070201--
