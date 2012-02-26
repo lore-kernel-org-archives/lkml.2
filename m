@@ -1,201 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab2BZLEL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 06:04:11 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40875 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071Ab2BZLEI (ORCPT
+	id S1751212Ab2BZLnz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 06:43:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51468 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2BZLnw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 06:04:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6631"; a="166588748"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: axboe@kernel.dk, ygardi@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 2/2] mmc: card: Adding support for Sanitize in eMMC v4.5
-Date: Sun, 26 Feb 2012 13:03:05 +0200
-Message-Id: <1330254185-2428-3-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1330254185-2428-1-git-send-email-ygardi@codeaurora.org>
-References: <1330254185-2428-1-git-send-email-ygardi@codeaurora.org>
+	Sun, 26 Feb 2012 06:43:52 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20120225145115.GB22460@alea.gnuu.de>
+Date: Sun, 26 Feb 2012 12:43:49 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3E36BEF4-E15F-410A-82C1-A8EB17AEF0DA@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20120220173844.GA2546@alea.gnuu.de> <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de> <20120221083213.GA19059@alea.gnuu.de> <20120225145115.GB22460@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
----
- drivers/mmc/card/block.c |   52 ++++++++++++++++++++++++++++++++++++++--------
- drivers/mmc/card/queue.c |   10 ++++++++-
- include/linux/mmc/card.h |    7 ++++++
- include/linux/mmc/host.h |    1 +
- 4 files changed, 60 insertions(+), 10 deletions(-)
+On 25.02.2012, at 15:51, Jörg Sommer wrote:
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 0c959c9..d76b20e 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -830,6 +830,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
+> Jörg Sommer hat am Tue 21. Feb, 09:32 (+0100) geschrieben:
+>> Alexander Graf hat am Mon 20. Feb, 22:27 (+0100) geschrieben:
+>>> On 20.02.2012, at 18:38, Jörg Sommer wrote:
+>>>> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
+>>>>> On 22.11.2011, at 21:04, Jörg Sommer wrote:
+>>>>>> [1] »kernel BUG at include/linux/kvm_host.h:603!«
+>>>>>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
+>>>>> 
+>>>>> This is unfortunately still there. It's because of preemption being
+>>>>> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
+>>>> 
+>>>> This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getting
+>>>> this Oops, when I start qemu.
+>>> 
+>>> Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I
+>>> fixed a bunch of things with preemption since then and it definitely
+>>> worked for me. If it still fails in that tree, I can try again to
+>>> reproduce it :).
+>> 
+>> This kernel (e9badff4b38a3f8b2c20aa8a30db210caf85a497) fails to build:
+>> 
+>>  CC [M]  arch/powerpc/kvm/book3s_pr.o
+>> arch/powerpc/kvm/book3s_pr.c: In function ‘kvm_vcpu_ioctl_get_one_reg’:
+>> arch/powerpc/kvm/book3s_pr.c:883:45: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:80: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:284: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:327: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:459: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:748: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:1112: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:1476: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:883:1867: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c: In function ‘kvm_vcpu_ioctl_set_one_reg’:
+>> arch/powerpc/kvm/book3s_pr.c:898:79: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:114: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:319: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:364: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:502: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:591: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> arch/powerpc/kvm/book3s_pr.c:898:2061: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>> cc1: all warnings being treated as errors
+>> make[3]: *** [arch/powerpc/kvm/book3s_pr.o] Fehler 1
+>> make[2]: *** [arch/powerpc/kvm] Fehler 2
+>> make[2]: *** Warte auf noch nicht beendete Prozesse...
+> 
+> The culprit is this patch:
+> 
+> commit 784f1782e3c9cab310d6c513df966c547c3f17aa
+> Author: Alexander Graf <agraf@suse.de>
+> Date:   Wed Sep 14 21:45:23 2011 +0200
+> 
+>    KVM: PPC: Add support for explicit HIOR setting
+> 
+>    Until now, we always set HIOR based on the PVR, but this is just wrong.
+>    Instead, we should be setting HIOR explicitly, so user space can decide
+>    what the initial HIOR value is - just like on real hardware.
+> 
+>    We keep the old PVR based way around for backwards compatibility, but
+>    once user space uses the SET_ONE_REG based method, we drop the PVR logic.
+> 
+>    Signed-off-by: Alexander Graf <agraf@suse.de>
+> 
+> diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
+> index 089c61b..5985209 100644
+> --- a/arch/powerpc/kvm/powerpc.c
+> +++ b/arch/powerpc/kvm/powerpc.c
+> @@ -212,6 +212,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>        case KVM_CAP_PPC_BOOKE_SREGS:
+> #else
+>        case KVM_CAP_PPC_SEGSTATE:
+> +       case KVM_CAP_PPC_HIOR:
+>        case KVM_CAP_PPC_PAPR:
+> #endif
+>        case KVM_CAP_PPC_UNSET_IRQ:
+> @@ -652,6 +653,11 @@ static int kvm_vcpu_ioctl_get_one_reg(struct kvm_vcpu *vcpu,
+>        int r = -EINVAL;
+> 
+>        switch (reg->id) {
+> +#ifdef CONFIG_PPC_BOOK3S
+> +       case KVM_REG_PPC_HIOR:
+> +               r = put_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
+> +               break;
+> +#endif
+>        default:
+>                break;
+>        }
+> @@ -665,6 +671,13 @@ static int kvm_vcpu_ioctl_set_one_reg(struct kvm_vcpu *vcpu,
+>        int r = -EINVAL;
+> 
+>        switch (reg->id) {
+> +#ifdef CONFIG_PPC_BOOK3S
+> +       case KVM_ONE_REG_PPC_HIOR:
+> +               r = get_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
+> +               if (!r)
+> +                       to_book3s(vcpu)->hior_explicit = true;
+> +               break;
+> +#endif
+>        default:
+>                break;
+>        }
+> 
+> Later, this code was moved to arch/powerpc/kvm/book3s_pr.c by
+> 
+> commit c6afb78d175ae6cf99f4191fbb258e54478b0371
+> Author: Paul Mackerras <paulus@samba.org>
+> Date:   Mon Dec 12 12:26:50 2011 +0000
+> 
+>    KVM: PPC: Move kvm_vcpu_ioctl_[gs]et_one_reg down to platform-specific code
+
+Yikes. Does this patch work for you?
+
+
+
+diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
+index ee222ec..f329eae 100644
+--- a/arch/powerpc/kvm/book3s_pr.c
++++ b/arch/powerpc/kvm/book3s_pr.c
+@@ -880,7 +880,8 @@ int kvm_vcpu_ioctl_get_one_reg(struct kvm_vcpu *vcpu, struct kvm_one_reg *reg)
  
-+	/* 1ST priority is DISCARD.
-+	   2ND is TRIM
-+	   3RD is ERASE */
- 	if (mmc_can_discard(card))
- 		arg = MMC_DISCARD_ARG;
- 	else if (mmc_can_trim(card))
-@@ -868,18 +871,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 	unsigned int from, nr, arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
+        switch (reg->id) {
+        case KVM_REG_PPC_HIOR:
+-               r = put_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
++               r = put_user(to_book3s(vcpu)->hior,
++                            (u64 __user *)(long)reg->addr);
+                break;
+        default:
+                break;
+@@ -895,7 +896,8 @@ int kvm_vcpu_ioctl_set_one_reg(struct kvm_vcpu *vcpu, struct kvm_one_reg *reg)
  
--	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-+	if (!(mmc_can_secure_erase_trim(card))) {
- 		err = -EOPNOTSUPP;
- 		goto out;
- 	}
- 
--	/* The sanitize operation is supported at v4.5 only */
--	if (mmc_can_sanitize(card)) {
--		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
--				EXT_CSD_SANITIZE_START, 1, 0);
--		goto out;
--	}
--
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
-@@ -922,6 +918,38 @@ out:
- 	return err ? 0 : 1;
- }
- 
-+int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-+			       struct request *req)
-+{
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int err = 0;
-+
-+	if (!(mmc_can_sanitize(card) && (mq->card->host->caps2 & MMC_CAP2_SANITIZE))) {
-+		pr_err("%s: SANITIZE is not supported", __func__);
-+		err = -EOPNOTSUPP;
-+		goto out;
-+	}
-+
-+	mmc_sd_card_set_sanitize_in_progress(card);
-+
-+	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_SANITIZE_START, 1, 0);
-+
-+	if (err)
-+		pr_err("%s: mmc%d: mmc_switch() failed. err=%d\n",
-+		       __func__, card->host->index, err);
-+
-+	mmc_sd_card_set_sanitize_completed(card);
-+
-+out:
-+	spin_lock_irq(&md->lock);
-+	__blk_end_request(req, err, blk_rq_bytes(req));
-+	spin_unlock_irq(&md->lock);
-+
-+	return err ? 0 : 1;
-+}
-+
- static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
- {
- 	struct mmc_blk_data *md = mq->data;
-@@ -1379,7 +1407,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		goto out;
- 	}
- 
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_SANITIZE) {
-+		/* complete ongoing async transfer before issuing sanitize */
-+		if (card->host && card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
-+		ret = mmc_blk_issue_sanitize_rq(mq, req);
-+	} else if (req && req->cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1396,6 +1429,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		ret = mmc_blk_issue_rw_rq(mq, req);
- 	}
- 
-+
- out:
- 	if (!req)
- 		/* release host only when there are no more requests */
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index dcad59c..ad6605d 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -140,10 +140,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
- 	/* granularity must not be greater than max. discard */
- 	if (card->pref_erase > max_discard)
- 		q->limits.discard_granularity = 0;
--	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-+	if (mmc_can_secure_erase_trim(card))
- 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
- }
- 
-+static void mmc_queue_setup_sanitize(struct request_queue *q)
-+{
-+	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
-+}
-+
- /**
-  * mmc_init_queue - initialise a queue structure.
-  * @mq: mmc queue
-@@ -181,6 +186,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	if (mmc_can_erase(card))
- 		mmc_queue_setup_discard(mq->queue, card);
- 
-+	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
-+		mmc_queue_setup_sanitize(mq->queue);
-+
- #ifdef CONFIG_MMC_BLOCK_BOUNCE
- 	if (host->max_segs == 1) {
- 		unsigned int bouncesz;
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 9478a6b..0890e9c 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -236,6 +236,9 @@ struct mmc_card {
- #define MMC_POWEROFF_SHORT		2
- #define MMC_POWEROFF_LONG		3
- 
-+/* card is in sanitize progress */
-+#define MMC_STATE_SANITIZE_IN_PROGRESS (1<<9)
-+
- 	unsigned int		erase_size;	/* erase size in sectors */
-  	unsigned int		erase_shift;	/* if erase unit is power 2 */
-  	unsigned int		pref_erase;	/* in sectors */
-@@ -388,6 +391,10 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
- #define mmc_card_set_ddr_mode(c) ((c)->state |= MMC_STATE_HIGHSPEED_DDR)
- #define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
- #define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
-+#define mmc_sd_card_set_sanitize_in_progress(c) ((c)->state |= \
-+		MMC_STATE_SANITIZE_IN_PROGRESS)
-+#define mmc_sd_card_set_sanitize_completed(c) ((c)->state &= \
-+		~MMC_STATE_SANITIZE_IN_PROGRESS)
- #define mmc_card_set_ext_capacity(c) ((c)->state |= MMC_CARD_SDXC)
- #define mmc_card_set_removed(c) ((c)->state |= MMC_CARD_REMOVED)
- 
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 9a03d03..93210aa 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -242,6 +242,7 @@ struct mmc_host {
- #define MMC_CAP2_CACHE_CTRL	(1 << 1)	/* Allow cache control */
- #define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)	/* Notify poweroff supported */
- #define MMC_CAP2_NO_MULTI_READ	(1 << 3)	/* Multiblock reads don't work */
-+#define MMC_CAP2_SANITIZE	(1<<4)		/* Support Sanitize */
- 
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
- 	unsigned int        power_notify_type;
--- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+        switch (reg->id) {
+        case KVM_REG_PPC_HIOR:
+-               r = get_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
++               r = get_user(to_book3s(vcpu)->hior,
++                            (u64 __user *)(long)reg->addr);
+                if (!r)
+                        to_book3s(vcpu)->hior_explicit = true;
+                break;
+
