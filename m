@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2BZTVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 14:21:25 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:53523 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab2BZTVY (ORCPT
+	id S1752752Ab2BZTcK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 14:32:10 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:41066 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab2BZTcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 14:21:24 -0500
-Date: Sun, 26 Feb 2012 14:20:38 -0500 (EST)
-Message-Id: <20120226.142038.556939530554716833.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: paul.gortmaker@windriver.com, tim.bird@am.sony.com, kuznet@ms2.inr.ac.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: RFC: memory leak in udp_table_init
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330147182.2462.25.camel@edumazet-laptop>
-References: <4F48318E.8070902@am.sony.com>
-	<CAP=VYLp7+Apubm=PHRLSw50V9zBKmV-xFRvcO4-qAogJVp7jcw@mail.gmail.com>
-	<1330147182.2462.25.camel@edumazet-laptop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 26 Feb 2012 11:20:44 -0800 (PST)
+	Sun, 26 Feb 2012 14:32:07 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH RESEND] bluetooth: Remove bogus inline for l2cap_chan_connect()
+Date: Sun, 26 Feb 2012 20:31:59 +0100
+Message-Id: <1330284719-22348-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 25 Feb 2012 06:19:42 +0100
+commit 03a001948166d966d0d580cddb8ae3a23f8b795b ("Bluetooth: invert locking
+order in connect path") marked l2cap_chan_connect() inline for both the
+prototype in include/net/bluetooth/l2cap.h and the implementation in
+net/bluetooth/l2cap_core.c.
 
-> [PATCH] mm: add a low limit to alloc_large_system_hash
+As the former doesn't contain an implementation, net/bluetooth/l2cap_sock.c
+now fails to build with gcc version 4.1.2 20061115 (prerelease) (Ubuntu
+4.1.1-21), e.g. for m68k allmodconfig:
 
-I think you should just use zero as the default minimum for all
-call sites except this UDP case we are trying to fix.
+    net/bluetooth/l2cap_sock.c: In function ‘l2cap_sock_connect’:
+    include/net/bluetooth/l2cap.h:838: sorry, unimplemented: inlining failed in call to ‘l2cap_chan_connect’: function body not available
+    net/bluetooth/l2cap_sock.c:126: sorry, unimplemented: called from here
+    make[1]: *** [net/bluetooth/l2cap_sock.o] Error 1
 
-For example I see you used 16 for kernel/pid.c
+As l2cap_chan_connect() is not that small and also called from
+net/bluetooth/l2cap_sock.c, I removed both inline keywords.
 
-Let's not try to do unrelated changes like that now, we can do such
-tweaks later.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Linus, this has been breaking my builds for 6 weeks with no imminent action
+from the maintainer, so I'm sending it to you directly.
+
+ include/net/bluetooth/l2cap.h |    2 +-
+ net/bluetooth/l2cap_core.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/net/bluetooth/l2cap.h b/include/net/bluetooth/l2cap.h
+index 68f5891..124f7cf 100644
+--- a/include/net/bluetooth/l2cap.h
++++ b/include/net/bluetooth/l2cap.h
+@@ -834,7 +834,7 @@ int l2cap_add_scid(struct l2cap_chan *chan,  __u16 scid);
+ struct l2cap_chan *l2cap_chan_create(struct sock *sk);
+ void l2cap_chan_close(struct l2cap_chan *chan, int reason);
+ void l2cap_chan_destroy(struct l2cap_chan *chan);
+-inline int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid,
++int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid,
+ 								bdaddr_t *dst);
+ int l2cap_chan_send(struct l2cap_chan *chan, struct msghdr *msg, size_t len,
+ 								u32 priority);
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index faf0b11..980abdb 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -1120,7 +1120,7 @@ static struct l2cap_chan *l2cap_global_chan_by_psm(int state, __le16 psm, bdaddr
+ 	return c1;
+ }
+ 
+-inline int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid, bdaddr_t *dst)
++int l2cap_chan_connect(struct l2cap_chan *chan, __le16 psm, u16 cid, bdaddr_t *dst)
+ {
+ 	struct sock *sk = chan->sk;
+ 	bdaddr_t *src = &bt_sk(sk)->src;
+-- 
+1.7.0.4
+
