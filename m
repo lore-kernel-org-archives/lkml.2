@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab2BZIoG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 03:44:06 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:54018 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab2BZIoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 03:44:04 -0500
-Date: Sun, 26 Feb 2012 08:44:03 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fadvise: avoid EINVAL if user input is valid
-Message-ID: <20120226084403.GA4641@dcvr.yhbt.net>
-References: <20120225022710.GA29455@dcvr.yhbt.net>
- <CAJd=RBDHB8yM=LGkzhOWZO6ftYFyZ42SQKySc0hUzNEQzrmVTw@mail.gmail.com>
+	id S1752533Ab2BZJGO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 04:06:14 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:59698 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab2BZJFf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 04:05:35 -0500
+X-Auth-Info: 1Ef3JMvGcn75ZyId7W8uGPMcdCq2JPeFguLvkivDjRc=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] autofs4: fix compilation without CONFIG_COMPAT
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+	<20120221.221609.218135609185671883.davem@davemloft.net>
+	<CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+	<CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+	<CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+	<1329889428.2193.45.camel@perseus.themaw.net>
+	<1329890027.2193.48.camel@perseus.themaw.net>
+	<1329890251.2193.50.camel@perseus.themaw.net>
+	<m2vcmuh8dg.fsf_-_@igel.home>
+	<CA+55aFxH4_gucG7vpdV5NJPNHoXy5bSGtr0yHqmobvYO6PmjNw@mail.gmail.com>
+X-Yow: Vote for ME -- I'm well-tapered, half-cocked, ill-conceived and
+ TAX-DEFERRED!
+Date: Sun, 26 Feb 2012 10:05:22 +0100
+In-Reply-To: <CA+55aFxH4_gucG7vpdV5NJPNHoXy5bSGtr0yHqmobvYO6PmjNw@mail.gmail.com>
+	(Linus Torvalds's message of "Sat, 25 Feb 2012 17:31:30 -0800")
+Message-ID: <m2399yq819.fsf@linux-m68k.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.93 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBDHB8yM=LGkzhOWZO6ftYFyZ42SQKySc0hUzNEQzrmVTw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton <dhillf@gmail.com> wrote:
-> On Sat, Feb 25, 2012 at 10:27 AM, Eric Wong <normalperson@yhbt.net> wrote:
-> > index 469491e0..f9e48dd 100644
-> > --- a/mm/fadvise.c
-> > +++ b/mm/fadvise.c
-> > @@ -43,13 +43,13 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
-> >                goto out;
-> >        }
-> >
-> > -       mapping = file->f_mapping;
-> > -       if (!mapping || len < 0) {
-> > +       if (len < 0) {
-> 
-> Current code makes sure mapping is valid after the above check,
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Right.  I moved the !mapping check down a few lines.
+> How about this patch instead?
 
-> >                ret = -EINVAL;
-> >                goto out;
-> >        }
+Works as well.
 
-Now the check hits the "goto out" the get_xip_mem check hits:
+> And if you worry about the size of autofs_sb_info, I think that could
+> be made denser by using 'char' or bitfields instead of the various
+> ints that hold small values or flags instead.
 
-> > -       if (mapping->a_ops->get_xip_mem) {
-> > +       mapping = file->f_mapping;
-> > +       if (!mapping || mapping->a_ops->get_xip_mem) {
-> >                switch (advice) {
-> >                case POSIX_FADV_NORMAL:
-> >                case POSIX_FADV_RANDOM:
+Since it's local to autofs4 it doesn't really matter that much.
 
-		case POSIX_FADV_SEQUENTIAL:
-		case POSIX_FADV_WILLNEED:
-		case POSIX_FADV_NOREUSE:
-		case POSIX_FADV_DONTNEED:
-			/* no bad return value, but ignore advice */
-			break;
-		default:
-			ret = -EINVAL;
-		}
-		goto out; <------ we hit this if (mapping == NULL)
-	}
+Andreas.
 
-> but backing devices info is no longer evaluated with that
-> guarantee in your change.
-> 
-> -hd
-> 
-> 75:	bdi = mapping->backing_dev_info;
-
-The above line still doesn't evaluated because of the goto.
-
-out:
-	fput(file);
-	return ret;
-}
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
