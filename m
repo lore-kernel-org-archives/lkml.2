@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab2BZLEB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 06:04:01 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:37719 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2BZLD7 (ORCPT
+	id S1753118Ab2BZLEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 06:04:11 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:40875 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab2BZLEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 06:03:59 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6631"; a="164296373"
+	Sun, 26 Feb 2012 06:04:08 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6631"; a="166588748"
 From: Yaniv Gardi <ygardi@codeaurora.org>
 To: linux-mmc@vger.kernel.org
 Cc: axboe@kernel.dk, ygardi@codeaurora.org, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v4 1/2] block: IOCTL support for Sanitize in eMMC v4.5
-Date: Sun, 26 Feb 2012 13:03:04 +0200
-Message-Id: <1330254185-2428-2-git-send-email-ygardi@codeaurora.org>
+Subject: [PATCH v4 2/2] mmc: card: Adding support for Sanitize in eMMC v4.5
+Date: Sun, 26 Feb 2012 13:03:05 +0200
+Message-Id: <1330254185-2428-3-git-send-email-ygardi@codeaurora.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1330254185-2428-1-git-send-email-ygardi@codeaurora.org>
 References: <1330254185-2428-1-git-send-email-ygardi@codeaurora.org>
@@ -25,271 +25,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
 ---
- block/blk-core.c          |   15 ++++++++++++---
- block/blk-lib.c           |   44 ++++++++++++++++++++++++++++++++++++++++++++
- block/blk-merge.c         |    6 ++++++
- block/elevator.c          |    8 +++++++-
- block/ioctl.c             |    9 +++++++++
- include/linux/blk_types.h |    6 ++++--
- include/linux/blkdev.h    |    3 +++
- include/linux/fs.h        |    1 +
- kernel/trace/blktrace.c   |    2 ++
- 9 files changed, 88 insertions(+), 6 deletions(-)
+ drivers/mmc/card/block.c |   52 ++++++++++++++++++++++++++++++++++++++--------
+ drivers/mmc/card/queue.c |   10 ++++++++-
+ include/linux/mmc/card.h |    7 ++++++
+ include/linux/mmc/host.h |    1 +
+ 4 files changed, 60 insertions(+), 10 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index e6c05a9..150ea4a 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1544,7 +1544,7 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 0c959c9..d76b20e 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -830,6 +830,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
+ 	from = blk_rq_pos(req);
+ 	nr = blk_rq_sectors(req);
+ 
++	/* 1ST priority is DISCARD.
++	   2ND is TRIM
++	   3RD is ERASE */
+ 	if (mmc_can_discard(card))
+ 		arg = MMC_DISCARD_ARG;
+ 	else if (mmc_can_trim(card))
+@@ -868,18 +871,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
+ 	unsigned int from, nr, arg;
+ 	int err = 0, type = MMC_BLK_SECDISCARD;
+ 
+-	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
++	if (!(mmc_can_secure_erase_trim(card))) {
+ 		err = -EOPNOTSUPP;
+ 		goto out;
  	}
  
--	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
-+	if (unlikely(!(bio->bi_rw & (REQ_DISCARD | REQ_SANITIZE)) &&
- 		     nr_sectors > queue_max_hw_sectors(q))) {
- 		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
- 		       bdevname(bio->bi_bdev, b),
-@@ -1592,6 +1592,14 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
+-	/* The sanitize operation is supported at v4.5 only */
+-	if (mmc_can_sanitize(card)) {
+-		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+-				EXT_CSD_SANITIZE_START, 1, 0);
+-		goto out;
+-	}
+-
+ 	from = blk_rq_pos(req);
+ 	nr = blk_rq_sectors(req);
  
-+	 if ((bio->bi_rw & REQ_SANITIZE) &&
-+	     (!blk_queue_sanitize(q))) {
-+		pr_err("%s - SANITIZE request but queue "
-+		       "doesn't support sanitize", __func__);
-+		err = -EOPNOTSUPP;
-+		goto end_io;
-+	 }
-+
- 	if (blk_throtl_bio(q, bio))
- 		return false;	/* throttled, will be resubmitted later */
- 
-@@ -1697,7 +1705,8 @@ void submit_bio(int rw, struct bio *bio)
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
- 	 */
--	if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
-+	if (bio_has_data(bio) &&
-+	    (!(rw & (REQ_DISCARD | REQ_SANITIZE)))) {
- 		if (rw & WRITE) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
-@@ -1743,7 +1752,7 @@ EXPORT_SYMBOL(submit_bio);
-  */
- int blk_rq_check_limits(struct request_queue *q, struct request *rq)
- {
--	if (rq->cmd_flags & REQ_DISCARD)
-+	if (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))
- 		return 0;
- 
- 	if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b4..1aef2fb 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -114,6 +114,50 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+@@ -922,6 +918,38 @@ out:
+ 	return err ? 0 : 1;
  }
- EXPORT_SYMBOL(blkdev_issue_discard);
  
-+int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask)
++int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
++			       struct request *req)
 +{
-+	DECLARE_COMPLETION_ONSTACK(wait);
-+	struct request_queue *q = bdev_get_queue(bdev);
-+	int type = REQ_WRITE | REQ_SANITIZE;
++	struct mmc_blk_data *md = mq->data;
++	struct mmc_card *card = md->queue.card;
++	int err = 0;
 +
-+	struct bio_batch bb;
-+	struct bio *bio;
-+	int ret = 0;
-+
-+	if (!q)
-+		return -ENXIO;
-+
-+	if (!blk_queue_sanitize(q)) {
-+		pr_err("%s - card doesn't support sanitize", __func__);
-+		return -EOPNOTSUPP;
++	if (!(mmc_can_sanitize(card) && (mq->card->host->caps2 & MMC_CAP2_SANITIZE))) {
++		pr_err("%s: SANITIZE is not supported", __func__);
++		err = -EOPNOTSUPP;
++		goto out;
 +	}
 +
-+	bio = bio_alloc(gfp_mask, 1);
-+	if (!bio)
-+		return -ENOMEM;
++	mmc_sd_card_set_sanitize_in_progress(card);
 +
-+	atomic_set(&bb.done, 1);
-+	bb.flags = 1 << BIO_UPTODATE;
-+	bb.wait = &wait;
++	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
++					 EXT_CSD_SANITIZE_START, 1, 0);
 +
-+	bio->bi_end_io = bio_batch_end_io;
-+	bio->bi_bdev = bdev;
-+	bio->bi_private = &bb;
++	if (err)
++		pr_err("%s: mmc%d: mmc_switch() failed. err=%d\n",
++		       __func__, card->host->index, err);
 +
-+	atomic_inc(&bb.done);
-+	submit_bio(type, bio);
++	mmc_sd_card_set_sanitize_completed(card);
 +
-+	/* Wait for bios in-flight */
-+	if (!atomic_dec_and_test(&bb.done))
-+		wait_for_completion(&wait);
++out:
++	spin_lock_irq(&md->lock);
++	__blk_end_request(req, err, blk_rq_bytes(req));
++	spin_unlock_irq(&md->lock);
 +
-+	if (!test_bit(BIO_UPTODATE, &bb.flags))
-+		ret = -EIO;
-+
-+	return ret;
++	return err ? 0 : 1;
 +}
-+EXPORT_SYMBOL(blkdev_issue_sanitize);
 +
- /**
-  * blkdev_issue_zeroout - generate number of zero filed write bios
-  * @bdev:	blockdev to issue
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index cfcc37c..f3ed15b 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -383,6 +383,12 @@ static int attempt_merge(struct request_queue *q, struct request *req,
- 		return 0;
+ static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
+ {
+ 	struct mmc_blk_data *md = mq->data;
+@@ -1379,7 +1407,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 		goto out;
+ 	}
  
- 	/*
-+	 * Don't merge file system requests and sanitize requests
-+	 */
-+	if ((req->cmd_flags & REQ_SANITIZE) != (next->cmd_flags & REQ_SANITIZE))
-+		return 0;
-+
-+	/*
- 	 * not contiguous
- 	 */
- 	if (blk_rq_pos(req) + blk_rq_sectors(req) != blk_rq_pos(next))
-diff --git a/block/elevator.c b/block/elevator.c
-index 99838f4..4255dd9 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -88,6 +88,12 @@ int elv_rq_merge_ok(struct request *rq, struct bio *bio)
- 		return 0;
+-	if (req && req->cmd_flags & REQ_DISCARD) {
++	if (req && req->cmd_flags & REQ_SANITIZE) {
++		/* complete ongoing async transfer before issuing sanitize */
++		if (card->host && card->host->areq)
++			mmc_blk_issue_rw_rq(mq, NULL);
++		ret = mmc_blk_issue_sanitize_rq(mq, req);
++	} else if (req && req->cmd_flags & REQ_DISCARD) {
+ 		/* complete ongoing async transfer before issuing discard */
+ 		if (card->host->areq)
+ 			mmc_blk_issue_rw_rq(mq, NULL);
+@@ -1396,6 +1429,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+ 		ret = mmc_blk_issue_rw_rq(mq, req);
+ 	}
  
- 	/*
-+	 * Don't merge sanitize requests
-+	 */
-+	if ((bio->bi_rw & REQ_SANITIZE) != (rq->bio->bi_rw & REQ_SANITIZE))
-+		return 0;
 +
-+	/*
- 	 * different data direction or already started, don't merge
- 	 */
- 	if (bio_data_dir(bio) != rq_data_dir(rq))
-@@ -647,7 +653,7 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
- 		/* barriers are scheduling boundary, update end_sector */
- 		if (rq->cmd_type == REQ_TYPE_FS ||
--		    (rq->cmd_flags & REQ_DISCARD)) {
-+		    (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))) {
- 			q->end_sector = rq_end_sector(rq);
- 			q->boundary_rq = rq;
- 		}
-diff --git a/block/ioctl.c b/block/ioctl.c
-index ca939fc..eed6dbb 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -132,6 +132,11 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
- 	return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
+ out:
+ 	if (!req)
+ 		/* release host only when there are no more requests */
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index dcad59c..ad6605d 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -140,10 +140,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+ 	/* granularity must not be greater than max. discard */
+ 	if (card->pref_erase > max_discard)
+ 		q->limits.discard_granularity = 0;
+-	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
++	if (mmc_can_secure_erase_trim(card))
+ 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
  }
  
-+static int blk_ioctl_sanitize(struct block_device *bdev)
++static void mmc_queue_setup_sanitize(struct request_queue *q)
 +{
-+	return blkdev_issue_sanitize(bdev, GFP_KERNEL);
++	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
 +}
 +
- static int put_ushort(unsigned long arg, unsigned short val)
- {
- 	return put_user(val, (unsigned short __user *)arg);
-@@ -216,6 +221,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
- 		set_device_ro(bdev, n);
- 		return 0;
+ /**
+  * mmc_init_queue - initialise a queue structure.
+  * @mq: mmc queue
+@@ -181,6 +186,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 	if (mmc_can_erase(card))
+ 		mmc_queue_setup_discard(mq->queue, card);
  
-+	case BLKSANITIZE:
-+		ret = blk_ioctl_sanitize(bdev);
-+		break;
++	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
++		mmc_queue_setup_sanitize(mq->queue);
 +
- 	case BLKDISCARD:
- 	case BLKSECDISCARD: {
- 		uint64_t range[2];
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 4053cbd..bbe4976 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -150,6 +150,7 @@ enum rq_flag_bits {
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
-+	__REQ_SANITIZE,		/* sanitize */
- 	__REQ_NR_BITS,		/* stops here */
- };
+ #ifdef CONFIG_MMC_BLOCK_BOUNCE
+ 	if (host->max_segs == 1) {
+ 		unsigned int bouncesz;
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 9478a6b..0890e9c 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -236,6 +236,9 @@ struct mmc_card {
+ #define MMC_POWEROFF_SHORT		2
+ #define MMC_POWEROFF_LONG		3
  
-@@ -161,13 +162,14 @@ enum rq_flag_bits {
- #define REQ_META		(1 << __REQ_META)
- #define REQ_PRIO		(1 << __REQ_PRIO)
- #define REQ_DISCARD		(1 << __REQ_DISCARD)
-+#define REQ_SANITIZE		(1 << __REQ_SANITIZE)
- #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
++/* card is in sanitize progress */
++#define MMC_STATE_SANITIZE_IN_PROGRESS (1<<9)
++
+ 	unsigned int		erase_size;	/* erase size in sectors */
+  	unsigned int		erase_shift;	/* if erase unit is power 2 */
+  	unsigned int		pref_erase;	/* in sectors */
+@@ -388,6 +391,10 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
+ #define mmc_card_set_ddr_mode(c) ((c)->state |= MMC_STATE_HIGHSPEED_DDR)
+ #define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+ #define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
++#define mmc_sd_card_set_sanitize_in_progress(c) ((c)->state |= \
++		MMC_STATE_SANITIZE_IN_PROGRESS)
++#define mmc_sd_card_set_sanitize_completed(c) ((c)->state &= \
++		~MMC_STATE_SANITIZE_IN_PROGRESS)
+ #define mmc_card_set_ext_capacity(c) ((c)->state |= MMC_CARD_SDXC)
+ #define mmc_card_set_removed(c) ((c)->state |= MMC_CARD_REMOVED)
  
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
- #define REQ_COMMON_MASK \
--	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
--	 REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
-+	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
-+	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE | REQ_SANITIZE)
- #define REQ_CLONE_MASK		REQ_COMMON_MASK
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 9a03d03..93210aa 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -242,6 +242,7 @@ struct mmc_host {
+ #define MMC_CAP2_CACHE_CTRL	(1 << 1)	/* Allow cache control */
+ #define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)	/* Notify poweroff supported */
+ #define MMC_CAP2_NO_MULTI_READ	(1 << 3)	/* Multiblock reads don't work */
++#define MMC_CAP2_SANITIZE	(1<<4)		/* Support Sanitize */
  
- #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 7084318..1197c31 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -423,6 +423,7 @@ struct request_queue {
- #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
- #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
- #define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
-+#define QUEUE_FLAG_SANITIZE    19	/* supports SANITIZE */
- 
- #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
- 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
-@@ -506,6 +507,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- #define blk_queue_stackable(q)	\
- 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
- #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
-+#define blk_queue_sanitize(q)	test_bit(QUEUE_FLAG_SANITIZE, &(q)->queue_flags)
- #define blk_queue_secdiscard(q)	(blk_queue_discard(q) && \
- 	test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
- 
-@@ -955,6 +957,7 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
- extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *);
- extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
-+extern int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask);
- extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask);
- static inline int sb_issue_discard(struct super_block *sb, sector_t block,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 057434a..3680eef 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -319,6 +319,7 @@ struct inodes_stat_t {
- #define BLKPBSZGET _IO(0x12,123)
- #define BLKDISCARDZEROES _IO(0x12,124)
- #define BLKSECDISCARD _IO(0x12,125)
-+#define BLKSANITIZE _IO(0x12, 126)
- 
- #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
- #define FIBMAP	   _IO(0x00,1)	/* bmap access */
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index 16fc34a..2c2efc6 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -1802,6 +1802,8 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
- 		rwbs[i++] = 'W';
- 	else if (rw & REQ_DISCARD)
- 		rwbs[i++] = 'D';
-+	else if (rw & REQ_SANITIZE)
-+		rwbs[i++] = 'Z';
- 	else if (bytes)
- 		rwbs[i++] = 'R';
- 	else
+ 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+ 	unsigned int        power_notify_type;
 -- 
 1.7.6
 -- 
