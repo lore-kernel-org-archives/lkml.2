@@ -1,60 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab2BZGsi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 01:48:38 -0500
-Received: from mail05-md.ns.itscom.net ([175.177.155.115]:40973 "EHLO
-	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab2BZGsh (ORCPT
+	id S1751861Ab2BZIId (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 03:08:33 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49121 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2BZIIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 01:48:37 -0500
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: copy-up xattr (Re: [RFC][PATCH 00/73] Union Mount [ver #2])
-To: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        valerie.aurora@gmail.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-Date: Sun, 26 Feb 2012 15:48:33 +0900
-Message-ID: <18418.1330238913@jrobl>
+	Sun, 26 Feb 2012 03:08:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of prasannatsmkumar@gmail.com designates 10.68.227.105 as permitted sender) smtp.mail=prasannatsmkumar@gmail.com; dkim=pass header.i=prasannatsmkumar@gmail.com
+Message-ID: <4F49E87B.1050708@gmail.com>
+Date: Sun, 26 Feb 2012 13:38:27 +0530
+From: Prasanna Kumar T S M <prasannatsmkumar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Module Load order
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-David Howells:
->  (4) Added some code to override the credentials around upper inode creation
->      to make sure the inode gets the right UID/GID.  This doesn't help if the
->      lower inode has some sort of foreign user identifier.
->
->      Also, I'm not sure whether the LSM xattrs should be blindly copied up.
->      Should the LSM policies applicable to the lower fs's apply to the upper
->      fs too?
-
-Obviously the xattr entry may not have its meanings on the upper fs, or
-the upper fs may return an error when setting the xattr. Additionally
-the returned errno may not follow the generic semantics (ENOTSUP,
-ENOSPC, or EDQUOT) since the fs may return fs-specific error.
-On the other hand, users may expect that the all xattrs are copied-up,
-particulary when he knows that the xattrs works well on the upper fs
-too.
-In copy-up, it will be hard to support all cases.
-
-In order to leave users how to handle the xattrs, I'd suggest
-introducing some mount options, which are similar to cp(1).
-cp(1) has several options
-	--preserve=mode,ownership,timestamps,context,links,xattr,all
-	('mode' includes acl which are based upon xattr)
-
-Since the mode (without acl), ownership and timestamps should always be
-copied-up, the new mount options will be something like
-	cpup-xattr=acl,context,all
-
-And only when the option is specfied, the xattrs are copied up. No
-special error handling is necessary, all the errors should be returned
-to users unconditionally.
-
-Does union-mount preserve mtime? If not, it is critical for some
-applications such like "make" I am afraid.
-
-
-J. R. Okajima
+Is there any specific module load order in Linux? If there is a GPL
+driver and binary driver for a particular device which will be loaded?
+Is there any logic to load GPL driver built inside the kernel? Or is the
+module search and load is handled by some other component (like udev)
+and not the kernel? Sorry for my ignorance if I have asked this to a
+wrong list.
