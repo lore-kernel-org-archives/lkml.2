@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2BZRES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 12:04:18 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64593 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab2BZREQ convert rfc822-to-8bit (ORCPT
+	id S1752237Ab2BZRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 12:35:26 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.29]:52974 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab2BZRfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 12:04:16 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of maciej.rutecki@gmail.com designates 10.213.14.205 as permitted sender) smtp.mail=maciej.rutecki@gmail.com; dkim=pass header.i=maciej.rutecki@gmail.com
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Hugh Dickins <hughd@google.com>
-Subject: Re: Regression: Bad page map in process xyz
-Date: Sun, 26 Feb 2012 18:04:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.6.5; x86_64; ; )
-Cc: Jiri Slaby <jslaby@suse.cz>, n-horiguchi@ah.jp.nec.com,
-        kamezawa.hiroyu@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org
-References: <4F421A29.6060303@suse.cz> <201202261027.48029.maciej.rutecki@gmail.com> <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202261804.11440.maciej.rutecki@gmail.com>
+	Sun, 26 Feb 2012 12:35:25 -0500
+From: Bernhard Walle <bernhard@bwalle.de>
+To: mmarek@suse.cz
+Cc: lacombar@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] scripts/Kbuild.include: Fix portability problem of "echo -e"
+Date: Sun, 26 Feb 2012 18:35:18 +0100
+Message-Id: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
+X-Mailer: git-send-email 1.7.9
+X-Df-Sender: YmVybmhhcmRAYndhbGxlLmRl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 26 lutego 2012 o 14:10:31 Hugh Dickins wrote:
-> On Sun, 26 Feb 2012, Maciej Rutecki wrote:
-> > On poniedziałek, 20 lutego 2012 o 11:02:17 Jiri Slaby wrote:
-> > > Hi,
-> > > 
-> > > I'm getting a ton of
-> > > BUG: Bad page map in process zypper  pte:676b700029736c6f pmd:44967067
-> > > when trying to upgrade the system by:
-> > > zypper dup
-> > > 
-> > > I bisected that to:
-> > > commit afb1c03746aa940374b73a7d5750ee05a2376077
-> > > Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > Date:   Fri Feb 17 10:57:58 2012 +1100
-> > > 
-> > >     thp: optimize away unnecessary page table locking
-> > > 
-> > > thanks,
-> > 
-> > I created a Bugzilla entry at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=42820
-> > for your bug/regression report, please add your address to the CC list in
-> > there, thanks!
-> 
-> No, thanks for spotting it, but please remove from the regressions
-> report: it's not a regression in 3.3-rc but in linux-next - don't take
-> my word for it, check the commit and you'll not find it in 3.3-rc.
-> 
-> We do still need to get the fix into linux-next: Horiguchi-san, has
-> akpm put your fix in mm-commits yet?  Please send it again if not.
-> 
-> Hugh
+"echo -e" is a GNU extension. When cross-compiling the kernel on a
+BSD-like operating system (Mac OS X in my case), this doesn't work.
 
-Thanks for the information. I should check where is commit placed before.
+One could install a GNU version of echo, put that in the $PATH before
+the system echo and use "/usr/bin/env echo", but the solution with
+printf is simpler.
 
-Regards
+Since it is no disadvantage on Linux, I hope that gets accepted even if
+cross-compiling the Linux kernel on another Unix operating system is
+quite a rare use case.
+
+Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+---
+ scripts/Kbuild.include |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index d897278..6a3ee98 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -104,7 +104,7 @@ as-option = $(call try-run,\
+ # Usage: cflags-y += $(call as-instr,instr,option1,option2)
+ 
+ as-instr = $(call try-run,\
+-	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
++	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
+ 
+ # cc-option
+ # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+1.7.9
+
