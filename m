@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab2BZQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 11:27:29 -0500
-Received: from smtprelay05.ispgateway.de ([80.67.31.97]:57729 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2BZQ12 (ORCPT
+	id S1752125Ab2BZRES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 12:04:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64593 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab2BZREQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 11:27:28 -0500
-Message-ID: <4F4A5D6B.10102@bwalle.de>
-Date: Sun, 26 Feb 2012 17:27:23 +0100
-From: Bernhard Walle <bernhard@bwalle.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Sun, 26 Feb 2012 12:04:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of maciej.rutecki@gmail.com designates 10.213.14.205 as permitted sender) smtp.mail=maciej.rutecki@gmail.com; dkim=pass header.i=maciej.rutecki@gmail.com
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: Regression: Bad page map in process xyz
+Date: Sun, 26 Feb 2012 18:04:11 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.6.5; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, n-horiguchi@ah.jp.nec.com,
+        kamezawa.hiroyu@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org
+References: <4F421A29.6060303@suse.cz> <201202261027.48029.maciej.rutecki@gmail.com> <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jochen Friedrich <jochen@scram.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>
-Subject: Re: [PATCH v2] mod/file2alias: make modpost compile on darwin again
-References: <1329947735-4331-1-git-send-email-andreas@biessmann.de> <1330068233-12713-1-git-send-email-andreas@biessmann.de>
-In-Reply-To: <1330068233-12713-1-git-send-email-andreas@biessmann.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Df-Sender: YmVybmhhcmRAYndhbGxlLmRl
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202261804.11440.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am 24.02.12 08:23, schrieb Andreas Bießmann:
-> commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
-> the linux kernel on darwin hosts.
-> This fix introduce some minimal glue to adopt linker section handling
-> for darwin hosts.
+On niedziela, 26 lutego 2012 o 14:10:31 Hugh Dickins wrote:
+> On Sun, 26 Feb 2012, Maciej Rutecki wrote:
+> > On poniedziałek, 20 lutego 2012 o 11:02:17 Jiri Slaby wrote:
+> > > Hi,
+> > > 
+> > > I'm getting a ton of
+> > > BUG: Bad page map in process zypper  pte:676b700029736c6f pmd:44967067
+> > > when trying to upgrade the system by:
+> > > zypper dup
+> > > 
+> > > I bisected that to:
+> > > commit afb1c03746aa940374b73a7d5750ee05a2376077
+> > > Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > Date:   Fri Feb 17 10:57:58 2012 +1100
+> > > 
+> > >     thp: optimize away unnecessary page table locking
+> > > 
+> > > thanks,
+> > 
+> > I created a Bugzilla entry at
+> > https://bugzilla.kernel.org/show_bug.cgi?id=42820
+> > for your bug/regression report, please add your address to the CC list in
+> > there, thanks!
 > 
-> Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Jochen Friedrich <jochen@scram.de>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> CC: "K. Y. Srinivasan" <kys@microsoft.com>
+> No, thanks for spotting it, but please remove from the regressions
+> report: it's not a regression in 3.3-rc but in linux-next - don't take
+> my word for it, check the commit and you'll not find it in 3.3-rc.
+> 
+> We do still need to get the fix into linux-next: Horiguchi-san, has
+> akpm put your fix in mm-commits yet?  Please send it again if not.
+> 
+> Hugh
 
-Tested-by: Bernhard Walle <bernhard@bwalle.de>
+Thanks for the information. I should check where is commit placed before.
 
-Would be nice if that patch gets applied even if cross-compiling the
-Linux kernel on a Mac is exotic.
-
-
-Regards,
-Bernhard
+Regards
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
