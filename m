@@ -1,219 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab2BZNeN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 08:34:13 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:60575 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2BZNeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 08:34:11 -0500
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: jack_wang@usish.com
-Cc: lindar_liu@usish.com, JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
-Date: Sun, 26 Feb 2012 19:03:30 +0530
-Message-Id: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1752155Ab2BZNfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 08:35:12 -0500
+Received: from mail2.charite.de ([141.42.206.200]:47681 "EHLO mail2.charite.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751591Ab2BZNfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 08:35:09 -0500
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Feb 2012 08:35:09 EST
+Date: Sun, 26 Feb 2012 14:26:38 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: [3.2.7] WARNING: at arch/x86/mm/pageattr.c:877
+ change_page_attr_set_clr+0x243/0x354()
+Message-ID: <20120226132638.GA20273@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+Linux mail.charite.de 3.2.7 #1 SMP Sun Feb 26 14:11:52 CET 2012 i686 GNU/Linux
 
-Static checker is giving following warning:
-" error: calling 'spin_unlock_irqrestore()' with bogus flags"
+With 3.2.7 I'm getting:
 
-The code flow is as shown below:
-process_oq() --> process_one_iomb --> mpi_sata_completion
+...
+[    6.451075] bnx2: Broadcom NetXtreme II Gigabit Ethernet Driver bnx2 v2.1.11 (July 20, 2011)
+[    6.452111] hpwdt 0000:01:04.0: PCI INT A -> GSI 21 (level, low) -> IRQ 21
+[    6.452176] hpwdt: New timer passed in is 30 seconds.
+[    6.452336] ------------[ cut here ]------------
+[    6.452395] WARNING: at arch/x86/mm/pageattr.c:877 change_page_attr_set_clr+0x243/0x354()
+[    6.452468] Hardware name: ProLiant DL360 G5
+[    6.452521] Modules linked in: hpwdt(+) bnx2(+) psmouse intel_rng(-) rng_core container thermal button processor
+[    6.452914] Pid: 695, comm: modprobe Not tainted 3.2.7 #1
+[    6.452969] Call Trace:
+[    6.453032]  [<c102c0fc>] ? warn_slowpath_common+0x6c/0x95
+[    6.453088]  [<c101ce15>] ? change_page_attr_set_clr+0x243/0x354
+[    6.453145]  [<c101ce15>] ? change_page_attr_set_clr+0x243/0x354
+[    6.453202]  [<c102c140>] ? warn_slowpath_null+0x1b/0x1f
+[    6.453257]  [<c101ce15>] ? change_page_attr_set_clr+0x243/0x354
+[    6.453314]  [<c101be05>] ? __ioremap_caller+0x365/0x45c
+[    6.453369]  [<c101cf7d>] ? set_memory_x+0x57/0x5b
+[    6.453425]  [<f842f5b8>] ? hpwdt_init_one+0x207/0x3c2 [hpwdt]
+[    6.453484]  [<c115eb86>] ? pci_device_probe+0x47/0x68
+[    6.453541]  [<c11ac197>] ? driver_probe_device+0x4a/0x13a
+[    6.453597]  [<c115ea54>] ? pci_match_device+0xf/0x8a
+[    6.453652]  [<c11ac2e9>] ? __driver_attach+0x62/0x64
+[    6.453707]  [<c11ac287>] ? driver_probe_device+0x13a/0x13a
+[    6.453763]  [<c11ab633>] ? bus_for_each_dev+0x3e/0x62
+[    6.453818]  [<c115eaf2>] ? pci_dev_put+0xd/0xd
+[    6.453872]  [<c11abf59>] ? driver_attach+0x19/0x1e
+[    6.453927]  [<c11ac287>] ? driver_probe_device+0x13a/0x13a
+[    6.453983]  [<c11abcdb>] ? bus_add_driver+0x17d/0x24d
+[    6.454042]  [<c115eaf2>] ? pci_dev_put+0xd/0xd
+[    6.454096]  [<c11ac4c9>] ? driver_register+0x57/0xec
+[    6.454151]  [<c115ef3f>] ? __pci_register_driver+0x31/0x92
+[    6.454207]  [<c1001027>] ? do_one_initcall+0x27/0x150
+[    6.454262]  [<c101cfee>] ? set_memory_nx+0x57/0x5b
+[    6.454316]  [<f8434000>] ? 0xf8433fff
+[    6.454370]  [<c1055076>] ? sys_init_module+0xdff/0x1a14
+[    6.454428]  [<c1275317>] ? sysenter_do_call+0x12/0x26
+[    6.454483] ---[ end trace eda5d4063781bdf2 ]---
+[    6.454543] hpwdt: CRU Base Address:   0xfff69800
+[    6.454544] hpwdt: CRU Offset Address: 0x0
+[    6.454545] hpwdt: CRU Length:         0x8000
+[    6.454547] hpwdt: CRU Mapped Address: f84310dc
+[    6.454549] hpwdt 0000:01:04.0: HP Watchdog Timer Driver: NMI decoding initialized, allow kernel dump: OFF (default = 0/OFF), priority: LAST (default = 0/LAST).
+[    6.454668] hpwdt 0000:01:04.0: HP Watchdog Timer Driver: 1.3.0, timer margin: 30 seconds (nowayout=0).
+[    6.572031] bnx2 0000:03:00.0: BAR 0: set to [mem 0xf8000000-0xf9ffffff 64bit] (PCI address [0xf8000000-0xf9ffffff])
 
-In 'mpi_sata_completion'
-the first call for 'spin_unlock_irqrestore()' is with flags=0,
-which is as good as 'spin_unlock_irq()' ( unconditional interrupt
-enabling).
-
-So for better performance 'spin_unlock_irqrestore()' can be replaced
-with 'spin_unlock_irq()' and 'spin_lock_irqsave()' can be replaced by
-'spin_lock_irq()'.
-
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/scsi/pm8001/pm8001_hwi.c |   58 ++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 833e720..838e3e2 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -1877,7 +1877,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- {
- 	struct sas_task *t;
- 	struct pm8001_ccb_info *ccb;
--	unsigned long flags = 0;
- 	u32 param;
- 	u32 status;
- 	u32 tag;
-@@ -2016,9 +2015,9 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/*in order to force CPU ordering*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2036,9 +2035,9 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/*ditto*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2064,9 +2063,9 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/* ditto*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2131,9 +2130,9 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/*ditto*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2155,9 +2154,9 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/*ditto*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2175,31 +2174,31 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 		ts->stat = SAS_DEV_NO_RESPONSE;
- 		break;
- 	}
--	spin_lock_irqsave(&t->task_state_lock, flags);
-+	spin_lock_irq(&t->task_state_lock);
- 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
- 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
- 	t->task_state_flags |= SAS_TASK_STATE_DONE;
- 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		PM8001_FAIL_DBG(pm8001_ha,
- 			pm8001_printk("task 0x%p done with io_status 0x%x"
- 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
- 			t, status, ts->resp, ts->stat));
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 	} else if (t->uldd_task) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/* ditto */
--		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
--		spin_lock_irqsave(&pm8001_ha->lock, flags);
-+		spin_lock_irq(&pm8001_ha->lock);
- 	} else if (!t->uldd_task) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/*ditto*/
--		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
--		spin_lock_irqsave(&pm8001_ha->lock, flags);
-+		spin_lock_irq(&pm8001_ha->lock);
- 	}
- }
- 
-@@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
- {
- 	struct sas_task *t;
--	unsigned long flags = 0;
- 	struct task_status_struct *ts;
- 	struct pm8001_ccb_info *ccb;
- 	struct pm8001_device *pm8001_dev;
-@@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
- 			ts->stat = SAS_QUEUE_FULL;
- 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 			mb();/*ditto*/
--			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+			spin_unlock_irq(&pm8001_ha->lock);
- 			t->task_done(t);
--			spin_lock_irqsave(&pm8001_ha->lock, flags);
-+			spin_lock_irq(&pm8001_ha->lock);
- 			return;
- 		}
- 		break;
-@@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
- 		ts->stat = SAS_OPEN_TO;
- 		break;
- 	}
--	spin_lock_irqsave(&t->task_state_lock, flags);
-+	spin_lock_irq(&t->task_state_lock);
- 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
- 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
- 	t->task_state_flags |= SAS_TASK_STATE_DONE;
- 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		PM8001_FAIL_DBG(pm8001_ha,
- 			pm8001_printk("task 0x%p done with io_status 0x%x"
- 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
- 			t, event, ts->resp, ts->stat));
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 	} else if (t->uldd_task) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/* ditto */
--		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
--		spin_lock_irqsave(&pm8001_ha->lock, flags);
-+		spin_lock_irq(&pm8001_ha->lock);
- 	} else if (!t->uldd_task) {
--		spin_unlock_irqrestore(&t->task_state_lock, flags);
-+		spin_unlock_irq(&t->task_state_lock);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/*ditto*/
--		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-+		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
--		spin_lock_irqsave(&pm8001_ha->lock, flags);
-+		spin_lock_irq(&pm8001_ha->lock);
- 	}
- }
- 
 -- 
-1.7.4.4
-
+Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
+ralf.hildebrandt@charite.de        Campus Benjamin Franklin
+http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
+Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
