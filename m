@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab2BZKRI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 05:17:08 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63857 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab2BZKRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 05:17:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="114981697"
-Message-ID: <4F4A0662.4050909@intel.com>
-Date: Sun, 26 Feb 2012 18:16:02 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1753001Ab2BZKq5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 05:46:57 -0500
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:44280 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab2BZKqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 05:46:55 -0500
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlWiAAQNSk9V5qjTPGdsb2JhbABCiX6oJwOBBBkBAQEBNzSBcwEBBAE6HCMQCANGFCUKGogUCbZ3E4pXgi4BCRwNAgoBBgsCBgcMFAYDAoRDCAEBOwoJEgqDDmMElTyFbY0D
+X-IronPort-AV: E=Sophos;i="4.73,485,1325458800"; 
+   d="scan'208";a="272681436"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 26 Feb 2012 11:47:01 +0100
+To: Bobby Powers <bobbypowers@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120226104701.GA18152@polaris.bitmath.org>
+References: <20120224191535.GA4505@polaris.bitmath.org>
+ <20120224192643.GB24120@kroah.com>
+ <20120224201027.GA4859@polaris.bitmath.org>
+ <20120224201655.GA5994@kroah.com>
+ <20120224203715.GA4995@polaris.bitmath.org>
+ <20120224205651.GA13333@kroah.com>
+ <20120224212238.GA5178@polaris.bitmath.org>
+ <20120224213027.GB15735@thunk.org>
+ <20120224221459.GA5254@polaris.bitmath.org>
+ <CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, clemens@ladisch.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] usb: enable pci MSI/MSIX in usb core
-References: <1329728733-32419-1-git-send-email-alex.shi@intel.com> <1329728733-32419-2-git-send-email-alex.shi@intel.com> <1329728733-32419-3-git-send-email-alex.shi@intel.com> <20120223034147.GD27250@xanatos> <20120223124147.GL18463@legolas.emea.dhcp.ti.com> <1330048028.21053.1176.camel@debian> <20120224100051.GF17178@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20120224100051.GF17178@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-
-> sure, makes sense, but that should be static inline I guess.
+> > The main issue that set me off has been sufficiently diluted in the
+> > (selective) discussion so as to no longer make sense as a reply: At
+> > some point, in-tree or out-of-tree will no longer be distinguishable,
 > 
+> Please explain how you would be unable to distinguish between a driver
+> that lives in the kernel source tree, and one that does not.
 
+The SUD pointed to in the beginning of the thread is an example of
+this, but I was not thinking of it in quite so literal terms. Rather,
+I was imagining that as the kernel grows and the in-kernel interfaces
+matures, the amount of actual communication between different portions
+of the code diminishes. Code on opposite sides of a stable interface
+is, for all practical purposes, separated. Whether that code lives
+in-tree or out-of tree is then of little consequence.
 
-Yes, thanks for reminder!
+To try to prevent another flame war, let's make it clear that I am not
+saying that the most powerful in-kernel argument, that code can be
+changed, is unimportant. Maybe code, like so many other things,
+arranges itself in a scale-free critical fashion, which would forever
+warrant a monolithic approach. Maybe it would even make sense to have
+userspace join the same tree as well. There is however a frofoundly
+political aspect here, which cannot be expressed in terms of
+code. Also, in practise, breaking things down into manageable chunks
+is usually a good idea in the end.
+
+Thanks,
+Henrik
