@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab2BZM0O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 07:26:14 -0500
-Received: from edge1.cs.stonybrook.edu ([130.245.9.210]:31262 "EHLO
-	edge1.cs.stonybrook.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2BZM0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 07:26:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ryao@cs.stonybrook.edu designates 10.50.155.231 as permitted sender) smtp.mail=ryao@cs.stonybrook.edu
+	id S1751666Ab2BZM4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 07:56:47 -0500
+Received: from mail.yuiop.co.uk ([89.145.97.74]:37227 "EHLO mail.yuiop.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab2BZM4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 07:56:45 -0500
+Message-ID: <4F4A2C37.3090500@anonymous.org.uk>
+Date: Sun, 26 Feb 2012 12:57:27 +0000
+From: John Robinson <john.robinson@anonymous.org.uk>
+Organization: None; Disorganization: Total
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <20120226104701.GA18152@polaris.bitmath.org>
-References: <20120224191535.GA4505@polaris.bitmath.org>
-	<20120224192643.GB24120@kroah.com>
-	<20120224201027.GA4859@polaris.bitmath.org>
-	<20120224201655.GA5994@kroah.com>
-	<20120224203715.GA4995@polaris.bitmath.org>
-	<20120224205651.GA13333@kroah.com>
-	<20120224212238.GA5178@polaris.bitmath.org>
-	<20120224213027.GB15735@thunk.org>
-	<20120224221459.GA5254@polaris.bitmath.org>
-	<CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
-	<20120226104701.GA18152@polaris.bitmath.org>
-Date: Sun, 26 Feb 2012 07:26:10 -0500
-Message-ID: <CABDyM6R72WW6YnpNs+EQktaXN_Z_7cxPmABv7ojoLGbmS=+23w@mail.gmail.com>
-Subject: Re: Can we move device drivers into user-space?
-From: Richard Yao <ryao@cs.stonybrook.edu>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Bobby Powers <bobbypowers@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Originating-IP: [209.85.210.174]
+To: thomas@fjellstrom.ca
+CC: Simon McNair <simonmcnair@gmail.com>, linux-kernel@vger.kernel.org,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        ayan@marvell.com, andy yan <andyysj@gmail.com>,
+        linux-raid <linux-raid@vger.kernel.org>
+Subject: Solved (for me at least!) GRUB doesn't like ServeRAID M1015/LSI 9220-8i
+References: <201201131144.58044.thomas@fjellstrom.ca> <CAKaSfQDyU1a641ZMBNNJJABhXBQxhPGH=E6sNoss=2JyYgFusw@mail.gmail.com> <201202010703.09833.thomas@fjellstrom.ca> <4F294E64.10204@anonymous.org.uk>
+In-Reply-To: <4F294E64.10204@anonymous.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 5:47 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> > The main issue that set me off has been sufficiently diluted in the
->> > (selective) discussion so as to no longer make sense as a reply: At
->> > some point, in-tree or out-of-tree will no longer be distinguishable,
->>
->> Please explain how you would be unable to distinguish between a driver
->> that lives in the kernel source tree, and one that does not.
+On 01/02/2012 14:38, John Robinson wrote:
+> On 01/02/2012 14:03, Thomas Fjellstrom wrote:
+> [...]
+>> I picked up a refurb IBM
+>> ServeRaid M1015 (aka: LSI 9220-8i) card. It arrived yesterday. Just
+>> have to
+>> wait and see why grub doesn't like it.
 >
-> The SUD pointed to in the beginning of the thread is an example of
-> this, but I was not thinking of it in quite so literal terms. Rather,
-> I was imagining that as the kernel grows and the in-kernel interfaces
-> matures, the amount of actual communication between different portions
-> of the code diminishes. Code on opposite sides of a stable interface
-> is, for all practical purposes, separated. Whether that code lives
-> in-tree or out-of tree is then of little consequence.
->
-> To try to prevent another flame war, let's make it clear that I am not
-> saying that the most powerful in-kernel argument, that code can be
-> changed, is unimportant. Maybe code, like so many other things,
-> arranges itself in a scale-free critical fashion, which would forever
-> warrant a monolithic approach. Maybe it would even make sense to have
-> userspace join the same tree as well. There is however a frofoundly
-> political aspect here, which cannot be expressed in terms of
-> code. Also, in practise, breaking things down into manageable chunks
-> is usually a good idea in the end.
+> When you find out, please let me know - I bought one via ebay, its
+> firmware was elderly and wouldn't let me put it in JBOD mode, after a
+> bit of googling I flashed it with IBM's latest firmware, then GRUB
+> thought my machine had no RAM in it. The card has been sitting in a box
+> since.
 
-I do not see what prevents an in-kernel context switch into a ring 3
-context with a different process address space. Is it necessary to
-remove the code from the kernel tree before someone can do this?
+RHEL/CentOS 5's GRUB is buggy, in that it doesn't always read the whole 
+of the BIOS's memory map. See 
+https://bugzilla.redhat.com/show_bug.cgi?id=445893 and in particular 
+comment 7 where there's a link to a replacement GRUB which incorporates 
+the patch that was first offered to Red Hat in July 2007. The issue 
+likely affects other distros GRUBs too, since GRUB is moribund.
+
+Cheers,
+
+John.
+
