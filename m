@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2BZWpz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 17:45:55 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50287 "EHLO
+	id S1753215Ab2BZWt2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 17:49:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62090 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2BZWpy (ORCPT
+	with ESMTP id S1753050Ab2BZWt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 17:45:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.195.99 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F4AB61C.4080404@gmail.com>
-Date: Mon, 27 Feb 2012 09:45:48 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	Sun, 26 Feb 2012 17:49:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.70 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Sun, 26 Feb 2012 14:46:37 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jidong Xiao <jidong.xiao@gmail.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120226224637.GB16895@kroah.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+ <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+ <20120224153811.GA16535@kroah.com>
+ <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+ <20120224165448.GA8751@kroah.com>
+ <CAG4AFWb3y0GuKnun5Oiw7UEruUSaw78PoSxeyaXAN13o-aDrtw@mail.gmail.com>
+ <20120225205540.GA29303@kroah.com>
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de
-Subject: Re: [PATCH v3 17/21] ARM: at91: merge SRAM Memory banks thanks to
- mirroring
-References: <cover.1330006537.git.nicolas.ferre@atmel.com> <c9b1e3ffbc322a1d1e1272062a9361abe536a33a.1330006537.git.nicolas.ferre@atmel.com> <4F46B3DF.7010402@gmail.com> <20120224165443.GA21556@game.jcrosoft.org>
-In-Reply-To: <20120224165443.GA21556@game.jcrosoft.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120225205540.GA29303@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/02/12 03:54, Jean-Christophe PLAGNIOL-VILLARD wrote:
+On Sat, Feb 25, 2012 at 12:55:40PM -0800, Greg KH wrote:
+> On Sat, Feb 25, 2012 at 02:23:07PM -0500, Jidong Xiao wrote:
+> > Hi, Greg,
+> > 
+> > These two studies support my point. If the first one is too old, then
+> > the second one should be more convincing. To save your time, you can
+> > take a look at their conclusion first.
+> > 
+> > An Empirical Study of Operating Systems Errors
+> > http://www.stanford.edu/~engler/metrics-sosp-01.pdf
+> > 
+> > Faults in Linux: Ten Years Later
+> > http://pagesperso-systeme.lip6.fr/Suman.Saha/src/asplos11.pdf
+> 
+> This second paper proves my point, it's funny that you tried to use it
+> to prove yours, you obviously must not have read the conclusion...
+> 
+> Anyway, any paper that goes "look at all of these problems in the code!"
+> and isn't instantly followed by patches fixing ALL of those problems by
+> the authors of the paper, should be ignored as a troll masquerading as a
+> "study".
 
-> On 08:47 Fri 24 Feb     , Ryan Mallon wrote:
->> On 24/02/12 01:26, Nicolas Ferre wrote:
->>
->>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
->>>
->>> On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
->>> merge them together to be able to have bigger and continuous
->>> internal RAM.
->>
->> I think this patch needs some comments in the code. As mentioned in the
->> last round, this functionality is not documented, so it is not obvious
->> how/why this works. This is especially true for any user who has
->> problems with this code and then tries to look up those addresses in
->> their at91 manual only to find the regions are reserved.
->>
->> Nicolas, are you able to give an official Atmel stance on this?
-> you have the ack from Nico and he send the e-mail
+Oops, it was pointed out to me that one of the authors of that paper
+really is contributing patches, my appologies to them.  Julia has
+probably fixed more bugs than almost anyone else in the kernel
+community.  I did not mean to make light of her contributions at all,
+again my mistake.
 
-Sure, but it would be nice to get some official documentation on this.
-Why was the feature, which seems quite useful, never documented? Is it
-supported on all revisions of the chips? Are there any restrictions or
-caveats to using the mirrored layout versus the separate layout?
-
-At the very least, the code needs to be documented, since anyone using
-this code is not able to look up the details in the at91 technical manuals.
-
-~Ryan
+greg k-h
