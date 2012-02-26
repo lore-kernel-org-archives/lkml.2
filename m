@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2BZBxc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 20:53:32 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab2BZBxa (ORCPT
+	id S1752568Ab2BZCTR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 21:19:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33993 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab2BZCTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 20:53:30 -0500
+	Sat, 25 Feb 2012 21:19:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jorgyano@gmail.com designates 10.236.192.230 as permitted sender) smtp.mail=jorgyano@gmail.com; dkim=pass header.i=jorgyano@gmail.com
+Date: Sat, 25 Feb 2012 23:19:11 -0300
+From: Jorgyano Vieira <jorgyano@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        jarod@wilsonet.com, nsankar@broadcom.com
+Subject: [PATCH] Staging: crystalhd: Remove unused header bc_dts_types.h
+Message-ID: <20120226021910.GA29831@debian>
 MIME-Version: 1.0
-In-Reply-To: <4F498EFF.6040309@zytor.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
- <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
- <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
- <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
- <1329889428.2193.45.camel@perseus.themaw.net> <1329890027.2193.48.camel@perseus.themaw.net>
- <1329890251.2193.50.camel@perseus.themaw.net> <m2vcmuh8dg.fsf_-_@igel.home>
- <CA+55aFxH4_gucG7vpdV5NJPNHoXy5bSGtr0yHqmobvYO6PmjNw@mail.gmail.com> <4F498EFF.6040309@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 25 Feb 2012 17:53:10 -0800
-X-Google-Sender-Auth: 4mOLzl7I3v07bmKEiREsT7pRfXg
-Message-ID: <CA+55aFxwZt3xwo6+KKCDYSXE78+uAVe49mZOyiO3n=ZOEa+Wxg@mail.gmail.com>
-Subject: Re: [PATCH] autofs4: fix compilation without CONFIG_COMPAT
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Ian Kent <raven@themaw.net>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 25, 2012 at 5:46 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> I think this patch could help clean up other places, too.
+The header bc_dts_types is not used, so we can remove it.
 
-Grepping for CONFIG_COMPAT shows that the most common test is for some
-local variable that indicates "compatness".
+Signed-off-by: Jorgyano Vieira <jorgyano@gmail.com>
+---
+ drivers/staging/crystalhd/bc_dts_types.h |   40 ------------------------------
+ 1 files changed, 0 insertions(+), 40 deletions(-)
+ delete mode 100644 drivers/staging/crystalhd/bc_dts_types.h
 
-The "is_compat_task()" test is actually surprisingly rare.
+diff --git a/drivers/staging/crystalhd/bc_dts_types.h b/drivers/staging/crystalhd/bc_dts_types.h
+deleted file mode 100644
+index 1085a91..0000000
+--- a/drivers/staging/crystalhd/bc_dts_types.h
++++ /dev/null
+@@ -1,40 +0,0 @@
+-/********************************************************************
+- * Copyright(c) 2006-2009 Broadcom Corporation.
+- *
+- *  Name: bc_dts_types.h
+- *
+- *  Description: Data types
+- *
+- *  AU
+- *
+- *  HISTORY:
+- *
+- ********************************************************************
+- * This header is free software: you can redistribute it and/or modify
+- * it under the terms of the GNU Lesser General Public License as published
+- * by the Free Software Foundation, either version 2.1 of the License.
+- *
+- * This header is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU Lesser General Public License for more details.
+- * You should have received a copy of the GNU Lesser General Public License
+- * along with this header.  If not, see <http://www.gnu.org/licenses/>.
+- *******************************************************************/
+-
+-#ifndef _BC_DTS_TYPES_H_
+-#define _BC_DTS_TYPES_H_
+-
+-#include <stdint.h>
+-
+-#ifndef TRUE
+-	#define TRUE		1
+-#endif
+-
+-#ifndef FALSE
+-	#define FALSE		0
+-#endif
+-
+-#define TEXT
+-
+-#endif
+-- 
+1.7.2.5
 
-                    Linus
