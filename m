@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab2BZJym (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 04:54:42 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:33959 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2BZJyl (ORCPT
+	id S1752958Ab2BZKC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 05:02:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54133 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab2BZKCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 04:54:41 -0500
-X-SENDER-IP: [85.230.168.211]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoVeADAASk9V5qjTPGdsb2JhbABDDoUZhEWpLhkBAQEBNzSBcwEBBAEjDwEjIwULCAMODAImAgIUJQoaiBQJpVWRAxOBHItvAQcBBgQRCQIKAQYEBwIGBwwUBgMChEMIATwKCRIKglszYwSVPIVtjEs4
-X-IronPort-AV: E=Sophos;i="4.73,485,1325458800"; 
-   d="scan'208";a="1814441300"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Sun, 26 Feb 2012 10:54:47 +0100
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Can we move device drivers into user-space?
-Message-ID: <20120226095447.GA18141@polaris.bitmath.org>
-References: <20120224191535.GA4505@polaris.bitmath.org>
- <20120224192643.GB24120@kroah.com>
- <20120224201027.GA4859@polaris.bitmath.org>
- <20120224201655.GA5994@kroah.com>
- <20120224203715.GA4995@polaris.bitmath.org>
- <20120224205651.GA13333@kroah.com>
- <20120224212238.GA5178@polaris.bitmath.org>
- <20120224213027.GB15735@thunk.org>
- <20120224221459.GA5254@polaris.bitmath.org>
- <717014CA-C53C-4001-BD60-B742468DA0BD@MIT.EDU>
+	Sun, 26 Feb 2012 05:02:25 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
+Date: Sun, 26 Feb 2012 10:01:49 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
+        Roland Stigge <stigge@antcom.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com
+References: <Pine.LNX.4.44L0.1202251033550.4173-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202251033550.4173-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <717014CA-C53C-4001-BD60-B742468DA0BD@MIT.EDU>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202261001.49937.arnd@arndb.de>
+X-Provags-ID: V02:K0:4svaJ2Vvi0bWkdZjuR2+/TGQu5B0MiNyqWEj4VTLPJk
+ 3Ce4xB9lwR9phLk9eCc8IH/VJ1F8SlZkARKgTyHOiPH3CnDC+v
+ UhOpq41jNAdVQrUmDsFKnqRx1xfPwPm0tgGe1vO2yE9/XVCNom
+ Y/ws5ZSCS3TZcYsLOq63wxuTkfvGxZioZKH6vtLQez3Y5dWcor
+ Q0aV6E/G2duY2pPOscT6sxDCV3BxBTiYJe75v3SNeXMmUZFzcx
+ /x9Qjqs9pJbvhaLtid2mRcW0TD++gmi0q+cc/Luj4qYWdEpukP
+ o8WGRAzDMawgtqTGBUCckpXwlQVjZeggF2QNY6I5vr+n8kaxX6
+ VDb32AjaqVmFNKAEWXoE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> … and the performance is terrible --- as it must be.  If you don't
-> understand why this must be, then we're wasting our time having this
-> conversation.
+On Saturday 25 February 2012, Alan Stern wrote:
+> You are talking about two separate issues.  One is the way the various
+> bus-glue files get built into the driver, and the other is the way it
+> #includes .c files.
+> 
+> I don't view the second as a big deal.  A few people have complained
+> about it, but I don't see the point.  Sure, it has the disadvantage
+> that you have to recompile the entire driver any time one of the files
+> is changed.
+> I can live with that.  It has the advantage that symbols
+> shared among the source files can be static; they don't have to get
+> merged into the overall kernel namespace when the driver isn't build as
+> a module.
 
-You are right, I don't understand the assumptions leading to that
-conclusion. It does not seem to stop people from experimenting with
-filesystems that do no even reside within the same computer (hdfs).
+Right, I don't really object that part (including .c files), with
+conditional includes I was referring to the inclusion of hw-specific
+glues into the driver.
 
-> And if you're the one wanting to make a change, then you are the one
-> who has to provide the proof.
+> The first issue is more serious.  There are long-term plans to
+> restructure both of those drivers so that the bus glue resides in a
+> separate module from the main core of the driver.  However I have not
+> started to work on that yet; there are other more pressing matters to
+> do first.
 
-I know the drill, and I obviously already got hit on the head. ;-)
+Ok.
 
-> Otherwise we're just talking about
-> hypotheticals, and that way lies over-design.  Why waste time
-> engineering something that may never come to pass?
+> It doesn't seem extremely urgent.  Things are working the way they are.  
+> The main advantage to restructuring is that it would allow distributors
+> to build bus glue for multiple platforms in a single distribution
+> image.  Currently that's not possible (except that any one of the
+> platform glues can be enabled along with the PCI glue).
 
-This is a seriously defensive attitude, given that the thread was
-hypothetical from the start.
+We are doing a major rework of the ARM architecture tree right now
+to allow building multiple SoC platforms together, which has not
+been possible traditionally. The "PLATFORM_DRIVER" macro in ohci
+and ehci is one of many things standing in the way still and will have
+to be dealt with at some point.
 
-> Of course, your time is something you are free to spend however you
-> like.  So if you want to try implementing some of these grand plans
-> of yours, show us the code….
+> A little progress has been made already.  We just received a submission
+> for a "generic" platform bus glue file that will be able to take over
+> the jobs of several of the existiing files.  If anyone wants to take
+> this further I won't object, but I don't plan to work on it myself
+> soon.
 
-If I put on rose-colored glasses and try really hard, I can almost
-interpret this as an invitation to share code.
+Ok, good to know. The approach of a generic glue is exactly what I
+was going to suggest. As we get to ARM platforms that are currently
+using PLATFORM_DRIVER, I will then ask people to convert the ohci
+glue to use that generic glue instead of adding another *_DRIVER
+macro to ohci/ehci.
 
-Thanks.
-Henrik
+I'm not sure about what we should do for lpc32xx. Is that
+generic glue going into v3.4? If so, we could convert the
+pnx4008 driver to use that and abstract it in a way that works
+nicely for pnx4008 and lpc32xx. OTOH, we might just let this
+one go in as before and ask people to do it right for the next
+one.
+
+	Arnd
