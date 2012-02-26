@@ -1,92 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab2BZNfm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 08:35:42 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:51323 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab2BZNfk (ORCPT
+	id S1752215Ab2BZNiM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 08:38:12 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53733 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab2BZNiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 08:35:40 -0500
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: jack_wang@usish.com
-Cc: lindar_liu@usish.com, JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH 2/2] [SCSI] pm8001: Fix possible racing codition.
-Date: Sun, 26 Feb 2012 19:05:03 +0530
-Message-Id: <1330263303-25177-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sun, 26 Feb 2012 08:38:10 -0500
+Date: Sun, 26 Feb 2012 13:40:05 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Prasanna Kumar T S M <prasannatsmkumar@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Module Load order
+Message-ID: <20120226134005.687b1622@pyramind.ukuu.org.uk>
+In-Reply-To: <4F49E87B.1050708@gmail.com>
+References: <4F49E87B.1050708@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Sun, 26 Feb 2012 13:38:27 +0530
+Prasanna Kumar T S M <prasannatsmkumar@gmail.com> wrote:
 
-There is a possble racing scenario.
+> Is there any specific module load order in Linux? If there is a GPL
+> driver and binary driver for a particular device which will be loaded?
+> Is there any logic to load GPL driver built inside the kernel? Or is the
+> module search and load is handled by some other component (like udev)
+> and not the kernel? Sorry for my ignorance if I have asked this to a
+> wrong list.
 
-'process_oq' is called by two routines, as shown below.
+There should never be two drivers for one piece of hardware. There may be
+two for the same PCI ID however which grab different device versions. In
+that case both drivers get loaded and the probe routine figures out which
+to bind.
 
-pm8001_8001_dispatch = {
-         .......
-
-        .isr             = pm8001_chip_isr --> process_oq,// A
-        .isr_process_oq  = process_oq,                   //  B
-        .....
-}
-
-process_oq() --> process_one_iomb() --> mpi_sata_completion()
-
-In 'mpi_sata_completion', "pm8001_ha->lock" is first released.
-It means lock is taken before,  which is true for
-the context A, as 'pm8001_ha->lock' is taken in 'pm8001_chip_isr()'
-
-But for context B there is no lock taken before and pm8001_ha->lock
-is unlocked in 'mpi_sata_completion()'. This may unlock the lock
-taken in context A. Possible racing ??
-
-If 'pm8001_ha->lock' is taken in 'process_oq()' instead of
-'pm8001_chip_isr' then the above issue can be avoided.
-
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/scsi/pm8001/pm8001_hwi.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 838e3e2..6d9973b 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -3663,7 +3663,9 @@ static int process_oq(struct pm8001_hba_info *pm8001_ha)
- 	void *pMsg1 = NULL;
- 	u8 uninitialized_var(bc);
- 	u32 ret = MPI_IO_STATUS_FAIL;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&pm8001_ha->lock, flags);
- 	circularQ = &pm8001_ha->outbnd_q_tbl[0];
- 	do {
- 		ret = mpi_msg_consume(pm8001_ha, circularQ, &pMsg1, &bc);
-@@ -3682,6 +3684,7 @@ static int process_oq(struct pm8001_hba_info *pm8001_ha)
- 				break;
- 		}
- 	} while (1);
-+	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
- 	return ret;
- }
- 
-@@ -4087,12 +4090,9 @@ static u32 pm8001_chip_is_our_interupt(struct pm8001_hba_info *pm8001_ha)
- static irqreturn_t
- pm8001_chip_isr(struct pm8001_hba_info *pm8001_ha)
- {
--	unsigned long flags;
--	spin_lock_irqsave(&pm8001_ha->lock, flags);
- 	pm8001_chip_interrupt_disable(pm8001_ha);
- 	process_oq(pm8001_ha);
- 	pm8001_chip_interrupt_enable(pm8001_ha);
--	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
- 	return IRQ_HANDLED;
- }
- 
--- 
-1.7.4.4
-
+Alan
