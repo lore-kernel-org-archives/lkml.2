@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2BZRsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 12:48:09 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:49466 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab2BZRsI (ORCPT
+	id S1752473Ab2BZRw5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 12:52:57 -0500
+Received: from smtprelay04.ispgateway.de ([80.67.31.38]:35973 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab2BZRw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 12:48:08 -0500
-Date: Sun, 26 Feb 2012 18:48:05 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Bernhard Walle <bernhard@bwalle.de>
-Cc: mmarek@suse.cz, lacombar@gmail.com, linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] scripts/Kbuild.include: Fix portability problem of
-	"echo -e"
-Message-ID: <20120226174805.GA562@merkur.ravnborg.org>
-References: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
+	Sun, 26 Feb 2012 12:52:56 -0500
+Message-ID: <4F4A7126.6020009@bwalle.de>
+Date: Sun, 26 Feb 2012 18:51:34 +0100
+From: Bernhard Walle <bernhard@bwalle.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: mmarek@suse.cz, lacombar@gmail.com, linux-kernel@vger.kernel.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>, zippel@linux-m68k.org
+Subject: Re: [PATCH] scripts/Kbuild.include: Fix portability problem of "echo
+ -e"
+References: <1330277718-2667-1-git-send-email-bernhard@bwalle.de> <20120226174805.GA562@merkur.ravnborg.org>
+In-Reply-To: <20120226174805.GA562@merkur.ravnborg.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: YmVybmhhcmRAYndhbGxlLmRl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 06:35:18PM +0100, Bernhard Walle wrote:
-> "echo -e" is a GNU extension. When cross-compiling the kernel on a
-> BSD-like operating system (Mac OS X in my case), this doesn't work.
+Am 26.02.12 18:48, schrieb Sam Ravnborg:
+>> > --- a/scripts/Kbuild.include
+>> > +++ b/scripts/Kbuild.include
+>> > @@ -104,7 +104,7 @@ as-option = $(call try-run,\
+>> >  # Usage: cflags-y += $(call as-instr,instr,option1,option2)
+>> >  
+>> >  as-instr = $(call try-run,\
+>> > -	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
+>> > +	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
+>> >  
+>> >  # cc-option
+>> >  # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+> Roman Zippel removed use of printf in this patch: beda9f3a13bbb22cde92a45f230a02ef2afef6a9
 > 
-> One could install a GNU version of echo, put that in the $PATH before
-> the system echo and use "/usr/bin/env echo", but the solution with
-> printf is simpler.
-> 
-> Since it is no disadvantage on Linux, I hope that gets accepted even if
-> cross-compiling the Linux kernel on another Unix operating system is
-> quite a rare use case.
-> 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
-> ---
->  scripts/Kbuild.include |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-> index d897278..6a3ee98 100644
-> --- a/scripts/Kbuild.include
-> +++ b/scripts/Kbuild.include
-> @@ -104,7 +104,7 @@ as-option = $(call try-run,\
->  # Usage: cflags-y += $(call as-instr,instr,option1,option2)
->  
->  as-instr = $(call try-run,\
-> -	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-> +	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
->  
->  # cc-option
->  # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+> I cannot remember why - but it would be good if you could dig up
+> why - just so we do not hit an old issue again.
 
-Roman Zippel removed use of printf in this patch: beda9f3a13bbb22cde92a45f230a02ef2afef6a9
+Well, he used printf "$(1)", that's different from printf "%b\n" "$(1)"
+since format strings inside $(1) would be interpreted.
 
-I cannot remember why - but it would be good if you could dig up
-why - just so we do not hit an old issue again.
+But maybe Roman can comment on that? Cc'ing him.
 
-	Sam
+
+Regards,
+Bernhard
+
+
+
