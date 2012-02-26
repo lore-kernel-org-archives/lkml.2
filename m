@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab2BZAH2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Feb 2012 19:07:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab2BZAHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Feb 2012 19:07:19 -0500
-Date: Sun, 26 Feb 2012 01:07:09 +0100
-From: Jiri Pirko <jpirko@redhat.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/12] team: check given MAC address, if invalid return
- -EADDRNOTAVAIL
-Message-ID: <20120226000709.GA2148@minipsycho.orion>
-References: <1330099282-4588-1-git-send-email-danny.kukawka@bisect.de>
- <1330099282-4588-6-git-send-email-danny.kukawka@bisect.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330099282-4588-6-git-send-email-danny.kukawka@bisect.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752125Ab2BZAKk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Feb 2012 19:10:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61615 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab2BZAKj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Feb 2012 19:10:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of larry.finger@gmail.com designates 10.50.207.7 as permitted sender) smtp.mail=larry.finger@gmail.com; dkim=pass header.i=larry.finger@gmail.com
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: gregkh@linuxfoundation.org
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 0/2 V2] staging: r8712u: Fix two regressions
+Date: Sat, 25 Feb 2012 18:10:19 -0600
+Message-Id: <1330215021-7968-1-git-send-email-Larry.Finger@lwfinger.net>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Feb 24, 2012 at 05:01:15PM CET, danny.kukawka@bisect.de wrote:
->Check if given address is valid in .ndo_set_mac_address, if
->invalid return -EADDRNOTAVAIL as eth_mac_addr() already does
->if is_valid_ether_addr() fails.
->
->Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
->---
-> drivers/net/team/team.c |    3 +++
-> 1 files changed, 3 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
->index 8f81805..788650c 100644
->--- a/drivers/net/team/team.c
->+++ b/drivers/net/team/team.c
->@@ -868,6 +868,9 @@ static int team_set_mac_address(struct net_device *dev, void *p)
-> 	struct team_port *port;
-> 	struct sockaddr *addr = p;
-> 
->+	if (!is_valid_ether_addr(addr->sa_data))
->+		return -EADDRNOTAVAIL;
->+
+This patch set fixes regressions introduced in kernel 3.2.
 
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
-Wouldn't it be better to do this in one place? dev_set_mac_address()
-seems like a good place...
+V2 - Improved commit message as requested
+   - Fixed the Tested-by lines
 
-Jirka
+Larry Finger (2):
+  staging: r8712u: Fix regression introduced by commit a5ee652
+  staging: r8712u: Fix regression caused by commit 8c213fa
 
+ drivers/staging/rtl8712/os_intfs.c |    5 -----
+ drivers/staging/rtl8712/usb_intf.c |    5 +++++
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-> 	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
-> 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-> 	rcu_read_lock();
->-- 
->1.7.8.3
->
+-- 
+1.7.7
+
