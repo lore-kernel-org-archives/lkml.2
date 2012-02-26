@@ -1,112 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2BZSUb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 13:20:31 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59690 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab2BZSUa (ORCPT
+	id S1752473Ab2BZSZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 13:25:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58274 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2BZSZl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 13:20:30 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        hughd@google.com
-Cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] hugetlbfs: Add new rw_semaphore to fix truncate/read race
-Date: Sun, 26 Feb 2012 23:49:58 +0530
-Message-Id: <1330280398-27956-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-x-cbid: 12022618-5816-0000-0000-0000017487F3
+	Sun, 26 Feb 2012 13:25:41 -0500
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CAK1hOcMEWnCysL1HRe+Z3Qfxg9+=tcY6YKWor7_bymNkPVSL+A@mail.gmail.com>
+References: <CAK1hOcPFXMoYsP6N6Hx5Qz3J4xj31TmSj7xo6SRVPegNCbhx7g@mail.gmail.com>
+ <CAKgNAkicbgpSLZE6Wn_5ickGojJuGd4x2vMUG0491OB+O1Z_HA@mail.gmail.com>
+ <CAK1hOcNEBFOd1MR6L+Fdj0paAGacmrepbyPmpT_J9wBQ7bxx=Q@mail.gmail.com>
+ <CAKgNAkj8tjBk1mXO6WhwUyeZDrRC5ECzHXLzPQ0PCpbr34D4_A@mail.gmail.com> <CAK1hOcMEWnCysL1HRe+Z3Qfxg9+=tcY6YKWor7_bymNkPVSL+A@mail.gmail.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Mon, 27 Feb 2012 07:25:20 +1300
+Message-ID: <CAKgNAkiyR7v=q0WTr+sQEsYE57z_j-C3+3n3ABZT+5HjJoc9fw@mail.gmail.com>
+Subject: Re: [PATCH] man ptrace: add extended description of various ptrace quirks
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-man <linux-man@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Blaisorblade <blaisorblade@yahoo.it>,
+        Daniel Jacobowitz <dan@debian.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+ Hello Denys,
 
-Drop using inode->i_mutex from read, since that can result in deadlock with
-mmap. Ideally we can extend the patch to make sure we don't increase i_size
-in mmap. But that will break userspace, because application will have to now
-use truncate(2) to increase i_size in hugetlbfs.
+Thanks for these comments.
 
-AFAIU i_mutex was added in hugetlbfs_read as per
-http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html
+On Tue, Feb 14, 2012 at 11:02 AM, Denys Vlasenko
+<vda.linux@googlemail.com> wrote:
+> On Mon, Oct 3, 2011 at 7:27 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+>> Thanks for the detailed responses. Some comments to your remarks
+>> below, and a couple of open questions (marked "????"). If you send me
+>> the answers, then I can get another draft for review.
+>>
+>>>>> - SIGSTOP _can_ be injected.
+>>>>
+>>>> Was this true at one time? If yes, then we should document past and
+>>>> current behavior, and note when the change occurred.
+>>>>
+>>>> In the Linux 2.4 sources, I see the following in
+>>>> arch/i386/kernel/signal.c::do_signal():
+>>>>
+>>>>                        /* The debugger continued.  Ignore SIGSTOP.  */
+>>>>                        if (signr == SIGSTOP)
+>>>>                                continue;
+>>>>
+>>>> Did that code prevent SIGSTOP being injected in the 2.4 series?
+>>>
+>>> Looks like it is indeed the code.
+>>
+>> ????
+>> Sorry -- I'm not quite clear there. You're confirming that SIGSTOP
+>> could not be injected in 2.4, right?
+>
+> Yes. In 2.4, SIGSTOP can't be injected.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/hugetlbfs/inode.c    |   13 +++++++++----
- include/linux/hugetlb.h |    1 +
- 2 files changed, 10 insertions(+), 4 deletions(-)
+Okay -- I added some words to (what I hope is) an appropriate place in
+the page. Can you please check this in the next draft.
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 1e85a7a..3d541dd 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -237,8 +237,9 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 	unsigned long end_index;
- 	loff_t isize;
- 	ssize_t retval = 0;
-+	struct hugetlbfs_inode_info *hinfo = HUGETLBFS_I(inode);
- 
--	mutex_lock(&inode->i_mutex);
-+	down_read(&hinfo->truncate_sem);
- 
- 	/* validate length */
- 	if (len == 0)
-@@ -308,7 +309,7 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 	}
- out:
- 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
--	mutex_unlock(&inode->i_mutex);
-+	up_read(&hinfo->truncate_sem);
- 	return retval;
- }
- 
-@@ -407,16 +408,19 @@ static int hugetlb_vmtruncate(struct inode *inode, loff_t offset)
- 	pgoff_t pgoff;
- 	struct address_space *mapping = inode->i_mapping;
- 	struct hstate *h = hstate_inode(inode);
-+	struct hugetlbfs_inode_info *hinfo = HUGETLBFS_I(inode);
- 
- 	BUG_ON(offset & ~huge_page_mask(h));
- 	pgoff = offset >> PAGE_SHIFT;
- 
-+	down_write(&hinfo->truncate_sem);
- 	i_size_write(inode, offset);
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	if (!prio_tree_empty(&mapping->i_mmap))
- 		hugetlb_vmtruncate_list(&mapping->i_mmap, pgoff);
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 	truncate_hugepages(inode, offset);
-+	up_write(&hinfo->truncate_sem);
- 	return 0;
- }
- 
-@@ -694,9 +698,10 @@ static const struct address_space_operations hugetlbfs_aops = {
- 
- static void init_once(void *foo)
- {
--	struct hugetlbfs_inode_info *ei = (struct hugetlbfs_inode_info *)foo;
-+	struct hugetlbfs_inode_info *hinfo = (struct hugetlbfs_inode_info *)foo;
- 
--	inode_init_once(&ei->vfs_inode);
-+	init_rwsem(&hinfo->truncate_sem);
-+	inode_init_once(&hinfo->vfs_inode);
- }
- 
- const struct file_operations hugetlbfs_file_operations = {
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 8aef867..6d8469a 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -150,6 +150,7 @@ struct hugetlbfs_sb_info {
- 
- struct hugetlbfs_inode_info {
- 	struct shared_policy policy;
-+	struct rw_semaphore truncate_sem;
- 	struct inode vfs_inode;
- };
- 
+>>> No need to do PTRACE_GETSIGINFO.
+>>> Remember, requiring PTRACE_GETSIGINFO on every ptrace stop
+>>> is a performance hit.
+>>
+>> Thanks. So I'll change that sentence (and the others):
+>>
+>> A subsequent PTRACE_GETSIGINFO on the stopped tracee will return a
+>> siginfo_t structure with si_code set to SIGTRAP|PTRACE_EVENT_FORK<<8.
+>>
+>> to:
+>>
+>> A waitpid() by the tracer will return SIGTRAP|PTRACE_EVENT_FORK<<8 as
+>> the status of the tracee.
+>
+> Word "status" above is ambiguous. Is it waitpid status?
+> Is it si_code field in PTRACE_GETSIGINFO result?
+> We probably need to be ridiculously verbose here
+> to avoid confusion:
+>
+> "A waitpid() by the tracer will return status value which
+> will have SIGTRAP | (PTRACE_EVENT_FORK << 8) in its
+> most significant 24 bits. IOW: (status >> 8) will be equal to
+> SIGTRAP | (PTRACE_EVENT_FORK << 8)."
+
+
+That's a bit repetitious, so I simplified to sentences of the form:
+
+A waitpid(2) by the tracer will return a status value such that
+
+      status>>8 == (SIGTRAP | (PTRACE_EVENT_FORK<<8))
+
+>>> As of kernel 2.6.38,
+>>> after the tracer sees the tracee ptrace-stop and until it
+>>> restarts or kills it, the tracee will not run,
+>>> and will not send notifications (except
+>>> .B SIGKILL
+>>> death) to the tracer, even if the tracer enters into another
+>>> .BR waitpid (2)
+>>> call.
+>>> .LP
+>>> .\"
+>>> .\" FIXME ??? referrent of "it" in the next line is unclear
+>>> .\"        What does "it" refer to?
+>>> Currently, it causes a problem with transparent handling of stopping
+>>> signals: if the tracer restarts the tracee after group-stop,
+>>> .B SIGSTOP
+>>> is effectively ignored: the tracee doesn't remain stopped, it runs.
+>>> If the tracer doesn't restart the tracee before entering into the next
+>>> .BR waitpid (2),
+>>> future
+>>> .B SIGCONT
+>>> signals will not be reported to the tracer.
+>>> This would cause
+>>> .B SIGCONT
+>>> to have no effect.
+>>>
+>>> "it" refers to ptrace behavior versus group-stops and SIGCONT,
+>>> as described. Feel free to rephrase.
+>>
+>> ????
+>> Help! I'm still having problems here. The problem may possibly be
+>> this: when one uses a pronoun like "it" in English, it's normally a
+>> back reference to some text already given. Is this "it" a back
+>> reference (In that case, could you please send me a rewritten version
+>> of the sentence that replaces "it" by some descriptive text), or is it
+>> a reference to the current paragraph (in other words, should this
+>> paragraph rather start with the words "Currently, here is a problem
+>> with...")?
+>
+> I think replacing "it" with "this kernel behavior" will do:
+
+That helps, but still it's a bit unclear. I'll leave you a question in
+the next draft.
+
+> "Currently, this kernel behavior causes a problem with transparent
+> handling of stopping signals: if the tracer restarts the tracee
+> after group-stop, the stopping signal is effectively ignored:
+> the tracee doesn't remain stopped, it runs. ..."
+>
+> (^^^^^^ also, replaced SIGSTOP with "the stopping signal" -
+> all stopping signals are equally affected).
+
+Okay -- I made that change also.
+
+>>> No, it is not ok. Please consult sigaction(2) manpage and
+>>> /usr/include/bits/siginfo.h
+>>> For example, si_code == SI_TIMER (-2) can be sent by timer
+>>> expiration, which is not a system call. There are many other signal
+>>> sources which are not systcalls.
+>>
+>> Okay. So how about the following:
+>>
+>> was delivered as a result of a userspace action,
+>> for example, a direct system call
+>> .RB ( tgkill (2),
+>> .BR kill (2),
+>> .BR sigqueue (3),
+>> etc.),
+>> expiration of a POSIX timer,
+>> change of state on a POSIX message queue,
+>> or completion of an asynchronous I/O request.
+>
+> Yes, this looks ok.
+
+Good.
+
+I will shortly send you another draft for review.
+
+Thanks,
+
+Michael
+
+
 -- 
-1.7.9
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
