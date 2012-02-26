@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2BZRik (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 12:38:40 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:49068 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab2BZRii (ORCPT
+	id S1752394Ab2BZRke (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 12:40:34 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52883 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751838Ab2BZRkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 12:38:38 -0500
-Date: Sun, 26 Feb 2012 12:34:58 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Jan Beulich <jbeulich@suse.com>, "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] RFC: Prepare PAD for native and xen platform
-Message-ID: <20120226173458.GB18098@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350AD088@SHSMSX101.ccr.corp.intel.com>
- <4F46530B020000780007F751@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
+	Sun, 26 Feb 2012 12:40:33 -0500
+X-Sasl-enc: JnGMML6146jh6tnTfuIAs+e1gTLlYqcphtY3M4CkEKc2 1330278032
+Date: Sun, 26 Feb 2012 09:40:22 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jidong Xiao <jidong.xiao@gmail.com>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+Message-ID: <20120226174022.GB3531@kroah.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+ <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+ <20120224153811.GA16535@kroah.com>
+ <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+ <20120224165448.GA8751@kroah.com>
+ <CAG4AFWb3y0GuKnun5Oiw7UEruUSaw78PoSxeyaXAN13o-aDrtw@mail.gmail.com>
+ <20120225205540.GA29303@kroah.com>
+ <CAG4AFWZOJ6_WtU50pZb6zzyBb7CWwphFzt_duyx_WTY45Gt1pw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <CAG4AFWZOJ6_WtU50pZb6zzyBb7CWwphFzt_duyx_WTY45Gt1pw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F4A6E14.00B1,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 08:25:41AM +0000, Liu, Jinsong wrote:
-> Liu, Jinsong wrote:
-> > Jan Beulich wrote:
-> >>>>> "Liu, Jinsong" <jinsong.liu@intel.com> 02/23/12 2:29 PM >>>
-> >>> --- a/drivers/acpi/Kconfig
-> >>> +++ b/drivers/acpi/Kconfig
-> >>> @@ -213,10 +213,11 @@ config ACPI_HOTPLUG_CPU
-> >>>    default y
-> >>  >
-> >>> config ACPI_PROCESSOR_AGGREGATOR
-> >>> -    tristate "Processor Aggregator"
-> >>> +    bool "Processor Aggregator"
-> >> 
-> >> There must be ways to address whatever strange problem you see
-> >> without making this piece of code non-modular.
-> >> 
-> > 
-> > Yes, another approach is x86_init approach, defining acpi_pad_ops at
-> > x86_init.c and overwritten when xen_start_kernel. This patch is just
-> > a RFC patch, to evaluate which approch is more reasonable :-) 
-> > 
-> 
-> Have a more think about it, x86_init approach still need to disable acpi_pad module.
-> Seems we have to set acpi_pad as bool, as long as it need to hook to native acpi_pad fucs/variables.
+On Sat, Feb 25, 2012 at 06:43:58PM -0500, Jidong Xiao wrote:
+> On Sat, Feb 25, 2012 at 3:55 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Sat, Feb 25, 2012 at 02:23:07PM -0500, Jidong Xiao wrote:
+> >> Hi, Greg,
+> >>
+> >> These two studies support my point. If the first one is too old, then
+> >> the second one should be more convincing. To save your time, you can
+> >> take a look at their conclusion first.
+> >>
+> >> An Empirical Study of Operating Systems Errors
+> >> http://www.stanford.edu/~engler/metrics-sosp-01.pdf
+> >>
+> >> Faults in Linux: Ten Years Later
+> >> http://pagesperso-systeme.lip6.fr/Suman.Saha/src/asplos11.pdf
+> >
+> > This second paper proves my point, it's funny that you tried to use it
+> > to prove yours, you obviously must not have read the conclusion...
+> >
+> > Anyway, any paper that goes "look at all of these problems in the code!"
+> > and isn't instantly followed by patches fixing ALL of those problems by
+> > the authors of the paper, should be ignored as a troll masquerading as a
+> > "study".
+> >
+> My point was "a significant portion of kernel crash incidents are due
+> to bugs in drivers". You said no. I did *not* say bugs in device
+> drivers are the dominant factor of kernel crashes/faults. So at least
+> my point matches with the conclusion of the second paper. You can
+> certainly say these academic studies are meaningless because they are
+> not telling the whole story, but you can not deny the fact that
+> because of the large code base, it is the almost impossible to
+> eliminate all the bugs/problems from device drivers. That's why people
+> are doing research to mitigate this problem, even though moving device
+> drivers to user space may not be a good idea, or it is unrealistic in
+> Linux, those researchers as well as their results deserve more
+> respect. Everyone in the whole community, including kernel developers
+> and researchers, shares the same goal, namely, improving the kernel
+> code quality.
 
-What about the other approach I suggested where there are some function
-overrides in osl.c? Something similar to https://lkml.org/lkml/2012/1/17/401,
-specifically https://lkml.org/lkml/2012/1/17/403 - that way you are not turning
-the modules into being built in, but intead have the function table already in
-the kernel (as some form of EXPORT_SYMBOL_GPL or a registration function).
+I don't see much help from the majority of researchers toward actually
+helping change Linux for the better, their goals usually are just
+publishing a paper and then moving on.
 
-Instead of just one function being over-ridden it could have some more. However
-I am not sure if the osl.c is the place for this either. Perhaps Len might
-have some better ideas?
+Yes, some stick around, and some people are working on making the
+intersection between researchers and real-life more condusive toward
+helping us out, but that is a hard task given that the goals of the two
+groups are usually totally different in the end.
 
+I suggest, if you have the time, to try to work with the researchers to
+resolve the problems that they find.  They said that they found hundreds
+of problems.  Why aren't those problems all now fixed?  What kept them
+from getting fixed after they found them?  Was it something that the
+community ignored, or did they not even try?  Find out the root cause of
+that, and then, for their next paper, they might have something totally
+different to report...
+
+good luck,
+
+greg k-h
