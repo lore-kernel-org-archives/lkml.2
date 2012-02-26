@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2BZPHX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 10:07:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34576 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab2BZPHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 10:07:22 -0500
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: balbi@ti.com
-Cc: dahlmann.thomas@arcor.de, gregkh@linuxfoundation.org,
-        linux-geode@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>
-Subject: [PATCH 5/6] amd5536udc: Fix the type of ep_string.
-Date: Sun, 26 Feb 2012 16:00:25 +0100
-Message-Id: <1330268425-4260-1-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <4F48FD62.7090304@mvista.com>
-References: <4F48FD62.7090304@mvista.com>
+	id S1752775Ab2BZPKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 10:10:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751564Ab2BZPKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 10:10:23 -0500
+Date: Sun, 26 Feb 2012 16:10:17 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: autofs@linux.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] autofs: fix 3.3-rc5 compilation breakage on x86-32
+Message-ID: <20120226151015.GA14324@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use "static const char *const" instead of "static const char *".
+Recent commit a32744d4abae24572eff7269bc17895c41bd0085 broke autofs
+compilation on x86-32:
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+fs/autofs4/inode.c: In function ‘autofs4_fill_super’:
+fs/autofs4/inode.c:228: error: implicit declaration of function ‘is_compat_task’
+
+This patch fix that by adding #if checks.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 ---
- drivers/usb/gadget/amd5536udc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/autofs4/autofs_i.h  |    2 ++
+ fs/autofs4/dev-ioctl.c |    2 ++
+ fs/autofs4/inode.c     |    2 ++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
-index 3d563d0..16079bd 100644
---- a/drivers/usb/gadget/amd5536udc.c
-+++ b/drivers/usb/gadget/amd5536udc.c
-@@ -140,7 +140,7 @@ static DECLARE_TASKLET(disconnect_tasklet, udc_tasklet_disconnect,
- 
- /* endpoint names used for print */
- static const char ep0_string[] = "ep0in";
--static const char *ep_string[] = {
-+static const char *const ep_string[] = {
- 	ep0_string,
- 	"ep1in-int", "ep2in-bulk", "ep3in-bulk", "ep4in-bulk", "ep5in-bulk",
- 	"ep6in-bulk", "ep7in-bulk", "ep8in-bulk", "ep9in-bulk", "ep10in-bulk",
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index eb1cc92..60439c2 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -110,7 +110,9 @@ struct autofs_sb_info {
+ 	int sub_version;
+ 	int min_proto;
+ 	int max_proto;
++#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
+ 	int compat_daemon;
++#endif
+ 	unsigned long exp_timeout;
+ 	unsigned int type;
+ 	int reghost_enabled;
+diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+index 85f1fcd..3ffff72 100644
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -385,7 +385,9 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
++#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
+ 		sbi->compat_daemon = is_compat_task();
++#endif
+ 	}
+ out:
+ 	mutex_unlock(&sbi->wq_mutex);
+diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+index 06858d9..5f3fb68 100644
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -225,7 +225,9 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	set_autofs_type_indirect(&sbi->type);
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
++#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
+ 	sbi->compat_daemon = is_compat_task();
++#endif
+ 	mutex_init(&sbi->wq_mutex);
+ 	mutex_init(&sbi->pipe_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
 -- 
-1.7.9
+1.7.1
 
