@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab2BZFwh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 00:52:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55057 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab2BZFwg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 00:52:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.28.167 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
+	id S1751145Ab2BZFzX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 00:55:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39915 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2BZFzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 00:55:22 -0500
+Message-ID: <4F49C931.4010203@zytor.com>
+Date: Sat, 25 Feb 2012 21:54:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120225022710.GA29455@dcvr.yhbt.net>
-References: <20120225022710.GA29455@dcvr.yhbt.net>
-Date: Sun, 26 Feb 2012 13:52:35 +0800
-Message-ID: <CAJd=RBDHB8yM=LGkzhOWZO6ftYFyZ42SQKySc0hUzNEQzrmVTw@mail.gmail.com>
-Subject: Re: [PATCH] fadvise: avoid EINVAL if user input is valid
-From: Hillf Danton <dhillf@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+To: Bobby Powers <bobbypowers@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        x86@kernel.org, hjl.tools@gmail.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] x32: make sure TS_COMPAT is cleared for x32 tasks
+References: <1330230338-25077-1-git-send-email-bobbypowers@gmail.com>
+In-Reply-To: <1330230338-25077-1-git-send-email-bobbypowers@gmail.com>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 25, 2012 at 10:27 AM, Eric Wong <normalperson@yhbt.net> wrote:
-> The kernel is not required to act on fadvise, so fail silently
-> and ignore advice as long as it has a valid descriptor and
-> parameters.
->
-> Cc: linux-mm@kvack.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Eric Wong <normalperson@yhbt.net>
+On 02/25/2012 08:25 PM, Bobby Powers wrote:
+> If a process has a non-x32 ia32 personality and changes to x32, the
+> process would keep its TS_COMPAT flag. x32 uses the presence of the
+> x32 flag on a syscall to determine compat status, so make sure
+> TS_COMPAT is cleared.
+> 
+> Signed-off-by: Bobby Powers <bobbypowers@gmail.com>
 > ---
->
->  Of course I wouldn't knowingly call posix_fadvise() on a file in
->  tmpfs, but a userspace app often doesn't know (nor should it
->  care) what type of filesystem it's on.
->
->  I encountered EINVAL while running the Ruby 1.9.3 test suite on a
->  stock Debian wheezy installation.  Wheezy uses tmpfs for "/tmp" by
->  default and the test suite creates a temporary file to test the
->  Ruby wrapper for posix_fadvise() on.
->
->  mm/fadvise.c |   19 +++++++------------
->  1 file changed, 7 insertions(+), 12 deletions(-)
->
-> diff --git a/mm/fadvise.c b/mm/fadvise.c
-> index 469491e0..f9e48dd 100644
-> --- a/mm/fadvise.c
-> +++ b/mm/fadvise.c
-> @@ -43,13 +43,13 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->                goto out;
->        }
->
-> -       mapping = file->f_mapping;
-> -       if (!mapping || len < 0) {
-> +       if (len < 0) {
+>  arch/x86/kernel/process_64.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+> index e9ec8f1..a465973 100644
+> --- a/arch/x86/kernel/process_64.c
+> +++ b/arch/x86/kernel/process_64.c
+> @@ -539,6 +539,9 @@ void set_personality_ia32(bool x32)
+>  		clear_thread_flag(TIF_IA32);
+>  		set_thread_flag(TIF_X32);
+>  		current->personality &= ~READ_IMPLIES_EXEC;
+> +		/* is_compat_task() uses the presence of the x32
+> +		   syscall bit flag to determine compat status */
+> +		current_thread_info()->status &= ~TS_COMPAT;
+>  	} else {
+>  		set_thread_flag(TIF_IA32);
+>  		clear_thread_flag(TIF_X32);
 
-Current code makes sure mapping is valid after the above check,
+I suspect we should also clear TS_COMPAT in set_personality_64() ...
+this is not x32-related, but would affect the behavior when execing a
+64-bit task from an i386 compatibility task.  I have no idea if it
+actually makes any difference, and clearly it can't have been too broken
+since noone has found a problem all these years, but it looks wrong...
 
->                ret = -EINVAL;
->                goto out;
->        }
->
-> -       if (mapping->a_ops->get_xip_mem) {
-> +       mapping = file->f_mapping;
-> +       if (!mapping || mapping->a_ops->get_xip_mem) {
->                switch (advice) {
->                case POSIX_FADV_NORMAL:
->                case POSIX_FADV_RANDOM:
+	-hpa
 
-but backing devices info is no longer evaluated with that
-guarantee in your change.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
--hd
-
-75:	bdi = mapping->backing_dev_info;
-
-> @@ -93,10 +93,9 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->                spin_unlock(&file->f_lock);
->                break;
->        case POSIX_FADV_WILLNEED:
-> -               if (!mapping->a_ops->readpage) {
-> -                       ret = -EINVAL;
-> +               /* ignore the advice if readahead isn't possible (tmpfs) */
-> +               if (!mapping->a_ops->readpage)
->                        break;
-> -               }
->
->                /* First and last PARTIAL page! */
->                start_index = offset >> PAGE_CACHE_SHIFT;
-> @@ -106,12 +105,8 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->                nrpages = end_index - start_index + 1;
->                if (!nrpages)
->                        nrpages = ~0UL;
-> -
-> -               ret = force_page_cache_readahead(mapping, file,
-> -                               start_index,
-> -                               nrpages);
-> -               if (ret > 0)
-> -                       ret = 0;
-> +
-> +               force_page_cache_readahead(mapping, file, start_index, nrpages);
->                break;
->        case POSIX_FADV_NOREUSE:
->                break;
-> --
-> Eric Wong
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
