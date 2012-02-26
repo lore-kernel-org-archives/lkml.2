@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab2BZNLI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 08:11:08 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:36284 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab2BZNLG (ORCPT
+	id S1752028Ab2BZNLL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 08:11:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46394 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2BZNLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 08:11:06 -0500
-Message-ID: <4F4A2F60.1060700@windriver.com>
-Date: Sun, 26 Feb 2012 07:10:56 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Sun, 26 Feb 2012 08:11:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.125.227 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Sun, 26 Feb 2012 05:10:31 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+cc: Jiri Slaby <jslaby@suse.cz>, n-horiguchi@ah.jp.nec.com,
+        kamezawa.hiroyu@jp.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org
+Subject: Re: Regression: Bad page map in process xyz
+In-Reply-To: <201202261027.48029.maciej.rutecki@gmail.com>
+Message-ID: <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
+References: <4F421A29.6060303@suse.cz> <201202261027.48029.maciej.rutecki@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrei Warkentin <andreiw@vmware.com>
-CC: <kgdb-bugreport@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
-References: <1329522773-21359-1-git-send-email-andreiw@vmware.com>
-In-Reply-To: <1329522773-21359-1-git-send-email-andreiw@vmware.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1891972638-1330261843=:5648"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2012 05:52 PM, Andrei Warkentin wrote:
-> This fixes the following problems:
-> 1) Typematic-repeat of 'enter' gives warning message.
-> 2) Use of 'keypad enter' gives warning message.
-> 3) Lag on the order of seconds between "break" and "make" when
->    expecting the enter "break" code. Seen under virtualized
->    environments such as VMware ESX.
-> 
-> Explanations:
-> 1) Holding down 'enter' will not set a repeating sequence
->    of 0x1c(make)-0x9c(make), but a repeating sequence
->    of make codes, followed by one break code when the key
->    is released. Thus, it's wrong to expect the break code
->    after seeing the 'enter' make code.
-> 2) Keypad enter generates different make/break, namely
->    0xe0 0x1c and 0xe0 0x9c. The 'generic' logic handles
->    the 0xe0 escape already, but the special 'enter' logic
->    always expects '0x9c' and not '0xe0 0x9c', so you get
->    a warning message, again.
-> 3) When expecting the 'enter' break code, the code polls
->    the status register in a tight loop, like so -
->    >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0);
-> 
->    However, it really should do something like -
->    >  while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
->    >     cpu_relax(); /* pause */
-> 
->    Basically, it's a common optimization to have a fast
->    path for accessing often accessed and slow changing I/O
->    in a virtualized environment. The tight spinning in KDB
->    seems to run against the logic by ESX keyboard virtualization
->    code to detect when the fast path or the slow path should
->    be used to satisfy the keyboard status read, leading to
->    multi-second timeouts before the 'real' status comes through.
->    Without knowing ESX internals, it's hard to say if this is
->    an ESX bug or not, but letting the VM be explicitely descheduled
->    seems to resolve the problem. I've seen something similar with
->    shared MMIO buffers with VMs on Hyper-V.
-> 
->    Anyway, given (3), (2) and (1), we might as well blow away the
->    entire special casing for 'enter'. The break codes will already
->    be handled correctly, and we get rid of the bugs with repeat
->    enters and keypad enter key. And of course, there is no
->    need to AND with 0x7f when checking for 'enter', because we'll
->    never ever get to this code with a break code (checked for much
->    earlier).
-> 
->    I tried to figure out the history behind the 'enter' key special
->    casing code, and it seems to have come from whatever the original
->    KDB patch was. Perhaps someone can chime in.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
+--8323584-1891972638-1330261843=:5648
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-I did not write the original code, but I can explain why there was some special logic.
+On Sun, 26 Feb 2012, Maciej Rutecki wrote:
+> On poniedzia=C5=82ek, 20 lutego 2012 o 11:02:17 Jiri Slaby wrote:
+> > Hi,
+> >=20
+> > I'm getting a ton of
+> > BUG: Bad page map in process zypper  pte:676b700029736c6f pmd:44967067
+> > when trying to upgrade the system by:
+> > zypper dup
+> >=20
+> > I bisected that to:
+> > commit afb1c03746aa940374b73a7d5750ee05a2376077
+> > Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Date:   Fri Feb 17 10:57:58 2012 +1100
+> >=20
+> >     thp: optimize away unnecessary page table locking
+> >=20
+> > thanks,
+>=20
+> I created a Bugzilla entry at=20
+> https://bugzilla.kernel.org/show_bug.cgi?id=3D42820
+> for your bug/regression report, please add your address to the CC list in=
+=20
+> there, thanks!
 
-When you restore the system back to the running state you do not want to send any other key scan codes back to the kernel.  The idea being that you type "go" and press enter to resume kernel execution.  At that point you do not want to send a random scan code back to the kernel, ideally you want to leave everything as it was.  This also handled the case where there was a PS/2 style mouse attached.
+No, thanks for spotting it, but please remove from the regressions
+report: it's not a regression in 3.3-rc but in linux-next - don't take
+my word for it, check the commit and you'll not find it in 3.3-rc.
 
-I do have a question about part of the section you deleted.
+We do still need to get the fix into linux-next: Horiguchi-san, has
+akpm put your fix in mm-commits yet?  Please send it again if not.
 
-
-> Tested on ESX 5.0 and QEMU.
-> 
-> Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
-> ---
->  kernel/debug/kdb/kdb_keyboard.c |   28 +---------------------------
->  1 files changed, 1 insertions(+), 27 deletions(-)
-> 
-> diff --git a/kernel/debug/kdb/kdb_keyboard.c b/kernel/debug/kdb/kdb_keyboard.c
-> index 4bca634..ed4a2f9 100644
-> --- a/kernel/debug/kdb/kdb_keyboard.c
-> +++ b/kernel/debug/kdb/kdb_keyboard.c
-> @@ -178,34 +178,8 @@ int kdb_get_kbd_char(void)
->  		return -1;	/* ignore unprintables */
->  	}
->  
-> -	if ((scancode & 0x7f) == 0x1c) {
-> -		/*
-> -		 * enter key.  All done.  Absorb the release scancode.
-> -		 */
-> -		while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
-> -			;
-
-Seems there is a bug here.  There is a cpu_relax() missing.
-
-> -
-> -		/*
-> -		 * Fetch the scancode
-> -		 */
-> -		scancode = inb(KBD_DATA_REG);
-> -		scanstatus = inb(KBD_STATUS_REG);
-> -
-> -		while (scanstatus & KBD_STAT_MOUSE_OBF) {
-
-There should also be a cpu_relax() right here.
-
-> -			scancode = inb(KBD_DATA_REG);
-> -			scanstatus = inb(KBD_STATUS_REG);
-> -		}
-> -
-
-
-If you put the two cpu_relax() pieces in do you still end up with a problem?  If this does not work for you the possibility to exists to clear the keyboard/mouse state on the kdb exit.
-
-Thanks,
-Jason.
+Hugh
+--8323584-1891972638-1330261843=:5648--
