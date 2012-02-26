@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2BZWom (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 17:44:42 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21991 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2BZWok (ORCPT
+	id S1753038Ab2BZWpz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 17:45:55 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50287 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab2BZWpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 17:44:40 -0500
-Date: Sun, 26 Feb 2012 23:42:36 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Alan Cox <alan@linux.intel.com>
-cc: trivial@kernel.org, David Airlie <airlied@linux.ie>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Dave Airlie <airlied@redhat.com>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Benjamin Defnet <benjamin.r.defnet@intel.com>,
-        Rajesh Poornachandran <rajesh.poornachandran@intel.com>
-Subject: [PATCH][trivial] gma500: remove redundant ';' and redundant 'else'
- from drivers/gpu/drm/gma500/power.c
-Message-ID: <alpine.LNX.2.00.1202262340390.6089@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 26 Feb 2012 17:45:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.195.99 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F4AB61C.4080404@gmail.com>
+Date: Mon, 27 Feb 2012 09:45:48 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de
+Subject: Re: [PATCH v3 17/21] ARM: at91: merge SRAM Memory banks thanks to
+ mirroring
+References: <cover.1330006537.git.nicolas.ferre@atmel.com> <c9b1e3ffbc322a1d1e1272062a9361abe536a33a.1330006537.git.nicolas.ferre@atmel.com> <4F46B3DF.7010402@gmail.com> <20120224165443.GA21556@game.jcrosoft.org>
+In-Reply-To: <20120224165443.GA21556@game.jcrosoft.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25/02/12 03:54, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/gpu/drm/gma500/power.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+> On 08:47 Fri 24 Feb     , Ryan Mallon wrote:
+>> On 24/02/12 01:26, Nicolas Ferre wrote:
+>>
+>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>
+>>> On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
+>>> merge them together to be able to have bigger and continuous
+>>> internal RAM.
+>>
+>> I think this patch needs some comments in the code. As mentioned in the
+>> last round, this functionality is not documented, so it is not obvious
+>> how/why this works. This is especially true for any user who has
+>> problems with this code and then tries to look up those addresses in
+>> their at91 manual only to find the regions are reserved.
+>>
+>> Nicolas, are you able to give an official Atmel stance on this?
+> you have the ack from Nico and he send the e-mail
 
-diff --git a/drivers/gpu/drm/gma500/power.c b/drivers/gpu/drm/gma500/power.c
-index 9402569..6486f61 100644
---- a/drivers/gpu/drm/gma500/power.c
-+++ b/drivers/gpu/drm/gma500/power.c
-@@ -302,7 +302,7 @@ int psb_runtime_suspend(struct device *dev)
- 
- int psb_runtime_resume(struct device *dev)
- {
--	return gma_power_resume(dev);;
-+	return gma_power_resume(dev);
- }
- 
- int psb_runtime_idle(struct device *dev)
-@@ -311,6 +311,5 @@ int psb_runtime_idle(struct device *dev)
- 	struct drm_psb_private *dev_priv = drmdev->dev_private;
- 	if (dev_priv->display_count)
- 		return 0;
--	else
--		return 1;
-+	return 1;
- }
--- 
-1.7.9.2
+Sure, but it would be nice to get some official documentation on this.
+Why was the feature, which seems quite useful, never documented? Is it
+supported on all revisions of the chips? Are there any restrictions or
+caveats to using the mirrored layout versus the separate layout?
 
+At the very least, the code needs to be documented, since anyone using
+this code is not able to look up the details in the at91 technical manuals.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+~Ryan
