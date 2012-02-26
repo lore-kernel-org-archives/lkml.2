@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab2BZMSR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 07:18:17 -0500
-Received: from mail.eleftheriou.eu ([86.35.2.10]:60136 "EHLO
-	enigma.wired-net.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab2BZMSP (ORCPT
+	id S1751591Ab2BZMWM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 07:22:12 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53489 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab2BZMWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 07:18:15 -0500
-Date: Sun, 26 Feb 2012 14:18:02 +0200
-From: Nanakos Chrysostomos <nanakos@wired-net.gr>
-To: tytso@mit.edu
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Ext4 Kernel Crash
-Message-ID: <20120226121802.GA8600@dinofilaria.home>
+	Sun, 26 Feb 2012 07:22:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tmezzadra@gmail.com designates 10.236.154.165 as permitted sender) smtp.mail=tmezzadra@gmail.com; dkim=pass header.i=tmezzadra@gmail.com
+Message-ID: <4F4A23EC.2040802@gmail.com>
+Date: Sun, 26 Feb 2012 09:22:04 -0300
+From: "Tomas M." <tmezzadra@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120217 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: linux 3.3-rc5 fails to build
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
-I tried a newer kernel and for the moment there are no problems.
-I am testing our systems this weekend and the new week. I will
-let you know the results.
+Hi everyone,
 
-Kind regards,
-     Chris
+autofs4 breaks build in 3.3-rc5
+
+---
+CC fs/ioprio.o
+CC fs/proc_namespace.o
+CC [M] fs/autofs4/init.o
+CC [M] fs/autofs4/inode.o
+fs/autofs4/inode.c: In function ‘autofs4_fill_super’:
+fs/autofs4/inode.c:228:2: error: implicit declaration of function 
+‘is_compat_task’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+
+make[2]: *** [fs/autofs4/inode.o] Error 1
+make[1]: *** [fs/autofs4] Error 2
+make: *** [fs] Error 2
 
 
-On Mon, Jan 30, 2012 at 12:26:59PM -0500, Ted Ts'o wrote:
-> On Sun, Jan 29, 2012 at 07:50:57PM +0200, Nanakos Chrysostomos wrote:
-> > Dear Linux Kernel Developers,
-> > I am writing to report a kernel or ext4 bug.
->
-> Hi Nanakos,
->
-> My apologies for not responding to the message that you sent to me
-> personally three days ago, but I was on vacation in Hawaii; the best
-> place to send queries about ext4 file systems is to use the
-> linux-ext4@vger.kernel.org mailing list.
->
-> One thing that I would immediately suggest is to see whether you can
-> reproduce this bug using a modern kernel.  You are currently using a
-> RHEL6-derived kernel (2.6.32-220.4.1.el6.x86_64).  The ext4 file
-> system in such a kernel is quite different from what is in upstream,
-> and there were a large number of bugs that have been fixed in ext4
-> since 2.6.32.  Many of these fixes were backported into the RHEL6
-> kernel, but I'm not an expert on which fixes have been backported into
-> RHEL6 and which haven't.  (Especially since Red Hat doesn't release
-> broken-out patches for their RHEL kernels....)
->
-> My understanding is that Gluster doesn't require any kernel-side
-> patches, so it should be OK to run Gluster on a v3.2 kernel.
-> Alternatively, if you are a paid customer of RHEL6, I'd suggest
-> sending a support request to Red Hat.
->
-> Best regards,
->
->                                       - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+could it be commit a32744d4abae24572eff7269bc17895c41bd0085
+
+autofs: work around unhappy compat problem on x86-64
+
