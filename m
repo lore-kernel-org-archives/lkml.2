@@ -1,171 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2B0MOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:14:52 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:50816
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751541Ab2B0MOv (ORCPT
+	id S1753935Ab2B0MPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 07:15:36 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:47239 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab2B0MPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 07:14:51 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 27 Feb 2012 20:21:18 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
-        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
-        <thomas.abraham@linaro.org>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
- config operations
-Message-ID: <20120227122117.GA15593@shlinux2.ap.freescale.net>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
- <1329720360-23227-21-git-send-email-swarren@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1329720360-23227-21-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Mon, 27 Feb 2012 07:15:34 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-16-4f4b73e30f92
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, gregkh@linuxfoundation.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
+Subject: [PATCH v6 0/5] Introduce External Connector Class (extcon)
+Date: Mon, 27 Feb 2012 21:15:34 +0900
+Message-id: <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 11:46:00PM -0700, Stephen Warren wrote:
-> The pinctrl mapping table can now contain entries to:
-> * Set the mux function of a pin group
-> * Apply a set of pin config options to a pin or a group
-> 
-> This allows pinctrl_select_state() to apply pin configs settings as well
-> as mux settings.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-....
-> -       PIN_MAP("default", "pinctrl-foo", "i2c0", "foo-i2c.0"),
-> +	PIN_MAP_MUX_GROUP("foo-i2c.o", "default", "pinctrl-foo", NULL, "i2c0"),
-> +};
-> +
-> +The mapping table may also contain pin configuration entries. It's common for
-> +each pin/group to have a number of configuration entries that affect it, so
-> +the table entries for configuration reference an array of config parameters
-> +and values. An example using the convenience macros is shown below:
-> +
-> +static unsigned long i2c_grp_configs[] = {
-> +	FOO_PIN_DRIVEN,
-> +	FOO_PIN_PULLUP,
-> +};
-> +
-> +static unsigned long i2c_pin_configs[] = {
-> +	FOO_OPEN_COLLECTOR,
-> +	FOO_SLEW_RATE_SLOW,
-> +};
-> +
-> +static struct pinctrl_map __initdata mapping[] = {
-> +	PIN_MAP_MUX_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", "i2c0"),
-> +	PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", i2c_grp_configs),
-> +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0scl", i2c_pin_configs),
-> +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0sda", i2c_pin_configs),
-I still have not read all over this patch.
-But one question i'm considering is that
-will this way here also work for "virtual" group?
-For example, the virtual group "i2c_grp_configs" may actually contains
-the config for each pin in that group?
-The core will handle this difference or let each driver to handle it?
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-> @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
->  mux settings on the primary pin controller, there is a convenience macro for
->  this:
->  
-> -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
-Hmm?
-Why remove this one?
+An example is a 4-pin (or more pins?) analog audio connector
+(usually referred as "3.5-pi" jacks). It can be implemented with the 5/5
+patch, "adc-jack", supplied with information about IRQ, a method to get
+ADC values, and ADC value ranges. With a 4-pin 3.5-pi port and adc-jack
+driver with proper ADC configurations, the following modes may be
+detected: "standard mono cable", "standard stereo cable",
+"standard stereo + remote cable", "standard stereo + mic + remote cable",
+"standard stereo + different-spec mic + remote cable", and such.
+Note that for 4-pin cables with mic and remote, there are multiple
+standards (at least Samsung and Apple use different configurations for
+those 4-pin earphones although the pins looks exactly same.)
+and they often can be distinguished with ADC values.
 
-> +PIN_MAP_MUX_GROUP("pinctrl-foo", "active", "pinctrl-foo", NULL, "power_func")
->  
->  This gives the exact same result as the above construction.
->  
-> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-> index eb79a49..599aa79 100644
-> --- a/arch/arm/mach-u300/core.c
-> +++ b/arch/arm/mach-u300/core.c
-> @@ -1554,13 +1554,13 @@ static struct platform_device pinmux_device = {
->  /* Pinmux settings */
->  static struct pinctrl_map __initdata u300_pinmux_map[] = {
->  	/* anonymous maps for chip power and EMIFs */
-> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "power"),
-> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif0"),
-> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif1"),
-> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "power"),
-> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif0"),
-> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif1"),
->  	/* per-device maps for MMC/SD, SPI and UART */
-> -	PIN_MAP("default", "pinmux-u300", "mmc0", "mmci"),
-> -	PIN_MAP("default", "pinmux-u300", "spi0", "pl022"),
-> -	PIN_MAP("default", "pinmux-u300", "uart0", "uart0"),
-> +	PIN_MAP_MUX_GROUP("mmci",  "default", "pinmux-u300", NULL, "mmc0"),
-> +	PIN_MAP_MUX_GROUP("pl022", "default", "pinmux-u300", NULL, "spi0"),
-> +	PIN_MAP_MUX_GROUP("uart0", "default", "pinmux-u300", NULL, "uart0"),
->  };
->  
->  struct u300_mux_hog {
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index bab1a69..af4ebe9 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -341,6 +341,31 @@ int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
->  }
->  
->  /**
-> + * pinctrl_get_pin_id() - returns the group selector for a group
-> + * @pctldev: the pin controller handling the group
-> + * @pin_group: the pin group to look up
-The comment seems not correct here.
+Although we may have simply given different "cable id" for "stereo" and
+"stereo + mic". However, for those userspace processes or other device
+drivers that are interested only in "stereo" part of possible combinations,
+having seperated mode/id for "stereo" and "mic" is more desirable.
+For example, if we do not have multistate capabilities, those who want
+to know "stereo" is attached or not should monitor everything:
+"standard stereo cable", "standard stereo + remove cable",
+"standard stereo + mic + remote cable", and others. However, with
+multistate capabilities, they only need to monitor the bit associated
+with "standard stero".
 
-> + */
-> +int pinctrl_get_pin_id(struct pinctrl_dev *pctldev,
-> +		       const char *pin)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < pctldev->desc->npins; i++) {
-> +		if (pctldev->desc->pins[i].name == NULL)
-> +			continue;
-> +		if (!strcmp(pin, pctldev->desc->pins[i].name)) {
-> +			dev_dbg(pctldev->dev, "found pin id %u for %s\n",
-> +				i, pin);
-> +			return i;
-It looks actually this is not a PIN id.
-It's just the index of the pin array.
-Pin has its own id:
-struct pinctrl_pin_desc {
-	unsigned number;
-	const char *name;
-};
+For another example, when MAX8997-MUIC detects a Charger cable insertion,
+another device driver (such as MAX8903 charger, MAX8997 charger, Charger
+Manager, or board file) needs to set charger current limit accordingly
+and when MAX8997-MUIC detects a HDMI cable insertion, multimedia device
+drivers need to do some operations accordingly.
 
->  static int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
->  			   unsigned long *config)
->  {
-> @@ -260,8 +278,154 @@ unlock:
->  }
->  EXPORT_SYMBOL(pin_config_group_set);
->  
-> +int pinconf_map_to_setting(struct pinctrl_map const *map,
-> +			  struct pinctrl_setting *setting)
-> +{
-> +	struct pinctrl_dev *pctldev = setting->pctldev;
-> +
-> +	switch (setting->type) {
-> +	case PIN_MAP_TYPE_CONFIGS_PIN:
-> +		setting->data.configs.group_or_pin =
-> +			pinctrl_get_pin_id(pctldev,
-> +					   map->data.configs.group_or_pin);
-> +		if (setting->data.configs.group_or_pin < 0)
-> +			return setting->data.configs.group_or_pin;
-> +		break;
-> +		break;
-Two break here.
 
-Regards
-Dong Aisheng
+This patchset supports the usage of notifier for passing such information
+between device drivers.
+
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
+
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
+
+Summary of changes from v5 patchset
+- Excluded adc-jack from the "default" patchset. Adc-jack will be later
+added after Extcon is finalized.
+- Sysfs style updated
+- Bugfixes after using at Exynos4412 boards with userspace processes
+- Code stype updated
+
+Summary of changes from v4 patchset
+- Bugfixes after testing at Exynos4412 boards with userspace processes
+- Added adc-jack to support 3.5-pi jack and other ADC-based cable detection
+ports.
+
+Summary of changes from v3 patchset
+- Bugfixes after testing at Exynos4412 boards.
+
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
+
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
+
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
+
+MyungJoo Ham (4):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support generic GPIO extcon driver
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
+
+ Documentation/ABI/testing/sysfs-class-extcon |   97 +++
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/extcon/Kconfig                       |   35 ++
+ drivers/extcon/Makefile                      |    6 +
+ drivers/extcon/extcon_class.c                |  812 ++++++++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                 |  175 ++++++
+ include/linux/extcon.h                       |  322 ++++++++++
+ include/linux/extcon/extcon_gpio.h           |   52 ++
+ 9 files changed, 1502 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/extcon_class.c
+ create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
+ create mode 100644 include/linux/extcon/extcon_gpio.h
+
+-- 
+1.7.4.1
 
