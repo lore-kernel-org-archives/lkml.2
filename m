@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2B0WX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 17:23:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38804 "EHLO
+	id S932069Ab2B0WYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 17:24:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38805 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab2B0WX4 (ORCPT
+	with ESMTP id S1755926Ab2B0WYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 17:23:56 -0500
+	Mon, 27 Feb 2012 17:24:00 -0500
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 6/7] AppArmor: Add ability to load extended policy
-Date: Mon, 27 Feb 2012 14:23:16 -0800
-Message-Id: <1330381397-5352-7-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 7/7] AppArmor: Add the ability to mediate mount
+Date: Mon, 27 Feb 2012 14:23:17 -0800
+Message-Id: <1330381397-5352-8-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1330381397-5352-1-git-send-email-john.johansen@canonical.com>
 References: <1330381397-5352-1-git-send-email-john.johansen@canonical.com>
@@ -20,125 +20,941 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the base support for the new policy extensions. This does not bring
-any additional functionality, or change current semantics.
+Add the ability for apparmor to do mediation of mount operations. Mount
+rules require an updated apparmor_parser (2.8 series) for policy compilation.
+
+The basic form of the rules are.
+
+  [audit] [deny] mount [conds]* [device] [ -> [conds] path],
+  [audit] [deny] remount [conds]* [path],
+  [audit] [deny] umount [conds]* [path],
+  [audit] [deny] pivotroot [oldroot=<value>] <path>
+
+  remount is just a short cut for mount options=remount
+
+  where [conds] can be
+    fstype=<expr>
+    options=<expr>
+
+Example mount commands
+  mount,		# allow all mounts, but not umount or pivotroot
+
+  mount fstype=procfs,  # allow mounting procfs anywhere
+
+  mount options=(bind, ro) /foo -> /bar,  # readonly bind mount
+
+  mount /dev/sda -> /mnt,
+
+  mount /dev/sd** -> /mnt/**,
+
+  mount fstype=overlayfs options=(rw,upperdir=/tmp/upper/,lowerdir=/) -> /mnt/
+
+  umount,
+
+  umount /m*,
+
+See the apparmor userspace for full documentation
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 Acked-by: Kees Cook <kees@ubuntu.com>
 ---
- security/apparmor/include/apparmor.h |   13 +++++++++++++
- security/apparmor/include/policy.h   |   13 +++++++++++++
- security/apparmor/policy.c           |    1 +
- security/apparmor/policy_unpack.c    |   22 ++++++++++++++++++++++
- 4 files changed, 49 insertions(+), 0 deletions(-)
+ include/linux/lsm_audit.h            |    7 +
+ security/apparmor/Makefile           |    3 +-
+ security/apparmor/apparmorfs.c       |   13 +
+ security/apparmor/audit.c            |    4 +
+ security/apparmor/domain.c           |    2 +-
+ security/apparmor/include/apparmor.h |    3 +-
+ security/apparmor/include/audit.h    |    4 +
+ security/apparmor/include/domain.h   |    2 +
+ security/apparmor/include/mount.h    |   53 +++
+ security/apparmor/lsm.c              |   59 ++++
+ security/apparmor/mount.c            |  600 ++++++++++++++++++++++++++++++++++
+ 11 files changed, 746 insertions(+), 4 deletions(-)
+ create mode 100644 security/apparmor/include/mount.h
+ create mode 100644 security/apparmor/mount.c
 
-diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
-index 248c408..40aedd9 100644
---- a/security/apparmor/include/apparmor.h
-+++ b/security/apparmor/include/apparmor.h
-@@ -19,6 +19,19 @@
+diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
+index 88e78de..7611a42 100644
+--- a/include/linux/lsm_audit.h
++++ b/include/linux/lsm_audit.h
+@@ -119,6 +119,13 @@ struct common_audit_data {
+ 					unsigned long max;
+ 				} rlim;
+ 				struct {
++					const char *src_name;
++					const char *type;
++					const char *trans;
++					const char *data;
++					unsigned long flags;
++				} mnt;
++				struct {
+ 					const char *target;
+ 					u32 request;
+ 					u32 denied;
+diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
+index 86103ce..30cf9b2 100644
+--- a/security/apparmor/Makefile
++++ b/security/apparmor/Makefile
+@@ -4,11 +4,10 @@ obj-$(CONFIG_SECURITY_APPARMOR) += apparmor.o
  
- #include "match.h"
+ apparmor-y := apparmorfs.o audit.o capability.o context.o ipc.o lib.o match.o \
+               path.o domain.o policy.o policy_unpack.o procattr.o lsm.o \
+-              resource.o sid.o file.o
++              resource.o sid.o file.o mount.o
  
-+/*
-+ * Class of mediation types in the AppArmor policy db
-+ */
-+#define AA_CLASS_ENTRY		0
-+#define AA_CLASS_UNKNOWN	1
-+#define AA_CLASS_FILE		2
-+#define AA_CLASS_CAP		3
-+#define AA_CLASS_NET		4
-+#define AA_CLASS_RLIMITS	5
-+#define AA_CLASS_DOMAIN		6
-+
-+#define AA_CLASS_LAST		AA_CLASS_DOMAIN
-+
- /* Control parameters settable through module/boot flags */
- extern enum audit_mode aa_g_audit;
- extern bool aa_g_audit_header;
-diff --git a/security/apparmor/include/policy.h b/security/apparmor/include/policy.h
-index aeda5cf..9e18e96 100644
---- a/security/apparmor/include/policy.h
-+++ b/security/apparmor/include/policy.h
-@@ -129,6 +129,17 @@ struct aa_namespace {
- 	struct list_head sub_ns;
+ clean-files := capability_names.h rlim_names.h
+ 
+-
+ # Build a lower case string table of capability names
+ # Transforms lines from
+ #    #define CAP_DAC_OVERRIDE     1
+diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
+index 16c15ec..f38a259 100644
+--- a/security/apparmor/apparmorfs.c
++++ b/security/apparmor/apparmorfs.c
+@@ -198,9 +198,22 @@ static struct aa_fs_entry aa_fs_entry_domain[] = {
+ 	{ }
  };
  
-+/* struct aa_policydb - match engine for a policy
-+ * dfa: dfa pattern match
-+ * start: set of start states for the different classes of data
-+ */
-+struct aa_policydb {
-+	/* Generic policy DFA specific rule types will be subsections of it */
-+	struct aa_dfa *dfa;
-+	unsigned int start[AA_CLASS_LAST + 1];
-+
++static struct aa_fs_entry aa_fs_entry_mount[] = {
++	AA_FS_FILE_STRING("mask", "mount umount"),
++	{ }
 +};
 +
- /* struct aa_profile - basic confinement data
-  * @base - base components of the profile (name, refcount, lists, lock ...)
-  * @parent: parent of profile
-@@ -143,6 +154,7 @@ struct aa_namespace {
-  * @flags: flags controlling profile behavior
-  * @path_flags: flags controlling path generation behavior
-  * @size: the memory consumed by this profiles rules
-+ * @policy: general match rules governing policy
-  * @file: The set of rules governing basic file access and domain transitions
-  * @caps: capabilities for the profile
-  * @rlimits: rlimits for the profile
-@@ -179,6 +191,7 @@ struct aa_profile {
- 	u32 path_flags;
- 	int size;
++static struct aa_fs_entry aa_fs_entry_namespaces[] = {
++	AA_FS_FILE_BOOLEAN("profile",		1),
++	AA_FS_FILE_BOOLEAN("pivot_root",	1),
++	{ }
++};
++
+ static struct aa_fs_entry aa_fs_entry_features[] = {
+ 	AA_FS_DIR("domain",			aa_fs_entry_domain),
+ 	AA_FS_DIR("file",			aa_fs_entry_file),
++	AA_FS_DIR("mount",			aa_fs_entry_mount),
++	AA_FS_DIR("namespaces",			aa_fs_entry_namespaces),
+ 	AA_FS_FILE_U64("capability",		VFS_CAP_FLAGS_MASK),
+ 	AA_FS_DIR("rlimit",			aa_fs_entry_rlimit),
+ 	{ }
+diff --git a/security/apparmor/audit.c b/security/apparmor/audit.c
+index 61344b5..d63cfb6 100644
+--- a/security/apparmor/audit.c
++++ b/security/apparmor/audit.c
+@@ -44,6 +44,10 @@ const char *op_table[] = {
+ 	"file_mmap",
+ 	"file_mprotect",
  
-+	struct aa_policydb policy;
- 	struct aa_file_rules file;
- 	struct aa_caps caps;
- 	struct aa_rlimit rlimits;
-diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
-index 537e5dc..8b7febb 100644
---- a/security/apparmor/policy.c
-+++ b/security/apparmor/policy.c
-@@ -752,6 +752,7 @@ static void free_profile(struct aa_profile *profile)
++	"pivotroot",
++	"mount",
++	"umount",
++
+ 	"create",
+ 	"post_create",
+ 	"bind",
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 7c69599..6fc18d1 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -242,7 +242,7 @@ static const char *next_name(int xtype, const char *name)
+  *
+  * Returns: refcounted profile, or NULL on failure (MAYBE NULL)
+  */
+-static struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex)
++struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex)
+ {
+ 	struct aa_profile *new_profile = NULL;
+ 	struct aa_namespace *ns = profile->ns;
+diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
+index 40aedd9..e243d96 100644
+--- a/security/apparmor/include/apparmor.h
++++ b/security/apparmor/include/apparmor.h
+@@ -29,8 +29,9 @@
+ #define AA_CLASS_NET		4
+ #define AA_CLASS_RLIMITS	5
+ #define AA_CLASS_DOMAIN		6
++#define AA_CLASS_MOUNT		7
  
- 	aa_free_sid(profile->sid);
- 	aa_put_dfa(profile->xmatch);
-+	aa_put_dfa(profile->policy.dfa);
+-#define AA_CLASS_LAST		AA_CLASS_DOMAIN
++#define AA_CLASS_LAST		AA_CLASS_MOUNT
  
- 	aa_put_profile(profile->replacedby);
+ /* Control parameters settable through module/boot flags */
+ extern enum audit_mode aa_g_audit;
+diff --git a/security/apparmor/include/audit.h b/security/apparmor/include/audit.h
+index 9317cd8..0e8689d 100644
+--- a/security/apparmor/include/audit.h
++++ b/security/apparmor/include/audit.h
+@@ -73,6 +73,10 @@ enum aa_ops {
+ 	OP_FMMAP,
+ 	OP_FMPROT,
  
-diff --git a/security/apparmor/policy_unpack.c b/security/apparmor/policy_unpack.c
-index 6137b10..c7a6d03 100644
---- a/security/apparmor/policy_unpack.c
-+++ b/security/apparmor/policy_unpack.c
-@@ -562,6 +562,28 @@ static struct aa_profile *unpack_profile(struct aa_ext *e)
- 	if (!unpack_rlimits(e, profile))
- 		goto fail;
++	OP_PIVOTROOT,
++	OP_MOUNT,
++	OP_UMOUNT,
++
+ 	OP_CREATE,
+ 	OP_POST_CREATE,
+ 	OP_BIND,
+diff --git a/security/apparmor/include/domain.h b/security/apparmor/include/domain.h
+index de04464..a3f70c5 100644
+--- a/security/apparmor/include/domain.h
++++ b/security/apparmor/include/domain.h
+@@ -23,6 +23,8 @@ struct aa_domain {
+ 	char **table;
+ };
  
-+	if (unpack_nameX(e, AA_STRUCT, "policydb")) {
-+		/* generic policy dfa - optional and may be NULL */
-+		profile->policy.dfa = unpack_dfa(e);
-+		if (IS_ERR(profile->policy.dfa)) {
-+			error = PTR_ERR(profile->policy.dfa);
-+			profile->policy.dfa = NULL;
-+			goto fail;
-+		}
-+		if (!unpack_u32(e, &profile->policy.start[0], "start"))
-+			/* default start state */
-+			profile->policy.start[0] = DFA_START;
-+		/* setup class index */
-+		for (i = AA_CLASS_FILE; i <= AA_CLASS_LAST; i++) {
-+			profile->policy.start[i] =
-+				aa_dfa_next(profile->policy.dfa,
-+					    profile->policy.start[0],
-+					    i);
-+		}
-+		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+			goto fail;
++struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex);
++
+ int apparmor_bprm_set_creds(struct linux_binprm *bprm);
+ int apparmor_bprm_secureexec(struct linux_binprm *bprm);
+ void apparmor_bprm_committing_creds(struct linux_binprm *bprm);
+diff --git a/security/apparmor/include/mount.h b/security/apparmor/include/mount.h
+new file mode 100644
+index 0000000..6f936bc
+--- /dev/null
++++ b/security/apparmor/include/mount.h
+@@ -0,0 +1,53 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor file mediation function definitions.
++ *
++ * Copyright 2012 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ */
++
++#ifndef __AA_MOUNT_H
++#define __AA_MOUNT_H
++
++#include <linux/fs.h>
++#include <linux/path.h>
++
++#include "domain.h"
++#include "policy.h"
++
++/* mount perms */
++#define AA_MAY_PIVOTROOT	0x01
++#define AA_MAY_MOUNT		0x02
++#define AA_MAY_UMOUNT		0x04
++
++#define AA_MS_IGNORE_MASK (MS_KERNMOUNT | MS_NOSEC | MS_ACTIVE | MS_BORN)
++
++
++int aa_remount(struct aa_profile *profile, struct path *path,
++	       unsigned long flags, void *data);
++
++int aa_bind_mount(struct aa_profile *profile, struct path *path,
++		  const char *old_name, unsigned long flags);
++
++
++int aa_mount_change_type(struct aa_profile *profile, struct path *path,
++			 unsigned long flags);
++
++int aa_move_mount(struct aa_profile *profile, struct path *path,
++		  const char *old_name);
++
++int aa_new_mount(struct aa_profile *profile, const char *dev_name,
++		 struct path *path, const char *type, unsigned long flags,
++		 void *data);
++
++int aa_umount(struct aa_profile *profile, struct vfsmount *mnt, int flags);
++
++int aa_pivotroot(struct aa_profile *profile, struct path *old_path,
++		  struct path *new_path);
++
++#endif /* __AA_MOUNT_H */
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index 97ce8fa..08e0fa5 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -35,6 +35,7 @@
+ #include "include/path.h"
+ #include "include/policy.h"
+ #include "include/procattr.h"
++#include "include/mount.h"
+ 
+ /* Flag indicating whether initialization completed */
+ int apparmor_initialized __initdata;
+@@ -511,6 +512,60 @@ static int apparmor_file_mprotect(struct vm_area_struct *vma,
+ 			   !(vma->vm_flags & VM_SHARED) ? MAP_PRIVATE : 0);
+ }
+ 
++static int apparmor_sb_mount(char *dev_name, struct path *path, char *type,
++			     unsigned long flags, void *data)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	/* Discard magic */
++	if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
++		flags &= ~MS_MGC_MSK;
++
++	flags &= ~AA_MS_IGNORE_MASK;
++
++	profile = __aa_current_profile();
++	if (!unconfined(profile)) {
++		if (flags & MS_REMOUNT)
++			error = aa_remount(profile, path, flags, data);
++		else if (flags & MS_BIND)
++			error = aa_bind_mount(profile, path, dev_name, flags);
++		else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE |
++				  MS_UNBINDABLE))
++			error = aa_mount_change_type(profile, path, flags);
++		else if (flags & MS_MOVE)
++			error = aa_move_mount(profile, path, dev_name);
++		else
++			error = aa_new_mount(profile, dev_name, path, type,
++					     flags, data);
++	}
++	return error;
++}
++
++static int apparmor_sb_umount(struct vfsmount *mnt, int flags)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	profile = __aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_umount(profile, mnt, flags);
++
++	return error;
++}
++
++static int apparmor_sb_pivotroot(struct path *old_path, struct path *new_path)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	profile = __aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_pivotroot(profile, old_path, new_path);
++
++	return error;
++}
++
+ static int apparmor_getprocattr(struct task_struct *task, char *name,
+ 				char **value)
+ {
+@@ -628,6 +683,10 @@ static struct security_operations apparmor_ops = {
+ 	.capget =			apparmor_capget,
+ 	.capable =			apparmor_capable,
+ 
++	.sb_mount =			apparmor_sb_mount,
++	.sb_umount =			apparmor_sb_umount,
++	.sb_pivotroot =			apparmor_sb_pivotroot,
++
+ 	.path_link =			apparmor_path_link,
+ 	.path_unlink =			apparmor_path_unlink,
+ 	.path_symlink =			apparmor_path_symlink,
+diff --git a/security/apparmor/mount.c b/security/apparmor/mount.c
+new file mode 100644
+index 0000000..1352d60
+--- /dev/null
++++ b/security/apparmor/mount.c
+@@ -0,0 +1,600 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor mediation of files
++ *
++ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright 2009-2012 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ */
++
++#include <linux/fs.h>
++#include <linux/mount.h>
++#include <linux/namei.h>
++
++#include "include/apparmor.h"
++#include "include/audit.h"
++#include "include/context.h"
++#include "include/domain.h"
++#include "include/file.h"
++#include "include/match.h"
++#include "include/mount.h"
++#include "include/path.h"
++#include "include/policy.h"
++
++
++static void audit_mnt_flags(struct audit_buffer *ab, unsigned long flags)
++{
++	if (flags & MS_RDONLY)
++		audit_log_format(ab, "ro");
++	else
++		audit_log_format(ab, "rw");
++	if (flags & MS_NOSUID)
++		audit_log_format(ab, ", nosuid");
++	if (flags & MS_NODEV)
++		audit_log_format(ab, ", nodev");
++	if (flags & MS_NOEXEC)
++		audit_log_format(ab, ", noexec");
++	if (flags & MS_SYNCHRONOUS)
++		audit_log_format(ab, ", sync");
++	if (flags & MS_REMOUNT)
++		audit_log_format(ab, ", remount");
++	if (flags & MS_MANDLOCK)
++		audit_log_format(ab, ", mand");
++	if (flags & MS_DIRSYNC)
++		audit_log_format(ab, ", dirsync");
++	if (flags & MS_NOATIME)
++		audit_log_format(ab, ", noatime");
++	if (flags & MS_NODIRATIME)
++		audit_log_format(ab, ", nodiratime");
++	if (flags & MS_BIND)
++		audit_log_format(ab, flags & MS_REC ? ", rbind" : ", bind");
++	if (flags & MS_MOVE)
++		audit_log_format(ab, ", move");
++	if (flags & MS_SILENT)
++		audit_log_format(ab, ", silent");
++	if (flags & MS_POSIXACL)
++		audit_log_format(ab, ", acl");
++	if (flags & MS_UNBINDABLE)
++		audit_log_format(ab, flags & MS_REC ? ", runbindable" :
++				 ", unbindable");
++	if (flags & MS_PRIVATE)
++		audit_log_format(ab, flags & MS_REC ? ", rprivate" :
++				 ", private");
++	if (flags & MS_UNBINDABLE)
++		audit_log_format(ab, flags & MS_REC ? ", rslave" :
++				 ", slave");
++	if (flags & MS_UNBINDABLE)
++		audit_log_format(ab, flags & MS_REC ? ", rshared" :
++				 ", shared");
++	if (flags & MS_RELATIME)
++		audit_log_format(ab, ", relatime");
++	if (flags & MS_I_VERSION)
++		audit_log_format(ab, ", iversion");
++	if (flags & MS_STRICTATIME)
++		audit_log_format(ab, ", strictatime");
++	if (flags & MS_NOUSER)
++		audit_log_format(ab, ", nouser");
++}
++
++/**
++ * mount_audit_cb - call back for mount specific audit fields
++ * @ab: audit_buffer  (NOT NULL)
++ * @va: audit struct to audit values of  (NOT NULL)
++ */
++static void mount_audit_cb(struct audit_buffer *ab, void *va)
++{
++	struct common_audit_data *sa = va;
++
++	if (sa->aad.mnt.type) {
++		audit_log_format(ab, " fstype=");
++		audit_log_untrustedstring(ab, sa->aad.mnt.type);
++	}
++	if (sa->aad.mnt.src_name) {
++		audit_log_format(ab, " src_name=");
++		audit_log_untrustedstring(ab, sa->aad.mnt.src_name);
++	}
++	if (sa->aad.mnt.trans) {
++		audit_log_format(ab, " trans=");
++		audit_log_untrustedstring(ab, sa->aad.mnt.trans);
++	}
++	if (sa->aad.mnt.flags || sa->aad.op == OP_MOUNT) {
++		audit_log_format(ab, " flags=\"");
++		audit_mnt_flags(ab, sa->aad.mnt.flags);
++		audit_log_format(ab, "\"");
++	}
++	if (sa->aad.mnt.data) {
++		audit_log_format(ab, " options=");
++		audit_log_untrustedstring(ab, sa->aad.mnt.data);
++	}
++}
++
++/**
++ * aa_audit_file - handle the auditing of file operations
++ * @profile: the profile being enforced  (NOT NULL)
++ * @gfp: allocation flags
++ * @op: operation being mediated
++ * @name: name of object being mediated (MAYBE NULL)
++ * @src_name: src_name of object being mediated (MAYBE_NULL)
++ * @type: type of filesystem
++ * @trans: name of trans (MAYBE NULL)
++ * @flags: filesystem idependent mount flags
++ * @data: filesystem mount flags
++ * @request: permissions requested
++ * @perms: the permissions computed for the request (NOT NULL)
++ * @info: extra information message (MAYBE NULL)
++ * @error: 0 if operation allowed else failure error code
++ *
++ * Returns: %0 or error on failure
++ */
++int aa_audit_mount(struct aa_profile *profile, gfp_t gfp, int op,
++		   const char *name, const char *src_name, const char *type,
++		   const char *trans, unsigned long flags, void *data,
++		   u32 request, struct file_perms *perms, const char *info,
++		   int error)
++{
++	int audit_type = AUDIT_APPARMOR_AUTO;
++	struct common_audit_data sa;
++
++	if (likely(!error)) {
++		u32 mask = perms->audit;
++
++		if (unlikely(AUDIT_MODE(profile) == AUDIT_ALL))
++			mask = 0xffff;
++
++		/* mask off perms that are not being force audited */
++		request &= mask;
++
++		if (likely(!request))
++			return 0;
++		audit_type = AUDIT_APPARMOR_AUDIT;
++	} else {
++		/* only report permissions that were denied */
++		request = request & ~perms->allow;
++
++		if (request & perms->kill)
++			audit_type = AUDIT_APPARMOR_KILL;
++
++		/* quiet known rejects, assumes quiet and kill do not overlap */
++		if ((request & perms->quiet) &&
++		    AUDIT_MODE(profile) != AUDIT_NOQUIET &&
++		    AUDIT_MODE(profile) != AUDIT_ALL)
++			request &= ~perms->quiet;
++
++		if (!request)
++			return COMPLAIN_MODE(profile) ? 0 : error;
 +	}
 +
- 	/* get file rules */
- 	profile->file.dfa = unpack_dfa(e);
- 	if (IS_ERR(profile->file.dfa)) {
++	COMMON_AUDIT_DATA_INIT(&sa, NONE);
++	sa.aad.op = op,
++	sa.aad.name = name;
++	sa.aad.info = info;
++	sa.aad.error = error;
++	sa.aad.mnt.src_name = src_name;
++	sa.aad.mnt.type = type;
++	sa.aad.mnt.trans = trans;
++	sa.aad.mnt.flags = flags;
++	sa.aad.mnt.data = data;
++
++	return aa_audit(audit_type, profile, gfp, &sa, mount_audit_cb);
++}
++
++
++/**
++ * match_mnt_flags - Do an ordered match on mount flags
++ * @dfa: dfa to match against
++ * @state: state to start in
++ * @flags: mount flags to match against
++ *
++ * Mount flags are encoded as an ordered match. This is done instead of
++ * checking against a simple bitmask, to allow for logical operations
++ * on the flags.
++ *
++ * Returns: next state after flags match
++ */
++static unsigned int match_mnt_flags(struct aa_dfa *dfa, unsigned int state,
++				    unsigned long flags)
++{
++	unsigned int i;
++
++	for (i = 0; i <= 31 ; ++i) {
++		if ((1 << i) & flags)
++			state = aa_dfa_next(dfa, state, i + 1);
++	}
++	return state;
++}
++
++/**
++ * compute_mnt_perms - compute mount permission associated with @state
++ * @dfa: dfa to match against (NOT NULL)
++ * @state: state match finished in
++ *
++ * Returns: mount permissions
++ */
++static struct file_perms compute_mnt_perms(struct aa_dfa *dfa,
++					   unsigned int state)
++{
++	struct file_perms perms;
++
++	perms.kill = 0;
++	perms.allow = dfa_user_allow(dfa, state);
++	perms.audit = dfa_user_audit(dfa, state);
++	perms.quiet = dfa_user_quiet(dfa, state);
++	perms.xindex = dfa_user_xindex(dfa, state);
++
++	return perms;
++}
++
++static int path_flags(struct aa_profile *profile, struct path *path)
++{
++	return profile->path_flags |
++		S_ISDIR(path->dentry->d_inode->i_mode) ? PATH_IS_DIR : 0;
++}
++
++int aa_remount(struct aa_profile *profile, struct path *path,
++	       unsigned long flags, void *data)
++{
++	struct file_perms perms;
++	const char *name, *info = NULL;
++	char *buffer = NULL;
++	int binarydata, error;
++
++	binarydata = path->dentry->d_sb->s_type->fs_flags & FS_BINARY_MOUNTDATA;
++
++	error = aa_path_name(path, path_flags(profile, path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip device */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip type */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = match_mnt_flags(profile->policy.dfa, state, flags);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		if (data && !binarydata)
++			state = aa_dfa_match(profile->policy.dfa, state,
++					     data);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_MOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_MOUNT, name,
++			       NULL, NULL, NULL, flags, data, AA_MAY_MOUNT,
++			       &perms, info, error);
++	kfree(buffer);
++
++	return error;
++}
++
++int aa_bind_mount(struct aa_profile *profile, struct path *path,
++		  const char *dev_name, unsigned long flags)
++{
++	struct file_perms perms = { };
++	char *buffer = NULL, *old_buffer = NULL;
++	const char *name, *old_name, *info = NULL;
++	struct path old_path;
++	int error;
++
++	if (!dev_name || !*dev_name)
++		return -EINVAL;
++
++	flags &= MS_REC | MS_BIND;
++
++	error = aa_path_name(path, path_flags(profile, path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	error = kern_path(dev_name, LOOKUP_FOLLOW|LOOKUP_AUTOMOUNT, &old_path);
++	if (error)
++		goto audit;
++
++	error = aa_path_name(&old_path, path_flags(profile, &old_path),
++			     &old_buffer, &old_name, &info);
++	path_put(&old_path);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = aa_dfa_match(profile->policy.dfa, state, old_name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip type */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = match_mnt_flags(profile->policy.dfa, state, flags);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_MOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_MOUNT, name,
++			       old_name, NULL, NULL, flags, NULL,
++			       AA_MAY_MOUNT, &perms, info, error);
++
++	kfree(buffer);
++	kfree(old_buffer);
++
++	return error;
++}
++
++int aa_mount_change_type(struct aa_profile *profile, struct path *path,
++			 unsigned long flags)
++{
++	struct file_perms perms = { };
++	char *buffer = NULL;
++	const char *name, *info = NULL;
++	int error;
++
++	flags &= (MS_REC | MS_SILENT | MS_SHARED | MS_PRIVATE | MS_SLAVE |
++		  MS_UNBINDABLE);
++
++	error = aa_path_name(path, path_flags(profile, path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip device */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip type */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = match_mnt_flags(profile->policy.dfa, state, flags);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_MOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_MOUNT, name,
++			       NULL, NULL, NULL, flags, NULL,
++			       AA_MAY_MOUNT, &perms, info, error);
++	kfree(buffer);
++
++	return error;
++}
++
++int aa_move_mount(struct aa_profile *profile, struct path *path,
++		  const char *orig_name)
++{
++	struct file_perms perms = { };
++	char *buffer = NULL, *old_buffer = NULL;
++	const char *name, *old_name, *info = NULL;
++	struct path old_path;
++	int error;
++
++	if (!orig_name || !*orig_name)
++		return -EINVAL;
++
++	error = aa_path_name(path, path_flags(profile, path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	error = kern_path(orig_name, LOOKUP_FOLLOW, &old_path);
++	if (error)
++		goto audit;
++
++	error = aa_path_name(&old_path, path_flags(profile, &old_path),
++			     &old_buffer, &old_name, &info);
++	path_put(&old_path);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = aa_dfa_match(profile->policy.dfa, state, old_name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		/* skip type */
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = match_mnt_flags(profile->policy.dfa, state, MS_MOVE);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_MOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_MOUNT, name,
++			       old_name, NULL, NULL, MS_MOVE, NULL,
++			       AA_MAY_MOUNT, &perms, info, error);
++
++	kfree(buffer);
++	kfree(old_buffer);
++
++	return error;
++}
++
++int aa_new_mount(struct aa_profile *profile, const char *orig_dev_name,
++		 struct path *path, const char *type, unsigned long flags,
++		 void *data)
++{
++	struct file_system_type *fstype = NULL;
++	struct file_perms perms = { };
++	char *buffer = NULL, *dev_buffer = NULL;
++	const char *name, *dev_name, *info = NULL;
++	struct path dev_path;
++	int binary_data, error;
++
++	fstype = get_fs_type(type);
++	if (!fstype) {
++		error = -ENODEV;
++		goto out;
++	}
++	binary_data = fstype->fs_flags & FS_BINARY_MOUNTDATA;
++
++	if (fstype->fs_flags & FS_REQUIRES_DEV) {
++		if (!dev_name) {
++			error = -ENOENT;
++			goto out;
++		}
++
++		error = kern_path(orig_dev_name, LOOKUP_FOLLOW, &dev_path);
++		if (error)
++			goto audit;
++
++		error = aa_path_name(&dev_path, path_flags(profile, &dev_path),
++				     &dev_buffer, &dev_name, &info);
++		path_put(&dev_path);
++		if (error)
++			goto audit;
++	} else
++		dev_name = orig_dev_name;
++
++	error = aa_path_name(path, path_flags(profile, path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		if (dev_name)
++			state = aa_dfa_match(profile->policy.dfa, state,
++					     dev_name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = aa_dfa_match(profile->policy.dfa, state, type);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = match_mnt_flags(profile->policy.dfa, state, flags);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		if (data && !binary_data)
++			state = aa_dfa_match(profile->policy.dfa, state,
++					     data);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_MOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_MOUNT, name,  dev_name,
++			       type, NULL, flags, data, AA_MAY_MOUNT,
++			       &perms, info, error);
++	kfree(buffer);
++	kfree(dev_buffer);
++
++out:
++	if (fstype)
++		put_filesystem(fstype);
++
++	return error;
++
++}
++
++int aa_umount(struct aa_profile *profile, struct vfsmount *mnt, int flags)
++{
++	struct file_perms perms = { };
++	char *buffer = NULL;
++	const char *name, *info = NULL;
++	int error;
++
++	struct path path = { mnt, mnt->mnt_root };
++	error = aa_path_name(&path, path_flags(profile, &path), &buffer, &name,
++			     &info);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     name);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_UMOUNT & ~perms.allow)
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_UMOUNT, name, NULL,
++			       NULL, NULL, 0, NULL, AA_MAY_UMOUNT,
++			       &perms, info, error);
++	kfree(buffer);
++
++	return error;
++}
++
++int aa_pivotroot(struct aa_profile *profile, struct path *old_path,
++		  struct path *new_path)
++{
++	struct file_perms perms = { };
++	struct aa_profile *target = NULL;
++	char *old_buffer = NULL, *new_buffer = NULL;
++	const char *old_name, *new_name, *info = NULL;
++	int error;
++
++	error = aa_path_name(old_path, path_flags(profile, old_path),
++			     &old_buffer, &old_name, &info);
++	if (error)
++		goto audit;
++
++	error = aa_path_name(new_path, path_flags(profile, new_path),
++			     &new_buffer, &new_name, &info);
++	if (error)
++		goto audit;
++
++	if (profile->policy.dfa) {
++		unsigned int state;
++		state = aa_dfa_match(profile->policy.dfa,
++				     profile->policy.start[AA_CLASS_MOUNT],
++				     old_name);
++		state = aa_dfa_null_transition(profile->policy.dfa, state);
++		state = aa_dfa_match(profile->policy.dfa, state, new_name);
++		perms = compute_mnt_perms(profile->policy.dfa, state);
++	}
++
++	if (AA_MAY_PIVOTROOT & perms.allow) {
++		if ((perms.xindex & AA_X_TYPE_MASK) == AA_X_TABLE) {
++			target = x_table_lookup(profile, perms.xindex);
++			if (!target)
++				error = -ENOENT;
++			else
++				error = aa_replace_current_profile(target);
++		}
++	} else
++		error = -EACCES;
++
++audit:
++	error = aa_audit_mount(profile, GFP_KERNEL, OP_PIVOTROOT, new_name,
++			       old_name, NULL,
++			       target ? target->base.name : NULL, 0, NULL,
++			       AA_MAY_PIVOTROOT, &perms, info, error);
++
++	aa_put_profile(target);
++	kfree(old_buffer);
++	kfree(new_buffer);
++
++	return error;
++}
 -- 
 1.7.9
 
