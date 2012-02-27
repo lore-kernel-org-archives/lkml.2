@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab2B0HdF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 02:33:05 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50668 "EHLO mx3.mail.elte.hu"
+	id S1751913Ab2B0HjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 02:39:19 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44074 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab2B0HdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 02:33:04 -0500
-Date: Mon, 27 Feb 2012 08:32:39 +0100
+	id S1751199Ab2B0HjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 02:39:18 -0500
+Date: Mon, 27 Feb 2012 08:39:05 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v2
-Message-ID: <20120227073239.GA3397@elte.hu>
-References: <1330122800-834-1-git-send-email-venki@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/2] [GIT PULL][v3.3] x86: Fix up CFI for the nested NMI
+Message-ID: <20120227073905.GB3397@elte.hu>
+References: <20120225173548.977089274@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330122800-834-1-git-send-email-venki@google.com>
+In-Reply-To: <20120225173548.977089274@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,14 +32,53 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Venkatesh Pallipadi <venki@google.com> wrote:
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> [...] I did have to avoid x86 smpboot cleanup that Ingo 
-> suggested as that did not seem trivial to me :-).
+> 
+> Ingo,
+> 
+> Jan posted a patch that fixes the CFI annotations. I recommend getting
+> this into 3.3 as this is new code and it would be nice to have CFI
+> correct. It also does a little simplification of it as well.
+> 
+> The second patch is comment changes only (very low impact on messing
+> anything up). I realized that the comments had some references to
+> previous approaches that I tried, and I fixed them to reflect what
+> the final result was. I also added some more comments to describe
+> the code a bit better.
+> 
+> Thanks,
+> 
+> -- Steve
+> 
+> Please pull the latest tip/x86/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/x86/urgent
+> 
+> Head SHA1: 79fb4ad63e8266ffac1f69bbb45a6f86570493e7
+> 
+> 
+> Jan Beulich (1):
+>       x86-64: Fix CFI annotations for NMI nesting code
+> 
+> Steven Rostedt (1):
+>       x86: Fix the NMI nesting comments
+> 
+> ----
+>  arch/x86/kernel/entry_64.S |   64 ++++++++++++++++++++++++--------------------
+>  1 files changed, 35 insertions(+), 29 deletions(-)
 
-Well, idletask_ti_flags is unacceptably ugly, please do the 
-smpboot.c cleanup because that paves the way to add new features 
-to the x86 idle code.
+I don't think we want a 30+ lines diffstat to this rather 
+non-trivial NMI codepath - and it changes real instructions, not 
+just the CFI annotations.
+
+Also, the 'update comments' commit does not belong into 
+x86/urgent either.
+
+So either you do an obviously trivial patch that only adds CFI 
+annotations and nothing else, or I can pull these bits into 
+tip:x86/debug, for a v3.4 merge.
 
 Thanks,
 
