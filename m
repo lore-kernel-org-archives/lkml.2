@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2B0LSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:18:10 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1230 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753335Ab2B0LSH (ORCPT
+	id S1753565Ab2B0LT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:19:26 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49542 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753233Ab2B0LTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:18:07 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q1RBHnBC002693
-Subject: Re: Can we move device drivers into user-space?
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Richard Yao <ryao@cs.stonybrook.edu>
-Cc: Theodore Tso <tytso@mit.edu>, Henrik Rydberg <rydberg@euromail.se>,
-        Bobby Powers <bobbypowers@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jidong Xiao <jidong.xiao@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Feb 2012 12:17:50 +0100
-In-Reply-To: <CABDyM6SaRKg+gVvyFCyZkTBtCbkFtXxZVrX=xe4U7Xp3XMV9XA@mail.gmail.com>
-References: <20120224203715.GA4995@polaris.bitmath.org>
-	 <20120224205651.GA13333@kroah.com>
-	 <20120224212238.GA5178@polaris.bitmath.org>
-	 <20120224213027.GB15735@thunk.org>
-	 <20120224221459.GA5254@polaris.bitmath.org>
-	 <CAArOQ2WCXDf2ymxihFdjKhBFMVhtoupVRB97_LsEky4HAGq0hA@mail.gmail.com>
-	 <20120226104701.GA18152@polaris.bitmath.org>
-	 <CABDyM6R72WW6YnpNs+EQktaXN_Z_7cxPmABv7ojoLGbmS=+23w@mail.gmail.com>
-	 <365b85cee33d4f1aadc31336663de21c@HUBCAS2.cs.stonybrook.edu>
-	 <CABDyM6Q309HeTv3PMc6QaJqGg0MWGV3y2KdeBEKENbD-cCV0Sg@mail.gmail.com>
-	 <09a5cca9cffb4300843f682be529e8ca@HUBCAS2.cs.stonybrook.edu>
-	 <CABDyM6Qzm3nfQDD1mHcQ58JUVECaPdukTB+b5-WxP=iqoONF4w@mail.gmail.com>
-	 <10de0ef9fb5d44c08669191e12343a97@HUBCAS2.cs.stonybrook.edu>
-	 <CABDyM6SaRKg+gVvyFCyZkTBtCbkFtXxZVrX=xe4U7Xp3XMV9XA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1330341472.17330.19.camel@thorin>
-Mime-Version: 1.0
-X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 27 Feb 2012 06:19:24 -0500
+X-Sasl-enc: yFpzO5aUT9c2pZGflZX1BFw+FeHo/xpUZObzGMIlMByW 1330341564
+Message-ID: <4F4B66BA.5070007@imap.cc>
+Date: Mon, 27 Feb 2012 12:19:22 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Hansjoerg Lipp <hjlipp@web.de>,
+        gigaset307x-common@lists.sourceforge.net,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: "whitespace coding style cleanup" broke coding style
+References: <4F4B45F6.4090706@suse.cz>
+In-Reply-To: <4F4B45F6.4090706@suse.cz>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Son, 2012-02-26 at 17:03 -0500, Richard Yao wrote:
-[...]
-> I think it is nice for people to be interested in kernel design and
-> even if they have bad ideas, letting them discuss their ideas
-> generally gives them the opportunity to learn why they are bad, which
-> could generate good ideas in the process.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Part of the learning experience is (or should be IMHO) to - at least -
-try it out in someway at some point and not only "discuss" it or throw
-ideas around.
-And that is: look for one target like a char driver or a filesystem or
-what ever one likes or seems fit and try to produce a somewhat working
-prototype.
-The performance point is probably valid but not every driver is a high
-performance issue.
-As for "filesystems", there is already FUSE around BTW. And IIRC there
-were similar efforts for block and/or char drivers.
+Am 27.02.2012 09:59, schrieb Jiri Slaby:
+> commit 475be4d85a274d0961593db41cf85689db1d583c Author: Joe Perches
+> <joe@perches.com> Date:   Sun Feb 19 19:52:38 2012 -0800
+> 
+> isdn: whitespace coding style cleanup
+> 
+> isdn source code uses a not-current coding style. ... Done with
+> emacs and some scripts and some typing. ... ---
+> a/drivers/isdn/gigaset/interface.c +++
+> b/drivers/isdn/gigaset/interface.c ... @@ -680,9 +680,9 @@ void
+> gigaset_if_initdriver(struct gigaset_driver *drv, const char
+> *procname, goto enomem;
+> 
+> tty->magic =            TTY_DRIVER_MAGIC, -       tty->type =
+> TTY_DRIVER_TYPE_SERIAL, -       tty->subtype =
+> SERIAL_TYPE_NORMAL, -       tty->flags =
+> TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV; +
+> tty->type =             TTY_DRIVER_TYPE_SERIAL, +
+> tty->subtype =          SERIAL_TYPE_NORMAL, +
+> tty->flags =            TTY_DRIVER_REAL_RAW | 
+> TTY_DRIVER_DYNAMIC_DEV;
+> 
+> Hmm, please, fix your scripts or emacs!
+> 
+> Through which tree did this get in?
 
-And of course, the "try it out" means primarily the OP - see the other
-mail.
+That's the first I see of this patch.
+It neither came through LKML nor did I get a CC.
+For all I know, this didn't get in.
+It isn't in http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
+anyway.
 
->                                           microkernel designs are
-> nice, but Linux is not the right basis for one.
+Regards,
+Tilman
 
-Yes, that's the reason that everyone uses a microkernel today. SCNR ....
-And Mach got at times so fat so that people considered something else. 
+- -- 
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (MingW32)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+iEYEARECAAYFAk9LZroACgkQMdB4Whm86/ndbQCeLQM0kHgzLSbexyF5qiH+bkq/
+b+YAn0cM5VEzsoPVW3iQYYzbeByHyEFN
+=AcbN
+-----END PGP SIGNATURE-----
