@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2B0EQu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 23:16:50 -0500
-Received: from mailgw01.mediatek.com ([218.249.47.110]:56973 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753447Ab2B0EQt (ORCPT
+	id S1753884Ab2B0Eab (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 23:30:31 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55798 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab2B0Ea2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 23:16:49 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Feb 2012 23:16:48 EST
-From: =?utf-8?B?TWVuZyBaaGFuZyAo5byg6JCMKQ==?= <Meng.Zhang@mediatek.com>
-To: "smurf@smurf.noris.de" <smurf@smurf.noris.de>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Feb 2012 12:11:37 +0800
-Subject: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
-Thread-Topic: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
-Thread-Index: Acz1BeZ28G1tqn2lR3mjK/u78LKFfA==
-Message-ID: <0D3EFCAF29FAA54FB91286E54DF1085C2304850460@MTKMBS30.mediatek.inc>
-Accept-Language: en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Sun, 26 Feb 2012 23:30:28 -0500
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andrei Warkentin <andreiw@vmware.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Subject: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+Date: Sun, 26 Feb 2012 22:30:09 -0500
+Message-Id: <1330313411-845-2-git-send-email-andrey.warkentin@gmail.com>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1330313411-845-1-git-send-email-andrey.warkentin@gmail.com>
+References: <1330137851-4716-1-git-send-email-andrey.warkentin@gmail.com>
+ <1330313411-845-1-git-send-email-andrey.warkentin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1R4GuYw016095
 
-1. To declare the product IDs in option.c
-2. Please pull from
-	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-   to get these changes
+From: Andrei Warkentin <andreiw@vmware.com>
 
-Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
----------------------------------------------------------------------------------------
+Pass down source information to rx_hook, useful
+for accepting connections from unspecified clients.
 
-drivers/usb/serial/option.c |    7 +++++++
-1 files changed, 7 insertions(+), 0 deletions(-)
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+---
+ include/linux/netpoll.h |   10 +++++++++-
+ net/core/netpoll.c      |   10 ++++------
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index b54afce..7069f9d 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -484,6 +484,9 @@ static void option_instat_callback(struct urb *urb);
- #define LG_VENDOR_ID                           0x1004
- #define LG_PRODUCT_L02C                                0x618f
+diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
+index 5dfa091..9a9cfa1 100644
+--- a/include/linux/netpoll.h
++++ b/include/linux/netpoll.h
+@@ -11,12 +11,19 @@
+ #include <linux/interrupt.h>
+ #include <linux/rcupdate.h>
+ #include <linux/list.h>
++#include <linux/if_ether.h>
++#include <net/tcp.h>
++#include <net/udp.h>
  
-+/* MediaTek products */
-+#define MEDIATEK_VENDOR_ID                     0x0e8d
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
-                OPTION_BLACKLIST_NONE = 0,
-@@ -1198,6 +1201,10 @@ static const struct usb_device_id option_ids[] = {
-        { USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
-        { USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
-        { USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C modem */
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x00, 0x00) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x02, 0x01) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x00, 0x00) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-        { } /* Terminating entry */
+ struct netpoll {
+ 	struct net_device *dev;
+ 	char dev_name[IFNAMSIZ];
+ 	const char *name;
+-	void (*rx_hook)(struct netpoll *, int, char *, int);
++	void (*rx_hook)(struct netpoll *,
++			u8 *h_source,
++			__be32 saddr,
++			struct udphdr *,
++			char *, int);
+ 
+ 	__be32 local_ip, remote_ip;
+ 	u16 local_port, remote_port;
+@@ -40,6 +47,7 @@ struct netpoll_info {
+ 	struct netpoll *netpoll;
  };
- MODULE_DEVICE_TABLE(usb, option_ids);
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ 
++void netpoll_poll_dev(struct net_device *dev);
+ void netpoll_send_udp(struct netpoll *np, const char *msg, int len);
+ void netpoll_print_options(struct netpoll *np);
+ int netpoll_parse_options(struct netpoll *np, char *opt);
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 3d84fb9..c182bb2 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -26,8 +26,6 @@
+ #include <linux/workqueue.h>
+ #include <linux/slab.h>
+ #include <linux/export.h>
+-#include <net/tcp.h>
+-#include <net/udp.h>
+ #include <asm/unaligned.h>
+ #include <trace/events/napi.h>
+ 
+@@ -189,7 +187,7 @@ static void service_arp_queue(struct netpoll_info *npi)
+ 	}
+ }
+ 
+-static void netpoll_poll_dev(struct net_device *dev)
++void netpoll_poll_dev(struct net_device *dev)
+ {
+ 	const struct net_device_ops *ops;
+ 
+@@ -615,9 +613,9 @@ int __netpoll_rx(struct sk_buff *skb)
+ 		if (np->local_port && np->local_port != ntohs(uh->dest))
+ 			continue;
+ 
+-		np->rx_hook(np, ntohs(uh->source),
+-			       (char *)(uh+1),
+-			       ulen - sizeof(struct udphdr));
++		np->rx_hook(np, eth_hdr(skb)->h_source,
++			    iph->saddr, uh, (char *)(uh+1),
++			    ulen - sizeof(struct udphdr));
+ 		hits++;
+ 	}
+ 
+-- 
+1.7.8.3
+
