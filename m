@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab2B0UAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:00:48 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42827 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754905Ab2B0UAl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:00:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.12.74 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
+	id S1754899Ab2B0UCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:02:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54473 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab2B0UC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:02:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of robherring2@gmail.com designates 10.236.155.101 as permitted sender) smtp.mail=robherring2@gmail.com; dkim=pass header.i=robherring2@gmail.com
+Message-ID: <4F4BE150.3000903@gmail.com>
+Date: Mon, 27 Feb 2012 14:02:24 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <1330370733.2542.18.camel@localhost>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-6-git-send-email-wad@chromium.org>
-	<20120226202828.GE3990@outflux.net>
-	<CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
-	<1330361396.2542.11.camel@localhost>
-	<CAGXu5jKJ7pYeULM=CvifpQ8jUoyH6Ska2Znx9tGjhz0tn5kZmQ@mail.gmail.com>
-	<1330370733.2542.18.camel@localhost>
-Date: Mon, 27 Feb 2012 12:00:37 -0800
-X-Google-Sender-Auth: hij1hTg_j9gBR54vvt2sDLmlba0
-Message-ID: <CAGXu5jKyLHLF+HuU=SLHJLg8AaOPJXoqq1=hOBy5oOvffA-xiQ@mail.gmail.com>
-Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
-From: Kees Cook <keescook@chromium.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <kees@ubuntu.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PULL] DT fixes for 3.3
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 11:25 AM, Eric Paris <eparis@redhat.com> wrote:
-> On Mon, 2012-02-27 at 10:55 -0800, Kees Cook wrote:
->> On Mon, Feb 27, 2012 at 8:49 AM, Eric Paris <eparis@redhat.com> wrote:
->
->> You mean as used in audit_log_exit() ? It looks like that depends on a
->> lot of state cached in __audit_syscall_entry() and finally triggered
->> in __audit_syscall_exit() (and ..._free()). I don't think this is
->> really want seccomp wants to be involved in.
->>
->> By CONFIG_AUDITSC, you mean CONFIG_AUDITSYSCALL? Without that set,
->> audit_seccomp is a no-op.
->>
->> The reason compat needs to be reported (or rather, arch) is because
->> just reporting syscall is ambiguous. It either needs arch or compat to
->> distinguish it.
->
-> Yes, that is what I mean and you are right.  You shouldn't push the
-> syscall in this record either.  If !audit_dummy_context() you are
-> already going to get arch, syscall, and a0-a4 in the associated audit
-> record.  Please do not duplicate that info.
+Grant,
 
-Ah, in that case, please ignore the patch I just sent. Heh.
+Please pull these few fixes and doc updates for 3.3.
 
-> It might make sense to have a separate audit_seccomp() path when
-> audit_dummy_context() which includes arch, syscall, and a0-a4.
+Rob
 
-Ah! I think I understand what you mean now. If audit_dummy_context(),
-then the syscall, arch, and a0-a4 were not already collected. Gotcha.
+The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
 
-How do you envision it looking? I still see it as two distinct events
-(the syscall itself, and the rejection). Would you want those details
-added to the context structure to be reported at ..._exit() time? It
-seems like context->type couldn't be used to see if those fields were
-valid.
+  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
 
-Something like:
+are available in the git repository at:
+  git://sources.calxeda.com/kernel/linux.git fixes-for-grant
 
-void __audit_seccomp(unsigned long syscall, long signr)
-{
-        struct audit_buffer *ab;
+Baruch Siach (1):
+      of/mdio: fix fixed link bus name
 
-        if (!audit_dummy_context()) {
-                struct audit_context *context = current->audit_context;
-                context->syscall_signr = signr;
-                context->syscall_ip = KSTK_EIP(current);
-                return;
-        }
+Danny Kukawka (1):
+      of/fdt.c: asm/setup.h included twice
 
-        ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
-        audit_log_abend(ab, "seccomp", signr);
-        audit_log_format(ab, " syscall=%ld", syscall);
-        audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
-        audit_log_end(ab);
-}
+Jamie Iles (1):
+      of: add picochip vendor prefix
 
-And then report syscall_ip and syscall_signr if syscall_signr != 0 in
-the _exit()? I think everything else from audit_log_abend() will end
-up in the _exit() report.
+Tobias Klauser (1):
+      doc: dt: Fix broken reference in gpio-leds documentation
 
-> It is my fault (85e7bac3) that we have syscall at all, but I'm on a new
-> crusade to remove audit record duplication.  So I'd happily see a patch
-> in this series that removes that instead of adds to it.
-
-Well, I think the abend reporting is nice; I'd hate to see that
-totally removed. The seccomp case is a bit different, I agree. I could
-see it either way.
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+ Documentation/devicetree/bindings/gpio/led.txt     |    6 +++---
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/of/fdt.c                                   |    1 -
+ drivers/of/of_mdio.c                               |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
