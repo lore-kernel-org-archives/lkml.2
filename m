@@ -1,165 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab2B0V4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:56:12 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42704 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab2B0V4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:56:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.154.168 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
-Message-ID: <4F4BFBEB.8080800@gmail.com>
-Date: Mon, 27 Feb 2012 13:55:55 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1755719Ab2B0V7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:59:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755102Ab2B0V7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 16:59:05 -0500
+Date: Mon, 27 Feb 2012 23:59:09 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.3-rc5
+Message-ID: <20120227215908.GA4952@redhat.com>
+References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
 MIME-Version: 1.0
-To: Venkatesh Pallipadi <venki@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
- -v5
-References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com>
-In-Reply-To: <1328055439-9441-1-git-send-email-venki@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 04:17 PM, Venkatesh Pallipadi wrote:
-> Kernel's notion of possible cpus (from include/linux/cpumask.h)
->   *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
->
->   *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
->   *  that it is possible might ever be plugged in at anytime during the
->   *  life of that system boot.
->
->   #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
->
-> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
-> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
->
-> i.e, We needlessly go through this mask based calculation everytime
-> num_possible_cpus() is called.
->
-> The problem is there with cpu_online_mask() as well, which is fixed value at
-> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
-> in HOTPLUG case.
->
-> Though most of the callers of these two routines are init time (with few
-> exceptions of runtime calls), it is cleaner to use variables
-> and not go through this repeated mask based calculation.
->
-> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
-> Acked-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
-> Acked-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+On Sat, Feb 25, 2012 at 12:34:20PM -0800, Linus Torvalds wrote:
+> Hey, no delays this week.
+> 
+> And nothing really odd going on either. Maybe things are finally calming down.
+> 
+> Sure, I'd have liked it to be even calmer, and there's is movement in
+> various areas: btrfs updates along with scsi and media driver updates.
+> And various noise elsewhere. But on the whole it's been pretty boring,
+> which is just how I like it.
+> 
+> A couple of the fixes were directly linked to my -rc4 announcement,
+> where I told people they could use a 64-bit kernel to avoid the FP
+> state save/restore problem we used to have. That brought up some
+> fairly corner-case compatibility issues that could make that
+> impractical. So hopefully it's *true* this time around.
+> 
+> And while the FP state save problem is gone, if you have a 64-bit
+> capable CPU but are still running a 32-bit distro, it really would be
+> interesting to verify that a 64-bit kernel works for you without
+> problems. Because it always *should* have, but clearly that wasn't
+> always the case. It would be very interesting to hear from people who
+> have perhaps tried and failed before and perhaps didn't even bother to
+> report the failure? Maybe it's worth trying again?
+> 
+>                           Linus
 
-How is it that this patch got merged to linux-next before all the 
-cleanup patches for nr_online_cpus?
+Yes, I just tried.
 
- From the looks of your follow-on patches it would seem that all MIPS, 
-hexagon, and um are now broken.
+IIRC, I used to run 64 bit upstream kernels with 32 bit userspace
+under Fedora 14 (because I can) this stopped booting when I switched
+to Fedora 15, I think the upstream kernel was 2.6.39 at that time,
+so I stopped trying.
 
-I know for a fact that MIPS doesn't boot because of this.
+With 3.3.0-rc5, a 64 bit kernel works fine for me, again.
+Yay!
 
-David Daney
+As a side note, it's a pity that gcc in 32 bit Fedora
+does not support -m 64 to support building 64 bit kernels.
 
-
-> ---
->   include/linux/cpumask.h |    9 +++++++--
->   kernel/cpu.c            |   13 +++++++++++++
->   2 files changed, 20 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-> index 4f7a632..930e255 100644
-> --- a/include/linux/cpumask.h
-> +++ b/include/linux/cpumask.h
-> @@ -27,6 +27,9 @@ typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
->   extern int nr_cpu_ids;
->   #endif
->
-> +extern unsigned int nr_online_cpus;
-> +extern unsigned int nr_possible_cpus;
-> +
->   #ifdef CONFIG_CPUMASK_OFFSTACK
->   /* Assuming NR_CPUS is huge, a runtime limit is more efficient.  Also,
->    * not all bits may be allocated. */
-> @@ -81,8 +84,10 @@ extern const struct cpumask *const cpu_present_mask;
->   extern const struct cpumask *const cpu_active_mask;
->
->   #if NR_CPUS>  1
-> -#define num_online_cpus()	cpumask_weight(cpu_online_mask)
-> -#define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
-> +
-> +#define num_online_cpus()	(nr_online_cpus)
-> +#define num_possible_cpus()	(nr_possible_cpus)
-> +
->   #define num_present_cpus()	cpumask_weight(cpu_present_mask)
->   #define num_active_cpus()	cpumask_weight(cpu_active_mask)
->   #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 2060c6e..d520d34 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -604,9 +604,13 @@ EXPORT_SYMBOL(cpu_all_bits);
->   #ifdef CONFIG_INIT_ALL_POSSIBLE
->   static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly
->   	= CPU_BITS_ALL;
-> +unsigned int nr_possible_cpus __read_mostly = CONFIG_NR_CPUS;
->   #else
->   static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
-> +unsigned int nr_possible_cpus __read_mostly;
->   #endif
-> +EXPORT_SYMBOL(nr_possible_cpus);
-> +
->   const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
->   EXPORT_SYMBOL(cpu_possible_mask);
->
-> @@ -614,6 +618,9 @@ static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
->   const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
->   EXPORT_SYMBOL(cpu_online_mask);
->
-> +unsigned int nr_online_cpus __read_mostly;
-> +EXPORT_SYMBOL(nr_online_cpus);
-> +
->   static DECLARE_BITMAP(cpu_present_bits, CONFIG_NR_CPUS) __read_mostly;
->   const struct cpumask *const cpu_present_mask = to_cpumask(cpu_present_bits);
->   EXPORT_SYMBOL(cpu_present_mask);
-> @@ -628,6 +635,8 @@ void set_cpu_possible(unsigned int cpu, bool possible)
->   		cpumask_set_cpu(cpu, to_cpumask(cpu_possible_bits));
->   	else
->   		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
-> +
-> +	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
->   }
->
->   void set_cpu_present(unsigned int cpu, bool present)
-> @@ -644,6 +653,8 @@ void set_cpu_online(unsigned int cpu, bool online)
->   		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
->   	else
->   		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
-> +
-> +	nr_online_cpus = cpumask_weight(cpu_online_mask);
->   }
->
->   void set_cpu_active(unsigned int cpu, bool active)
-> @@ -662,9 +673,11 @@ void init_cpu_present(const struct cpumask *src)
->   void init_cpu_possible(const struct cpumask *src)
->   {
->   	cpumask_copy(to_cpumask(cpu_possible_bits), src);
-> +	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
->   }
->
->   void init_cpu_online(const struct cpumask *src)
->   {
->   	cpumask_copy(to_cpumask(cpu_online_bits), src);
-> +	nr_online_cpus = cpumask_weight(cpu_online_mask);
->   }
-
+-- 
+MST
