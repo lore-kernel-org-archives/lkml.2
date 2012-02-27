@@ -1,313 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab2B0VUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:20:49 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30248 "EHLO
+	id S1755359Ab2B0VUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:20:32 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30104 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab2B0VUq (ORCPT
+	with ESMTP id S1755301Ab2B0VU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:20:46 -0500
+	Mon, 27 Feb 2012 16:20:26 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: [RFC PATCH 19/22] ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
-Date: Mon, 27 Feb 2012 15:19:33 -0600
-Message-Id: <1330377576-3659-20-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [RFC PATCH 12/22] dio: add dio_post_submission() helper function
+Date: Mon, 27 Feb 2012 15:19:26 -0600
+Message-Id: <1330377576-3659-13-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090201.4F4BF39F.001D,ss=1,re=-2.300,fgs=0
+X-CT-RefId: str=0001.0A090209.4F4BF399.00C9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-ocfs2's .aio_read and .aio_write methods are changed to take
-iov_iter and pass it to generic functions.  Wrappers are made to pack
-the iovecs into iters and call these new functions.
-
-ocfs2_direct_IO() is trivial enough that a new function is made which
-passes the bvec down to the generic direct path.
+This creates a function that contains all the code that is executed
+after IO is submitted.  It takes code from the end of
+do_blockdev_direct_IO().  This will be called by another entry point
+that will be added in an upcoming patch.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
 ---
- fs/ocfs2/aops.c        |   31 ++++++++++++++++++
- fs/ocfs2/file.c        |   82 ++++++++++++++++++++++++++++++++++--------------
- fs/ocfs2/ocfs2_trace.h |    6 +++-
- 3 files changed, 94 insertions(+), 25 deletions(-)
+ fs/direct-io.c |  127 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 68 insertions(+), 59 deletions(-)
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 78b68af..80183df 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -645,6 +645,36 @@ static ssize_t ocfs2_direct_IO(int rw,
- 				    ocfs2_dio_end_io, NULL, 0);
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index e75b8d7..20bb84c 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -1187,6 +1187,73 @@ static int dio_lock_and_flush(struct dio *dio, loff_t offset, loff_t end)
+ 	return 0;
  }
  
-+static ssize_t ocfs2_direct_IO_bvec(int rw,
-+				    struct kiocb *iocb,
-+				    struct bio_vec *bvec,
-+				    loff_t offset,
-+				    unsigned long bvec_len)
++static ssize_t dio_post_submission(int rw, loff_t offset, struct dio *dio,
++				   struct dio_submit *sdio,
++				   struct buffer_head *map_bh, ssize_t ret)
 +{
-+	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_path.dentry->d_inode->i_mapping->host;
-+	int ret;
++	if (ret == -ENOTBLK) {
++		/*
++		 * The remaining part of the request will be
++		 * be handled by buffered I/O when we return
++		 */
++		ret = 0;
++	}
++	/*
++	 * There may be some unwritten disk at the end of a part-written
++	 * fs-block-sized block.  Go zero that now.
++	 */
++	dio_zero_block(dio, sdio, 1, map_bh);
++
++	if (sdio->cur_page) {
++		ssize_t ret2;
++
++		ret2 = dio_send_cur_page(dio, sdio, map_bh);
++		if (ret == 0)
++			ret = ret2;
++		page_cache_release(sdio->cur_page);
++		sdio->cur_page = NULL;
++	}
++	if (sdio->bio)
++		dio_bio_submit(dio, sdio);
 +
 +	/*
-+	 * Fallback to buffered I/O if we see an inode without
-+	 * extents.
++	 * It is possible that, we return short IO due to end of file.
++	 * In that case, we need to release all the pages we got hold on.
 +	 */
-+	if (OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL)
-+		return 0;
++	dio_cleanup(dio, sdio);
 +
-+	/* Fallback to buffered I/O if we are appending. */
-+	if (i_size_read(inode) <= offset)
-+		return 0;
++	/*
++	 * All block lookups have been performed. For READ requests
++	 * we can let i_mutex go now that its achieved its purpose
++	 * of protecting us from looking up uninitialized blocks.
++	 */
++	if (rw == READ && (dio->flags & DIO_LOCKING))
++		mutex_unlock(&dio->inode->i_mutex);
 +
-+	ret = blockdev_direct_IO_bvec_no_locking(rw, iocb, inode,
-+						 inode->i_sb->s_bdev, bvec,
-+						 offset, bvec_len,
-+						 ocfs2_direct_IO_get_blocks,
-+						 ocfs2_dio_end_io);
++	/*
++	 * The only time we want to leave bios in flight is when a successful
++	 * partial aio read or full aio write have been setup.  In that case
++	 * bio completion will call aio_complete.  The only time it's safe to
++	 * call aio_complete is when we return -EIOCBQUEUED, so we key on that.
++	 * This had *better* be the only place that raises -EIOCBQUEUED.
++	 */
++	BUG_ON(ret == -EIOCBQUEUED);
++	if (dio->is_async && ret == 0 && dio->result &&
++	    ((rw & READ) || (dio->result == sdio->size)))
++		ret = -EIOCBQUEUED;
++
++	if (ret != -EIOCBQUEUED)
++		dio_await_completion(dio);
++
++	if (drop_refcount(dio) == 0) {
++		ret = dio_complete(dio, offset, ret, false);
++		kmem_cache_free(dio_cache, dio);
++	} else
++		BUG_ON(ret != -EIOCBQUEUED);
 +
 +	return ret;
 +}
 +
- static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
- 					    u32 cpos,
- 					    unsigned int *start,
-@@ -2091,6 +2121,7 @@ const struct address_space_operations ocfs2_aops = {
- 	.write_end		= ocfs2_write_end,
- 	.bmap			= ocfs2_bmap,
- 	.direct_IO		= ocfs2_direct_IO,
-+	.direct_IO_bvec		= ocfs2_direct_IO_bvec,
- 	.invalidatepage		= ocfs2_invalidatepage,
- 	.releasepage		= ocfs2_releasepage,
- 	.migratepage		= buffer_migrate_page,
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 061591a..f636813 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -2233,15 +2233,13 @@ out:
- 	return ret;
- }
- 
--static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs,
--				    loff_t pos)
-+static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter,
-+				     loff_t pos)
- {
- 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
- 	int can_do_direct, has_refcount = 0;
- 	ssize_t written = 0;
--	size_t ocount;		/* original count */
- 	size_t count;		/* after file limit checks */
- 	loff_t old_size, *ppos = &iocb->ki_pos;
- 	u32 old_clusters;
-@@ -2252,11 +2250,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
- 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
- 	int unaligned_dio = 0;
- 
--	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
-+	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
- 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
- 		file->f_path.dentry->d_name.len,
- 		file->f_path.dentry->d_name.name,
--		(unsigned int)nr_segs);
-+		(unsigned long long)pos);
- 
- 	if (iocb->ki_left == 0)
- 		return 0;
-@@ -2358,28 +2356,24 @@ relock:
- 	/* communicate with ocfs2_dio_end_io */
- 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
- 
--	ret = generic_segment_checks(iov, &nr_segs, &ocount,
--				     VERIFY_READ);
--	if (ret)
--		goto out_dio;
- 
--	count = ocount;
-+	count = iov_iter_count(iter);
- 	ret = generic_write_checks(file, ppos, &count,
- 				   S_ISBLK(inode->i_mode));
- 	if (ret)
- 		goto out_dio;
- 
- 	if (direct_io) {
--		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
--						    ppos, count, ocount);
-+		written = generic_file_direct_write_iter(iocb, iter, *ppos,
-+						    ppos, count);
- 		if (written < 0) {
- 			ret = written;
- 			goto out_dio;
+ /*
+  * This is a library function for use by filesystem drivers.
+  *
+@@ -1302,65 +1369,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
  		}
- 	} else {
- 		current->backing_dev_info = file->f_mapping->backing_dev_info;
--		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
--						      ppos, count, 0);
-+		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
-+							   ppos, 0);
- 		current->backing_dev_info = NULL;
- 	}
+ 	} /* end iovec loop */
  
-@@ -2440,6 +2434,25 @@ out_sems:
- 	return ret;
- }
+-	if (retval == -ENOTBLK) {
+-		/*
+-		 * The remaining part of the request will be
+-		 * be handled by buffered I/O when we return
+-		 */
+-		retval = 0;
+-	}
+-	/*
+-	 * There may be some unwritten disk at the end of a part-written
+-	 * fs-block-sized block.  Go zero that now.
+-	 */
+-	dio_zero_block(dio, &sdio, 1, &map_bh);
+-
+-	if (sdio.cur_page) {
+-		ssize_t ret2;
+-
+-		ret2 = dio_send_cur_page(dio, &sdio, &map_bh);
+-		if (retval == 0)
+-			retval = ret2;
+-		page_cache_release(sdio.cur_page);
+-		sdio.cur_page = NULL;
+-	}
+-	if (sdio.bio)
+-		dio_bio_submit(dio, &sdio);
+-
+-	/*
+-	 * It is possible that, we return short IO due to end of file.
+-	 * In that case, we need to release all the pages we got hold on.
+-	 */
+-	dio_cleanup(dio, &sdio);
+-
+-	/*
+-	 * All block lookups have been performed. For READ requests
+-	 * we can let i_mutex go now that its achieved its purpose
+-	 * of protecting us from looking up uninitialized blocks.
+-	 */
+-	if (rw == READ && (dio->flags & DIO_LOCKING))
+-		mutex_unlock(&dio->inode->i_mutex);
+-
+-	/*
+-	 * The only time we want to leave bios in flight is when a successful
+-	 * partial aio read or full aio write have been setup.  In that case
+-	 * bio completion will call aio_complete.  The only time it's safe to
+-	 * call aio_complete is when we return -EIOCBQUEUED, so we key on that.
+-	 * This had *better* be the only place that raises -EIOCBQUEUED.
+-	 */
+-	BUG_ON(retval == -EIOCBQUEUED);
+-	if (dio->is_async && retval == 0 && dio->result &&
+-	    ((rw & READ) || (dio->result == sdio.size)))
+-		retval = -EIOCBQUEUED;
+-
+-	if (retval != -EIOCBQUEUED)
+-		dio_await_completion(dio);
+-
+-	if (drop_refcount(dio) == 0) {
+-		retval = dio_complete(dio, offset, retval, false);
+-		kmem_cache_free(dio_cache, dio);
+-	} else
+-		BUG_ON(retval != -EIOCBQUEUED);
++	retval = dio_post_submission(rw, offset, dio, &sdio, &map_bh, retval);
  
-+static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
-+				    const struct iovec *iov,
-+				    unsigned long nr_segs,
-+				    loff_t pos)
-+{
-+	struct iov_iter iter;
-+	size_t count;
-+	int ret;
-+
-+	count = 0;
-+	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_READ);
-+	if (ret)
-+		return ret;
-+
-+	iov_iter_init(&iter, iov, nr_segs, count, 0);
-+
-+	return ocfs2_file_write_iter(iocb, &iter, pos);
-+}
-+
- static int ocfs2_splice_to_file(struct pipe_inode_info *pipe,
- 				struct file *out,
- 				struct splice_desc *sd)
-@@ -2553,19 +2566,18 @@ bail:
- 	return ret;
- }
- 
--static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
--				   const struct iovec *iov,
--				   unsigned long nr_segs,
-+static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
-+				   struct iov_iter *iter,
- 				   loff_t pos)
- {
- 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
- 	struct file *filp = iocb->ki_filp;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 
--	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
-+	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
- 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
- 			filp->f_path.dentry->d_name.len,
--			filp->f_path.dentry->d_name.name, nr_segs);
-+			filp->f_path.dentry->d_name.name, pos);
- 
- 
- 	if (!inode) {
-@@ -2601,7 +2613,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
- 	 *
- 	 * Take and drop the meta data lock to update inode fields
- 	 * like i_size. This allows the checks down below
--	 * generic_file_aio_read() a chance of actually working.
-+	 * generic_file_read_iter() a chance of actually working.
- 	 */
- 	ret = ocfs2_inode_lock_atime(inode, filp->f_vfsmnt, &lock_level);
- 	if (ret < 0) {
-@@ -2610,8 +2622,8 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
- 	}
- 	ocfs2_inode_unlock(inode, lock_level);
- 
--	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
--	trace_generic_file_aio_read_ret(ret);
-+	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
-+	trace_generic_file_read_iter_ret(ret);
- 
- 	/* buffered aio wouldn't have proper lock coverage today */
- 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
-@@ -2683,6 +2695,24 @@ out:
- 	return offset;
- }
- 
-+static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
-+				   const struct iovec *iov,
-+				   unsigned long nr_segs,
-+				   loff_t pos)
-+{
-+	struct iov_iter iter;
-+	size_t count;
-+	int ret;
-+
-+	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-+	if (ret)
-+		return ret;
-+
-+	iov_iter_init(&iter, iov, nr_segs, count, 0);
-+
-+	return ocfs2_file_read_iter(iocb, &iter, pos);
-+}
-+
- const struct inode_operations ocfs2_file_iops = {
- 	.setattr	= ocfs2_setattr,
- 	.getattr	= ocfs2_getattr,
-@@ -2716,6 +2746,8 @@ const struct file_operations ocfs2_fops = {
- 	.open		= ocfs2_file_open,
- 	.aio_read	= ocfs2_file_aio_read,
- 	.aio_write	= ocfs2_file_aio_write,
-+	.read_iter	= ocfs2_file_read_iter,
-+	.write_iter	= ocfs2_file_write_iter,
- 	.unlocked_ioctl	= ocfs2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ocfs2_compat_ioctl,
-@@ -2764,6 +2796,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
- 	.open		= ocfs2_file_open,
- 	.aio_read	= ocfs2_file_aio_read,
- 	.aio_write	= ocfs2_file_aio_write,
-+	.read_iter	= ocfs2_file_read_iter,
-+	.write_iter	= ocfs2_file_write_iter,
- 	.unlocked_ioctl	= ocfs2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ocfs2_compat_ioctl,
-diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
-index 3b481f4..8409f00 100644
---- a/fs/ocfs2/ocfs2_trace.h
-+++ b/fs/ocfs2/ocfs2_trace.h
-@@ -1312,12 +1312,16 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
- 
-+DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
-+
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
- 
-+DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
-+
- DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
- 
- DEFINE_OCFS2_ULL_ULL_EVENT(ocfs2_truncate_file_error);
-@@ -1474,7 +1478,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
- 		  __entry->direct_io, __entry->has_refcount)
- );
- 
--DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
-+DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
- 
- /* End of trace events for fs/ocfs2/file.c. */
- 
+ out:
+ 	return retval;
 -- 
 1.7.9.2
 
