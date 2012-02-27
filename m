@@ -1,561 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2B0VUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:20:43 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33719 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab2B0VUe (ORCPT
+	id S1755449Ab2B0VUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:20:49 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30248 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab2B0VUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:20:34 -0500
+	Mon, 27 Feb 2012 16:20:46 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [RFC PATCH 20/22] ext4: add support for read_iter, write_iter, and direct_IO_bvec
-Date: Mon, 27 Feb 2012 15:19:34 -0600
-Message-Id: <1330377576-3659-21-git-send-email-dave.kleikamp@oracle.com>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [RFC PATCH 19/22] ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
+Date: Mon, 27 Feb 2012 15:19:33 -0600
+Message-Id: <1330377576-3659-20-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F4BF39D.0054,ss=1,re=-2.300,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090201.4F4BF39F.001D,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some helpers were broken out of ext4_ind_direct_IO() and
-ext4_ext_direct_IO() in order to avoid code duplication in new
-bio_vec-based functions.
+From: Zach Brown <zab@zabbo.net>
+
+ocfs2's .aio_read and .aio_write methods are changed to take
+iov_iter and pass it to generic functions.  Wrappers are made to pack
+the iovecs into iters and call these new functions.
+
+ocfs2_direct_IO() is trivial enough that a new function is made which
+passes the bvec down to the generic direct path.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
 ---
- fs/ext4/ext4.h     |    3 +
- fs/ext4/file.c     |    2 +
- fs/ext4/indirect.c |  169 +++++++++++++++++++++++++++++++-----------
- fs/ext4/inode.c    |  206 +++++++++++++++++++++++++++++++++++-----------------
- 4 files changed, 268 insertions(+), 112 deletions(-)
+ fs/ocfs2/aops.c        |   31 ++++++++++++++++++
+ fs/ocfs2/file.c        |   82 ++++++++++++++++++++++++++++++++++--------------
+ fs/ocfs2/ocfs2_trace.h |    6 +++-
+ 3 files changed, 94 insertions(+), 25 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 513004f..6426d43 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1905,6 +1905,9 @@ extern int ext4_ind_map_blocks(handle_t *handle, struct inode *inode,
- extern ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- 				const struct iovec *iov, loff_t offset,
- 				unsigned long nr_segs);
-+extern ssize_t ext4_ind_direct_IO_bvec(int rw, struct kiocb *iocb,
-+				struct bio_vec *bvec, loff_t offset,
-+				unsigned long bvec_len);
- extern int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock);
- extern int ext4_ind_trans_blocks(struct inode *inode, int nrblocks, int chunk);
- extern void ext4_ind_truncate(struct inode *inode);
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index cb70f18..ce76745 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -234,6 +234,8 @@ const struct file_operations ext4_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= ext4_file_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.unlocked_ioctl = ext4_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext4_compat_ioctl,
-diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index 830e1b2..e8ca3b9 100644
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -760,6 +760,72 @@ out:
- 	return err;
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 78b68af..80183df 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -645,6 +645,36 @@ static ssize_t ocfs2_direct_IO(int rw,
+ 				    ocfs2_dio_end_io, NULL, 0);
  }
  
-+static ssize_t ext4_journal_orphan_add(struct inode *inode)
-+{
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	handle_t *handle;
-+	ssize_t ret;
-+
-+	/* Credits for sb + inode write */
-+	handle = ext4_journal_start(inode, 2);
-+	if (IS_ERR(handle)) {
-+		ret = PTR_ERR(handle);
-+		goto out;
-+	}
-+	ret = ext4_orphan_add(handle, inode);
-+	if (ret) {
-+		ext4_journal_stop(handle);
-+		goto out;
-+	}
-+	ei->i_disksize = inode->i_size;
-+	ext4_journal_stop(handle);
-+out:
-+	return ret;
-+}
-+
-+static ssize_t ext4_journal_orphan_del(struct inode *inode, ssize_t ret,
-+				       loff_t offset)
-+{
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	handle_t *handle;
-+	int err;
-+
-+	/* Credits for sb + inode write */
-+	handle = ext4_journal_start(inode, 2);
-+	if (IS_ERR(handle)) {
-+		/* This is really bad luck. We've written the data
-+		 * but cannot extend i_size. Bail out and pretend
-+		 * the write failed... */
-+		ret = PTR_ERR(handle);
-+		if (inode->i_nlink)
-+			ext4_orphan_del(NULL, inode);
-+
-+		goto out;
-+	}
-+	if (inode->i_nlink)
-+		ext4_orphan_del(handle, inode);
-+	if (ret > 0) {
-+		loff_t end = offset + ret;
-+		if (end > inode->i_size) {
-+			ei->i_disksize = end;
-+			i_size_write(inode, end);
-+			/*
-+			 * We're going to return a positive `ret'
-+			 * here due to non-zero-length I/O, so there's
-+			 * no way of reporting error returns from
-+			 * ext4_mark_inode_dirty() to userspace.  So
-+			 * ignore it.
-+			 */
-+			ext4_mark_inode_dirty(handle, inode);
-+		}
-+	}
-+	err = ext4_journal_stop(handle);
-+	if (ret == 0)
-+		ret = err;
-+out:
-+	return ret;
-+}
-+
- /*
-  * O_DIRECT for ext3 (or indirect map) based files
-  *
-@@ -778,7 +844,6 @@ ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
- 	struct ext4_inode_info *ei = EXT4_I(inode);
--	handle_t *handle;
- 	ssize_t ret;
- 	int orphan = 0;
- 	size_t count = iov_length(iov, nr_segs);
-@@ -788,20 +853,10 @@ ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- 		loff_t final_size = offset + count;
- 
- 		if (final_size > inode->i_size) {
--			/* Credits for sb + inode write */
--			handle = ext4_journal_start(inode, 2);
--			if (IS_ERR(handle)) {
--				ret = PTR_ERR(handle);
--				goto out;
--			}
--			ret = ext4_orphan_add(handle, inode);
--			if (ret) {
--				ext4_journal_stop(handle);
-+			ret =  ext4_journal_orphan_add(inode);
-+			if (ret)
- 				goto out;
--			}
- 			orphan = 1;
--			ei->i_disksize = inode->i_size;
--			ext4_journal_stop(handle);
- 		}
- 	}
- 
-@@ -831,42 +886,68 @@ retry:
- 	if (ret == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
- 		goto retry;
- 
--	if (orphan) {
--		int err;
-+	if (orphan)
-+		ret = ext4_journal_orphan_del(inode, ret, offset);
-+out:
-+	return ret;
-+}
- 
--		/* Credits for sb + inode write */
--		handle = ext4_journal_start(inode, 2);
--		if (IS_ERR(handle)) {
--			/* This is really bad luck. We've written the data
--			 * but cannot extend i_size. Bail out and pretend
--			 * the write failed... */
--			ret = PTR_ERR(handle);
--			if (inode->i_nlink)
--				ext4_orphan_del(NULL, inode);
-+/*
-+ * Like ext4_ind_direct_IO, but operates on bio_vec instead of iovec
-+ */
-+ssize_t ext4_ind_direct_IO_bvec(int rw, struct kiocb *iocb,
-+				struct bio_vec *bvec, loff_t offset,
-+				unsigned long bvec_len)
++static ssize_t ocfs2_direct_IO_bvec(int rw,
++				    struct kiocb *iocb,
++				    struct bio_vec *bvec,
++				    loff_t offset,
++				    unsigned long bvec_len)
 +{
 +	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_mapping->host;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	ssize_t ret;
-+	int orphan = 0;
-+	size_t count = bvec_length(bvec, bvec_len);
-+	int retries = 0;
++	struct inode *inode = file->f_path.dentry->d_inode->i_mapping->host;
++	int ret;
 +
-+	if (rw == WRITE) {
-+		loff_t final_size = offset + count;
- 
--			goto out;
-+		if (final_size > inode->i_size) {
-+			ret =  ext4_journal_orphan_add(inode);
-+			if (ret)
-+				goto out;
-+			orphan = 1;
- 		}
--		if (inode->i_nlink)
--			ext4_orphan_del(handle, inode);
--		if (ret > 0) {
--			loff_t end = offset + ret;
--			if (end > inode->i_size) {
--				ei->i_disksize = end;
--				i_size_write(inode, end);
--				/*
--				 * We're going to return a positive `ret'
--				 * here due to non-zero-length I/O, so there's
--				 * no way of reporting error returns from
--				 * ext4_mark_inode_dirty() to userspace.  So
--				 * ignore it.
--				 */
--				ext4_mark_inode_dirty(handle, inode);
--			}
-+	}
++	/*
++	 * Fallback to buffered I/O if we see an inode without
++	 * extents.
++	 */
++	if (OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL)
++		return 0;
 +
-+retry:
-+	if (rw == READ && ext4_should_dioread_nolock(inode)) {
-+		if (unlikely(!list_empty(&ei->i_completed_io_list))) {
-+			mutex_lock(&inode->i_mutex);
-+			ext4_flush_completed_IO(inode);
-+			mutex_unlock(&inode->i_mutex);
-+		}
-+		ret = __blockdev_direct_IO_bvec(rw, iocb, inode,
-+				 inode->i_sb->s_bdev, bvec,
-+				 offset, bvec_len,
-+				 ext4_get_block, NULL, NULL, 0);
-+	} else {
-+		ret = blockdev_direct_IO_bvec(rw, iocb, inode,
-+				 inode->i_sb->s_bdev, bvec,
-+				 offset, bvec_len,
-+				 ext4_get_block, NULL);
++	/* Fallback to buffered I/O if we are appending. */
++	if (i_size_read(inode) <= offset)
++		return 0;
 +
-+		if (unlikely((rw & WRITE) && ret < 0)) {
-+			loff_t isize = i_size_read(inode);
-+			loff_t end = offset + bvec_length(bvec, bvec_len);
++	ret = blockdev_direct_IO_bvec_no_locking(rw, iocb, inode,
++						 inode->i_sb->s_bdev, bvec,
++						 offset, bvec_len,
++						 ocfs2_direct_IO_get_blocks,
++						 ocfs2_dio_end_io);
 +
-+			if (end > isize)
-+				ext4_truncate_failed_write(inode);
- 		}
--		err = ext4_journal_stop(handle);
--		if (ret == 0)
--			ret = err;
- 	}
-+	if (ret == -ENOSPC && ext4_should_retry_alloc(inode->i_sb, &retries))
-+		goto retry;
++	return ret;
++}
 +
-+	if (orphan)
-+		ret = ext4_journal_orphan_del(inode, ret, offset);
- out:
+ static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
+ 					    u32 cpos,
+ 					    unsigned int *start,
+@@ -2091,6 +2121,7 @@ const struct address_space_operations ocfs2_aops = {
+ 	.write_end		= ocfs2_write_end,
+ 	.bmap			= ocfs2_bmap,
+ 	.direct_IO		= ocfs2_direct_IO,
++	.direct_IO_bvec		= ocfs2_direct_IO_bvec,
+ 	.invalidatepage		= ocfs2_invalidatepage,
+ 	.releasepage		= ocfs2_releasepage,
+ 	.migratepage		= buffer_migrate_page,
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 061591a..f636813 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2233,15 +2233,13 @@ out:
  	return ret;
  }
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index feaa82f..922b26f 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2764,7 +2764,7 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
  
- 	ext_debug("ext4_end_io_dio(): io_end 0x%p "
- 		  "for inode %lu, iocb 0x%p, offset %llu, size %llu\n",
-- 		  iocb->private, io_end->inode->i_ino, iocb, offset,
-+		  iocb->private, io_end->inode->i_ino, iocb, offset,
- 		  size);
+-static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs,
+-				    loff_t pos)
++static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter,
++				     loff_t pos)
+ {
+ 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
+ 	int can_do_direct, has_refcount = 0;
+ 	ssize_t written = 0;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	loff_t old_size, *ppos = &iocb->ki_pos;
+ 	u32 old_clusters;
+@@ -2252,11 +2250,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
+ 	int unaligned_dio = 0;
  
- 	iocb->private = NULL;
-@@ -2868,6 +2868,85 @@ retry:
- 	return 0;
- }
+-	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
++	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
+ 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 		file->f_path.dentry->d_name.len,
+ 		file->f_path.dentry->d_name.name,
+-		(unsigned int)nr_segs);
++		(unsigned long long)pos);
  
-+static ssize_t ext4_ext_direct_IO_pre_write(struct kiocb *iocb,
-+					    struct inode *inode)
-+{
-+	/*
-+	 * We could direct write to holes and fallocate.
-+	 *
-+	 * Allocated blocks to fill the hole are marked as uninitialized
-+	 * to prevent parallel buffered read to expose the stale data
-+	 * before DIO complete the data IO.
-+	 *
-+	 * As to previously fallocated extents, ext4 get_block
-+	 * will just simply mark the buffer mapped but still
-+	 * keep the extents uninitialized.
-+	 *
-+	 * for non AIO case, we will convert those unwritten extents
-+	 * to written after return back from blockdev_direct_IO.
-+	 *
-+	 * for async DIO, the conversion needs to be defered when
-+	 * the IO is completed. The ext4 end_io callback function
-+	 * will be called to take care of the conversion work.
-+	 * Here for async case, we allocate an io_end structure to
-+	 * hook to the iocb.
-+	 */
-+	iocb->private = NULL;
-+	EXT4_I(inode)->cur_aio_dio = NULL;
-+	if (!is_sync_kiocb(iocb)) {
-+		iocb->private = ext4_init_io_end(inode, GFP_NOFS);
-+		if (!iocb->private)
-+			return -ENOMEM;
-+		/*
-+		 * we save the io structure for current async
-+		 * direct IO, so that later ext4_map_blocks()
-+		 * could flag the io structure whether there
-+		 * is a unwritten extents needs to be converted
-+		 * when IO is completed.
-+		 */
-+		EXT4_I(inode)->cur_aio_dio = iocb->private;
-+	}
-+	return 0;
-+}
-+
-+static ssize_t ext4_ext_direct_IO_post_write(struct kiocb *iocb,
-+					     struct inode *inode,
-+					     loff_t offset, ssize_t ret)
-+{
-+	if (iocb->private)
-+			EXT4_I(inode)->cur_aio_dio = NULL;
-+	/*
-+	 * The io_end structure takes a reference to the inode,
-+	 * that structure needs to be destroyed and the
-+	 * reference to the inode need to be dropped, when IO is
-+	 * complete, even with 0 byte write, or failed.
-+	 *
-+	 * In the successful AIO DIO case, the io_end structure will be
-+	 * desctroyed and the reference to the inode will be dropped
-+	 * after the end_io call back function is called.
-+	 *
-+	 * In the case there is 0 byte write, or error case, since
-+	 * VFS direct IO won't invoke the end_io call back function,
-+	 * we need to free the end_io structure here.
-+	 */
-+	if (ret != -EIOCBQUEUED && ret <= 0 && iocb->private) {
-+		ext4_free_io_end(iocb->private);
-+		iocb->private = NULL;
-+	} else if (ret > 0 &&
-+		   ext4_test_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN)) {
-+		int err;
-+		/*
-+		 * for non AIO case, since the IO is already
-+		 * completed, we could do the conversion right here
-+		 */
-+		err = ext4_convert_unwritten_extents(inode, offset, ret);
-+		if (err < 0)
-+			ret = err;
-+		ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
-+	}
-+	return ret;
-+}
-+
- /*
-  * For ext4 extent files, ext4 will do direct-io write to holes,
-  * preallocated extents, and those write extend the file, no need to
-@@ -2898,41 +2977,9 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+@@ -2358,28 +2356,24 @@ relock:
+ 	/* communicate with ocfs2_dio_end_io */
+ 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
  
- 	loff_t final_size = offset + count;
- 	if (rw == WRITE && final_size <= inode->i_size) {
--		/*
-- 		 * We could direct write to holes and fallocate.
--		 *
-- 		 * Allocated blocks to fill the hole are marked as uninitialized
-- 		 * to prevent parallel buffered read to expose the stale data
-- 		 * before DIO complete the data IO.
--		 *
-- 		 * As to previously fallocated extents, ext4 get_block
-- 		 * will just simply mark the buffer mapped but still
-- 		 * keep the extents uninitialized.
-- 		 *
--		 * for non AIO case, we will convert those unwritten extents
--		 * to written after return back from blockdev_direct_IO.
--		 *
--		 * for async DIO, the conversion needs to be defered when
--		 * the IO is completed. The ext4 end_io callback function
--		 * will be called to take care of the conversion work.
--		 * Here for async case, we allocate an io_end structure to
--		 * hook to the iocb.
-- 		 */
--		iocb->private = NULL;
--		EXT4_I(inode)->cur_aio_dio = NULL;
--		if (!is_sync_kiocb(iocb)) {
--			iocb->private = ext4_init_io_end(inode, GFP_NOFS);
--			if (!iocb->private)
--				return -ENOMEM;
--			/*
--			 * we save the io structure for current async
--			 * direct IO, so that later ext4_map_blocks()
--			 * could flag the io structure whether there
--			 * is a unwritten extents needs to be converted
--			 * when IO is completed.
--			 */
--			EXT4_I(inode)->cur_aio_dio = iocb->private;
--		}
-+		ret = ext4_ext_direct_IO_pre_write(iocb, inode);
-+		if (ret)
-+			return ret;
+-	ret = generic_segment_checks(iov, &nr_segs, &ocount,
+-				     VERIFY_READ);
+-	if (ret)
+-		goto out_dio;
  
- 		ret = __blockdev_direct_IO(rw, iocb, inode,
- 					 inode->i_sb->s_bdev, iov,
-@@ -2941,38 +2988,7 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
- 					 ext4_end_io_dio,
- 					 NULL,
- 					 DIO_LOCKING | DIO_SKIP_HOLES);
--		if (iocb->private)
--			EXT4_I(inode)->cur_aio_dio = NULL;
--		/*
--		 * The io_end structure takes a reference to the inode,
--		 * that structure needs to be destroyed and the
--		 * reference to the inode need to be dropped, when IO is
--		 * complete, even with 0 byte write, or failed.
--		 *
--		 * In the successful AIO DIO case, the io_end structure will be
--		 * desctroyed and the reference to the inode will be dropped
--		 * after the end_io call back function is called.
--		 *
--		 * In the case there is 0 byte write, or error case, since
--		 * VFS direct IO won't invoke the end_io call back function,
--		 * we need to free the end_io structure here.
--		 */
--		if (ret != -EIOCBQUEUED && ret <= 0 && iocb->private) {
--			ext4_free_io_end(iocb->private);
--			iocb->private = NULL;
--		} else if (ret > 0 && ext4_test_inode_state(inode,
--						EXT4_STATE_DIO_UNWRITTEN)) {
--			int err;
--			/*
--			 * for non AIO case, since the IO is already
--			 * completed, we could do the conversion right here
--			 */
--			err = ext4_convert_unwritten_extents(inode,
--							     offset, ret);
--			if (err < 0)
--				ret = err;
--			ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
--		}
-+		ret = ext4_ext_direct_IO_post_write(iocb, inode, offset, ret);
- 		return ret;
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	ret = generic_write_checks(file, ppos, &count,
+ 				   S_ISBLK(inode->i_mode));
+ 	if (ret)
+ 		goto out_dio;
+ 
+ 	if (direct_io) {
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+-						    ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, *ppos,
++						    ppos, count);
+ 		if (written < 0) {
+ 			ret = written;
+ 			goto out_dio;
+ 		}
+ 	} else {
+ 		current->backing_dev_info = file->f_mapping->backing_dev_info;
+-		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+-						      ppos, count, 0);
++		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
++							   ppos, 0);
+ 		current->backing_dev_info = NULL;
  	}
  
-@@ -2980,6 +2996,37 @@ static ssize_t ext4_ext_direct_IO(int rw, struct kiocb *iocb,
- 	return ext4_ind_direct_IO(rw, iocb, iov, offset, nr_segs);
+@@ -2440,6 +2434,25 @@ out_sems:
+ 	return ret;
  }
  
-+/*
-+ * Like ext4_ext_direct_IO, but operates on a bio_vec rather than iovec.
-+ */
-+static ssize_t ext4_ext_direct_IO_bvec(int rw, struct kiocb *iocb,
-+			      struct bio_vec *bvec, loff_t offset,
-+			      unsigned long bvec_len)
++static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
++				    const struct iovec *iov,
++				    unsigned long nr_segs,
++				    loff_t pos)
 +{
-+	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_mapping->host;
-+	ssize_t ret;
-+	size_t count = bvec_length(bvec, bvec_len);
++	struct iov_iter iter;
++	size_t count;
++	int ret;
 +
-+	loff_t final_size = offset + count;
-+	if (rw == WRITE && final_size <= inode->i_size) {
-+		ret = ext4_ext_direct_IO_pre_write(iocb, inode);
-+		if (ret)
-+			return ret;
-+
-+		ret = blockdev_direct_IO_bvec(rw, iocb, inode,
-+					 inode->i_sb->s_bdev, bvec,
-+					 offset, bvec_len,
-+					 ext4_get_block_write,
-+					 ext4_end_io_dio);
-+		ret = ext4_ext_direct_IO_post_write(iocb, inode, offset, ret);
++	count = 0;
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_READ);
++	if (ret)
 +		return ret;
-+	}
 +
-+	/* for write the the end of file case, we fall back to old way */
-+	return ext4_ind_direct_IO_bvec(rw, iocb, bvec, offset, bvec_len);
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	return ocfs2_file_write_iter(iocb, &iter, pos);
 +}
 +
- static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
- 			      const struct iovec *iov, loff_t offset,
- 			      unsigned long nr_segs)
-@@ -3004,6 +3051,25 @@ static ssize_t ext4_direct_IO(int rw, struct kiocb *iocb,
+ static int ocfs2_splice_to_file(struct pipe_inode_info *pipe,
+ 				struct file *out,
+ 				struct splice_desc *sd)
+@@ -2553,19 +2566,18 @@ bail:
  	return ret;
  }
  
-+static ssize_t ext4_direct_IO_bvec(int rw, struct kiocb *iocb,
-+			      struct bio_vec *bvec, loff_t offset,
-+			      unsigned long bvec_len)
+-static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+-				   const struct iovec *iov,
+-				   unsigned long nr_segs,
++static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
++				   struct iov_iter *iter,
+ 				   loff_t pos)
+ {
+ 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
+ 	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 
+-	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
++	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
+ 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 			filp->f_path.dentry->d_name.len,
+-			filp->f_path.dentry->d_name.name, nr_segs);
++			filp->f_path.dentry->d_name.name, pos);
+ 
+ 
+ 	if (!inode) {
+@@ -2601,7 +2613,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	 *
+ 	 * Take and drop the meta data lock to update inode fields
+ 	 * like i_size. This allows the checks down below
+-	 * generic_file_aio_read() a chance of actually working.
++	 * generic_file_read_iter() a chance of actually working.
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, filp->f_vfsmnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2610,8 +2622,8 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	}
+ 	ocfs2_inode_unlock(inode, lock_level);
+ 
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
+-	trace_generic_file_aio_read_ret(ret);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
++	trace_generic_file_read_iter_ret(ret);
+ 
+ 	/* buffered aio wouldn't have proper lock coverage today */
+ 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
+@@ -2683,6 +2695,24 @@ out:
+ 	return offset;
+ }
+ 
++static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
++				   const struct iovec *iov,
++				   unsigned long nr_segs,
++				   loff_t pos)
 +{
-+	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_mapping->host;
-+	ssize_t ret;
++	struct iov_iter iter;
++	size_t count;
++	int ret;
 +
-+	trace_ext4_direct_IO_enter(inode, offset, bvec_length(bvec, bvec_len),
-+				   rw);
-+	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
-+		ret = ext4_ext_direct_IO_bvec(rw, iocb, bvec, offset, bvec_len);
-+	else
-+		ret = ext4_ind_direct_IO_bvec(rw, iocb, bvec, offset, bvec_len);
-+	trace_ext4_direct_IO_exit(inode, offset, bvec_length(bvec, bvec_len),
-+				  rw, ret);
-+	return ret;
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
++	if (ret)
++		return ret;
++
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	return ocfs2_file_read_iter(iocb, &iter, pos);
 +}
 +
- /*
-  * Pages can be marked dirty completely asynchronously from ext4's journalling
-  * activity.  By filemap_sync_pte(), try_to_unmap_one(), etc.  We cannot do
-@@ -3033,6 +3099,7 @@ static const struct address_space_operations ext4_ordered_aops = {
- 	.invalidatepage		= ext4_invalidatepage,
- 	.releasepage		= ext4_releasepage,
- 	.direct_IO		= ext4_direct_IO,
-+	.direct_IO_bvec		= ext4_direct_IO_bvec,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-@@ -3048,6 +3115,7 @@ static const struct address_space_operations ext4_writeback_aops = {
- 	.invalidatepage		= ext4_invalidatepage,
- 	.releasepage		= ext4_releasepage,
- 	.direct_IO		= ext4_direct_IO,
-+	.direct_IO_bvec		= ext4_direct_IO_bvec,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-@@ -3064,6 +3132,7 @@ static const struct address_space_operations ext4_journalled_aops = {
- 	.invalidatepage		= ext4_invalidatepage,
- 	.releasepage		= ext4_releasepage,
- 	.direct_IO		= ext4_direct_IO,
-+	.direct_IO_bvec		= ext4_direct_IO_bvec,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
- };
-@@ -3079,6 +3148,7 @@ static const struct address_space_operations ext4_da_aops = {
- 	.invalidatepage		= ext4_da_invalidatepage,
- 	.releasepage		= ext4_releasepage,
- 	.direct_IO		= ext4_direct_IO,
-+	.direct_IO_bvec		= ext4_direct_IO_bvec,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
+ const struct inode_operations ocfs2_file_iops = {
+ 	.setattr	= ocfs2_setattr,
+ 	.getattr	= ocfs2_getattr,
+@@ -2716,6 +2746,8 @@ const struct file_operations ocfs2_fops = {
+ 	.open		= ocfs2_file_open,
+ 	.aio_read	= ocfs2_file_aio_read,
+ 	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+@@ -2764,6 +2796,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
+ 	.open		= ocfs2_file_open,
+ 	.aio_read	= ocfs2_file_aio_read,
+ 	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
+index 3b481f4..8409f00 100644
+--- a/fs/ocfs2/ocfs2_trace.h
++++ b/fs/ocfs2/ocfs2_trace.h
+@@ -1312,12 +1312,16 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
+ 
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
++
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
+ 
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
++
+ DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
+ 
+ DEFINE_OCFS2_ULL_ULL_EVENT(ocfs2_truncate_file_error);
+@@ -1474,7 +1478,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
+ 		  __entry->direct_io, __entry->has_refcount)
+ );
+ 
+-DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
++DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
+ 
+ /* End of trace events for fs/ocfs2/file.c. */
+ 
 -- 
 1.7.9.2
 
