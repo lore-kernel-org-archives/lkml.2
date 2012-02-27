@@ -1,44 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab2B0DFx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 22:05:53 -0500
+	id S1753739Ab2B0DF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 22:05:57 -0500
 Received: from mail-qy0-f174.google.com ([209.85.216.174]:63561 "EHLO
 	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab2B0DFw (ORCPT
+	with ESMTP id S1753474Ab2B0DFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 22:05:52 -0500
+	Sun, 26 Feb 2012 22:05:53 -0500
 From: Andrei Warkentin <andrey.warkentin@gmail.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: NetKGDB support v2
-Date: Sun, 26 Feb 2012 21:05:35 -0500
-Message-Id: <1330308337-21365-1-git-send-email-andrey.warkentin@gmail.com>
+Cc: Andrei Warkentin <andreiw@vmware.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Subject: [PATCHv2 1/2] NETPOLL: Extend rx_hook support.
+Date: Sun, 26 Feb 2012 21:05:36 -0500
+Message-Id: <1330308337-21365-2-git-send-email-andrey.warkentin@gmail.com>
 X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1330137851-4716-1-git-send-email-andrey.warkentin@gmail.com>
+In-Reply-To: <1330308337-21365-1-git-send-email-andrey.warkentin@gmail.com>
 References: <1330137851-4716-1-git-send-email-andrey.warkentin@gmail.com>
+ <1330308337-21365-1-git-send-email-andrey.warkentin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Andrei Warkentin <andreiw@vmware.com>
 
-This is v2 of the tentative patch set I am sending for feedback.
-It implements a network I/O backend for KDB/KGDB, the kernel
-debugger. 
+Pass down source information to rx_hook, useful
+for accepting connections from unspecified clients.
 
-NetKGDB is very similar to netconsole, on which it is based, but with
-a crucial difference - netkgdb is designed to accept connections
-from any hosts, i.e. it is not necessary to specify these ahead
-of time. This makes it that much more useful in a "this host crashed
-and a I want a developer to take a look at it" scenario, common to
-large scale test/QA farms and automated testing harnesses. This
-involves a minor change to the netpoll rx_hook, namely, to provide
-source connection information.
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+---
+ include/linux/netpoll.h |   10 +++++++++-
+ net/core/netpoll.c      |   10 ++++------
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-This differs from v1 in cleaning up the netdev notifier code, which
-was needlessly byzantine and had potential races, and in some docu-
-mentation changes.
+diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
+index 5dfa091..9a9cfa1 100644
+--- a/include/linux/netpoll.h
++++ b/include/linux/netpoll.h
+@@ -11,12 +11,19 @@
+ #include <linux/interrupt.h>
+ #include <linux/rcupdate.h>
+ #include <linux/list.h>
++#include <linux/if_ether.h>
++#include <net/tcp.h>
++#include <net/udp.h>
+ 
+ struct netpoll {
+ 	struct net_device *dev;
+ 	char dev_name[IFNAMSIZ];
+ 	const char *name;
+-	void (*rx_hook)(struct netpoll *, int, char *, int);
++	void (*rx_hook)(struct netpoll *,
++			u8 *h_source,
++			__be32 saddr,
++			struct udphdr *,
++			char *, int);
+ 
+ 	__be32 local_ip, remote_ip;
+ 	u16 local_port, remote_port;
+@@ -40,6 +47,7 @@ struct netpoll_info {
+ 	struct netpoll *netpoll;
+ };
+ 
++void netpoll_poll_dev(struct net_device *dev);
+ void netpoll_send_udp(struct netpoll *np, const char *msg, int len);
+ void netpoll_print_options(struct netpoll *np);
+ int netpoll_parse_options(struct netpoll *np, char *opt);
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 3d84fb9..c182bb2 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -26,8 +26,6 @@
+ #include <linux/workqueue.h>
+ #include <linux/slab.h>
+ #include <linux/export.h>
+-#include <net/tcp.h>
+-#include <net/udp.h>
+ #include <asm/unaligned.h>
+ #include <trace/events/napi.h>
+ 
+@@ -189,7 +187,7 @@ static void service_arp_queue(struct netpoll_info *npi)
+ 	}
+ }
+ 
+-static void netpoll_poll_dev(struct net_device *dev)
++void netpoll_poll_dev(struct net_device *dev)
+ {
+ 	const struct net_device_ops *ops;
+ 
+@@ -615,9 +613,9 @@ int __netpoll_rx(struct sk_buff *skb)
+ 		if (np->local_port && np->local_port != ntohs(uh->dest))
+ 			continue;
+ 
+-		np->rx_hook(np, ntohs(uh->source),
+-			       (char *)(uh+1),
+-			       ulen - sizeof(struct udphdr));
++		np->rx_hook(np, eth_hdr(skb)->h_source,
++			    iph->saddr, uh, (char *)(uh+1),
++			    ulen - sizeof(struct udphdr));
+ 		hits++;
+ 	}
+ 
+-- 
+1.7.8.3
 
-I've also Cc'd Matt Mackall, who wrote the current netconsole code.
-
-[PATCHv2 1/2] NETPOLL: Extend rx_hook support.
-[PATCHv2 2/2] NETKGDB: Ethernet/UDP/IP KDB transport.
