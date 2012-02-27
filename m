@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2B0L5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:57:11 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58540 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab2B0L5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:57:09 -0500
-Date: Mon, 27 Feb 2012 12:56:52 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-Message-ID: <20120227115652.GA9943@elte.hu>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
- <1330338785.11248.49.camel@twins>
- <20120227104452.GA6082@elte.hu>
- <1330340694.11248.64.camel@twins>
+	id S1753890Ab2B0L6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:58:13 -0500
+Received: from mailgw01.mediatek.com ([218.249.47.110]:53189 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751541Ab2B0L6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 06:58:12 -0500
+From: =?utf-8?B?TWVuZyBaaGFuZyAo5byg6JCMKQ==?= <Meng.Zhang@mediatek.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>,
+        "smurf@smurf.noris.de" <smurf@smurf.noris.de>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Feb 2012 19:57:59 +0800
+Subject: RE: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
+Thread-Topic: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
+Thread-Index: Acz1QBMGtJSlYr8TR5WUYxiduFlD/wABksbw
+Message-ID: <0D3EFCAF29FAA54FB91286E54DF1085C2304850551@MTKMBS30.mediatek.inc>
+References: <0D3EFCAF29FAA54FB91286E54DF1085C2304850460@MTKMBS30.mediatek.inc>
+ <4F4B63BD.6070602@mvista.com>
+In-Reply-To: <4F4B63BD.6070602@mvista.com>
+Accept-Language: en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330340694.11248.64.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RBwLWf017982
 
+Dear both,
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Sorry I'm still a rookie in kernel patching, and should I commit this change by myself or let owner (hi, Matthias) do it?
 
-> On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
-> > I edited that code earlier today - is the form below OK, or can 
-> > you see a simpler method? It's not yet pushed out so can still 
-> > edit it. 
-> 
-> I think something like the below should do, but then I didn't really
-> think much about it, my thoughts went like:
-> 
-> ... *shees* that's ugly
->   ... that error path already does a loop
->     ... what the problem is!? -- reread changelog
->       ... err_cpu == cpu is placed wrong!
-> 
-> 
-> So I replied and marked read.. waiting to either hear if there's a good
-> reason to do ugly or find a new (tested) patch in my inbox.. :-)
-> 
-> ---
->  kernel/events/hw_breakpoint.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index b0309f7..3330022 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
->  
->   err_alloc:
->  	for_each_possible_cpu(err_cpu) {
-> -		if (err_cpu == cpu)
-> -			break;
->  		for (i = 0; i < TYPE_MAX; i++)
->  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-> +		if (err_cpu == cpu)
-> +			break;
->  	}
+Thanks~
 
-Looks a lot nicer - I'll wait for an updated patch.
+BR.
+Meng Zhang
 
-Thanks,
+-----Original Message-----
+From: Sergei Shtylyov [mailto:sshtylyov@mvista.com] 
+Sent: Monday, February 27, 2012 7:07 PM
+To: Meng Zhang (å¼ èŒ)
+Cc: smurf@smurf.noris.de; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
 
-	Ingo
+Hello.
+
+On 27-02-2012 8:11, Meng Zhang (å¼ èŒ) wrote:
+
+> 1. To declare the product IDs in option.c 2. Please pull from
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>     to get these changes
+
+    This patch is not yet there. :-)
+
+> Signed-off-by: Meng Zhang<meng.zhang@mediatek.com>
+> ----------------------------------------------------------------------
+> -----------------
+
+    This line is not needed. If you want a sperator, use --- instead.
+
+> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c 
+> index b54afce..7069f9d 100644
+> --- a/drivers/usb/serial/option.c
+> +++ b/drivers/usb/serial/option.c
+> @@ -484,6 +484,9 @@ static void option_instat_callback(struct urb *urb);
+>   #define LG_VENDOR_ID                           0x1004
+>   #define LG_PRODUCT_L02C                                0x618f
+>
+> +/* MediaTek products */
+> +#define MEDIATEK_VENDOR_ID                     0x0e8d
+> +
+>   /* some devices interfaces need special handling due to a number of reasons */
+>   enum option_blacklist_reason {
+>                  OPTION_BLACKLIST_NONE = 0, @@ -1198,6 +1201,10 @@ 
+> static const struct usb_device_id option_ids[] = {
+>          { USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
+>          { USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
+>          { USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo 
+> L-02C modem */
+> +       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x00, 0x00) },
+> +       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 0x02, 0x01) },
+> +       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x00, 0x00) },
+> +       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem&  app port */
+
+    All tabs in the patch were converted to spaces.
+
+WBR, Sergei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
