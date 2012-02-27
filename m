@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab2B0VFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:05:11 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37941 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2B0VFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:05:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of peter.maydell@linaro.org designates 10.224.185.207 as permitted sender) smtp.mail=peter.maydell@linaro.org
+	id S1754856Ab2B0VHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:07:08 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51877 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754006Ab2B0VHH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 16:07:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.182.44.68 as permitted sender) smtp.mail=glikely@secretlab.ca
 MIME-Version: 1.0
-In-Reply-To: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
-	<1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	<1330360043.8557.302.camel@zakaz.uk.xensource.com>
-Date: Mon, 27 Feb 2012 21:05:08 +0000
-Message-ID: <CAFEAcA8PzT9mfnEz60CYvwQWX1OEvejrZvkpuPL2LpTPosp8cA@mail.gmail.com>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-From: Peter Maydell <peter.maydell@linaro.org>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4F4BE150.3000903@gmail.com>
+References: <4F4BE150.3000903@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 27 Feb 2012 14:06:46 -0700
+X-Google-Sender-Auth: GkMqQ1DGAYLxLrCzoXRs4C7kPXc
+Message-ID: <CACxGe6uzY4z22tS-Z7oNT7NTiwgXLxkzAi=zEydf2+8OhwZX7A@mail.gmail.com>
+Subject: Re: [PULL] DT fixes for 3.3
+To: Rob Herring <robherring2@gmail.com>
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 February 2012 16:27, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
-> immediate (which can only target r0..r7).
+On Mon, Feb 27, 2012 at 1:02 PM, Rob Herring <robherring2@gmail.com> wrote:
+> Grant,
 >
-> Since we support only ARMv7+ there are "T2" and "T3" encodings available
-> which do allow direct mov of an immediate into R12, but are 32 bit Thumb
-> instructions.
+> Please pull these few fixes and doc updates for 3.3.
+
+Merged, thanks.
+
+g.
+
+
 >
-> Should we use r7 instead to maximise instruction density for Thumb code?
+> Rob
+>
+> The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+>
+>  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+>
+> are available in the git repository at:
+>  git://sources.calxeda.com/kernel/linux.git fixes-for-grant
+>
+> Baruch Siach (1):
+>      of/mdio: fix fixed link bus name
+>
+> Danny Kukawka (1):
+>      of/fdt.c: asm/setup.h included twice
+>
+> Jamie Iles (1):
+>      of: add picochip vendor prefix
+>
+> Tobias Klauser (1):
+>      doc: dt: Fix broken reference in gpio-leds documentation
+>
+>  Documentation/devicetree/bindings/gpio/led.txt     |    6 +++---
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  drivers/of/fdt.c                                   |    1 -
+>  drivers/of/of_mdio.c                               |    2 +-
+>  4 files changed, 5 insertions(+), 5 deletions(-)
 
-r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
-makes it worth avoiding in this context.
 
--- PMM
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
