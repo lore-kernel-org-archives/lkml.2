@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab2B0ILs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 03:11:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:16290 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2B0ILr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 27 Feb 2012 03:11:47 -0500
-Message-Id: <4F4B48CC0200007800074DD7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 27 Feb 2012 08:11:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <ak@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, resend] x86-64: improve insn scheduling in
- SAVE_ARGS_IRQ
-References: <4F4788A50200007800074A26@nat28.tlf.novell.com>
- <4F47F167.6070203@zytor.com>
-In-Reply-To: <4F47F167.6070203@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752710Ab2B0IMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 03:12:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48077 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab2B0IMm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 03:12:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.160.131 as permitted sender) smtp.mail=linus.walleij@linaro.org
+MIME-Version: 1.0
+In-Reply-To: <20120227072705.GA19429@bnru02>
+References: <1329333578-31773-1-git-send-email-danny.kukawka@bisect.de>
+	<20120227072705.GA19429@bnru02>
+Date: Mon, 27 Feb 2012 09:12:41 +0100
+Message-ID: <CACRpkdYV-EoJNPei9JbM=xmF8i8J5sd33uE70cAMF7p-h42Zzg@mail.gmail.com>
+Subject: Re: [PATCH] arch/arm/mach-ux500/board-mop500-u8500uib.c: included
+ linux/gpio.h twice
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Danny Kukawka <danny.kukawka@bisect.de>, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.02.12 at 21:21, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 02/24/2012 03:55 AM, Jan Beulich wrote:
->>  	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
->> -	testl $3, CS(%rdi)
->> +	testl $3, CS-RBP(%rsi)
->>  	je 1f
-> 
-> IIRC there is no imm8 version of testl; could this be a testb instead or
-> is that going to cause stalls on some platforms you think?
+On Mon, Feb 27, 2012 at 8:27 AM, Srinidhi Kasagar
+<srinidhi.kasagar@stericsson.com> wrote:
+> On Wed, Feb 15, 2012 at 20:19:38 +0100, Danny Kukawka wrote:
+>> arch/arm/mach-ux500/board-mop500-u8500uib.c included 'linux/gpio.h'
+>> remove the duplicate.
+>>
+>> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+>> ---
+>>  arch/arm/mach-ux500/board-mop500-u8500uib.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-ux500/board-mop500-u8500uib.c b/arch/arm/mach-ux500/board-mop500-u8500uib.c
+>> index feb5744..ead91c9 100644
+>> --- a/arch/arm/mach-ux500/board-mop500-u8500uib.c
+>> +++ b/arch/arm/mach-ux500/board-mop500-u8500uib.c
+>> @@ -8,7 +8,6 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/init.h>
+>>  #include <linux/i2c.h>
+>> -#include <linux/gpio.h>
+>>  #include <linux/interrupt.h>
+>>  #include <linux/mfd/tc3589x.h>
+>>  #include <linux/input/matrix_keypad.h>
+>
+> Thanks,
+>
+> Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+>
+> Linus W, would you please pick if you have not noticed this.
 
-As far as I'm aware, memory operations don't suffer "partial register
-stalls" or alike, so yes, using a testb here ought to be appropriate.
+Thanks for the reminder, I've picked it up and merged
+to my ux500-core branch.
 
-Jan
-
+Yours,
+Linus Walleij
