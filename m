@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2B0EFf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 23:05:35 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55362 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab2B0EFe (ORCPT
+	id S1753809Ab2B0EHu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 23:07:50 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56187 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2B0EHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 23:05:34 -0500
-Date: Mon, 27 Feb 2012 15:05:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the regmap tree
-Message-Id: <20120227150518.d5d521c9662a8b4b7850710d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 26 Feb 2012 23:07:48 -0500
+Date: Sun, 26 Feb 2012 23:05:23 -0500 (EST)
+Message-Id: <20120226.230523.1906949835561978402.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bhutchings@solarflare.com
+Subject: Re: linux-next: manual merge of the net-next tree with Linus' tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120227121125.007c32f9aa7be2470d9e3356@canb.auug.org.au>
+References: <20120227121125.007c32f9aa7be2470d9e3356@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__27_Feb_2012_15_05_18_+1100_gVad7SU+1=PM5yIu"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 26 Feb 2012 20:05:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Feb_2012_15_05_18_+1100_gVad7SU+1=PM5yIu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Mark,
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 27 Feb 2012 12:11:25 +1100
 
-After merging the regmap tree, today's linux-next build
-(x86_64_allmodconfig) failed like this:
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/sfc/rx.c between commit ff3bc1e75275 ("sfc: Fix
+> assignment of ip_summed for pre-allocated skbs") from Linus' tree and
+> commit db3395697cad ("sfc: Replace efx_rx_buffer::is_page and other
+> booleans with a flags field") from the net-next tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-drivers/base/regmap/regcache-lzo.c: In function 'regcache_lzo_sync':
-drivers/base/regmap/regcache-lzo.c:344:2: error: implicit declaration of fu=
-nction 'for_each_set_bit_from' [-Werror=3Dimplicit-function-declaration]
-drivers/base/regmap/regcache-lzo.c:345:41: error: expected ';' before '{' t=
-oken
-drivers/base/regmap/regcache-lzo.c:340:6: warning: unused variable 'ret' [-=
-Wunused-variable]
-drivers/base/regmap/regcache-lzo.c:338:15: warning: unused variable 'val' [=
--Wunused-variable]
-drivers/base/regmap/regcache-lzo.c:368:1: warning: no return statement in f=
-unction returning non-void [-Wreturn-type]
+I just merged net into net-next and resolved this conflict.
 
-Caused by commit ac8d91c80190 ("regmap: Supply ranges to the sync operation=
-s").
-
-I have used the regmap tree form next-20120224 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__27_Feb_2012_15_05_18_+1100_gVad7SU+1=PM5yIu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPSwD+AAoJEECxmPOUX5FES9wP/3flTNCWSySq6ouIpQ33DqK0
-71FIc0X8gwZyMasUY84Kj7jpbyYwLic5arNKIJTkC+4D+3AprIVsHVY7DwlN6Nrz
-JtAJ3642y4C4ueQKBUAypj3OLM9n7AF7YEjDhMzsNL02UlqjgpxyRUXMps6frFpr
-v/VvF0UJ9qHcEER2hPU4h3DnIVQzhc+bP7Ee49lahErlxyEugZiRKwnPsLU5sEs7
-SaYEr5ssP+ENbjTM64whQk291ElvtLfSH0yfc7rFe4TyjTTkndSc1iAW3VVbLaOx
-WKFItS4lbab+5zq9Fnga68BBfLMC9Ec48MBrz6ev11h0MnjoN9QRftE0eKXuxhgH
-VfIbQrHy+6+EfM1mFTss9Exyajzws0E9Uet0+QNtWvJZIb4l+hYX7p1X0oG5ciyB
-EAEJyZAPMsMCPVvs19c+OeyTvMFFKQihToM/KbtZl6LaBAIBnmfDZZ/VT0enMPtn
-jgP1m2Oo5aGKro/ITaVDURTSG0yohJcdBKuN0vPY88c3I0zjppI5c6iEn5OjN/F6
-B3azvaPuf4c3StrpVH5PYB4WHi+fc7ynNIQmiDJkOSnI4vLaXTkDWR5osUnWtIbN
-lnaeDbk8EfwEetwy1SmBo/cWe5SxaB883dGXcEM7qyPiT567TccB7t5xQevfFlUj
-OHGMot66wxcU5KPcJpFQ
-=+37R
------END PGP SIGNATURE-----
-
---Signature=_Mon__27_Feb_2012_15_05_18_+1100_gVad7SU+1=PM5yIu--
+Thanks!
