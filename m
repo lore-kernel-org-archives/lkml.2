@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2B0AXA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 19:23:00 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39090 "EHLO smtp.gentoo.org"
+	id S1753385Ab2B0AbD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 19:31:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38014 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2B0AW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 19:22:58 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
-Date: Sun, 26 Feb 2012 19:23:12 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2838396.dFR3c2q4Di";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202261923.15167.vapier@gentoo.org>
+	id S1752381Ab2B0AbB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 19:31:01 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20120227000847.GA30855@alea.gnuu.de>
+Date: Mon, 27 Feb 2012 01:30:59 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FE16BFF8-0C0C-4FFB-B64F-BF4497B12AA4@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20120220173844.GA2546@alea.gnuu.de> <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de> <20120221083213.GA19059@alea.gnuu.de> <20120225145115.GB22460@alea.gnuu.de> <3E36BEF4-E15F-410A-82C1-A8EB17AEF0DA@suse.de> <20120227000847.GA30855@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2838396.dFR3c2q4Di
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
 
-On Sunday 26 February 2012 18:26:53 Paul Gortmaker wrote:
-> --- a/arch/parisc/Makefile
-> +++ b/arch/parisc/Makefile
->
-> -CROSS_COMPILE	:= hppa64-linux-gnu-
-> +ifndef CROSS_COMPILE
-> + CROSS_COMPILE	:= hppa64-linux-gnu-
-> +endif
+On 27.02.2012, at 01:08, Jörg Sommer wrote:
 
-this should accomplish the same thing in practice:
-	CROSS_COMPILE ?= hppa64-linux-gnu-
--mike
+> Alexander Graf hat am Sun 26. Feb, 12:43 (+0100) geschrieben:
+>> On 25.02.2012, at 15:51, Jörg Sommer wrote:
+>>> Jörg Sommer hat am Tue 21. Feb, 09:32 (+0100) geschrieben:
+>>>> Alexander Graf hat am Mon 20. Feb, 22:27 (+0100) geschrieben:
+>>>>> On 20.02.2012, at 18:38, Jörg Sommer wrote:
+>>>>>> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
+>>>>>>> On 22.11.2011, at 21:04, Jörg Sommer wrote:
+>>>>>>>> [1] »kernel BUG at include/linux/kvm_host.h:603!«
+>>>>>>>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
+>>>>>>> 
+>>>>>>> This is unfortunately still there. It's because of preemption being
+>>>>>>> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
+>>>>>> 
+>>>>>> This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getting
+>>>>>> this Oops, when I start qemu.
+>>>>> 
+>>>>> Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I
+>>>>> fixed a bunch of things with preemption since then and it definitely
+>>>>> worked for me. If it still fails in that tree, I can try again to
+>>>>> reproduce it :).
+>>>> 
+>>>> This kernel (e9badff4b38a3f8b2c20aa8a30db210caf85a497) fails to build:
+>>>> 
+>>>> CC [M]  arch/powerpc/kvm/book3s_pr.o
+>>>> arch/powerpc/kvm/book3s_pr.c: In function ‘kvm_vcpu_ioctl_get_one_reg’:
+>>>> arch/powerpc/kvm/book3s_pr.c:883:45: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+>>>> arch/powerpc/kvm/book3s_pr.c:883:80: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
+> 
+>> Yikes. Does this patch work for you?
+> 
+>> diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
+>> index ee222ec..f329eae 100644
+>> --- a/arch/powerpc/kvm/book3s_pr.c
+>> +++ b/arch/powerpc/kvm/book3s_pr.c
+>> @@ -880,7 +880,8 @@ int kvm_vcpu_ioctl_get_one_reg(struct kvm_vcpu *vcpu, struct kvm_one_reg *reg)
+>> 
+>>        switch (reg->id) {
+>>        case KVM_REG_PPC_HIOR:
+>> -               r = put_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
+>> +               r = put_user(to_book3s(vcpu)->hior,
+>> +                            (u64 __user *)(long)reg->addr);
+> 
+> Yes and no. It brings me a step further, but not to a working kernel.
+> 
+>  CHK     include/linux/version.h
+>  CHK     include/generated/utsrelease.h
+>  CALL    scripts/checksyscalls.sh
+>  CC [M]  arch/powerpc/kvm/book3s_pr.o
+>  LD [M]  arch/powerpc/kvm/kvm.o
+>  Building modules, stage 2.
+>  MODPOST 227 modules
+> ERROR: "__get_user_bad" [arch/powerpc/kvm/kvm.ko] undefined!
 
---nextPart2838396.dFR3c2q4Di
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Ah, because you can't get_user u64s I suppose. Sigh. As a quick hack, just comment out the get/put_user lines - you don't care about configuring HIOR on ppc32 anyways. I'll try to come up with something :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAABAgAGBQJPSszyAAoJEEFjO5/oN/WBQ8MP+gKO+u/03HSZFU7qi0ivEVPT
-XWmWrSEXYJyKG7tQQrczqKcwx1UcW9x+Eo9cSzkTh7YGTN4S+wACaVfIZLBTdKyW
-FPIDumZWFvJQ3r3XXd/ELhHW68ny4yTQgyqT/wNXaWw+cB5rdTvkxKyNkeu371SQ
-NryxZYAEoCLfWF0ZITPN9bNEZjj1KsoaKHBr4ApFuHxV15Bjk3RTEY8UhnZrWgQ2
-GGfZ61U7f/DbX09TTh3TxQrI06I2Cnh2OU0yW48sDDCjefKo3QRz/5HzT9ag+pPs
-P1Fqo+l+VgC4/kiAuBUj533P4S39u/INRXuf0krDYZd5FF/oFcT4X7cDdRV4HpNA
-vrCDohCtZGIpG88mjX87Sqcp3XKg1kA55ceFju51zQczzkDnKIuuQTOPeg1SMNEY
-Qsirs5nppIUXlKiG5HXwSog2O5zqp+YNuO6cEmpJRhedq7VwLfVbmS9SM2D+OBug
-DzIrfZFtm1X/7tlVySl/H5n5/1BelfEGFTm2/Kb7tUOUAbTCxChQBXVLVWlNd9YC
-HbTGXKK2wR2SEF9XrWePo2io8XLZNRskUmJ1edkQRLr6LicebM7NsPmR9fJfGIci
-N0livuklxfzDGxAe8HuwmcjGqyPnL1Ve8gIKFgb5o6hJpaOXINqvwRJdJ0vtXK4U
-jTX3Z4kLJQOSJFfPGvdb
-=KY3Z
------END PGP SIGNATURE-----
+Alex
 
---nextPart2838396.dFR3c2q4Di--
