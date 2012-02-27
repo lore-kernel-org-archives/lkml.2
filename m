@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2B0QS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:18:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48234 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab2B0QS4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:18:56 -0500
-Message-ID: <1330359518.11248.72.camel@twins>
-Subject: Re: [PATCH] perf_event use rdpmc rather than rdmsr when possible in
- kernel
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Date: Mon, 27 Feb 2012 17:18:38 +0100
-In-Reply-To: <alpine.DEB.2.00.1202271051330.1902@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1202201722120.2753@cl320.eecs.utk.edu>
-	 <1330342762.11248.69.camel@twins>
-	 <alpine.DEB.2.00.1202271051330.1902@cl320.eecs.utk.edu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753893Ab2B0QVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:21:03 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:11147 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab2B0QVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 11:21:00 -0500
+Message-ID: <4F4BAD5E.9000600@parallels.com>
+Date: Mon, 27 Feb 2012 20:20:46 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 2/4] NFS: release per-net clients lock before calling
+ PipeFS dentries creation
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E7E@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E7E@saturn3.aculab.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 11:06 -0500, Vince Weaver wrote:
-> > > +   new_raw_count=native_read_pmc(hwc->event_base_rdpmc);
-> > 
-> > That really wants to be rdpmc(), bypassing paravirt like that isn't
-> > nice.
-> 
-> I couldn't find another usable rdpmc() call in the kernel.  Should I add 
-> one?  I admit I hadn't thought that this might break VMs not expecting
-> rdpmc calls from the kernel. 
+27.02.2012 19:59, David Laight пишет:
+>
+>>   	spin_lock(&nn->nfs_client_lock);
+>> -	list_for_each_entry(clp,&nn->nfs_client_list, cl_share_link) {
+>> +	list_for_each_entry_safe(clp, tmp,&nn->nfs_client_list,
+> cl_share_link) {
+>>   		if (clp->rpc_ops !=&nfs_v4_clientops)
+>>   			continue;
+>> +		atomic_inc(&clp->cl_count);
+>> +		spin_unlock(&nn->nfs_client_lock);
+>>   		error = __rpc_pipefs_event(clp, event, sb);
+>> +		nfs_put_client(clp);
+>>   		if (error)
+>>   			break;
+>> +		spin_lock(&nn->nfs_client_lock);
+>>   	}
+>>   	spin_unlock(&nn->nfs_client_lock);
+>>   	return error;
+>
+> The locking doesn't look right if the loop breaks on error.
+> (Same applied to patch v2 1/4)
+>
 
-arch/x86/include/asm/msr.h
+Thanks for the catch. I'll fix this.
 
-#define rdpmc(counter, low, high)                       \                                    
-do {                                                    \                                    
-        u64 _l = native_read_pmc((counter));            \                                    
-        (low)  = (u32)_l;                               \                                    
-        (high) = (u32)(_l >> 32);                       \                                    
-} while (0)
+> Although list_fo_each_entry_safe() allows the current entry
+> to be freed, I don't believe it allows the 'next' to be freed.
+> I doubt there is protection against that happening.
+>
 
+We need to use safe macro, because client can be destroyed on nfs_put_client() call.
+About "protection against ... the 'next' to be freed" - I dont' think, that we 
+need any protection against it. This will be done under nfs_client_lock, and 
+current entry list pointers will be updated properly.
+
+> Do you need to use an atomic_inc() for cl_count.
+> I'd guess the nfs_client_lock is usually held?
+>
+
+Sorry, I don't understand this question.
+
+-- 
+Best regards,
+Stanislav Kinsbursky
