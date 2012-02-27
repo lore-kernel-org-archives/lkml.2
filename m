@@ -1,98 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2B0MKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:10:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45467 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab2B0MKD (ORCPT
+	id S1753825Ab2B0MOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 07:14:52 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:50816
+	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751541Ab2B0MOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 07:10:03 -0500
-Date: Mon, 27 Feb 2012 04:09:11 -0800
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-8f2f748b0656257153bcf0941df8d6060acc5ca6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com, prashanth@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        srivatsa.bhat@linux.vnet.ibm.com, prashanth@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4F460D7B.1020703@linux.vnet.ibm.com>
-References: <4F460D7B.1020703@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] CPU hotplug, cpusets, suspend: Don'
- t touch cpusets during suspend/resume
-Git-Commit-ID: 8f2f748b0656257153bcf0941df8d6060acc5ca6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 27 Feb 2012 07:14:51 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 27 Feb 2012 20:21:18 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
+ config operations
+Message-ID: <20120227122117.GA15593@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-21-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Feb 2012 04:09:40 -0800 (PST)
+In-Reply-To: <1329720360-23227-21-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f2f748b0656257153bcf0941df8d6060acc5ca6
-Gitweb:     http://git.kernel.org/tip/8f2f748b0656257153bcf0941df8d6060acc5ca6
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Thu, 23 Feb 2012 15:27:15 +0530
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 27 Feb 2012 11:38:13 +0100
+On Sun, Feb 19, 2012 at 11:46:00PM -0700, Stephen Warren wrote:
+> The pinctrl mapping table can now contain entries to:
+> * Set the mux function of a pin group
+> * Apply a set of pin config options to a pin or a group
+> 
+> This allows pinctrl_select_state() to apply pin configs settings as well
+> as mux settings.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+....
+> -       PIN_MAP("default", "pinctrl-foo", "i2c0", "foo-i2c.0"),
+> +	PIN_MAP_MUX_GROUP("foo-i2c.o", "default", "pinctrl-foo", NULL, "i2c0"),
+> +};
+> +
+> +The mapping table may also contain pin configuration entries. It's common for
+> +each pin/group to have a number of configuration entries that affect it, so
+> +the table entries for configuration reference an array of config parameters
+> +and values. An example using the convenience macros is shown below:
+> +
+> +static unsigned long i2c_grp_configs[] = {
+> +	FOO_PIN_DRIVEN,
+> +	FOO_PIN_PULLUP,
+> +};
+> +
+> +static unsigned long i2c_pin_configs[] = {
+> +	FOO_OPEN_COLLECTOR,
+> +	FOO_SLEW_RATE_SLOW,
+> +};
+> +
+> +static struct pinctrl_map __initdata mapping[] = {
+> +	PIN_MAP_MUX_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", "i2c0"),
+> +	PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", i2c_grp_configs),
+> +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0scl", i2c_pin_configs),
+> +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0sda", i2c_pin_configs),
+I still have not read all over this patch.
+But one question i'm considering is that
+will this way here also work for "virtual" group?
+For example, the virtual group "i2c_grp_configs" may actually contains
+the config for each pin in that group?
+The core will handle this difference or let each driver to handle it?
 
-CPU hotplug, cpusets, suspend: Don't touch cpusets during suspend/resume
+> @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
+>  mux settings on the primary pin controller, there is a convenience macro for
+>  this:
+>  
+> -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
+Hmm?
+Why remove this one?
 
-Currently, during CPU hotplug, the cpuset callbacks modify the cpusets
-to reflect the state of the system, and this handling is asymmetric.
-That is, upon CPU offline, that CPU is removed from all cpusets. However
-when it comes back online, it is put back only to the root cpuset.
+> +PIN_MAP_MUX_GROUP("pinctrl-foo", "active", "pinctrl-foo", NULL, "power_func")
+>  
+>  This gives the exact same result as the above construction.
+>  
+> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+> index eb79a49..599aa79 100644
+> --- a/arch/arm/mach-u300/core.c
+> +++ b/arch/arm/mach-u300/core.c
+> @@ -1554,13 +1554,13 @@ static struct platform_device pinmux_device = {
+>  /* Pinmux settings */
+>  static struct pinctrl_map __initdata u300_pinmux_map[] = {
+>  	/* anonymous maps for chip power and EMIFs */
+> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "power"),
+> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif0"),
+> -	PIN_MAP_SYS_HOG("default", "pinmux-u300", "emif1"),
+> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "power"),
+> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif0"),
+> +	PIN_MAP_MUX_GROUP("pinmux-u300", "default", "pinmux-u300", NULL, "emif1"),
+>  	/* per-device maps for MMC/SD, SPI and UART */
+> -	PIN_MAP("default", "pinmux-u300", "mmc0", "mmci"),
+> -	PIN_MAP("default", "pinmux-u300", "spi0", "pl022"),
+> -	PIN_MAP("default", "pinmux-u300", "uart0", "uart0"),
+> +	PIN_MAP_MUX_GROUP("mmci",  "default", "pinmux-u300", NULL, "mmc0"),
+> +	PIN_MAP_MUX_GROUP("pl022", "default", "pinmux-u300", NULL, "spi0"),
+> +	PIN_MAP_MUX_GROUP("uart0", "default", "pinmux-u300", NULL, "uart0"),
+>  };
+>  
+>  struct u300_mux_hog {
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index bab1a69..af4ebe9 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -341,6 +341,31 @@ int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
+>  }
+>  
+>  /**
+> + * pinctrl_get_pin_id() - returns the group selector for a group
+> + * @pctldev: the pin controller handling the group
+> + * @pin_group: the pin group to look up
+The comment seems not correct here.
 
-This gives rise to a significant problem during suspend/resume. During
-suspend, we offline all non-boot cpus and during resume we online them back.
-Which means, after a resume, all cpusets (except the root cpuset) will be
-restricted to just one single CPU (the boot cpu). But the whole point of
-suspend/resume is to restore the system to a state which is as close as
-possible to how it was before suspend.
+> + */
+> +int pinctrl_get_pin_id(struct pinctrl_dev *pctldev,
+> +		       const char *pin)
+> +{
+> +	unsigned int i;
+> +
+> +	for (i = 0; i < pctldev->desc->npins; i++) {
+> +		if (pctldev->desc->pins[i].name == NULL)
+> +			continue;
+> +		if (!strcmp(pin, pctldev->desc->pins[i].name)) {
+> +			dev_dbg(pctldev->dev, "found pin id %u for %s\n",
+> +				i, pin);
+> +			return i;
+It looks actually this is not a PIN id.
+It's just the index of the pin array.
+Pin has its own id:
+struct pinctrl_pin_desc {
+	unsigned number;
+	const char *name;
+};
 
-So to fix this, don't touch cpusets during suspend/resume. That is, modify
-the cpuset-related CPU hotplug callback to just ignore CPU hotplug when it
-is initiated as part of the suspend/resume sequence.
+>  static int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+>  			   unsigned long *config)
+>  {
+> @@ -260,8 +278,154 @@ unlock:
+>  }
+>  EXPORT_SYMBOL(pin_config_group_set);
+>  
+> +int pinconf_map_to_setting(struct pinctrl_map const *map,
+> +			  struct pinctrl_setting *setting)
+> +{
+> +	struct pinctrl_dev *pctldev = setting->pctldev;
+> +
+> +	switch (setting->type) {
+> +	case PIN_MAP_TYPE_CONFIGS_PIN:
+> +		setting->data.configs.group_or_pin =
+> +			pinctrl_get_pin_id(pctldev,
+> +					   map->data.configs.group_or_pin);
+> +		if (setting->data.configs.group_or_pin < 0)
+> +			return setting->data.configs.group_or_pin;
+> +		break;
+> +		break;
+Two break here.
 
-Reported-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/4F460D7B.1020703@linux.vnet.ibm.com
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Regards
+Dong Aisheng
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b342f57..33a0676 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6728,7 +6728,7 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
- static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
- 		cpuset_update_active_cpus();
-@@ -6741,7 +6741,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- 			       void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
- 		return NOTIFY_OK;
