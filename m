@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab2B0SVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:21:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3546 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab2B0SVv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:21:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 27 Feb 2012 10:21:30 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Feb 2012 10:21:29 -0800
-Subject: RE: [PATCH 17/20] pinctrl: Add usecount to pins for muxing
-Thread-Topic: [PATCH 17/20] pinctrl: Add usecount to pins for muxing
-Thread-Index: Acz1Hix2xcCU6DslSBC8tmIdguNxygAXjrpA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFB6@HQMAIL01.nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
- <1329720360-23227-18-git-send-email-swarren@nvidia.com>
- <20120227071150.GA26061@shlinux2.ap.freescale.net>
-In-Reply-To: <20120227071150.GA26061@shlinux2.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754571Ab2B0SWI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:22:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61797 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754475Ab2B0SWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:22:06 -0500
+Date: Mon, 27 Feb 2012 19:14:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com
+Subject: Re: [PATCH v11 07/12] seccomp: add SECCOMP_RET_ERRNO
+Message-ID: <20120227181434.GA13903@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-7-git-send-email-wad@chromium.org> <20120227171132.GB10608@redhat.com> <CAGXu5jJQhfSSwTU5fSGR_Q57LAQBFW25A_FtR2GFsxyT_ibnzQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jJQhfSSwTU5fSGR_Q57LAQBFW25A_FtR2GFsxyT_ibnzQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dong Aisheng wrote at Monday, February 27, 2012 12:12 AM:
-> On Sun, Feb 19, 2012 at 11:45:57PM -0700, Stephen Warren wrote:
-> > Multiple mapping table entries could reference the same pin, and hence
-> > "own" it. This would be unusual now that pinctrl_get() represents a single
-> > state for a client device, but in the future when it represents all known
-> > states for a device, this is quite likely. Implement reference counting
-> > for pin ownership to handle this.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-...
-> >  	/*
-> > -	 * If there is no kind of request function for the pin we just assume
-> > -	 * we got it by default and proceed.
-> > -	 */
-> > +	* If there is no kind of request function for the pin we just assume
-> > +	* we got it by default and proceed.
-> > +	*/
+On 02/27, Kees Cook wrote:
 >
-> I remember the correct format for multiple lines of comments is:
-> /*
->  * ...
->  */
-> 
-> But i see the changes here are(i'm using mutt):
-> /*
-> * ...
-> */
-> Can you help explain?
+> On Mon, Feb 27, 2012 at 9:11 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/24, Will Drewry wrote:
+> >>
+> >>  static u32 seccomp_run_filters(int syscall)
+> >>  {
+> >>       struct seccomp_filter *f;
+> >> -     u32 ret = SECCOMP_RET_KILL;
+> >>       static const struct bpf_load_fn fns = {
+> >>               bpf_load,
+> >>               sizeof(struct seccomp_data),
+> >>       };
+> >> +     u32 ret = SECCOMP_RET_ALLOW;
+> >>       const void *sc_ptr = (const void *)(uintptr_t)syscall;
+> >>
+> >> +     /* Ensure unexpected behavior doesn't result in failing open. */
+> >> +     if (unlikely(current->seccomp.filter == NULL))
+> >> +             ret = SECCOMP_RET_KILL;
+> >
+> > Is "seccomp.filter == NULL" really possible?
+>
+> It should not be, but I'm much more comfortable with this failing
+> closed. I think it's important to be as defensive as possible with
+> this code given its intended use.
 
-It was a mistake; my editor corrupted it when I added or removed some
-indentation levels. I noticed this and fixed it locally when doing
-some rebasing.
+Can't resists... Sorry, I know I am troll but personally I think
+in this case the most defensive code is BUG_ON(->filter == NULL)
+or at least WARN_ON().
 
-> Else please also take my ACK:
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+Nevermind, I won't pretend I really understand the intended use,
+please ignore.
 
-Thanks.
-
--- 
-nvpublic
+Oleg.
 
