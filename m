@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab2B0LT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:19:26 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49542 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753233Ab2B0LTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:19:24 -0500
-X-Sasl-enc: yFpzO5aUT9c2pZGflZX1BFw+FeHo/xpUZObzGMIlMByW 1330341564
-Message-ID: <4F4B66BA.5070007@imap.cc>
-Date: Mon, 27 Feb 2012 12:19:22 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753591Ab2B0L3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:29:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596Ab2B0L3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 06:29:35 -0500
+Message-ID: <4F4B690B.3010707@redhat.com>
+Date: Mon, 27 Feb 2012 08:29:15 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hansjoerg Lipp <hjlipp@web.de>,
-        gigaset307x-common@lists.sourceforge.net,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: "whitespace coding style cleanup" broke coding style
-References: <4F4B45F6.4090706@suse.cz>
-In-Reply-To: <4F4B45F6.4090706@suse.cz>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8bit
+To: "Dr. David Alan Gilbert" <linux@treblig.org>
+CC: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+        Jidong Xiao <jidong.xiao@gmail.com>, david@lang.hm,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com> <4F4661D6.7030809@gmail.com> <CAG4AFWa3cs-V+wfL8o6PauTAOtvj8t1E_iSN5r0A8z=Aqzg0tg@mail.gmail.com> <alpine.DEB.2.02.1202231247550.1803@asgard.lang.hm> <CAG4AFWbfrTtq2OCrkrXfF-VV1+80oUE1Nfaxg5US3hNX3AiQ6A@mail.gmail.com> <20120224162109.1bbf157b@redhat.com> <20120225150940.GA3719@localhost> <4F497782.3060902@redhat.com> <20120226015820.GB18931@gallifrey>
+In-Reply-To: <20120226015820.GB18931@gallifrey>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Em 25-02-2012 23:58, Dr. David Alan Gilbert escreveu:
+> * Mauro Carvalho Chehab (mchehab@redhat.com) wrote:
+>> Em 25-02-2012 13:10, Eduard - Gabriel Munteanu escreveu:
+>>> On Fri, Feb 24, 2012 at 04:21:09PM -0200, Mauro Carvalho Chehab wrote:
+>>>> Moving a buggy driver to userspace won't fix the bug. You're just moving
+>>>> it from one place to another place. Also, the code will likely require changes
+>>>> to work on userspace, so, the chances are that you're actually introducing more
+>>>> bugs.
+>>>
+> 
+> <snip>
+> 
+>>>> That's said, there are much more eyes inspecting the kernel sources than on any 
+>>>> other userspace project. So, the risk of a bad code to be inserted unnoticed at
+>>>> the Linux kernel is degrees of magnitude lower than on an userspace driver.
+>>>
+>>> Those much more eyes have already missed important bugs in the past.
+>>
+>> Yes, nobody is perfect. But the probability that something passes on a 4000+ people
+>> review is lower than the probability of a bug on a piece of code where just one 
+>> or two people are looking on it.
+> 
+> That there are 4000+ people reading a driver is a big assumption; for common
+> drivers I'd agree - one problem though is there are a lot of drivers for obscure
+> hardware or old/dead hardware/protocols that frankly near to nobody cares about.
 
-Am 27.02.2012 09:59, schrieb Jiri Slaby:
-> commit 475be4d85a274d0961593db41cf85689db1d583c Author: Joe Perches
-> <joe@perches.com> Date:   Sun Feb 19 19:52:38 2012 -0800
-> 
-> isdn: whitespace coding style cleanup
-> 
-> isdn source code uses a not-current coding style. ... Done with
-> emacs and some scripts and some typing. ... ---
-> a/drivers/isdn/gigaset/interface.c +++
-> b/drivers/isdn/gigaset/interface.c ... @@ -680,9 +680,9 @@ void
-> gigaset_if_initdriver(struct gigaset_driver *drv, const char
-> *procname, goto enomem;
-> 
-> tty->magic =            TTY_DRIVER_MAGIC, -       tty->type =
-> TTY_DRIVER_TYPE_SERIAL, -       tty->subtype =
-> SERIAL_TYPE_NORMAL, -       tty->flags =
-> TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV; +
-> tty->type =             TTY_DRIVER_TYPE_SERIAL, +
-> tty->subtype =          SERIAL_TYPE_NORMAL, +
-> tty->flags =            TTY_DRIVER_REAL_RAW | 
-> TTY_DRIVER_DYNAMIC_DEV;
-> 
-> Hmm, please, fix your scripts or emacs!
-> 
-> Through which tree did this get in?
+Drivers for dead hardware won't offer security risks: those drivers will not load,
+as such hardware won't be found at the machine. The same applies to old hardware drivers:
+they won't run on modern machines.
 
-That's the first I see of this patch.
-It neither came through LKML nor did I get a CC.
-For all I know, this didn't get in.
-It isn't in http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
-anyway.
+Yet, even those old/dead drivers have people looking into it. I receive lots of patches
+from the janitors team touching those old stuff, fixing potential issues on them.
+
+If the userspace drivers become fragmented into hundreds of independent projects,
+I doubt that most of those projects would have a janitors or a security team. Yet,
+they can offer security risks.
+
+> Very few people read those drivers; yet sometimes they get built and distributed
+> and someone then finds that since no one has looked at them they're full of holes,
+> and given a malicious USB device for example, you can suddenly create one of these
+> devices that only 3 people have bothered to read the source to - 5 years ago.
+> (The Econet security bug recently would be an example of that).
+
+If a malicious person has physical access to the hardware, he can certainly compromise
+the machine even without an USB device: if he powers off the machine, a DoS is caused;
+if he stoles the hard disks, confidentiality is compromised; if he boots a live CD,
+he can insert malicious code there, etc.
+
+> There is a line which says that things that really aren't used
+> just shouldn't be built; but then there are things that are only used
+> by a few people, and then ones only used by a few organisations - and
+> it gets very difficult to say at what point you say just turn it off.
+
+True. If such organizations have high security requirements, they should be hardening 
+the OS, disabling anything that allows to load a driver at runtime. The consulting
+services for it I've worked with in the past generally disables not only all unused
+drivers, but also any other drivers that would allow the usage of external media
+(USB, CD rom, memory stick drivers) and userspace ones.
 
 Regards,
-Tilman
-
-- -- 
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk9LZroACgkQMdB4Whm86/ndbQCeLQM0kHgzLSbexyF5qiH+bkq/
-b+YAn0cM5VEzsoPVW3iQYYzbeByHyEFN
-=AcbN
------END PGP SIGNATURE-----
+Mauro
