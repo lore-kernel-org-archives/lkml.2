@@ -1,117 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab2B0Qp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:45:29 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:50186 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753654Ab2B0Qp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:45:28 -0500
-Date: Mon, 27 Feb 2012 08:45:20 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Eugeni Dodonov <eugeni@dodonov.net>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>, DRI@freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        mailing list <dri-devel@lists.freedesktop.org>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: Re: [git pull] drm fixes
-Message-ID: <20120227084520.548ea01b@jbarnes-desktop>
-In-Reply-To: <CAC7Lmnu6Wp1aVDuCkP6+UN7jVW8jCk5PcufBn1nVANJfNQzq0A@mail.gmail.com>
-References: <alpine.DEB.2.00.1202221952430.18534@skynet.skynet.ie>
-	<CAPVoSvSvQv14dM6EWTi3YxUtxNWB8+kypDHSwkYTiWpBxL2eug@mail.gmail.com>
-	<20120227080912.5e2163ee@jbarnes-desktop>
-	<CAC7Lmnu6Wp1aVDuCkP6+UN7jVW8jCk5PcufBn1nVANJfNQzq0A@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+	id S1754069Ab2B0QvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:51:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab2B0QvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 11:51:11 -0500
+Message-ID: <1330361396.2542.11.camel@localhost>
+Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+From: Eric Paris <eparis@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: Kees Cook <kees@ubuntu.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Date: Mon, 27 Feb 2012 11:49:56 -0500
+In-Reply-To: <CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	 <1330140111-17201-6-git-send-email-wad@chromium.org>
+	 <20120226202828.GE3990@outflux.net>
+	 <CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/O9HfGuL/eGRM622r3V.7QA/"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/O9HfGuL/eGRM622r3V.7QA/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 27 Feb 2012 13:33:53 -0300
-Eugeni Dodonov <eugeni@dodonov.net> wrote:
-
-> On Mon, Feb 27, 2012 at 13:09, Jesse Barnes <jbarnes@virtuousgeek.org>wro=
-te:
->=20
-> > On Thu, 23 Feb 2012 21:19:20 +0100
-> > Torsten Kaiser <just.for.lkml@googlemail.com> wrote:
+On Mon, 2012-02-27 at 10:23 -0600, Will Drewry wrote:
+> On Sun, Feb 26, 2012 at 2:28 PM, Kees Cook <kees@ubuntu.com> wrote:
+> > On Fri, Feb 24, 2012 at 09:21:45PM -0600, Will Drewry wrote:
+> >> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> >> index e8d76c5..25e8296 100644
+> >> --- a/kernel/seccomp.c
+> >> +++ b/kernel/seccomp.c
+> >> [...]
+> >> +static void seccomp_filter_log_failure(int syscall)
+> >> +{
+> >> +     int compat = 0;
+> >> +#ifdef CONFIG_COMPAT
+> >> +     compat = is_compat_task();
+> >> +#endif
+> >> +     pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+> >> +             current->comm, task_pid_nr(current),
+> >> +             (compat ? "compat " : ""),
+> >> +             syscall, KSTK_EIP(current));
+> >> +}
+> >> [...]
+> >> +#ifdef CONFIG_SECCOMP_FILTER
+> >> +     case SECCOMP_MODE_FILTER:
+> >> +             if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
+> >> +                     return;
+> >> +             seccomp_filter_log_failure(this_syscall);
+> >> +             exit_code = SIGSYS;
+> >> +             break;
+> >> +#endif
+> >>       default:
+> >>               BUG();
+> >>       }
+> >> @@ -56,7 +324,7 @@ void __secure_computing(int this_syscall)
+> >>       dump_stack();
+> >>  #endif
+> >>       audit_seccomp(this_syscall);
+> >> -     do_exit(SIGKILL);
+> >> +     do_exit(exit_code);
+> >>  }
 > >
-> > > On Wed, Feb 22, 2012 at 8:56 PM, Dave Airlie <airlied@linux.ie> wrote:
-> > > > Eugeni Dodonov (4):
-> > > >      drm/i915: gen7: implement rczunit workaround
-> > > >      drm/i915: gen7: Implement an L3 caching workaround.
-> > > >      drm/i915: gen7: work around a system hang on IVB
-> > > >      drm/i915: do not enable RC6p on Sandy Bridge
-> > >
-> > > That last patch about RC6p looks wrong.
-> > >
-> > > It does:
-> > >  GEN6_RC_CTL_RC6_ENABLE |
-> > >                       (IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENA=
-BLE
-> > : 0;
-> > > But I think this was meant:
-> > >  GEN6_RC_CTL_RC6_ENABLE |
-> > >                       ((IS_GEN7(dev_priv->dev)) ?
-> > GEN6_RC_CTL_RC6p_ENABLE : 0);
-> > >
-> > > Or did I get the operator precedence wrong?
+> > I think the seccomp_filter_log_failure() use is redundant with the
+> > audit_seccomp call.  Here's a possible reorganization of the logging...
+> 
+> Cool - a comment below:
+> 
+> > From: Kees Cook <keescook@chromium.org>
+> > Date: Sun, 26 Feb 2012 11:56:12 -0800
+> > Subject: [PATCH] seccomp: improve audit logging details
 > >
-> > You're right, no cookie for Eugeni. :)  This would have prevented RC6
-> > from ever getting enabled though, which should have the same effect as
-> > the patch intended, though at the cost of higher power consumption.
+> > This consolidates the seccomp filter error logging path and adds more
+> > details to the audit log.
 > >
->=20
-> Actually, no, it got RC6p enabled - so it got to have all the power savin=
-gs
-> of RC6 plus some additional ones in the range of 0.1W, but it also result=
-ed
-> in the very same problem as before, when both RC6 and RC6p were enabled.
->=20
-> So, from what we've seen with
-> https://wiki.ubuntu.com/Kernel/PowerManagementRC6, the graphics corruptio=
-ns
-> do only happen when RC6p is enabled (either together with RC6, or
-> individually, on its own). If we have only RC6, all the issues are gone so
-> far.
->=20
-> So this bad patch had its use after all - it served to finally isolate and
-> prove that the i915_enable_rc6-related issues are caused directly by RC6p.
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > ---
+> >  include/linux/audit.h |    8 ++++----
+> >  kernel/auditsc.c      |    9 +++++++--
+> >  kernel/seccomp.c      |   15 +--------------
+> >  3 files changed, 12 insertions(+), 20 deletions(-)
+> >
+> > diff --git a/include/linux/audit.h b/include/linux/audit.h
+> > index 9ff7a2c..5aa6cfc 100644
+> > --- a/include/linux/audit.h
+> > +++ b/include/linux/audit.h
+> > @@ -463,7 +463,7 @@ extern void audit_putname(const char *name);
+> >  extern void __audit_inode(const char *name, const struct dentry *dentry);
+> >  extern void __audit_inode_child(const struct dentry *dentry,
+> >                                const struct inode *parent);
+> > -extern void __audit_seccomp(unsigned long syscall);
+> > +extern void __audit_seccomp(unsigned long syscall, long signr);
+> >  extern void __audit_ptrace(struct task_struct *t);
+> >
+> >  static inline int audit_dummy_context(void)
+> > @@ -508,10 +508,10 @@ static inline void audit_inode_child(const struct dentry *dentry,
+> >  }
+> >  void audit_core_dumps(long signr);
+> >
+> > -static inline void audit_seccomp(unsigned long syscall)
+> > +static inline void audit_seccomp(unsigned long syscall, long signr)
+> >  {
+> >        if (unlikely(!audit_dummy_context()))
+> > -               __audit_seccomp(syscall);
+> > +               __audit_seccomp(syscall, signr);
+> >  }
+> >
+> >  static inline void audit_ptrace(struct task_struct *t)
+> > @@ -634,7 +634,7 @@ extern int audit_signals;
+> >  #define audit_inode(n,d) do { (void)(d); } while (0)
+> >  #define audit_inode_child(i,p) do { ; } while (0)
+> >  #define audit_core_dumps(i) do { ; } while (0)
+> > -#define audit_seccomp(i) do { ; } while (0)
+> > +#define audit_seccomp(i,s) do { ; } while (0)
+> >  #define auditsc_get_stamp(c,t,s) (0)
+> >  #define audit_get_loginuid(t) (-1)
+> >  #define audit_get_sessionid(t) (-1)
+> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > index af1de0f..74652fe 100644
+> > --- a/kernel/auditsc.c
+> > +++ b/kernel/auditsc.c
+> > @@ -67,6 +67,7 @@
+> >  #include <linux/syscalls.h>
+> >  #include <linux/capability.h>
+> >  #include <linux/fs_struct.h>
+> > +#include <linux/compat.h>
+> >
+> >  #include "audit.h"
+> >
+> > @@ -2710,13 +2711,17 @@ void audit_core_dumps(long signr)
+> >        audit_log_end(ab);
+> >  }
+> >
+> > -void __audit_seccomp(unsigned long syscall)
+> > +void __audit_seccomp(unsigned long syscall, long signr)
+> >  {
+> >        struct audit_buffer *ab;
+> >
+> >        ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+> > -       audit_log_abend(ab, "seccomp", SIGKILL);
+> > +       audit_log_abend(ab, "seccomp", signr);
+> >        audit_log_format(ab, " syscall=%ld", syscall);
+> > +#ifdef CONFIG_COMPAT
+> > +       audit_log_format(ab, " compat=%d", is_compat_task());
+> > +#endif
+> 
+> Should this just use syscall_get_arch to get the AUDIT_ARCH now? :)
 
-Oh you're right; I had the bit positions mixed up...  I thought the
-higher level bit toggled all RC6 functionality, but that's kept
-separate from this.
+I'm waffling on this one, but I'm leaning towards not including compat
+at all.  If you include it, yes, you should use the generic function.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+If you have CONFIG_AUDITSC and started audit you are going to get this,
+along with a0-a4, in a separate but associated audit record.  Thus you
+get all the interesting/relevant info.  Without CONFIG_AUDITSC and
+running auditd you get compat, but nothing else.  Why is compat so
+interesting?
 
---Sig_/O9HfGuL/eGRM622r3V.7QA/
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+This patch would duplicate the arch=field from that record (calling it
+compat).  So if we are going to duplicate it in another record, we
+should at least call it the same thing (arch=%x)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+My current thinking, and I'm not settled would be to include syscall,
+a0-a4 and arch in the record only if !CONFIG_AUDITSC.  (ip doesn't show
+up elsewhere, so that makes sense here)
 
-iQIcBAEBAgAGBQJPS7MgAAoJEIEoDkX4Qk9hGfcP+waBb3coh9733z8cnoJlIRnC
-2KYZRw0CkEJ6Cp8qYxDOyyDnSLNqD/KN0ooFjljuSmgG/YENrC3dPbJad1HE92Wx
-yJHEQetucz2j35vvHHfFQIFEzutKku3iR0UGO69b8DZJ3zPtvS/Hl8jLwYXPgj9b
-mePLEjv2iVYdTezoMnkILSXShD2mX/c51UdpX5CQVKdxoEfkHVkDRGCGdv7bYtDy
-Q4tSS/P4aTXql4ApvGyWkA6EVnyeZbvW/nJNGxkqviY2dqm7ie7ZaWsRshCnTt/9
-RY86wCHu1rP1iGnFLEDmW20zlkuc/zGKpyP6ZIss0cB+aIHE37JA+ifSjXuEEz6k
-TI8ISWEwVcN9yMcbhQTcdVoiUgDgLandfzSNMiBpIL8aQLs5uE8mI0jGx01a4S7q
-urFh+OWuyiFvsCnnQRhtrnVIm61gjA3lkrD+BxWpXWn921JgAxolV2GwYBmFHaz5
-YMeoHi171ggb5u8HGgBFXj2O+Bu13ScRHQJCgs2B82kwG/bxQXK6UPqoS1FyzHRh
-BIvhtOR/XHpVhJGfXrpDDdRJ2sq6BCckdEPmALd/zQGynM751IzXe/maAkfxuJBY
-7ngeG5izQAs/TQYvpy16lbGJcGDHMB9+oHN64O3dYJjQemz7bJaBS+8iDS6F2b21
-+jZC7a24sq9x2OdmmFcJ
-=BCvm
------END PGP SIGNATURE-----
+It might be annoying to have to find the info in the right record, but
+if you use the auparse audit library tools, it should 'Just Work'...
 
---Sig_/O9HfGuL/eGRM622r3V.7QA/--
+> > +       audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+> >        audit_log_end(ab);
+> >  }
+> >
+> > diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> > index 5aabc3c..40af83f 100644
+> > --- a/kernel/seccomp.c
+> > +++ b/kernel/seccomp.c
+> > @@ -57,18 +57,6 @@ struct seccomp_filter {
+> >        struct sock_filter insns[];
+> >  };
+> >
+> > -static void seccomp_filter_log_failure(int syscall)
+> > -{
+> > -       int compat = 0;
+> > -#ifdef CONFIG_COMPAT
+> > -       compat = is_compat_task();
+> > -#endif
+> > -       pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+> > -               current->comm, task_pid_nr(current),
+> > -               (compat ? "compat " : ""),
+> > -               syscall, KSTK_EIP(current));
+> > -}
+> > -
+> >  /**
+> >  * get_u32 - returns a u32 offset into data
+> >  * @data: a unsigned 64 bit value
+> > @@ -378,7 +366,6 @@ int __secure_computing_int(int this_syscall)
+> >                default:
+> >                        break;
+> >                }
+> > -               seccomp_filter_log_failure(this_syscall);
+> >                exit_code = SIGSYS;
+> >                break;
+> >        }
+> > @@ -390,7 +377,7 @@ int __secure_computing_int(int this_syscall)
+> >  #ifdef SECCOMP_DEBUG
+> >        dump_stack();
+> >  #endif
+> > -       audit_seccomp(this_syscall);
+> > +       audit_seccomp(this_syscall, exit_code);
+> >        do_exit(exit_code);
+> >        return -1;      /* never reached */
+> >  }
+> > --
+> > 1.7.0.4
+> 
+> I'll pull this into the series if that's okay with you?
+> 
+> Thanks!
+
+
