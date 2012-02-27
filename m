@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2B0KaJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 05:30:09 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50167 "EHLO mx2.mail.elte.hu"
+	id S1752198Ab2B0KdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 05:33:17 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53434 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab2B0KaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 05:30:08 -0500
-Date: Mon, 27 Feb 2012 11:29:56 +0100
+	id S1751818Ab2B0KdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 05:33:13 -0500
+Date: Mon, 27 Feb 2012 11:32:58 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fix
-Message-ID: <20120227102956.GA3015@elte.hu>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20120227103258.GA3729@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,116 +31,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest sched-urgent-for-linus git tree from:
+Please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-   HEAD: 8c79a045fd590a26e81e75f5d8d4ec5c7d23e565 sched/events: Revert trace_sched_stat_sleeptime()
+   HEAD: 3f806e50981825fa56a7f1938f24c0680816be45 x86/mce/AMD: Fix UP build error
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Peter Zijlstra (1):
-      sched/events: Revert trace_sched_stat_sleeptime()
+Andreas Herrmann (1):
+      x86/amd: Fix L1i and L2 cache sharing information for AMD family 15h processors
+
+Borislav Petkov (1):
+      x86/mce/AMD: Fix UP build error
+
+Prarit Bhargava (1):
+      x86/microcode: Remove noisy AMD microcode warning
+
+Steven Rostedt (2):
+      x86/nmi: Test saved %cs in NMI to determine nested NMI case
+      x86: Specify a size for the cmp in the NMI handler
 
 
- include/trace/events/sched.h |   50 ------------------------------------------
- kernel/sched/core.c          |    1 -
- kernel/sched/fair.c          |    2 +
- 3 files changed, 2 insertions(+), 51 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |   44 +++++++++++++++++++++++++++------
+ arch/x86/kernel/cpu/mcheck/mce_amd.c  |    2 +
+ arch/x86/kernel/entry_64.S            |    9 ++++++-
+ arch/x86/kernel/microcode_amd.c       |    1 -
+ 4 files changed, 46 insertions(+), 10 deletions(-)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 6ba596b..e33ed1b 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -370,56 +370,6 @@ TRACE_EVENT(sched_stat_runtime,
- 			(unsigned long long)__entry->vruntime)
- );
+diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+index 6b45e5e..73d08ed 100644
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -326,8 +326,7 @@ static void __cpuinit amd_calc_l3_indices(struct amd_northbridge *nb)
+ 	l3->indices = (max(max3(sc0, sc1, sc2), sc3) << 10) - 1;
+ }
  
--#ifdef CREATE_TRACE_POINTS
--static inline u64 trace_get_sleeptime(struct task_struct *tsk)
--{
--#ifdef CONFIG_SCHEDSTATS
--	u64 block, sleep;
--
--	block = tsk->se.statistics.block_start;
--	sleep = tsk->se.statistics.sleep_start;
--	tsk->se.statistics.block_start = 0;
--	tsk->se.statistics.sleep_start = 0;
--
--	return block ? block : sleep ? sleep : 0;
--#else
--	return 0;
--#endif
--}
--#endif
--
--/*
-- * Tracepoint for accounting sleeptime (time the task is sleeping
-- * or waiting for I/O).
-- */
--TRACE_EVENT(sched_stat_sleeptime,
--
--	TP_PROTO(struct task_struct *tsk, u64 now),
--
--	TP_ARGS(tsk, now),
--
--	TP_STRUCT__entry(
--		__array( char,	comm,	TASK_COMM_LEN	)
--		__field( pid_t,	pid			)
--		__field( u64,	sleeptime		)
--	),
--
--	TP_fast_assign(
--		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
--		__entry->pid		= tsk->pid;
--		__entry->sleeptime = trace_get_sleeptime(tsk);
--		__entry->sleeptime = __entry->sleeptime ?
--				now - __entry->sleeptime : 0;
--	)
--	TP_perf_assign(
--		__perf_count(__entry->sleeptime);
--	),
--
--	TP_printk("comm=%s pid=%d sleeptime=%Lu [ns]",
--			__entry->comm, __entry->pid,
--			(unsigned long long)__entry->sleeptime)
--);
--
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-  * priority.
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..b342f57 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1932,7 +1932,6 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	local_irq_enable();
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- 	finish_lock_switch(rq, prev);
--	trace_sched_stat_sleeptime(current, rq->clock);
+-static void __cpuinit amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf,
+-					int index)
++static void __cpuinit amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf, int index)
+ {
+ 	int node;
  
- 	fire_sched_in_preempt_notifiers(current);
- 	if (mm)
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7c6414f..aca16b8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1003,6 +1003,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		if (unlikely(delta > se->statistics.sleep_max))
- 			se->statistics.sleep_max = delta;
+@@ -725,14 +724,16 @@ static DEFINE_PER_CPU(struct _cpuid4_info *, ici_cpuid4_info);
+ #define CPUID4_INFO_IDX(x, y)	(&((per_cpu(ici_cpuid4_info, x))[y]))
  
-+		se->statistics.sleep_start = 0;
- 		se->statistics.sum_sleep_runtime += delta;
+ #ifdef CONFIG_SMP
+-static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
++
++static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
+ {
+-	struct _cpuid4_info	*this_leaf, *sibling_leaf;
+-	unsigned long num_threads_sharing;
+-	int index_msb, i, sibling;
++	struct _cpuid4_info *this_leaf;
++	int ret, i, sibling;
+ 	struct cpuinfo_x86 *c = &cpu_data(cpu);
  
- 		if (tsk) {
-@@ -1019,6 +1020,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		if (unlikely(delta > se->statistics.block_max))
- 			se->statistics.block_max = delta;
+-	if ((index == 3) && (c->x86_vendor == X86_VENDOR_AMD)) {
++	ret = 0;
++	if (index == 3) {
++		ret = 1;
+ 		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
+ 			if (!per_cpu(ici_cpuid4_info, i))
+ 				continue;
+@@ -743,8 +744,35 @@ static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
+ 				set_bit(sibling, this_leaf->shared_cpu_map);
+ 			}
+ 		}
+-		return;
++	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
++		ret = 1;
++		for_each_cpu(i, cpu_sibling_mask(cpu)) {
++			if (!per_cpu(ici_cpuid4_info, i))
++				continue;
++			this_leaf = CPUID4_INFO_IDX(i, index);
++			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
++				if (!cpu_online(sibling))
++					continue;
++				set_bit(sibling, this_leaf->shared_cpu_map);
++			}
++		}
+ 	}
++
++	return ret;
++}
++
++static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
++{
++	struct _cpuid4_info *this_leaf, *sibling_leaf;
++	unsigned long num_threads_sharing;
++	int index_msb, i;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++	if (c->x86_vendor == X86_VENDOR_AMD) {
++		if (cache_shared_amd_cpu_map_setup(cpu, index))
++			return;
++	}
++
+ 	this_leaf = CPUID4_INFO_IDX(cpu, index);
+ 	num_threads_sharing = 1 + this_leaf->base.eax.split.num_threads_sharing;
  
-+		se->statistics.block_start = 0;
- 		se->statistics.sum_sleep_runtime += delta;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 786e76a..e4eeaaf 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -528,6 +528,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
  
- 		if (tsk) {
+ 	sprintf(name, "threshold_bank%i", bank);
+ 
++#ifdef CONFIG_SMP
+ 	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
+ 		i = cpumask_first(cpu_llc_shared_mask(cpu));
+ 
+@@ -553,6 +554,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 
+ 		goto out;
+ 	}
++#endif
+ 
+ 	b = kzalloc(sizeof(struct threshold_bank), GFP_KERNEL);
+ 	if (!b) {
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 3fe8239..1333d98 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1532,10 +1532,17 @@ ENTRY(nmi)
+ 	pushq_cfi %rdx
+ 
+ 	/*
++	 * If %cs was not the kernel segment, then the NMI triggered in user
++	 * space, which means it is definitely not nested.
++	 */
++	cmpl $__KERNEL_CS, 16(%rsp)
++	jne first_nmi
++
++	/*
+ 	 * Check the special variable on the stack to see if NMIs are
+ 	 * executing.
+ 	 */
+-	cmp $1, -8(%rsp)
++	cmpl $1, -8(%rsp)
+ 	je nested_nmi
+ 
+ 	/*
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index ac0417b..73465aa 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -360,7 +360,6 @@ out:
+ static enum ucode_state
+ request_microcode_user(int cpu, const void __user *buf, size_t size)
+ {
+-	pr_info("AMD microcode update via /dev/cpu/microcode not supported\n");
+ 	return UCODE_ERROR;
+ }
+ 
