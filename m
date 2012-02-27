@@ -1,125 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab2B0BAz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 20:00:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42856 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2B0BAx (ORCPT
+	id S1753515Ab2B0BB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 20:01:29 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:59279 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753250Ab2B0BB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 20:00:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.42.154.195 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Mon, 27 Feb 2012 09:00:38 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: spock@gentoo.org
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
-        hpa@linux.intel.com
-Subject: [PATCH 0/2] Fix oops when uvesafb try to execute NX-protected page
-Message-ID: <20120227010038.GA4019@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>, spock@gentoo.org,
-	lkml <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
-	hpa@linux.intel.com
+	Sun, 26 Feb 2012 20:01:28 -0500
+Date: Sun, 26 Feb 2012 17:01:28 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Andrei Warkentin <andreiw@vmware.com>
+Message-ID: <106764274.1567181.1330304488097.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <4F4A2F60.1060700@windriver.com>
+Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I decide to  resend these two patches after without any reply in past
-four days, because I think we should not ignore it, maybe these patches
-are not the best cure, then I believe any better patches or comments 
-are welcome by our kernel community!
+Hi Jason,
 
-https://lkml.org/lkml/2011/11/17/54 is the first time I post my problem.
-Recent day I get it a little clearly!
+Thank you for the review. Comments inline.
 
-[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
-[   81.609384] uvesafb: protected mode interface info at c000:d350
-[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
-[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
-[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
-[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
-[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
-[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
-[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
-[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
-[   81.744171] Oops: 0011 [#1] SMP
-[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
-[   81.744178]
-[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
-[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
-[   81.744187] EIP is at 0xc00cd3b3
-[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
-[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
-[   81.744196] Stack:
-[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
-[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
-[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
-[   81.744210] Call Trace:
-[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
-[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
-[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
-[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
-[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
-[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
-[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
-[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
-[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
-[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
-[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
-[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
-[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
-[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
-[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
-[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
-[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
-[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
-[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
-[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
-[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
-[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
-[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
-[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
-[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
-[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
-[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
-[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
-[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
-[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
-[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
-[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
-[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
-[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
-[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
-[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
-[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
-[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
-[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
-[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
-[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
-[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
-[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
-[   81.744391] CR2: 00000000c00cd3b3
-[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
+----- Original Message -----
+> From: "Jason Wessel" <jason.wessel@windriver.com>
+> To: "Andrei Warkentin" <andreiw@vmware.com>
+> Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+> Sent: Sunday, February 26, 2012 8:10:56 AM
+> Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
+> 
+> I did not write the original code, but I can explain why there was
+> some special logic.
+> 
+> When you restore the system back to the running state you do not want
+> to send any other key scan codes back to the kernel.  The idea being
+> that you type "go" and press enter to resume kernel execution.  At
+> that point you do not want to send a random scan code back to the
+> kernel, ideally you want to leave everything as it was.  This also
+> handled the case where there was a PS/2 style mouse attached.
 
+The input device is already reset on kdb exit to a safe state, however, by the
+code inside kgdboc_post_exp_handler, which calls kgdboc_restore_input().
 
-I will appreciate for any comments.Thanks
-attached patches:
-1/2 x86:add function to check BIOS whether NX
-2/2 video:uvesafb: check whether BIOS is NX before try to use PMI
+The existing logic also already correctly will handle the case of a PS/2 mouse, i.e.:
 
----
- arch/x86/include/asm/pci.h |    1 +
- arch/x86/mm/pageattr.c     |    2 +-
- arch/x86/pci/pcbios.c      |   11 +++++++++++
- drivers/video/uvesafb.c    |    6 ++++++
- 4 files changed, 19 insertions(+), 1 deletions(-)
----
+        /*
+         * Ignore mouse events.
+         */
+        if (scanstatus & KBD_STAT_MOUSE_OBF)
+                return -1;
+
+...so there is nothing that the non-ENTER-specific code already doesn't deal with.
+That special ENTER code also doesn't correctly handle typematic repeat, nor does it handle
+key-pad enter (as I mentioned before in the patch description, this has a different
+make and break codes, prefixed with 0xe0).
+
+> 
+> I do have a question about part of the section you deleted.
+> 
+> 
+> > -	if ((scancode & 0x7f) == 0x1c) {
+> > -		/*
+> > -		 * enter key.  All done.  Absorb the release scancode.
+> > -		 */
+> > -		while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
+> > -			;
+> 
+> Seems there is a bug here.  There is a cpu_relax() missing.
+
+Right, that's exactly what I said in the patch :-).
+
+> 
+> > -
+> > -		/*
+> > -		 * Fetch the scancode
+> > -		 */
+> > -		scancode = inb(KBD_DATA_REG);
+> > -		scanstatus = inb(KBD_STATUS_REG);
+> > -
+> > -		while (scanstatus & KBD_STAT_MOUSE_OBF) {
+> 
+> There should also be a cpu_relax() right here.
+
+Correct.
+
+> 
+> > -			scancode = inb(KBD_DATA_REG);
+> > -			scanstatus = inb(KBD_STATUS_REG);
+> > -		}
+> > -
+> 
+> 
+> If you put the two cpu_relax() pieces in do you still end up with a
+> problem?  If this does not work for you the possibility to exists to
+> clear the keyboard/mouse state on the kdb exit.
+
+You will solve the multi-second hangs on ESX. However, this still doesn't fix the
+bogus messages during typematic repeat (holding down ENTER) or keypad enter key use.
+
+Basically, if you nuke the entire ENTER-key special case block, the existing key will
+correctly handle both typematic, break codes, and KP ENTER key use (as well as any
+mouse events). Cleanup of mouse/keyboard state is done already on kdb exit by kgdboc, which
+is the only consumer of the kdb_keyboard code.
+
+A
