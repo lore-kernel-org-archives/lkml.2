@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2B0E5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 23:57:16 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46375 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab2B0E5P (ORCPT
+	id S1753965Ab2B0E5o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 23:57:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40832 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab2B0E5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 23:57:15 -0500
-Message-ID: <4F4B0D21.6060002@linux.vnet.ibm.com>
-Date: Mon, 27 Feb 2012 12:57:05 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Sun, 26 Feb 2012 23:57:42 -0500
+Message-ID: <4F4B0D36.7080203@mediatek.com>
+Date: Mon, 27 Feb 2012 12:57:26 +0800
+From: Meng Zhang <meng.zhang@mediatek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-References: <4F338CAA.10807@linux.vnet.ibm.com> <4F338D56.6010505@linux.vnet.ibm.com> <4F42DB8D.7060900@gmail.com>
-In-Reply-To: <4F42DB8D.7060900@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: smurf@smurf.noris.de
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12022704-4790-0000-0000-000001826329
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 07:47 AM, David Ahern wrote:
+from: Meng Zhang <meng.zhang@mediatek.com>
 
+1. To declare the product IDs in option.c
+2. Please pull from
+     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+    to get these changes
 
->> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
->> index 70c2c13..c48ebf3 100644
->> --- a/tools/perf/util/thread.h
->> +++ b/tools/perf/util/thread.h
->> @@ -16,6 +16,8 @@ struct thread {
->>       bool            comm_set;
->>       char            *comm;
->>       int            comm_len;
->> +
->> +    void            *private;
-> Arnaldo: Are you ok with this design for now? I can fix this command to whatever API we agree to when it gets committed.
+Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+---------------------------------------------------------------------------------------
 
+drivers/usb/serial/option.c |    7 +++++++
+1 files changed, 7 insertions(+), 0 deletions(-)
 
-Hi Arnaldo,
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index b54afce..7069f9d 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -484,6 +484,9 @@ static void option_instat_callback(struct urb *urb);
+  #define LG_VENDOR_ID                           0x1004
+  #define LG_PRODUCT_L02C                                0x618f
 
-What do you think of it? :)
-
++/* MediaTek products */
++#define MEDIATEK_VENDOR_ID                     0x0e8d
++
+  /* some devices interfaces need special handling due to a number of 
+reasons */
+  enum option_blacklist_reason {
+                 OPTION_BLACKLIST_NONE = 0,
+@@ -1198,6 +1201,10 @@ static const struct usb_device_id option_ids[] = {
+         { USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, 
+VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
+         { USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 
+0xff, 0xff, 0xff) },
+         { USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C 
+modem */
++       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 
+0xff, 0x00, 0x00) },
++       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 
+0xff, 0x02, 0x01) },
++       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 
+0xff, 0x00, 0x00) },
++       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 
+0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
+         { } /* Terminating entry */
+  };
+  MODULE_DEVICE_TABLE(usb, option_ids);
 
