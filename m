@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2B0TIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:08:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54292 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab2B0TIv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:08:51 -0500
+	id S1754910Ab2B0TJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:09:24 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:43460 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754528Ab2B0TJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:09:22 -0500
+Date: Mon, 27 Feb 2012 14:09:16 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: David Howells <dhowells@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "valerie.aurora@gmail.com" <valerie.aurora@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>,
+        "linux-ext4@kernel.org" <linux-ext4@kernel.org>
+Subject: Re: [PATCH 66/73] ext2: Split ext2_add_entry() from
+ ext2_add_link() [ver #2]
+Message-ID: <20120227190916.GH1651@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Andreas Dilger <adilger@dilger.ca>,
+	David Howells <dhowells@redhat.com>,
+	"linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+	"viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+	"valerie.aurora@gmail.com" <valerie.aurora@gmail.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Jan Kara <jack@suse.cz>,
+	"linux-ext4@kernel.org" <linux-ext4@kernel.org>
+References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+ <20120221180546.25235.50961.stgit@warthog.procyon.org.uk>
+ <20120227000428.GA8044@thunk.org>
+ <B5DCCBD9-F032-44E1-8368-146137487B83@dilger.ca>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4PMzuPdCZvbYFiQRGjGuMg+KYk0ZxJH0xr-n6AfqBAnA@mail.gmail.com>
-References: <1330299202-3838-1-git-send-email-yinghai@kernel.org>
-	<1330299202-3838-6-git-send-email-yinghai@kernel.org>
-	<CAErSpo4PMzuPdCZvbYFiQRGjGuMg+KYk0ZxJH0xr-n6AfqBAnA@mail.gmail.com>
-Date: Mon, 27 Feb 2012 11:08:51 -0800
-X-Google-Sender-Auth: 6uRnXyqq4Drnk21st7srKTlPJNU
-Message-ID: <CAE9FiQUDtJc5uwPXkQ7T7zr8=xa=VnPuQT4Q87SXbynuCHQ2Zg@mail.gmail.com>
-Subject: Re: [PATCH 5/8] PCI: add generic device into pci_host_bridge struct
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B5DCCBD9-F032-44E1-8368-146137487B83@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 9:57 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sun, Feb 26, 2012 at 4:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> use that device for pci_root_bus bridge pointer.
->>
->> With that make code more simple.
->>
->> Also we can use pci_release_bus_bridge_dev() to release allocated
->> pci_host_bridge during removing path.
->>
->> At last, we can use root bus bridge pointer to get host bridge pointer instead
->> of going over host bridge list, so could kill that host bridge list.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  drivers/pci/host-bridge.c |   14 ---------
->>  drivers/pci/pci.h         |    2 -
->>  drivers/pci/probe.c       |   65 ++++++++++++++++++++++++----------------------
->>  include/linux/pci.h       |    4 ++
->>  4 files changed, 38 insertions(+), 47 deletions(-)
->>
->> Index: linux-2.6/drivers/pci/host-bridge.c
->> ===================================================================
->> --- linux-2.6.orig/drivers/pci/host-bridge.c
->> +++ linux-2.6/drivers/pci/host-bridge.c
->> -       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
->> -       if (!dev)
->> -               goto err_dev;
->> +               return NULL;
->>
-...
+On Sun, Feb 26, 2012 at 08:30:34PM -0700, Andreas Dilger wrote:
+> > I'd suggest folding this in with the following patch (67/73).  It's
+> > not clear from this patch why renaming ext2_add_link to
+> > ext2_add_entry() makes sense and then adding a new ext2_add_link()
+> > which calls ext_add_entry().   It doesn't seem to clarify much....
+> 
+> Also, why is this being done in ext2, when it should only be done in ext4?
 
-here old code allocate dummy struct device.
+I believe Val used ext2 as a proof-of-concept, because the codebase
+was stable (and Union Mounts has been in the oven a loooong time, so
+that was probably a good choice).  I agree that if union mounts is
+finally going to make it upstream, this would be a good time to
+support implemented for ext4, and to get the support into e2fsprogs.
 
->> +       bridge = pci_alloc_host_bridge(b);
->> +       if (!bridge)
->> +               goto err_out;
->> +
->> +       bridge->dev.parent = parent;
->> +       bridge->dev.release = pci_release_bus_bridge_dev;
->> +       dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
->> +       error = device_register(&bridge->dev);
->>        if (error)
->> -               goto dev_reg_err;
->> -       b->bridge = get_device(dev);
->> +               goto bridge_dev_reg_err;
->> +       b->bridge = get_device(&bridge->dev);
-...
->> --- linux-2.6.orig/include/linux/pci.h
->> +++ linux-2.6/include/linux/pci.h
->> @@ -375,11 +375,13 @@ struct pci_host_bridge_window {
->>  };
->>
->>  struct pci_host_bridge {
->> -       struct list_head list;
->> +       struct device dev;
->>        struct pci_bus *bus;            /* root bus */
->>        struct list_head windows;       /* pci_host_bridge_windows */
->>  };
->
-> This doesn't feel right to me.  You're allocating a new struct device
-> here, but the arch likely already has one.  In fact, I think we even
-> passed it in to pci_create_root_bus().
+BTW, one thing that I think would be a good thing to do while we're
+making this change is to mask off the low 4 bits when looking at the
+filetype field so eventually we can use the high 4 bits for some
+future extension.
 
-no.
-
-original pci_create_root_bus() will create one dummy struct device and
-use it as parent for bus->dev.
-
->
-> On x86, we already have an ACPI device for the host bridge, and now
-> we'll have a second one.  (Actually a *third* one, because PNPACPI
-> also has one, but that's a long-standing problem.)
-
-not related.
-
-      Yinghai
+						- Ted
