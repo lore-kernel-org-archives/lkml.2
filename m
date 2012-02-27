@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab2B0SCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:02:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab2B0SCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:02:33 -0500
-Date: Mon, 27 Feb 2012 18:54:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-Message-ID: <20120227175407.GD10608@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-10-git-send-email-wad@chromium.org>
+	id S1754255Ab2B0SEC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:04:02 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40845 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab2B0SD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:03:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.180.92.229 as permitted sender) smtp.mail=dave.martin@linaro.org
+Date: Mon, 27 Feb 2012 18:03:55 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+Message-ID: <20120227180355.GB2023@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+ <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1330360043.8557.302.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330140111-17201-10-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24, Will Drewry wrote:
->
->  arch/Kconfig              |    1 +
->  include/linux/ptrace.h    |    7 +++++--
->  include/linux/seccomp.h   |    4 +++-
->  include/linux/tracehook.h |    6 ++++++
->  kernel/ptrace.c           |    4 ++++
->  kernel/seccomp.c          |   18 ++++++++++++++++++
+On Mon, Feb 27, 2012 at 04:27:23PM +0000, Ian Campbell wrote:
+> On Thu, 2012-02-23 at 17:48 +0000, Stefano Stabellini wrote:
+> > We need a register to pass the hypercall number because we might not
+> > know it at compile time and HVC only takes an immediate argument.
+> > 
+> > Among the available registers r12 seems to be the best choice because it
+> > is defined as "intra-procedure call scratch register".
+> 
+> R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
+> immediate (which can only target r0..r7).
 
-FYI, this conflicts with the changes -mm tree.
+This is untrue.  The important instructions, like MOV Rd, Rn can access
+all the regs.  But anyway, there is no such thing as a Thumb-1 kernel,
+so we won't really care.
 
-The changes in ptrace.* confict with Denys's
-"ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code"
+> Since we support only ARMv7+ there are "T2" and "T3" encodings available
+> which do allow direct mov of an immediate into R12, but are 32 bit Thumb
+> instructions.
+> 
+> Should we use r7 instead to maximise instruction density for Thumb code?
 
-The change in tracehook.h conflicts with
-"ptrace: the killed tracee should not enter the syscall"
+The difference seems trivial when put into context, even if you code a
+special Thumb version of the code to maximise density (the Thumb-2 code
+which gets built from assembler in the kernel is very suboptimal in
+size, but there simply isn't a high proportion of asm code in the kernel
+anyway.)  I wouldn't consider the ARM/Thumb differences as an important
+factor when deciding on a register.
 
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
->  			seccomp_send_sigsys(this_syscall, reason_code);
->  			return -1;
->  		}
-> +		case SECCOMP_RET_TRACE: {
-> +			int ret;
-> +			struct pt_regs *regs = task_pt_regs(current);
-> +			if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
-> +			    !(current->ptrace & PT_TRACE_SECCOMP))
-> +				return -1;
-> +			/*
-> +			 * PT_TRACE_SECCOMP and seccomp.trace indicate whether
-> +			 * tracehook_report_syscall_entry needs to signal the
-> +			 * tracer.  This avoids race conditions in hand off and
-> +			 * the requirement for TIF_SYSCALL_TRACE ensures that
-> +			 * we are in the syscall slow path.
-> +			 */
-> +			current->seccomp.trace = 1;
-> +			ret = tracehook_report_syscall_entry(regs);
-> +			current->seccomp.trace = 0;
-> +			return ret;
+One argument for _not_ using r12 for this purpose is that it is then
+harder to put a generic "HVC" function (analogous to the "syscall"
+syscall) out-of-line, since r12 could get destroyed by the call.  
 
-To be honest, this interface looks a bit strange to me...
+If you don't think you will ever care about putting HVC out of line
+though, it may not matter.
 
-Once again, sorry if this was already discussed. But perhaps it would
-be better to introduce PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP instead?
-
-SECCOMP_RET_TRACE: could simply do ptrace_event(PTRACE_EVENT_SECCOMP)
-unconditionaly. The tracer can set the option and do PTRACE_CONT if it
-doesn't want the system call notifications.
-
-This is also much simpler, no need to change ptrace/tracehook files.
-
-Oleg.
-
+Cheers
+---Dave
