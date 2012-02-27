@@ -1,16 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2B0MQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:16:26 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:47239 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab2B0MPf (ORCPT
+	id S1754026Ab2B0MQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 07:16:41 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58520 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab2B0MPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Feb 2012 07:15:35 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61a-b7b78ae000001ceb-1e-4f4b73e3c0d8
+X-AuditID: cbfee61b-b7c62ae000000989-7c-4f4b73e5b216
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
@@ -24,10 +21,10 @@ Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         John Stultz <john.stultz@linaro.org>,
         Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
-Subject: [PATCH v6 1/5] Extcon (external connector): import Android's switch
- class and modify.
-Date: Mon, 27 Feb 2012 21:15:35 +0900
-Message-id: <1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
+Subject: [PATCH v6 5/5] Extcon: support mutually exclusive relation between
+ cables.
+Date: Mon, 27 Feb 2012 21:15:39 +0900
+Message-id: <1330344939-18394-6-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 In-reply-to: <1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
 References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
@@ -37,486 +34,363 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-External connector class (extcon) is based on and an extension of
-Android kernel's switch class located at linux/drivers/switch/.
+There could be cables that t recannot be attaches simulatenously. Extcon
+device drivers may express such information via mutually_exclusive in
+struct extcon_dev.
 
-This patch provides the before-extension switch class moved to the
-location where the extcon will be located (linux/drivers/extcon/) and
-updates to handle class properly.
+For example, for an extcon device with 16 cables (bits 0 to 15 are
+available), if mutually_exclusive = { 0x7, 0xC0, 0x81, 0 }, then, the
+following attachments are prohibitted.
+{0, 1}
+{0, 2}
+{1, 2}
+{6, 7}
+{0, 7}
+and every attachment set that are superset of one of the above.
+For the detail, please refer to linux/include/linux/extcon.h.
 
-The before-extension class, switch class of Android kernel, commits
-imported are:
-
-switch: switch class and GPIO drivers. (splitted)
-Author: Mike Lockwood <lockwood@android.com>
-
-switch: Use device_create instead of device_create_drvdata.
-Author: Arve Hjønnevåg <arve@android.com>
-
-In this patch, upon the commits of Android kernel, we have added:
-- Relocated and renamed for extcon.
-- Comments, module name, and author information are updated
-- Code clean for successing patches
-- Bugfix: enabling write access without write functions
-- Class/device/sysfs create/remove handling
-- Added comments about uevents
-- Format changes for extcon_dev_register() to have a parent dev.
+The concept is suggested by NeilBrown <neilb@suse.de>
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
 --
-Changes from v5
-- Split the patch
-- Style fixes
-- "Android-compatible" mode is enabled by Kconfig option.
-
-Changes from v2
-- Updated name_show
-- Sysfs entries are handled by class itself.
-- Updated the method to add/remove devices for the class
-- Comments on uevent send
-- Able to become a module
-- Compatible with Android platform
-
-Changes from RFC
-- Renamed to extcon (external connector) from multistate switch
-- Added a seperated directory (drivers/extcon)
-- Added kerneldoc comments
-- Removed unused variables from extcon_gpio.c
-- Added ABI Documentation.
+Changes from V5:
+- Updated sysfs format
 ---
- Documentation/ABI/testing/sysfs-class-extcon |   26 +++
- drivers/Kconfig                              |    2 +
- drivers/Makefile                             |    1 +
- drivers/extcon/Kconfig                       |   28 ++++
- drivers/extcon/Makefile                      |    5 +
- drivers/extcon/extcon_class.c                |  226 ++++++++++++++++++++++++++
- include/linux/extcon.h                       |   82 ++++++++++
- 7 files changed, 370 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
- create mode 100644 drivers/extcon/Kconfig
- create mode 100644 drivers/extcon/Makefile
- create mode 100644 drivers/extcon/extcon_class.c
- create mode 100644 include/linux/extcon.h
+ Documentation/ABI/testing/sysfs-class-extcon |   22 +++++
+ drivers/extcon/extcon_class.c                |  123 ++++++++++++++++++++++++--
+ include/linux/extcon.h                       |   28 +++++-
+ 3 files changed, 160 insertions(+), 13 deletions(-)
 
 diff --git a/Documentation/ABI/testing/sysfs-class-extcon b/Documentation/ABI/testing/sysfs-class-extcon
-new file mode 100644
-index 0000000..59a4b1c
---- /dev/null
+index 19b18e9..20ab361 100644
+--- a/Documentation/ABI/testing/sysfs-class-extcon
 +++ b/Documentation/ABI/testing/sysfs-class-extcon
-@@ -0,0 +1,26 @@
-+What:		/sys/class/extcon/.../
+@@ -15,6 +15,10 @@ Description:
+ 		may have both HDMI and Charger attached, or analog audio,
+ 		video, and USB cables attached simulteneously.
+ 
++		If there are cables mutually exclusive with each other,
++		such binary relations may be expressed with extcon_dev's
++		mutually_exclusive array.
++
+ What:		/sys/class/extcon/.../name
+ Date:		February 2012
+ Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
+@@ -73,3 +77,21 @@ Description:
+ 		state of cable "x" (integer between 0 and 31) of an extcon
+ 		device. The state value is either 0 (detached) or 1
+ 		(attached).
++
++What:		/sys/class/extcon/.../mutually_exclusive/...
 +Date:		December 2011
 +Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
 +Description:
-+		Provide a place in sysfs for the extcon objects.
-+		This allows accessing extcon specific variables.
-+		The name of extcon object denoted as ... is the name given
-+		with extcon_dev_register.
++		Shows the relations of mutually exclusiveness. For example,
++		if the mutually_exclusive array of extcon_dev is
++		{0x3, 0x5, 0xC, 0x0}, the, the output is:
++		# ls mutually_exclusive/
++		0x3
++		0x5
++		0xc
++		#
 +
-+What:		/sys/class/extcon/.../name
-+Date:		December 2011
-+Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+Description:
-+		The /sys/class/extcon/.../name shows the name of the extcon
-+		object. If the extcon object has an optional callback
-+		"show_name" defined, the callback will provide the name with
-+		this sysfs node.
-+
-+What:		/sys/class/extcon/.../state
-+Date:		December 2011
-+Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-+Description:
-+		The /sys/class/extcon/.../state shows the cable attach/detach
-+		information of the corresponding extcon object. If the extcon
-+		objecct has an optional callback "show_state" defined, the
-+		callback will provide the name with this sysfs node.
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 5afe5d1..537d126 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -136,4 +136,6 @@ source "drivers/virt/Kconfig"
- 
- source "drivers/devfreq/Kconfig"
- 
-+source "drivers/extcon/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index c07be02..6faceab 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -132,3 +132,4 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
- obj-$(CONFIG_HYPERV)		+= hv/
- 
- obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
-+obj-$(CONFIG_EXTCON)		+= extcon/
-diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-new file mode 100644
-index 0000000..11db865
---- /dev/null
-+++ b/drivers/extcon/Kconfig
-@@ -0,0 +1,28 @@
-+menuconfig EXTCON
-+	tristate "External Connector Class (extcon) support"
-+	help
-+	  Say Y here to enable external connector class (extcon) support.
-+	  This allows monitoring external connectors by userspace
-+	  via sysfs and uevent and supports external connectors with
-+	  multiple states; i.e., an extcon that may have multiple
-+	  cables attached. For example, an external connector of a device
-+	  may be used to connect an HDMI cable and a AC adaptor, and to
-+	  host USB ports. Many of 30-pin connectors including PDMI are
-+	  also good examples.
-+
-+if EXTCON
-+
-+comment "Extcon Class Configuration"
-+
-+config EXTCON_ANDROID_COMPATIBLE
-+	bool "Class name uses 'switch' to be compatible with Android kernel"
-+	depends on ANDROID
-+	help
-+	  The class name of extcon device drivers are set 'switch' in order
-+	  to be compatible with Android kernel switch framework. With this
-+	  option enabled, Android userspace platform may use extcon device
-+	  drivers as if they are switch device drivers.
-+
-+comment "Extcon Device Drivers"
-+
-+endif # MULTISTATE_SWITCH
-diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-new file mode 100644
-index 0000000..6bc6921
---- /dev/null
-+++ b/drivers/extcon/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for external connector class (extcon) devices
-+#
-+
-+obj-$(CONFIG_EXTCON)		+= extcon_class.o
++		Note that mutually_exclusive is a sub-directory of the extcon
++		device and the file names under the mutually_exclusive
++		directory show the mutually-exclusive sets, not the contents
++		of the files.
 diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-new file mode 100644
-index 0000000..9bc062b
---- /dev/null
+index 55f19c2..fb8d3a4 100644
+--- a/drivers/extcon/extcon_class.c
 +++ b/drivers/extcon/extcon_class.c
-@@ -0,0 +1,226 @@
-+/*
-+ *  drivers/extcon/extcon_class.c
-+ *
-+ *  External connector (extcon) class driver
-+ *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Author: Donggeun Kim <dg77.kim@samsung.com>
-+ * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * based on android/drivers/switch/switch_class.c
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/fs.h>
-+#include <linux/err.h>
-+#include <linux/extcon.h>
-+#include <linux/slab.h>
-+
-+struct class *extcon_class;
-+
-+static ssize_t state_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
-+
-+	if (edev->print_state) {
-+		int ret = edev->print_state(edev, buf);
-+
-+		if (ret >= 0)
-+			return ret;
-+		/* Use default if failed */
-+	}
-+	return sprintf(buf, "%u\n", edev->state);
-+}
-+
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-+		char *buf)
-+{
-+	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
-+
-+	/* Optional callback given by the user */
-+	if (edev->print_name) {
-+		int ret = edev->print_name(edev, buf);
-+		if (ret >= 0)
-+			return ret;
-+	}
-+
-+	return sprintf(buf, "%s\n", dev_name(edev->dev));
-+}
-+
+@@ -69,6 +69,39 @@ struct class *extcon_class;
+ static LIST_HEAD(extcon_dev_list);
+ static DEFINE_MUTEX(extcon_dev_list_lock);
+ 
 +/**
-+ * extcon_set_state() - Set the cable attach states of the extcon device.
++ * check_mutually_exclusive - Check if new_state violates mutually_exclusive
++ *			    condition.
 + * @edev:	the extcon device
-+ * @state:	new cable attach status for @edev
++ * @new_state:	new cable attach status for @edev
 + *
-+ * Changing the state sends uevent with environment variable containing
-+ * the name of extcon device (envp[0]) and the state output (envp[1]).
-+ * Tizen uses this format for extcon device to get events from ports.
-+ * Android uses this format as well.
++ * Returns 0 if nothing violates. Returns the index + 1 for the first
++ * violated condition.
 + */
-+void extcon_set_state(struct extcon_dev *edev, u32 state)
++static int check_mutually_exclusive(struct extcon_dev *edev, u32 new_state)
 +{
-+	char name_buf[120];
-+	char state_buf[120];
-+	char *prop_buf;
-+	char *envp[3];
-+	int env_offset = 0;
-+	int length;
++	int i = 0;
 +
-+	if (edev->state != state) {
-+		edev->state = state;
++	if (!edev->mutually_exclusive)
++		return 0;
 +
-+		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
-+		if (prop_buf) {
-+			length = name_show(edev->dev, NULL, prop_buf);
-+			if (length > 0) {
-+				if (prop_buf[length - 1] == '\n')
-+					prop_buf[length - 1] = 0;
-+				snprintf(name_buf, sizeof(name_buf),
-+					"SWITCH_NAME=%s", prop_buf);
-+				envp[env_offset++] = name_buf;
-+			}
-+			length = state_show(edev->dev, NULL, prop_buf);
-+			if (length > 0) {
-+				if (prop_buf[length - 1] == '\n')
-+					prop_buf[length - 1] = 0;
-+				snprintf(state_buf, sizeof(state_buf),
-+					"SWITCH_STATE=%s", prop_buf);
-+				envp[env_offset++] = state_buf;
-+			}
-+			envp[env_offset] = NULL;
-+			kobject_uevent_env(&edev->dev->kobj, KOBJ_CHANGE, envp);
-+			free_page((unsigned long)prop_buf);
-+		} else {
-+			dev_err(edev->dev, "out of memory in extcon_set_state\n");
-+			kobject_uevent(&edev->dev->kobj, KOBJ_CHANGE);
++	for (i = 0; edev->mutually_exclusive[i]; i++) {
++		int count = 0, j;
++		u32 correspondants = new_state & edev->mutually_exclusive[i];
++		u32 exp = 1;
++
++		for (j = 0; j < 32; j++) {
++			if (exp & correspondants)
++				count++;
++			if (count > 1)
++				return i + 1;
++			exp <<= 1;
 +		}
 +	}
-+}
-+EXPORT_SYMBOL_GPL(extcon_set_state);
-+
-+static struct device_attribute extcon_attrs[] = {
-+	__ATTR_RO(state),
-+	__ATTR_RO(name),
-+};
-+
-+static int create_extcon_class(void)
-+{
-+	if (!extcon_class) {
-+#ifdef CONFIG_ANDROID
-+		extcon_class = class_create(THIS_MODULE, "switch");
-+#else /* !CONFIG_ANDROID */
-+		extcon_class = class_create(THIS_MODULE, "extcon");
-+#endif /* CONFIG_ANDROID */
-+		if (IS_ERR(extcon_class))
-+			return PTR_ERR(extcon_class);
-+		extcon_class->dev_attrs = extcon_attrs;
-+	}
 +
 +	return 0;
 +}
 +
-+static void extcon_cleanup(struct extcon_dev *edev, bool skip)
-+{
-+	if (!skip && get_device(edev->dev)) {
-+		device_unregister(edev->dev);
-+		put_device(edev->dev);
-+	}
+ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+ 			  char *buf)
+ {
+@@ -97,7 +130,7 @@ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+ 	return count;
+ }
+ 
+-void extcon_set_state(struct extcon_dev *edev, u32 state);
++int extcon_set_state(struct extcon_dev *edev, u32 state);
+ static ssize_t state_store(struct device *dev, struct device_attribute *attr,
+ 			   const char *buf, size_t count)
+ {
+@@ -109,7 +142,7 @@ static ssize_t state_store(struct device *dev, struct device_attribute *attr,
+ 	if (ret == 0)
+ 		ret = -EINVAL;
+ 	else
+-		extcon_set_state(edev, state);
++		ret = extcon_set_state(edev, state);
+ 
+ 	if (ret < 0)
+ 		return ret;
+@@ -188,7 +221,7 @@ static ssize_t cable_state_store(struct device *dev,
+  * Note that the notifier provides which bits are changed in the state
+  * variable with the val parameter (second) to the callback.
+  */
+-void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
++int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ {
+ 	char name_buf[120];
+ 	char state_buf[120];
+@@ -203,6 +236,12 @@ void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
+ 		u32 old_state = edev->state;
+ 
++		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
++						   (state & mask))) {
++			spin_unlock_irqrestore(&edev->lock, flags);
++			return -EPERM;
++		}
 +
-+	kfree(edev->dev);
-+}
+ 		edev->state &= ~mask;
+ 		edev->state |= state & mask;
+ 
+@@ -244,6 +283,8 @@ void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 		/* No changes */
+ 		spin_unlock_irqrestore(&edev->lock, flags);
+ 	}
 +
-+static void extcon_dev_release(struct device *dev)
-+{
-+	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
-+
-+	extcon_cleanup(edev, true);
-+}
-+
-+/**
-+ * extcon_dev_register() - Register a new extcon device
-+ * @edev	: the new extcon device (should be allocated before calling)
-+ * @dev		: the parent device for this extcon device.
-+ *
-+ * Among the members of edev struct, please set the "user initializing data"
-+ * in any case and set the "optional callbacks" if required. However, please
-+ * do not set the values of "internal data", which are initialized by
-+ * this function.
-+ */
-+int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
-+{
-+	int ret;
-+
-+	if (!extcon_class) {
-+		ret = create_extcon_class();
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	edev->dev = kzalloc(sizeof(struct device), GFP_KERNEL);
-+	edev->dev->parent = dev;
-+	edev->dev->class = extcon_class;
-+	edev->dev->release = extcon_dev_release;
-+
-+	dev_set_name(edev->dev, edev->name ? edev->name : dev_name(dev));
-+	ret = device_register(edev->dev);
-+	if (ret) {
-+		put_device(edev->dev);
-+		goto err_dev;
-+	}
-+
-+	dev_set_drvdata(edev->dev, edev);
-+	edev->state = 0;
 +	return 0;
+ }
+ EXPORT_SYMBOL_GPL(extcon_update_state);
+ 
+@@ -255,9 +296,9 @@ EXPORT_SYMBOL_GPL(extcon_update_state);
+  * Note that notifier provides which bits are changed in the state
+  * variable with the val parameter (second) to the callback.
+  */
+-void extcon_set_state(struct extcon_dev *edev, u32 state)
++int extcon_set_state(struct extcon_dev *edev, u32 state)
+ {
+-	extcon_update_state(edev, 0xffffffff, state);
++	return extcon_update_state(edev, 0xffffffff, state);
+ }
+ EXPORT_SYMBOL_GPL(extcon_set_state);
+ 
+@@ -331,8 +372,7 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
+ 		return -EINVAL;
+ 
+ 	state = cable_state ? (1 << index) : 0;
+-	extcon_update_state(edev, 1 << index, state);
+-	return 0;
++	return extcon_update_state(edev, 1 << index, state);
+ }
+ EXPORT_SYMBOL_GPL(extcon_set_cable_state_);
+ 
+@@ -506,6 +546,14 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+ 	if (!skip && get_device(edev->dev)) {
+ 		int index;
+ 
++		if (edev->mutually_exclusive && edev->max_supported) {
++			for (index = 0; edev->mutually_exclusive[index];
++			     index++)
++				kfree(edev->d_attrs_muex[index].attr.name);
++			kfree(edev->d_attrs_muex);
++			kfree(edev->attrs_muex);
++		}
 +
-+err_dev:
-+	kfree(edev->dev);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(extcon_dev_register);
+ 		for (index = 0; index < edev->max_supported; index++)
+ 			kfree(edev->cables[index].attr_g.name);
+ 
+@@ -528,6 +576,7 @@ static void extcon_dev_release(struct device *dev)
+ 	extcon_cleanup(edev, true);
+ }
+ 
++static const char *muex_name = "mutually_exclusive";
+ static void dummy_sysfs_dev_release(struct device *dev)
+ {
+ }
+@@ -620,10 +669,58 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 		}
+ 	}
+ 
++	if (edev->max_supported && edev->mutually_exclusive) {
++		char buf[80];
++		char *name;
 +
-+/**
-+ * extcon_dev_unregister() - Unregister the extcon device.
-+ * @edev:	the extcon device instance to be unregitered.
-+ *
-+ * Note that this does not call kfree(edev) because edev was not allocated
-+ * by this class.
-+ */
-+void extcon_dev_unregister(struct extcon_dev *edev)
-+{
-+	extcon_cleanup(edev, false);
-+}
-+EXPORT_SYMBOL_GPL(extcon_dev_unregister);
++		/* Count the size of mutually_exclusive array */
++		for (index = 0; edev->mutually_exclusive[index]; index++)
++			;
 +
-+static int __init extcon_class_init(void)
-+{
-+	return create_extcon_class();
-+}
-+module_init(extcon_class_init);
++		edev->attrs_muex = kzalloc(sizeof(struct attribute *) *
++					   (index + 1), GFP_KERNEL);
++		if (!edev->attrs_muex) {
++			ret = -ENOMEM;
++			goto err_muex;
++		}
 +
-+static void __exit extcon_class_exit(void)
-+{
-+	class_destroy(extcon_class);
-+}
-+module_exit(extcon_class_exit);
++		edev->d_attrs_muex = kzalloc(sizeof(struct device_attribute) *
++					     index, GFP_KERNEL);
++		if (!edev->d_attrs_muex) {
++			ret = -ENOMEM;
++			kfree(edev->attrs_muex);
++			goto err_muex;
++		}
 +
-+MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");
-+MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
-+MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
-+MODULE_DESCRIPTION("External connector (extcon) class driver");
-+MODULE_LICENSE("GPL");
++		for (index = 0; edev->mutually_exclusive[index]; index++) {
++			sprintf(buf, "0x%x", edev->mutually_exclusive[index]);
++			name = kzalloc(sizeof(char) * (strlen(buf) + 1),
++				       GFP_KERNEL);
++			if (!name) {
++				for (index--; index >= 0; index--) {
++					kfree(edev->d_attrs_muex[index].attr.
++					      name);
++				}
++				kfree(edev->d_attrs_muex);
++				kfree(edev->attrs_muex);
++				ret = -ENOMEM;
++				goto err_muex;
++			}
++			strcpy(name, buf);
++			edev->d_attrs_muex[index].attr.name = name;
++			edev->d_attrs_muex[index].attr.mode = 0000;
++			edev->attrs_muex[index] = &edev->d_attrs_muex[index]
++							.attr;
++		}
++		edev->attr_g_muex.name = muex_name;
++		edev->attr_g_muex.attrs = edev->attrs_muex;
++
++	}
++
+ 	if (edev->max_supported) {
+ 		edev->extcon_dev_type.groups =
+ 			kzalloc(sizeof(struct attribute_group *) *
+-				(edev->max_supported + 1), GFP_KERNEL);
++				(edev->max_supported + 2), GFP_KERNEL);
+ 		if (!edev->extcon_dev_type.groups) {
+ 			ret = -ENOMEM;
+ 			goto err_alloc_groups;
+@@ -635,6 +732,9 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
+ 		for (index = 0; index < edev->max_supported; index++)
+ 			edev->extcon_dev_type.groups[index] =
+ 				&edev->cables[index].attr_g;
++		if (edev->mutually_exclusive)
++			edev->extcon_dev_type.groups[index] =
++				&edev->attr_g_muex;
+ 
+ 		edev->dev->type = &edev->extcon_dev_type;
+ 	}
+@@ -662,6 +762,13 @@ err_dev:
+ 	if (edev->max_supported)
+ 		kfree(edev->extcon_dev_type.groups);
+ err_alloc_groups:
++	if (edev->max_supported && edev->mutually_exclusive) {
++		for (index = 0; edev->mutually_exclusive[index]; index++)
++			kfree(edev->d_attrs_muex[index].attr.name);
++		kfree(edev->d_attrs_muex);
++		kfree(edev->attrs_muex);
++	}
++err_muex:
+ 	for (index = 0; index < edev->max_supported; index++)
+ 		kfree(edev->cables[index].attr_g.name);
+ err_alloc_cables:
 diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-new file mode 100644
-index 0000000..cd732ab
---- /dev/null
+index 99ff60e..c9e2de8 100644
+--- a/include/linux/extcon.h
 +++ b/include/linux/extcon.h
-@@ -0,0 +1,82 @@
-+/*
-+ *  External connector (extcon) class driver
-+ *
-+ * Copyright (C) 2012 Samsung Electronics
-+ * Author: Donggeun Kim <dg77.kim@samsung.com>
-+ * Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * based on switch class driver
-+ * Copyright (C) 2008 Google, Inc.
-+ * Author: Mike Lockwood <lockwood@android.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+*/
-+
-+#ifndef __LINUX_EXTCON_H__
-+#define __LINUX_EXTCON_H__
-+
-+/**
-+ * struct extcon_dev - An extcon device represents one external connector.
-+ * @name	The name of this extcon device. Parent device name is used
-+ *		if NULL.
-+ * @print_name	An optional callback to override the method to print the
-+ *		name of the extcon device.
-+ * @print_state	An optional callback to override the method to print the
-+ *		status of the extcon device.
-+ * @dev		Device of this extcon. Do not provide at register-time.
-+ * @state	Attach/detach state of this extcon. Do not provide at
-+ *		register-time
-+ *
-+ * In most cases, users only need to provide "User initializing data" of
-+ * this struct when registering an extcon. In some exceptional cases,
-+ * optional callbacks may be needed. However, the values in "internal data"
-+ * are overwritten by register function.
-+ */
-+struct extcon_dev {
-+	/* --- Optional user initializing data --- */
-+	const char	*name;
-+
-+	/* --- Optional callbacks to override class functions --- */
-+	ssize_t	(*print_name)(struct extcon_dev *edev, char *buf);
-+	ssize_t	(*print_state)(struct extcon_dev *edev, char *buf);
-+
-+	/* --- Internal data. Please do not set. --- */
-+	struct device	*dev;
-+	u32		state;
-+};
-+
-+#ifdef CONFIG_EXTCON
-+extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
-+extern void extcon_dev_unregister(struct extcon_dev *edev);
-+
-+static inline u32 extcon_get_state(struct extcon_dev *edev)
-+{
-+	return edev->state;
-+}
-+
-+extern void extcon_set_state(struct extcon_dev *edev, u32 state);
-+#else /* CONFIG_EXTCON */
-+static inline int extcon_dev_register(struct extcon_dev *edev,
-+				      struct device *dev)
+@@ -78,6 +78,14 @@ struct extcon_cable;
+  * @supported_cable	Array of supported cable name ending with NULL.
+  *			If supported_cable is NULL, cable name related APIs
+  *			are disabled.
++ * @mutually_exclusive	Array of mutually exclusive set of cables that cannot
++ *			be attached simultaneously. The array should be
++ *			ending with NULL or be NULL (no mutually exclusive
++ *			cables). For example, if it is { 0x7, 0x30, 0}, then,
++ *			{0, 1}, {0, 1, 2}, {0, 2}, {1, 2}, or {4, 5} cannot
++ *			be attached simulataneously. {0x7, 0} is equivalent to
++ *			{0x3, 0x6, 0x5, 0}. If it is {0xFFFFFFFF, 0}, there
++ *			can be no simultaneous connections.
+  * @print_name	An optional callback to override the method to print the
+  *		name of the extcon device.
+  * @print_state	An optional callback to override the method to print the
+@@ -103,6 +111,7 @@ struct extcon_dev {
+ 	/* --- Optional user initializing data --- */
+ 	const char	*name;
+ 	const char **supported_cable;
++	const u32	*mutually_exclusive;
+ 
+ 	/* --- Optional callbacks to override class functions --- */
+ 	ssize_t	(*print_name)(struct extcon_dev *edev, char *buf);
+@@ -119,6 +128,10 @@ struct extcon_dev {
+ 	/* /sys/class/extcon/.../cable.n/... */
+ 	struct device_type extcon_dev_type;
+ 	struct extcon_cable *cables;
++	/* /sys/class/extcon/.../mutually_exclusive/... */
++	struct attribute_group attr_g_muex;
++	struct attribute **attrs_muex;
++	struct device_attribute *d_attrs_muex;
+ };
+ 
+ /**
+@@ -179,8 +192,8 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ 	return edev->state;
+ }
+ 
+-extern void extcon_set_state(struct extcon_dev *edev, u32 state);
+-extern void extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state);
++extern int extcon_set_state(struct extcon_dev *edev, u32 state);
++extern int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state);
+ 
+ /*
+  * get/set_cable_state access each bit of the 32b encoded state value.
+@@ -235,11 +248,16 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ 	return 0;
+ }
+ 
+-static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
++static inline int extcon_set_state(struct extcon_dev *edev, u32 state)
 +{
 +	return 0;
 +}
-+
-+static inline void extcon_dev_unregister(struct extcon_dev *edev) { }
-+
-+static inline u32 extcon_get_state(struct extcon_dev *edev)
+ 
+-static inline void extcon_update_state(struct extcon_dev *edev, u32 mask,
++static inline int extcon_update_state(struct extcon_dev *edev, u32 mask,
+ 				       u32 state)
+-{ }
 +{
 +	return 0;
 +}
-+
-+static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
-+#endif /* CONFIG_EXTCON */
-+#endif /* __LINUX_EXTCON_H__ */
+ 
+ static inline int extcon_find_cable_index(struct extcon_dev *edev,
+ 					  const char *cable_name)
 -- 
 1.7.4.1
 
