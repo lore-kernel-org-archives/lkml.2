@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2B0PBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 10:01:16 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:62015 "EHLO mx2.netapp.com"
+	id S1752885Ab2B0PEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 10:04:00 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:35262 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab2B0PBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 10:01:14 -0500
-X-IronPort-AV: E=Sophos;i="4.73,491,1325491200"; 
-   d="scan'208";a="628856441"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "xemul@parallels.com" <xemul@parallels.com>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 2/4] NFS: replace per-net client lock by mutex
-Thread-Topic: [PATCH 2/4] NFS: replace per-net client lock by mutex
-Thread-Index: AQHM9VadVjGAEH5ilEO0vcxtPQmAoJZRXHWA
-Date: Mon, 27 Feb 2012 15:00:18 +0000
-Message-ID: <1330354815.5541.24.camel@lade.trondhjem.org>
-References: <20120227134623.13371.61185.stgit@localhost6.localdomain6>
-	 <20120227134900.13371.96849.stgit@localhost6.localdomain6>
-In-Reply-To: <20120227134900.13371.96849.stgit@localhost6.localdomain6>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <600AC5785E386347B60FF4F6BAC60906@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1752488Ab2B0PD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 10:03:59 -0500
+X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Feb 2012 10:03:59 EST
+Date: Mon, 27 Feb 2012 15:52:17 +0100
+From: David Sterba <dave@jikos.cz>
+To: =?iso-8859-1?B?Suly9G1l?= Carretero <cJ-ko@zougloub.eu>
+Cc: linux-btrfs@vger.kernel.org,
+        Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, chris.mason@oracle.com,
+        kamalesh@linux.vnet.ibm.com, Liu Bo <liubo2009@cn.fujitsu.com>
+Subject: Re: [BUG] Kernel Bug at fs/btrfs/volumes.c:3638
+Message-ID: <20120227145217.GP1046@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: =?iso-8859-1?B?Suly9G1l?= Carretero <cJ-ko@zougloub.eu>,
+	linux-btrfs@vger.kernel.org,
+	Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>,
+	linux-kernel@vger.kernel.org, chris.mason@oracle.com,
+	kamalesh@linux.vnet.ibm.com, Liu Bo <liubo2009@cn.fujitsu.com>
+References: <4F476959.2010400@linux.vnet.ibm.com> <20120226234258.522ee56e@Bidule>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120226234258.522ee56e@Bidule>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RF1NY0018891
 
-On Mon, 2012-02-27 at 17:49 +0400, Stanislav Kinsbursky wrote:
-> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
-> creation, which can be called on mount notification, where this per-net client
-> lock is taken on clients list walk.
-> 
-> Note: I used simple mutex instead of rw semaphore because of
-> nfs_put_client->atomic_dec_and_mutex_lock() call. Probably, there is a better
-> solution here.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
+On Sun, Feb 26, 2012 at 11:42:58PM -0500, Jérôme Carretero wrote:
+> At some point, I would appreciate some kind of thorough evaluation using a fuzzer on small disk images.
+> The btrfs developers could for instance:
+> - provide a script to create a filesystem image with a known layout (known corpus)
+> - provide .config and reference to kernel sources to build the kernel
+> - provide a minimal root filesystem to be run under qemu, it would run a procedure on the other disk image at boot
+>   crashes wouldn't affect the host, which is good.
+> - provide a way to retrieve the test parameters and results for every test case
+>   in case of bug, the test can be reproduced by the developers since the configuration is known
+> - expect volunteers to run the scenarios (I know I would)
+> The tricky part is of course the potentially super-costly procedure...
+> Simplest case: flipping every bit / writing blocks with pseudo-random data, even on meta-data only, as the outcome on data is supposed to be known.
+> Smarter: flipping bits on every btrfs meta-data structure type at every possible logical location.
 
-This is overkill... We end up blocking NFSv4 callbacks while the
-rpc_pipefs notifier runs through the nfs_clients creating or destroying
-idmapper dentries.
+There is a dangerdonteveruse(tm) utility btrfs-corrupt-block able to
+target at specific metadata structure and corrupt it, with the fsck
+counterpart for the rescue. I believe we'll see more updates in that
+area.
 
-Surely the rpc_pipefs_event() can take a reference to the nfs_client and
-then drop the spin_lock if it sees that it needs to create or destroy a
-dentry?
+The block checksums are supposed to catch bitflips after they were
+written down to device (provided the data were correct up to the
+checksum point).
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+If you're talking about random bitflips in metadata structures during
+processing, that's very likely to crash in many ways of course. I think
+some logic needs to be added to those corruptions and accompanied by the
+fsck part.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> The kind of stuff that would help all this could be something like Python bindings for a *btrfs library*.
+> Helpful even for prototyping fsck stuff, making illustrations, etc.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+We could see btrfsprogs turn into a library + tool, someday. Added to
+project page.
+
+> As of today, how are btrfs developers testing the filesystem implementation (except with xfstests) ?
+
+If there is a patch fixing particular bug, I try to set up environment
+stressing exactly that bug (and sometimes finding another one ...). The
+xfstests suite is a must before any testing. There are common loads
+raising the chances to hit a bug like repeated snapshots (and deletions),
+exhausting data/metadata space, 'fi defrag', 'fi sync', 'fi balance'.
+
+Sometimes it's enough to run a specific xfstest in a loop. I have set of
+hackish scripts doing just these tasks or wrappers around xfstests to
+create filesystem with desired raid levels (where applicable) and let
+the suite run on top of it.
+
+Another dimension of testing are mount options, there are some
+combinations likely to execrise specific parts of code, or create files
+in a way that may confuse different mount options (like nodatasum).
+
+We've seen btrfs-specific tests added to xfstests, so it's mostly
+changing the outer environment for the testsuite.
+
+
+david
