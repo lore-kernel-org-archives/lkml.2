@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2B0Qmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:42:55 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:53778 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753654Ab2B0Qmx (ORCPT
+	id S1753998Ab2B0Qnv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:43:51 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:20488 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752599Ab2B0Qnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:42:53 -0500
-Date: Mon, 27 Feb 2012 11:42:52 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Wolfram Sang <w.sang@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kevin.wells@nxp.com>
-Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
-In-Reply-To: <201202271403.16893.arnd@arndb.de>
-Message-ID: <Pine.LNX.4.44L0.1202271131070.1539-100000@iolanthe.rowland.org>
+	Mon, 27 Feb 2012 11:43:50 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: KZAD5MMVM1mOV9UWAFQK3yqxDzVUwmghBIUcfqL818qz2TG
+ KjZxmVnanjduYu6w5rhuDAVmziCuj6YT57MKYWgEW.bTzTUPp7WcNRJ8_iF2
+ O_8qRmBU09h3n8qy6nwXffkpbOgEAaCBCxiBOCUmgU7N09eVtM5b6h5o9Lc8
+ NBIY72t5V_QY0kfAOaUZjQL3.1OcLzjFr7AfFDXix52Epp8Bz7FFeT04fTSM
+ nVsSDXBhjzjggLXPdfk0t5D.qA6iAbfcwDG_6q32x7oiuw7i5TOMD3zWTsCz
+ ILnzTMbw_jO3O_VrTjEnR9HEmm.UiWSoBuGF8gO3SEumct.WGYsJg8Zu3hQp
+ ZeEsEQ5v.sf4DvxSOHA61NLEdXeJ_mObc6QTT6kOImRdIq0zysFR.6q54kD1
+ u
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 27 Feb 2012 10:43:47 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+In-Reply-To: <87zkc7eshq.fsf@xmission.com>
+Message-ID: <alpine.DEB.2.00.1202271039320.29787@router.home>
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home>
+ <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home> <4F47C800.4090903@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202241131400.3726@router.home> <87zkc7eshq.fsf@xmission.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Feb 2012, Arnd Bergmann wrote:
+On Fri, 24 Feb 2012, Eric W. Biederman wrote:
 
-> > > > A little progress has been made already.  We just received a submission
-> > > > for a "generic" platform bus glue file that will be able to take over
-> > > > the jobs of several of the existiing files.  If anyone wants to take
-> > > > this further I won't object, but I don't plan to work on it myself
-> > > > soon.
-> > > 
-> > > Ok, good to know. The approach of a generic glue is exactly what I
-> > > was going to suggest. As we get to ARM platforms that are currently
-> > > using PLATFORM_DRIVER, I will then ask people to convert the ohci
-> > > glue to use that generic glue instead of adding another *_DRIVER
-> > > macro to ohci/ehci.
-> > 
-> > The problem is that several platforms have highly specialized needs
-> > that can't sanely be handled in a single generic driver.  Although a
-> > lot of drivers can be converted over, not all of them will.
-> 
-> Can you give an example? We have recently converted the sdhci mmc drivers
-> in a similar way, and we have the libata drivers that have always worked
-> in this manner.
+> Taking a quick look it does appear that in cpuset_mems_allowed and it's
+> cousins we never sleep under "callback_mutex" so that lock looks like it
+> could become a spinlock.
+>
+> But I have to say something just bothers me about the permissions for
+> modifying an mm living in the task.  We can have different rules
+> for modifying an mm depending on the path to tme mm?
 
-Look at ehci-tegra.c.  It has numerous non-generic overrides, such as
-tegra_ehci_hub_control().  It also has support for two clocks and a 
-transceiver.
+Yes. Permissions are associated with pids which refer to tasks. Tasks have
+address spaces and tasks may share address spaces.
 
-> > > I'm not sure about what we should do for lpc32xx. Is that
-> > > generic glue going into v3.4?
-> > 
-> > That's up to Greg.  At the moment it isn't used by anything, and unless
-> > an existing driver can be converted over I'd guess it's not likely to
-> > get merged right away.
-> 
-> Where is that patch? Maybe I can help out by converting the PCI
-> variants of ohci and ehci to the generic glue, because they are
-> easy to test.
+> Especially in things like which numa nodes we can put pages in?
 
-	http://marc.info/?l=linux-usb&m=132986573930143&w=2
+Things = address spaces? The page migration functionality is about moving
+the location of physical memory from one numa node to the other. It does
+not affect the execution just the latencies experienced by the processes.
 
-and the following two messages in the linux-usb mailing list.
+> So by specifying a different pid to access them mm through the call can
+> either work or succeed?  Are these checks really sane?
 
-> > At the moment, switching the pnx4008 driver to use the generic bus glue
-> > doesn't look easy.  The generic code doesn't know anything about i2c.
-> 
-> Maybe I misunderstood what the generic bus glue does then, because I
-> would not expect that it should know about i2c ;-)
-> 
-> I would think the generic bus glue would be a very simple library that
-> just exports the various symbols that are defined in ohci-hcd.c and
-> used in the bus specific driver so that the driver can be a separate
-> module. Is it something different from that?
-
-Quite different.  What you just described is ohci-hcd.c itself -- 
-except that it doesn't export the necessary symbols.
-
-The generic driver, as you'll see when you read the patch, includes 
-generic versions of the various routines that a bus glue file has to 
-provide (probe, remove, initialize, and so on).
-
-Alan Stern
+Yes if you can create two pids with the same address space and give
+those those pids to different owners then the permission checks on one
+may fail and succeed on the other. We have no way to refer to address
+spaces from user space outside of a pid.
 
