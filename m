@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2B0VAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:00:17 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56696 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab2B0VAP (ORCPT
+	id S1755074Ab2B0VFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:05:11 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37941 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab2B0VFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:00:15 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
-        deller@gmx.de
-Cc: vapier@gentoo.org, dave.anglin@bell.net, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
-Date: Mon, 27 Feb 2012 15:59:19 -0500
-Message-Id: <1330376359-23731-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
+	Mon, 27 Feb 2012 16:05:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of peter.maydell@linaro.org designates 10.224.185.207 as permitted sender) smtp.mail=peter.maydell@linaro.org
+MIME-Version: 1.0
+In-Reply-To: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+	<1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	<1330360043.8557.302.camel@zakaz.uk.xensource.com>
+Date: Mon, 27 Feb 2012 21:05:08 +0000
+Message-ID: <CAFEAcA8PzT9mfnEz60CYvwQWX1OEvejrZvkpuPL2LpTPosp8cA@mail.gmail.com>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+From: Peter Maydell <peter.maydell@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the 64 bit toolchains from kernel.org[1], one finds that
-you can't build the a500_defconfig, because the Makefile will
-stomp whatever value you have in your env. for CROSS_COMPILE.
+On 27 February 2012 16:27, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
+> immediate (which can only target r0..r7).
+>
+> Since we support only ARMv7+ there are "T2" and "T3" encodings available
+> which do allow direct mov of an immediate into R12, but are 32 bit Thumb
+> instructions.
+>
+> Should we use r7 instead to maximise instruction density for Thumb code?
 
-This shows up since the kernel.org toolchains for parisc-64
-do not have the "-gnu" prefix, and so you run into it always
-saying hppa64-linux-gnu-gcc not found, regardless of the fact
-you've not got "-gnu" put anywhere into CROSS_COMPILE.
+r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
+makes it worth avoiding in this context.
 
-Since you can set CROSS_COMPILE from the environment and/or set
-it in your .config file, there really is no need for it to be
-poked at by the Makefile at all.  So just delete it.
-
-[1] ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.2/
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-
-[v2: no ifdef/endif -- just delete the offending line.]
-
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 55cca1d..a533367 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -31,7 +31,6 @@ ifdef CONFIG_64BIT
- UTS_MACHINE	:= parisc64
- CHECKFLAGS	+= -D__LP64__=1 -m64
- WIDTH		:= 64
--CROSS_COMPILE	:= hppa64-linux-gnu-
- else # 32-bit
- WIDTH		:=
- endif
--- 
-1.7.9.1
-
+-- PMM
