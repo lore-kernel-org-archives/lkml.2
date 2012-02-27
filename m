@@ -1,102 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab2B0Re6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:34:58 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36744 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab2B0Rey convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:34:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.180.92.229 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
+	id S1754129Ab2B0RhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:37:19 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:1746 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753715Ab2B0RhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:37:17 -0500
+X-IronPort-AV: E=Sophos;i="4.73,491,1325491200"; 
+   d="scan'208";a="628913105"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James Bottomley" <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 1/4] SUNRPC: release per-net clients lock before
+ calling PipeFS dentries creation
+Thread-Topic: [PATCH v2 1/4] SUNRPC: release per-net clients lock before
+ calling PipeFS dentries creation
+Thread-Index: AQHM9Weod0HJbXoOhkm4LDxKtXHHipZQ9otygACRqQA=
+Date: Mon, 27 Feb 2012 17:37:13 +0000
+Message-ID: <1330364238.5541.52.camel@lade.trondhjem.org>
+References: <20120227154713.7941.17963.stgit@localhost6.localdomain6>
+		 <20120227155055.7941.18741.stgit@localhost6.localdomain6>
+	 <1330359695.5541.45.camel@lade.trondhjem.org>
+	 <4F4BB570.60105@parallels.com>
+In-Reply-To: <4F4BB570.60105@parallels.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <EE89BB558AA8204D866D9156C438E65B@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <1330299202-3838-3-git-send-email-yinghai@kernel.org>
-References: <1330299202-3838-1-git-send-email-yinghai@kernel.org> <1330299202-3838-3-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Feb 2012 10:34:33 -0700
-Message-ID: <CAErSpo6njxGbsjqFW6nJi3hefKRNUYKj_zCGuPmOOfaFcLkk4A@mail.gmail.com>
-Subject: Re: [PATCH 2/8] x86, PCI: have own version for pcibios_bus_to_resource
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RHbPhd019729
 
-On Sun, Feb 26, 2012 at 4:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> x86 does not need to offset the address. So we can skip that costing offset
-> searching.
+On Mon, 2012-02-27 at 20:55 +0400, Stanislav Kinsbursky wrote:
+> 27.02.2012 20:21, Myklebust, Trond Ğ¿Ğ¸ÑˆĞµÑ‚:
+> > On Mon, 2012-02-27 at 19:50 +0400, Stanislav Kinsbursky wrote:
+> >> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
+> >> creation, which can be called on mount notification, where this per-net client
+> >> lock is taken on clients list walk.
+> >>
+> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+> >>
+> >> ---
+> >>   net/sunrpc/clnt.c |   10 +++++++---
+> >>   1 files changed, 7 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+> >> index bb7ed2f3..ddb5741 100644
+> >> --- a/net/sunrpc/clnt.c
+> >> +++ b/net/sunrpc/clnt.c
+> >> @@ -84,7 +84,7 @@ static void rpc_register_client(struct rpc_clnt *clnt)
+> >>   	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
+> >>
+> >>   	spin_lock(&sn->rpc_client_lock);
+> >> -	list_add(&clnt->cl_clients,&sn->all_clients);
+> >> +	list_add_tail(&clnt->cl_clients,&sn->all_clients);
+> >>   	spin_unlock(&sn->rpc_client_lock);
+> >>   }
+> >>
+> >> @@ -208,15 +208,19 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+> >>   			    void *ptr)
+> >>   {
+> >>   	struct super_block *sb = ptr;
+> >> -	struct rpc_clnt *clnt;
+> >> +	struct rpc_clnt *clnt, *tmp;
+> >>   	int error = 0;
+> >>   	struct sunrpc_net *sn = net_generic(sb->s_fs_info, sunrpc_net_id);
+> >>
+> >>   	spin_lock(&sn->rpc_client_lock);
+> >> -	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
+> >> +	list_for_each_entry_safe(clnt, tmp,&sn->all_clients, cl_clients) {
+> >> +		atomic_inc(&clnt->cl_count);
+> >> +		spin_unlock(&sn->rpc_client_lock);
+> >>   		error = __rpc_pipefs_event(clnt, event, sb);
+> >> +		rpc_release_client(clnt);
+> >>   		if (error)
+> >>   			break;
+> >> +		spin_lock(&sn->rpc_client_lock);
+> >>   	}
+> >>   	spin_unlock(&sn->rpc_client_lock);
+> >>   	return error;
+> >>
+> >
+> > This won't be safe. Nothing guarantees that 'tmp' remains valid after
+> > you drop the spin_lock.
+> >
+> > I think you rather need to add a check for whether clnt->cl_dentry is in
+> > the right state (NULL if RPC_PIPEFS_UMOUNT or non-NULL if
+> > RPC_PIPEFS_MOUNT) before deciding whether or not to atomic_inc() and
+> > drop the lock, so that you can restart the loop after calling
+> > __rpc_pipefs_event().
+> >
+> 
+> Gmmm.
+> Please, correct me, if I'm wrong, that you are proposing something like this:
+> 
+>    	spin_lock(&sn->rpc_client_lock);
+> again:
+> 	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
+> 		if ((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
+> 		    (event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
+> 			continue;
+> 		atomic_inc(&clnt->cl_count);
+> 		spin_unlock(&sn->rpc_client_lock);
+>     		error = __rpc_pipefs_event(clnt, event, sb);
+> 		rpc_release_client(clnt);
+> 		spin_lock(&sn->rpc_client_lock);
+>     		if (error)
+>     			break;
+> 		goto again;
+>     	}
+>     	spin_unlock(&sn->rpc_client_lock);
 
-I don't understand the point of this.  I'm trying hard to *remove* PCI
-code from arch/ because most of it is not really arch-specific.  This
-is a good example.  There's nothing in the pcibios_bus_to_resource()
-that you're adding back to x86 that is specific to x86, and it makes
-things more complicated.  Using __weak adds ambiguity for the reader,
-now the pci_add_resource_offset() interface exists but doesn't work,
-etc.
+Something along those lines, yes... Alternatively, you could do as David
+proposes, and grab a reference to the next rpc_client before calling
+rpc_release_client. Either works for me...
 
-I agree that this patch will make x86 a tiny bit faster and a tiny bit
-smaller, but I don't think it's enough to matter.  Do you have numbers
-that say otherwise?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Bjorn
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-> ---
->  arch/x86/pci/i386.c       |   14 ++++++++++++++
->  drivers/pci/host-bridge.c |    9 +++++----
->  2 files changed, 19 insertions(+), 4 deletions(-)
->
-> Index: linux-2.6/arch/x86/pci/i386.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/pci/i386.c
-> +++ linux-2.6/arch/x86/pci/i386.c
-> @@ -335,6 +335,20 @@ void __init pcibios_resource_survey(void
->  */
->  fs_initcall(pcibios_assign_resources);
->
-> +void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-> +                            struct resource *res)
-> +{
-> +       region->start = res->start;
-> +       region->end = res->end;
-> +}
-> +
-> +void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-> +                            struct pci_bus_region *region)
-> +{
-> +       res->start = region->start;
-> +       res->end = region->end;
-> +}
-> +
->  static const struct vm_operations_struct pci_mmap_ops = {
->        .access = generic_access_phys,
->  };
-> Index: linux-2.6/drivers/pci/host-bridge.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/host-bridge.c
-> +++ linux-2.6/drivers/pci/host-bridge.c
-> @@ -38,8 +38,9 @@ static bool resource_contains(struct res
->        return res1->start <= res2->start && res1->end >= res2->end;
->  }
->
-> -void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-> -                            struct resource *res)
-> +void __weak pcibios_resource_to_bus(struct pci_dev *dev,
-> +                                   struct pci_bus_region *region,
-> +                                   struct resource *res)
->  {
->        struct pci_host_bridge *bridge = pci_host_bridge(dev);
->        struct pci_host_bridge_window *window;
-> @@ -66,8 +67,8 @@ static bool region_contains(struct pci_b
->        return region1->start <= region2->start && region1->end >= region2->end;
->  }
->
-> -void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-> -                            struct pci_bus_region *region)
-> +void __weak pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-> +                                   struct pci_bus_region *region)
->  {
->        struct pci_host_bridge *bridge = pci_host_bridge(dev);
->        struct pci_host_bridge_window *window;
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
