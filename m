@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab2B0UPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:15:46 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34963 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754246Ab2B0UPl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:15:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.155.68 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
-MIME-Version: 1.0
-In-Reply-To: <CABqD9hbtFDU_vgBOajG2jJxQoHubcwYWJuHPLjgZkZyjGkQ2uQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-6-git-send-email-wad@chromium.org>
-	<20120227170922.GA10608@redhat.com>
-	<CABqD9hbtFDU_vgBOajG2jJxQoHubcwYWJuHPLjgZkZyjGkQ2uQ@mail.gmail.com>
-Date: Mon, 27 Feb 2012 12:15:38 -0800
-X-Google-Sender-Auth: hVWI9r70jetrHVp0DtsfQoLRkds
-Message-ID: <CAGXu5j+TzwCHpX6sGkQj4QDeZTR=MkGGaXawzAYbxCJQoT_9aQ@mail.gmail.com>
-Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
-From: Kees Cook <keescook@chromium.org>
-To: Will Drewry <wad@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754390Ab2B0UTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:19:41 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:57517 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754134Ab2B0UTk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:19:40 -0500
+Date: Mon, 27 Feb 2012 12:19:32 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PCI: acpihp user __pci_remove_bus_device instead
+Message-ID: <20120227121932.24852506@jbarnes-desktop>
+In-Reply-To: <1330206863-31381-5-git-send-email-yinghai@kernel.org>
+References: <1330206863-31381-1-git-send-email-yinghai@kernel.org>
+	<1330206863-31381-5-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/TCcGUpmW5aX1Tnb3r8+DclX"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 11:54 AM, Will Drewry <wad@chromium.org> wrote:
-> On Mon, Feb 27, 2012 at 11:09 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 02/24, Will Drewry wrote:
->>> +static struct seccomp_filter *get_seccomp_filter(struct seccomp_filter *orig)
->>> +{
->>> +     if (!orig)
->>> +             return NULL;
->>> +     /* Reference count is bounded by the number of total processes. */
->>> +     atomic_inc(&orig->usage);
->>> +     return orig;
->>> +}
->>> ...
->>> +void copy_seccomp(struct seccomp *child, const struct seccomp *parent)
->>> +{
->>> +     /* Other fields are handled by dup_task_struct. */
->>> +     child->filter = get_seccomp_filter(parent->filter);
->>> +}
->>
->> This is purely cosmetic, but imho looks a bit confusing.
->>
->> We do not copy seccomp->mode and this is correct, it was already copied
->> implicitely. So why do we copy ->filter? This is not "symmetrical", afaics
->> you can simply do
->>
->>        void copy_seccomp(struct seccomp *child)
->>        {
->>                if (child->filter)
->>                        atomic_inc(child->filter->usage);
->>
->> But once again, this is cosmetic, feel free to ignore.
->
-> Right now get_seccomp_filter does the NULL check, so really this could
-> be reduced to adding an external get_seccomp_filter(p->seccomp.filter)
-> in place of copy_seccomp().
->
-> As to removing the extra arg, that should be fine since the parent
-> can't drop its refcount when copy_seccomp is called.  At the very
-> least, I can make that change so it reads more cleanly.
+--Sig_/TCcGUpmW5aX1Tnb3r8+DclX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I had various conflicting thoughts while looking over the refcounting:
+On Sat, 25 Feb 2012 13:54:23 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-- get_seccomp_filter is defined static, and has a single caller: copy_seccomp()
-- put isn't static, and has a single caller: kernel/fork.c:free_task()
-- having only get_/put_ touch ->usage seems cleaner to me
-- seccomp_attach_filter touches ->usage without get_seccomp_filter
-- having the initializing routine use atomic_set(..., 1) is a common pattern
+> pci_stop_bus_device get called before in the same loop.
+>=20
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>=20
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
+> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -910,7 +910,7 @@ static int disable_device(struct acpiphp
+>  				disable_bridges(pdev->subordinate);
+>  				pci_disable_device(pdev);
+>  			}
+> -			pci_stop_and_remove_bus_device(pdev);
+> +			__pci_remove_bus_device(pdev);
+>  			pci_dev_put(pdev);
+>  		}
+>  	}
+>=20
 
-In a fit of extreme bike-shedding, I can't decide which is more sensible:
+Ok applied these.  How about another that converts in-tree users to
+pci_remove_bus_device and marks the __ version deprecated though?
 
-- rename put_seccomp_filter to free_seccomp_filter and inline the
-get_seccomp_filter logic into copy_seccomp().
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-or
+--Sig_/TCcGUpmW5aX1Tnb3r8+DclX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-- create a wrapper for put_seccomp_filter named free_seccomp_filter so
-that get_/put_ can both be static.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--Kees
+iQIcBAEBAgAGBQJPS+VUAAoJEIEoDkX4Qk9hxt8QAMAp+2tK1c+5mTtTOuItEckt
+cM2KORyERTzalS98iabSG7UhI18cNaIuLbflbgG5IVQxdvBLFJdFgBk8MqDTI1Ra
+4i9lu+QFXVFgNTSaYKvtzKIzJtYURJq7O+tWY+gjIzAkb9DWjO48CYXXZBtwO4o5
+CfCntYsyjQJpsDY8Q/euSE3OvHXRg/HWoJzi2NgXfbFKQlmUvDmxWqFfMsKuvpkT
+rTi/TZAoPefwEQjUSBoPtfigaeEXPFRBPmI84vfVZ2Ojnw3qMreMcAoQiL/7D5+k
+2LAOVpvdJx5MVkcTt/0c4bRmO653nStNU5+tFyX3EywkoPJZw+ByYUlWYUp0qXQo
+xwS2M0BSStdCPo5Ao2qahxM/qdCclN0NK4+2+JJDWdXxxEhpADfoiZ5u4ylRCEja
++rMGJ6jxCdgOI0oCzncqD/f6mEno1yjWFbab8oLClPqmIu6ePUc4q05HJ6eHe4AF
+04/aoQyHTiW649tQQU4Oi61pht/95sx5GR8GScn+EE2p/XtnhDzkg7OW/Dcg7VV8
+ydD24hLQWotMc9zmdgV+yfJQ07pz4qmFrFOEnYXsDOEd6WP/7S1s6AoLN37hy8ub
+impfqT9obX+WwdnHsrxnp0Ija1e1N3LHGfR91AGw/3H3Y94QJiClcKI5ieYCZro7
+AP9xV1TTSKpwrzFhnWv0
+=x/N/
+-----END PGP SIGNATURE-----
 
--- 
-Kees Cook
-ChromeOS Security
+--Sig_/TCcGUpmW5aX1Tnb3r8+DclX--
