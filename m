@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2B0VbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:31:00 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36788 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456Ab2B0Va6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:30:58 -0500
-Date: Mon, 27 Feb 2012 16:30:44 -0500 (EST)
-Message-Id: <20120227.163044.2168482307021109001.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: sam@ravnborg.org, tj@kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1202272316280.15067@math.ut.ee>
-References: <alpine.SOC.1.00.1202271914310.15067@math.ut.ee>
-	<20120227194341.GA1448@merkur.ravnborg.org>
-	<alpine.SOC.1.00.1202272316280.15067@math.ut.ee>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755035Ab2B0Vhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:37:45 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60902 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754703Ab2B0Vho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 16:37:44 -0500
+Message-ID: <1330378346.11728.5.camel@pasglop>
+Subject: Re: [PATCH 1/2] powerpc: Move GE GPIO and PIC drivers
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: linuxppc-dev@lists.ozlabs.org, Wim Van Sebroeck <wim@iguana.be>,
+        Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org
+Date: Tue, 28 Feb 2012 08:32:26 +1100
+In-Reply-To: <4F4B8BB2.1060004@ge.com>
+References: <1328614121-17803-1-git-send-email-martyn.welch@ge.com>
+	 <1328614121-17803-2-git-send-email-martyn.welch@ge.com>
+	 <1330299464.20389.58.camel@pasglop> <4F4B8BB2.1060004@ge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Feb 2012 13:30:47 -0800 (PST)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Mon, 27 Feb 2012 23:25:11 +0200 (EET)
+On Mon, 2012-02-27 at 13:57 +0000, Martyn Welch wrote:
 
->> Could you try to give this a quick spin and see if something
->> turns up. I you have time it would be good to try on a box
->> that worked before and one that was fixed by the patch from Tejun.
+> This patch (or one like it) has been around for a while now. Kumar wanted me
+> to put them here rather than sysdev[1], but I'm easy either way.
+
+Ah well, I disagree with Kumar here :-) One thing you can do is put all
+your platforms files including the drivers in platforms/ge, that works
+too. What I don't want is to have stray files at the top-level of
+platforms.
+
+> > Also, use git mv so that the file moves appear as such in the history,
+> > this will make review easier by clearly separating the move from actual
+> > changes to the files.
+> > 
 > 
-> Neither of the machines - already working one and "fixed with the 
-> rounding patch" one emit any prot: messages.
+> Hmm, thought I'd done that. Will try again.
 
-I think the issue is that OF writes past the end of the buffer even
-though the length it reports is smaller than what it writes.
+Could be the way you exported the patch, I don't remember the git option
+off the top of my head but there's a way to make it show the moves as
+such.
 
-That's why we really need to fill the memblock memory with magic
-numbers and scan every allocation for free memory with corrupted
-magic values.
+Cheers,
+Ben.
+
+
