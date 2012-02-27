@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2B0AbD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 19:31:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38014 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab2B0AbB convert rfc822-to-8bit (ORCPT
+	id S1753454Ab2B0Abk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 19:31:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56171 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab2B0Abi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 19:31:01 -0500
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=windows-1252
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20120227000847.GA30855@alea.gnuu.de>
-Date: Mon, 27 Feb 2012 01:30:59 +0100
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FE16BFF8-0C0C-4FFB-B64F-BF4497B12AA4@suse.de>
-References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20120220173844.GA2546@alea.gnuu.de> <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de> <20120221083213.GA19059@alea.gnuu.de> <20120225145115.GB22460@alea.gnuu.de> <3E36BEF4-E15F-410A-82C1-A8EB17AEF0DA@suse.de> <20120227000847.GA30855@alea.gnuu.de>
-To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
-X-Mailer: Apple Mail (2.1257)
+	Sun, 26 Feb 2012 19:31:38 -0500
+Date: Mon, 27 Feb 2012 11:31:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: manual merge of the pci tree with the mips tree
+Message-Id: <20120227113129.c03c34ff7ea516f155cf0c87@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__27_Feb_2012_11_31_29_+1100_vTujrHiqiO5ZGod5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__27_Feb_2012_11_31_29_+1100_vTujrHiqiO5ZGod5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 27.02.2012, at 01:08, Jörg Sommer wrote:
+Hi Jesse,
 
-> Alexander Graf hat am Sun 26. Feb, 12:43 (+0100) geschrieben:
->> On 25.02.2012, at 15:51, Jörg Sommer wrote:
->>> Jörg Sommer hat am Tue 21. Feb, 09:32 (+0100) geschrieben:
->>>> Alexander Graf hat am Mon 20. Feb, 22:27 (+0100) geschrieben:
->>>>> On 20.02.2012, at 18:38, Jörg Sommer wrote:
->>>>>> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
->>>>>>> On 22.11.2011, at 21:04, Jörg Sommer wrote:
->>>>>>>> [1] »kernel BUG at include/linux/kvm_host.h:603!«
->>>>>>>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
->>>>>>> 
->>>>>>> This is unfortunately still there. It's because of preemption being
->>>>>>> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
->>>>>> 
->>>>>> This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getting
->>>>>> this Oops, when I start qemu.
->>>>> 
->>>>> Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I
->>>>> fixed a bunch of things with preemption since then and it definitely
->>>>> worked for me. If it still fails in that tree, I can try again to
->>>>> reproduce it :).
->>>> 
->>>> This kernel (e9badff4b38a3f8b2c20aa8a30db210caf85a497) fails to build:
->>>> 
->>>> CC [M]  arch/powerpc/kvm/book3s_pr.o
->>>> arch/powerpc/kvm/book3s_pr.c: In function ‘kvm_vcpu_ioctl_get_one_reg’:
->>>> arch/powerpc/kvm/book3s_pr.c:883:45: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
->>>> arch/powerpc/kvm/book3s_pr.c:883:80: error: cast to pointer from integer of different size [-Werror=int-to-pointer-cast]
-> 
->> Yikes. Does this patch work for you?
-> 
->> diff --git a/arch/powerpc/kvm/book3s_pr.c b/arch/powerpc/kvm/book3s_pr.c
->> index ee222ec..f329eae 100644
->> --- a/arch/powerpc/kvm/book3s_pr.c
->> +++ b/arch/powerpc/kvm/book3s_pr.c
->> @@ -880,7 +880,8 @@ int kvm_vcpu_ioctl_get_one_reg(struct kvm_vcpu *vcpu, struct kvm_one_reg *reg)
->> 
->>        switch (reg->id) {
->>        case KVM_REG_PPC_HIOR:
->> -               r = put_user(to_book3s(vcpu)->hior, (u64 __user *)reg->addr);
->> +               r = put_user(to_book3s(vcpu)->hior,
->> +                            (u64 __user *)(long)reg->addr);
-> 
-> Yes and no. It brings me a step further, but not to a working kernel.
-> 
->  CHK     include/linux/version.h
->  CHK     include/generated/utsrelease.h
->  CALL    scripts/checksyscalls.sh
->  CC [M]  arch/powerpc/kvm/book3s_pr.o
->  LD [M]  arch/powerpc/kvm/kvm.o
->  Building modules, stage 2.
->  MODPOST 227 modules
-> ERROR: "__get_user_bad" [arch/powerpc/kvm/kvm.ko] undefined!
+Today's linux-next merge of the pci tree got a conflict in
+arch/mips/pci/pci.c between commit f79eaeb10849 ("MIPS: PCI: use
+list_for_each_entry() for bus->devices traversal") from the mips tree and
+commit 96a6b9ad05a2 ("mips/PCI: get rid of device resource fixups") from
+the pci tree.
 
-Ah, because you can't get_user u64s I suppose. Sigh. As a quick hack, just comment out the get/put_user lines - you don't care about configuring HIOR on ppc32 anyways. I'll try to come up with something :)
+The latter appears to supersede the former, so I used that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__27_Feb_2012_11_31_29_+1100_vTujrHiqiO5ZGod5
+Content-Type: application/pgp-signature
 
-Alex
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPSs7hAAoJEECxmPOUX5FEmOIP/i7+mXVsHo0dgtj2wSVzpFX3
+g0RJovZ6V7OjnRGuGFVQ0c5gNFb8jdBQWZMLbhB9gBQcooK9UfstU93DHTF+CPZP
+ulHHJi1KVGrklD2eh3k3gCh84pJvUBVqti/NJiPi96PyEQaAfRreIcNH85RC0c99
+Q/ij4XIt76PlIl9ONCH2gcY9JrWVre6861BtQ8+9e8kXkn1AeUqikgx6SbmSbdJY
+EQMxQu6OmphEvY3+AZJA0stTRE+v9t9IQKKrwfPIXAgmEudpECgoCoIVs/RieZp2
+NnM7rIKGhO0oH5B7iR5HVKxTkfUvypNUvXFAvDUPDX6HyGGOGE+rhksraVXu5+t1
+H5v1PrSEzqIL8YlPtZB5R2f+NcBS49SJvK8ItfHxBcF12jK8DQtjuqYZns1YVUsn
+ml9nOtUOHpLPIVYesR3O0/7kASN/lKpjRUDTm3X4GQrrQ73xYqTwo5SoTky3fC55
+1sPkGKOVrxiIMTf+K/hrmITIXW9yvAyF5b+H2/FDybK7SJMbRHAcFonF19owTCGp
+aDXLsFEZ+yiEyn0foda26Yakwq/FCTWgkJd+b/3+xTVdoSQsVK2TkTfVTNp/GGI8
+UawYczzs8fN1QnofkqsLuEotY2WMb0l6qOfn2a22rLh9dhK3UpoeaIdMj7pj+dBN
+3v2TPLKjcHUkZaO81ZX2
+=pxnx
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__27_Feb_2012_11_31_29_+1100_vTujrHiqiO5ZGod5--
