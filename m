@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2B0WqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 17:46:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47298 "EHLO
+	id S1755862Ab2B0WtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 17:49:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47312 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab2B0WqE (ORCPT
+	with ESMTP id S1754224Ab2B0WtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 17:46:04 -0500
-Date: Mon, 27 Feb 2012 14:46:02 -0800
+	Mon, 27 Feb 2012 17:49:02 -0500
+Date: Mon, 27 Feb 2012 14:49:00 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        James Morris <jmorris@namei.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
-Message-Id: <20120227144602.07f5ec33.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
-References: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
-	<alpine.LRH.2.02.1202241913400.30742@tundra.namei.org>
-	<alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
+To: viresh kumar <viresh.linux@gmail.com>
+Cc: salvatore.dedominicis@st.com, bhavna.yadav@st.com, rajeev-dlh.kumar@st.com,
+        Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
+        shiraz.hashim@st.com, deepak.sikri@st.com, mirko.gardi@st.com,
+        vipulkumar.samar@st.com, rui.zhang@intel.com, len.brown@intel.com,
+        armando.visconti@st.com, amit.virdi@st.com, vincenzo.frascino@st.com,
+        vipin.kumar@st.com, linux-kernel@vger.kernel.org,
+        bhupesh.sharma@st.com
+Subject: Re: [PATCH] thermal: Add support for thermal sensor present on
+ SPEAr13xx machines
+Message-Id: <20120227144900.e7a9d972.akpm@linux-foundation.org>
+In-Reply-To: <CAOh2x=kszwxhwKqwKN37Yd_KRKG5DwC_5zXXevsLpUJmJsZV0w@mail.gmail.com>
+References: <032b0bad50a9ad812c9a907138bb1a6caed38c74.1330068012.git.viresh.kumar@st.com>
+	<20120224120251.ad8e7332.akpm@linux-foundation.org>
+	<CAOh2x=kszwxhwKqwKN37Yd_KRKG5DwC_5zXXevsLpUJmJsZV0w@mail.gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,48 +32,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012 19:19:22 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+On Fri, 24 Feb 2012 19:30:54 -0800
+viresh kumar <viresh.linux@gmail.com> wrote:
 
-> +/*
-> + * Callback for security_inode_init_security() for acquiring xattrs.
-> + */
-> +static int shmem_initxattrs(struct inode *inode,
-> +			    const struct xattr *xattr_array,
-> +			    void *fs_info)
-> +{
-> +	struct shmem_inode_info *info = SHMEM_I(inode);
-> +	const struct xattr *xattr;
-> +	struct shmem_xattr *new_xattr;
-> +	size_t len;
-> +
-> +	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-> +		new_xattr = shmem_xattr_alloc(xattr->value, xattr->value_len);
-> +		if (!new_xattr)
-> +			return -ENOMEM;
-> +
-> +		len = strlen(xattr->name) + 1;
-> +		new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
-> +					  GFP_KERNEL);
-> +		if (!new_xattr->name) {
-> +			kfree(new_xattr);
-> +			return -ENOMEM;
-> +		}
-> +
-> +		memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
-> +		       XATTR_SECURITY_PREFIX_LEN);
-> +		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
-> +		       xattr->name, len);
-> +
-> +		spin_lock(&info->lock);
-> +		list_add(&new_xattr->list, &info->xattr_list);
-> +		spin_unlock(&info->lock);
-> +	}
-> +
-> +	return 0;
-> +}
+> On Feb 25, 2012 1:32 AM, "Andrew Morton" <akpm@linux-foundation.org> wrote:
+> >
+> 
+> > The driver can be compiled for all architectures which support
+> > CONFIG_THERMAL.  This includes x86_64.  Was that intended?
+> >
+> 
+> No.
+> 
+> > I don't think it's necessarily a bad thing:
+> 
+> Ya we thought about removing spear_* from the driver. But the hardware
+> looked a bit proprietary.
 
-So if there's a kmalloc failure partway through the array, we leave a
-partially xattrified inode in place.
+I don't really understand this reply.  Does it mean that you will be
+updating the Kconfig logic?
 
-Are we sure this is OK?
