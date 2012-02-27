@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab2B0F3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 00:29:16 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52401 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab2B0F3O (ORCPT
+	id S1752612Ab2B0Fdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 00:33:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53530 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab2B0Fdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 00:29:14 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Andrei Warkentin <andrey.warkentin@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrei Warkentin <andreiw@vmware.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCHv3 2/3] NETKGDB: Ethernet/UDP/IP KDB transport.
-In-Reply-To: Your message of "Sun, 26 Feb 2012 22:30:10 EST."
-             <1330313411-845-3-git-send-email-andrey.warkentin@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1330137851-4716-1-git-send-email-andrey.warkentin@gmail.com> <1330313411-845-1-git-send-email-andrey.warkentin@gmail.com>
-            <1330313411-845-3-git-send-email-andrey.warkentin@gmail.com>
+	Mon, 27 Feb 2012 00:33:52 -0500
+Date: Mon, 27 Feb 2012 16:33:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Shi <alex.shi@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20120227163343.b0c0ff0836f433538ec295f5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1330320543_6549P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 27 Feb 2012 00:29:03 -0500
-Message-ID: <116798.1330320543@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4F4B14A2.002A,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1330320543_6549P
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, 26 Feb 2012 22:30:10 EST, Andrei Warkentin said:
+Hi Andrew,
 
-> +Note: the parameter is optional and largely unneeded unless you
-> +are running a listen server - netkgdb will accept connection from any
-> +IP on all interfaces and will reconfigure itself appropriately if
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/include/asm/i387.h between commits 8546c008924d ("i387: Uninline
+the generic FP helpers that we expose to kernel modules") and
+1361b83a13d4 ("i387: Split up <asm/i387.h> into exported and internal
+interfaces") from the tip tree and commit
+"percpu-remove-percpu_xxx-functions-fix" from the akpm tree.
 
-This *really* needs a discussion of the security implications of this.  Do
-you *really* want to have a kgdb that will accept connections from *anywhere*?
-Sounds like an insta-root waiting to happen.
+I applied the appropriate part of the latter patch to
+arch/x86/include/asm/fpu-internal.h and arch/x86/kernel/i387.c (see below).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +the assigned interface IP address changes. This makes it useful
-> +in an environment where it's not known ahead of time what computer
-> +will connect to perform the crash analysis.
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu=
+-internal.h
+index 5caaf43..e9801b4 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -290,14 +290,14 @@ static inline int __thread_has_fpu(struct task_struct=
+ *tsk)
+ static inline void __thread_clear_has_fpu(struct task_struct *tsk)
+ {
+ 	tsk->thread.fpu.has_fpu =3D 0;
+-	percpu_write(fpu_owner_task, NULL);
++	__this_cpu_write(fpu_owner_task, NULL);
+ }
+=20
+ /* Must be paired with a 'clts' before! */
+ static inline void __thread_set_has_fpu(struct task_struct *tsk)
+ {
+ 	tsk->thread.fpu.has_fpu =3D 1;
+-	percpu_write(fpu_owner_task, tsk);
++	__this_cpu_write(fpu_owner_task, tsk);
+ }
+=20
+ /*
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 7734bcb..32c3972 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -88,7 +88,7 @@ void kernel_fpu_begin(void)
+ 		__thread_clear_has_fpu(me);
+ 		/* We do 'stts()' in kernel_fpu_end() */
+ 	} else {
+-		percpu_write(fpu_owner_task, NULL);
++		__this_cpu_write(fpu_owner_task, NULL);
+ 		clts();
+ 	}
+ }
 
-Exactly. You don't know ahead of time who's going to connect. That's the
-problem...
-
---==_Exmh_1330320543_6549P
+--Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUBT0sUnwdmEQWDXROgAQKSkw//Xbl4nTmDtTxYA9sgOvDw8O35P1ytSN/p
-uNkUVQ2ry8ash091BM/bfkEVd8qa8cgW+cAliw3lOd7Uke2Vsp5xQNFMHD6Divtx
-hOhBOHO6lVQyAKtuf9HFxX2HtMzEQeuv2e4jzOp0kMcWLfg6R12FzPeQElFZph7V
-/Tg2n4ICYSR4TGewNOCVkYUNHzwLoWbVw4AMcE6hFvp1RlahOqMuLrDyvgU2Rmj5
-vVOrID50jDRYlrB7qNwMBLRYEMgIrojeWqXZ3u34NiM7BGQCIdZwrzvbTpChAN4S
-DXlPjOy8dhT1CF1xuSWctNl5pnAn69F4NkSKoIoskrs3X8c+M5LRSYhp87q7oiVE
-82qq4WcUu5TbNhepjGvvJrq4fJ91UDy5uV71BarJnGM0QZLgLK23l8+XMUsvQ2Wl
-Xe2F9Y01mk0+x3/yis0KlFgnMePiYEKzUFey2B1pWCLp1yZzMvDe3NtHIXlXqbiu
-Jta9AyiO4m9sDP1InLspmte0mjH1LuwmhsN6HRroB7Umv2De7H1Fr8/dwSzjLwF0
-YaioG4vuoPMAIV6y2WpJYSkbH+Dt2HN7dNoFcavTCqFJEkFIFZURRQcMCCxPbn3j
-T5QsZb0gOVol9fAFZy1UznBlBj2Sg7g/3ppgagQbb1Kj0wdM3OBkVN9L5Ench2Nj
-VfuLu2iTzfs=
-=7WKG
+iQIcBAEBCAAGBQJPSxW3AAoJEECxmPOUX5FEMi0QAKCKOgbLA8b0HVURWatWcUfF
+T0aEmfu6C3GppJA4xingcgatOkWZ3tNAbroAR8E3WNkBrhodE+IZsIf6tIt9FINn
+DOUnG8/4Ozju4W79WNGoCOAtzHFiwBLrTkDFgkh6yVTzjyDgrdJLTiGj2CUFhitb
+bnzA+Q7D77dg+pOVJ+OLS0R2iVoiltuEjll1B8grLvY2JCdquF+DyLrB5ggWMgKg
+Zaj7bgDvOcbPriMFVw6hoZGWZI/3FDMhbHzbX08n9jzihRC3a6bPDjaRlagQu+a5
+fIE6VxIgVXfBYmnacipQ+FXIDezFmMZuHwv5sHAMe+Vs4pZTGsh0iTMFZHeKDv9l
+w8FoL0XimAVJWRQU9CPHrWbZD50YGfT52SexdEXGYy3inYm8n8GEFw7z0OmxE1Us
+w6NLAa4jqpv2ItC4UtkPZJjs6I9PIY14Ulz/YgIbtDP5PqPhQShFbBa+6V326POg
+Pd9TnP24JqebCjsKU/J8bzrDRpEeg5yfti19MeMcsW9JReXmRb28Pk/7vT4bsTy1
+WsPDKNguQi9DW/00cm2DF6/oiuE/cARFc8xZ6icn0m6lVSIid5sfg8anMN4eeQej
+cEaef5vxc/k10ZjXCEyjn/3qHzubl8Sj/h0c4c0PaVnOZ0qfVTzympAM4BcEId0D
+BtL7QK/vSvCFqWTI7SF1
+=g9xY
 -----END PGP SIGNATURE-----
 
---==_Exmh_1330320543_6549P--
-
+--Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q--
