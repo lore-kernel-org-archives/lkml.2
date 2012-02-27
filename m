@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2B0KpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 05:45:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42697 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab2B0KpN convert rfc822-to-8bit (ORCPT
+	id S1753128Ab2B0KrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 05:47:01 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:43935 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2B0Kq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 05:45:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.202.97 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Mon, 27 Feb 2012 05:46:59 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 7374382331
+Date: Mon, 27 Feb 2012 11:46:46 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120227104646.GA1700@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
+ <20120227113338.e8e1ecd6.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
-References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
-Date: Mon, 27 Feb 2012 11:45:12 +0100
-Message-ID: <CACRpkdZe5caTr5LLWm7J5NfsWegoih4yQx+GV=H5brdPSUvEsQ@mail.gmail.com>
-Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120227113338.e8e1ecd6.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 10:30 AM, Chanho Min <chanho0207@gmail.com> wrote:
+On Mon, Feb 27, 2012 at 11:33:38AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Sun, 12 Feb 2012 01:21:38 +0100
+> Andrea Righi <andrea@betterlinux.com> wrote:
+> 
+> > According to the POSIX standard the POSIX_FADV_NOREUSE hint means that
+> > the application expects to access the specified data once and then not
+> > reuse it thereafter.
+> > 
+> > It seems that the expected behavior is to implement a drop-behind
+> > policy where the application can set certain intervals of a file as
+> > FADV_NOREUSE _before_ accessing the data.
+> > 
+> > An interesting usage of this hint is to guarantee that pages marked as
+> > FADV_NOREUSE will never blow away the pages of the current working set.
+> > 
+> > A possible solution to satisfy this requirement is to prevent lru
+> > activation of the pages marked as FADV_NOREUSE, in other words, never
+> > add pages marked as FADV_NOREUSE to the active lru list. Moreover, all
+> > the file cache pages in a FADV_NOREUSE range can be immediately dropped
+> > after a read if the page was not present in the file cache before.
+> > 
+> > In general, the purpose of this approach is to preserve as much as
+> > possible the previous state of the file cache memory before reading data
+> > in ranges marked by FADV_NOREUSE.
+> > 
+> > All the pages read before (pre-)setting them as FADV_NOREUSE should be
+> > treated as normal, so they can be added to the active lru list as usual
+> > if they're accessed multiple times.
+> > 
+> > Only after setting them as FADV_NOREUSE we can prevent them for being
+> > promoted to the active lru list. If they are already in the active lru
+> > list before calling FADV_NOREUSE we should keep them there, but if they
+> > quit from the active list they can't get back anymore (except by
+> > explicitly setting a different caching hint).
+> > 
+> 
+> >From this part, it seems the behavior of systemcall is highly depends on
+> interanal kernel implemenatation...
 
-> This is another workaroud of  'https://lkml.org/lkml/2012/1/17/104'
-> with additional analysis.Bootloader can transfer control to kernel and
-> there are some pending interrupts. In this case, RXFE of the flag
-> register is set by clearing FEN(LCRH) even if rx data remains in the
-> fifo. It seems that the fifo's status is initiailized. Interrupt
-> handler can not get any data from data register because of the below
-> break condtion.
->
-> pl011_fifo_to_tty
->  while (max_count--) {
->   if (status & UART01x_FR_RXFE)
->        break;
->
-> Then, Rx interrupt is never cleared. cpu is looping in ISR. System is
-> hang. If we don't guarantee that no interrupt is pended until fifo is
-> disabled by calling 'writew(0, uap->port.membase + uap->lcrh_rx)',
-> this misbehave of the interrupt handelr can be occurred. So, All
-> pending interrupts should be cleared just after fifo is disabled under
-> the protection from interrupt. Also,'clear error interrupts' routine
-> can be removed becuase all interrupts are cleared before.
->
-> Signed-off-by: Chanho Min <chanho.min@lge.com>
+Yes. If in a future kernel we'll decide to remove the active/inactive
+lru lists we also need to change the implementation of FADV_NOREUSE.
 
-Looks correct to me.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+However, I think that any solution for a feature that allows to not
+disturb the state of the page cache has inevitably something dependent
+on internal kernel implementation...
 
-Thanks,
-Linus Walleij
+Probably a more generic concept to document is that FADV_NOREUSE is an
+advice from the application to never consider the marked pages as part
+of the working set (for any possible meaning/implementation of "working
+set").
+
+> 
+> 
+> > To achieve this goal we need to maintain the list of file ranges marked
+> > as FADV_NOREUSE until the pages are dropped from the page cache, or the
+> > inode is deleted, or they're explicitly marked to use a different cache
+> > behavior (FADV_NORMAL | FADV_WILLNEED).
+> > 
+> > The list of FADV_NOREUSE ranges is maintained in the address_space
+> > structure using an interval tree (kinterval).
+> > 
+> > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+> 
+> 
+> Once an appliation sets a range of file as FILEMAP_CACHE_ONCE,
+> the effects will last until the inode is dropped....right ?
+> Won't this cause troubles which cannot be detected
+> (because kinterval information is hidden.) ?
+> 
+> I'm not sure but FADV_NOREUSE seems like one-shot call and should not have
+> very long time of effect (after the application exits.)
+> Can't we ties the liftime of kinteval to the application/file descriptor ?
+
+Yes, I'm also concerned about this. Using FADV_NOREUSE may also affect
+the page cache behavior of other applications.
+
+I like the idea to tie the FADV_NOREUSE ranges to the file descriptor.
+In addition to the shorter lifetime it has the advantage that the policy
+is applied only to the application that is actually using this feature
+and not also to the other apps running in the system.
+
+I'll consider this possibility for sure if I'll post a new version of
+this patch set.
+
+Thanks!
+-Andrea
