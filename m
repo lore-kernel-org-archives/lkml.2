@@ -1,193 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab2B0Tti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:49:38 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62598 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab2B0Tth (ORCPT
+	id S1755109Ab2B0Tus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:50:48 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:35034 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab2B0Tur convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:49:37 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v3] lpc32xx: Added ethernet driver
-Date: Mon, 27 Feb 2012 19:49:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
-        alexander.h.duyck@intel.com, eilong@broadcom.com,
-        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, baruch@tkos.co.il,
-        joe@perches.com
-References: <1330364539-23152-1-git-send-email-stigge@antcom.de>
-In-Reply-To: <1330364539-23152-1-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202271949.03144.arnd@arndb.de>
-X-Provags-ID: V02:K0:ApWIngUU0fIzRaUScmVKKlsIBodh62UIZdIs73dNwYC
- mbVB0+ScEWj2rR9h6VuQssPL5hdFen18XK4cDGZ4iqf2mGryjs
- JHZZNIsHH5ozjnkHdcp5KN4HCYtOXFp7TroDB2ZqOW1lWkSsvX
- R81b1MxFO82f7S4HFlkgze8sFkQQi+VNur/gzpZyhsu4VFOXvq
- B5CW+2HxmWLnFN3FNxQ9HLC/K4ZYTF6rA12oH1h5qxXjnC08hc
- 3I0m+tlznIAD+OzuH4swVo+hWETNzq38vrmFt2/7hxuq22xgvY
- VV2/8DY+opU+v+7Bv4U0hyUg9hTszIZmlugbK6FwVOQg5ZCk2J
- 8/keSly+ZV43O0hBr1Kk=
+	Mon, 27 Feb 2012 14:50:47 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [git pull] Trivial NTFS and LDM changes.
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=US-ASCII
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <CA+55aFy5qXa-5KKABqgNoE=dhK-8ef45EbSGwzjGPEvxf1q1Gw@mail.gmail.com>
+Date: Mon, 27 Feb 2012 19:50:43 +0000
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ntfs-dev <linux-ntfs-dev@lists.sourceforge.net>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <0019251A-4324-45B7-ACBB-8D495C87981C@cam.ac.uk>
+References: <6BDEC6CA-36B6-4CA7-88C3-02FD1A0B2526@cam.ac.uk> <CA+55aFy5qXa-5KKABqgNoE=dhK-8ef45EbSGwzjGPEvxf1q1Gw@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 February 2012, Roland Stigge wrote:
-> This patch adds an ethernet driver for the LPC32xx ARM SoC.
+Hi Linus,
+
+On 27 Feb 2012, at 16:23, Linus Torvalds wrote:
+> On Mon, Feb 27, 2012 at 2:26 AM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>> 
+>> PS. None of this is especially urgent so if you prefer me to re-send when the
+>> next merge window opens please let me know.  I just thought these things
+>> are so trivial we might as well get them in now.
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> Hey, it was small and removed more lines than it added, so I pulled it.
 > 
-> ---
->  drivers/net/ethernet/Kconfig       |    1 
->  drivers/net/ethernet/Makefile      |    1 
->  drivers/net/ethernet/nxp/Kconfig   |    8 
->  drivers/net/ethernet/nxp/Makefile  |    1 
->  drivers/net/ethernet/nxp/lpc_eth.c | 1311 +++++++++++++++++++++++++++++++++++++
->  drivers/net/ethernet/nxp/lpc_eth.h |  336 +++++++++
+> Sadly, I didn't *look* at it until after I had already pushed out.
+> 
+> *THESE* things would have made me unpull it immediately, if I hadn't
+> done my test compile and pushed things out:
+> 
+> commit f621c5334396fd153cd882ea92466823b7e7b821
+> Merge: 0afa1b62e332 500dd2370e77
+> Author: Anton Altaparmakov <anton@tuxera.com>
+> Date:   Mon Feb 27 09:01:22 2012 +0000
+> 
+>    Merge branch 'master' of /Volumes/CaseSensitiveDisk/linux
+> 
+> commit 0afa1b62e33250d4777c5803a98ae69fbe872061
+> Merge: 97387e3baaf3 bb4c7e9a9908
+> Author: Anton Altaparmakov <anton@tuxera.com>
+> Date:   Fri Feb 24 09:39:16 2012 +0000
+> 
+>    Merge branch 'master' of /Volumes/CaseSensitiveDisk/linux
+> 
+> There's two of those *stupid* merges that have no reason for existing,
+> no explanation, and are just ugly.
+> 
+> Don't do this, guys!
 
-Just merge the header into the implementation file, it's not used an
-an interface between two .c files.
+Sorry!  I just pulled in your latest tree before pushing it to kernel.org.  I didn't realize that goes and merges stuff and I certainly did not get an editor window.  )-:
 
-> --- linux-2.6.orig/drivers/net/ethernet/Makefile
-> +++ linux-2.6/drivers/net/ethernet/Makefile
-> @@ -47,6 +47,7 @@ obj-$(CONFIG_NET_VENDOR_NATSEMI) += nats
->  obj-$(CONFIG_NET_NETX) += netx-eth.o
->  obj-$(CONFIG_NET_VENDOR_NUVOTON) += nuvoton/
->  obj-$(CONFIG_NET_VENDOR_NVIDIA) += nvidia/
-> +obj-$(CONFIG_LPC_ENET) += nxp/
->  obj-$(CONFIG_OCTEON_MGMT_ETHERNET) += octeon/
->  obj-$(CONFIG_NET_VENDOR_OKI) += oki-semi/
->  obj-$(CONFIG_ETHOC) += ethoc.o
+I have been running git 1.7.4.4.  I have now upgraded to current git head 1.7.9.2.302.g3724c so hopefully that will not happen again.
 
-Are you sure that npx is actually the origin of this controller?
-If they only licensed the IP themselves, it would be better to list
-it under the name of the actual creator so that the next person
-who has the same core can find it.
+Best regards,
 
-> +static irqreturn_t __lpc_eth_interrupt(int irq, void *dev_id)
-> +{
-> +	struct net_device *ndev = dev_id;
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	u32 tmp;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&pldat->lock, flags);
-> +
-> +	while ((tmp = readl(LPC_ENET_INTSTATUS(pldat->net_base)))) {
-> +		/* Clear interrupts */
-> +		writel(tmp, LPC_ENET_INTCLEAR(pldat->net_base));
-> +
-> +		/* Transmit complete? */
-> +		if (tmp & (LPC_MACINT_TXUNDERRUNINTEN |
-> +				LPC_MACINT_TXERRORINTEN |
-> +				LPC_MACINT_TXFINISHEDINTEN |
-> +				LPC_MACINT_TXDONEINTEN))
-> +			__lpc_handle_xmit(ndev);
-> +
-> +		/* Receive buffer available */
-> +		if (tmp & (LPC_MACINT_RXOVERRUNINTEN |
-> +				LPC_MACINT_RXERRORONINT |
-> +				LPC_MACINT_RXFINISHEDINTEN |
-> +				LPC_MACINT_RXDONEINTEN))
-> +			__lpc_handle_recv(ndev);
-> +	}
-> +
-> +	spin_unlock_irqrestore(&pldat->lock, flags);
-> +
-> +	return IRQ_HANDLED;
-> +}
+	Anton
 
-Why do you handle receive and transmit directly in the irq handler,
-rather than using napi?
+> And if you know you do these by mistake, just get the current version
+> of git *pronto*, and install that instead of (or in addition to: "make
+> install" just installs it in your ~/bin directory, so if you make your
+> PATH look there first, you don't need anything else) your distro
+> version of git.
+> 
+> That will now bring up an editor for your merges, and maybe that will
+> make you go "Oh, this is f*cking STUPID", and realize that you
+> shouldn't be doing that merge!
+> 
+> Christ. I really don't like stupid unnecessary merges. And when they
+> are from "master" of some random badly named repository, I like them
+> even less. The above is really just a f*cking abomination, and says
+> "somebody is doing something horribly wrong".
+> 
+>                     Linus
 
-> +	/* Save resources */
-> +	pldat->net_region_start = res->start;
-> +	pldat->net_region_size = res->end - res->start + 1;
 
-This does not seem to be needed really. It's only printed in
-debug output and copied into ndev->base_addr, which is also
-unused.
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
-> +	/* Save board specific configuration */
-> +	pldat->ncfg = (struct lpc_net_cfg *)pdev->dev.platform_data;
-> +	if (pldat->ncfg == NULL) {
-> +		dev_err(&pdev->dev, "error requesting interrupt.\n");
-> +		pldat->ncfg = &__lpc_local_net_config;
-> +	}
-
-I would recommend dropping all the platform_data logic from this driver.
-The board support that you added doesn't actually set it and once you
-move to device tree probing, it will be obsolete anyway.
-
-> +	if (use_iram_for_net()) {
-> +		dma_handle = (dma_addr_t)LPC32XX_IRAM_BASE;
-> +		if (pldat->dma_buff_size <= lpc32xx_return_iram_size())
-> +			pldat->dma_buff_base_v =
-> +				(u32)io_p2v(LPC32XX_IRAM_BASE);
-> +		else
-> +			netdev_err(ndev,
-> +				"IRAM not big enough for net buffers, using SDRAM instead.\n");
-> +	}
-
-Can you put this into another resource? It doesn't seem appropriate
-to use constants from a platform specific header file here.
-
-> +	if (pldat->dma_buff_base_v == 0) {
-> +		pldat->dma_buff_size += 4096; /* Allows room for alignment */
-> +
-> +		/* Align on the next highest page entry size */
-> +		pldat->dma_buff_size &= 0Xfffff000;
-> +		pldat->dma_buff_size += 0X00001000;
-
-PAGE_ALIGN()
-
-> +		/* Allocate a chunk of memory for the DMA ethernet buffers
-> +		   and descriptors */
-> +		pldat->dma_buff_base_v =
-> +			(u32)dma_alloc_coherent(&pldat->pdev->dev,
-> +						pldat->dma_buff_size,
-> +						&dma_handle, GFP_KERNEL);
-> +
-> +		if (pldat->dma_buff_base_v == (u32)NULL) {
-> +			dev_err(&pdev->dev, "error getting DMA region.\n");
-> +			ret = -ENOMEM;
-> +			goto err_out_free_irq;
-> +		}
-> +	}
-> +	pldat->dma_buff_base_p = (u32)dma_handle;
-
-Please use correct types here and remove all the typecasts. Virtual
-addresses use pointers and dma addresses are dma_addr_t.
-
-> +static int lpc_net_drv_suspend(struct platform_device *pdev,
-> +	pm_message_t state)
-> +{
-> +}
-> +
-> +static int lpc_net_drv_resume(struct platform_device *pdev)
-> +{
-> +}
-
-Define these conditionally?
-
-> +static int __init lpc_net_init(void)
-> +{
-> +	return platform_driver_register(&lpc_net_driver);
-> +}
-> +
-> +static void __exit lpc_net_cleanup(void)
-> +{
-> +	platform_driver_unregister(&lpc_net_driver);
-> +}
-> +
-> +module_init(lpc_net_init);
-> +module_exit(lpc_net_cleanup);
-
-You can use module_platform_driver() now.
-
-	Arnd
