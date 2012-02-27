@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab2B0SEC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:04:02 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40845 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab2B0SD7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:03:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.180.92.229 as permitted sender) smtp.mail=dave.martin@linaro.org
-Date: Mon, 27 Feb 2012 18:03:55 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-Message-ID: <20120227180355.GB2023@linaro.org>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
- <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+	id S1754267Ab2B0SFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:05:36 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:37017 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754074Ab2B0SFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:05:35 -0500
+Subject: [PATCH v3 0/4] SUNRPC: several fixes around PipeFS objects
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Mon, 27 Feb 2012 22:05:20 +0400
+Message-ID: <20120227180509.1089.29555.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 04:27:23PM +0000, Ian Campbell wrote:
-> On Thu, 2012-02-23 at 17:48 +0000, Stefano Stabellini wrote:
-> > We need a register to pass the hypercall number because we might not
-> > know it at compile time and HVC only takes an immediate argument.
-> > 
-> > Among the available registers r12 seems to be the best choice because it
-> > is defined as "intra-procedure call scratch register".
-> 
-> R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
-> immediate (which can only target r0..r7).
+v3:
+1) Lookup for client is performed from the beginning of the list on each PipeFS
+event handling operation.
 
-This is untrue.  The important instructions, like MOV Rd, Rn can access
-all the regs.  But anyway, there is no such thing as a Thumb-1 kernel,
-so we won't really care.
+v2: 
+1) Prior to calling PipeFS dentry rountines (for both type of clients - SUNPRC
+and NFS) get the client and drop the list lock instead of replacing per-net
+locks by mutexes.
 
-> Since we support only ARMv7+ there are "T2" and "T3" encodings available
-> which do allow direct mov of an immediate into R12, but are 32 bit Thumb
-> instructions.
-> 
-> Should we use r7 instead to maximise instruction density for Thumb code?
+First two pathes fixes lockdep warnings and next two - dereferencing of
+released pipe data on eventfd close and in file operations.
 
-The difference seems trivial when put into context, even if you code a
-special Thumb version of the code to maximise density (the Thumb-2 code
-which gets built from assembler in the kernel is very suboptimal in
-size, but there simply isn't a high proportion of asm code in the kernel
-anyway.)  I wouldn't consider the ARM/Thumb differences as an important
-factor when deciding on a register.
+The following series consists of:
 
-One argument for _not_ using r12 for this purpose is that it is then
-harder to put a generic "HVC" function (analogous to the "syscall"
-syscall) out-of-line, since r12 could get destroyed by the call.  
+---
 
-If you don't think you will ever care about putting HVC out of line
-though, it may not matter.
+Stanislav Kinsbursky (4):
+      SUNRPC: release per-net clients lock before calling PipeFS dentries creation
+      NFS: release per-net clients lock before calling PipeFS dentries creation
+      SUNRPC: check RPC inode's pipe reference before dereferencing
+      SUNRPC: move waitq from RPC pipe to RPC inode
 
-Cheers
----Dave
+
+ fs/nfs/idmap.c                     |   30 ++++++++++++---
+ include/linux/sunrpc/rpc_pipe_fs.h |    2 +
+ net/sunrpc/clnt.c                  |   30 ++++++++++++---
+ net/sunrpc/rpc_pipe.c              |   71 +++++++++++++++++++++++-------------
+ 4 files changed, 93 insertions(+), 40 deletions(-)
+
