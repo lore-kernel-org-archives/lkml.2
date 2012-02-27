@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2B0KpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 05:45:05 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48684 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474Ab2B0KpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 05:45:03 -0500
-Date: Mon, 27 Feb 2012 11:44:52 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-Message-ID: <20120227104452.GA6082@elte.hu>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
- <1330338785.11248.49.camel@twins>
+	id S1753381Ab2B0KpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 05:45:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42697 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab2B0KpN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 05:45:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.202.97 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330338785.11248.49.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+In-Reply-To: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
+Date: Mon, 27 Feb 2012 11:45:12 +0100
+Message-ID: <CACRpkdZe5caTr5LLWm7J5NfsWegoih4yQx+GV=H5brdPSUvEsQ@mail.gmail.com>
+Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 27, 2012 at 10:30 AM, Chanho Min <chanho0207@gmail.com> wrote:
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> This is another workaroud of  'https://lkml.org/lkml/2012/1/17/104'
+> with additional analysis.Bootloader can transfer control to kernel and
+> there are some pending interrupts. In this case, RXFE of the flag
+> register is set by clearing FEN(LCRH) even if rx data remains in the
+> fifo. It seems that the fifo's status is initiailized. Interrupt
+> handler can not get any data from data register because of the below
+> break condtion.
+>
+> pl011_fifo_to_tty
+>  while (max_count--) {
+>   if (status & UART01x_FR_RXFE)
+>        break;
+>
+> Then, Rx interrupt is never cleared. cpu is looping in ISR. System is
+> hang. If we don't guarantee that no interrupt is pended until fifo is
+> disabled by calling 'writew(0, uap->port.membase + uap->lcrh_rx)',
+> this misbehave of the interrupt handelr can be occurred. So, All
+> pending interrupts should be cleared just after fifo is disabled under
+> the protection from interrupt. Also,'clear error interrupts' routine
+> can be removed becuase all interrupts are cleared before.
+>
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
 
-> On Mon, 2012-02-27 at 12:02 +0900, Namhyung Kim wrote:
-> > If kzalloc() for TYPE_DATA failed on a given cpu, previous chunk
-> > will be leaked. Fix it.
-> 
-> so why not fix the error loop? wouldn't putting that err_cpu == cpu
-> break after the kfree sort it?
-
-I edited that code earlier today - is the form below OK, or can 
-you see a simpler method? It's not yet pushed out so can still 
-edit it.
+Looks correct to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Thanks,
-
-	Ingo
-
->From f019669c93da6c2094326d07735320d3bf223ffe Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung.kim@lge.com>
-Date: Mon, 27 Feb 2012 12:02:19 +0900
-Subject: [PATCH] hw breakpoints: Fix possible memory leak
-
-If kzalloc() for TYPE_DATA failed on a given cpu, previous chunk
-will be leaked. Fix it.
-
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Link: http://lkml.kernel.org/r/1330311739-24302-1-git-send-email-namhyung.kim@lge.com
-[ rearranged the code to have a clearer flow ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/events/hw_breakpoint.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index b7971d6..867032d 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -636,10 +636,9 @@ int __init init_hw_breakpoint(void)
- 	for_each_possible_cpu(cpu) {
- 		for (i = 0; i < TYPE_MAX; i++) {
- 			task_bp_pinned = &per_cpu(nr_task_bp_pinned[i], cpu);
--			*task_bp_pinned = kzalloc(sizeof(int) * nr_slots[i],
--						  GFP_KERNEL);
-+			*task_bp_pinned = kzalloc(sizeof(int) * nr_slots[i], GFP_KERNEL);
- 			if (!*task_bp_pinned)
--				goto err_alloc;
-+				goto err_alloc_pinned;
- 		}
- 	}
- 
-@@ -649,6 +648,9 @@ int __init init_hw_breakpoint(void)
- 
- 	return register_die_notifier(&hw_breakpoint_exceptions_nb);
- 
-+ err_alloc_pinned:
-+	while (--i >= 0)
-+		kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-  err_alloc:
- 	for_each_possible_cpu(err_cpu) {
- 		if (err_cpu == cpu)
+Linus Walleij
