@@ -1,139 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab2B0RhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:37:19 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:1746 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab2B0RhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:37:17 -0500
-X-IronPort-AV: E=Sophos;i="4.73,491,1325491200"; 
-   d="scan'208";a="628913105"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James Bottomley" <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 1/4] SUNRPC: release per-net clients lock before
- calling PipeFS dentries creation
-Thread-Topic: [PATCH v2 1/4] SUNRPC: release per-net clients lock before
- calling PipeFS dentries creation
-Thread-Index: AQHM9Weod0HJbXoOhkm4LDxKtXHHipZQ9otygACRqQA=
-Date: Mon, 27 Feb 2012 17:37:13 +0000
-Message-ID: <1330364238.5541.52.camel@lade.trondhjem.org>
-References: <20120227154713.7941.17963.stgit@localhost6.localdomain6>
-		 <20120227155055.7941.18741.stgit@localhost6.localdomain6>
-	 <1330359695.5541.45.camel@lade.trondhjem.org>
-	 <4F4BB570.60105@parallels.com>
-In-Reply-To: <4F4BB570.60105@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <EE89BB558AA8204D866D9156C438E65B@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1754112Ab2B0RjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:39:12 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51457 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab2B0RjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:39:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of djpohly@gmail.com designates 10.52.68.241 as permitted sender) smtp.mail=djpohly@gmail.com; dkim=pass header.i=djpohly@gmail.com
+From: "Devin J. Pohly" <djpohly@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Devin J. Pohly" <djpohly@gmail.com>
+Subject: [PATCH] mei: fix typo in error code return
+Date: Mon, 27 Feb 2012 12:38:12 -0500
+Message-Id: <1330364292-10516-1-git-send-email-djpohly@gmail.com>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RHbPhd019729
 
-On Mon, 2012-02-27 at 20:55 +0400, Stanislav Kinsbursky wrote:
-> 27.02.2012 20:21, Myklebust, Trond Ğ¿Ğ¸ÑˆĞµÑ‚:
-> > On Mon, 2012-02-27 at 19:50 +0400, Stanislav Kinsbursky wrote:
-> >> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
-> >> creation, which can be called on mount notification, where this per-net client
-> >> lock is taken on clients list walk.
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>
-> >> ---
-> >>   net/sunrpc/clnt.c |   10 +++++++---
-> >>   1 files changed, 7 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> >> index bb7ed2f3..ddb5741 100644
-> >> --- a/net/sunrpc/clnt.c
-> >> +++ b/net/sunrpc/clnt.c
-> >> @@ -84,7 +84,7 @@ static void rpc_register_client(struct rpc_clnt *clnt)
-> >>   	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
-> >>
-> >>   	spin_lock(&sn->rpc_client_lock);
-> >> -	list_add(&clnt->cl_clients,&sn->all_clients);
-> >> +	list_add_tail(&clnt->cl_clients,&sn->all_clients);
-> >>   	spin_unlock(&sn->rpc_client_lock);
-> >>   }
-> >>
-> >> @@ -208,15 +208,19 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
-> >>   			    void *ptr)
-> >>   {
-> >>   	struct super_block *sb = ptr;
-> >> -	struct rpc_clnt *clnt;
-> >> +	struct rpc_clnt *clnt, *tmp;
-> >>   	int error = 0;
-> >>   	struct sunrpc_net *sn = net_generic(sb->s_fs_info, sunrpc_net_id);
-> >>
-> >>   	spin_lock(&sn->rpc_client_lock);
-> >> -	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
-> >> +	list_for_each_entry_safe(clnt, tmp,&sn->all_clients, cl_clients) {
-> >> +		atomic_inc(&clnt->cl_count);
-> >> +		spin_unlock(&sn->rpc_client_lock);
-> >>   		error = __rpc_pipefs_event(clnt, event, sb);
-> >> +		rpc_release_client(clnt);
-> >>   		if (error)
-> >>   			break;
-> >> +		spin_lock(&sn->rpc_client_lock);
-> >>   	}
-> >>   	spin_unlock(&sn->rpc_client_lock);
-> >>   	return error;
-> >>
-> >
-> > This won't be safe. Nothing guarantees that 'tmp' remains valid after
-> > you drop the spin_lock.
-> >
-> > I think you rather need to add a check for whether clnt->cl_dentry is in
-> > the right state (NULL if RPC_PIPEFS_UMOUNT or non-NULL if
-> > RPC_PIPEFS_MOUNT) before deciding whether or not to atomic_inc() and
-> > drop the lock, so that you can restart the loop after calling
-> > __rpc_pipefs_event().
-> >
-> 
-> Gmmm.
-> Please, correct me, if I'm wrong, that you are proposing something like this:
-> 
->    	spin_lock(&sn->rpc_client_lock);
-> again:
-> 	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
-> 		if ((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
-> 		    (event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
-> 			continue;
-> 		atomic_inc(&clnt->cl_count);
-> 		spin_unlock(&sn->rpc_client_lock);
->     		error = __rpc_pipefs_event(clnt, event, sb);
-> 		rpc_release_client(clnt);
-> 		spin_lock(&sn->rpc_client_lock);
->     		if (error)
->     			break;
-> 		goto again;
->     	}
->     	spin_unlock(&sn->rpc_client_lock);
+From: "Devin J. Pohly" <djpohly@gmail.com>
 
-Something along those lines, yes... Alternatively, you could do as David
-proposes, and grab a reference to the next rpc_client before calling
-rpc_release_client. Either works for me...
+~ENODEV is a different number than -ENODEV
 
+Signed-off-by: Devin J. Pohly <djpohly@gmail.com>
+---
+ drivers/staging/mei/interrupt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
+index 5c9170f..c2800ba 100644
+--- a/drivers/staging/mei/interrupt.c
++++ b/drivers/staging/mei/interrupt.c
+@@ -1243,7 +1243,7 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
+ 		}
+ 	}
+ 	if (dev->stop)
+-		return ~ENODEV;
++		return -ENODEV;
+ 
+ 	/* complete control write list CB */
+ 	dev_dbg(&dev->pdev->dev, "complete control write list cb.\n");
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.7.9.2
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
