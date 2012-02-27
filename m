@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2B0OTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 09:19:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:9064 "EHLO mga14.intel.com"
+	id S1753180Ab2B0OZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:25:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab2B0OTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 09:19:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="70700280"
-Date: Mon, 27 Feb 2012 15:26:38 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, nsekhar@ti.com, linux@arm.linux.org.uk,
-        dwmw2@infradead.org
-Subject: Re: [PATCH v5 2/3] arm:davinci: move emif driver to mfd framework
-Message-ID: <20120227142638.GN27687@sortiz-mobl>
-References: <y>
- <1330005504-25321-3-git-send-email-prakash.pm@ti.com>
+	id S1752453Ab2B0OZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 09:25:41 -0500
+Date: Mon, 27 Feb 2012 09:25:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120227142529.GA27677@redhat.com>
+References: <1330036246-21633-1-git-send-email-tj@kernel.org>
+ <20120223144336.58742e1b.akpm@linux-foundation.org>
+ <20120223230123.GL22536@google.com>
+ <20120223231204.GM22536@google.com>
+ <20120225034432.GA18391@redhat.com>
+ <20120225214641.GB3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120225222113.GE3401@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330005504-25321-3-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <20120225222113.GE3401@dhcp-172-17-108-109.mtv.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prakash,
+On Sun, Feb 26, 2012 at 07:21:13AM +0900, Tejun Heo wrote:
+> On Sun, Feb 26, 2012 at 06:46:41AM +0900, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Fri, Feb 24, 2012 at 10:44:32PM -0500, Vivek Goyal wrote:
+> > > Booting with blkcg-stacking branch and changing io scheduler from cfq to
+> > > deadline oopsed.
+> > > 
+> > > login: [   67.382768] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > > [   67.383037] CPU 1 
+> > > [   67.383037] Modules linked in: floppy [last unloaded: scsi_wait_scan]
+> > > [   67.383037] 
+> > > [   67.383037] Pid: 4763, comm: bash Not tainted 3.3.0-rc3-tejun-misc+ #6 Hewlett-Packard HP xw6600 Workstation/0A9Ch
+> > > [   67.383037] RIP: 0010:[<ffffffff81311793>]  [<ffffffff81311793>] cfq_put_queue+0xb3/0x1d0
+> > 
+> > Hmmm... weird.  Looking into it.  I'm away from office for a week and
+> > will probably be slow.
+> 
+> It won't reproduce here.  Can you please explain how to trigger it?
+> Can you please also run addr2line on the oops address?
 
-On Thu, Feb 23, 2012 at 07:28:23PM +0530, Manjunathappa, Prakash wrote:
-> +static int __init davinci_aemif_probe(struct platform_device *pdev)
-> +{
-> +	struct davinci_aemif_devices *davinci_aemif_devices =
-> +		pdev->dev.platform_data;
-> +	struct platform_device *devices;
-> +	struct mfd_cell *cells;
-> +	int i, ret, count;
-> +
-> +	devices = davinci_aemif_devices->devices;
-> +
-> +	cells = kzalloc(sizeof(struct mfd_cell) *
-> +			davinci_aemif_devices->num_devices, GFP_KERNEL);
-> +
-> +	for (i = 0, count = 0; i < davinci_aemif_devices->num_devices; i++) {
-> +		if (!strcmp(devices[i].name, "davinci_nand")) {
-> +			cells[count].pdata_size =
-> +				sizeof(struct davinci_nand_pdata);
-> +		} else if (!strcmp(devices[i].name, "physmap-flash")) {
-> +			cells[count].pdata_size =
-> +				sizeof(struct physmap_flash_data);
-> +		} else
-> +			continue;
-> +
-> +		cells[count].name = devices[i].name;
-> +		cells[count].platform_data =
-> +			devices[i].dev.platform_data;
-> +		cells[count].id = devices[i].id;
-> +		cells[count].resources = devices[i].resource;
-> +		cells[count].num_resources = devices[i].num_resources;
-> +		count++;
-> +	}
-So it seems you're passing a platform devices array through your mfd aemif
-platform data pointer. And from what I can see, it's mostly a 1 entry array
-(for the NAND case) or a 2 entries array (for the NAND and NOR case).
-In that case, adding an MFD driver in the middle brings basically nothing but
-confusion and overhead (and 200+ lines of code).
-So unless someone explains to me how this is doing any good to the kernel in
-general, I'm not going to take this patchset.
+I have BLK_CGROUP enabled. CFQ is deafult scheduler. I boot the system and
+just change the scheduler to deadline on sda and crash happens. It is
+consistently reproducible on my machine.
 
-Cheers,
-Samuel.
+add2line points to, blk-cgroup.h
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+blkg_put() {
+	WARN_ON_ONCE(blkg->refcnt <= 0);
+}
+
+I put more printk and we are putting down async queues when crash happens.
+
+cfq_put_async_queues().
+
+So looks like a group might have already been freed. May be it is a group
+refcount issue. I see 6b6b6b... pattern in RBX. Sounds like a use after
+free thing.
+
+Thanks
+Vivek
