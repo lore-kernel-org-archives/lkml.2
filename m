@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2B0PEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 10:04:00 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:35262 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab2B0PD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 10:03:59 -0500
-X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Feb 2012 10:03:59 EST
-Date: Mon, 27 Feb 2012 15:52:17 +0100
-From: David Sterba <dave@jikos.cz>
-To: =?iso-8859-1?B?Suly9G1l?= Carretero <cJ-ko@zougloub.eu>
-Cc: linux-btrfs@vger.kernel.org,
-        Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, chris.mason@oracle.com,
-        kamalesh@linux.vnet.ibm.com, Liu Bo <liubo2009@cn.fujitsu.com>
-Subject: Re: [BUG] Kernel Bug at fs/btrfs/volumes.c:3638
-Message-ID: <20120227145217.GP1046@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: =?iso-8859-1?B?Suly9G1l?= Carretero <cJ-ko@zougloub.eu>,
-	linux-btrfs@vger.kernel.org,
-	Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>,
-	linux-kernel@vger.kernel.org, chris.mason@oracle.com,
-	kamalesh@linux.vnet.ibm.com, Liu Bo <liubo2009@cn.fujitsu.com>
-References: <4F476959.2010400@linux.vnet.ibm.com> <20120226234258.522ee56e@Bidule>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120226234258.522ee56e@Bidule>
-User-Agent: Mutt/1.4.2.2i
+	id S1752995Ab2B0PFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 10:05:49 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59017 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751249Ab2B0PFs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 10:05:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.224.181.130 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CAJh9x3o3M+PWW8k6Ns51pQaMjEtWDmD3s8P0P_6_jro5zh66bA@mail.gmail.com>
+References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
+	<4F4484AC.9050500@lge.com>
+	<87ehtnhz9w.fsf@gmail.com>
+	<CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com>
+	<4F45E9C5.4020900@lge.com>
+	<CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
+	<CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
+	<4F468EBB.9000209@gmail.com>
+	<CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
+	<4F4AF727.2040105@gmail.com>
+	<CAJh9x3oO+-8Bc4UONG6RTmSeVFcuNHTKH5m2KsizaubmSojYmw@mail.gmail.com>
+	<CAJh9x3qoF=WdmfaTUTGjKWzPbw7TNb3cG+=mi=YFVQ9q76o6yQ@mail.gmail.com>
+	<4F4B963F.4060705@gmail.com>
+	<CAJh9x3o3M+PWW8k6Ns51pQaMjEtWDmD3s8P0P_6_jro5zh66bA@mail.gmail.com>
+Date: Mon, 27 Feb 2012 10:05:47 -0500
+Message-ID: <CAJh9x3otaAhOz0n-nVjuA-iZzvy6ZExN-JFQ_EhYpDn6YJzKDw@mail.gmail.com>
+Subject: Fwd: perf record: can I specify multiple events and use different
+ sample-after value
+From: Yuanfang Chen <cyfmxc@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 11:42:58PM -0500, J�r�me Carretero wrote:
-> At some point, I would appreciate some kind of thorough evaluation using a fuzzer on small disk images.
-> The btrfs developers could for instance:
-> - provide a script to create a filesystem image with a known layout (known corpus)
-> - provide .config and reference to kernel sources to build the kernel
-> - provide a minimal root filesystem to be run under qemu, it would run a procedure on the other disk image at boot
->   crashes wouldn't affect the host, which is good.
-> - provide a way to retrieve the test parameters and results for every test case
->   in case of bug, the test can be reproduced by the developers since the configuration is known
-> - expect volunteers to run the scenarios (I know I would)
-> The tricky part is of course the potentially super-costly procedure...
-> Simplest case: flipping every bit / writing blocks with pseudo-random data, even on meta-data only, as the outcome on data is supposed to be known.
-> Smarter: flipping bits on every btrfs meta-data structure type at every possible logical location.
-
-There is a dangerdonteveruse(tm) utility btrfs-corrupt-block able to
-target at specific metadata structure and corrupt it, with the fsck
-counterpart for the rescue. I believe we'll see more updates in that
-area.
-
-The block checksums are supposed to catch bitflips after they were
-written down to device (provided the data were correct up to the
-checksum point).
-
-If you're talking about random bitflips in metadata structures during
-processing, that's very likely to crash in many ways of course. I think
-some logic needs to be added to those corruptions and accompanied by the
-fsck part.
-
-> The kind of stuff that would help all this could be something like Python bindings for a *btrfs library*.
-> Helpful even for prototyping fsck stuff, making illustrations, etc.
-
-We could see btrfsprogs turn into a library + tool, someday. Added to
-project page.
-
-> As of today, how are btrfs developers testing the filesystem implementation (except with xfstests) ?
-
-If there is a patch fixing particular bug, I try to set up environment
-stressing exactly that bug (and sometimes finding another one ...). The
-xfstests suite is a must before any testing. There are common loads
-raising the chances to hit a bug like repeated snapshots (and deletions),
-exhausting data/metadata space, 'fi defrag', 'fi sync', 'fi balance'.
-
-Sometimes it's enough to run a specific xfstest in a loop. I have set of
-hackish scripts doing just these tasks or wrappers around xfstests to
-create filesystem with desired raid levels (where applicable) and let
-the suite run on top of it.
-
-Another dimension of testing are mount options, there are some
-combinations likely to execrise specific parts of code, or create files
-in a way that may confuse different mount options (like nodatasum).
-
-We've seen btrfs-specific tests added to xfstests, so it's mostly
-changing the outer environment for the testsuite.
+---------- Forwarded message ----------
+From: Yuanfang Chen <cyfmxc@gmail.com>
+Date: Mon, Feb 27, 2012 at 10:05 AM
+Subject: Re: perf record: can I specify multiple events and use
+different sample-after value
+To: David Ahern <dsahern@gmail.com>
 
 
-david
+On Mon, Feb 27, 2012 at 9:42 AM, David Ahern <dsahern@gmail.com> wrote:
+> On 2/27/12 6:58 AM, Yuanfang Chen wrote:
+>>
+>> On Mon, Feb 27, 2012 at 8:56 AM, Yuanfang Chen<cyfmxc@gmail.com>  wrote:
+>>>
+>>>
+>>> On Feb 26, 2012 10:23 PM, "David Ahern"<dsahern@gmail.com>  wrote:
+>>>>
+>>>>
+>>>> On 2/24/12 3:41 PM, Yuanfang Chen wrote:
+>>>>>
+>>>>>
+>>>>> I think I'll settle with perf record for now. Still, unlike trace
+>>>>> event, sample count is not meaningful for PMU event. Output of "perf
+>>>>> script" does not include period value. One line of code will do the
+>>>>> work.
+>>>>>
+>>>>> lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
+>>>>> __mem_cgroup_commit_char
+>>>>> lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
+>>>>> __mem_cgroup_commit_char
+>>>>>
+>>>>> 86754, 1027634 is the period value. But I'm not sure which is the PMU
+>>>>> value, is it just period value, or period x sample after. If so, what
+>>>>> is the sample after value?
+>>>>
+>>>>
+>>>>
+>>>> You lost me. You modified perf-script to print the period?
+>>>>
+>>>> Are you asking for the PMU counter value for 0x3c?
+>>
+>>
+>>      yes
+>
+>
+> perf-record does not get counter values when samples are genereated.
+
+  If so, it make sense to sample trace event. But what's the point to
+sample an PMU event?
+  If using perf-record -c , counter values is available indirectly.
+
+>
+>>
+>>>>
+>>>> What perf commands are you running?
+>>
+>>
+>>     perf script
+>>     (with no options)
+>
+>
+> record command?
+>
+> I don't see what the 86754 and 1902764 values are in your example output
+> above.
+
+It's the period value in that sample. However, I'm not sure what
+period mean here.
+
+>
+>
+> David
