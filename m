@@ -1,111 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab2B0TR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:17:59 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63797 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab2B0TR5 convert rfc822-to-8bit (ORCPT
+	id S1754989Ab2B0TXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:23:13 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46208 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab2B0TXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:17:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.180.107.67 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
+	Mon, 27 Feb 2012 14:23:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.192.137 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUDtJc5uwPXkQ7T7zr8=xa=VnPuQT4Q87SXbynuCHQ2Zg@mail.gmail.com>
-References: <1330299202-3838-1-git-send-email-yinghai@kernel.org>
- <1330299202-3838-6-git-send-email-yinghai@kernel.org> <CAErSpo4PMzuPdCZvbYFiQRGjGuMg+KYk0ZxJH0xr-n6AfqBAnA@mail.gmail.com>
- <CAE9FiQUDtJc5uwPXkQ7T7zr8=xa=VnPuQT4Q87SXbynuCHQ2Zg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Feb 2012 12:17:36 -0700
-Message-ID: <CAErSpo4pDOZ0FM_OQ7=X2iysfUy6pFyWvY5i7WX=5cdD2Tu9Ew@mail.gmail.com>
-Subject: Re: [PATCH 5/8] PCI: add generic device into pci_host_bridge struct
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Date: Mon, 27 Feb 2012 20:23:11 +0100
+Message-ID: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
+Subject: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+From: "Joshua C." <joshuacov@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Bodo Eggert <7eggert@gmx.de>, "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 12:08 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Feb 27, 2012 at 9:57 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Sun, Feb 26, 2012 at 4:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> use that device for pci_root_bus bridge pointer.
->>>
->>> With that make code more simple.
->>>
->>> Also we can use pci_release_bus_bridge_dev() to release allocated
->>> pci_host_bridge during removing path.
->>>
->>> At last, we can use root bus bridge pointer to get host bridge pointer instead
->>> of going over host bridge list, so could kill that host bridge list.
->>>
->>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>
->>> ---
->>>  drivers/pci/host-bridge.c |   14 ---------
->>>  drivers/pci/pci.h         |    2 -
->>>  drivers/pci/probe.c       |   65 ++++++++++++++++++++++++----------------------
->>>  include/linux/pci.h       |    4 ++
->>>  4 files changed, 38 insertions(+), 47 deletions(-)
->>>
->>> Index: linux-2.6/drivers/pci/host-bridge.c
->>> ===================================================================
->>> --- linux-2.6.orig/drivers/pci/host-bridge.c
->>> +++ linux-2.6/drivers/pci/host-bridge.c
->>> -       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
->>> -       if (!dev)
->>> -               goto err_dev;
->>> +               return NULL;
->>>
-> ...
->
-> here old code allocate dummy struct device.
->
->>> +       bridge = pci_alloc_host_bridge(b);
->>> +       if (!bridge)
->>> +               goto err_out;
->>> +
->>> +       bridge->dev.parent = parent;
->>> +       bridge->dev.release = pci_release_bus_bridge_dev;
->>> +       dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
->>> +       error = device_register(&bridge->dev);
->>>        if (error)
->>> -               goto dev_reg_err;
->>> -       b->bridge = get_device(dev);
->>> +               goto bridge_dev_reg_err;
->>> +       b->bridge = get_device(&bridge->dev);
-> ...
->>> --- linux-2.6.orig/include/linux/pci.h
->>> +++ linux-2.6/include/linux/pci.h
->>> @@ -375,11 +375,13 @@ struct pci_host_bridge_window {
->>>  };
->>>
->>>  struct pci_host_bridge {
->>> -       struct list_head list;
->>> +       struct device dev;
->>>        struct pci_bus *bus;            /* root bus */
->>>        struct list_head windows;       /* pci_host_bridge_windows */
->>>  };
->>
->> This doesn't feel right to me.  You're allocating a new struct device
->> here, but the arch likely already has one.  In fact, I think we even
->> passed it in to pci_create_root_bus().
->
-> no.
->
-> original pci_create_root_bus() will create one dummy struct device and
-> use it as parent for bus->dev.
->
->>
->> On x86, we already have an ACPI device for the host bridge, and now
->> we'll have a second one.  (Actually a *third* one, because PNPACPI
->> also has one, but that's a long-standing problem.)
->
-> not related.
+I rebased this on the latest kernel-3.3-rc5 so that it can be properly applied.
+------------------
 
-OK.  Can you educate me?  What is the device we pass in, what does the
-dummy one correspond to, why do we have two, what's the difference,
-etc., etc.?
+>From 36e15b8d9d491817a3bada5ef9375aabe9439d9b Mon Sep 17 00:00:00 2012
+From: Joshua Cov <joshuacov@googlemail.com>
+Date: Mon, 27 Feb 2012 20:49:18 +0100
+Subject: [PATCH] Use BIOS Keyboard variable to set Numlock
 
-Bjorn
+The PC BIOS does provide a NUMLOCK flag containing the desired state
+of this LED. Bit 0x417 has the current keyboard modifier state. This
+patch sets the current state according to the data in the bios and
+introduces a module parameter "numlock" which can be used to
+explicitely disable the NumLock (1 = enable, 0 = disable).
+
+See first discussion back in 2007 at:
+http://lkml.indiana.edu/hypermail/linux/kernel/0707.1/1834.html
+
+Signed-Off-By: Joshua Cov <joshuacov@googlemail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Bodo Eggert <7eggert@gmx.de>
+
+---
+ drivers/input/keyboard/Kconfig |   14 ++++++++++++++
+ drivers/tty/vt/keyboard.c      |   21 +++++++++++++++++++--
+ 2 files changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index cdc385b..1dd1965 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -84,6 +84,20 @@ config KEYBOARD_ATKBD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called atkbd.
+
++config KBD_DEFLEDS_PCBIOS
++	bool "Enable Num-Lock based on BIOS settings"
++	depends on KEYBOARD_ATKBD && X86
++	default y
++	help
++	  Turns on Numlock depending on the BIOS settings.
++	  This works by reading the BIOS data area as defined for IBM PCs (1981).
++	  You can also controll the NumLock state with the kernel parameter
++	  numlock.
++
++	  If you have an alternative firmware like OpenFirmware or LinuxBios,
++	  this flag might not be set correctly, which results in a random state
++	  of the Numlock key.
++
+ config KEYBOARD_ATKBD_HP_KEYCODES
+ 	bool "Use HP keyboard scancodes"
+ 	depends on PARISC && KEYBOARD_ATKBD
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index a605549..d254396 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -24,6 +24,7 @@
+
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
++#include <asm/io.h>
+ #include <linux/consolemap.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+@@ -59,7 +60,13 @@ extern void ctrl_alt_del(void);
+  * to be used for numbers.
+  */
+
+-#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
+defined(CONFIG_KEYBOARD_HIL_OLD))
++#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
++/* KBD_DEFLEDS is a variable */
++#undef KBD_DEFLEDS
++	static int numlock = 1;
++	MODULE_PARM_DESC(numlock, "Toggle Numlock (1 = enable, 0 = disable)");
++	module_param_named(numlock, numlock, int, 0400);
++#elif defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
+defined(CONFIG_KEYBOARD_HIL_OLD))
+ #define KBD_DEFLEDS (1 << VC_NUMLOCK)
+ #else
+ #define KBD_DEFLEDS 0
+@@ -1432,7 +1439,17 @@ int __init kbd_init(void)
+ {
+ 	int i;
+ 	int error;
+-
++	
++#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
++	int KBD_DEFLEDS = 0;
++	/* address 0x40:0x17 */
++	char * bios_kbd_status=xlate_dev_mem_ptr(0x417);
++	
++	/* Numlock status bit set? */
++	if ((*bios_kbd_status & 0x20) && numlock)
++	KBD_DEFLEDS = 1 << VC_NUMLOCK;
++#endif
++	
+         for (i = 0; i < MAX_NR_CONSOLES; i++) {
+ 		kbd_table[i].ledflagstate = KBD_DEFLEDS;
+ 		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
+-- 
+1.7.7.6
