@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab2B0Tyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:54:46 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39534 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755149Ab2B0Tyn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:54:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.86.67 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	id S1755191Ab2B0T5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:57:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54871 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab2B0T5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:57:07 -0500
+Date: Mon, 27 Feb 2012 19:56:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: boot/compressed/misc.s: Include <linux/bug.h> to
+	fix build break
+Message-ID: <20120227195637.GE2440@n2100.arm.linux.org.uk>
+References: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJGiLSRSgQ1nssLSMY1V+9X3y4Uh-kMgQG7moa6PPj3bw@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-7-git-send-email-wad@chromium.org>
-	<20120227171132.GB10608@redhat.com>
-	<CAGXu5jJQhfSSwTU5fSGR_Q57LAQBFW25A_FtR2GFsxyT_ibnzQ@mail.gmail.com>
-	<20120227181434.GA13903@redhat.com>
-	<CAObL_7GZVrHpQ0yR9LihQ=UrjAR=BOLRT1F0m4JGGRbEeh=-fQ@mail.gmail.com>
-	<CAGXu5jJGiLSRSgQ1nssLSMY1V+9X3y4Uh-kMgQG7moa6PPj3bw@mail.gmail.com>
-Date: Mon, 27 Feb 2012 13:54:40 -0600
-Message-ID: <CABqD9hZQ7T4zPjKY3403yKDLXpVLBWHeKVxTKvQXnWAzmiksfQ@mail.gmail.com>
-Subject: Re: [PATCH v11 07/12] seccomp: add SECCOMP_RET_ERRNO
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 1:14 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Feb 27, 2012 at 10:35 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->> On Mon, Feb 27, 2012 at 10:14 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 02/27, Kees Cook wrote:
->>>>
->>>> On Mon, Feb 27, 2012 at 9:11 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> > On 02/24, Will Drewry wrote:
->>>> >>
->>>> >>  static u32 seccomp_run_filters(int syscall)
->>>> >>  {
->>>> >>       struct seccomp_filter *f;
->>>> >> -     u32 ret = SECCOMP_RET_KILL;
->>>> >>       static const struct bpf_load_fn fns = {
->>>> >>               bpf_load,
->>>> >>               sizeof(struct seccomp_data),
->>>> >>       };
->>>> >> +     u32 ret = SECCOMP_RET_ALLOW;
->>>> >>       const void *sc_ptr = (const void *)(uintptr_t)syscall;
->>>> >>
->>>> >> +     /* Ensure unexpected behavior doesn't result in failing open. */
->>>> >> +     if (unlikely(current->seccomp.filter == NULL))
->>>> >> +             ret = SECCOMP_RET_KILL;
->>>> >
->>>> > Is "seccomp.filter == NULL" really possible?
->>>>
->>>> It should not be, but I'm much more comfortable with this failing
->>>> closed. I think it's important to be as defensive as possible with
->>>> this code given its intended use.
->>>
->>> Can't resists... Sorry, I know I am troll but personally I think
->>> in this case the most defensive code is BUG_ON(->filter == NULL)
->>> or at least WARN_ON().
->>
->> Linus will probably object because he objected (correctly) to a very
->> similar problem in my old vsyscall emulation series.  A userspace
->> security feature shouldn't have a failure mode in which it confuses
->> the kernel and results in an oops, unless the situation is really
->> unrecoverable.  So WARN_ON plus do_exit would be okay but BUG_ON would
->> not.
->
-> Yeah, actually, add WARN_ON would be preferred here because it should
-> be an impossible situation. It should still fail closed, though:
->
->      /* Ensure unexpected behavior doesn't result in failing open. */
->      if (WARN_ON(current->seccomp.filter == NULL))
->              return SECCOMP_RET_KILL;
+On Mon, Feb 27, 2012 at 12:52:30PM -0700, Stephen Warren wrote:
+> Commmit cf86c17 "kernel.h: doesn't explicitly use bug.h, so don't include
+> it." caused the following build failure on ARM:
+> 
+>   CC      arch/arm/boot/compressed/misc.o
+> In file included from arch/arm/boot/compressed/misc.c:28:0:
+> arch/arm/mach-tegra/include/mach/uncompress.h: In function 'arch_decomp_setup':
+> arch/arm/mach-tegra/include/mach/uncompress.h:125:2: error: implicit declaration of function 'BUILD_BUG_ON_ZERO' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
 
-I'll do that - thanks!
+Err no.  The decompressor is _not_ part of the kernel, it's a separate
+stand alone environment.  Including randomly kernel headers from the
+rest of the kernel is bad news, particularly if they start calling out
+to external code.
+
+You should try to keep your uncompress.h as free of other dependencies
+as possible.
+
+> 
+> Include <linux/bug.h> to fix that.
+> 
+> This should probably be squashed into commit a3a3a1a "bug.h: add include
+> of it to various implicit C users".
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/boot/compressed/misc.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
+> index 8e2a8fc..30055be 100644
+> --- a/arch/arm/boot/compressed/misc.c
+> +++ b/arch/arm/boot/compressed/misc.c
+> @@ -18,6 +18,7 @@
+>  
+>  unsigned int __machine_arch_type;
+>  
+> +#include <linux/bug.h>
+>  #include <linux/compiler.h>	/* for inline */
+>  #include <linux/types.h>
+>  #include <linux/linkage.h>
+> -- 
+> 1.7.0.4
+> 
