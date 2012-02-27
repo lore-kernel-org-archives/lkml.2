@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2B0N73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 08:59:29 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50343 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab2B0N72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 08:59:28 -0500
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <spi-devel-general@lists.sourceforge.net>
-CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Vitaly Wool <vwool@ru.mvista.com>
-Subject: [PATCH] spi: Trivial warning fix
-Date: Mon, 27 Feb 2012 19:29:05 +0530
-Message-ID: <1330351145-3564-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753568Ab2B0N7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 08:59:33 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:48603 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab2B0N7b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 08:59:31 -0500
+Message-ID: <4F4B8C66.5060206@collabora.co.uk>
+Date: Mon, 27 Feb 2012 15:00:06 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Miller <davem@davemloft.net>
+CC: javier@collabora.co.uk, eric.dumazet@gmail.com, lennart@poettering.net,
+        kay.sievers@vrfy.org, alban.crequy@collabora.co.uk,
+        bart.cerneels@collabora.co.uk, rodrigo.moya@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk> <20120224.153616.117399887784547022.davem@davemloft.net>
+In-Reply-To: <20120224.153616.117399887784547022.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loop count i traverses for ntrans which is unsigned
-so make the loop count i also unsigned.
 
-Fix the below warning
-In file included from drivers/spi/spi-omap2-mcspi.c:38:
-include/linux/spi/spi.h: In function 'spi_message_alloc':
-include/linux/spi/spi.h:556: warning: comparison between signed and unsigned integer expressions
+On 02/24/2012 09:36 PM, David Miller wrote:
+> 
+> My first impression is that I'm amazed at how much complicated new
+> code you have to add to support groups of receivers of AF_UNIX
+> messages.
+> 
+> I can't see how this is better than doing multicast over ipv4 using
+> UDP or something like that, code which we have already and has been
+> tested for decades.
+> 
 
-Cc: Vitaly Wool <vwool@ru.mvista.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
-Untested !
+Primary for performance reasons. D-bus is an IPC system for processes in
+the same machine so traversing the whole TCP/IP stack seems a little
+overkill to me. We will try it though to have numbers on the actual
+overhead of using UDP multicast over IP instead of multicast Unix domain
+sockets.
 
- include/linux/spi/spi.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+We also thought of using Netlink sockets since it already supports
+multicast and should be more lightweight than IP multicast. But even
+Netlink doesn't meet our needs since our multicast on Unix sockets
+implementation has different semantics needed for D-bus:
 
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 176fce9..6ae4993 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -549,7 +549,7 @@ static inline struct spi_message *spi_message_alloc(unsigned ntrans, gfp_t flags
- 			+ ntrans * sizeof(struct spi_transfer),
- 			flags);
- 	if (m) {
--		int i;
-+		unsigned i;
- 		struct spi_transfer *t = (struct spi_transfer *)(m + 1);
- 
- 		INIT_LIST_HEAD(&m->transfers);
--- 
-1.7.0.4
+- total order is guaranteed: If sender A sends a message before B, then
+receiver C and D should both get message A first and then B.
 
+- slow readers: dropping packets vs blocking the sender. Although
+  datagrams are not reliable on IP, datagrams on Unix sockets are never
+  lost. So if one receiver has its buffer full the sender is blocked
+instead of dropping packets. That way we guarantee a reliable
+communication channel.
+
+- multicast group acess control: controlling who can join the multicast
+group.
+
+- multicast on loopback is not supported: which means we have to use a
+NIC (i.e: eth0).
+
+> I really don't want to apply this stuff, it looks bloated,
+> complicated, and there is another avenue for doing what you want to
+> do.
+> 
+
+We can work to reduce the implementation complexity and make it less
+bloated.
+
+Or you don't like the idea in general?
+
+> Applications have to change to support the new multicast facilities,
+> so they can equally be changed to use a real transport that already
+> supports multicasting.
+
+Yes, this is not about minimizing user-space application change but to
+improve the D-bus performance, or any other framework that relies on
+multicast communication on a single machine.
+
+Best regards,
+Javier
