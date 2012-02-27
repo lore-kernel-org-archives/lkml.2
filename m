@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2B0GWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 01:22:33 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51824 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab2B0GWa convert rfc822-to-8bit (ORCPT
+	id S1754067Ab2B0GZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 01:25:45 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45758 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753454Ab2B0GZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 01:22:30 -0500
+	Mon, 27 Feb 2012 01:25:44 -0500
+Date: Sun, 26 Feb 2012 22:25:43 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: axboe@kernel.dk
+Cc: LKML <linux-kernel@vger.kernel.org>
+Message-ID: <1359683961.1571598.1330323943766.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1876351746.1571382.1330323287053.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Subject: /dev/loop direction?
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBAVfG1J66VVrCNAiaoMEJ3O7MZOU21g-T_CkyF10WJa8w@mail.gmail.com>
-References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
- <1330067945-9128-5-git-send-email-santoshsy@gmail.com> <CAJd=RBAVfG1J66VVrCNAiaoMEJ3O7MZOU21g-T_CkyF10WJa8w@mail.gmail.com>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Mon, 27 Feb 2012 11:52:09 +0530
-Message-ID: <CALMYJDtxKw_doL=nwJiyE4sGFXcwrdAUCR4KbmAmwPvgK+78pw@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] [SCSI] ufshcd: SCSI error handling
-To: Hillf Danton <dhillf@gmail.com>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        yeji@jasper.es
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 10:16 AM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Fri, Feb 24, 2012 at 3:19 PM, Santosh Y <santoshsy@gmail.com> wrote:
->> +/**
->> + * ufshcd_is_tmq_full - checks if the task management slots are full
->> + * @hba: per adapter instance
->> + *
->> + * Returns maximum number of task management request slots in case of
->> + * task management queue full or returns the free slot number
->> + */
->> +static inline int ufshcd_is_tmq_full(struct ufs_hba *hba)
->
-> This helper function is named to be misleading, little to do with
-> its functionality as full is checked at callsite.
+Hi Jens,
 
-ok, thanks, I'll change it.
+I am unsure if you are the right person to approach. I have been
+on and off working on sparse file support for the loop device
+(think mounting QCOW, VHD, VMDK images, if you are interested
+the current patches, which are stale by about three months, are at
+https://github.com/andreiw/andreiw-wip/tree/master/linux/3.2/block/loop).
 
->
-> -hd
->
->> +{
->> +       return find_first_zero_bit(&hba->outstanding_tasks, hba->nutmrs);
->> +}
->> +
-> [...]
->> +       host = hba->host;
->> +
->> +       spin_lock_irqsave(host->host_lock, flags);
->> +
->> +       /* If task management queue is full */
->> +       free_slot = ufshcd_is_tmq_full(hba);
->> +       if (free_slot >= hba->nutmrs) {
->> +               spin_unlock_irqrestore(host->host_lock, flags);
->> +               dev_err(&hba->pdev->dev, "Task management queue full\n");
->> +               err = FAILED;
->> +               goto out;
->> +       }
+As I look at rebasing my current work on top of the latest linux-next,
+I ask myself if this is even the right direction to look at. Loop
+device has a lot of existing stuff that I've ended up refactoring
+and reshuffling, and while I think I've haven't introduced regressions,
+the sheer number of odd scenarios with loop means I probably did and
+will again. The existing changes already would be a sisyphean task
+to split into manageable patches and merge, and the existing loop
+design (rigid IOCTL iface that I can't break and no support for
+multiple outstanding I/Os) makes me wonder if I should just make
+my work as a device-mapper target. Turns out RedHat as done work
+on a dm-loop target that (at least at some point) existed and
+looks like a good place to start (it can bypass file I/O where it
+makes sense, bmap()ing, which was one direction I wanted to take
+loop into with future work).
 
--- 
-~Santosh
+What are your thoughts? Is extending loop to support sparse images
+(and by that direction, also COW/differencing images) appropriate?
+Or should I just not worry about /dev/loop and fork off or base
+on device-mapper?
+
+A
+
