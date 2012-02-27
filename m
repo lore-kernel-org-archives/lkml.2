@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2B0Fdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 00:33:53 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53530 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab2B0Fdw (ORCPT
+	id S1752843Ab2B0Fgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 00:36:42 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:52986 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811Ab2B0Fgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 00:33:52 -0500
-Date: Mon, 27 Feb 2012 16:33:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Shi <alex.shi@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120227163343.b0c0ff0836f433538ec295f5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q"
+	Mon, 27 Feb 2012 00:36:41 -0500
+Date: Sun, 26 Feb 2012 21:36:40 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrei Warkentin <andreiw@vmware.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Message-ID: <310080656.1570547.1330321000661.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <116798.1330320543@turing-police.cc.vt.edu>
+Subject: Re: [PATCHv3 2/3] NETKGDB: Ethernet/UDP/IP KDB transport.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Andrew,
+----- Original Message -----
+> From: "Valdis Kletnieks" <Valdis.Kletnieks@vt.edu>
+> To: "Andrei Warkentin" <andrey.warkentin@gmail.com>
+> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
+> kgdb-bugreport@lists.sourceforge.net, "Jason Wessel" <jason.wessel@windriver.com>, "Matt Mackall" <mpm@selenic.com>
+> Sent: Monday, February 27, 2012 12:29:03 AM
+> Subject: Re: [PATCHv3 2/3] NETKGDB: Ethernet/UDP/IP KDB transport.
+> 
+> This *really* needs a discussion of the security implications of
+> this.  Do
+> you *really* want to have a kgdb that will accept connections from
+> *anywhere*?
+> Sounds like an insta-root waiting to happen.
+> 
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/include/asm/i387.h between commits 8546c008924d ("i387: Uninline
-the generic FP helpers that we expose to kernel modules") and
-1361b83a13d4 ("i387: Split up <asm/i387.h> into exported and internal
-interfaces") from the tip tree and commit
-"percpu-remove-percpu_xxx-functions-fix" from the akpm tree.
+It does *really* need documentation. It's not meant for general purpose use.
+Just like Android devices come with KDB compiled out, this shouldn't be
+built in. That means that netkgdb should be default off and come with a
+huge warning. It is insta-root. And that's the message it should carry with it.
+It's no different from running kgdboc - anyone has root access if they press
+Alt-PrtScrn-g, right?
 
-I applied the appropriate part of the latter patch to
-arch/x86/include/asm/fpu-internal.h and arch/x86/kernel/i387.c (see below).
---=20
+> > +the assigned interface IP address changes. This makes it useful
+> > +in an environment where it's not known ahead of time what computer
+> > +will connect to perform the crash analysis.
+> 
+> Exactly. You don't know ahead of time who's going to connect. That's
+> the
+> problem...
+
+It's not a problem unless you make it one. If I am running a private test farm
+where I provision 250+ machines or VMs, and I have 10-15 devs that could possibly
+investigate the issue, it's not realistic to know ahead of times what internal
+IP address the connection could come from.
+
+I will update the docs and the Kconfig (default=off). That should be
+sufficient for PEBCAK failures.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu=
--internal.h
-index 5caaf43..e9801b4 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -290,14 +290,14 @@ static inline int __thread_has_fpu(struct task_struct=
- *tsk)
- static inline void __thread_clear_has_fpu(struct task_struct *tsk)
- {
- 	tsk->thread.fpu.has_fpu =3D 0;
--	percpu_write(fpu_owner_task, NULL);
-+	__this_cpu_write(fpu_owner_task, NULL);
- }
-=20
- /* Must be paired with a 'clts' before! */
- static inline void __thread_set_has_fpu(struct task_struct *tsk)
- {
- 	tsk->thread.fpu.has_fpu =3D 1;
--	percpu_write(fpu_owner_task, tsk);
-+	__this_cpu_write(fpu_owner_task, tsk);
- }
-=20
- /*
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 7734bcb..32c3972 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -88,7 +88,7 @@ void kernel_fpu_begin(void)
- 		__thread_clear_has_fpu(me);
- 		/* We do 'stts()' in kernel_fpu_end() */
- 	} else {
--		percpu_write(fpu_owner_task, NULL);
-+		__this_cpu_write(fpu_owner_task, NULL);
- 		clts();
- 	}
- }
-
---Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPSxW3AAoJEECxmPOUX5FEMi0QAKCKOgbLA8b0HVURWatWcUfF
-T0aEmfu6C3GppJA4xingcgatOkWZ3tNAbroAR8E3WNkBrhodE+IZsIf6tIt9FINn
-DOUnG8/4Ozju4W79WNGoCOAtzHFiwBLrTkDFgkh6yVTzjyDgrdJLTiGj2CUFhitb
-bnzA+Q7D77dg+pOVJ+OLS0R2iVoiltuEjll1B8grLvY2JCdquF+DyLrB5ggWMgKg
-Zaj7bgDvOcbPriMFVw6hoZGWZI/3FDMhbHzbX08n9jzihRC3a6bPDjaRlagQu+a5
-fIE6VxIgVXfBYmnacipQ+FXIDezFmMZuHwv5sHAMe+Vs4pZTGsh0iTMFZHeKDv9l
-w8FoL0XimAVJWRQU9CPHrWbZD50YGfT52SexdEXGYy3inYm8n8GEFw7z0OmxE1Us
-w6NLAa4jqpv2ItC4UtkPZJjs6I9PIY14Ulz/YgIbtDP5PqPhQShFbBa+6V326POg
-Pd9TnP24JqebCjsKU/J8bzrDRpEeg5yfti19MeMcsW9JReXmRb28Pk/7vT4bsTy1
-WsPDKNguQi9DW/00cm2DF6/oiuE/cARFc8xZ6icn0m6lVSIid5sfg8anMN4eeQej
-cEaef5vxc/k10ZjXCEyjn/3qHzubl8Sj/h0c4c0PaVnOZ0qfVTzympAM4BcEId0D
-BtL7QK/vSvCFqWTI7SF1
-=g9xY
------END PGP SIGNATURE-----
-
---Signature=_Mon__27_Feb_2012_16_33_43_+1100_omPGVHCD6mKOUA.q--
+A
