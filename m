@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2B0Xih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 18:38:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64077 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab2B0Xif (ORCPT
+	id S1755741Ab2B0XlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 18:41:02 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:40748 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2B0XlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 18:38:35 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.52.93.74 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
-Date: Tue, 28 Feb 2012 00:38:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-Message-ID: <20120227233828.GE30232@somewhere.redhat.com>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
- <1330338785.11248.49.camel@twins>
- <20120227104452.GA6082@elte.hu>
- <1330340694.11248.64.camel@twins>
- <20120227115652.GA9943@elte.hu>
- <1330349551.1782.15.camel@leonhard>
- <20120227194038.GA11448@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120227194038.GA11448@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Feb 2012 18:41:00 -0500
+Date: Tue, 28 Feb 2012 10:40:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: linux-next: Tree for Feb 27 (gpio-sodaville.c)
+Message-Id: <20120228104047.85b5515f3b27c631580f5503@canb.auug.org.au>
+In-Reply-To: <4F4BC3C5.8040802@xenotime.net>
+References: <20120227182029.545a7db32550ce94c9faffb4@canb.auug.org.au>
+	<4F4BC3C5.8040802@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__28_Feb_2012_10_40_47_+1100_z+sVIqtrrUfFTSVJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 08:40:38PM +0100, Ingo Molnar wrote:
-> 
-> * Namhyung Kim <namhyung@gmail.com> wrote:
-> 
-> > 2012-02-27 (월), 12:56 +0100, Ingo Molnar:
-> > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > > 
-> > > > On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
-> > > > > I edited that code earlier today - is the form below OK, or can 
-> > > > > you see a simpler method? It's not yet pushed out so can still 
-> > > > > edit it. 
-> > > > 
-> > > > I think something like the below should do, but then I didn't really
-> > > > think much about it, my thoughts went like:
-> > > > 
-> > > > ... *shees* that's ugly
-> > > >   ... that error path already does a loop
-> > > >     ... what the problem is!? -- reread changelog
-> > > >       ... err_cpu == cpu is placed wrong!
-> > > > 
-> > > > 
-> > > > So I replied and marked read.. waiting to either hear if there's a good
-> > > > reason to do ugly or find a new (tested) patch in my inbox.. :-)
-> > > > 
-> > > > ---
-> > > >  kernel/events/hw_breakpoint.c |    4 ++--
-> > > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> > > > index b0309f7..3330022 100644
-> > > > --- a/kernel/events/hw_breakpoint.c
-> > > > +++ b/kernel/events/hw_breakpoint.c
-> > > > @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
-> > > >  
-> > > >   err_alloc:
-> > > >  	for_each_possible_cpu(err_cpu) {
-> > > > -		if (err_cpu == cpu)
-> > > > -			break;
-> > > >  		for (i = 0; i < TYPE_MAX; i++)
-> > > >  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-> > > > +		if (err_cpu == cpu)
-> > > > +			break;
-> > > >  	}
-> > > 
-> > > Looks a lot nicer - I'll wait for an updated patch.
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > 
-> > Ingo, do you want me to resend? If so, I really don't know how 
-> > to give the credit to Peter in this case.
-> 
-> Just mention it in the changelog that this solution was his 
-> idea. It was you who did most of the work: found the bug, wrote 
-> the patch, wrote the changelog and tested the final patch ;-)
+--Signature=_Tue__28_Feb_2012_10_40_47_+1100_z+sVIqtrrUfFTSVJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And please add my Acked-by: Frederic Weisbecker <fweisbec@gmail.com> :)
+On Mon, 27 Feb 2012 09:56:21 -0800 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> on i386:
+>=20
+> drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' =
+specified in initializer
+> drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompa=
+tible pointer type
+> drivers/gpio/gpio-sodaville.c: In function 'sdv_register_irqsupport':
+> drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no me=
+mber named 'irq_base'
+> drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of funct=
+ion 'irq_domain_add'
+> drivers/gpio/gpio-sodaville.c: In function 'sdv_gpio_remove':
+> drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of funct=
+ion 'irq_domain_del'
+
+These are a conflicts between the gio tree and the irqdomain tree.
+Grant, can you supply me with a merge fix patch?  Or will you merge the
+irqdomain stuff into the gpio tree (making sure that the irqdomain tree
+never rebases again) ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__28_Feb_2012_10_40_47_+1100_z+sVIqtrrUfFTSVJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTBR/AAoJEECxmPOUX5FEkgYQAKVNkbQTDzgM+8O6ES0JYDfG
+TWwz0OBH+da2sLMDBltzjrgJ5FppLfEa0Frqt/gqJFJcX/OAyUciX7m0GtTcnzt3
+D21WtLxNqO/ZYIIfR7m1rpo8mXSkEGWEUzPgzErMrJVO+IfBgq/6RZSBX30Lduy/
+UGMLAS1Reu5/VEFglVvIr56oWKmte+6GKXhzfQVGXXtJL4PgG6vUZLYiWmLDt0p6
+1fuzq2lSo+1t1xOJXkV4BVpAlaJRI+aVaaYNxviGOma2vJPW2Ano/Msi13KJmQhX
+wJzsYWTjwaRoWI3UAC7T3Auf4f6tJOBgTRJqS6koJq8yJ9SxEw3W6xEkpYCIVLkJ
+4/X/4eqPXUK/AQfZFKeDmK4zDF+5spJmt9NLPhmHJ9KH6OHopMEsg/lNdaOWSYmf
+DhP6GyT1iGddK0+1ioqqAyTtySiqzGcKqfDqZc8vtVL96M0MNRRWfM/cuPbRpmnm
+gH7eZ2/X8BUN/l+gYnSdskjB58QIX5QjGtT1i47cUuUroT3V8Rrc8y0wh4ccLQy+
+NUeI2tz42Z9xK5kXXfJhlhtg9kTT1fz1I3L3xZSwbTLtYB8eIWjf3jjMDH4QCEm2
+7gRJsYezRH1k9ZoGGNucRb6fcHmnxqR7a94tneZuWzD9Wn4UtX7W1wwmSD+crMor
+JhE9yNr3aKxeRhYgwq0u
+=GKcz
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__28_Feb_2012_10_40_47_+1100_z+sVIqtrrUfFTSVJ--
