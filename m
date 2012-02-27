@@ -1,198 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab2B0Ntn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 08:49:43 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38831 "EHLO relay.sw.ru"
+	id S1753071Ab2B0NvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 08:51:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:14621 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753262Ab2B0Nta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 08:49:30 -0500
-Subject: [PATCH 4/4] SUNRPC: move waitq from RPC pipe to RPC inode
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Mon, 27 Feb 2012 17:49:16 +0400
-Message-ID: <20120227134916.13371.79606.stgit@localhost6.localdomain6>
-In-Reply-To: <20120227134623.13371.61185.stgit@localhost6.localdomain6>
-References: <20120227134623.13371.61185.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1752201Ab2B0NvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 08:51:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="121883432"
+Date: Mon, 27 Feb 2012 14:58:27 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, kernel@pengutronix.de
+Subject: Re: [PATCH 1/3] mfd: Add basic support for the Congatec CGEB BIOS
+ interface
+Message-ID: <20120227135827.GM27687@sortiz-mobl>
+References: <1328102793-4313-1-git-send-email-s.hauer@pengutronix.de>
+ <1328102793-4313-2-git-send-email-s.hauer@pengutronix.de>
+ <20120220163927.GY5387@sortiz-mobl>
+ <20120220180752.GV3852@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220180752.GV3852@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, wait queue, used for polling of RPC pipe changes from user-space,
-is a part of RPC pipe. But the pipe data itself can be released on NFS umount
-prior to dentry-inode pair, connected to it (is case of this pair is open by
-some process).
-This is not a problem for almost all pipe users, because all PipeFS file
-operations checks pipe reference prior to using it.
-Except evenfd. This thing registers itself with "poll" file operation and thus
-has a reference to pipe wait queue. This leads to oopses on destroying eventfd
-after NFS umount (like rpc_idmapd do) since not pipe data left to the point
-already.
-The solution is to wait queue from pipe data to internal RPC inode data. This
-looks more logical, because this wiat queue used only for user-space processes,
-which already holds inode reference.
+Hi Sascha,
 
-Note: upcalls have to get pipe->dentry prior to dereferecing wait queue to make
-sure, that mount point won't disappear from underneath us.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+On Mon, Feb 20, 2012 at 07:07:52PM +0100, Sascha Hauer wrote:
+> Hi Samuel,
+> 
+> On Mon, Feb 20, 2012 at 05:39:27PM +0100, Samuel Ortiz wrote:
+> > Hi Sascha,
+> > 
+> > On Wed, Feb 01, 2012 at 02:26:31PM +0100, Sascha Hauer wrote:
+> > > The Congatec CGEB is a BIOS interface found on some Congatec x86
+> > > modules. It provides access to on board peripherals like I2C busses
+> > > and watchdogs. This driver contains the basic support for accessing
+> > > the CGEB interface and registers the child devices.
+> > After looking at the code, I'm not entirely sure this one belongs to
+> > drivers/mfd/. Have you thought about putting it under arch/x86/platform/ ?
+> > There are similar examples there, like uv or olpc.
+> 
+> I don't mind putting it in arch/x86/platform instead. I'm an ARM guy and
+> on ARM there currently is a rush to move everything looking remotely
+> like a driver out of arch/arm/ to drivers/, so putting it under
+> drivers/mfd/ seemed logical to me.
+Yes, this seems to be the trend apparently. Could you try pushing that into
+the x86/platform, please ? If they put you under fire, I guess I could take
+this patchset. But they have several "BIOS interfaces" there already...
 
----
- include/linux/sunrpc/rpc_pipe_fs.h |    2 +-
- net/sunrpc/rpc_pipe.c              |   39 ++++++++++++++++++++++++------------
- 2 files changed, 27 insertions(+), 14 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 426ce6e..a7b422b 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -28,7 +28,6 @@ struct rpc_pipe {
- 	int pipelen;
- 	int nreaders;
- 	int nwriters;
--	wait_queue_head_t waitq;
- #define RPC_PIPE_WAIT_FOR_OPEN	1
- 	int flags;
- 	struct delayed_work queue_timeout;
-@@ -41,6 +40,7 @@ struct rpc_inode {
- 	struct inode vfs_inode;
- 	void *private;
- 	struct rpc_pipe *pipe;
-+	wait_queue_head_t waitq;
- };
- 
- static inline struct rpc_inode *
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index b67b2ae..ac9ee15 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -57,7 +57,7 @@ void rpc_pipefs_notifier_unregister(struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(rpc_pipefs_notifier_unregister);
- 
--static void rpc_purge_list(struct rpc_pipe *pipe, struct list_head *head,
-+static void rpc_purge_list(wait_queue_head_t *waitq, struct list_head *head,
- 		void (*destroy_msg)(struct rpc_pipe_msg *), int err)
- {
- 	struct rpc_pipe_msg *msg;
-@@ -70,7 +70,7 @@ static void rpc_purge_list(struct rpc_pipe *pipe, struct list_head *head,
- 		msg->errno = err;
- 		destroy_msg(msg);
- 	} while (!list_empty(head));
--	wake_up(&pipe->waitq);
-+	wake_up(waitq);
- }
- 
- static void
-@@ -80,6 +80,7 @@ rpc_timeout_upcall_queue(struct work_struct *work)
- 	struct rpc_pipe *pipe =
- 		container_of(work, struct rpc_pipe, queue_timeout.work);
- 	void (*destroy_msg)(struct rpc_pipe_msg *);
-+	struct dentry *dentry;
- 
- 	spin_lock(&pipe->lock);
- 	destroy_msg = pipe->ops->destroy_msg;
-@@ -87,8 +88,13 @@ rpc_timeout_upcall_queue(struct work_struct *work)
- 		list_splice_init(&pipe->pipe, &free_list);
- 		pipe->pipelen = 0;
- 	}
-+	dentry = dget(pipe->dentry);
- 	spin_unlock(&pipe->lock);
--	rpc_purge_list(pipe, &free_list, destroy_msg, -ETIMEDOUT);
-+	if (dentry) {
-+		rpc_purge_list(&RPC_I(dentry->d_inode)->waitq,
-+			       &free_list, destroy_msg, -ETIMEDOUT);
-+		dput(dentry);
-+	}
- }
- 
- ssize_t rpc_pipe_generic_upcall(struct file *filp, struct rpc_pipe_msg *msg,
-@@ -125,6 +131,7 @@ int
- rpc_queue_upcall(struct rpc_pipe *pipe, struct rpc_pipe_msg *msg)
- {
- 	int res = -EPIPE;
-+	struct dentry *dentry;
- 
- 	spin_lock(&pipe->lock);
- 	if (pipe->nreaders) {
-@@ -140,8 +147,12 @@ rpc_queue_upcall(struct rpc_pipe *pipe, struct rpc_pipe_msg *msg)
- 		pipe->pipelen += msg->len;
- 		res = 0;
- 	}
-+	dentry = dget(pipe->dentry);
- 	spin_unlock(&pipe->lock);
--	wake_up(&pipe->waitq);
-+	if (dentry) {
-+		wake_up(&RPC_I(dentry->d_inode)->waitq);
-+		dput(dentry);
-+	}
- 	return res;
- }
- EXPORT_SYMBOL_GPL(rpc_queue_upcall);
-@@ -168,7 +179,7 @@ rpc_close_pipes(struct inode *inode)
- 	pipe->pipelen = 0;
- 	pipe->dentry = NULL;
- 	spin_unlock(&pipe->lock);
--	rpc_purge_list(pipe, &free_list, pipe->ops->destroy_msg, -EPIPE);
-+	rpc_purge_list(&RPC_I(inode)->waitq, &free_list, pipe->ops->destroy_msg, -EPIPE);
- 	pipe->nwriters = 0;
- 	if (need_release && pipe->ops->release_pipe)
- 		pipe->ops->release_pipe(inode);
-@@ -257,7 +268,7 @@ rpc_pipe_release(struct inode *inode, struct file *filp)
- 			list_splice_init(&pipe->pipe, &free_list);
- 			pipe->pipelen = 0;
- 			spin_unlock(&pipe->lock);
--			rpc_purge_list(pipe, &free_list,
-+			rpc_purge_list(&RPC_I(inode)->waitq, &free_list,
- 					pipe->ops->destroy_msg, -EAGAIN);
- 		}
- 	}
-@@ -330,16 +341,18 @@ rpc_pipe_write(struct file *filp, const char __user *buf, size_t len, loff_t *of
- static unsigned int
- rpc_pipe_poll(struct file *filp, struct poll_table_struct *wait)
- {
--	struct rpc_pipe *pipe = RPC_I(filp->f_path.dentry->d_inode)->pipe;
--	unsigned int mask = 0;
-+	struct inode *inode = filp->f_path.dentry->d_inode;
-+	struct rpc_inode *rpci = RPC_I(inode);
-+	unsigned int mask = POLLOUT | POLLWRNORM;
- 
--	poll_wait(filp, &pipe->waitq, wait);
-+	poll_wait(filp, &rpci->waitq, wait);
- 
--	mask = POLLOUT | POLLWRNORM;
--	if (pipe->dentry == NULL)
-+	mutex_lock(&inode->i_mutex);
-+	if (rpci->pipe == NULL)
- 		mask |= POLLERR | POLLHUP;
--	if (filp->private_data || !list_empty(&pipe->pipe))
-+	else if (filp->private_data || !list_empty(&rpci->pipe->pipe))
- 		mask |= POLLIN | POLLRDNORM;
-+	mutex_unlock(&inode->i_mutex);
- 	return mask;
- }
- 
-@@ -543,7 +556,6 @@ init_pipe(struct rpc_pipe *pipe)
- 	INIT_LIST_HEAD(&pipe->in_downcall);
- 	INIT_LIST_HEAD(&pipe->pipe);
- 	pipe->pipelen = 0;
--	init_waitqueue_head(&pipe->waitq);
- 	INIT_DELAYED_WORK(&pipe->queue_timeout,
- 			    rpc_timeout_upcall_queue);
- 	pipe->ops = NULL;
-@@ -1165,6 +1177,7 @@ init_once(void *foo)
- 	inode_init_once(&rpci->vfs_inode);
- 	rpci->private = NULL;
- 	rpci->pipe = NULL;
-+	init_waitqueue_head(&rpci->waitq);
- }
- 
- int register_rpc_pipefs(void)
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
