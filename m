@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2B0Lxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:53:45 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:47780 "EHLO multi.imgtec.com"
+	id S1753829Ab2B0L5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:57:11 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58540 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab2B0Lxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:53:44 -0500
-Message-ID: <4F4B6EC5.1070806@imgtec.com>
-Date: Mon, 27 Feb 2012 11:53:41 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S1751541Ab2B0L5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 06:57:09 -0500
+Date: Mon, 27 Feb 2012 12:56:52 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
+Message-ID: <20120227115652.GA9943@elte.hu>
+References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
+ <1330338785.11248.49.camel@twins>
+ <20120227104452.GA6082@elte.hu>
+ <1330340694.11248.64.camel@twins>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RESEND] [PATCH] media: ir-sony-decoder: 15bit function decode fix
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Feb 2012 11:53:42.0033 (UTC) FILETIME=[7372F010:01CCF546]
-X-SEF-Processed: 7_3_0_01181__2012_02_27_11_53_42
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330340694.11248.64.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The raw Sony IR decoder decodes 15bit messages slightly incorrectly.
-To decode the function number, it shifts the bits right by 7 so that the
-function is in bits 7:1, masks with 0xFD (0b11111101), and does an 8 bit
-reverse so it ends up in bits 6:0. The mask should be 0xFE to correspond
-with bits 7:1 (0b11111110).
 
-The old mask had the effect of dropping the MSB of the function number
-from bit 6, and leaving the LSB of the device number in bit 7.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
+> On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
+> > I edited that code earlier today - is the form below OK, or can 
+> > you see a simpler method? It's not yet pushed out so can still 
+> > edit it. 
+> 
+> I think something like the below should do, but then I didn't really
+> think much about it, my thoughts went like:
+> 
+> ... *shees* that's ugly
+>   ... that error path already does a loop
+>     ... what the problem is!? -- reread changelog
+>       ... err_cpu == cpu is placed wrong!
+> 
+> 
+> So I replied and marked read.. waiting to either hear if there's a good
+> reason to do ugly or find a new (tested) patch in my inbox.. :-)
+> 
+> ---
+>  kernel/events/hw_breakpoint.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> index b0309f7..3330022 100644
+> --- a/kernel/events/hw_breakpoint.c
+> +++ b/kernel/events/hw_breakpoint.c
+> @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
+>  
+>   err_alloc:
+>  	for_each_possible_cpu(err_cpu) {
+> -		if (err_cpu == cpu)
+> -			break;
+>  		for (i = 0; i < TYPE_MAX; i++)
+>  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
+> +		if (err_cpu == cpu)
+> +			break;
+>  	}
 
-(note, i don't have a 15bit sony remote to test this with, but i'm
-pretty confident of it's correctness based on this:
-http://picprojects.org.uk/projects/sirc/sonysirc.pdf )
+Looks a lot nicer - I'll wait for an updated patch.
 
- drivers/media/rc/ir-sony-decoder.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks,
 
-diff --git a/drivers/media/rc/ir-sony-decoder.c b/drivers/media/rc/ir-sony-decoder.c
-index d5e2b50..dab98b3 100644
---- a/drivers/media/rc/ir-sony-decoder.c
-+++ b/drivers/media/rc/ir-sony-decoder.c
-@@ -130,7 +130,7 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
- 		case 15:
- 			device    = bitrev8((data->bits >>  0) & 0xFF);
- 			subdevice = 0;
--			function  = bitrev8((data->bits >>  7) & 0xFD);
-+			function  = bitrev8((data->bits >>  7) & 0xFE);
- 			break;
- 		case 20:
- 			device    = bitrev8((data->bits >>  5) & 0xF8);
--- 
-1.7.2.3
-
-
+	Ingo
