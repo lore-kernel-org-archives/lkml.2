@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab2B0WIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 17:08:54 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:59036 "EHLO mx2.netapp.com"
+	id S1755858Ab2B0WMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 17:12:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22991 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755382Ab2B0WIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 17:08:52 -0500
-X-IronPort-AV: E=Sophos;i="4.73,493,1325491200"; 
-   d="scan'208";a="628988115"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zach Brown <zab@zabbo.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [RFC PATCH 22/22] nfs: add support for read_iter, write_iter
-Thread-Topic: [RFC PATCH 22/22] nfs: add support for read_iter, write_iter
-Thread-Index: AQHM9ZWhvWFzos/n0EeozJmwFG1JYJZR07UA
-Date: Mon, 27 Feb 2012 22:08:50 +0000
-Message-ID: <1330380530.5541.87.camel@lade.trondhjem.org>
-References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
-	 <1330377576-3659-23-git-send-email-dave.kleikamp@oracle.com>
-In-Reply-To: <1330377576-3659-23-git-send-email-dave.kleikamp@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <ED465B60B5CCDF4A965C0DD51A044988@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1755350Ab2B0WMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 17:12:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="115409086"
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Mon, 27 Feb 2012 14:11:22 -0800
+In-Reply-To: <1330158655.11655.58.camel@marge.simpson.net>
+References: <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1329748861.2293.345.camel@twins>
+	 <1329761661.6276.146.camel@marge.simpson.net>
+	 <20120223104959.GA8454@linux.vnet.ibm.com>
+	 <1329996064.7411.106.camel@marge.simpson.net>
+	 <20120225065403.GB12313@linux.vnet.ibm.com>
+	 <1330158655.11655.58.camel@marge.simpson.net>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1330380683.23436.16.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RM92aN021351
 
-On Mon, 2012-02-27 at 15:19 -0600, Dave Kleikamp wrote:
-> This patch implements the read_iter and write_iter file operations which
-> allow kernel code to initiate directIO. This allows the loop device to
-> read and write directly to the server, bypassing the page cache.
+On Sat, 2012-02-25 at 09:30 +0100, Mike Galbraith wrote:
+> My less rotund config shows the L2 penalty decidedly more prominently.
+> We used to have avg_overlap as a synchronous wakeup hint, but it was
+> broken by preemption and whatnot, got the axe to recover some cycles.  A
+> reliable and dirt cheap replacement would be a good thing to have.
 > 
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-> Cc: Zach Brown <zab@zabbo.net>
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: linux-nfs@vger.kernel.org
+> TCP_RR and tbench are far way away from the overlap breakeven point on
+> E5620, whereas with Q6600s shared L2, you can start converting overlap
+> into throughput almost immediately. 
+> 
+> 2.4 GHz E5620
+> Throughput 248.994 MB/sec 1 procs  SD_SHARE_PKG_RESOURCES
+> Throughput 379.488 MB/sec 1 procs  !SD_SHARE_PKG_RESOURCES
+> 
+> 2.4 GHz Q6600
+> Throughput 299.049 MB/sec 1 procs  SD_SHARE_PKG_RESOURCES
+> Throughput 300.018 MB/sec 1 procs  !SD_SHARE_PKG_RESOURCES
+> 
 
-Performance is going to be absolutely terrible for O_DIRECT bvecs if you
-send just one page per RPC call. We are working on merging the O_DIRECT
-and page cache code in order to give O_DIRECT the ability to coalesce
-requests and do pNFS, and I'm hoping that code will be available soon.
+Also it is not always about just the L2 cache being shared/not or
+warm/cold etc. It also depends on the core c-states/p-states etc. It
+will cost waking up an idle core and the cost will depend on the what
+core-c state it is in. And also if we ping-pong between cores often,
+cpufreq governor will come and request for a lower core p-state even
+though the load was keeping one core or the other in the socket always
+busy at any given point of time.
 
-In the meantime, wouldn't it be possible to add basic coalescing to
-nfs_direct_read_schedule_bvec/nfs_direct_write_schedule_bvec more or
-less in the same way that we do for multi-page iovec segments?
-i.e. if the next bvec is contiguous with the previous, and the resulting
-RPC read length < rsize / write length < wsize, then add it to the same
-RPC call.
+thanks,
+suresh
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
