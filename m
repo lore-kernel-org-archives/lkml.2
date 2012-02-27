@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2B0XiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 18:38:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18555 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab2B0XiC (ORCPT
+	id S1756196Ab2B0Xih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 18:38:37 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64077 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab2B0Xif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 18:38:02 -0500
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=f-yYDmgdQXkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=rm9a0bTRZYS0tXU1swkA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330385881.25686.202.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL][v3.3] ktest: Fix make_min_config test when
- build fails
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Feb 2012 18:38:01 -0500
-In-Reply-To: <CA+55aFw5hhQQU-X_n=Q98Xt_UVKUgeVJ53BhwDgFvXSSt_0Bjw@mail.gmail.com>
-References: <1330370242.25686.196.camel@gandalf.stny.rr.com>
-	 <CA+55aFw5hhQQU-X_n=Q98Xt_UVKUgeVJ53BhwDgFvXSSt_0Bjw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 27 Feb 2012 18:38:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.52.93.74 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Tue, 28 Feb 2012 00:38:31 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
+Message-ID: <20120227233828.GE30232@somewhere.redhat.com>
+References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
+ <1330338785.11248.49.camel@twins>
+ <20120227104452.GA6082@elte.hu>
+ <1330340694.11248.64.camel@twins>
+ <20120227115652.GA9943@elte.hu>
+ <1330349551.1782.15.camel@leonhard>
+ <20120227194038.GA11448@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120227194038.GA11448@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 15:26 -0800, Linus Torvalds wrote:
-> On Mon, Feb 27, 2012 at 11:17 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Please pull the latest for-linus tree, which can be found at:
-> >
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-> > ktest-fix-make-min-failed-build
+On Mon, Feb 27, 2012 at 08:40:38PM +0100, Ingo Molnar wrote:
 > 
-> I'm getting "Already up-to-date" with that tag. It points to your old
-> commit be405f95f0a0 ("ktest: Add INGORE_ERRORS to ignore warnings in
-> boot up") and normally I'd ask whether you perhaps forgot to push, but
-> considering the fairly unique naming of that tag, you clearly *did*
-> push.
+> * Namhyung Kim <namhyung@gmail.com> wrote:
+> 
+> > 2012-02-27 (월), 12:56 +0100, Ingo Molnar:
+> > > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > 
+> > > > On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
+> > > > > I edited that code earlier today - is the form below OK, or can 
+> > > > > you see a simpler method? It's not yet pushed out so can still 
+> > > > > edit it. 
+> > > > 
+> > > > I think something like the below should do, but then I didn't really
+> > > > think much about it, my thoughts went like:
+> > > > 
+> > > > ... *shees* that's ugly
+> > > >   ... that error path already does a loop
+> > > >     ... what the problem is!? -- reread changelog
+> > > >       ... err_cpu == cpu is placed wrong!
+> > > > 
+> > > > 
+> > > > So I replied and marked read.. waiting to either hear if there's a good
+> > > > reason to do ugly or find a new (tested) patch in my inbox.. :-)
+> > > > 
+> > > > ---
+> > > >  kernel/events/hw_breakpoint.c |    4 ++--
+> > > >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+> > > > index b0309f7..3330022 100644
+> > > > --- a/kernel/events/hw_breakpoint.c
+> > > > +++ b/kernel/events/hw_breakpoint.c
+> > > > @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
+> > > >  
+> > > >   err_alloc:
+> > > >  	for_each_possible_cpu(err_cpu) {
+> > > > -		if (err_cpu == cpu)
+> > > > -			break;
+> > > >  		for (i = 0; i < TYPE_MAX; i++)
+> > > >  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
+> > > > +		if (err_cpu == cpu)
+> > > > +			break;
+> > > >  	}
+> > > 
+> > > Looks a lot nicer - I'll wait for an updated patch.
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > 
+> > Ingo, do you want me to resend? If so, I really don't know how 
+> > to give the credit to Peter in this case.
+> 
+> Just mention it in the changelog that this solution was his 
+> idea. It was you who did most of the work: found the bug, wrote 
+> the patch, wrote the changelog and tested the final patch ;-)
 
-New tag, with the real commit in it.
-
-
-ktest-fix-make-min-failed-build-for-real
-
-Thanks,
-
--- Steve
-
-
+And please add my Acked-by: Frederic Weisbecker <fweisbec@gmail.com> :)
