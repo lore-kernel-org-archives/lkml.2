@@ -1,325 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab2B0HvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 02:51:15 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35535 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab2B0HvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 02:51:14 -0500
-Message-ID: <4F4B35DC.4000506@linux.vnet.ibm.com>
-Date: Mon, 27 Feb 2012 13:20:52 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1752373Ab2B0H4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 02:56:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61173 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752170Ab2B0H4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 02:56:34 -0500
+Message-ID: <4F4B383C.1000804@cn.fujitsu.com>
+Date: Mon, 27 Feb 2012 16:01:00 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, dsahern@gmail.com
-Subject: Re: [PATCH v6 00/18] perf: add support for sampling taken branches
-References: <1328826068-11713-1-git-send-email-eranian@google.com>
-In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: [PATCH 1/2 RFC] srcu: change the comments of the wait algorithm
+References: <20120213020951.GA12138@linux.vnet.ibm.com> <4F41F315.1040900@cn.fujitsu.com> <20120220174418.GI2470@linux.vnet.ibm.com> <4F42EF53.6060400@cn.fujitsu.com> <20120221015037.GE2384@linux.vnet.ibm.com> <4F435966.9020106@cn.fujitsu.com> <20120221172442.GG2375@linux.vnet.ibm.com> <4F44B580.6040003@cn.fujitsu.com> <4F4744E9.1060109@cn.fujitsu.com> <20120224200109.GH2399@linux.vnet.ibm.com>
+In-Reply-To: <20120224200109.GH2399@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-27 15:54:38,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-27 15:54:44,
+	Serialize complete at 2012-02-27 15:54:44
 Content-Transfer-Encoding: 7bit
-x-cbid: 12022707-2000-0000-0000-0000068D159B
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 February 2012 03:50 AM, Stephane Eranian wrote:
-> This patchset adds an important and useful new feature to
-> perf_events: branch stack sampling. In other words, the
-> ability to capture taken branches into each sample.
-> 
-> Statistical sampling of taken branch should not be confused
-> for branch tracing. Not all branches are necessarily captured
-> 
-> Sampling taken branches is important for basic block profiling,
-> statistical call graph, function call counts. Many of those
-> measurements can help drive a compiler optimizer.
-> 
-> The branch stack is a software abstraction which sits on top
-> of the PMU hardware. As such, it is not available on all
-> processors. For now, the patch provides the generic interface
-> and the Intel X86 implementation where it leverages the Last
-> Branch Record (LBR) feature (from Core2 to SandyBridge).
-> 
-> Branch stack sampling is supported for both per-thread and
-> system-wide modes.
-> 
-> It is possible to filter the type and privilege level of branches
-> to sample. The target of the branch is used to determine
-> the privilege level.
-> 
-> For each branch, the source and destination are captured. On
-> some hardware platforms, it may be possible to also extract
-> the target prediction and, in that case, it is also exposed
-> to end users.
-> 
-> The branch stack can record a variable number of taken
-> branches per sample. Those branches are always consecutive
-> in time. The number of branches captured depends on the
-> filtering and the underlying hardware. On Intel Nehalem
-> and later, up to 16 consecutive branches can be captured
-> per sample.
-> 
-> Branch sampling is always coupled with an event. It can
-> be any PMU event but it can't be a SW or tracepoint event.
-> 
-> Branch sampling is requested by setting a new sample_type
-> flag called: PERF_SAMPLE_BRANCH_STACK.
-> 
-> To support branch filtering, we introduce a new field
-> to the perf_event_attr struct: branch_sample_type. We chose
-> NOT to overload the config1, config2 field because those
-> are related to the event encoding. Branch stack is a
-> separate feature which is combined with the event.
-> 
-> The branch_sample_type is a bitmask of possible filters.
-> The following filters are defined (more can be added):
-> - PERF_SAMPLE_BRANCH_ANY     : any control flow change
-> - PERF_SAMPLE_BRANCH_USER    : branches when target is at user level
-> - PERF_SAMPLE_BRANCH_KERNEL  : branches when target is at kernel level
-> - PERF_SAMPLE_BRANCH_HV      : branches when target is at hypervisor level
-> - PERF_SAMPLE_BRANCH_ANY_CALL: call branches (incl. syscalls)
-> - PERF_SAMPLE_BRANCH_ANY_RET : return branches (incl. syscall returns)
-> - PERF_SAMPLE_BRANCH_IND_CALL: indirect calls
-> 
-> It is possible to combine filters, e.g., IND_CALL|USER|KERNEL.
-> 
-> When the privilege level is not specified, the branch stack
-> inherits that of the associated event.
-> 
-> Some processors may not offer hardware branch filtering, e.g., Intel
-> Atom. Some may have HW filtering bugs (e.g., Nehalem). The Intel
-> X86 implementation in this patchset also provides a SW branch filter
-> which works on a best effort basis. It can compensate for the lack
-> of LBR filtering. But first and foremost, it helps work around LBR
-> filtering errata. The goal is to only capture the type of branches
-> requested by the user.
-> 
-> It is possible to combine branch stack sampling with PEBS on Intel
-> X86 processors. Depending on the precise_sampling mode, there are
-> certain filterting restrictions. When precise_sampling=1, then
-> there are no filtering restrictions. When precise_sampling > 1, 
-> then only ANY|USER|KERNEL filter can be used. This comes from
-> the fact that the kernel uses LBR to compensate for the PEBS
-> off-by-1 skid on the instruction pointer.
-> 
-> To demonstrate how the perf_event branch stack sampling interface
-> works, the patchset also modifies perf record to capture taken
-> branches. Similarly perf report is enhanced to display a histogram
-> of taken branches.
-> 
-> I would like to thank Roberto Vitillo @ LBL for his work on the perf
-> tool for this.
-> 
-> Enough talking, let's take a simple example. Our trivial test program
-> goes like this:
-> 
-> void f2(void)
-> {}
-> void f3(void)
-> {}
-> void f1(unsigned long n)
-> {
->   if (n & 1UL)
->     f2();
->   else
->     f3();
-> }
-> int main(void)
-> {
->   unsigned long i;
-> 
->   for (i=0; i < N; i++)
->    f1(i);
->   return 0;
-> }
-> 
-> $ perf record -b any branchy
-> $ perf report -b
-> # Events: 23K cycles
-> #
-> # Overhead  Source Symbol     Target Symbol
-> # ........  ................  ................
-> 
->     18.13%  [.] f1            [.] main                          
->     18.10%  [.] main          [.] main                          
->     18.01%  [.] main          [.] f1                            
->     15.69%  [.] f1            [.] f1                            
->      9.11%  [.] f3            [.] f1                            
->      6.78%  [.] f1            [.] f3                            
->      6.74%  [.] f1            [.] f2                            
->      6.71%  [.] f2            [.] f1                            
-> 
-> Of the total number of branches captured, 18.13% were from f1() -> main().
-> 
-> Let's make this clearer by filtering the user call branches only:
-> 
-> $ perf record -b any_call -e cycles:u branchy
-> $ perf report -b
-> # Events: 19K cycles
-> #
-> # Overhead  Source Symbol              Target Symbol
-> # ........  .........................  .........................
-> #
->     52.50%  [.] main                   [.] f1                   
->     23.99%  [.] f1                     [.] f3                   
->     23.48%  [.] f1                     [.] f2                   
->      0.03%  [.] _IO_default_xsputn     [.] _IO_new_file_overflow
->      0.01%  [k] _start                 [k] __libc_start_main    
-> 
-> Now it is more obvious. %52 of all the captured branches where calls from main() -> f1().
-> The rest is split 50/50 between f1() -> f2() and f1() -> f3() which is expected given
-> that f1() dispatches based on odd vs. even values of n which is constantly increasing.
-> 
-> 
-> Here is a kernel example, where we want to sample indirect calls:
-> $ perf record -a -C 1 -b ind_call -e r1c4:k sleep 10 
-> $ perf report -b
-> #
-> # Overhead  Source Symbol               Target Symbol
-> # ........  ..........................  ..........................
-> #
->     36.36%  [k] __delay                 [k] delay_tsc             
->      9.09%  [k] ktime_get               [k] read_tsc              
->      9.09%  [k] getnstimeofday          [k] read_tsc              
->      9.09%  [k] notifier_call_chain     [k] tick_notify           
->      4.55%  [k] cpuidle_idle_call       [k] intel_idle            
->      4.55%  [k] cpuidle_idle_call       [k] menu_reflect          
->      2.27%  [k] handle_irq              [k] handle_edge_irq       
->      2.27%  [k] ack_apic_edge           [k] native_apic_mem_write 
->      2.27%  [k] hpet_interrupt_handler  [k] hrtimer_interrupt     
->      2.27%  [k] __run_hrtimer           [k] watchdog_timer_fn     
->      2.27%  [k] enqueue_task            [k] enqueue_task_rt       
->      2.27%  [k] try_to_wake_up          [k] select_task_rq_rt     
->      2.27%  [k] do_timer                [k] read_tsc              
-> 
-> Due to HW limitations, branch filtering may be approximate on
-> Core, Atom processors. It is more accurate on Nehalem, Westmere
-> and best on Sandy Bridge.
-> 
-> In version 2, we've updated the patch to tip/master (commit 5734857) and
-> we've incoporated the feedback from v1 concerning anynous bitfield
-> struct for branch_stack_entry and the hanlding of i386 ABI binaries
-> on 64-bit host in the instr decoder for the LBR SW filter.
-> 
-> In version 3, we've updated to 3.2.0-tip. The Atom revision
-> check has been put into its own patch. We fixed a browser
-> issue with report report. We fixed all the style issues as well.
-> 
-> In version 4, we've modified the branch stack API to add a missing
-> priv level : hypervisor. There is a new PERF_SAMPLE_BRANCH_HV. It
-> is not used on Intel X86. Thanks to  khandual@linux.vnet.ibm.com
-> for pointing this out. We also fix compilation error on ARM.
-> 
-> In version 4, we also extend the patch to include the changes necessary
-> to the perf tool to support reading perf.data files which were produced
-> from older perf_event ABI revisions. This patch set extends the ABI
-> with a new field in struct perf_event_attr. That struct is saved as
-> is in the perf.data file. Therefore, older perf.data files contain
-> smaller perf_event_attr struct, yet perf must process them transparently.
-> That's not the case today. It dies with 'incompatible file format'.
-> 
-> The patch solves this problem and, at the same time, decouples endianness
-> detection from the size of perf_event_attr. Endianness is now detected via
-> the signature (the first 8 bytes of the file). We introduce a new signature
-> (PERFILE2). It is not laid out the same way in the file based on the endianness
-> of the host where the file is written. Therefore, we can dynamically detect
-> the endianness by simply reading the first 8 bytes. The size of the
-> perf_event_attr struct can then be processed according to the endianness.
-> The ambiguity between the size being at the same time, the endianness marker
-> and the actual size is gone. We can now distinguish an older ABI by the size
-> and not confuse it with an endianness mismatch.
-> 
-> In version 5, we fix the PEBS+LBR vs. BRANCH_STACK check in x86_pmu_hw_config.
-> We also changed the handling of PERF_SAMPLE_BRANCH_HV on X86. It is now ignored
-> instead of triggering an error. That enables: perf record -b any -e cycles,
-> without having to force a priv level on the branch type. We also fix an
-> uninitialized variable bug in the perf tool reported by reviewers. Thanks
-> to Anshuman Khandual for his comments.
-> 
-> In version 6, we have fixed several issues in the perf tool code and
-> especially in patch 11. We have fully implemented the --sort option
-> on the branch source and target. We have fixed several column alignment
-> issues. We have integrated feedback from David Ahern, concerning patch
-> 16 and the ability to read perf.data files written from a different
-> ABI. Perf will now reject any perf.data file that has a larger perf_event_attr
-> size. Perf provides compatibility backward and not forward.
+Hi, ALL
 
+The call_srcu() will be sent soon(may be in 2 days). I found something is not
+good in current sruc when I implement it, so I do more prepare for it.
 
-Hey Stephane,
+The second patch is inspired Peter. I had decided to use per-cpu machine,
+the the snap array makes me unhappy. If a machine is sleeping/preempted
+while checking, the other machine can't not check the same srcu_struct.
+It is nothing big, but it also blocks the sychronize_srcu_expedited().
+I hope sychronize_srcu_expedited() can't be blocked when it try to do its
+fast-checking. So I try to find non-block checking algorithm, and I find
+Peter's.
 
-Could you please specify which tip tree I can apply and try out the
-V6 patchset ? Thank you. 
+The most things in these two patches are comments, so I bring a lot
+troubles to Paul because my poor English.
 
+Thanks,
+Lai
 
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> 
-> 
-> Roberto Agostino Vitillo (3):
->   perf: add code to support PERF_SAMPLE_BRANCH_STACK
->   perf: add support for sampling taken branch to perf record
->   perf: add support for taken branch sampling to perf report
-> 
-> Stephane Eranian (15):
->   perf: add generic taken branch sampling support
->   perf: add Intel LBR MSR definitions
->   perf: add Intel X86 LBR sharing logic
->   perf: sync branch stack sampling with X86 precise_sampling
->   perf: add Intel X86 LBR mappings for PERF_SAMPLE_BRANCH filters
->   perf: disable LBR support for older Intel Atom processors
->   perf: implement PERF_SAMPLE_BRANCH for Intel X86
->   perf: add LBR software filter support for Intel X86
->   perf: disable PERF_SAMPLE_BRANCH_* when not supported
->   perf: add hook to flush branch_stack on context switch
->   perf: fix endianness detection in perf.data
->   perf: add ABI reference sizes
->   perf: enable reading of perf.data files from different ABI rev
->   perf: fix bug print_event_desc()
->   perf: make perf able to read file from older ABIs
-> 
->  arch/alpha/kernel/perf_event.c             |    4 +
->  arch/arm/kernel/perf_event.c               |    4 +
->  arch/mips/kernel/perf_event_mipsxx.c       |    4 +
->  arch/powerpc/kernel/perf_event.c           |    4 +
->  arch/sh/kernel/perf_event.c                |    4 +
->  arch/sparc/kernel/perf_event.c             |    4 +
->  arch/x86/include/asm/msr-index.h           |    7 +
->  arch/x86/kernel/cpu/perf_event.c           |   85 ++++-
->  arch/x86/kernel/cpu/perf_event.h           |   19 +
->  arch/x86/kernel/cpu/perf_event_amd.c       |    3 +
->  arch/x86/kernel/cpu/perf_event_intel.c     |  120 +++++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c  |   22 +-
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |  526 ++++++++++++++++++++++++++--
->  include/linux/perf_event.h                 |   82 ++++-
->  kernel/events/core.c                       |  177 ++++++++++
->  kernel/events/hw_breakpoint.c              |    6 +
->  tools/perf/Documentation/perf-record.txt   |   25 ++
->  tools/perf/Documentation/perf-report.txt   |    7 +
->  tools/perf/builtin-record.c                |   74 ++++
->  tools/perf/builtin-report.c                |   98 +++++-
->  tools/perf/perf.h                          |   18 +
->  tools/perf/util/annotate.c                 |    2 +-
->  tools/perf/util/event.h                    |    1 +
->  tools/perf/util/evsel.c                    |   14 +
->  tools/perf/util/header.c                   |  230 +++++++++++--
->  tools/perf/util/hist.c                     |   93 ++++-
->  tools/perf/util/hist.h                     |    7 +
->  tools/perf/util/session.c                  |   72 ++++
->  tools/perf/util/session.h                  |    4 +
->  tools/perf/util/sort.c                     |  362 ++++++++++++++-----
->  tools/perf/util/sort.h                     |    5 +
->  tools/perf/util/symbol.h                   |   13 +
->  32 files changed, 1866 insertions(+), 230 deletions(-)
-> 
+>From 77af819872ddab065d3a46758471b80f31b30e5e Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Mon, 27 Feb 2012 10:52:00 +0800
+Subject: [PATCH 1/2] srcu: change the comments of the wait algorithm
 
+The original comments does not describe the essential of the wait algorithm
+well.
 
+The safe of srcu-protected data and srcu critical section is provided by
+wait_idx(), not the flipping.
+
+The two index of the active counter array and the flipping are just used to keep
+the wait_idx() from starvation.
+(the flip also provides "only one srcu_read_lock() at most after flip
+for every cpu", this coupling will be remove in future(next patch))
+
+The code will be split as pieces between every machine-states for call_srcu(),
+It is very hard to provide the exactly semantics as original comments,
+So I have to consider the exactly what the algorithm, and I change this
+comments.
+
+The code is not changed, but it is refactored a little.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/srcu.c |   75 +++++++++++++++++++++++++++++----------------------------
+ 1 files changed, 38 insertions(+), 37 deletions(-)
+
+diff --git a/kernel/srcu.c b/kernel/srcu.c
+index b6b9ea2..47ee35d 100644
+--- a/kernel/srcu.c
++++ b/kernel/srcu.c
+@@ -249,6 +249,10 @@ EXPORT_SYMBOL_GPL(__srcu_read_unlock);
+  */
+ #define SYNCHRONIZE_SRCU_READER_DELAY 5
+ 
++/*
++ * Wait until all the readers(which starts before this wait_idx()
++ * with the specified idx) complete.
++ */
+ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
+ {
+ 	int trycount = 0;
+@@ -291,24 +295,9 @@ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
+ 	smp_mb(); /* E */
+ }
+ 
+-/*
+- * Flip the readers' index by incrementing ->completed, then wait
+- * until there are no more readers using the counters referenced by
+- * the old index value.  (Recall that the index is the bottom bit
+- * of ->completed.)
+- *
+- * Of course, it is possible that a reader might be delayed for the
+- * full duration of flip_idx_and_wait() between fetching the
+- * index and incrementing its counter.  This possibility is handled
+- * by the next __synchronize_srcu() invoking wait_idx() for such readers
+- * before starting a new grace period.
+- */
+-static void flip_idx_and_wait(struct srcu_struct *sp, bool expedited)
++static void srcu_flip(struct srcu_struct *sp)
+ {
+-	int idx;
+-
+-	idx = sp->completed++ & 0x1;
+-	wait_idx(sp, idx, expedited);
++	sp->completed++;
+ }
+ 
+ /*
+@@ -316,6 +305,8 @@ static void flip_idx_and_wait(struct srcu_struct *sp, bool expedited)
+  */
+ static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
+ {
++	int busy_idx;
++
+ 	rcu_lockdep_assert(!lock_is_held(&sp->dep_map) &&
+ 			   !lock_is_held(&rcu_bh_lock_map) &&
+ 			   !lock_is_held(&rcu_lock_map) &&
+@@ -323,8 +314,31 @@ static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
+ 			   "Illegal synchronize_srcu() in same-type SRCU (or RCU) read-side critical section");
+ 
+ 	mutex_lock(&sp->mutex);
++	busy_idx = sp->completed & 0X1UL;
+ 
+ 	/*
++	 * There are some readers start with idx=0, and some others start
++	 * with idx=1. So two wait_idx()s are enough for synchronize:
++	 * __synchronize_srcu() {
++	 * 	wait_idx(sp, 0, expedited);
++	 * 	wait_idx(sp, 1, expedited);
++	 * }
++	 * When it returns, all started readers have complete.
++	 *
++	 * But synchronizer may be starved by the readers, example,
++	 * if sp->complete & 0x1L == 1, wait_idx(sp, 1, expedited)
++	 * may not returns if there are continuous readers start
++	 * with idx=1.
++	 *
++	 * So we need to flip the busy index to keep synchronizer
++	 * from starvation.
++	 */
++
++	/*
++	 * The above comments assume we have readers with all the
++	 * 2 idx. It does have this probability, some readers may
++	 * hold the reader lock with idx=1-busy_idx:
++	 *
+ 	 * Suppose that during the previous grace period, a reader
+ 	 * picked up the old value of the index, but did not increment
+ 	 * its counter until after the previous instance of
+@@ -333,31 +347,18 @@ static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
+ 	 * not start until after the grace period started, so the grace
+ 	 * period was not obligated to wait for that reader.
+ 	 *
+-	 * However, the current SRCU grace period does have to wait for
+-	 * that reader.  This is handled by invoking wait_idx() on the
+-	 * non-active set of counters (hence sp->completed - 1).  Once
+-	 * wait_idx() returns, we know that all readers that picked up
+-	 * the old value of ->completed and that already incremented their
+-	 * counter will have completed.
+-	 *
+-	 * But what about readers that picked up the old value of
+-	 * ->completed, but -still- have not managed to increment their
+-	 * counter?  We do not need to wait for those readers, because
+-	 * they will have started their SRCU read-side critical section
+-	 * after the current grace period starts.
+-	 *
+-	 * Because it is unlikely that readers will be preempted between
+-	 * fetching ->completed and incrementing their counter, wait_idx()
++	 * Because this probability is not high, wait_idx()
+ 	 * will normally not need to wait.
+ 	 */
+-	wait_idx(sp, (sp->completed - 1) & 0x1, expedited);
++	wait_idx(sp, 1 - busy_idx, expedited);
++
++	/* flip the index to ensure the return of the next wait_idx() */
++	srcu_flip(sp);
+ 
+ 	/*
+-	 * Now that wait_idx() has waited for the really old readers,
+-	 * invoke flip_idx_and_wait() to flip the counter and wait
+-	 * for current SRCU readers.
++	 * Now that wait_idx() has waited for the really old readers.
+ 	 */
+-	flip_idx_and_wait(sp, expedited);
++	wait_idx(sp, busy_idx, expedited);
+ 
+ 	mutex_unlock(&sp->mutex);
+ }
 -- 
-Anshuman Khandual
-Linux Technology Centre
-IBM Systems and Technology Group
+1.7.4.4
 
