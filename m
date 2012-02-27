@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2B0Xc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 18:32:56 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2338 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab2B0Xcz (ORCPT
+	id S1756191Ab2B0Xd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 18:33:57 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:59674 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755304Ab2B0Xd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 18:32:55 -0500
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=f-yYDmgdQXkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=eHhjHUCVnzWktsagGM0A:9 a=ri5RDADop6QmSAh_0_UA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330385574.25686.200.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH][GIT PULL][v3.3] ktest: Fix make_min_config test when
- build fails
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Feb 2012 18:32:54 -0500
-In-Reply-To: <CA+55aFw5hhQQU-X_n=Q98Xt_UVKUgeVJ53BhwDgFvXSSt_0Bjw@mail.gmail.com>
-References: <1330370242.25686.196.camel@gandalf.stny.rr.com>
-	 <CA+55aFw5hhQQU-X_n=Q98Xt_UVKUgeVJ53BhwDgFvXSSt_0Bjw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Mon, 27 Feb 2012 18:33:56 -0500
+Date: Mon, 27 Feb 2012 15:33:55 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrei Warkentin <andreiw@vmware.com>,
+        kgdb-bugreport@lists.sourceforge.net, Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Message-ID: <628860779.1621452.1330385635262.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <4F4C0EF8.8010405@windriver.com>
+Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 15:26 -0800, Linus Torvalds wrote:
-> On Mon, Feb 27, 2012 at 11:17 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Please pull the latest for-linus tree, which can be found at:
-> >
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
-> > ktest-fix-make-min-failed-build
+Hi,
+
+Thank you for the review, Jason. Comments inline.
+
+----- Original Message -----
+> From: "Jason Wessel" <jason.wessel@windriver.com>
+> To: "Andrei Warkentin" <andrey.warkentin@gmail.com>
+> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
+> kgdb-bugreport@lists.sourceforge.net, "Matt Mackall" <mpm@selenic.com>
+> Sent: Monday, February 27, 2012 6:17:12 PM
+> Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
 > 
-> I'm getting "Already up-to-date" with that tag. It points to your old
-> commit be405f95f0a0 ("ktest: Add INGORE_ERRORS to ignore warnings in
-> boot up") and normally I'd ask whether you perhaps forgot to push, but
-> considering the fairly unique naming of that tag, you clearly *did*
-> push.
-
-Crap! I haven't gotten the scripts working yet with the signed tags. It
-tagged then merged the latest commit :-p
-
 > 
-> Congratulations, you seem to have found a whole new and unique way of
-> screwing up ;)
-
-I knew I was good at something!
-
-I'll go fix.
-
-Thanks,
-
--- Steve
-
+> I am just now starting to look how this patch set compares to kgdboe.
+>  For the kgdboe the patch is a bit different.  The kgdboe opted to
+> just pass the skb so as to cut down on the number of arguments to
+> the function call.
 > 
->                Linus "my mom called me 'special' too" Torvalds
+> From the kgdboe patch:
+> 
+> -       void (*rx_hook)(struct netpoll *, int, char *, int);
+> +       void (*rx_hook)(struct netpoll *, int, char *, int, struct
+> sk_buff *);
+> 
+> 
 
+Interesting, I thought about passing the skb, but decided I didn't
+want to copy and paste the skb parsing code, especially given
+that it's always UDP anyway. I still have reservations about
+passing the physical address, but I don't think anyone tried
+to use netpoll or a non-ethernet device anyway.
 
+> >  
+> > +void netpoll_poll_dev(struct net_device *dev);
+> >  void netpoll_send_udp(struct netpoll *np, const char *msg, int
+> >  
+> > -static void netpoll_poll_dev(struct net_device *dev)
+> > +void netpoll_poll_dev(struct net_device *dev)
+> 
+> 
+> This is interesting and I will have to look into this further...  A
+> large part of the reason kgdboe never went anywhere was all around
+> the locking problems the ability to safely use the network hardware
+> and restore the state when it was done.  It appears you made this
+> change so as to make a lockless call directly instead of going
+> through netpoll_poll().  I am not entirely sure you could safely do
+> this.
+> 
+> In kgdboe we always had:
+> 
+> +static int eth_get_char(void)
+> +{
+> +	int chr;
+> +
+> +	while (atomic_read(&in_count) == 0)
+> +		netpoll_poll(&np);
+> 
+> 
+> If it is the case that you really can safely call the
+> netpoll_poll_dev() without the locks then the horrible sync irq
+> state etc... could go away in kgdboe, and then it would be worth
+> considering digging up all the ethernet polling errata fixes that
+> live of out the mainline and perhaps submit some for review.
+> 
+
+I didn't look deeply at kgdboe (probably should have...). Anyway, netpoll_poll
+doesn't seem to exist. netpoll_poll_dev is called from netpoll_send_skb_on_dev
+and the only contract I see is running with the interrupts disabled - something
+that is satisfied by running in the context of KDB.
+
+This is slight OT, but...are WiFi drivers sufficiently similar that netpoll "just works?"
+
+Thanks again.
+
+A
