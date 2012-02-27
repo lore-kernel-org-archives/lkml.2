@@ -1,139 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab2B0JCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 04:02:51 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50352 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2B0JCt (ORCPT
+	id S1751821Ab2B0JHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 04:07:01 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63302 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab2B0JG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 04:02:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.180.100.33 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
-Date: Mon, 27 Feb 2012 10:02:45 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, dsahern@gmail.com, peterz@infradead.org, mingo@elte.hu
-Subject: [PATCH v2] perf tools: fix piped mode read code
-Message-ID: <20120227090245.GA6228@quad>
+	Mon, 27 Feb 2012 04:06:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.224.194.195 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
+Date: Mon, 27 Feb 2012 17:06:46 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Venki Pallipadi <venki@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+Message-ID: <20120227090646.GA1112@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+ <1329989454.24994.57.camel@twins>
+ <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+ <20120224054150.GA17543@zhy>
+ <20120226013253.GN2393@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20120226013253.GN2393@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 25, 2012 at 05:32:53PM -0800, Paul E. McKenney wrote:
+> On Fri, Feb 24, 2012 at 01:41:50PM +0800, Yong Zhang wrote:
+> > On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
+> > > On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > > Why not scheduler_ipi()?
+> > > 
+> > > Was trying to avoid irq_enter/exit. As the work here is done in idle
+> > > thread context, I though we could avoid enter/exit. 
+> > 
+> > It seems we could not.
+> > At least RCU need it, see commit c5d753a55, otherwise we will get
+> > warning like 'RCU used illegally from extended quiescent state!'
+> 
+> If the use is tracing, then Steven Rostedt's patchset plus use of his
+> _rcuidle() tracing variants handles this:
+> 
+> 	https://lkml.org/lkml/2012/2/7/231
+> 
+> If this is instead algorithmic use of RCU, a set of patches I have queued
+> up for 3.4 will be required.
 
-In __perf_session__process_pipe_events(), there is a risk
-we could read more than what a union perf_event struct can
-hold. This could happen when perf is reading a file which
-contains new and unknown record types which are larger than
-anything the tool already knows about (i.e. part of union
-perf_event).
-    
-In general, perf is supposed to skip records it does not
-understand, but in pipe mode, those have to be read and
-ignored. They cannot just be skipped. In the current code,
-the backing for the read is provided by union perf_event.
-There is no check for the size limit thus there is a risk
-of buffer overrun:
+scheduler_ipi() doing more than tracing. Will look at your patches :)
 
-      union perf_event event;
-      void *p;
-    
-      size = event->header.size;
-    
-      p = &event;
-      p += sizeof(struct perf_event_header);
-      if (size - sizeof(struct perf_event_header)) {
-        err = readn(self->fd, p, size - sizeof(struct perf_event_header));
-    
-We fix this by allocating a buffer based on the size reported in
-the header. We reuse the buffer as much as we can. We realloc in
-case it becomes too small. In the  common case, the performance
-impact is negligible.
-    
-In version 2, we fixed the potential memory leak introduced by
-the realloc() statement in case of error.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 9f833cf..ecaf541 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -982,8 +982,9 @@ volatile int session_done;
- static int __perf_session__process_pipe_events(struct perf_session *self,
- 					       struct perf_tool *tool)
- {
--	union perf_event event;
--	uint32_t size;
-+	union perf_event *event;
-+	uint32_t size, cur_size = 0;
-+	void *buf = NULL;
- 	int skip = 0;
- 	u64 head;
- 	int err;
-@@ -992,8 +993,14 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
- 	perf_tool__fill_defaults(tool);
- 
- 	head = 0;
-+	cur_size = sizeof(union perf_event);
-+
-+	buf = malloc(cur_size);
-+	if (!buf)
-+		return -errno;
- more:
--	err = readn(self->fd, &event, sizeof(struct perf_event_header));
-+	event = buf;
-+	err = readn(self->fd, event, sizeof(struct perf_event_header));
- 	if (err <= 0) {
- 		if (err == 0)
- 			goto done;
-@@ -1003,13 +1010,23 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
- 	}
- 
- 	if (self->header.needs_swap)
--		perf_event_header__bswap(&event.header);
-+		perf_event_header__bswap(&event->header);
- 
--	size = event.header.size;
-+	size = event->header.size;
- 	if (size == 0)
- 		size = 8;
- 
--	p = &event;
-+	if (size > cur_size) {
-+		void *new = realloc(buf, size);
-+		if (!new) {
-+			pr_err("failed to allocate memory to read event\n");
-+			goto out_err;
-+		}
-+		buf = new;
-+		cur_size = size;
-+		event = buf;
-+	}
-+	p = event;
- 	p += sizeof(struct perf_event_header);
- 
- 	if (size - sizeof(struct perf_event_header)) {
-@@ -1025,9 +1042,9 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
- 		}
- 	}
- 
--	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
-+	if ((skip = perf_session__process_event(self, event, tool, head)) < 0) {
- 		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
--			    head, event.header.size, event.header.type);
-+			    head, event->header.size, event->header.type);
- 		/*
- 		 * assume we lost track of the stream, check alignment, and
- 		 * increment a single u64 in the hope to catch on again 'soon'.
-@@ -1048,6 +1065,7 @@ static int __perf_session__process_pipe_events(struct perf_session *self,
- done:
- 	err = 0;
- out_err:
-+	free(buf);
- 	perf_session__warn_about_errors(self, tool);
- 	perf_session_free_sample_buffers(self);
- 	return err;
+Thanks,
+Yong
