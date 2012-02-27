@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab2B0Tnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:43:47 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:31098 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab2B0Tnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:43:43 -0500
-Date: Mon, 27 Feb 2012 20:43:41 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Tejun Heo <tj@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-Message-ID: <20120227194341.GA1448@merkur.ravnborg.org>
-References: <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <alpine.SOC.1.00.1202220213180.4171@math.ut.ee> <20120222174825.GA32694@google.com> <alpine.SOC.1.00.1202222025120.20496@math.ut.ee> <20120223185503.GI22536@google.com> <alpine.SOC.1.00.1202241120300.1227@math.ut.ee> <alpine.SOC.1.00.1202271914310.15067@math.ut.ee>
+	id S1754983Ab2B0TrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:47:24 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64965 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753965Ab2B0TrW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:47:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.25.8 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1202271914310.15067@math.ut.ee>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120227175407.GD10608@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	<1330140111-17201-10-git-send-email-wad@chromium.org>
+	<20120227175407.GD10608@redhat.com>
+Date: Mon, 27 Feb 2012 13:47:17 -0600
+Message-ID: <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
+Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
+From: Will Drewry <wad@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Denys Vlasenko <dvlasenk@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 07:17:42PM +0200, Meelis Roos wrote:
-> > > > > Can you please try the following patch?  If it still fails to boot,
-> > > > > please attach the failing log.  Thank you.
-> > > > 
-> > > > It works on E3500! Will try other machines tomorrow.
-> > > 
-> > > Once confirmed, I'll push the patch through tip.  It just hides the
-> > > underlying problem but we should be in no worse shape than before,
-> > > it's two line change so reproduing the problem again for proper
-> > > diagnosing isn't difficult, and we're getting a bit late in release
-> > > cycle already.
-> > 
-> > It cured the V210 too but I could not test V100 since it's offline until 
-> > monday.
-> 
-> Tested V100 too, success!
+On Mon, Feb 27, 2012 at 11:54 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/24, Will Drewry wrote:
+>>
+>>  arch/Kconfig              |    1 +
+>>  include/linux/ptrace.h    |    7 +++++--
+>>  include/linux/seccomp.h   |    4 +++-
+>>  include/linux/tracehook.h |    6 ++++++
+>>  kernel/ptrace.c           |    4 ++++
+>>  kernel/seccomp.c          |   18 ++++++++++++++++++
+>
+> FYI, this conflicts with the changes -mm tree.
+>
+> The changes in ptrace.* confict with Denys's
+> "ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code"
+>
+> The change in tracehook.h conflicts with
+> "ptrace: the killed tracee should not enter the syscall"
 
-Hi Meelis.
+What's the best way to reconcile this in this day and age? I don't see
+these in kernel-next yet and I can't tell if there is a public -mm
+anywhere anymore.  I can use the patches from the mailing list with
+Denys's changes if that'd be good enough.  His cleanup will make this
+code even smaller!
 
-I have tried to cook up a small patch that verify the length of what
-we read - compared to the original length.
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
+>>                       seccomp_send_sigsys(this_syscall, reason_code);
+>>                       return -1;
+>>               }
+>> +             case SECCOMP_RET_TRACE: {
+>> +                     int ret;
+>> +                     struct pt_regs *regs = task_pt_regs(current);
+>> +                     if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
+>> +                         !(current->ptrace & PT_TRACE_SECCOMP))
+>> +                             return -1;
+>> +                     /*
+>> +                      * PT_TRACE_SECCOMP and seccomp.trace indicate whether
+>> +                      * tracehook_report_syscall_entry needs to signal the
+>> +                      * tracer.  This avoids race conditions in hand off and
+>> +                      * the requirement for TIF_SYSCALL_TRACE ensures that
+>> +                      * we are in the syscall slow path.
+>> +                      */
+>> +                     current->seccomp.trace = 1;
+>> +                     ret = tracehook_report_syscall_entry(regs);
+>> +                     current->seccomp.trace = 0;
+>> +                     return ret;
+>
+> To be honest, this interface looks a bit strange to me...
+>
+> Once again, sorry if this was already discussed. But perhaps it would
+> be better to introduce PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP instead?
+>
+> SECCOMP_RET_TRACE: could simply do ptrace_event(PTRACE_EVENT_SECCOMP)
+> unconditionaly. The tracer can set the option and do PTRACE_CONT if it
+> doesn't want the system call notifications.
 
-Could you try to give this a quick spin and see if something
-turns up. I you have time it would be good to try on a box
-that worked before and one that was fixed by the patch from Tejun.
+Works for me - this also gets rid of the extra int for brief state
+tracking. I'll switch over to that in the next rev.  (More follow-ups
+to your reviews incoming too :).
 
-I have not looked much at the of stuff - but this looked like the right place to start.
-
-I have no possibility to try it out myself...
-
-	Sam
-
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 07cc1d6..826204a 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -128,6 +128,10 @@ static struct property * __init of_pdt_build_one_prop(phandle node, char *prev,
- 			p->value = prom_early_alloc(p->length + 1);
- 			len = of_pdt_prom_ops->getproperty(node, p->name,
- 					p->value, p->length);
-+
-+			if (len != p->length)
-+				pr_err("prop: %s %d => %d", p->name, p->length, len);
-+
- 			if (len <= 0)
- 				p->length = 0;
- 			((unsigned char *)p->value)[p->length] = '\0';
-@@ -161,8 +165,13 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
- 
- 	len = of_pdt_prom_ops->getproplen(node, name);
- 	if (len > 0) {
-+		int proplen;
- 		buf = prom_early_alloc(len);
--		len = of_pdt_prom_ops->getproperty(node, name, buf, len);
-+		proplen = of_pdt_prom_ops->getproperty(node, name, buf, len);
-+
-+		if (proplen != len)
-+			pr_err("prop: %s %d => %d\n", name, len, proplen);
-+
- 	}
- 
- 	return buf;
+Thanks!
+will
