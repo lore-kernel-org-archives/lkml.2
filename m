@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab2B0Grd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 01:47:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50936 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2B0Grc convert rfc822-to-8bit (ORCPT
+	id S1753225Ab2B0Gsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 01:48:33 -0500
+Received: from nctlincom01.orcon.net.nz ([60.234.4.74]:43263 "EHLO
+	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab2B0Gsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 01:47:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.50.203.98 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
+	Mon, 27 Feb 2012 01:48:31 -0500
+Message-ID: <4F4B273C.9080506@orcon.net.nz>
+Date: Mon, 27 Feb 2012 19:48:28 +1300
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <201202241253.52336.arnd@arndb.de>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
-	<201202221000.00810.arnd@arndb.de>
-	<CAJ0PZbR+AEpfNcX0wMHdVQfseC+fMxJjyaM25378miLnnfV0+w@mail.gmail.com>
-	<201202241253.52336.arnd@arndb.de>
-Date: Mon, 27 Feb 2012 15:47:32 +0900
-Message-ID: <CAJ0PZbSdm90=14Og4HSo+UoB5gNPfeXWnC-hiX6rw6WBTs9vTQ@mail.gmail.com>
-Subject: Re: [PATCH v5 4/5] Extcon: support mutually exclusive relation
- between cables.
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, gregkh@linuxfoundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
+To: Richard Henderson <rth@twiddle.net>
+CC: Michel Lespinasse <walken@google.com>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: alpha: futex regression bisected
+References: <4F420256.2090600@orcon.net.nz> <4F4282CA.5010502@twiddle.net>
+In-Reply-To: <4F4282CA.5010502@twiddle.net>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx4.orcon.net.nz on Mon, 27 Feb 2012 19:48:29 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Mon Feb 27 19:48:29 2012
+X-DSPAM-Confidence: 0.7006
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: 0.00 () [Hold at 5.00] 
+X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 06GCSM54t - 7eabc50daf87 - 20120227
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 9:53 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 24 February 2012, MyungJoo Ham wrote:
->> Ok, here goes an example how it would look like in the next revision of Extcon.
->> I think this addresses your comments on multistate-support patch (3/5)
+On 21/02/12 06:28, Richard Henderson wrote:
+> On 02/20/12 00:20, Michael Cree wrote:
+>> I have noticed some user space problems (pulseaudio crashes in pthread
+>> code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
+>> systems) that arise when using a 2.6.39 or later kernel on Alpha.
+>> Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
+>> criterion for good/bad kernel) eventually leads to:
 >>
->> /sys/class/extcon/max8997-muic.0/
->>         name: "max8997-muic.0"
->>         state: 0x00000009                   /* RW. 0xblahblah format
->> for both read and write */
->>         mutually_exclusive/
->>                 rule.0: 0x3
->>                 rule.1: 0x5
->>                 rule.2: 0xC
-
-==> I'll simply add 0x3, 0x5, 0xc as the filenames insteadof rule.0 .. 2.
-
->>         cable.0/
->>                 name: "VGA"
->>                 state: 1            /* RW: 0 or 1 */
->>                 mutually_exclusive/
->>                         cable.1
->>                         cable.2
-
-==> Removing this subdirectory, "mutually_exclusive"
-
->>         cable.1/
->>           ...
+>> 8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
+>> commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
+>> Author: Michel Lespinasse <walken@google.com>
+>> Date:   Thu Mar 10 18:50:58 2011 -0800
 >>
+>>     futex: Sanitize futex ops argument types
 >>
->> How about this?
->>
->
-> I would leave out the global mutually_exclusive/ directory because that
-> is redundant and I see no benefit in it. Having the redundant "state"
-> files is probably a good idea because the global one lets you make
-> atomic changes of multiple cables and the other are very convenient.
->
-> What kind of object is /sys/class/extcon/max8997-muic.0/cable.0/mutually_exclusive?
-> Is that a file with two lines, a directory with two empty files or
-> a directory with symlinks to the other directories?
+>>     Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
+>>     prototypes to use u32 types for the futex as this is the data type the
+>>     futex core code uses all over the place.
+> 
+> 
+> futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+>                               u32 oldval, u32 newval)
+> ...
+>         :       "r"(uaddr), "r"((long)oldval), "r"(newval)
+> 
+> 
+> There is no 32-bit compare instruction.  These are implemented by
+> consistently extending the values to a 64-bit type.  Since the
+> load instruction sign-extends, we want to sign-extend the other
+> quantity as well (despite the fact it's logically unsigned).
+> 
+> So:
+> 
+> -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
+> +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
+> 
+> should do the trick.
 
-I meant it to be a directory containing attributes (w/o show/store
-callbacks) with names of exclusive cables.
+Thanks, that fixes it.  Will you formally submit a patch with commit
+message or should I?
 
-However, because we cannot make 2nd-subdirectories under a kobject (I
-didn't know this until some hours ago), it appears that I need to
-avoid this approach until it is allowed to do so.
+You can have at least a Reviewed-by, or even an
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+who correctly analysed the problem in response to when I suggested the
+fix on the debian-alpha email list without explanation.
 
-Because the redundant information is in the global mutually_exclusive
-directory, I'll skip this one (mutually_exclusive subdirectory under
-cable.x subdirectory).
-
-
->
->        Arnd
-
-
-
-
-
-Cheers!
-MyungJoo.
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+Cheers
+Michael.
