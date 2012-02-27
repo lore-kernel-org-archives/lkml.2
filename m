@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2B0OmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 09:42:13 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36827 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab2B0OmL (ORCPT
+	id S1753948Ab2B0Ooz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:44:55 -0500
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:37713 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752488Ab2B0Ooy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 09:42:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.136.4 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
-Message-ID: <4F4B963F.4060705@gmail.com>
-Date: Mon, 27 Feb 2012 07:42:07 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Yuanfang Chen <cyfmxc@gmail.com>
-CC: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com> <4F4484AC.9050500@lge.com> <87ehtnhz9w.fsf@gmail.com> <CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com> <4F45E9C5.4020900@lge.com> <CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com> <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com> <4F468EBB.9000209@gmail.com> <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com> <4F4AF727.2040105@gmail.com> <CAJh9x3oO+-8Bc4UONG6RTmSeVFcuNHTKH5m2KsizaubmSojYmw@mail.gmail.com> <CAJh9x3qoF=WdmfaTUTGjKWzPbw7TNb3cG+=mi=YFVQ9q76o6yQ@mail.gmail.com>
-In-Reply-To: <CAJh9x3qoF=WdmfaTUTGjKWzPbw7TNb3cG+=mi=YFVQ9q76o6yQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 27 Feb 2012 09:44:54 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
+	h=Received:Subject:From:To:Cc:Date:In-Reply-To:References:Content-Type:X-Mailer:Content-Transfer-Encoding:Message-ID:Mime-Version;
+	b=mu6iJH9u43HUajH/0LvBU0TwvcTWlG04Uiqsj2zMbh/Vg3aoWjAH4dHkBr8DtbDhJ/C5RHrYaclir1A5UiDV/dPK+ETKYr32bW4HNXkyrysaOrDsRqONbfiqodYDzclD;
+Subject: Re: [PATCH 2/2] HID: wacom: Add serial and id reporting for Wacom
+ Intuos4 WL
+From: Przemo Firszt <przemo@firszt.eu>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: pinglinux@gmail.com, chris@cnpbagwell.com,
+        linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Date: Mon, 27 Feb 2012 14:44:31 +0000
+In-Reply-To: <alpine.LNX.2.00.1202271530390.31150@pobox.suse.cz>
+References: <1330091552-9011-1-git-send-email-przemo@firszt.eu>
+	 <alpine.LNX.2.00.1202271530390.31150@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 PLD Linux 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1330353877.4870.3.camel@pldmachine>
+Mime-Version: 1.0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/27/12 6:58 AM, Yuanfang Chen wrote:
-> On Mon, Feb 27, 2012 at 8:56 AM, Yuanfang Chen<cyfmxc@gmail.com>  wrote:
->>
->> On Feb 26, 2012 10:23 PM, "David Ahern"<dsahern@gmail.com>  wrote:
->>>
->>> On 2/24/12 3:41 PM, Yuanfang Chen wrote:
->>>>
->>>> I think I'll settle with perf record for now. Still, unlike trace
->>>> event, sample count is not meaningful for PMU event. Output of "perf
->>>> script" does not include period value. One line of code will do the
->>>> work.
->>>>
->>>> lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
->>>> __mem_cgroup_commit_char
->>>> lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
->>>> __mem_cgroup_commit_char
->>>>
->>>> 86754, 1027634 is the period value. But I'm not sure which is the PMU
->>>> value, is it just period value, or period x sample after. If so, what
->>>> is the sample after value?
->>>
->>>
->>> You lost me. You modified perf-script to print the period?
->>>
->>> Are you asking for the PMU counter value for 0x3c?
->
->       yes
+Dnia 2012-02-27, pon o godzinie 15:30 +0100, Jiri Kosina pisze:
+> On Fri, 24 Feb 2012, Przemo Firszt wrote:
+> 
+> > This patch implements reporting id and serial number of used tool.
+> > Reported values are the same as for USB on of the driver for wacom Intuos4 W
+> 
+> Applied.
+> 
 
-perf-record does not get counter values when samples are genereated.
+Thanks!
+-- 
+Przemo
 
->
->>>
->>> What perf commands are you running?
->
->      perf script
->      (with no options)
-
-record command?
-
-I don't see what the 86754 and 1902764 values are in your example output 
-above.
-
-
-David
