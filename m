@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab2B0SVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:21:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55980 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2B0SVY (ORCPT
+	id S1754538Ab2B0SVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:21:52 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3546 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab2B0SVv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:21:24 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of venki@google.com designates 10.50.189.200 as permitted sender) smtp.mail=venki@google.com; dkim=pass header.i=venki@google.com
+	Mon, 27 Feb 2012 13:21:51 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 27 Feb 2012 10:21:30 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Feb 2012 10:21:29 -0800
+Subject: RE: [PATCH 17/20] pinctrl: Add usecount to pins for muxing
+Thread-Topic: [PATCH 17/20] pinctrl: Add usecount to pins for muxing
+Thread-Index: Acz1Hix2xcCU6DslSBC8tmIdguNxygAXjrpA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFB6@HQMAIL01.nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-18-git-send-email-swarren@nvidia.com>
+ <20120227071150.GA26061@shlinux2.ap.freescale.net>
+In-Reply-To: <20120227071150.GA26061@shlinux2.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120227073239.GA3397@elte.hu>
-References: <1330122800-834-1-git-send-email-venki@google.com>
-	<20120227073239.GA3397@elte.hu>
-Date: Mon, 27 Feb 2012 10:21:23 -0800
-Message-ID: <CABeCy1bXR7RDi8iOh1fD2XcM3x6weefzv_ZVNghOCkfK3csErQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v2
-From: Venki Pallipadi <venki@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 11:32 PM, Ingo Molnar <mingo@elte.hu> wrote:
+Dong Aisheng wrote at Monday, February 27, 2012 12:12 AM:
+> On Sun, Feb 19, 2012 at 11:45:57PM -0700, Stephen Warren wrote:
+> > Multiple mapping table entries could reference the same pin, and hence
+> > "own" it. This would be unusual now that pinctrl_get() represents a single
+> > state for a client device, but in the future when it represents all known
+> > states for a device, this is quite likely. Implement reference counting
+> > for pin ownership to handle this.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+...
+> >  	/*
+> > -	 * If there is no kind of request function for the pin we just assume
+> > -	 * we got it by default and proceed.
+> > -	 */
+> > +	* If there is no kind of request function for the pin we just assume
+> > +	* we got it by default and proceed.
+> > +	*/
 >
-> * Venkatesh Pallipadi <venki@google.com> wrote:
->
->> [...] I did have to avoid x86 smpboot cleanup that Ingo
->> suggested as that did not seem trivial to me :-).
->
-> Well, idletask_ti_flags is unacceptably ugly, please do the
-> smpboot.c cleanup because that paves the way to add new features
-> to the x86 idle code.
->
+> I remember the correct format for multiple lines of comments is:
+> /*
+>  * ...
+>  */
+> 
+> But i see the changes here are(i'm using mutt):
+> /*
+> * ...
+> */
+> Can you help explain?
 
-OK. Will look at this soon.
-If everything else looks OK, can you queue up the first 3 patches in
-the series somewhere so that it gets some wider testing. Things should
-work without that idletask_ti_flags change.
+It was a mistake; my editor corrupted it when I added or removed some
+indentation levels. I noticed this and fixed it locally when doing
+some rebasing.
 
-Thanks,
-Venki
+> Else please also take my ACK:
+> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+
+Thanks.
+
+-- 
+nvpublic
+
