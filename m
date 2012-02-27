@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2B0RjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:39:12 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51457 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab2B0RjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:39:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of djpohly@gmail.com designates 10.52.68.241 as permitted sender) smtp.mail=djpohly@gmail.com; dkim=pass header.i=djpohly@gmail.com
-From: "Devin J. Pohly" <djpohly@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Devin J. Pohly" <djpohly@gmail.com>
-Subject: [PATCH] mei: fix typo in error code return
-Date: Mon, 27 Feb 2012 12:38:12 -0500
-Message-Id: <1330364292-10516-1-git-send-email-djpohly@gmail.com>
-X-Mailer: git-send-email 1.7.9.2
+	id S1754157Ab2B0RjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:39:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab2B0RjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:39:19 -0500
+Date: Mon, 27 Feb 2012 19:39:00 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        peterz@infradead.org, mingo@elte.hu, joro@8bytes.org,
+        joerg.roedel@amd.com
+Subject: Re: [PATCH] perf tools: fix guest mode monitoring on AMD
+Message-ID: <20120227173900.GE22220@redhat.com>
+References: <20120227173351.GA6945@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120227173351.GA6945@quad>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Devin J. Pohly" <djpohly@gmail.com>
+On Mon, Feb 27, 2012 at 06:33:51PM +0100, Stephane Eranian wrote:
+> Commit:
+> 
+> 1aed267 perf kvm: Do guest-only counting by default
+>  
+> introduced a bug on AMD systems whereby simple commands:
+> 
+> $ perf stat ls
+> Performance counter stats for 'ls':
+>                  0 cycles                    #    0.000 GHz                    
+>        0.003704596 seconds time elapsed
+> 
+> would not count anything anymore. Same results for perf record.
+> 
+> I tracked it down to guest mode exclusion being enabled
+> by default leading to attr->exclude_guest = 1. When
+> not operating under any sort of virtualization, this
+> causes the PMU not to count anything.
+CCing Joerg. I think he fixed this or similar problem recently.
 
-~ENODEV is a different number than -ENODEV
+> 
+> The fix disables guest exclusion by default.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+> 
+> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+> index 8109a90..c1017b3 100644
+> --- a/tools/perf/util/util.c
+> +++ b/tools/perf/util/util.c
+> @@ -6,7 +6,7 @@
+>   * XXX We need to find a better place for these things...
+>   */
+>  bool perf_host  = true;
+> -bool perf_guest = false;
+> +bool perf_guest = true;
+>  
+>  void event_attr_init(struct perf_event_attr *attr)
+>  {
 
-Signed-off-by: Devin J. Pohly <djpohly@gmail.com>
----
- drivers/staging/mei/interrupt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
-index 5c9170f..c2800ba 100644
---- a/drivers/staging/mei/interrupt.c
-+++ b/drivers/staging/mei/interrupt.c
-@@ -1243,7 +1243,7 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
- 		}
- 	}
- 	if (dev->stop)
--		return ~ENODEV;
-+		return -ENODEV;
- 
- 	/* complete control write list CB */
- 	dev_dbg(&dev->pdev->dev, "complete control write list cb.\n");
--- 
-1.7.9.2
-
+--
+			Gleb.
