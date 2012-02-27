@@ -1,102 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab2B0Xyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 18:54:40 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:33848 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751477Ab2B0Xyj (ORCPT
+	id S1756231Ab2B0XzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 18:55:19 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6304 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab2B0XzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 18:54:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of khilman@ti.com designates 10.68.73.103 as permitted sender) smtp.mail=khilman@ti.com
-From: Kevin Hilman <khilman@ti.com>
-To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
-Organization: Texas Instruments, Inc.
-References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
-	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
-Date: Mon, 27 Feb 2012 15:54:37 -0800
-In-Reply-To: <1329999031-6914-4-git-send-email-tarun.kanti@ti.com> (Tarun
-	Kanti DebBarma's message of "Thu, 23 Feb 2012 17:40:28 +0530")
-Message-ID: <87ty2bu91e.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 27 Feb 2012 18:55:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 27 Feb 2012 15:55:15 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 2/2] pinctrl: Assume map table entries can't have a NULL name field
+Date: Mon, 27 Feb 2012 16:55:09 -0700
+Message-ID: <1330386909-17723-2-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
+References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+pinctrl_register_mappings() already requires that every mapping table
+entry have a non-NULL name field.
 
-> Since we already have bank->context.wake_en to keep track
-> of gpios which are wakeup enabled, there is no need to have
-> this field any more.
->
-> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Logically, this makes sense too; drivers should always request a specific
+named state so they know what they're getting. Relying on getting the
+first mentioned state in the mapping table is error-prone, and a nasty
+special case to implement, given that a given the mapping table may define
+multiple states for a device.
 
-I'm not crazy about this change...
+Remove a small part of the documentation that talked about optionally
+requesting a specific state; it's mandatory now.
 
-> ---
->  drivers/gpio/gpio-omap.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-> index 64f15d5..b62e861 100644
-> --- a/drivers/gpio/gpio-omap.c
-> +++ b/drivers/gpio/gpio-omap.c
-> @@ -53,7 +53,6 @@ struct gpio_bank {
->  	void __iomem *base;
->  	u16 irq;
->  	u16 virtual_irq_start;
-> -	u32 suspend_wakeup;
->  	u32 non_wakeup_gpios;
->  	u32 enabled_non_wakeup_gpios;
->  	struct gpio_regs context;
-> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
->  
->  	spin_lock_irqsave(&bank->lock, flags);
->  	if (enable)
-> -		bank->suspend_wakeup |= gpio_bit;
-> +		bank->context.wake_en |= gpio_bit;
->  	else
-> -		bank->suspend_wakeup &= ~gpio_bit;
-> +		bank->context.wake_en &= ~gpio_bit;
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v2: Update mach-u300/core.c and sirfsoc_uart.c not to request NULL state
+names. Use PINCTRL_STATE_DEFAULT from previous patch.
 
-The bank->context values are expected to be copies of the actual
-register contents, and here that is clearly not the case.
+This is now conceptually ack'd by Dong Aisheng, although I didn't actually
+include the ack above since I've reworked the patch a little since I last
+posted it (per the v2 changelog above).
+---
+ Documentation/pinctrl.txt         |    7 +++----
+ arch/arm/mach-u300/core.c         |    8 ++++----
+ drivers/pinctrl/core.c            |   17 +++++------------
+ drivers/tty/serial/sirfsoc_uart.c |    2 +-
+ 4 files changed, 13 insertions(+), 21 deletions(-)
 
-With this change, you're using the context register to track changes
-that you *might* eventually write to the register.
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 6fe3232..558aac5 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -782,16 +782,19 @@ spi on the second function mapping:
+ static const struct pinctrl_map __initdata mapping[] = {
+ 	{
+ 		.dev_name = "foo-spi.0",
++		.name = PINCTRL_STATE_DEFAULT,
+ 		.ctrl_dev_name = "pinctrl-foo",
+ 		.function = "spi0",
+ 	},
+ 	{
+ 		.dev_name = "foo-i2c.0",
++		.name = PINCTRL_STATE_DEFAULT,
+ 		.ctrl_dev_name = "pinctrl-foo",
+ 		.function = "i2c0",
+ 	},
+ 	{
+ 		.dev_name = "foo-mmc.0",
++		.name = PINCTRL_STATE_DEFAULT,
+ 		.ctrl_dev_name = "pinctrl-foo",
+ 		.function = "mmc0",
+ 	},
+@@ -944,10 +947,6 @@ foo_remove()
+ 	pinctrl_put(state->p);
+ }
+ 
+-If you want to grab a specific control mapping and not just the first one
+-found for this device you can specify a specific mapping name, for example in
+-the above example the second i2c0 setting: pinctrl_get(&device, "spi0-pos-B");
+-
+ This get/enable/disable/put sequence can just as well be handled by bus drivers
+ if you don't want each and every driver to handle it and you know the
+ arrangement on your bus.
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index c9050dd..5b37d84 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -1573,9 +1573,9 @@ static struct pinctrl_map __initdata u300_pinmux_map[] = {
+ 	PIN_MAP_SYS_HOG("pinctrl-u300", "emif0"),
+ 	PIN_MAP_SYS_HOG("pinctrl-u300", "emif1"),
+ 	/* per-device maps for MMC/SD, SPI and UART */
+-	PIN_MAP("MMCSD", "pinctrl-u300", "mmc0", "mmci"),
+-	PIN_MAP("SPI", "pinctrl-u300", "spi0", "pl022"),
+-	PIN_MAP("UART0", "pinctrl-u300", "uart0", "uart0"),
++	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "mmc0", "mmci"),
++	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "spi0", "pl022"),
++	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "uart0", "uart0"),
+ };
+ 
+ struct u300_mux_hog {
+@@ -1607,7 +1607,7 @@ static int __init u300_pinctrl_fetch(void)
+ 		struct pinctrl *p;
+ 		int ret;
+ 
+-		p = pinctrl_get(u300_mux_hogs[i].dev, NULL);
++		p = pinctrl_get(u300_mux_hogs[i].dev, PINCTRL_STATE_DEFAULT);
+ 		if (IS_ERR(p)) {
+ 			pr_err("u300: could not get pinmux hog %s\n",
+ 			       u300_mux_hogs[i].name);
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index f25307b..6af6d8d 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -461,8 +461,8 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
+ 	int i;
+ 	struct pinctrl_map const *map;
+ 
+-	/* We must have a dev name */
+-	if (WARN_ON(!dev))
++	/* We must have both a dev and state name */
++	if (WARN_ON(!dev || !name))
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	devname = dev_name(dev);
+@@ -504,16 +504,9 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
+ 		if (strcmp(map->dev_name, devname))
+ 			continue;
+ 
+-		/*
+-		 * If we're looking for a specific named map, this must match,
+-		 * else we loop and look for the next.
+-		 */
+-		if (name != NULL) {
+-			if (map->name == NULL)
+-				continue;
+-			if (strcmp(map->name, name))
+-				continue;
+-		}
++		/* State name must be the one we're looking for */
++		if (strcmp(map->name, name))
++			continue;
+ 
+ 		ret = pinmux_apply_muxmap(pctldev, p, dev, devname, map);
+ 		if (ret) {
+diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
+index c1a871e..3cabb65 100644
+--- a/drivers/tty/serial/sirfsoc_uart.c
++++ b/drivers/tty/serial/sirfsoc_uart.c
+@@ -673,7 +673,7 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
+ 	port->irq = res->start;
+ 
+ 	if (sirfport->hw_flow_ctrl) {
+-		sirfport->p = pinctrl_get(&pdev->dev, NULL);
++		sirfport->p = pinctrl_get(&pdev->dev, PINCTRL_STATE_DEFAULT);
+ 		ret = IS_ERR(sirfport->p);
+ 		if (ret)
+ 			goto pin_err;
+-- 
+1.7.0.4
 
-IMO, this is more confusing than having a separate field to track this.
-
-Kevin
-
->  	spin_unlock_irqrestore(&bank->lock, flags);
->  
-> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
->  
->  	spin_lock_irqsave(&bank->lock, flags);
->  	bank->context.wake_en = __raw_readl(mask_reg);
-> -	__raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
-> +	__raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
->  	spin_unlock_irqrestore(&bank->lock, flags);
->  
->  	return 0;
-> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
->  	if (!bank->mod_usage || !bank->loses_context)
->  		return 0;
->  
-> -	if (!bank->regs->wkup_en || !bank->suspend_wakeup)
-> +	if (!bank->regs->wkup_en || !bank->context.wake_en)
->  		return 0;
->  
->  	spin_lock_irqsave(&bank->lock, flags);
->  	_gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
-> -	_gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
-> +	_gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
->  	spin_unlock_irqrestore(&bank->lock, flags);
->  
->  	return 0;
