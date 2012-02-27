@@ -1,205 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab2B0LR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:17:56 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4977 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab2B0LRt (ORCPT
+	id S1753668Ab2B0LSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:18:01 -0500
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1226 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753591Ab2B0LR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:17:49 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6632"; a="164454748"
-From: Yaniv Gardi <ygardi@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: axboe@kernel.dk, ygardi@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v5 2/2] mmc: card: Adding support for Sanitize in eMMC v4.5
-Date: Mon, 27 Feb 2012 13:17:29 +0200
-Message-Id: <1330341449-25686-3-git-send-email-ygardi@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1330341449-25686-1-git-send-email-ygardi@codeaurora.org>
-References: <1330341449-25686-1-git-send-email-ygardi@codeaurora.org>
+	Mon, 27 Feb 2012 06:17:58 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q1RBHnBD002693
+Subject: Re: Can we move device drivers into user-space?
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Jidong Xiao <jidong.xiao@gmail.com>
+Cc: Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Feb 2012 12:17:51 +0100
+In-Reply-To: <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>
+	 <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>
+	 <20120224153811.GA16535@kroah.com>
+	 <CAG4AFWaDxK2r9W7eehAnWHxD92C_fjpL1OQnENuZFjOjXDOYmA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1330341472.17330.20.camel@thorin>
+Mime-Version: 1.0
+X-DCC-URT-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+On Fre, 2012-02-24 at 11:38 -0500, Jidong Xiao wrote:
+[...]
+> Although I was asking "can we" do something, I am not actually
+> strongly in favor of either move or not move, as indeed it costs too
+> much to do the moving job.
 
----
- drivers/mmc/card/block.c |   56 ++++++++++++++++++++++++++++++++++++++-------
- drivers/mmc/card/queue.c |   10 +++++++-
- include/linux/mmc/card.h |    7 +++++
- include/linux/mmc/host.h |    1 +
- 4 files changed, 64 insertions(+), 10 deletions(-)
+You obviously missed a crucial point in the little corner "LKML" of the
+universe: You are (automatically, implicitly) expected to start the work
+and produce patches and keep on working on it and actually *do* the job.
+If only to show that you are serious, that the "ideas" are actually
+useful and you are not just trolling around. Possibly people will help
+you though.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 0c959c9..5cb4ba1 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -830,6 +830,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
-+	/* 1ST priority is DISCARD.
-+	   2ND is TRIM
-+	   3RD is ERASE */
- 	if (mmc_can_discard(card))
- 		arg = MMC_DISCARD_ARG;
- 	else if (mmc_can_trim(card))
-@@ -868,18 +871,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
- 	unsigned int from, nr, arg;
- 	int err = 0, type = MMC_BLK_SECDISCARD;
- 
--	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
-+	if (!(mmc_can_secure_erase_trim(card))) {
- 		err = -EOPNOTSUPP;
- 		goto out;
- 	}
- 
--	/* The sanitize operation is supported at v4.5 only */
--	if (mmc_can_sanitize(card)) {
--		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
--				EXT_CSD_SANITIZE_START, 1, 0);
--		goto out;
--	}
--
- 	from = blk_rq_pos(req);
- 	nr = blk_rq_sectors(req);
- 
-@@ -922,6 +918,42 @@ out:
- 	return err ? 0 : 1;
- }
- 
-+int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
-+			       struct request *req)
-+{
-+	struct mmc_blk_data *md = mq->data;
-+	struct mmc_card *card = md->queue.card;
-+	int err = 0;
-+
-+	BUG_ON(card == NULL);
-+	BUG_ON(card->host == NULL);
-+
-+	if (!(mmc_can_sanitize(card) &&
-+	     (card->host->caps2 & MMC_CAP2_SANITIZE))) {
-+			pr_err("%s: SANITIZE is not supported", __func__);
-+			err = -EOPNOTSUPP;
-+			goto out;
-+	}
-+
-+	mmc_sd_card_set_sanitize_in_progress(card);
-+
-+	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-+					 EXT_CSD_SANITIZE_START, 1, 0);
-+
-+	if (err)
-+		pr_err("%s: mmc%d: mmc_switch() failed. err=%d\n",
-+		       __func__, card->host->index, err);
-+
-+	mmc_sd_card_set_sanitize_completed(card);
-+
-+out:
-+	spin_lock_irq(&md->lock);
-+	__blk_end_request(req, err, blk_rq_bytes(req));
-+	spin_unlock_irq(&md->lock);
-+
-+	return err ? 0 : 1;
-+}
-+
- static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
- {
- 	struct mmc_blk_data *md = mq->data;
-@@ -1379,7 +1411,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		goto out;
- 	}
- 
--	if (req && req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_SANITIZE) {
-+		/* complete ongoing async transfer before issuing sanitize */
-+		if (card->host && card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
-+		ret = mmc_blk_issue_sanitize_rq(mq, req);
-+	} else if (req && req->cmd_flags & REQ_DISCARD) {
- 		/* complete ongoing async transfer before issuing discard */
- 		if (card->host->areq)
- 			mmc_blk_issue_rw_rq(mq, NULL);
-@@ -1396,6 +1433,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 		ret = mmc_blk_issue_rw_rq(mq, req);
- 	}
- 
-+
- out:
- 	if (!req)
- 		/* release host only when there are no more requests */
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index dcad59c..ad6605d 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -140,10 +140,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
- 	/* granularity must not be greater than max. discard */
- 	if (card->pref_erase > max_discard)
- 		q->limits.discard_granularity = 0;
--	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
-+	if (mmc_can_secure_erase_trim(card))
- 		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
- }
- 
-+static void mmc_queue_setup_sanitize(struct request_queue *q)
-+{
-+	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
-+}
-+
- /**
-  * mmc_init_queue - initialise a queue structure.
-  * @mq: mmc queue
-@@ -181,6 +186,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	if (mmc_can_erase(card))
- 		mmc_queue_setup_discard(mq->queue, card);
- 
-+	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
-+		mmc_queue_setup_sanitize(mq->queue);
-+
- #ifdef CONFIG_MMC_BLOCK_BOUNCE
- 	if (host->max_segs == 1) {
- 		unsigned int bouncesz;
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 9478a6b..0890e9c 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -236,6 +236,9 @@ struct mmc_card {
- #define MMC_POWEROFF_SHORT		2
- #define MMC_POWEROFF_LONG		3
- 
-+/* card is in sanitize progress */
-+#define MMC_STATE_SANITIZE_IN_PROGRESS (1<<9)
-+
- 	unsigned int		erase_size;	/* erase size in sectors */
-  	unsigned int		erase_shift;	/* if erase unit is power 2 */
-  	unsigned int		pref_erase;	/* in sectors */
-@@ -388,6 +391,10 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
- #define mmc_card_set_ddr_mode(c) ((c)->state |= MMC_STATE_HIGHSPEED_DDR)
- #define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
- #define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
-+#define mmc_sd_card_set_sanitize_in_progress(c) ((c)->state |= \
-+		MMC_STATE_SANITIZE_IN_PROGRESS)
-+#define mmc_sd_card_set_sanitize_completed(c) ((c)->state &= \
-+		~MMC_STATE_SANITIZE_IN_PROGRESS)
- #define mmc_card_set_ext_capacity(c) ((c)->state |= MMC_CARD_SDXC)
- #define mmc_card_set_removed(c) ((c)->state |= MMC_CARD_REMOVED)
- 
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 9a03d03..93210aa 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -242,6 +242,7 @@ struct mmc_host {
- #define MMC_CAP2_CACHE_CTRL	(1 << 1)	/* Allow cache control */
- #define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)	/* Notify poweroff supported */
- #define MMC_CAP2_NO_MULTI_READ	(1 << 3)	/* Multiblock reads don't work */
-+#define MMC_CAP2_SANITIZE	(1<<4)		/* Support Sanitize */
- 
- 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
- 	unsigned int        power_notify_type;
+Quoting some studies is nice for reference (implying that they are
+relevant and applicable which should be checked before blindly believing
+in it) but most here have read too many "studies" to be impressed any
+number of them.
+
+That's usually worded in (and meant with) "show patches" or "try it out"
+or "talk is cheap, show me the code".
+
+	Bernd
 -- 
-1.7.6
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
+
