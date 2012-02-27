@@ -1,226 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2B0GVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 01:21:21 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57583 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab2B0GVT convert rfc822-to-8bit (ORCPT
+	id S1754084Ab2B0GVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 01:21:49 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39700 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab2B0GVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 01:21:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F493238.4020907@cs.wisc.edu>
-References: <1330067945-9128-1-git-send-email-santoshsy@gmail.com>
- <1330067945-9128-3-git-send-email-santoshsy@gmail.com> <4F493238.4020907@cs.wisc.edu>
-From: Santosh Y <santoshsy@gmail.com>
-Date: Mon, 27 Feb 2012 11:50:56 +0530
-Message-ID: <CALMYJDv1mPPMBSviHkKF09JOdvVz=sEMj6HuVk_TR0Zr+iFKjg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] [SCSI] ufshcd: UFS UTP Transfer requests handling
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        yejin.moon@samsung.com, dsaxena@linaro.org, ilho215.lee@samsung.com,
-        nala.la@samsung.com, stephen.doel@linaro.org, sreekumar.c@samsung.com,
-        Vinayak Holikatti <vinholikatti@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Feb 2012 01:21:47 -0500
+Date: Mon, 27 Feb 2012 17:21:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Shi <alex.shi@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120227172139.726ddae85c910cee7b7e3a37@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__27_Feb_2012_17_21_39_+1100_mo6.0N.b/4Rw1O9k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>  #include "ufs.h"
->> @@ -75,6 +76,8 @@ enum {
->>       UFSHCD_MAX_CHANNEL      = 0,
->>       UFSHCD_MAX_ID           = 1,
->>       UFSHCD_MAX_LUNS         = 8,
->> +     UFSHCD_CMD_PER_LUN      = 32,
->> +     UFSHCD_CAN_QUEUE        = 32,
->
->
-> Is the can queue right, or are you working around a issue in the shared
-> tag map code, or is this due to how you are tracking outstanding reqs
-> (just a unsigned long so limited by that)?
->
-> Can you support multiple luns per host? If so, this seems low for normal
-> HBAs. Is this low due to the hw or something? If you have multiple luns
-> then you are going to get a burst of 32 IOs and the host will work on
-> them, then when those are done we will send IO to the next device, then
-> repeat. For normal HBAs we would have can_queue = cmd_per_lun * X, so we
-> can do IO on X devices at the same time.
->
+--Signature=_Mon__27_Feb_2012_17_21_39_+1100_mo6.0N.b/4Rw1O9k
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The host can support multiple LUNS, but the UFS host controller can
-support only 32 outstanding commands.
-So can queue is set to 32.
+Hi Andrew,
 
->> + *
->> + * Returns 0 for success, non-zero in case of failure
->> + */
->> +static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
->> +{
->> +     struct ufshcd_lrb *lrbp;
->> +     struct ufs_hba *hba;
->> +     unsigned long flags;
->> +     int tag;
->> +     int err = 0;
->> +
->> +     hba = (struct ufs_hba *) &host->hostdata[0];
->
->
-> Use shost_priv instead of accessing hostdata. Check the rest of the
-> driver for this.
->
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-ok, will use shost_priv.
+In file included from include/linux/compat.h:18:0,
+                 from arch/x86/include/asm/ia32.h:7,
+                 from arch/x86/include/asm/sigframe.h:17,
+                 from arch/x86/kernel/asm-offsets.c:16:
+arch/x86/include/asm/compat.h: In function 'arch_compat_alloc_user_space':
+arch/x86/include/asm/compat.h:232:3: error: implicit declaration of functio=
+n 'percpu_read' [-Werror=3Dimplicit-function-declaration]
 
->> +
->> +/**
->> + * ufshcd_adjust_lun_qdepth - Update LUN queue depth if device responds with
->> + *                         SAM_STAT_TASK_SET_FULL SCSI command status.
->> + * @cmd: pointer to SCSI command
->> + */
->> +static void ufshcd_adjust_lun_qdepth(struct scsi_cmnd *cmd)
->> +{
->> +     struct ufs_hba *hba;
->> +     int i;
->> +     int lun_qdepth = 0;
->> +
->> +     hba = (struct ufs_hba *) cmd->device->host->hostdata;
->> +
->> +     /*
->> +      * LUN queue depth can be obtained by counting outstanding commands
->> +      * on the LUN.
->> +      */
->> +     for (i = 0; i < hba->nutrs; i++) {
->> +             if (test_bit(i, &hba->outstanding_reqs)) {
->> +
->> +                     /*
->> +                      * Check if the outstanding command belongs
->> +                      * to the LUN which reported SAM_STAT_TASK_SET_FULL.
->> +                      */
->> +                     if (cmd->device->lun == hba->lrb[i].lun)
->> +                             lun_qdepth++;
->> +             }
->> +     }
->> +
->> +     /*
->> +      * LUN queue depth will be total outstanding commands, except the
->> +      * command for which the LUN reported SAM_STAT_TASK_SET_FULL.
->> +      */
->> +     scsi_adjust_queue_depth(cmd->device, MSG_SIMPLE_TAG, lun_qdepth - 1);
->> +}
->> +
->> +/**
->> + * ufshcd_scsi_cmd_status - Update SCSI command result based on SCSI status
->> + * @lrb: pointer to local reference block of completed command
->> + * @scsi_status: SCSI command status
->> + *
->> + * Returns value base on SCSI command status
->> + */
->> +static inline int
->> +ufshcd_scsi_cmd_status(struct ufshcd_lrb *lrbp, int scsi_status)
->> +{
->> +     int result = 0;
->> +
->> +     switch (scsi_status) {
->> +     case SAM_STAT_GOOD:
->> +             result |= DID_OK << 16 |
->> +                       COMMAND_COMPLETE << 8 |
->> +                       SAM_STAT_GOOD;
->> +             break;
->> +     case SAM_STAT_CHECK_CONDITION:
->> +             result |= DRIVER_SENSE << 24 |
->
-> scsi ml will set the driver sense bit for you when it completes the
-> command in scsi_finish_command. No need for the driver to touch this.
->
+Caused by commit d1a797f388d6 ("x32: Handle process creation") from the
+tip tree interacting with commit 30999a95d190 ("percpu: remove percpu_xxx()
+functions") from the akpm tree.
 
-ok, i'll change it.
+I applied the following fix up patch.
 
->
->> +                       DRIVER_OK << 16 |
->> +                       COMMAND_COMPLETE << 8 |
->> +                       SAM_STAT_CHECK_CONDITION;
->> +             ufshcd_copy_sense_data(lrbp);
->> +             break;
->> +     case SAM_STAT_BUSY:
->> +             result |= DID_BUS_BUSY << 16 |
->> +                       SAM_STAT_BUSY;
->
-> If you got sam stat busy just set that. You do not need to set the host
-> byte and you do not want to, because the scsi_error.c handling will be
-> incorrect. Instead of retrying until sam stat busy is no longer returned
-> (or until cmd->retries * cmd->timeout) you only get 5 retries.
->
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 27 Feb 2012 17:12:00 +1100
+Subject: [PATCH] percpu: fix for removal of percpu_xxx function
 
-Ok, I'll change it.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/x86/include/asm/compat.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->
->> +             break;
->> +     case SAM_STAT_TASK_SET_FULL:
->> +
->> +             /*
->> +              * If a LUN reports SAM_STAT_TASK_SET_FULL, then the LUN queue
->> +              * depth needs to be adjusted to the exact number of
->> +              * outstanding commands the LUN can handle at any given time.
->> +              */
->> +             ufshcd_adjust_lun_qdepth(lrbp->cmd);
->> +             result |= DID_SOFT_ERROR << 16 |
->> +                       SAM_STAT_TASK_SET_FULL;
->
->
-> Same here. Just set the sam stat part.
->
->
->> +             break;
->> +     case SAM_STAT_TASK_ABORTED:
->> +             result |=  DID_ABORT << 16 |
->> +                        ABORT_TASK << 8 |
->> +                        SAM_STAT_TASK_ABORTED;
->
-> Same.
->
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index e7f68b4..b6a2a1c 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -229,7 +229,7 @@ static inline void __user *arch_compat_alloc_user_space=
+(long len)
+ 		sp =3D task_pt_regs(current)->sp;
+ 	} else {
+ 		/* -128 for the x32 ABI redzone */
+-		sp =3D percpu_read(old_rsp) - 128;
++		sp =3D __this_cpu_read(old_rsp) - 128;
+ 	}
+=20
+ 	return (void __user *)round_down(sp - len, 16);
+--=20
+1.7.9.1
 
-ok.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> +             break;
->> +     default:
->> +             result |= DID_ERROR << 16;
->> +             break;
->> +     } /* end of switch */
->> +
->> +     return result;
->> +}
->> +
->> +/**
->>  /**
->> @@ -809,7 +1295,13 @@ static struct scsi_host_template ufshcd_driver_template = {
->>       .module                 = THIS_MODULE,
->>       .name                   = UFSHCD,
->>       .proc_name              = UFSHCD,
->> +     .queuecommand           = ufshcd_queuecommand,
->> +     .slave_alloc            = ufshcd_slave_alloc,
->> +     .slave_destroy          = ufshcd_slave_destroy,
->>       .this_id                = -1,
->> +     .sg_tablesize           = SG_ALL,
->> +     .cmd_per_lun            = UFSHCD_CMD_PER_LUN,
->> +     .can_queue              = UFSHCD_CAN_QUEUE,
->
-> Did you want a  change_queue_depth callout?
->
->>  };
->>
+--Signature=_Mon__27_Feb_2012_17_21_39_+1100_mo6.0N.b/4Rw1O9k
+Content-Type: application/pgp-signature
 
-No, command per LUN is set to maximum outstanding commands UFS
-controller can support.
-In case of queue full, the queue depth for a LUN will be calculated
-and set in ufshcd_adjust_lun_qdepth.
-So I don't think change_queue_depth will be necessary.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks for reviewing, please let me know if you find any issues in
-other patches as well.
+iQIcBAEBCAAGBQJPSyDzAAoJEECxmPOUX5FEWfgP/0HHCe+ItGQtGKdUmT4VQgVF
+pPvmIt9r0IrV7ma8NVSGxi1QjSHP1y+RKtvt7Ja4vSlsecmpQHv5LO+MOWDaYUlm
+kYnYLdMBph5D/L/MRHsYrwxeqxVNqP1B8JXEB8Tq4r/hfi0AuUoqHLLayILAEvEs
+Zt5Qr9knkbyAQtGr+PzOCvRrD6CsdTrHeYsxVGAcvWwdSX7CLfD/aqT1S1kZFDMG
+uVRhaXGxuIG4N1/FOspeVuapww/adWX3SpgVwZ+6G1xmCzZSXjdTmMjd5X4yYX1l
+9TvkZhit4fuapVGH7aZBMljTpG1yE6uSJhkJxslGfHu3QnhgQ6BednUe03gcOYGb
+h62mODrbsVwgpxM/pfkZSlLK7wma73tV4DMRUfN1ucE9DWVUGjEQVXbV6CIdgW9g
+/wP2i4412V/NsESRg/D1gXjX8CTOPxXwN6bv3mtbpZTIXHI3vQL9r5bm6PQ2caAz
+FC4pgbSDsc/pXgNFOUDhYhflbLtQtvfSuN8NvnkYtkfu2OI8UTeDHchJ1P36GEzX
+2pnpLv8LuPXs/qqWXQ1yCwa6ReWaKkFXwMcSCe/qw7hjI6UNQ5W4Tm0C11bfTusF
+/Oivxwu4NuvoKUNpuytE0o9aTpBjn2E6/QMcrbr/2ECNbW42c9u35eKLJIgTfq75
+EJ+UTayFxcdiQMceFYNS
+=SgpS
+-----END PGP SIGNATURE-----
 
--- 
-~Santosh
+--Signature=_Mon__27_Feb_2012_17_21_39_+1100_mo6.0N.b/4Rw1O9k--
