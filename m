@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2B0Qnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:43:51 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:20488 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752599Ab2B0Qnu (ORCPT
+	id S1754044Ab2B0Qo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:44:56 -0500
+Received: from mail16.primus.ca ([216.254.141.183]:59456 "EHLO
+	mail-02.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753654Ab2B0Qoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:43:50 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KZAD5MMVM1mOV9UWAFQK3yqxDzVUwmghBIUcfqL818qz2TG
- KjZxmVnanjduYu6w5rhuDAVmziCuj6YT57MKYWgEW.bTzTUPp7WcNRJ8_iF2
- O_8qRmBU09h3n8qy6nwXffkpbOgEAaCBCxiBOCUmgU7N09eVtM5b6h5o9Lc8
- NBIY72t5V_QY0kfAOaUZjQL3.1OcLzjFr7AfFDXix52Epp8Bz7FFeT04fTSM
- nVsSDXBhjzjggLXPdfk0t5D.qA6iAbfcwDG_6q32x7oiuw7i5TOMD3zWTsCz
- ILnzTMbw_jO3O_VrTjEnR9HEmm.UiWSoBuGF8gO3SEumct.WGYsJg8Zu3hQp
- ZeEsEQ5v.sf4DvxSOHA61NLEdXeJ_mObc6QTT6kOImRdIq0zysFR.6q54kD1
- u
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 27 Feb 2012 10:43:47 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-In-Reply-To: <87zkc7eshq.fsf@xmission.com>
-Message-ID: <alpine.DEB.2.00.1202271039320.29787@router.home>
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home>
- <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home> <4F47C800.4090903@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1202241131400.3726@router.home> <87zkc7eshq.fsf@xmission.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 27 Feb 2012 11:44:54 -0500
+Message-ID: <4F4BB315.6060501@bell.net>
+Date: Mon, 27 Feb 2012 11:45:09 -0500
+From: John David Anglin <dave.anglin@bell.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
+        deller@gmx.de, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: [PATCH] parisc: dont unconditionally override CROSS_COMPILE for
+ 64 bit.
+References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <4F4B9DD2.6000600@bell.net> <4F4BAF16.9060507@windriver.com>
+In-Reply-To: <4F4BAF16.9060507@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012, Eric W. Biederman wrote:
-
-> Taking a quick look it does appear that in cpuset_mems_allowed and it's
-> cousins we never sleep under "callback_mutex" so that lock looks like it
-> could become a spinlock.
+On 2/27/2012 11:28 AM, Paul Gortmaker wrote:
+> On 12-02-27 10:14 AM, John David Anglin wrote:
+>> >  On 2/26/2012 6:26 PM, Paul Gortmaker wrote:
+>>> >>  Using the 64 bit toolchains from kernel.org[1], one finds that
+>>> >>  you can't build the a500_defconfig, because the Makefile will
+>>> >>  stomp whatever value you have in your env. for CROSS_COMPILE.
+>>> >>
+>>> >>  This shows up since the kernel.org toolchains for parisc-64
+>>> >>  do not have the "-gnu" prefix, and so you run into it always
+>>> >>  saying hppa64-linux-gnu-gcc not found, regardless of the fact
+>>> >>  you've not got "-gnu" put anywhere into CROSS_COMPILE.
+>>> >>
+>>> >>  [1]ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.2/
+>>> >>
+>>> >>  Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
+>>> >>
+>>> >>  diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
+>>> >>  index 55cca1d..cefff6d 100644
+>>> >>  --- a/arch/parisc/Makefile
+>>> >>  +++ b/arch/parisc/Makefile
+>>> >>  @@ -31,7 +31,9 @@ ifdef CONFIG_64BIT
+>>> >>     UTS_MACHINE	:= parisc64
+>>> >>     CHECKFLAGS	+= -D__LP64__=1 -m64
+>>> >>     WIDTH		:= 64
+>>> >>  -CROSS_COMPILE	:= hppa64-linux-gnu-
+>>> >>  +ifndef CROSS_COMPILE
+>>> >>  + CROSS_COMPILE	:= hppa64-linux-gnu-
+>>> >>  +endif
+>>> >>     else # 32-bit
+>>> >>     WIDTH		:=
+>>> >>     endif
+>> >  This change breaks native builds.  So, I assume CROSS_COMPILE must be
+>> >  previously defined.
+> You lost me here.  As in a native 32bit env. doing a build for the
+> 64 bit case is setting CROSS_COMPILE?
 >
-> But I have to say something just bothers me about the permissions for
-> modifying an mm living in the task.  We can have different rules
-> for modifying an mm depending on the path to tme mm?
+Yes, native hppa is 32 bit .  Building a 64-bit kernel with CONFIG_64BIT 
+causes the
+setting of CROSS_COMPILE and the selection of hppa64-linux-gnu-gcc, etc.
+If CROSS_COMPILE wasn't previously defined, your change wouldn't have have
+affected the 64-bit build.
 
-Yes. Permissions are associated with pids which refer to tasks. Tasks have
-address spaces and tasks may share address spaces.
+Dave
 
-> Especially in things like which numa nodes we can put pages in?
-
-Things = address spaces? The page migration functionality is about moving
-the location of physical memory from one numa node to the other. It does
-not affect the execution just the latencies experienced by the processes.
-
-> So by specifying a different pid to access them mm through the call can
-> either work or succeed?  Are these checks really sane?
-
-Yes if you can create two pids with the same address space and give
-those those pids to different owners then the permission checks on one
-may fail and succeed on the other. We have no way to refer to address
-spaces from user space outside of a pid.
+-- 
+John David Anglin    dave.anglin@bell.net
 
