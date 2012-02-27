@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab2B0Mzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:55:38 -0500
-Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:52247 "EHLO
-	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab2B0Mzh (ORCPT
+	id S1752762Ab2B0NXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 08:23:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4251 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2B0NXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 07:55:37 -0500
-Message-ID: <4F4B7CC6.1030307@tu-ilmenau.de>
-Date: Mon, 27 Feb 2012 13:53:26 +0100
-From: =?UTF-8?B?U3RlcGhhbiBCw6Ryd29sZg==?= 
-	<stephan.baerwolf@tu-ilmenau.de>
-Reply-To: stephan.baerwolf@tu-ilmenau.de
-Organization: TU-Ilmenau
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120217 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 00/10] scheduler-ticker > 1000Hz, nitromethane for linux ;-)
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 27 Feb 2012 08:23:39 -0500
+X-Authority-Analysis: v=2.0 cv=Z7xu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_ST7Y0qlS7IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=ehPa5tgHUGONEQjP8HAA:9 a=tl_54uHMH2tQrAdczyMA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1330349016.25686.185.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/2] [GIT PULL][v3.3] x86: Fix up CFI for the nested NMI
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <JBeulich@suse.com>
+Date: Mon, 27 Feb 2012 08:23:36 -0500
+In-Reply-To: <20120227073905.GB3397@elte.hu>
+References: <20120225173548.977089274@goodmis.org>
+	 <20120227073905.GB3397@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Ingo,
 
-this is a not fully serious (this is why I only post it here without sendig it
-directly via mail) patchset for:
+On Mon, 2012-02-27 at 08:39 +0100, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > 
+> > Ingo,
+> > 
+> > Jan posted a patch that fixes the CFI annotations. I recommend getting
+> > this into 3.3 as this is new code and it would be nice to have CFI
+> > correct. It also does a little simplification of it as well.
+> > 
+> > The second patch is comment changes only (very low impact on messing
+> > anything up). I realized that the comments had some references to
+> > previous approaches that I tried, and I fixed them to reflect what
+> > the final result was. I also added some more comments to describe
+> > the code a bit better.
+> > 
+> > Thanks,
+> > 
+> > -- Steve
+> > 
+> > Please pull the latest tip/x86/urgent tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> > tip/x86/urgent
+> > 
+> > Head SHA1: 79fb4ad63e8266ffac1f69bbb45a6f86570493e7
+> > 
+> > 
+> > Jan Beulich (1):
+> >       x86-64: Fix CFI annotations for NMI nesting code
+> > 
+> > Steven Rostedt (1):
+> >       x86: Fix the NMI nesting comments
+> > 
+> > ----
+> >  arch/x86/kernel/entry_64.S |   64 ++++++++++++++++++++++++--------------------
+> >  1 files changed, 35 insertions(+), 29 deletions(-)
+> 
+> I don't think we want a 30+ lines diffstat to this rather 
 
-        * tune the scheduler at configuration point
-        * increase the ticker-frequency way above 1000Hz
-        * tune the ticker-freq. from userspace during runtime
+Some of that was just movement of code.
 
-Of course this increases your systems overhead, but it enables you to have
-more timer-triggered contexswitches per second and so (?)higher(?) interactivity.
-(Of course after tuning some scheduler-parameters, min_gran, wakeup_gran ...)
+> non-trivial NMI codepath - and it changes real instructions, not 
+> just the CFI annotations.
 
-An interesting feature might be the userspace controlling of the tickerfreq, too.
-(Without disturbing HZ-dependend kernelcode, of course.)
+The changes to the real code made the CFI code easier to fix. But if you
+are nervous about the code change (which actually simplifies the code),
+I can ask Jan (Cc'd) to break out the patch into two changes if
+possible.
 
-I don't have very high hopes for an mainline integration ;-) but perhaps
-there are people, who want to play with such stuff.
-The Code is more or less an excerise and perhaps some reviewing would
-be nice - so please contact me.
-If (in the very unlikely case) there is enough interest in it, I can cleanup
-the code and start maintaining it...
+I'm not sure how the CFI can handle the current trampoline, but perhaps
+we can just fix the main part of the code and leave the trampoline part
+broken? Then we can add the rest of the CFI changes and the movement of
+the trampoline back into the function for the next release.
 
-* The patch is diffed against 3.2.7
-* The whole patchset is also downloadable as an bzipped archive at:
-  http://www.matrixstorm.com/software/linux/nitromethane/linux-3.2.7-patches.tar.bz2
+> 
+> Also, the 'update comments' commit does not belong into 
+> x86/urgent either.
 
-So now, please blame me "we don't need such s*it, it causes only overhead"... ;-)
-
-regards Stephan
-
-pub   4096R/FB9B12DB 2011-10-14 Stephan Bärwolf <stephan.baerwolf@tu-ilmenau.de>
- Primary key fingerprint: 2252 B41E 12DF 41AD 476F  7F36 084A 0911 FB9B 12DB
+Hmm, I didn't know that fixing comments was for a merge window only.
+Some of the comments are currently wrong and I didn't think we would
+want those in a main release. While reading the code again I realized
+that I could also add more comments to make it easier to understand. I
+would think that comments would be fine for the -rc releases because
+they have almost no chance of introducing bugs.
 
 
+> 
+> So either you do an obviously trivial patch that only adds CFI 
+> annotations and nothing else, or I can pull these bits into 
+> tip:x86/debug, for a v3.4 merge.
 
-Stephan Baerwolf (10):
-  menuconfig: implement new submenu for extended scheduler-options
-  sched: implement the new menuconfig controlling of sched_tunables
-  menuconfig: extend nitro-menu by responsiveness nitro options
-  sched: implement the controlling of responsiveness-nitro-options
-  menuconfig: extend nitro-menu by HZ-frequency Nitro
-  hrtimer: implement the controlling of nitro-hzboost
-  menuconfig: extend nitro-menu by priority-nitro
-  sched: implement the controlling of priority-nitro
-  menuconfig: extend nitro-menu by userspace-multiplier
-  hrtimer/sysctl: implement the controlling of userspace multiplier
+I'm fine with waiting for v3.4 before these changes get in.
 
- arch/x86/Kconfig            |    4 +-
- include/linux/sched.h       |    8 ++
- kernel/Kconfig.hz           |    3 -
- kernel/Kconfig.sched        |  202 +++++++++++++++++++++++++++++++++++++++++++
- kernel/sched.c              |    9 ++
- kernel/sched_fair.c         |   58 +++++++++++--
- kernel/sysctl.c             |   16 ++++
- kernel/time/tick-common.c   |   33 +++++++
- kernel/time/tick-internal.h |   20 ++++
- kernel/time/tick-sched.c    |   51 +++++++++++
- 10 files changed, 390 insertions(+), 14 deletions(-)
- create mode 100644 kernel/Kconfig.sched
+-- Steve
 
--- 
-1.7.3.4
+
