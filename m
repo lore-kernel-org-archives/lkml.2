@@ -1,68 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2B0Unn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:43:43 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42414 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab2B0Unl convert rfc822-to-8bit (ORCPT
+	id S1754906Ab2B0Upx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:45:53 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:47937 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab2B0Upw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:43:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120227121932.24852506@jbarnes-desktop>
-References: <1330206863-31381-1-git-send-email-yinghai@kernel.org>
-	<1330206863-31381-5-git-send-email-yinghai@kernel.org>
-	<20120227121932.24852506@jbarnes-desktop>
-Date: Mon, 27 Feb 2012 12:43:41 -0800
-X-Google-Sender-Auth: Ui9EevggtYWZYFjTJiGBli_Ewrw
-Message-ID: <CAE9FiQWGRgKRynj6xBoWM3CABFH6QYii1TbHBg8-9Qyz_vR6YA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PCI: acpihp user __pci_remove_bus_device instead
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 Feb 2012 15:45:52 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=Ro8QOmc0aMDfanRtxUddlQ8SbE2D0zCZP8MBHZpYE5w= c=1 sm=1
+ a=ku11lMGN5J0A:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=lsbhbNazuj0DNHjOzDAA:9
+ a=nkg106ob_ygA0fexMJIA:7 a=CjuIK1q_8ugA:10 a=nbuOaDVMPKqOAFsu:21
+ a=chtP2vSTYnfyoeCs:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 66/73] ext2: Split ext2_add_entry() from ext2_add_link() [ver #2]
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20120227190916.GH1651@thunk.org>
+Date: Mon, 27 Feb 2012 13:45:50 -0700
+Cc: David Howells <dhowells@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "valerie.aurora@gmail.com" <valerie.aurora@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>,
+        "linux-ext4@kernel.org" <linux-ext4@kernel.org>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <8F6CA4DC-A52C-4210-B0AD-FF4CBD5BB1EE@dilger.ca>
+References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk> <20120221180546.25235.50961.stgit@warthog.procyon.org.uk> <20120227000428.GA8044@thunk.org> <B5DCCBD9-F032-44E1-8368-146137487B83@dilger.ca> <20120227190916.GH1651@thunk.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 12:19 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Sat, 25 Feb 2012 13:54:23 -0800
-> Yinghai Lu <yinghai@kernel.org> wrote:
->
->> pci_stop_bus_device get called before in the same loop.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
->> ===================================================================
->> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
->> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
->> @@ -910,7 +910,7 @@ static int disable_device(struct acpiphp
->>                               disable_bridges(pdev->subordinate);
->>                               pci_disable_device(pdev);
->>                       }
->> -                     pci_stop_and_remove_bus_device(pdev);
->> +                     __pci_remove_bus_device(pdev);
->>                       pci_dev_put(pdev);
->>               }
->>       }
->>
->
-> Ok applied these.  How about another that converts in-tree users to
-> pci_remove_bus_device and marks the __ version deprecated though?
+On 2012-02-27, at 12:09 PM, Ted Ts'o wrote:
+> On Sun, Feb 26, 2012 at 08:30:34PM -0700, Andreas Dilger wrote:
+>>> I'd suggest folding this in with the following patch (67/73).  It's
+>>> not clear from this patch why renaming ext2_add_link to
+>>> ext2_add_entry() makes sense and then adding a new ext2_add_link()
+>>> which calls ext_add_entry().   It doesn't seem to clarify much....
+>> 
+>> Also, why is this being done in ext2, when it should only be done in ext4?
+> 
+> I believe Val used ext2 as a proof-of-concept, because the codebase
+> was stable (and Union Mounts has been in the oven a loooong time, so
+> that was probably a good choice).  I agree that if union mounts is
+> finally going to make it upstream, this would be a good time to
+> support implemented for ext4, and to get the support into e2fsprogs.
+> 
+> BTW, one thing that I think would be a good thing to do while we're
+> making this change is to mask off the low 4 bits when looking at the
+> filetype field so eventually we can use the high 4 bits for some
+> future extension.
 
-thanks.
+Umm, we already DO use the high 4 bits for a future extension in the
+EXT4_FEATURE_INCOMPAT_DIRDATA feature.  The bare minimum for this is
+extracted from a larger patch that allows storing extra data in the
+dirent.  We use it to store a filesystem-wide 128-bit identifier into
+the dirent, and it could also be used to store the high 32 bits of the
+inode number in a compatible way.
 
-now the only user for  __pci_remove_bus_device is acpiphp
+I haven't pushed this upstream as I don't think anyone else is interested
+in this yet, but masking off the file type is definitely simple and could
+be accepted upstream.
 
-it will call stop bus devices at first, and then disable all bridges
-and then call __pci_remove_bus_device.
+Index: linux-stage/fs/ext4/ext4.h
+===================================================================
+--- linux-stage.orig/fs/ext4/ext4.h
++++ linux-stage/fs/ext4/ext4.h
+@@ -1262,6 +1265,24 @@ struct ext4_dir_entry_2 {
+ #define EXT4_FT_SYMLINK		7
 
-not sure why it need  to disable all bridges.
+ #define EXT4_FT_MAX		8
++#define EXT4_FT_MASK		0xf
++
++#if EXT4_FT_MAX > EXT4_FT_MASK
++#error "conflicting EXT4_FT_MAX and EXT4_FT_MASK"
++#endif
++
++/*
++ * d_type has 4 unused bits, so it can hold four types data. these different
++ * type of data (e.g. lustre file ID, high 32 bits of 64-bit inode number)
++ * can be stored, in flag order, after file-name in ext4 dirent.
++*/
++/*
++ * This flag is added to d_type if ext4 dirent has extra data after filename.
++ * This data length is variable and length is stored in first byte of data.
++ * Data starts after filename NUL byte. This is used by Lustre FS.
++  */
++#define EXT4_DIRENT_LUFID		0x10
 
-     Yinghai
+ /*
+  * EXT4_DIR_PAD defines the directory entries boundaries
+Index: linux-stage/fs/ext4/dir.c
+===================================================================
+--- linux-stage.orig/fs/ext4/dir.c
++++ linux-stage/fs/ext4/dir.c
+@@ -53,11 +53,14 @@ const struct file_operations ext4_dir_op
+ 
+ static unsigned char get_dtype(struct super_block *sb, int filetype)
+ {
++	int fl_index = filetype & EXT4_FT_MASK;
++
+ 	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FILETYPE) ||
+-	    (filetype >= EXT4_FT_MAX))
++	    (fl_index >= EXT4_FT_MAX))
+ 		return DT_UNKNOWN;
+
+-	return (ext4_filetype_table[filetype]);
++	return ext4_filetype_table[fl_index]);
++
+ }
+
+
+
+
+Cheers, Andreas
+
+
+
+
+
