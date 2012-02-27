@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab2B0GSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 01:18:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44070 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2B0GSI (ORCPT
+	id S1754058Ab2B0GTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 01:19:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60958 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab2B0GTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 01:18:08 -0500
-Date: Sun, 26 Feb 2012 22:17:35 -0800
-From: tip-bot for Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Message-ID: <tip-42dfc43ee5999ac64284476ea0ac6c937587cf2b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        siddhesh.poyarekar@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, siddhesh.poyarekar@gmail.com
-In-Reply-To: <1330273075-2949-1-git-send-email-siddhesh.poyarekar@gmail.com>
-References: <1330273075-2949-1-git-send-email-siddhesh.poyarekar@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/process] x86_64:
-  Record stack pointer before task execution begins
-Git-Commit-ID: 42dfc43ee5999ac64284476ea0ac6c937587cf2b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 26 Feb 2012 22:17:56 -0800 (PST)
+	Mon, 27 Feb 2012 01:19:39 -0500
+Date: Mon, 27 Feb 2012 17:19:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20120227171929.d3bb057460c0e4fcd7d8d7ff@canb.auug.org.au>
+In-Reply-To: <4F4B1C31.7070808@zytor.com>
+References: <20120227165356.6119ac92eabd7052fc56c741@canb.auug.org.au>
+	<4F4B1C31.7070808@zytor.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__27_Feb_2012_17_19_29_+1100_A6Y04Sdc2UVJA6IP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  42dfc43ee5999ac64284476ea0ac6c937587cf2b
-Gitweb:     http://git.kernel.org/tip/42dfc43ee5999ac64284476ea0ac6c937587cf2b
-Author:     Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-AuthorDate: Sun, 26 Feb 2012 21:47:55 +0530
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sun, 26 Feb 2012 12:59:04 -0800
+--Signature=_Mon__27_Feb_2012_17_19_29_+1100_A6Y04Sdc2UVJA6IP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86_64: Record stack pointer before task execution begins
+Hi Peter,
 
-task->thread.usersp is unusable immediately after a binary is exec()'d
-until it undergoes a context switch cycle. The start_thread() function
-called during execve() saves the stack pointer into pt_regs and into
-old_rsp, but fails to record it into task->thread.usersp.
+On Sun, 26 Feb 2012 22:01:21 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>
+> It should be "common" (otherwise there would need to be an x32 variant
+> which would point to the compat version of the call, but in this case
+> even the i386 entry point goes straight to sys_kcmp.)
 
-Because of this, KSTK_ESP(task) returns an incorrect value for a
-64-bit program until the task is switched out and back in since
-switch_to swaps %rsp values in and out into task->thread.usersp.
+Thanks, I will fix up the merge resolution tomorrow.
 
-Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Link: http://lkml.kernel.org/r/1330273075-2949-1-git-send-email-siddhesh.poyarekar@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/process_64.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 1fd94bc..eb54dd0 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -341,6 +341,7 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
- 	loadsegment(es, _ds);
- 	loadsegment(ds, _ds);
- 	load_gs_index(0);
-+	current->thread.usersp	= new_sp;
- 	regs->ip		= new_ip;
- 	regs->sp		= new_sp;
- 	percpu_write(old_rsp, new_sp);
+--Signature=_Mon__27_Feb_2012_17_19_29_+1100_A6Y04Sdc2UVJA6IP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPSyBxAAoJEECxmPOUX5FEApQQAIiqB/1f7J0pjwk8BZWJf+wt
+F1gExUAJgHDD+oH4mk3dPR0Bqg04fLqfFdA1qcKhjSa4z1sBL+cHCd+ySZOPEV+z
+um5U8Sr6o5TAV91sms6w0Sm/sOGg+4F9DmN0dnlL7zj1WHOYA0mu4ufwv9DxmYR0
+E+1LDJslkG+ktYZ/eqC1cm8NbrC35ijnEZXgIcL1gT2DwAnnUVCip+9DXbqzAtfp
+aCPHNtR3JWvePzsCj4ckCzPb7UhMZaQbptoW8aRXN2nbHpPATF4ItT5fXLcOnrlh
+JpPgrnsx4reg82KVSCvRJdMq/ruZX1gpRd5lTWP3kRGx486sDaSfrJUbsS4tMtsa
+xolFCHYcV5XvVQPss/GiifM714V/yqIzOpi95rOmkTHOCQEOchW8N4UA0fZcrNwJ
+xOQAn7cdyQeyNMDiwHO+UOl/ofxvyLdDWd/Lcp4eDzq6IlNEQTEOn8P14fA6lWH3
+z2j+Xxh7rLYB85i5tv9TSI7jWzitkVUedtgt1Xc0NmBtNcbvG+OEl/p2PUVKl8Lu
+HETz+AqvBPP+cOgF3bbdfpo8Z7VlZa2ngsCMs5TR8Yg92u3eZz4Hebx99tCgb5bl
+tnbIdJIB9p0C3knisB7P0UEPwNRCnm9YspYNt9euTFfahLB4v0a2detbJS2KteGx
+gFk9lk7pjTTz7jkzEfao
+=OBmD
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__27_Feb_2012_17_19_29_+1100_A6Y04Sdc2UVJA6IP--
