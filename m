@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2B0OF2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 09:05:28 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43114 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab2B0OF1 convert rfc822-to-8bit (ORCPT
+	id S1753343Ab2B0OI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:08:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51186 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751948Ab2B0OI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 09:05:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bekars@gmail.com designates 10.220.151.5 as permitted sender) smtp.mail=bekars@gmail.com; dkim=pass header.i=bekars@gmail.com
+	Mon, 27 Feb 2012 09:08:56 -0500
+Date: Mon, 27 Feb 2012 14:08:53 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        Sundar R Iyer <sundar.iyer@stericsson.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFC] regulator: Convert ab8500 to use get_voltage_sel()
+Message-ID: <20120227140853.GH3191@opensource.wolfsonmicro.com>
+References: <1330074945.8642.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <CANFwon1YoxbC8+6aq2eW68x2b2qAXkUgNsqnM7SqEboLzy9d3g@mail.gmail.com>
-References: <CANFwon1YoxbC8+6aq2eW68x2b2qAXkUgNsqnM7SqEboLzy9d3g@mail.gmail.com>
-Date: Mon, 27 Feb 2012 22:05:26 +0800
-Message-ID: <CABSWGtaC9ocvNdBb+3M9mGfF9T_NMGCE=2O9Za9DaYYBJfr_Bg@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20120224 release(more bug fix)
-From: bekars <bekars@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>, kernel@vger.linux-kernel.cn,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wtrm9ATX0sn6fFKv"
+Content-Disposition: inline
+In-Reply-To: <1330074945.8642.1.camel@phoenix>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great Work !
 
-2012/2/27 Hui Zhu <teawater@gmail.com>:
-> KGTP is a realtime and lightweight Linux Kernel debugger and tracer.
->
-> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
-> current machine or remote machine (see
-> https://code.google.com/p/kgtp/wiki/HOWTO#Make_GDB_connect_to_gtp) can
-> debug and trace Linux through GDB tracepoint without stopping the
-> Linux Kernel. And even if the board doesn't have GDB on it and doesn't
-> have interface for remote debug. It can debug the Linux Kernel using
-> offline debug (See
-> https://code.google.com/p/kgtp/wiki/HOWTO#Offline_debug).
-> And it can work with Android (See
-> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
-> Now, it supports X86-32, X86-64, MIPS and ARM.
->
-> Now, KGTP 20120224 release.
-> You can get the package for it from
-> http://kgtp.googlecode.com/files/kgtp_20120224.tar.bz2
-> or
-> svn co https://kgtp.googlecode.com/svn/tags/20120224
->
-> I tried to done an very interesting add-ons(a python script for GDB)
-> in this release.  But I found some bugs and fixed them when I tested
-> this add-ons.  So I think maybe release a new version for these bug
-> fixes is better.
-> Please give KGTP some concern, our next version will include this
-> interesting add-ons.
->
-> The change of this release is:
-> Fix build error with Linux Kernel 3.0.x version. Thanks for report
-> from sam.wanshan.
-> Make getgtprsp.pl support all special trace state variables.
-> Fix the bug that set the id of FID_PAGE_BEGIN inside gtp_rb.
-> Change code to ignore the task that read the
-> /sys/kernel/debug/gtpframe_pipe in default.  And add special trace
-> state variable $pipe_trace to control it.
-> Fix error of doc about $ignore_error.
-> Add $current_task_pid to access to get_current()->pid.
-> Remove GTP_VAR_NOT_GETV, GTP_VAR_NOT_SETV and GTP_VAR_NOT_TRACEV.
-> Fix bug in gtp_frame_file_header that affect stack when src of
-> conditon or action is bigger than 200.
-> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
->
-> According to the comments of Christoph.  I make a patch for Linux
-> Kernel and make it looks OK with checkpatch.pl.  I will post the patch
-> for review to linux-kernel@vger.kernel.org in a separate mail.
->
-> Thanks,
-> Hui
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel" in
-> the body of a message to majordomo@vger.linux-kernel.cn
-> More majordomo info at  http://vger.linux-kernel.cn/
+--Wtrm9ATX0sn6fFKv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Feb 24, 2012 at 05:15:45PM +0800, Axel Lin wrote:
+> This change is required to make ab8500_regulator_get_voltage_sel work.
+> The regulator core will call set_voltage_time_sel only when get_voltage_sel is
+> implemented.
+
+Applied, thanks.
+
+--Wtrm9ATX0sn6fFKv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPS45XAAoJEBus8iNuMP3d5lEP/iwDFHA/T7edflopu3diLQsx
+3v/3dPsCe/4oSf1i7tszrCLQE5ggS+MJ2EKCwkrbPDt6Gof9rbMBNiwdkPue103S
+Bg5kI7j7d6Hk3jDFpG9IHwShgl2xjD1te+znK1BpBBgFF3RRMBmKW7wdMGVJ93K+
+7FGEKzP2euUGCRii5erOmMtDO2QiqCqU0ank2E9y3RNT8n9vmARmajTOaJ5g0sFM
+HkIunTlbwQfkxxxqI4LDIJ8DANgodVor1WJXEj62m+8d6hTpculQeFsV3pYcRZY8
+ef5we092S5UVM8LyLJ2BxUzjBVAhlReo3sDW2Bfu77RKa2ZvunnomVSFRcRR7Tzc
+wMAWh5SQ0gljsj/UEp3nLAn6MbiyMYu04Ssa/4BSBtRM3ZIWXSHjLzKg2YHbj7Lc
+7ydvDKw1Au6V5bixp5wvVyoYD8hXOgp5ddy6/34ab8c3kfs0MNe8W7U2ADKx/JTr
+HuIprFZuP4fQVB4M3Z/9YZwV3uN18JRCC+r0X3CFwC7cT/qBtzZGmZsM2S6YJiBL
++7mRnLZjWrPrWb6Ho0EPrhZA2CK/c75aK+oAfuObMAQ9ddpxFvibj23q0paifBh8
+zAXdsLhun9Eys+vDhB69ub2NoxKzPD/dofTN7nbUedRONAqEz6ggvf0EtElm5Dlf
+927JLcVo8EpWVhuQoNEc
+=bVbf
+-----END PGP SIGNATURE-----
+
+--Wtrm9ATX0sn6fFKv--
