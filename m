@@ -1,111 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2B0McS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:32:18 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:52062 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2B0McQ (ORCPT
+	id S1754005Ab2B0Mgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 07:36:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54833 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab2B0Mgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 07:32:16 -0500
-Message-ID: <0333e182d9dad75b4c58315d54b4a16d.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-    <1329845435-2313-7-git-send-email-wad@chromium.org>
-    <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
-    <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-    <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-    <CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
-    <CABqD9hbC8v-rUBW+4T_-EwDwe1+VDohQZweQ-cxOg2A-iDH5CQ@mail.gmail.com>
-    <CAGXu5j+fQqkrrKSm3kmCkCcZJKo-VZjL6kkrOD81LZYBY7tf2g@mail.gmail.com>
-    <4F45887A.5010809@zytor.com>
-    <CAB=4xhq1sm_ewZ_8Kerf2aN7nGx+DEENse7Lqg5N0wuvqtzUAw@mail.gmail.com>
-    <4F459109.1060205@zytor.com>
-    <CAB=4xhqndEw3tMPaUcdZh_jcjQcoK_=7GwOc5gVhnz5o_4eWzQ@mail.gmail.com>
-    <CABqD9hbsZTtkFzM_8rHqAWjZhiV0iWb6s1eMF9LriH-NybrorA@mail.gmail.com>
-    <fe2d4b97d84c1e8053c397a20eec7ac8.squirrel@webmail.greenhost.nl>
-    <CAE6n16kusCN9LxwqB1D2Dsm50mtc-6zkRje69D=QDdxxzWFTKw@mail.gmail.com>
-Date: Mon, 27 Feb 2012 13:32:01 +0100
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it
- synchronous.
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Markus Gutschke" <markus@chromium.org>
-Cc: "Will Drewry" <wad@chromium.org>, "Roland McGrath" <mcgrathr@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Kees Cook" <keescook@chromium.org>,
-        "Andrew Lutomirski" <luto@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com
-User-Agent: SquirrelMail/1.4.22
+	Mon, 27 Feb 2012 07:36:37 -0500
+Message-ID: <4F4B78CE.4010405@redhat.com>
+Date: Mon, 27 Feb 2012 13:36:30 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 488b5a33f748713be529de57fa847022
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: stable@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] block: avoid false positive warnings on ioctl to partition
+References: <1329464338-8351-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1329464338-8351-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, February 23, 2012 23:33, Markus Gutschke wrote:
-> On Thu, Feb 23, 2012 at 14:15, Indan Zupancic <indan@nul.nu> wrote:
->> What about making SECCOMP_RET_TRAP dump core/send SIGSYS if there is
->> no tracer with PTRACE_O_SECCOMP set?
->
-> Please don't make things dependent on having a tracer. There are
-> applications that don't really need a tracer; in fact, these are
-> typically the exact same applications that can benefit from receiving
-> SIGSYS and then handling it internally.
+Ping.
 
-My proposal was to send the SIGSYS only when there is no seccomp aware
-tracer. If there is no such tracer, the process will receive a SIGSYS
-that it can handle internally. So having a tracer isn't required.
-
-I'm curious how you would like to handle SIGSYSs internally, because I
-don't see how you could gracefully recover from such failed system call,
-so I don't really see the added value compared to fail the syscall with
-some ERRNO or to just kill the task. Is it just for notification purposes?
-
->
-> If a tracer was required to set this up, it would make it difficult to
-> use gdb, strace, or any other common debugging tools.
-
-gdb and strace and such won't set the PTRACE_O_SECCOMP option, so it
-will behave the same whether it's being debugged or not.
-
-The main objective was to reduce the amount of policy in filters,
-I thought it could be done by having only one return value which
-delegates to user space. But that may be too confusing, and the
-interaction between a seccomp aware tracer and SIGSYS aware code
-is fuzzy, so I'm not sure if it's a good idea.
-
->
->> Sending SIGSYS is useful, but it's quite a bit less useful if user
->> space can't handle it in a signal handler, so I don't think it's
->> worth it to make a unblockable version.
->
-> Maybe, I am not parsing your e-mail correctly. But don't we already
-> get the desired behavior, if SIGSYS is treated the same as any other
-> synchronous signal? If it is unblocked and has a handler, the
-> application can decide to handle it. If neither one of these
-> conditions is true, it terminates the program. Ulimits and
-> PR_SET_DUMPABLE determine whether a core file is generated.
-
-The proposal I was replying to wanted to make SIGSYS always kill the
-process (with a core dump), so you wouldn't be able to set a handler
-any more. I think that is a bad idea. Or did I misunderstood?
-
-Enforcing task termination when there is no handler doesn't make
-conceptual sense, because an empty signal handler is effectively
-the same as blocking a signal. Though I guess it's simpler to check
-for just sigaction in the BPF filters, so perhaps that was the idea.
-
-Greetings,
-
-Indan
-
+On 02/17/2012 08:38 AM, Paolo Bonzini wrote:
+> After a month of reports, the warnings from non-whitelisted ioctls to
+> a partitions can be classified in three groups.
+> 
+> BLKFLSBUF and BLKROSET are always sent to devices.  Not having them in
+> the whitelist did not cause any visible harm, but anyway they can and
+> should be added to the whitelist.
+> 
+> Many unrecognized ioctls are sent to partitions as an attempt to probe for
+> CD-ROMs, floppies and other kinds of devices.  Like CDROM_GET_CAPABILITY,
+> they can be blocked safely.
+> 
+> Of the actual SCSI ioctls, only SG_IO was reported in the wild (twice).
+> udev's scsi_id can issue INQUIRY commands if passed a partition; this
+> only occurs with custom rules and is strictly speaking invalid, but we
+> need a transition period so that people can fix their configuration.
+> zfs-fuse also can issue SYNCHRONIZE CACHE commands, where it should
+> simply use fdatasync.
+> 
+> Therefore, this patch silently blocks all ioctls except SG_IO, since
+> all of them turned out to be false positives; in case some escaped, it
+> should be easily diagnosable or at least bisectable.  The warning text
+> is separated for root and non-root.  The warning for SG_IO is left in
+> because a) it will alert users to possible bugs, and b) we do want to
+> hear about more uses in the wild.  However, no deprecation period is
+> set for now.
+> 
+> Cc: stable@vger.kernel.org
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	Note: I will take care of the stable backport as soon as this
+> 	patch or something similar hits Linus's tree.
+> 
+>  block/scsi_ioctl.c |   40 ++++++++++++++++++++++++++++++-------------
+>  1 files changed, 27 insertions(+), 13 deletions(-)
+> 
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index 260fa80..fe86923 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -696,9 +696,6 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+>  	if (bd && bd == bd->bd_contains)
+>  		return 0;
+>  
+> -	/* Actually none of these is particularly useful on a partition,
+> -	 * but they are safe.
+> -	 */
+>  	switch (cmd) {
+>  	case SCSI_IOCTL_GET_IDLUN:
+>  	case SCSI_IOCTL_GET_BUS_NUMBER:
+> @@ -710,22 +707,39 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+>  	case SG_GET_RESERVED_SIZE:
+>  	case SG_SET_RESERVED_SIZE:
+>  	case SG_EMULATED_HOST:
+> +		/* Actually none of these is particularly useful on a partition,
+> +		 * but they are safe.
+> +		 */
+>  		return 0;
+> -	case CDROM_GET_CAPABILITY:
+> -		/* Keep this until we remove the printk below.  udev sends it
+> -		 * and we do not want to spam dmesg about it.   CD-ROMs do
+> -		 * not have partitions, so we get here only for disks.
+> -		 */
+> -		return -ENOIOCTLCMD;
+> +
+> +	case BLKROSET:
+> +	case BLKFLSBUF:
+> +		/* These are generic block layer ioctls that are nevertheless
+> +		 * passed down to devices.  They are certainly valid for
+> +		 * partitions!
+> +		 */
+> +		return 0;
+> +
+> +	case SG_IO:
+> +		/* Accept this for root users, at least for now.  */
+> +		break;
+> +
+>  	default:
+> -		break;
+> +		/* In particular, rule out resets and host-specific ioctls.  */
+> +		return -ENOIOCTLCMD;
+>  	}
+>  
+> -	/* In particular, rule out all resets and host-specific ioctls.  */
+> -	printk_ratelimited(KERN_WARNING
+> -			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+> +	if (capable(CAP_SYS_RAWIO)) {
+> +		printk_ratelimited(KERN_WARNING
+> +				   "%s: SG_IO to a partition is likely a bug\n",
+> +				   current->comm);
+> +		return 0;
+> +	}
+>  
+> -	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
+> +	printk_ratelimited(KERN_WARNING
+> +			   "%s: rejecting SG_IO to a partition for non-root user\n",
+> +			   current->comm);
+> +	return -ENOIOCTLCMD;
+>  }
+>  EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+>  
 
