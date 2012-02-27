@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab2B0DXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 22:23:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47815 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab2B0DXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 22:23:24 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.228.69 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
-Message-ID: <4F4AF727.2040105@gmail.com>
-Date: Sun, 26 Feb 2012 20:23:19 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Yuanfang Chen <cyfmxc@gmail.com>
-CC: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com> <4F4484AC.9050500@lge.com> <87ehtnhz9w.fsf@gmail.com> <CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com> <4F45E9C5.4020900@lge.com> <CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com> <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com> <4F468EBB.9000209@gmail.com> <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
-In-Reply-To: <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753601Ab2B0DlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 22:41:17 -0500
+Received: from mail130c7-2520.megamailservers.com ([69.49.98.25]:48541 "EHLO
+	mail130c7.megamailservers.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753317Ab2B0DlP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 22:41:15 -0500
+X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Feb 2012 22:41:14 EST
+X-POP-User: lamanatorplus.shawbiz.ca
+References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk> <20120221180546.25235.50961.stgit@warthog.procyon.org.uk> <20120227000428.GA8044@thunk.org>
+In-Reply-To: <20120227000428.GA8044@thunk.org>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <B5DCCBD9-F032-44E1-8368-146137487B83@dilger.ca>
+Content-Transfer-Encoding: 8BIT
+Cc: David Howells <dhowells@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "valerie.aurora@gmail.com" <valerie.aurora@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>,
+        "linux-ext4@kernel.org" <linux-ext4@kernel.org>
+X-Mailer: iPhone Mail (9A405)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH 66/73] ext2: Split ext2_add_entry() from ext2_add_link() [ver #2]
+Date: Sun, 26 Feb 2012 20:30:34 -0700
+To: "Ted Ts'o" <tytso@mit.edu>
+X-CSC: 0
+X-CHA: v=1.1 cv=79WxUICzzgkw5ZYFfgr1yO8Z474l5jtalk6swozgZjE= c=1 sm=1
+		a=ku11lMGN5J0A:10 a=kj9zAlcOel0A:10 a=I7mQGxDnXGc3WFdT/ZY6CQ==:17
+		a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=Y3TvZqSoOCCWDI7w-rQA:9
+		a=1ctbN4LbBH44dLbJA2UA:7 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10
+		a=LI9Vle30uBYA:10 a=I7mQGxDnXGc3WFdT/ZY6CQ==:117
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020209.4F4AF8C4.0067,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/12 3:41 PM, Yuanfang Chen wrote:
-> I think I'll settle with perf record for now. Still, unlike trace
-> event, sample count is not meaningful for PMU event. Output of "perf
-> script" does not include period value. One line of code will do the
-> work.
->
-> lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
-> __mem_cgroup_commit_char
-> lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
-> __mem_cgroup_commit_char
->
-> 86754, 1027634 is the period value. But I'm not sure which is the PMU
-> value, is it just period value, or period x sample after. If so, what
-> is the sample after value?
+On 2012-02-26, at 17:04, Ted Ts'o <tytso@mit.edu> wrote:
+> On Tue, Feb 21, 2012 at 06:05:46PM +0000, David Howells wrote:
+>> From: Valerie Aurora <vaurora@redhat.com>
+>> 
+>> Allow future code to use the guts of ext2_add_link().
+>> 
+>> Original-author: Valerie Aurora <vaurora@redhat.com>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+>> Cc: Jan Kara <jack@suse.cz>
+>> Cc: linux-ext4@kernel.org
+> 
+> I'd suggest folding this in with the following patch (67/73).  It's
+> not clear from this patch why renaming ext2_add_link to
+> ext2_add_entry() makes sense and then adding a new ext2_add_link()
+> which calls ext_add_entry().   It doesn't seem to clarify much....
 
-You lost me. You modified perf-script to print the period?
+Also, why is this being done in ext2, when it should only be done in ext4?
 
-Are you asking for the PMU counter value for 0x3c?
+Fedora is already using ext4 for ext2- and ext3-formatted filesystems, to allow us to finally deprecate and then delete both of those trees and their ongoing duplicate maintenance.  Adding new features to ext2 doesn't help that goal at all.
 
-What perf commands are you running?
-
-David
+Cheers, Andreas
