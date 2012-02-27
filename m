@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab2B0Sco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:32:44 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:44672 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754251Ab2B0Scn (ORCPT
+	id S1754632Ab2B0SgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:36:18 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39371 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab2B0SgQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:32:43 -0500
-Message-ID: <4F4BCC4A.1090402@fb.com>
-Date: Mon, 27 Feb 2012 10:32:42 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 27 Feb 2012 13:36:16 -0500
 MIME-Version: 1.0
-To: Balbir Singh <bsingharora@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: Enable MAP_UNINITIALIZED for archs with mmu
-References: <1326912662-18805-1-git-send-email-asharma@fb.com> <CAKTCnzn-reG4bLmyWNYPELYs-9M3ZShEYeOix_OcnPow-w8PNg@mail.gmail.com> <4F468888.9090702@fb.com> <20120224114748.720ee79a.kamezawa.hiroyu@jp.fujitsu.com> <CAKTCnzk7TgDeYRZK0rCugopq0tO7BtM8jM9U0RJUTqNtz42ZKw@mail.gmail.com> <4F47E0D0.9030409@fb.com> <CAKTCnznyZGLiZPNS151GzsUMApN_SYu3n6xX9E0ceMpq9JNq7w@mail.gmail.com>
-In-Reply-To: <CAKTCnznyZGLiZPNS151GzsUMApN_SYu3n6xX9E0ceMpq9JNq7w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-02-27_04:2012-02-27,2012-02-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <20120227181434.GA13903@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+ <1330140111-17201-7-git-send-email-wad@chromium.org> <20120227171132.GB10608@redhat.com>
+ <CAGXu5jJQhfSSwTU5fSGR_Q57LAQBFW25A_FtR2GFsxyT_ibnzQ@mail.gmail.com> <20120227181434.GA13903@redhat.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 27 Feb 2012 10:35:55 -0800
+X-Google-Sender-Auth: l9Nl6kkeWBizvOA3KZFSP_UnNa4
+Message-ID: <CAObL_7GZVrHpQ0yR9LihQ=UrjAR=BOLRT1F0m4JGGRbEeh=-fQ@mail.gmail.com>
+Subject: Re: [PATCH v11 07/12] seccomp: add SECCOMP_RET_ERRNO
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/12 8:13 PM, Balbir Singh wrote:
->> A uid based approach such as the one implemented by Davide Libenzi
+On Mon, Feb 27, 2012 at 10:14 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/27, Kees Cook wrote:
 >>
->> http://thread.gmane.org/gmane.linux.kernel/548928
->> http://thread.gmane.org/gmane.linux.kernel/548926
+>> On Mon, Feb 27, 2012 at 9:11 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > On 02/24, Will Drewry wrote:
+>> >>
+>> >>  static u32 seccomp_run_filters(int syscall)
+>> >>  {
+>> >>       struct seccomp_filter *f;
+>> >> -     u32 ret = SECCOMP_RET_KILL;
+>> >>       static const struct bpf_load_fn fns = {
+>> >>               bpf_load,
+>> >>               sizeof(struct seccomp_data),
+>> >>       };
+>> >> +     u32 ret = SECCOMP_RET_ALLOW;
+>> >>       const void *sc_ptr = (const void *)(uintptr_t)syscall;
+>> >>
+>> >> +     /* Ensure unexpected behavior doesn't result in failing open. */
+>> >> +     if (unlikely(current->seccomp.filter == NULL))
+>> >> +             ret = SECCOMP_RET_KILL;
+>> >
+>> > Is "seccomp.filter == NULL" really possible?
 >>
->> would probably apply the optimization to more use cases - but conceptually a
->> bit more complex. If we go with this more relaxed approach, we'll have to
->> design a race-free cgroup_uid_count() based mechanism.
+>> It should not be, but I'm much more comfortable with this failing
+>> closed. I think it's important to be as defensive as possible with
+>> this code given its intended use.
 >
-> Are you suggesting all processes with the same UID should have access
-> to each others memory contents?
+> Can't resists... Sorry, I know I am troll but personally I think
+> in this case the most defensive code is BUG_ON(->filter == NULL)
+> or at least WARN_ON().
 
-No - that's a stronger statement than the one I made in my last message. 
-I'll however observe that something like this is already possible via 
-PTRACE_PEEKDATA.
+Linus will probably object because he objected (correctly) to a very
+similar problem in my old vsyscall emulation series.  A userspace
+security feature shouldn't have a failure mode in which it confuses
+the kernel and results in an oops, unless the situation is really
+unrecoverable.  So WARN_ON plus do_exit would be okay but BUG_ON would
+not.
 
-Like I said: a cgroup with a single mm_struct is conceptually cleanest 
-and covers some of our heavy use cases. A cgroup with a single uid would 
-cover more of our use cases. It'd be good to know if you and other 
-maintainers are willing to accept the former, but not the latter.
-
-I'll note that the malloc implementation which uses these interfaces can 
-still decide to zero the memory depending on which variant of *alloc is 
-called. But then, we'd have more fine grained control and more 
-flexibility in terms of temporal usage hints.
-
-  -Arun
+--Andy
