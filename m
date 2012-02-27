@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2B0UPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:15:12 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:59550 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab2B0UPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:15:10 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Christoph Lameter <cl@linux.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-References: <20120223180740.C4EC4156@kernel>
-	<alpine.DEB.2.00.1202231240590.9878@router.home>
-	<4F468F09.5050200@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202231334290.10914@router.home>
-	<4F469BC7.50705@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202231536240.13554@router.home>
-	<m1ehtkapn9.fsf@fess.ebiederm.org>
-	<alpine.DEB.2.00.1202240859340.2621@router.home>
-	<4F47BF56.6010602@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202241053220.3726@router.home>
-	<alpine.DEB.2.00.1202241105280.3726@router.home>
-	<4F47C800.4090903@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1202241131400.3726@router.home>
-	<87sjhzun47.fsf@xmission.com>
-	<alpine.DEB.2.00.1202271238450.32410@router.home>
-Date: Mon, 27 Feb 2012 12:15:00 -0800
-In-Reply-To: <alpine.DEB.2.00.1202271238450.32410@router.home> (Christoph
-	Lameter's message of "Mon, 27 Feb 2012 13:01:52 -0600 (CST)")
-Message-ID: <87d390janv.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754356Ab2B0UPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:15:46 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34963 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754246Ab2B0UPl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:15:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.155.68 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/g/AqkUAy3/j2Xi2CVkP8LJtfKQP2AcSU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Christoph Lameter <cl@linux.com>
-X-Spam-Relay-Country: **
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <CABqD9hbtFDU_vgBOajG2jJxQoHubcwYWJuHPLjgZkZyjGkQ2uQ@mail.gmail.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	<1330140111-17201-6-git-send-email-wad@chromium.org>
+	<20120227170922.GA10608@redhat.com>
+	<CABqD9hbtFDU_vgBOajG2jJxQoHubcwYWJuHPLjgZkZyjGkQ2uQ@mail.gmail.com>
+Date: Mon, 27 Feb 2012 12:15:38 -0800
+X-Google-Sender-Auth: hVWI9r70jetrHVp0DtsfQoLRkds
+Message-ID: <CAGXu5j+TzwCHpX6sGkQj4QDeZTR=MkGGaXawzAYbxCJQoT_9aQ@mail.gmail.com>
+Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+From: Kees Cook <keescook@chromium.org>
+To: Will Drewry <wad@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@linux.com> writes:
-
-> On Sat, 25 Feb 2012, Eric W. Biederman wrote:
->
->> > Ok so take a count and drop it before entering the main migration
->> > function?
+On Mon, Feb 27, 2012 at 11:54 AM, Will Drewry <wad@chromium.org> wrote:
+> On Mon, Feb 27, 2012 at 11:09 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 02/24, Will Drewry wrote:
+>>> +static struct seccomp_filter *get_seccomp_filter(struct seccomp_filter *orig)
+>>> +{
+>>> +     if (!orig)
+>>> +             return NULL;
+>>> +     /* Reference count is bounded by the number of total processes. */
+>>> +     atomic_inc(&orig->usage);
+>>> +     return orig;
+>>> +}
+>>> ...
+>>> +void copy_seccomp(struct seccomp *child, const struct seccomp *parent)
+>>> +{
+>>> +     /* Other fields are handled by dup_task_struct. */
+>>> +     child->filter = get_seccomp_filter(parent->filter);
+>>> +}
 >>
->> For correct operation of kernel code a count sounds fine.
+>> This is purely cosmetic, but imho looks a bit confusing.
 >>
->> If you are going to allow sleeping how do you ensure that an exec that
->> happens between the taking of the reference count and checking the
->> permissions does not mess things up.
->
-> Ok in that case there is a race between which of the two address space
-> structures (mm structs) are used. But that is up to the user to resolve if
-> he wants to.
->
->> At the moment I suspect the permissions checks are not safe unless
->> performed under both rcu_read_lock and task_lock to ensure that
->> the task<->mm association does not change on us while we are
->> working.  Even with that the cred can change under us but at least
->> we know the cred will be valid until rcu_read_unlock happens.
->
-> The permissions check only refer to the task struct.
->
->> This entire thinhg of modifying another process is a pain.
+>> We do not copy seccomp->mode and this is correct, it was already copied
+>> implicitely. So why do we copy ->filter? This is not "symmetrical", afaics
+>> you can simply do
 >>
->> Perhaps you can play with task->self_exec_id to detect an exec and fail
->> the system call if there was an exec in between when we find the task
->> and when we drop the task reference.
+>>        void copy_seccomp(struct seccomp *child)
+>>        {
+>>                if (child->filter)
+>>                        atomic_inc(child->filter->usage);
+>>
+>> But once again, this is cosmetic, feel free to ignore.
 >
-> I am not sure why there would be an issue. We have to operate on one mm
-> the pid refers to. If it changes then we may either operate on the old
-> one or the new one.
+> Right now get_seccomp_filter does the NULL check, so really this could
+> be reduced to adding an external get_seccomp_filter(p->seccomp.filter)
+> in place of copy_seccomp().
 >
-> We can move the determination of the mm to the last point possible to show
-> that it is not used earlier?
+> As to removing the extra arg, that should be fine since the parent
+> can't drop its refcount when copy_seccomp is called.  At the very
+> least, I can make that change so it reads more cleanly.
 
-If we are just changing the numa node on which the pages reside it isn't
-too bad of a problem.  Somehow from the names I thought we were moving
-pages from one task to another.
+I had various conflicting thoughts while looking over the refcounting:
 
-The problem that I see is that we may race with a suid exec in which
-case the permissions checks might pass for the pre-exec state and then
-we get the post exec mm that we don't actually have permissions for,
-but we manipulate it anyway.
+- get_seccomp_filter is defined static, and has a single caller: copy_seccomp()
+- put isn't static, and has a single caller: kernel/fork.c:free_task()
+- having only get_/put_ touch ->usage seems cleaner to me
+- seccomp_attach_filter touches ->usage without get_seccomp_filter
+- having the initializing routine use atomic_set(..., 1) is a common pattern
 
-Another possibility is that half the permission checks could be
-performed on the pre-exec state and another half the permission checks
-on the post-exec state, and we happen to pass as a fluke in a situation
-where neither the pre nor the post exec state would be allowed (for
-different reasons) but looking at the inconsistent allowed us to pass.
+In a fit of extreme bike-shedding, I can't decide which is more sensible:
 
-So we really need to do something silly like get task and
-task->self_exec_id.  Then perform the permission checks and get the mm.
-Then if just before we perform the operation task->self_exec_id is
-different restart the system call, or fail with something like -EAGAIN.
+- rename put_seccomp_filter to free_seccomp_filter and inline the
+get_seccomp_filter logic into copy_seccomp().
 
-Eric
+or
+
+- create a wrapper for put_seccomp_filter named free_seccomp_filter so
+that get_/put_ can both be static.
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
