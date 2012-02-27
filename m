@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2B0QWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:22:20 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38212 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753918Ab2B0QWN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:22:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.152.130.98 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	id S1753654Ab2B0QXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:23:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46592 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab2B0QXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 11:23:30 -0500
+Message-ID: <4F4BADD2.5020908@zytor.com>
+Date: Mon, 27 Feb 2012 08:22:42 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLVwYev3EmLOKuEdyaqieGzWgVpFcgodnUbUkbMbiJVqQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-7-git-send-email-wad@chromium.org>
-	<CAGXu5jLVwYev3EmLOKuEdyaqieGzWgVpFcgodnUbUkbMbiJVqQ@mail.gmail.com>
-Date: Mon, 27 Feb 2012 10:22:09 -0600
-Message-ID: <CABqD9hZcBiG579hUuxkvmUE122vVee_u9Ta7Hwrp4h-Sb8Lbcg@mail.gmail.com>
-Subject: Re: [PATCH v11 07/12] seccomp: add SECCOMP_RET_ERRNO
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, Ian Kent <raven@themaw.net>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCH] autofs4: fix compilation without CONFIG_COMPAT
+References: <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com> <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com> <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com> <1329889428.2193.45.camel@perseus.themaw.net> <1329890027.2193.48.camel@perseus.themaw.net> <1329890251.2193.50.camel@perseus.themaw.net> <m2vcmuh8dg.fsf_-_@igel.home> <CA+55aFxH4_gucG7vpdV5NJPNHoXy5bSGtr0yHqmobvYO6PmjNw@mail.gmail.com> <4F4B30D5.6050305@de.ibm.com> <20120227090951.GA2681@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20120227090951.GA2681@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 25, 2012 at 2:20 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Feb 24, 2012 at 7:21 PM, Will Drewry <wad@chromium.org> wrote:
->> This change adds the SECCOMP_RET_ERRNO as a valid return value from a
->> seccomp filter.  Additionally, it makes the first use of the lower
->> 16-bits for storing a filter-supplied errno.  16-bits is more than
->> enough for the errno-base.h calls.
+On 02/27/2012 01:09 AM, Heiko Carstens wrote:
+> On Mon, Feb 27, 2012 at 08:29:25AM +0100, Christian Borntraeger wrote:
+>> On 26/02/12 02:31, Linus Torvalds wrote:
+>>>
+>>> +#else
+>>> +
+>>> +#define is_compat_task() (0)
+>>> +
 >>
->> Returning errors instead of immediately terminating processes that
->> violate seccomp policy allow for broader use of this functionality
->> for kernel attack surface reduction.  For example, a linux container
->> could maintain a whitelist of pre-existing system calls but drop
->> all new ones with errnos.  This would keep a logically static attack
->> surface while providing errnos that may allow for graceful failure
->> without the downside of do_exit() on a bad call.
+>> Linus,
 >>
->> v11: - check for NULL filter (keescook@chromium.org)
->> v10: - change loaders to fn
->>  v9: - n/a
->>  v8: - update Kconfig to note new need for syscall_set_return_value.
->>     - reordered such that TRAP behavior follows on later.
->>     - made the for loop a little less indent-y
->>  v7: - introduced
->>
->> Signed-off-by: Will Drewry <wad@chromium.org>
+>> this breaks 32bit builds of s390 (and maybe others), since several platforms already
+>> define a is_compat_task.
 >
-> Reviewed-by: Kees Cook <keescook@chromium.org>
-
-Thanks!
-
->> +       /* Ensure unexpected behavior doesn't result in failing open. */
->> +       if (unlikely(current->seccomp.filter == NULL))
->> +               ret = SECCOMP_RET_KILL;
+> It breaks only !COMPAT builds on s390, since only we have the is_compat_task()
+> function defined for !COMPAT. The reason for that was simply to get rid of a
+> couple of ugly  #ifdefs.
+> Note, that we still need to include asm/compat.h in some file since we need the
+> compat_ptr typedef.
+> That might be ugly, but I preferred including that header file so we could get
+> rid of the #ifdefs.
+> Anyway... the patch below fixes the build issues:
 >
-> Any reason to not just immediately return in this case?
 
-Not that I can think of. I can just have it bail here.
+This patch would seem to be The Right Thing; the combination of this 
+really takes what s390 has done in arch space and globalizes it.
+
+	-hpa
+
