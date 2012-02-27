@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2B0N7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 08:59:33 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:48603 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab2B0N7b (ORCPT
+	id S1753539Ab2B0ODw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:03:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64609 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2B0ODu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 08:59:31 -0500
-Message-ID: <4F4B8C66.5060206@collabora.co.uk>
-Date: Mon, 27 Feb 2012 15:00:06 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Mon, 27 Feb 2012 09:03:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
+Date: Mon, 27 Feb 2012 14:03:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
+        Roland Stigge <stigge@antcom.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com
+References: <Pine.LNX.4.44L0.1202261040020.22970-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202261040020.22970-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: javier@collabora.co.uk, eric.dumazet@gmail.com, lennart@poettering.net,
-        kay.sievers@vrfy.org, alban.crequy@collabora.co.uk,
-        bart.cerneels@collabora.co.uk, rodrigo.moya@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk> <20120224.153616.117399887784547022.davem@davemloft.net>
-In-Reply-To: <20120224.153616.117399887784547022.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202271403.16893.arnd@arndb.de>
+X-Provags-ID: V02:K0:oUHsOCR8v8HnogbR2J/5QBPPGMrpTxCaShTypJPKEZ5
+ BhNE5XLASsDWnMOMVM5zgxL1IQR2Ut6Qg/0FjucavqChdJmekF
+ n1pY3RGfAlflHsAN+cwO6DJi7NX1l63roIy8L529GOT+UpVeOb
+ 75HPZSSYM3mgtKvPzOGeuEfoqHP76Chx3LUg9hQdZML7cTzEeM
+ dDK+g0p+cPo6gMaGBocjlBSkWd2A4S+savIqkcI/lMzNtvKA9X
+ uwgF06la65Aw6YlUr9dUiL81KIfaSglHLBAwsUx6ESmCKHqnFF
+ lNuQpmTpVEFcX0SWjp1YXaFCztniRJi6BmJfJZHnFEofy52d65
+ hcNTKx+YE65CPb9s7v+c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 02/24/2012 09:36 PM, David Miller wrote:
+On Sunday 26 February 2012, Alan Stern wrote:
+> On Sun, 26 Feb 2012, Arnd Bergmann wrote:
 > 
-> My first impression is that I'm amazed at how much complicated new
-> code you have to add to support groups of receivers of AF_UNIX
-> messages.
+> > We are doing a major rework of the ARM architecture tree right now
+> > to allow building multiple SoC platforms together, which has not
+> > been possible traditionally. The "PLATFORM_DRIVER" macro in ohci
+> > and ehci is one of many things standing in the way still and will have
+> > to be dealt with at some point.
 > 
-> I can't see how this is better than doing multicast over ipv4 using
-> UDP or something like that, code which we have already and has been
-> tested for decades.
+> Is there anybody in particular who is going to attack this issue?
+
+Not the USB portion, we're still busy with more fundamental issues like
+conflicting header files between the various subarchitectures.
+
+> > > A little progress has been made already.  We just received a submission
+> > > for a "generic" platform bus glue file that will be able to take over
+> > > the jobs of several of the existiing files.  If anyone wants to take
+> > > this further I won't object, but I don't plan to work on it myself
+> > > soon.
+> > 
+> > Ok, good to know. The approach of a generic glue is exactly what I
+> > was going to suggest. As we get to ARM platforms that are currently
+> > using PLATFORM_DRIVER, I will then ask people to convert the ohci
+> > glue to use that generic glue instead of adding another *_DRIVER
+> > macro to ohci/ehci.
 > 
+> The problem is that several platforms have highly specialized needs
+> that can't sanely be handled in a single generic driver.  Although a
+> lot of drivers can be converted over, not all of them will.
 
-Primary for performance reasons. D-bus is an IPC system for processes in
-the same machine so traversing the whole TCP/IP stack seems a little
-overkill to me. We will try it though to have numbers on the actual
-overhead of using UDP multicast over IP instead of multicast Unix domain
-sockets.
+Can you give an example? We have recently converted the sdhci mmc drivers
+in a similar way, and we have the libata drivers that have always worked
+in this manner.
 
-We also thought of using Netlink sockets since it already supports
-multicast and should be more lightweight than IP multicast. But even
-Netlink doesn't meet our needs since our multicast on Unix sockets
-implementation has different semantics needed for D-bus:
-
-- total order is guaranteed: If sender A sends a message before B, then
-receiver C and D should both get message A first and then B.
-
-- slow readers: dropping packets vs blocking the sender. Although
-  datagrams are not reliable on IP, datagrams on Unix sockets are never
-  lost. So if one receiver has its buffer full the sender is blocked
-instead of dropping packets. That way we guarantee a reliable
-communication channel.
-
-- multicast group acess control: controlling who can join the multicast
-group.
-
-- multicast on loopback is not supported: which means we have to use a
-NIC (i.e: eth0).
-
-> I really don't want to apply this stuff, it looks bloated,
-> complicated, and there is another avenue for doing what you want to
-> do.
+> > I'm not sure about what we should do for lpc32xx. Is that
+> > generic glue going into v3.4?
 > 
+> That's up to Greg.  At the moment it isn't used by anything, and unless
+> an existing driver can be converted over I'd guess it's not likely to
+> get merged right away.
 
-We can work to reduce the implementation complexity and make it less
-bloated.
+Where is that patch? Maybe I can help out by converting the PCI
+variants of ohci and ehci to the generic glue, because they are
+easy to test.
 
-Or you don't like the idea in general?
+> >  If so, we could convert the
+> > pnx4008 driver to use that and abstract it in a way that works
+> > nicely for pnx4008 and lpc32xx. OTOH, we might just let this
+> > one go in as before and ask people to do it right for the next
+> > one.
+> 
+> I don't know anything about these two platforms.  If they are
+> sufficiently similar then it does make sense to combine the drivers
+> into a single file, with various platform-specific decisions made at
+> runtime.  These decisions don't necessarily have to use a machine_is_*
+> kind of test (although they can); it might be simpler to do such a
+> test once during probe and store the result in a flag for later reuse.
+> Or then again, it might not since there's no obvious place to keep 
+> such a flag...
+> 
+> At the moment, switching the pnx4008 driver to use the generic bus glue
+> doesn't look easy.  The generic code doesn't know anything about i2c.
 
-> Applications have to change to support the new multicast facilities,
-> so they can equally be changed to use a real transport that already
-> supports multicasting.
+Maybe I misunderstood what the generic bus glue does then, because I
+would not expect that it should know about i2c ;-)
 
-Yes, this is not about minimizing user-space application change but to
-improve the D-bus performance, or any other framework that relies on
-multicast communication on a single machine.
+I would think the generic bus glue would be a very simple library that
+just exports the various symbols that are defined in ohci-hcd.c and
+used in the bus specific driver so that the driver can be a separate
+module. Is it something different from that?
 
-Best regards,
-Javier
+	Arnd
