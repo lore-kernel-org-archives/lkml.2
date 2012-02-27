@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2B0R1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:27:11 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:52699 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753600Ab2B0R1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:27:09 -0500
-Message-ID: <1330363627.9942.16.camel@joe2Laptop>
-Subject: Re: "whitespace coding style cleanup" broke coding style
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Hansjoerg Lipp <hjlipp@web.de>, Tilman Schmidt <tilman@imap.cc>,
-        gigaset307x-common@lists.sourceforge.net
-Date: Mon, 27 Feb 2012 09:27:07 -0800
-In-Reply-To: <4F4BB983.8020608@suse.cz>
-References: <4F4B45F6.4090706@suse.cz> <1330361549.9942.7.camel@joe2Laptop>
-	 <4F4BB983.8020608@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754069Ab2B0R3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:29:35 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:46596 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab2B0R3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:29:34 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 40ED982A20
+Date: Mon, 27 Feb 2012 18:29:30 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org,
+        Alex =?iso-8859-1?B?VmlsbGFj7a1z?= Lasso 
+	<a_villacis@palosanto.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] zcache: avoid AB-BA deadlock condition
+Message-ID: <20120227172930.GB1650@thinkpad>
+References: <1329739909-3174-1-git-send-email-andrea@betterlinux.com>
+ <e60d5136-c2d2-45a4-97f4-5d8e58b12000@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e60d5136-c2d2-45a4-97f4-5d8e58b12000@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 18:12 +0100, Jiri Slaby wrote:
-> On 02/27/2012 05:52 PM, Joe Perches wrote:
-> > Notice that the code improperly uses commas and
-> > not semicolons for line terminations like the
-> > lines immediately above and below it.
+On Mon, Feb 27, 2012 at 09:23:24AM -0800, Dan Magenheimer wrote:
+> > From: Andrea Righi [mailto:andrea@betterlinux.com]
+> > Sent: Monday, February 20, 2012 5:12 AM
+> > To: Greg Kroah-Hartman
+> > Cc: Dan Magenheimer; Seth Jennings; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org;
+> > stable@kernel.org
+> > Subject: [PATCH] zcache: avoid AB-BA deadlock condition
+> > 
+> > Commit 9256a47 fixed a deadlock condition, being sure that the buddy
+> > list spinlock is always taken before the page spinlock.
+> > 
+> > However in zbud_free_and_delist() locking order is the opposite
+> > (page lock -> list lock).
+> > 
+> > Possible unsafe locking scenario (reported by lockdep):
+> > 
+> >         CPU0                    CPU1
+> >         ----                    ----
+> >    lock(&(&zbpg->lock)->rlock);
+> >                                 lock(zbud_budlists_spinlock);
+> >                                 lock(&(&zbpg->lock)->rlock);
+> >    lock(zbud_budlists_spinlock);
+> > 
+> > Fix by grabbing the locks in opposite order in zbud_free_and_delist().
+> > 
+> > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 > 
-> Oh, and you see that you made it actually _worse_?
-
-Actually, no.  This changes does highlight a
-nominal code style defect though.
-
-> The patch should not 
-> touch the code at all. It is obviously totally broken. In a separate 
-> patch you might do s@,@;@ instead.
-
-The code in either form is neither broken nor
-incorrect.  It's just "out of style".
-Emacs did made it consistent.
-
-> Hmm, but did not we conclude some time ago that we will not touch code 
-> just to perform a whitespace cleanup?
-
-It's a prelude to other patches so actually
-that's done quite a lot.   git blame -w
-doesn't even show my name on any of the
-code in this patch.
-
-> > It was a first pass and an overall improvement.
+> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 > 
-> I hope no other passes are going to happen there or anywhere in TTY 
-> drivers. I really do not want to solve zillion collisions in my ~100 
-> local patches due to whitespace changes, sorry.
+> Thanks for catching this Andrea!  (And thanks also to
+> Alex Vallacis-Lasso for independently reporting and testing:
+> http://permalink.gmane.org/gmane.linux.kernel/1257214 )
+> 
+> Greg, this patch could be targeted for 3.3-rc6 and 3.2-stable.
+> AFAIK, nobody has actually experienced a deadlock from this so
+> if Linus has the screws down tight for -rc6, it could wait
+> until the 3.4 window.
 
-Perhaps you should submit your ~100 patches sooner
-rather than later.  That's a lot of changes that
-could have any number of collisions.
+If it helps, without the fix I can easily trigger the lockdep splat
+running a echo 3 > /proc/sys/vm/drop_caches.
 
-> Yes, but it does not pass our brain, does it? One should throw 
-> "checkpatch --file" or alike away, finally.
-
-Perhaps you might notice I did not use checkpatch
-as a guide nor as a criteria for submission.
-
-It was ~5MB patch btw.  Compilation was done to
-verify lack of object delta only.
-
-Thanks for noticing the oddly formatted code.
-I'll send a patch to fix it.
-
-cheers, Joe
-
-
+-Andrea
