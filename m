@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab2B0UTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:19:41 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:57517 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754134Ab2B0UTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:19:40 -0500
-Date: Mon, 27 Feb 2012 12:19:32 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] PCI: acpihp user __pci_remove_bus_device instead
-Message-ID: <20120227121932.24852506@jbarnes-desktop>
-In-Reply-To: <1330206863-31381-5-git-send-email-yinghai@kernel.org>
-References: <1330206863-31381-1-git-send-email-yinghai@kernel.org>
-	<1330206863-31381-5-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/TCcGUpmW5aX1Tnb3r8+DclX"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1754535Ab2B0UXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:23:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52313 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185Ab2B0UXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:23:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="112367160"
+Subject: [RFC PATCH] kick ksoftirqd more often to please soft lockup detector
+To: linux-kernel@vger.kernel.org
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-scsi@vger.kernel.org, Lukasz Dorau <lukasz.dorau@intel.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Andrzej Jakowski <andrzej.jakowski@intel.com>
+Date: Mon, 27 Feb 2012 12:38:47 -0800
+Message-ID: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: StGit/0.16-1-g7004
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TCcGUpmW5aX1Tnb3r8+DclX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+An experimental hack to tease out whether we are continuing to
+run the softirq handler past the point of needing scheduling.
 
-On Sat, 25 Feb 2012 13:54:23 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+It allows only one trip through __do_softirq() as long as need_resched()
+is set which hopefully creates the back pressure needed to get ksoftirqd
+scheduled.
 
-> pci_stop_bus_device get called before in the same loop.
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->=20
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
-> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -910,7 +910,7 @@ static int disable_device(struct acpiphp
->  				disable_bridges(pdev->subordinate);
->  				pci_disable_device(pdev);
->  			}
-> -			pci_stop_and_remove_bus_device(pdev);
-> +			__pci_remove_bus_device(pdev);
->  			pci_dev_put(pdev);
->  		}
->  	}
->=20
+Targeted to address reports like the following that are produced
+with i/o tests to a sas domain with a large number of disks (48+), and
+lots of debugging enabled (slub_deubg, lockdep) that makes the
+block+scsi softirq path more cpu-expensive than normal.
 
-Ok applied these.  How about another that converts in-tree users to
-pci_remove_bus_device and marks the __ version deprecated though?
+With this patch applied the softlockup detector seems appeased, but it
+seems odd to need changes to kernel/softirq.c so maybe I have overlooked
+something that needs changing at the block/scsi level?
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+BUG: soft lockup - CPU#3 stuck for 22s! [kworker/3:1:78]
+Modules linked in: nls_utf8 ipv6 uinput sg iTCO_wdt iTCO_vendor_support ioatdma dca i2c_i801 i2c_core wmi sd_mod ahci libahci isci libsas libata scsi_transport_sas [last unloaded: scsi_wait_scan]
+irq event stamp: 26260303
+hardirqs last  enabled at (26260302): [<ffffffff814becf4>] restore_args+0x0/0x30
+hardirqs last disabled at (26260303): [<ffffffff814c60ee>] apic_timer_interrupt+0x6e/0x80
+softirqs last  enabled at (26220386): [<ffffffff81033edd>] __do_softirq+0x1ae/0x1bd
+softirqs last disabled at (26220665): [<ffffffff814c696c>] call_softirq+0x1c/0x26
+CPU 3
+Modules linked in: nls_utf8 ipv6 uinput sg iTCO_wdt iTCO_vendor_support ioatdma dca i2c_i801 i2c_core wmi sd_mod ahci libahci isci libsas libata scsi_transport_sas [last unloaded: scsi_wait_scan]
 
---Sig_/TCcGUpmW5aX1Tnb3r8+DclX
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Pid: 78, comm: kworker/3:1 Not tainted 3.3.0-rc3-7ada1dd-isci-3.0.183+ #1 Intel Corporation ROSECITY/ROSECITY
+RIP: 0010:[<ffffffff814be8b6>]  [<ffffffff814be8b6>] _raw_spin_unlock_irq+0x34/0x4b
+RSP: 0000:ffff8800bb8c3c50  EFLAGS: 00000202
+RAX: ffff8800375f3ec0 RBX: ffffffff814becf4 RCX: ffff8800bb8c3c00
+RDX: 0000000000000001 RSI: ffff880035bbc348 RDI: ffff8800375f4588
+RBP: ffff8800bb8c3c60 R08: 0000000000000000 R09: ffff880035aed150
+R10: 0000000000018f3b R11: ffff8800bb8c39e0 R12: ffff8800bb8c3bc8
+R13: ffffffff814c60f3 R14: ffff8800bb8c3c60 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff8800bb8c0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000f2e028 CR3: 00000000b11b3000 CR4: 00000000000406e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process kworker/3:1 (pid: 78, threadinfo ffff8800377d2000, task ffff8800375f3ec0)
+Stack:
+ ffff88003555f800 ffff88003555f800 ffff8800bb8c3cc0 ffffffffa00512c4
+ ffffffff814be8b2 ffff880035dfc000 ffff880035dfe000 000000000553a265
+ ffff8800bb8c3cb0 ffff88003555f800 ffff8800b20af200 ffff880035dfe000
+Call Trace:
+ <IRQ>
+ [<ffffffffa00512c4>] sas_queuecommand+0xa7/0x204 [libsas]
+ [<ffffffff814be8b2>] ? _raw_spin_unlock_irq+0x30/0x4b
+ [<ffffffff8132b6a9>] scsi_dispatch_cmd+0x1a2/0x24c
+ [<ffffffff813317a8>] ? spin_lock+0x9/0xb
+ [<ffffffff813333b0>] scsi_request_fn+0x3b1/0x3d9
+ [<ffffffff8124a19f>] __blk_run_queue+0x1d/0x1f
+ [<ffffffff8124b869>] blk_run_queue+0x26/0x3a
+ [<ffffffff813319a5>] scsi_run_queue+0x1fb/0x20a
+ [<ffffffff81332136>] scsi_next_command+0x3b/0x4c
+ [<ffffffff81332b66>] scsi_io_completion+0x205/0x44f
+ [<ffffffff813316b8>] ? spin_unlock_irqrestore+0x9/0xb
+ [<ffffffff8132b3ab>] scsi_finish_command+0xeb/0xf4
+ [<ffffffff81333a04>] scsi_softirq_done+0x112/0x11b
+ [<ffffffff812540ac>] blk_done_softirq+0x7e/0x96
+ [<ffffffff81033e0c>] __do_softirq+0xdd/0x1bd
+ [<ffffffff814c696c>] call_softirq+0x1c/0x26
+ [<ffffffff81003ce6>] do_softirq+0x4b/0xa5
+ [<ffffffff81034916>] irq_exit+0x55/0xc2
+ [<ffffffff814c6a9c>] smp_apic_timer_interrupt+0x7c/0x8a
+ [<ffffffff814c60f3>] apic_timer_interrupt+0x73/0x80
+ <EOI>
+ [<ffffffff814be8b6>] ? _raw_spin_unlock_irq+0x34/0x4b
+ [<ffffffffa00512c4>] sas_queuecommand+0xa7/0x204 [libsas]
+ [<ffffffff814be8b2>] ? _raw_spin_unlock_irq+0x30/0x4b
+ [<ffffffff8132b6a9>] scsi_dispatch_cmd+0x1a2/0x24c
+ [<ffffffff813317a8>] ? spin_lock+0x9/0xb
+ [<ffffffff813333b0>] scsi_request_fn+0x3b1/0x3d9
+ [<ffffffff8124a19f>] __blk_run_queue+0x1d/0x1f
+ [<ffffffff8125f3bb>] cfq_kick_queue+0x2f/0x41
+ [<ffffffff8104462e>] process_one_work+0x1c8/0x336
+ [<ffffffff81044599>] ? process_one_work+0x133/0x336
+ [<ffffffff81044306>] ? spin_lock_irq+0x9/0xb
+ [<ffffffff8125f38c>] ? cfq_init_queue+0x2a3/0x2a3
+ [<ffffffff81045fd9>] ? workqueue_congested+0x1e/0x1e
+ [<ffffffff81046085>] worker_thread+0xac/0x151
+ [<ffffffff81045fd9>] ? workqueue_congested+0x1e/0x1e
+ [<ffffffff8104a618>] kthread+0x8a/0x92
+ [<ffffffff8107654e>] ? trace_hardirqs_on_caller+0x16/0x16d
+ [<ffffffff814c6874>] kernel_thread_helper+0x4/0x10
+ [<ffffffff814becf4>] ? retint_restore_args+0x13/0x13
+ [<ffffffff8104a58e>] ? kthread_create_on_node+0x14d/0x14d
+ [<ffffffff814c6870>] ? gs_change+0x13/0x13
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <JBottomley@parallels.com>
+Reported-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reported-by: Andrzej Jakowski <andrzej.jakowski@intel.com>
+Not-yet-signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ kernel/softirq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-iQIcBAEBAgAGBQJPS+VUAAoJEIEoDkX4Qk9hxt8QAMAp+2tK1c+5mTtTOuItEckt
-cM2KORyERTzalS98iabSG7UhI18cNaIuLbflbgG5IVQxdvBLFJdFgBk8MqDTI1Ra
-4i9lu+QFXVFgNTSaYKvtzKIzJtYURJq7O+tWY+gjIzAkb9DWjO48CYXXZBtwO4o5
-CfCntYsyjQJpsDY8Q/euSE3OvHXRg/HWoJzi2NgXfbFKQlmUvDmxWqFfMsKuvpkT
-rTi/TZAoPefwEQjUSBoPtfigaeEXPFRBPmI84vfVZ2Ojnw3qMreMcAoQiL/7D5+k
-2LAOVpvdJx5MVkcTt/0c4bRmO653nStNU5+tFyX3EywkoPJZw+ByYUlWYUp0qXQo
-xwS2M0BSStdCPo5Ao2qahxM/qdCclN0NK4+2+JJDWdXxxEhpADfoiZ5u4ylRCEja
-+rMGJ6jxCdgOI0oCzncqD/f6mEno1yjWFbab8oLClPqmIu6ePUc4q05HJ6eHe4AF
-04/aoQyHTiW649tQQU4Oi61pht/95sx5GR8GScn+EE2p/XtnhDzkg7OW/Dcg7VV8
-ydD24hLQWotMc9zmdgV+yfJQ07pz4qmFrFOEnYXsDOEd6WP/7S1s6AoLN37hy8ub
-impfqT9obX+WwdnHsrxnp0Ija1e1N3LHGfR91AGw/3H3Y94QJiClcKI5ieYCZro7
-AP9xV1TTSKpwrzFhnWv0
-=x/N/
------END PGP SIGNATURE-----
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 4eb3a0f..82a3f43 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -255,7 +255,7 @@ restart:
+ 	local_irq_disable();
+ 
+ 	pending = local_softirq_pending();
+-	if (pending && --max_restart)
++	if (pending && --max_restart && !need_resched())
+ 		goto restart;
+ 
+ 	if (pending)
 
---Sig_/TCcGUpmW5aX1Tnb3r8+DclX--
