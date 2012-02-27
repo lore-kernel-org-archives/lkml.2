@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2B0N5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 08:57:13 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:52526 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab2B0N5M (ORCPT
+	id S1753180Ab2B0N6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 08:58:44 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35165 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab2B0N6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 08:57:12 -0500
-Message-ID: <4F4B8BB2.1060004@ge.com>
-Date: Mon, 27 Feb 2012 13:57:06 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Mon, 27 Feb 2012 08:58:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.224.33.4 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@lists.ozlabs.org, Wim Van Sebroeck <wim@iguana.be>,
-        Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] powerpc: Move GE GPIO and PIC drivers
-References: <1328614121-17803-1-git-send-email-martyn.welch@ge.com>	 <1328614121-17803-2-git-send-email-martyn.welch@ge.com> <1330299464.20389.58.camel@pasglop>
-In-Reply-To: <1330299464.20389.58.camel@pasglop>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <CAJh9x3oO+-8Bc4UONG6RTmSeVFcuNHTKH5m2KsizaubmSojYmw@mail.gmail.com>
+References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
+	<4F4484AC.9050500@lge.com>
+	<87ehtnhz9w.fsf@gmail.com>
+	<CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com>
+	<4F45E9C5.4020900@lge.com>
+	<CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com>
+	<CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com>
+	<4F468EBB.9000209@gmail.com>
+	<CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
+	<4F4AF727.2040105@gmail.com>
+	<CAJh9x3oO+-8Bc4UONG6RTmSeVFcuNHTKH5m2KsizaubmSojYmw@mail.gmail.com>
+Date: Mon, 27 Feb 2012 08:58:43 -0500
+Message-ID: <CAJh9x3qoF=WdmfaTUTGjKWzPbw7TNb3cG+=mi=YFVQ9q76o6yQ@mail.gmail.com>
+Subject: Re: perf record: can I specify multiple events and use different
+ sample-after value
+From: Yuanfang Chen <cyfmxc@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Feb 2012 13:57:09.0329 (UTC) FILETIME=[B28A9C10:01CCF557]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/02/12 23:37, Benjamin Herrenschmidt wrote:
-> On Tue, 2012-02-07 at 11:28 +0000, Martyn Welch wrote:
->> Move the GE GPIO and PIC drivers to allow these to be used by non-86xx
->> boards.
-> 
-> Hi, Sorry for the late review...
-> 
+On Mon, Feb 27, 2012 at 8:56 AM, Yuanfang Chen <cyfmxc@gmail.com> wrote:
+>
+> On Feb 26, 2012 10:23 PM, "David Ahern" <dsahern@gmail.com> wrote:
+>>
+>> On 2/24/12 3:41 PM, Yuanfang Chen wrote:
+>>>
+>>> I think I'll settle with perf record for now. Still, unlike trace
+>>> event, sample count is not meaningful for PMU event. Output of "perf
+>>> script" does not include period value. One line of code will do the
+>>> work.
+>>>
+>>> lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
+>>> __mem_cgroup_commit_char
+>>> lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
+>>> __mem_cgroup_commit_char
+>>>
+>>> 86754, 1027634 is the period value. But I'm not sure which is the PMU
+>>> value, is it just period value, or period x sample after. If so, what
+>>> is the sample after value?
+>>
+>>
+>> You lost me. You modified perf-script to print the period?
+>>
+>> Are you asking for the PMU counter value for 0x3c?
 
-No problem, thanks for the review!
+     yes
 
->> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
->> ---
->>  arch/powerpc/platforms/86xx/Kconfig      |    3 +
->>  arch/powerpc/platforms/86xx/Makefile     |    7 +-
->>  arch/powerpc/platforms/86xx/gef_gpio.c   |  171 --------------------
->>  arch/powerpc/platforms/86xx/gef_pic.c    |  252 ------------------------------
->>  arch/powerpc/platforms/86xx/gef_pic.h    |   11 --
->>  arch/powerpc/platforms/86xx/gef_ppc9a.c  |    3 +-
->>  arch/powerpc/platforms/86xx/gef_sbc310.c |    3 +-
->>  arch/powerpc/platforms/86xx/gef_sbc610.c |    3 +-
->>  arch/powerpc/platforms/Kconfig           |    7 +
->>  arch/powerpc/platforms/Makefile          |    3 +
->>  arch/powerpc/platforms/ge_gpio.c         |  171 ++++++++++++++++++++
->>  arch/powerpc/platforms/ge_pic.c          |  252 ++++++++++++++++++++++++++++++
->>  arch/powerpc/platforms/ge_pic.h          |   11 ++
-> 
-> So I don't like having files showing up there. In fact, I want to move
-> the only other one here, it's not the right place for it
-> (fsl_uli1575.c).
-> 
+>>
+>> What perf commands are you running?
 
-This patch (or one like it) has been around for a while now. Kumar wanted me
-to put them here rather than sysdev[1], but I'm easy either way.
+    perf script
+    (with no options)
 
-> Please contemplate using arch/powerpc/sysdev instead. Maybe make a
-> subdir in there (geip or something like that ?)
-> 
-
-I'd rather avoid "geip" (we seem to have a habit of renaming divisions), would
-"ge" be acceptable?
-
-> Also, use git mv so that the file moves appear as such in the history,
-> this will make review easier by clearly separating the move from actual
-> changes to the files.
-> 
-
-Hmm, thought I'd done that. Will try again.
-
-Martyn
-
-[1] http://old.nabble.com/GE-GPIO-and-PIC-support.-td27212938.html
-
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
+>
+>>
+>> David
