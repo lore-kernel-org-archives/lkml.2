@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2B0SX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:23:27 -0500
-Received: from 8bytes.org ([88.198.83.132]:52726 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754346Ab2B0SX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:23:26 -0500
-Date: Mon, 27 Feb 2012 19:23:25 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
-        mingo@elte.hu, gleb@redhat.com, joerg.roedel@amd.com
-Subject: Re: [PATCH] perf tools: fix guest mode monitoring on AMD
-Message-ID: <20120227182325.GA12302@8bytes.org>
-References: <20120227173351.GA6945@quad> <4F4BC1AD.9030600@gmail.com> <CABPqkBRUzp-gBANhiMerHanN7yaTnJbxHNEjz_mw+XRYT8ZHUw@mail.gmail.com>
+	id S1754581Ab2B0SZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:25:41 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:39956 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754522Ab2B0SZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:25:39 -0500
+Message-ID: <4F4BCAA5.8060308@xenotime.net>
+Date: Mon, 27 Feb 2012 10:25:41 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRUzp-gBANhiMerHanN7yaTnJbxHNEjz_mw+XRYT8ZHUw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] rtc: fix rtc-ds1307 printk format warning
+References: <20120227182029.545a7db32550ce94c9faffb4@canb.auug.org.au>
+In-Reply-To: <20120227182029.545a7db32550ce94c9faffb4@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 06:52:25PM +0100, Stephane Eranian wrote:
-> Yeah, but that causes simple commands such as "perf stat -e cycles ls"
-> to return 0 count.
-> 
-> So either you get a segfault or you get zero count. There is something
-> else going on here...
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hmm, looks like the counters will not do any counting when EFER.SVME==0
-and HO==1 or GO==1 is set in the counters :(
-A solution would be to mask out these bits in the perf-ctrl register
-when EFER.SVME=0
+Fix printk format warning:
 
-I'll try to come up with a fix soon.
+drivers/rtc/rtc-ds1307.c:915:3: warning: format '%d' expects type 'int', but argument 3 has type 'size_t'
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Alessandro Zummo <a.zummo@towertech.it>
+Cc:	rtc-linux@googlegroups.com
+---
+ drivers/rtc/rtc-ds1307.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	Joerg
-
+--- linux-next-20120227.orig/drivers/rtc/rtc-ds1307.c
++++ linux-next-20120227/drivers/rtc/rtc-ds1307.c
+@@ -912,7 +912,7 @@ read_rtc:
+ 			goto exit_nvram;
+ 		}
+ 		set_bit(HAS_NVRAM, &ds1307->flags);
+-		dev_info(&client->dev, "%d bytes nvram\n", ds1307->nvram->size);
++		dev_info(&client->dev, "%zu bytes nvram\n", ds1307->nvram->size);
+ 	}
+ 
+ 	return 0;
