@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2B0GZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 01:25:45 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45758 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753454Ab2B0GZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 01:25:44 -0500
-Date: Sun, 26 Feb 2012 22:25:43 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: axboe@kernel.dk
-Cc: LKML <linux-kernel@vger.kernel.org>
-Message-ID: <1359683961.1571598.1330323943766.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1876351746.1571382.1330323287053.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Subject: /dev/loop direction?
+	id S1754117Ab2B0Gbq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 01:31:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44130 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754028Ab2B0Gbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 01:31:45 -0500
+Message-ID: <4F4B232F.2070605@zytor.com>
+Date: Sun, 26 Feb 2012 22:31:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+References: <20120227172139.726ddae85c910cee7b7e3a37@canb.auug.org.au>
+In-Reply-To: <20120227172139.726ddae85c910cee7b7e3a37@canb.auug.org.au>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On 02/26/2012 10:21 PM, Stephen Rothwell wrote:
+> 
+> I applied the following fix up patch.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au> Date: Mon, 27 Feb
+> 2012 17:12:00 +1100 Subject: [PATCH] percpu: fix for removal of
+> percpu_xxx function
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au> --- 
+> arch/x86/include/asm/compat.h |    2 +- 1 files changed, 1
+> insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/compat.h
+> b/arch/x86/include/asm/compat.h index e7f68b4..b6a2a1c 100644 ---
+> a/arch/x86/include/asm/compat.h +++
+> b/arch/x86/include/asm/compat.h @@ -229,7 +229,7 @@ static inline
+> void __user *arch_compat_alloc_user_space(long len) sp =
+> task_pt_regs(current)->sp; } else { /* -128 for the x32 ABI redzone
+> */ -		sp = percpu_read(old_rsp) - 128; +		sp =
+> __this_cpu_read(old_rsp) - 128; }
+> 
+> return (void __user *)round_down(sp - len, 16);
 
-I am unsure if you are the right person to approach. I have been
-on and off working on sparse file support for the loop device
-(think mounting QCOW, VHD, VMDK images, if you are interested
-the current patches, which are stale by about three months, are at
-https://github.com/andreiw/andreiw-wip/tree/master/linux/3.2/block/loop).
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-As I look at rebasing my current work on top of the latest linux-next,
-I ask myself if this is even the right direction to look at. Loop
-device has a lot of existing stuff that I've ended up refactoring
-and reshuffling, and while I think I've haven't introduced regressions,
-the sheer number of odd scenarios with loop means I probably did and
-will again. The existing changes already would be a sisyphean task
-to split into manageable patches and merge, and the existing loop
-design (rigid IOCTL iface that I can't break and no support for
-multiple outstanding I/Os) makes me wonder if I should just make
-my work as a device-mapper target. Turns out RedHat as done work
-on a dm-loop target that (at least at some point) existed and
-looks like a good place to start (it can bypass file I/O where it
-makes sense, bmap()ing, which was one direction I wanted to take
-loop into with future work).
+	-hpa
 
-What are your thoughts? Is extending loop to support sparse images
-(and by that direction, also COW/differencing images) appropriate?
-Or should I just not worry about /dev/loop and fork off or base
-on device-mapper?
-
-A
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
