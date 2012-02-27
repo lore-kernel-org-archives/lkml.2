@@ -1,33 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2B0THu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:07:50 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:35396 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab2B0THt (ORCPT
+	id S1754870Ab2B0TIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:08:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54292 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072Ab2B0TIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:07:49 -0500
-Date: Mon, 27 Feb 2012 14:06:41 -0500 (EST)
-Message-Id: <20120227.140641.256676898629216540.davem@davemloft.net>
-To: linuxmail@4lin.net
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Don't get Sun SPARC T2000 Enterprise booting with any(?) kernel
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <73F85A3B-453F-4213-8B33-41061BA31F1B@4lin.net>
-References: <73F85A3B-453F-4213-8B33-41061BA31F1B@4lin.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Feb 2012 11:06:44 -0800 (PST)
+	Mon, 27 Feb 2012 14:08:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4PMzuPdCZvbYFiQRGjGuMg+KYk0ZxJH0xr-n6AfqBAnA@mail.gmail.com>
+References: <1330299202-3838-1-git-send-email-yinghai@kernel.org>
+	<1330299202-3838-6-git-send-email-yinghai@kernel.org>
+	<CAErSpo4PMzuPdCZvbYFiQRGjGuMg+KYk0ZxJH0xr-n6AfqBAnA@mail.gmail.com>
+Date: Mon, 27 Feb 2012 11:08:51 -0800
+X-Google-Sender-Auth: 6uRnXyqq4Drnk21st7srKTlPJNU
+Message-ID: <CAE9FiQUDtJc5uwPXkQ7T7zr8=xa=VnPuQT4Q87SXbynuCHQ2Zg@mail.gmail.com>
+Subject: Re: [PATCH 5/8] PCI: add generic device into pci_host_bridge struct
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 27, 2012 at 9:57 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sun, Feb 26, 2012 at 4:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> use that device for pci_root_bus bridge pointer.
+>>
+>> With that make code more simple.
+>>
+>> Also we can use pci_release_bus_bridge_dev() to release allocated
+>> pci_host_bridge during removing path.
+>>
+>> At last, we can use root bus bridge pointer to get host bridge pointer instead
+>> of going over host bridge list, so could kill that host bridge list.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  drivers/pci/host-bridge.c |   14 ---------
+>>  drivers/pci/pci.h         |    2 -
+>>  drivers/pci/probe.c       |   65 ++++++++++++++++++++++++----------------------
+>>  include/linux/pci.h       |    4 ++
+>>  4 files changed, 38 insertions(+), 47 deletions(-)
+>>
+>> Index: linux-2.6/drivers/pci/host-bridge.c
+>> ===================================================================
+>> --- linux-2.6.orig/drivers/pci/host-bridge.c
+>> +++ linux-2.6/drivers/pci/host-bridge.c
+>> -       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+>> -       if (!dev)
+>> -               goto err_dev;
+>> +               return NULL;
+>>
+...
 
-Everyone on the sparclinux list saw your posting yesterday there, and
-if you don't get a reply on sparclinux you're definitely NOT going to
-get one here.
+here old code allocate dummy struct device.
 
-You simply need to be patient and wait for a volunteer on sparclinux to
-give you a reply.
+>> +       bridge = pci_alloc_host_bridge(b);
+>> +       if (!bridge)
+>> +               goto err_out;
+>> +
+>> +       bridge->dev.parent = parent;
+>> +       bridge->dev.release = pci_release_bus_bridge_dev;
+>> +       dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+>> +       error = device_register(&bridge->dev);
+>>        if (error)
+>> -               goto dev_reg_err;
+>> -       b->bridge = get_device(dev);
+>> +               goto bridge_dev_reg_err;
+>> +       b->bridge = get_device(&bridge->dev);
+...
+>> --- linux-2.6.orig/include/linux/pci.h
+>> +++ linux-2.6/include/linux/pci.h
+>> @@ -375,11 +375,13 @@ struct pci_host_bridge_window {
+>>  };
+>>
+>>  struct pci_host_bridge {
+>> -       struct list_head list;
+>> +       struct device dev;
+>>        struct pci_bus *bus;            /* root bus */
+>>        struct list_head windows;       /* pci_host_bridge_windows */
+>>  };
+>
+> This doesn't feel right to me.  You're allocating a new struct device
+> here, but the arch likely already has one.  In fact, I think we even
+> passed it in to pci_create_root_bus().
+
+no.
+
+original pci_create_root_bus() will create one dummy struct device and
+use it as parent for bus->dev.
+
+>
+> On x86, we already have an ACPI device for the host bridge, and now
+> we'll have a second one.  (Actually a *third* one, because PNPACPI
+> also has one, but that's a long-standing problem.)
+
+not related.
+
+      Yinghai
