@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2B0Ldy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 06:33:54 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:33563 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753306Ab2B0Ldw convert rfc822-to-8bit (ORCPT
+	id S1753869Ab2B0Led (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 06:34:33 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59737 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab2B0Lec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 06:33:52 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 27 Feb 2012 06:34:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.14.198.72 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
+Message-ID: <4F4B6A44.4020309@suse.cz>
+Date: Mon, 27 Feb 2012 12:34:28 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120222 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: RFC: memory leak in udp_table_init
-Date: Mon, 27 Feb 2012 11:33:07 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E7D@saturn3.aculab.com>
-In-Reply-To: <1330321223.3330.1.camel@edumazet-laptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: RFC: memory leak in udp_table_init
-Thread-Index: Acz1Ejv0RHGgUOYHS+C08kH+8J+98wAMKD2g
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>
-Cc: <paul.gortmaker@windriver.com>, <tim.bird@am.sony.com>,
-        <kuznet@ms2.inr.ac.ru>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-X-OriginalArrivalTime: 27 Feb 2012 11:33:08.0045 (UTC) FILETIME=[93EF4FD0:01CCF543]
+To: Tilman Schmidt <tilman@imap.cc>
+CC: Jiri Slaby <jirislaby@gmail.com>, Joe Perches <joe@perches.com>,
+        LKML <linux-kernel@vger.kernel.org>, Hansjoerg Lipp <hjlipp@web.de>,
+        gigaset307x-common@lists.sourceforge.net,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: "whitespace coding style cleanup" broke coding style
+References: <4F4B45F6.4090706@suse.cz> <4F4B66BA.5070007@imap.cc>
+In-Reply-To: <4F4B66BA.5070007@imap.cc>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > [PATCH] mm: add a low limit to alloc_large_system_hash
-> > 
-> > I think you should just use zero as the default minimum for all
-> > call sites except this UDP case we are trying to fix.
-> > 
-> > For example I see you used 16 for kernel/pid.c
-> > 
-> > Let's not try to do unrelated changes like that now, we can do such
-> > tweaks later.
-> 
-> It was to match the comment we have few lines above :
-> 
-> /*
->  * The pid hash table is scaled according to the amount of memory in
-the
->  * machine.  From a minimum of 16 slots up to 4096 slots at one
-gigabyte or
->  * more.
->  */
+On 02/27/2012 12:19 PM, Tilman Schmidt wrote:
+> Am 27.02.2012 09:59, schrieb Jiri Slaby:
+>> commit 475be4d85a274d0961593db41cf85689db1d583c Author: Joe Perches
+>> <joe@perches.com>  Date:   Sun Feb 19 19:52:38 2012 -0800
+>>
+>> isdn: whitespace coding style cleanup
+>>
+>> isdn source code uses a not-current coding style. ... Done with
+>> emacs and some scripts and some typing. ... ---
+>> a/drivers/isdn/gigaset/interface.c +++
+>> b/drivers/isdn/gigaset/interface.c ... @@ -680,9 +680,9 @@ void
+>> gigaset_if_initdriver(struct gigaset_driver *drv, const char
+>> *procname, goto enomem;
+>>
+>> tty->magic =            TTY_DRIVER_MAGIC, -       tty->type =
+>> TTY_DRIVER_TYPE_SERIAL, -       tty->subtype =
+>> SERIAL_TYPE_NORMAL, -       tty->flags =
+>> TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV; +
+>> tty->type =             TTY_DRIVER_TYPE_SERIAL, +
+>> tty->subtype =          SERIAL_TYPE_NORMAL, +
+>> tty->flags =            TTY_DRIVER_REAL_RAW |
+>> TTY_DRIVER_DYNAMIC_DEV;
+>>
+>> Hmm, please, fix your scripts or emacs!
+>>
+>> Through which tree did this get in?
+>
+> That's the first I see of this patch.
+> It neither came through LKML nor did I get a CC.
+> For all I know, this didn't get in.
+> It isn't in http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
+> anyway.
 
-These large hash tables are, IMHO, an indication that the
-algorithm used is, perhaps, suboptimal.
+By "in" I meant "in -next". gitk suggests through davem's tree.
 
-Not least of the problems is actually finding a suitable
-(and fast) hash function that will work with the actual
-real-life data.
+It collided with my local patches, this is how I spotted it...
 
-The pid table is a good example of something where a hash
-table is unnecessary.
-Linux should steal the code I put into NetBSD :-)
-
-	David
-
-
+thanks,
+-- 
+js
+suse labs
