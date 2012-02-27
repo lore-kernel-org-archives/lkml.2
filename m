@@ -1,37 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab2B0VZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:25:18 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:48052 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755318Ab2B0VZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:25:13 -0500
-Date: Mon, 27 Feb 2012 23:25:11 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Sam Ravnborg <sam@ravnborg.org>
-cc: Tejun Heo <tj@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-In-Reply-To: <20120227194341.GA1448@merkur.ravnborg.org>
-Message-ID: <alpine.SOC.1.00.1202272316280.15067@math.ut.ee>
-References: <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
- <20120222174825.GA32694@google.com> <alpine.SOC.1.00.1202222025120.20496@math.ut.ee> <20120223185503.GI22536@google.com> <alpine.SOC.1.00.1202241120300.1227@math.ut.ee> <alpine.SOC.1.00.1202271914310.15067@math.ut.ee>
- <20120227194341.GA1448@merkur.ravnborg.org>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755419Ab2B0VXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:23:16 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:33643 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310Ab2B0VU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 16:20:26 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [RFC PATCH 16/22] aio: add aio support for iov_iter arguments
+Date: Mon, 27 Feb 2012 15:19:30 -0600
+Message-Id: <1330377576-3659-17-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4F4BF39A.0033,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could you try to give this a quick spin and see if something
-> turns up. I you have time it would be good to try on a box
-> that worked before and one that was fixed by the patch from Tejun.
+From: Zach Brown <zab@zabbo.net>
 
-Neither of the machines - already working one and "fixed with the 
-rounding patch" one emit any prot: messages.
+This adds iocb cmds which specify that memory is held in iov_iter
+structures.  This lets kernel callers specify memory that can be
+expressed in an iov_iter, which includes pages in bio_vec arrays.
 
+Only kernel callers can provide an iov_iter so it doesn't make a lot of
+sense to expose the IOCB_CMD values for this as part of the user space
+ABI.
+
+But kernel callers should also be able to perform the usual aio
+operations which suggests using the the existing operation namespace and
+support code.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ fs/aio.c                |   64 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/aio.h     |    3 +++
+ include/linux/aio_abi.h |    2 ++
+ 3 files changed, 69 insertions(+)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 2e2d358..1f9282a 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1502,6 +1502,26 @@ static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
+ 	return 0;
+ }
+ 
++static ssize_t aio_read_iter(struct kiocb *iocb)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret = -EINVAL;
++
++	if (file->f_op->read_iter)
++		ret = file->f_op->read_iter(iocb, iocb->ki_iter, iocb->ki_pos);
++	return ret;
++}
++
++static ssize_t aio_write_iter(struct kiocb *iocb)
++{
++	struct file *file = iocb->ki_filp;
++	ssize_t ret = -EINVAL;
++
++	if (file->f_op->write_iter)
++		ret = file->f_op->write_iter(iocb, iocb->ki_iter, iocb->ki_pos);
++	return ret;
++}
++
+ /*
+  * aio_setup_iocb:
+  *	Performs the initial checks and aio retry method
+@@ -1577,6 +1597,34 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
+ 		if (file->f_op->aio_write)
+ 			kiocb->ki_retry = aio_rw_vect_retry;
+ 		break;
++	case IOCB_CMD_READ_ITER:
++		ret = -EINVAL;
++		if (unlikely(!is_kernel_kiocb(kiocb)))
++			break;
++		ret = -EBADF;
++		if (unlikely(!(file->f_mode & FMODE_READ)))
++			break;
++		ret = security_file_permission(file, MAY_READ);
++		if (unlikely(ret))
++			break;
++		ret = -EINVAL;
++		if (file->f_op->read_iter)
++			kiocb->ki_retry = aio_read_iter;
++		break;
++	case IOCB_CMD_WRITE_ITER:
++		ret = -EINVAL;
++		if (unlikely(!is_kernel_kiocb(kiocb)))
++			break;
++		ret = -EBADF;
++		if (unlikely(!(file->f_mode & FMODE_WRITE)))
++			break;
++		ret = security_file_permission(file, MAY_WRITE);
++		if (unlikely(ret))
++			break;
++		ret = -EINVAL;
++		if (file->f_op->write_iter)
++			kiocb->ki_retry = aio_write_iter;
++		break;
+ 	case IOCB_CMD_FDSYNC:
+ 		ret = -EINVAL;
+ 		if (file->f_op->aio_fsync)
+@@ -1643,6 +1691,22 @@ void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
+ }
+ EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
+ 
++/*
++ * The iter count must be set before calling here.  Some filesystems uses
++ * iocb->ki_left as an indicator of the size of an IO.
++ */
++void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
++			  unsigned short op, struct iov_iter *iter, loff_t off)
++{
++	iocb->ki_filp = filp;
++	iocb->ki_iter = iter;
++	iocb->ki_opcode = op;
++	iocb->ki_pos = off;
++	iocb->ki_nbytes = iov_iter_count(iter);
++	iocb->ki_left = iocb->ki_nbytes;
++}
++EXPORT_SYMBOL_GPL(aio_kernel_init_iter);
++
+ void aio_kernel_init_callback(struct kiocb *iocb,
+ 			      void (*complete)(u64 user_data, long res),
+ 			      u64 user_data)
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 96e8e69..a32d57f 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -126,6 +126,7 @@ struct kiocb {
+ 	 * this is the underlying eventfd context to deliver events to.
+ 	 */
+ 	struct eventfd_ctx	*ki_eventfd;
++	struct iov_iter		*ki_iter;
+ };
+ 
+ #define is_sync_kiocb(iocb)	((iocb)->ki_key == KIOCB_SYNC_KEY)
+@@ -222,6 +223,8 @@ struct kiocb *aio_kernel_alloc(gfp_t gfp);
+ void aio_kernel_free(struct kiocb *iocb);
+ void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
+ 			unsigned short op, void *ptr, size_t nr, loff_t off);
++void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
++			  unsigned short op, struct iov_iter *iter, loff_t off);
+ void aio_kernel_init_callback(struct kiocb *iocb,
+ 			      void (*complete)(u64 user_data, long res),
+ 			      u64 user_data);
+diff --git a/include/linux/aio_abi.h b/include/linux/aio_abi.h
+index 2c87316..2c97a2d 100644
+--- a/include/linux/aio_abi.h
++++ b/include/linux/aio_abi.h
+@@ -44,6 +44,8 @@ enum {
+ 	IOCB_CMD_NOOP = 6,
+ 	IOCB_CMD_PREADV = 7,
+ 	IOCB_CMD_PWRITEV = 8,
++	IOCB_CMD_READ_ITER = 9,
++	IOCB_CMD_WRITE_ITER = 10,
+ };
+ 
+ /*
 -- 
-Meelis Roos (mroos@linux.ee)
+1.7.9.2
+
