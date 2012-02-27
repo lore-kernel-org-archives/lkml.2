@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab2B0T0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:26:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab2B0T0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:26:22 -0500
-Message-ID: <1330370733.2542.18.camel@localhost>
-Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <kees@ubuntu.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Date: Mon, 27 Feb 2012 14:25:33 -0500
-In-Reply-To: <CAGXu5jKJ7pYeULM=CvifpQ8jUoyH6Ska2Znx9tGjhz0tn5kZmQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	 <1330140111-17201-6-git-send-email-wad@chromium.org>
-	 <20120226202828.GE3990@outflux.net>
-	 <CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
-	 <1330361396.2542.11.camel@localhost>
-	 <CAGXu5jKJ7pYeULM=CvifpQ8jUoyH6Ska2Znx9tGjhz0tn5kZmQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754306Ab2B0Tdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:33:43 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43964 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab2B0Tdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:33:41 -0500
+X-IronPort-AV: E=Sophos;i="4.73,492,1325462400"; 
+   d="scan'208";a="10965141"
+Message-ID: <1330371219.10008.34.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Dave Martin <dave.martin@linaro.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 27 Feb 2012 19:33:39 +0000
+In-Reply-To: <20120227180355.GB2023@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+	 <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+	 <20120227180355.GB2023@linaro.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 10:55 -0800, Kees Cook wrote:
-> On Mon, Feb 27, 2012 at 8:49 AM, Eric Paris <eparis@redhat.com> wrote:
-
-> You mean as used in audit_log_exit() ? It looks like that depends on a
-> lot of state cached in __audit_syscall_entry() and finally triggered
-> in __audit_syscall_exit() (and ..._free()). I don't think this is
-> really want seccomp wants to be involved in.
+On Mon, 2012-02-27 at 18:03 +0000, Dave Martin wrote:
+> On Mon, Feb 27, 2012 at 04:27:23PM +0000, Ian Campbell wrote:
+> > On Thu, 2012-02-23 at 17:48 +0000, Stefano Stabellini wrote:
+> > > We need a register to pass the hypercall number because we might not
+> > > know it at compile time and HVC only takes an immediate argument.
+> > > 
+> > > Among the available registers r12 seems to be the best choice because it
+> > > is defined as "intra-procedure call scratch register".
+> > 
+> > R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
+> > immediate (which can only target r0..r7).
 > 
-> By CONFIG_AUDITSC, you mean CONFIG_AUDITSYSCALL? Without that set,
-> audit_seccomp is a no-op.
+> This is untrue.  The important instructions, like MOV Rd, Rn can access
+> all the regs.  But anyway, there is no such thing as a Thumb-1 kernel,
+> so we won't really care.
+
+I did say "mov immediate", which is the one which matters when loading a
+constant hypercall number (the common case). AFAIK the "mov Rd, #imm" T1
+encoding cannot access all registers.
+
+The "mov rd,rn" form only helps for syscall(2) like functions, which are
+unusual, at least for Xen, although as Stefano says, they do exist.
+
+> > Since we support only ARMv7+ there are "T2" and "T3" encodings available
+> > which do allow direct mov of an immediate into R12, but are 32 bit Thumb
+> > instructions.
+> > 
+> > Should we use r7 instead to maximise instruction density for Thumb code?
 > 
-> The reason compat needs to be reported (or rather, arch) is because
-> just reporting syscall is ambiguous. It either needs arch or compat to
-> distinguish it.
+> The difference seems trivial when put into context, even if you code a
+> special Thumb version of the code to maximise density (the Thumb-2 code
+> which gets built from assembler in the kernel is very suboptimal in
+> size, but there simply isn't a high proportion of asm code in the kernel
+> anyway.)  I wouldn't consider the ARM/Thumb differences as an important
+> factor when deciding on a register.
 
-Yes, that is what I mean and you are right.  You shouldn't push the
-syscall in this record either.  If !audit_dummy_context() you are
-already going to get arch, syscall, and a0-a4 in the associated audit
-record.  Please do not duplicate that info.
+OK, that's useful information. thanks.
 
-It might make sense to have a separate audit_seccomp() path when
-audit_dummy_context() which includes arch, syscall, and a0-a4.
+> One argument for _not_ using r12 for this purpose is that it is then
+> harder to put a generic "HVC" function (analogous to the "syscall"
+> syscall) out-of-line, since r12 could get destroyed by the call.
 
-It is my fault (85e7bac3) that we have syscall at all, but I'm on a new
-crusade to remove audit record duplication.  So I'd happily see a patch
-in this series that removes that instead of adds to it.
+For an out of line syscall(2) wouldn't the syscall number either be in a
+standard C calling convention argument register or on the stack when the
+function was called, since it is just a normal argument at that point?
+As you point out it cannot be passed in r12 (and could never be, due to
+the clobbering).
 
--Eric
+The syscall function itself would have to move the arguments and syscall
+nr etc around before issuing the syscall.
+
+I think the same is true of a similar hypercall(2)
+
+> If you don't think you will ever care about putting HVC out of line
+> though, it may not matter.
+
+Ian.
 
