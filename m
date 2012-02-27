@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2B0PAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 10:00:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56619 "EHLO mga11.intel.com"
+	id S1752825Ab2B0PBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 10:01:16 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:62015 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab2B0PAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 10:00:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121924422"
-Date: Mon, 27 Feb 2012 16:07:58 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mfd: twl-core: Add IRQ_DOMAIN dependency
-Message-ID: <20120227150758.GT27687@sortiz-mobl>
-References: <1330102448-19172-1-git-send-email-grant.likely@secretlab.ca>
- <1330102448-19172-2-git-send-email-grant.likely@secretlab.ca>
- <20120227101758.GI27687@sortiz-mobl>
- <CACxGe6t5+mSp2SwX1jr-H_NMrsqJrMSwXPRpen93ev=ryHC=2Q@mail.gmail.com>
+	id S1751738Ab2B0PBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 10:01:14 -0500
+X-IronPort-AV: E=Sophos;i="4.73,491,1325491200"; 
+   d="scan'208";a="628856441"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "xemul@parallels.com" <xemul@parallels.com>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 2/4] NFS: replace per-net client lock by mutex
+Thread-Topic: [PATCH 2/4] NFS: replace per-net client lock by mutex
+Thread-Index: AQHM9VadVjGAEH5ilEO0vcxtPQmAoJZRXHWA
+Date: Mon, 27 Feb 2012 15:00:18 +0000
+Message-ID: <1330354815.5541.24.camel@lade.trondhjem.org>
+References: <20120227134623.13371.61185.stgit@localhost6.localdomain6>
+	 <20120227134900.13371.96849.stgit@localhost6.localdomain6>
+In-Reply-To: <20120227134900.13371.96849.stgit@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <600AC5785E386347B60FF4F6BAC60906@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACxGe6t5+mSp2SwX1jr-H_NMrsqJrMSwXPRpen93ev=ryHC=2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RF1NY0018891
 
-On Mon, Feb 27, 2012 at 06:54:52AM -0700, Grant Likely wrote:
-> On Feb 27, 2012 3:10 AM, "Samuel Ortiz" <sameo@linux.intel.com> wrote:
-> >
-> > Hi Grant, Benoit,
-> >
-> > On Fri, Feb 24, 2012 at 09:54:08AM -0700, Grant Likely wrote:
-> > > From: Benoit Cousson <b-cousson@ti.com>
-> > >
-> > > TWL4030 depends on IRQ_DOMAIN support, so this patch selects it in
-> Kconfig.
-> > > It used to be that CONFIG_IRQ_DOMAIN must only be selected by the
-> architecture,
-> > > but recent cleanups have fixed it so that it is safe to select from
-> anywhere.
-> > Applied to my for-next branch, thanks.
+On Mon, 2012-02-27 at 17:49 +0400, Stanislav Kinsbursky wrote:
+> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
+> creation, which can be called on mount notification, where this per-net client
+> lock is taken on clients list walk.
 > 
-> It has to go via my tree to get rid of the build failure properly.
-Yes. I wasn't sure you pushed it already until I saw your reply to Andrew.
-I removed it from my tree, thanks for taking care of that.
+> Note: I used simple mutex instead of rw semaphore because of
+> nfs_put_client->atomic_dec_and_mutex_lock() call. Probably, there is a better
+> solution here.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
 
-Cheers,
-Samuel.
+This is overkill... We end up blocking NFSv4 callbacks while the
+rpc_pipefs notifier runs through the nfs_clients creating or destroying
+idmapper dentries.
+
+Surely the rpc_pipefs_event() can take a reference to the nfs_client and
+then drop the spin_lock if it sees that it needs to create or destroy a
+dentry?
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
