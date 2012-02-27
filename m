@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2B0E5o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 23:57:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40832 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367Ab2B0E5m (ORCPT
+	id S1753995Ab2B0E5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 23:57:53 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56867 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab2B0E5v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 23:57:42 -0500
-Message-ID: <4F4B0D36.7080203@mediatek.com>
-Date: Mon, 27 Feb 2012 12:57:26 +0800
-From: Meng Zhang <meng.zhang@mediatek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 26 Feb 2012 23:57:51 -0500
 MIME-Version: 1.0
-To: smurf@smurf.noris.de
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: option: Add MediaTek MT6276M modem&app interfaces
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120226150720.GB4763@mwanda>
+References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120226150720.GB4763@mwanda>
+Date: Mon, 27 Feb 2012 10:27:50 +0530
+Message-ID: <CAOD=uF4VGsM5AQTSCW4ZRr_n4HUSr0qO3fG_MAtsYgq=ogXvAQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: jack_wang@usish.com, lindar_liu@usish.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from: Meng Zhang <meng.zhang@mediatek.com>
+ In 'mpi_sata_completion'
+ the first call for 'spin_unlock_irqrestore()' is with flags=0,
+ which is as good as 'spin_unlock_irq()' ( unconditional interrupt
+ enabling). If intention of the developer is to enable the interrupt during
+execution of ' mpi_sata_completion' , then the code changes in the patch
+looks ok.
 
-1. To declare the product IDs in option.c
-2. Please pull from
-     git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-    to get these changes
+If interrupt should not be enabled during execution of
+'mpi_sata_completion' then
+we can use simple  spin_lock and spin_unlock.
 
-Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
----------------------------------------------------------------------------------------
 
-drivers/usb/serial/option.c |    7 +++++++
-1 files changed, 7 insertions(+), 0 deletions(-)
+regards
+santosh
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index b54afce..7069f9d 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -484,6 +484,9 @@ static void option_instat_callback(struct urb *urb);
-  #define LG_VENDOR_ID                           0x1004
-  #define LG_PRODUCT_L02C                                0x618f
 
-+/* MediaTek products */
-+#define MEDIATEK_VENDOR_ID                     0x0e8d
-+
-  /* some devices interfaces need special handling due to a number of 
-reasons */
-  enum option_blacklist_reason {
-                 OPTION_BLACKLIST_NONE = 0,
-@@ -1198,6 +1201,10 @@ static const struct usb_device_id option_ids[] = {
-         { USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, 
-VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
-         { USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 
-0xff, 0xff, 0xff) },
-         { USB_DEVICE(LG_VENDOR_ID, LG_PRODUCT_L02C) }, /* docomo L-02C 
-modem */
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 
-0xff, 0x00, 0x00) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 
-0xff, 0x02, 0x01) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 
-0xff, 0x00, 0x00) },
-+       { USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 
-0xff, 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-         { } /* Terminating entry */
-  };
-  MODULE_DEVICE_TABLE(usb, option_ids);
-
+On Sun, Feb 26, 2012 at 8:37 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sun, Feb 26, 2012 at 07:03:30PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> Static checker is giving following warning:
+>> " error: calling 'spin_unlock_irqrestore()' with bogus flags"
+>>
+>> The code flow is as shown below:
+>> process_oq() --> process_one_iomb --> mpi_sata_completion
+>>
+>> In 'mpi_sata_completion'
+>> the first call for 'spin_unlock_irqrestore()' is with flags=0,
+>> which is as good as 'spin_unlock_irq()' ( unconditional interrupt
+>> enabling).
+>>
+>> So for better performance 'spin_unlock_irqrestore()' can be replaced
+>> with 'spin_unlock_irq()' and 'spin_lock_irqsave()' can be replaced by
+>> 'spin_lock_irq()'.
+>>
+>
+> process_oq() is called from the interrupt handler pm8001_chip_isr()
+> with interrupts disabled.
+>
+> drivers/scsi/pm8001/pm8001_hwi.c
+>  4301          spin_lock_irqsave(&pm8001_ha->lock, flags);
+>  4302          pm8001_chip_interrupt_disable(pm8001_ha);
+>  4303          process_oq(pm8001_ha);
+>  4304          pm8001_chip_interrupt_enable(pm8001_ha);
+>  4305          spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>
+> Probably we should just be doing a spin_lock() and spin_unlock()
+> without re-enabling the IRQs.  Should we even be doing that in the
+> irq handler anyway?
+>
+> regards,
+> dan carpenter
+>
