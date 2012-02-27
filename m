@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2B0KdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 05:33:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58327 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab2B0KdV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 05:33:21 -0500
-Message-ID: <1330338785.11248.49.camel@twins>
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 27 Feb 2012 11:33:05 +0100
-In-Reply-To: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752934Ab2B0Kdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 05:33:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7476 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab2B0Kdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 05:33:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="112191140"
+Date: Mon, 27 Feb 2012 11:39:58 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [PATCH] devicetree: Add empty of_platform_populate() for
+ !CONFIG_OF_ADDRESS (sparc)
+Message-ID: <20120227103958.GJ27687@sortiz-mobl>
+References: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 12:02 +0900, Namhyung Kim wrote:
-> If kzalloc() for TYPE_DATA failed on a given cpu, previous chunk
-> will be leaked. Fix it.
+Hi Grant,
 
-so why not fix the error loop? wouldn't putting that err_cpu == cpu
-break after the kfree sort it?
+On Fri, Feb 24, 2012 at 03:06:58PM -0700, Grant Likely wrote:
+> Sparc has its own helpers for translating address ranges when the device
+> tree is parsed at boot time, and it isn't able to use of_platform_populate().
+> However, there are some device drivers that want to use that function on
+> other DT enabled platforms (ie. TWL4030).  This patch adds an empty
+> of_platform_populate() implementation that returns an error when
+> CONFIG_OF_ADDRESS is not selected.
+Applied as well. Please let me know if you'd prefer to see this one going
+through your irqdomain/next branch.
 
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-> ---
->  kernel/events/hw_breakpoint.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index b0309f76d777..58298b0d0e92 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -645,8 +645,12 @@ int __init init_hw_breakpoint(void)
->  			task_bp_pinned = &per_cpu(nr_task_bp_pinned[i], cpu);
->  			*task_bp_pinned = kzalloc(sizeof(int) * nr_slots[i],
->  						  GFP_KERNEL);
-> -			if (!*task_bp_pinned)
-> +			if (!*task_bp_pinned) {
-> +				while (--i >= 0)
-> +					kfree(per_cpu(nr_task_bp_pinned[i],
-> +						      cpu));
->  				goto err_alloc;
-> +			}
->  		}
->  	}
->  
+Cheers,
+Samuel.
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
