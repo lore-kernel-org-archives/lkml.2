@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2B0O1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 09:27:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:49158 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab2B0O1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 09:27:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="129859312"
-Date: Mon, 27 Feb 2012 15:34:44 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        David Dajun Chen <dchen@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] mfd: Remove unused io_lock mutex from da9052
-Message-ID: <20120227143444.GO27687@sortiz-mobl>
-References: <1329882220.4193.0.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329882220.4193.0.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753552Ab2B0O2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:28:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36184 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab2B0O2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 09:28:44 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: benh@kernel.crashing.org, linux-fbdev@vger.kernel.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] radeon: Fix typo in radeon_gem.c
+Date: Mon, 27 Feb 2012 23:28:38 +0900
+Message-Id: <1330352918-1738-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.9.2.262.gba998
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+Correct spelling "withou" to "without" in
+drivers/gpu/drm/radeon/radeon_gem.c
 
-On Wed, Feb 22, 2012 at 11:43:40AM +0800, Axel Lin wrote:
-> da9052 has been converted to use regmap API, so we can remove the unused
-> io_lock mutex.
-Thanks, patch applied.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/gpu/drm/radeon/radeon_gem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
-Samuel.
-
+diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
+index 7337850..ff4ff23 100644
+--- a/drivers/gpu/drm/radeon/radeon_gem.c
++++ b/drivers/gpu/drm/radeon/radeon_gem.c
+@@ -117,7 +117,7 @@ int radeon_gem_set_domain(struct drm_gem_object *gobj,
+ 	}
+ 	if (!domain) {
+ 		/* Do nothings */
+-		printk(KERN_WARNING "Set domain withou domain !\n");
++		printk(KERN_WARNING "Set domain without domain !\n");
+ 		return 0;
+ 	}
+ 	if (domain == RADEON_GEM_DOMAIN_CPU) {
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.9.2.262.gba998
+
