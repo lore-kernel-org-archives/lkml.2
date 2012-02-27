@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2B0IMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 03:12:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48077 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab2B0IMm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 03:12:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.160.131 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <20120227072705.GA19429@bnru02>
-References: <1329333578-31773-1-git-send-email-danny.kukawka@bisect.de>
-	<20120227072705.GA19429@bnru02>
-Date: Mon, 27 Feb 2012 09:12:41 +0100
-Message-ID: <CACRpkdYV-EoJNPei9JbM=xmF8i8J5sd33uE70cAMF7p-h42Zzg@mail.gmail.com>
-Subject: Re: [PATCH] arch/arm/mach-ux500/board-mop500-u8500uib.c: included
- linux/gpio.h twice
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Danny Kukawka <danny.kukawka@bisect.de>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752836Ab2B0IOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 03:14:46 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:25055 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab2B0IOo convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Mon, 27 Feb 2012 03:14:44 -0500
+Message-Id: <4F4B497B0200007800074DE1@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 27 Feb 2012 08:14:35 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <ke.yu@intel.com>, <kevin.tian@intel.com>, <lenb@kernel.org>,
+        <xen-devel@lists.xensource.com>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] xen/enlighten: Expose MWAIT and MWAIT_LEAF if
+ hypervisor OKs it.
+References: <1330036270-20015-1-git-send-email-konrad.wilk@oracle.com>
+ <1330036270-20015-3-git-send-email-konrad.wilk@oracle.com>
+ <4F4775410200007800074992@nat28.tlf.novell.com>
+ <20120224235228.GA26913@phenom.dumpdata.com>
+In-Reply-To: <20120224235228.GA26913@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 8:27 AM, Srinidhi Kasagar
-<srinidhi.kasagar@stericsson.com> wrote:
-> On Wed, Feb 15, 2012 at 20:19:38 +0100, Danny Kukawka wrote:
->> arch/arm/mach-ux500/board-mop500-u8500uib.c included 'linux/gpio.h'
->> remove the duplicate.
->>
->> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
->> ---
->>  arch/arm/mach-ux500/board-mop500-u8500uib.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/arm/mach-ux500/board-mop500-u8500uib.c b/arch/arm/mach-ux500/board-mop500-u8500uib.c
->> index feb5744..ead91c9 100644
->> --- a/arch/arm/mach-ux500/board-mop500-u8500uib.c
->> +++ b/arch/arm/mach-ux500/board-mop500-u8500uib.c
->> @@ -8,7 +8,6 @@
->>  #include <linux/kernel.h>
->>  #include <linux/init.h>
->>  #include <linux/i2c.h>
->> -#include <linux/gpio.h>
->>  #include <linux/interrupt.h>
->>  #include <linux/mfd/tc3589x.h>
->>  #include <linux/input/matrix_keypad.h>
->
-> Thanks,
->
-> Acked-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
->
-> Linus W, would you please pick if you have not noticed this.
+>>> On 25.02.12 at 00:52, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> > +DEFINE_GUEST_HANDLE(uint32_t);
+>> 
+>> Do you really need to introduce (step by step) handles for all those
+>> uintNN_t types in a way different from Xen's
+>> (__DEFINE_XEN_GUEST_HANDLE(uint32, uint32_t))?
+> 
+> Oh, no. Good eye - I will change it be uint32.
 
-Thanks for the reminder, I've picked it up and merged
-to my ux500-core branch.
+Might be worth converting the recently added counterpart of uint64_t
+then too.
 
-Yours,
-Linus Walleij
+Jan
+
