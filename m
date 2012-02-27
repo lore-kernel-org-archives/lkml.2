@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab2B0Qwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:52:32 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34930 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753125Ab2B0Qwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:52:31 -0500
-Message-ID: <1330361549.9942.7.camel@joe2Laptop>
-Subject: Re: "whitespace coding style cleanup" broke coding style
-From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Hansjoerg Lipp <hjlipp@web.de>,
-        Tilman Schmidt <tilman@imap.cc>,
-        gigaset307x-common@lists.sourceforge.net,
-        Jiri Slaby <jirislaby@gmail.com>
-Date: Mon, 27 Feb 2012 08:52:29 -0800
-In-Reply-To: <4F4B45F6.4090706@suse.cz>
-References: <4F4B45F6.4090706@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754067Ab2B0Qz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:55:28 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:44976 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab2B0Qz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 11:55:28 -0500
+Message-ID: <4F4BB570.60105@parallels.com>
+Date: Mon, 27 Feb 2012 20:55:12 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v2 1/4] SUNRPC: release per-net clients lock before calling
+ PipeFS dentries creation
+References: <20120227154713.7941.17963.stgit@localhost6.localdomain6>	 <20120227155055.7941.18741.stgit@localhost6.localdomain6> <1330359695.5541.45.camel@lade.trondhjem.org>
+In-Reply-To: <1330359695.5541.45.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 09:59 +0100, Jiri Slaby wrote:
-> commit 475be4d85a274d0961593db41cf85689db1d583c
-> Author: Joe Perches <joe@perches.com>
-> Date:   Sun Feb 19 19:52:38 2012 -0800
-> 
->      isdn: whitespace coding style cleanup
-> 
->      isdn source code uses a not-current coding style.
-> ...
->      Done with emacs and some scripts and some typing.
-> ...
-> --- a/drivers/isdn/gigaset/interface.c
-> +++ b/drivers/isdn/gigaset/interface.c
-> ...
-> @@ -680,9 +680,9 @@ void gigaset_if_initdriver(struct gigaset_driver 
-> *drv, const
->   char *procname,
->                  goto enomem;
-> 
->          tty->magic =            TTY_DRIVER_MAGIC,
-> -       tty->type =             TTY_DRIVER_TYPE_SERIAL,
-> -       tty->subtype =          SERIAL_TYPE_NORMAL,
-> -       tty->flags =            TTY_DRIVER_REAL_RAW | 
-> TTY_DRIVER_DYNAMIC_DEV;
-> +               tty->type =             TTY_DRIVER_TYPE_SERIAL,
-> +               tty->subtype =          SERIAL_TYPE_NORMAL,
-> +               tty->flags =            TTY_DRIVER_REAL_RAW | 
-> TTY_DRIVER_DYNAMIC_DEV;
-> 
-> Hmm, please, fix your scripts or emacs!
+27.02.2012 20:21, Myklebust, Trond пишет:
+> On Mon, 2012-02-27 at 19:50 +0400, Stanislav Kinsbursky wrote:
+>> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
+>> creation, which can be called on mount notification, where this per-net client
+>> lock is taken on clients list walk.
+>>
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>
+>> ---
+>>   net/sunrpc/clnt.c |   10 +++++++---
+>>   1 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+>> index bb7ed2f3..ddb5741 100644
+>> --- a/net/sunrpc/clnt.c
+>> +++ b/net/sunrpc/clnt.c
+>> @@ -84,7 +84,7 @@ static void rpc_register_client(struct rpc_clnt *clnt)
+>>   	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
+>>
+>>   	spin_lock(&sn->rpc_client_lock);
+>> -	list_add(&clnt->cl_clients,&sn->all_clients);
+>> +	list_add_tail(&clnt->cl_clients,&sn->all_clients);
+>>   	spin_unlock(&sn->rpc_client_lock);
+>>   }
+>>
+>> @@ -208,15 +208,19 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
+>>   			    void *ptr)
+>>   {
+>>   	struct super_block *sb = ptr;
+>> -	struct rpc_clnt *clnt;
+>> +	struct rpc_clnt *clnt, *tmp;
+>>   	int error = 0;
+>>   	struct sunrpc_net *sn = net_generic(sb->s_fs_info, sunrpc_net_id);
+>>
+>>   	spin_lock(&sn->rpc_client_lock);
+>> -	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
+>> +	list_for_each_entry_safe(clnt, tmp,&sn->all_clients, cl_clients) {
+>> +		atomic_inc(&clnt->cl_count);
+>> +		spin_unlock(&sn->rpc_client_lock);
+>>   		error = __rpc_pipefs_event(clnt, event, sb);
+>> +		rpc_release_client(clnt);
+>>   		if (error)
+>>   			break;
+>> +		spin_lock(&sn->rpc_client_lock);
+>>   	}
+>>   	spin_unlock(&sn->rpc_client_lock);
+>>   	return error;
+>>
+>
+> This won't be safe. Nothing guarantees that 'tmp' remains valid after
+> you drop the spin_lock.
+>
+> I think you rather need to add a check for whether clnt->cl_dentry is in
+> the right state (NULL if RPC_PIPEFS_UMOUNT or non-NULL if
+> RPC_PIPEFS_MOUNT) before deciding whether or not to atomic_inc() and
+> drop the lock, so that you can restart the loop after calling
+> __rpc_pipefs_event().
+>
 
-Hi Jiri.
+Gmmm.
+Please, correct me, if I'm wrong, that you are proposing something like this:
 
-I'm not fixing emacs.
+   	spin_lock(&sn->rpc_client_lock);
+again:
+	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
+		if ((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
+		    (event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
+			continue;
+		atomic_inc(&clnt->cl_count);
+		spin_unlock(&sn->rpc_client_lock);
+    		error = __rpc_pipefs_event(clnt, event, sb);
+		rpc_release_client(clnt);
+		spin_lock(&sn->rpc_client_lock);
+    		if (error)
+    			break;
+		goto again;
+    	}
+    	spin_unlock(&sn->rpc_client_lock);
 
-Notice that the code improperly uses commas and
-not semicolons for line terminations like the
-lines immediately above and below it.
 
-btw:  Your copy/paste lost the tab indents.
-
-The emacs pass was not perfect, nor was it
-intended to be perfect.  There are _way_
-too many coding style defects in isdn for
-that.
-
-It was a first pass and an overall improvement.
-
-"It's quite a bit more like what passes
-for the current kernel coding style though."
-
-> Through which tree did this get in?
-
-net-next
-
-> thanks,
-
-I'm working on improving the logging style
-in isdn and will submit more patches soonish.
-
-cheers, Joe
-
+-- 
+Best regards,
+Stanislav Kinsbursky
