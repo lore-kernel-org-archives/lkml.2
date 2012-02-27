@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab2B0JaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 04:30:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44391 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab2B0JaV (ORCPT
+	id S1752781Ab2B0JbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 04:31:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44305 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681Ab2B0JbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 04:30:21 -0500
-MIME-Version: 1.0
-Date: Mon, 27 Feb 2012 18:30:20 +0900
-Message-ID: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
-Subject: [PATCH] Clear previous interrupts after fifo is disabled
-From: Chanho Min <chanho0207@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Kim, Jong-Sung" <neidhard.kim@lge.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 Feb 2012 04:31:09 -0500
+Message-ID: <1330335058.11248.37.camel@twins>
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Venki Pallipadi <venki@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 27 Feb 2012 10:30:58 +0100
+In-Reply-To: <20120227090819.GB1112@zhy>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+	 <1329989454.24994.57.camel@twins>
+	 <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+	 <20120224054150.GA17543@zhy> <20120224061350.GB17543@zhy>
+	 <1330331881.11248.28.camel@twins> <20120227090819.GB1112@zhy>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is another workaroud of  'https://lkml.org/lkml/2012/1/17/104'
-with additional analysis.Bootloader can transfer control to kernel and
-there are some pending interrupts. In this case, RXFE of the flag
-register is set by clearing FEN(LCRH) even if rx data remains in the
-fifo. It seems that the fifo's status is initiailized. Interrupt
-handler can not get any data from data register because of the below
-break condtion.
+On Mon, 2012-02-27 at 17:08 +0800, Yong Zhang wrote:
+> On Mon, Feb 27, 2012 at 09:38:01AM +0100, Peter Zijlstra wrote:
+> > On Fri, 2012-02-24 at 14:13 +0800, Yong Zhang wrote:
+> > 
+> > > This remind me that we should have moved the irq_enter()/irq_exit() to
+> > > each arch's related irq handler.
+> > > see: http://marc.info/?l=linux-kernel&m=130709505700821&w=2
+> > > 
+> > > So Peter, is there someone alread on it? or it still worth doing now?
+> > 
+> > trouble was that some people didn't feel comfortable adding that
+> > overhead to plain resched IPIs that didn't need to do anything.
+> 
+> Any ideas on where the plain resched IPIs come from?
 
-pl011_fifo_to_tty
- while (max_count--) {
-   if (status & UART01x_FR_RXFE)
-	break;
+remote wakeups that don't queue I guess. 
 
-Then, Rx interrupt is never cleared. cpu is looping in ISR. System is
-hang. If we don't guarantee that no interrupt is pended until fifo is
-disabled by calling 'writew(0, uap->port.membase + uap->lcrh_rx)',
-this misbehave of the interrupt handelr can be occurred. So, All
-pending interrupts should be cleared just after fifo is disabled under
-the protection from interrupt. Also,'clear error interrupts' routine
-can be removed becuase all interrupts are cleared before.
+IIRC I looked at it a while back and while not in the majority there
+were still a few (I only added counters, didn't look where they came
+from).
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- drivers/tty/serial/amba-pl011.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+However since 518cd623 there'd be a lot more I guess..
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 6800f5f..8b5a824 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1397,7 +1397,11 @@ static int pl011_startup(struct uart_port *port)
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
- 	writew(1, uap->port.membase + UART011_IBRD);
-+	spin_lock_irq(&uap->port.lock);
- 	writew(0, uap->port.membase + uap->lcrh_rx);
-+	/* Clear all pending interrupts. */
-+	writew(0xffff, uap->port.membase + UART011_ICR);
-+	spin_unlock_irq(&uap->port.lock);
- 	if (uap->lcrh_tx != uap->lcrh_rx) {
- 		int i;
- 		/*
-@@ -1417,10 +1421,6 @@ static int pl011_startup(struct uart_port *port)
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-
--	/* Clear pending error interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS,
--	       uap->port.membase + UART011_ICR);
--
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
--- 
-1.7.0.4
+Feel free to investigate. Also, some non-sched users of the resched ipi
+exist, eg. KVM uses it to kick a remote vcpu out from guest mode.
