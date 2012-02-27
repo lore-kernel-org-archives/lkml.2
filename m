@@ -1,67 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2B0C6w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 21:58:52 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53477 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083Ab2B0C6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 21:58:50 -0500
-Date: Mon, 27 Feb 2012 13:58:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the uprobes tree with the tip tree
-Message-Id: <20120227135839.df169a9126ce5a8f2b53c718@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__27_Feb_2012_13_58_39_+1100_YXXBM8TKEBJRDcd="
+	id S1753839Ab2B0DAT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 22:00:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56071 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752381Ab2B0DAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 22:00:17 -0500
+Message-ID: <4F4AF1FB.6000903@cn.fujitsu.com>
+Date: Mon, 27 Feb 2012 11:01:15 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: [PATCH] kvm: notify host when guest paniced
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-27 10:58:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-27 10:58:30,
+	Serialize complete at 2012-02-27 10:58:30
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Feb_2012_13_58_39_+1100_YXXBM8TKEBJRDcd=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We can know the guest is paniced when the guest runs on xen.
+But we do not have such feature on kvm. This patch implemnts
+this feature, and the implementation is the same as xen:
+register panic notifier, and call hypercall when the guest
+is paniced.
 
-Hi Srikar,
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/x86/kernel/kvm.c    |   12 ++++++++++++
+ arch/x86/kvm/svm.c       |    8 ++++++--
+ arch/x86/kvm/vmx.c       |    8 ++++++--
+ arch/x86/kvm/x86.c       |   13 +++++++++++--
+ include/linux/kvm.h      |    1 +
+ include/linux/kvm_para.h |    1 +
+ 6 files changed, 37 insertions(+), 6 deletions(-)
 
-Today's linux-next merge of the uprobes tree got a conflicts in various
-files between commits from the tip tree and commits from the uprobes tree.
-
-It looks like a later (and different) version of the uprobes patch set has
-been merged into the tip tree.  So I have dropped the uprobes tree
-changes for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__27_Feb_2012_13_58_39_+1100_YXXBM8TKEBJRDcd=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPSvFfAAoJEECxmPOUX5FEHGwP/RRGZduNKJNDPw/Je58oQgFs
-GkvA3TX8ag1lQVdkPeAwcXCj/2WR1vZn2B40qxM+909xDmE+pCBtgWBVwZxYTHGs
-jRO6pxfEtZPRWPsOeHNpzv/2rk/Gk0bo346kvDFFgs3VFTeei3Cppx+a9I4h66RL
-w+x2Vc9pzeJw0QIzYBJhUfRSh88h0shvaUkioftTSCg5SV3NEjzooLV80l2U9fwh
-nYY0Twfoq9odvixxZZpawWIuPW5HhhGH4hxLKxLLZXRX/ELfSgrX7hJbI7NVuIdo
-GzGftInoCHx19zkQS4+GcywpqbezGL2qPzkZzD0FZxtVrSLAKKWaHfcHXu1xdQ/1
-ipCW8HoCEIBlpLu8sDSMM8kEo+UQE3NChab079GWc5OEzpyhqwaV+jF7ryAfSvDF
-jqcI59bRI0NpfpoCxG+WK5BUEVdnwFcAx0nnov6aXQQlVNggFcno03VowI8ERLwO
-EtUlJYRWkxfI2Ezb4BaLMcjcwp1w3Kj7MdMz7V6K/2TYigUFyO9djNcSchhneg9T
-J+ww+oF9xLtCT5nTybbsgElepaPDLhJ+atksLw0eEMftRMqJZ8sK+cOKVcPOyJEK
-xvcrCnipaw9ACzJS4aocCUfhn2ZxYtoRwOjRE2Pez+XcGP+kiV8VnrrDhGytvwJ/
-3xwpicaaCgTXDaDobI1y
-=QuFf
------END PGP SIGNATURE-----
-
---Signature=_Mon__27_Feb_2012_13_58_39_+1100_YXXBM8TKEBJRDcd=--
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index f0c6fd6..b928d1d 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	kvm_hypercall0(KVM_HC_GUEST_PANIC);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
+ {
+ 	u64 steal;
+@@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
+ 
+ 	paravirt_ops_setup();
+ 	register_reboot_notifier(&kvm_pv_reboot_nb);
++	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
+ 	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+ 		spin_lock_init(&async_pf_sleepers[i].lock);
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 0b7690e..38b4705 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
+ 
+ static int vmmcall_interception(struct vcpu_svm *svm)
+ {
++	int ret;
++
+ 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+ 	skip_emulated_instruction(&svm->vcpu);
+-	kvm_emulate_hypercall(&svm->vcpu);
+-	return 1;
++	ret = kvm_emulate_hypercall(&svm->vcpu);
++
++	/* Ignore the error? */
++	return ret == 0 ? 0 : 1;
+ }
+ 
+ static unsigned long nested_svm_get_tdp_cr3(struct kvm_vcpu *vcpu)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 66147ca..1b57ebb 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4582,9 +4582,13 @@ static int handle_halt(struct kvm_vcpu *vcpu)
+ 
+ static int handle_vmcall(struct kvm_vcpu *vcpu)
+ {
++	int ret;
++
+ 	skip_emulated_instruction(vcpu);
+-	kvm_emulate_hypercall(vcpu);
+-	return 1;
++	ret = kvm_emulate_hypercall(vcpu);
++
++	/* Ignore the error? */
++	return ret == 0 ? 0 : 1;
+ }
+ 
+ static int handle_invd(struct kvm_vcpu *vcpu)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c9d99e5..3fc2853 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4923,7 +4923,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 	u64 param, ingpa, outgpa, ret;
+ 	uint16_t code, rep_idx, rep_cnt, res = HV_STATUS_SUCCESS, rep_done = 0;
+ 	bool fast, longmode;
+-	int cs_db, cs_l;
++	int cs_db, cs_l, r = 1;
+ 
+ 	/*
+ 	 * hypercall generates UD from non zero cpl and real mode
+@@ -4964,6 +4964,10 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 	case HV_X64_HV_NOTIFY_LONG_SPIN_WAIT:
+ 		kvm_vcpu_on_spin(vcpu);
+ 		break;
++	case KVM_HC_GUEST_PANIC:
++		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
++		r = 0;
++		break;
+ 	default:
+ 		res = HV_STATUS_INVALID_HYPERCALL_CODE;
+ 		break;
+@@ -4977,7 +4981,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 		kvm_register_write(vcpu, VCPU_REGS_RAX, ret & 0xffffffff);
+ 	}
+ 
+-	return 1;
++	return r;
+ }
+ 
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+@@ -5013,6 +5017,11 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ 	case KVM_HC_VAPIC_POLL_IRQ:
+ 		ret = 0;
+ 		break;
++	case KVM_HC_GUEST_PANIC:
++		ret = 0;
++		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
++		r = 0;
++		break;
+ 	default:
+ 		ret = -KVM_ENOSYS;
+ 		break;
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index acbe429..8f0e31b 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -163,6 +163,7 @@ struct kvm_pit_config {
+ #define KVM_EXIT_OSI              18
+ #define KVM_EXIT_PAPR_HCALL	  19
+ #define KVM_EXIT_S390_UCONTROL	  20
++#define KVM_EXIT_GUEST_PANIC	  21
+ 
+ /* For KVM_EXIT_INTERNAL_ERROR */
+ #define KVM_INTERNAL_ERROR_EMULATION 1
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index ff476dd..cf94023 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -19,6 +19,7 @@
+ #define KVM_HC_MMU_OP			2
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
++#define KVM_HC_GUEST_PANIC		5
+ 
+ /*
+  * hypercalls use architecture specific
+-- 
+1.7.1
