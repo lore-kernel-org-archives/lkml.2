@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab2B0BEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 20:04:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64054 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab2B0BEl (ORCPT
+	id S1753651Ab2B0BEx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 20:04:53 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63837 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab2B0BEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 20:04:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.34.202 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Mon, 27 Feb 2012 09:04:29 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: spock@gentoo.org
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        x86@kernel.org, hpa@linux.intel.com
-Subject: [PATCH 2/2] video:uvesafb: Fix oops when uvesafb try to execute
- NX-protected page
-Message-ID: <20120227010429.GC4019@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>, spock@gentoo.org,
-	linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-	x86@kernel.org, hpa@linux.intel.com
+	Sun, 26 Feb 2012 20:04:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of teawater@gmail.com designates 10.216.135.193 as permitted sender) smtp.mail=teawater@gmail.com; dkim=pass header.i=teawater@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 27 Feb 2012 09:04:11 +0800
+Message-ID: <CANFwon1YoxbC8+6aq2eW68x2b2qAXkUgNsqnM7SqEboLzy9d3g@mail.gmail.com>
+Subject: KGTP (Linux Kernel debugger and tracer) 20120224 release(more bug fix)
+To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>, kernel@vger.linux-kernel.cn
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+KGTP is a realtime and lightweight Linux Kernel debugger and tracer.
 
-commit 5bd5a452662bc37c54fb6828db1a3faf87e6511c add NX protection for kernel
-data. So on many machine (like my machine Aspire 4741 and other three machines I
-have tested) this commit will make the BIOS NX,  then when uvesafb use PMI and
-try to execute NX-protected page, Oops!
-This patch try to resolve it!
-(I have try to let uvesafb_pan_display use v86d to do pan, but it works very
-very bad, so I give it up)
+It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+current machine or remote machine (see
+https://code.google.com/p/kgtp/wiki/HOWTO#Make_GDB_connect_to_gtp) can
+debug and trace Linux through GDB tracepoint without stopping the
+Linux Kernel. And even if the board doesn't have GDB on it and doesn't
+have interface for remote debug. It can debug the Linux Kernel using
+offline debug (See
+https://code.google.com/p/kgtp/wiki/HOWTO#Offline_debug).
+And it can work with Android (See
+https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
+Now, it supports X86-32, X86-64, MIPS and ARM.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/uvesafb.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Now, KGTP 20120224 release.
+You can get the package for it from
+http://kgtp.googlecode.com/files/kgtp_20120224.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20120224
 
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index e7f69ef..f7e326f 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -23,6 +23,7 @@
- #include <video/uvesafb.h>
- #ifdef CONFIG_X86
- #include <video/vga.h>
-+#include <linux/pci.h>
- #endif
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
-@@ -812,11 +813,16 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
- 
- 	par->nocrtc = nocrtc;
- #ifdef CONFIG_X86_32
-+	if (check_pcibios_enabled()) {
- 	par->pmi_setpal = pmi_setpal;
- 	par->ypan = ypan;
- 
- 	if (par->pmi_setpal || par->ypan)
- 		uvesafb_vbe_getpmi(task, par);
-+	} else {
-+		par->pmi_setpal = par->ypan = 0;
-+		printk(KERN_WARNING "uvesafb: PCI BIOS is NX, can't use PMI. Use redraw instead\n");
-+	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
- 	par->pmi_setpal = par->ypan = 0;
--- 
-1.7.3.4
+I tried to done an very interesting add-ons(a python script for GDB)
+in this release.  But I found some bugs and fixed them when I tested
+this add-ons.  So I think maybe release a new version for these bug
+fixes is better.
+Please give KGTP some concern, our next version will include this
+interesting add-ons.
 
+The change of this release is:
+Fix build error with Linux Kernel 3.0.x version. Thanks for report
+from sam.wanshan.
+Make getgtprsp.pl support all special trace state variables.
+Fix the bug that set the id of FID_PAGE_BEGIN inside gtp_rb.
+Change code to ignore the task that read the
+/sys/kernel/debug/gtpframe_pipe in default.  And add special trace
+state variable $pipe_trace to control it.
+Fix error of doc about $ignore_error.
+Add $current_task_pid to access to get_current()->pid.
+Remove GTP_VAR_NOT_GETV, GTP_VAR_NOT_SETV and GTP_VAR_NOT_TRACEV.
+Fix bug in gtp_frame_file_header that affect stack when src of
+conditon or action is bigger than 200.
+To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
+
+According to the comments of Christoph.  I make a patch for Linux
+Kernel and make it looks OK with checkpatch.pl.  I will post the patch
+for review to linux-kernel@vger.kernel.org in a separate mail.
+
+Thanks,
+Hui
