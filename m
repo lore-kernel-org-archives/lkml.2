@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2B0EqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 23:46:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178Ab2B0EqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 23:46:14 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        n-horiguchi@ah.jp.nec.com, kamezawa.hiroyu@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org
-Subject: =?UTF-8?q?Re=3A=20Regression=3A=20Bad=20page=20map=20in=20process=20xyz?=
-Date: Sun, 26 Feb 2012 23:45:33 -0500
-Message-Id: <1330317933-20196-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <alpine.LSU.2.00.1202260502450.5648@eggly.anvils>
+	id S1753769Ab2B0EuK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 23:50:10 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:44145 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab2B0EuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 23:50:09 -0500
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'santosh nayak'" <santoshprasadnayak@gmail.com>
+Cc: <lindar_liu@usish.com>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+References: <1330263303-25177-1-git-send-email-santoshprasadnayak@gmail.com>
+Subject: RE: [PATCH 2/2] [SCSI] pm8001: Fix possible racing codition.
+Date: Mon, 27 Feb 2012 12:48:19 +0800
+Message-ID: <F56E135C22654173B055597BC0C8DE09@usish.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <1330263303-25177-1-git-send-email-santoshprasadnayak@gmail.com>
+Thread-Index: Acz0i16AkVYZhCxnSi2VlL9vv80ZDQAfzX4g
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+Infact , process_oq is only called in pm8001_chip_isr, but this patch looks
+OK for me. Move down the lock to process_oq is OK.
 
-On Sun, Feb 26, 2012 at 05:10:31AM -0800, Hugh Dickins wrote:
-> On Sun, 26 Feb 2012, Maciej Rutecki wrote:
-> > On poniedziaナＦk, 20 lutego 2012 o 11:02:17 Jiri Slaby wrote:
-> > > Hi,
-> > > 
-> > > I'm getting a ton of
-> > > BUG: Bad page map in process zypper  pte:676b700029736c6f pmd:44967067
-> > > when trying to upgrade the system by:
-> > > zypper dup
-> > > 
-> > > I bisected that to:
-> > > commit afb1c03746aa940374b73a7d5750ee05a2376077
-> > > Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > Date:   Fri Feb 17 10:57:58 2012 +1100
-> > > 
-> > >     thp: optimize away unnecessary page table locking
-> > > 
-> > > thanks,
-> > 
-> > I created a Bugzilla entry at 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=42820
-> > for your bug/regression report, please add your address to the CC list in 
-> > there, thanks!
+Thanks for fix.
+Acked-by : Jack Wang <jack_wang@usish.com>
+
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
 > 
-> No, thanks for spotting it, but please remove from the regressions
-> report: it's not a regression in 3.3-rc but in linux-next - don't take
-> my word for it, check the commit and you'll not find it in 3.3-rc.
+> There is a possble racing scenario.
 > 
-> We do still need to get the fix into linux-next: Horiguchi-san, has
-> akpm put your fix in mm-commits yet?  Please send it again if not.
+> 'process_oq' is called by two routines, as shown below.
+> 
+> pm8001_8001_dispatch = {
+>          .......
+> 
+>         .isr             = pm8001_chip_isr --> process_oq,// A
+>         .isr_process_oq  = process_oq,                   //  B
+>         .....
+> }
+> 
+> process_oq() --> process_one_iomb() --> mpi_sata_completion()
+> 
+> In 'mpi_sata_completion', "pm8001_ha->lock" is first released.
+> It means lock is taken before,  which is true for
+> the context A, as 'pm8001_ha->lock' is taken in 'pm8001_chip_isr()'
+> 
+> But for context B there is no lock taken before and pm8001_ha->lock
+> is unlocked in 'mpi_sata_completion()'. This may unlock the lock
+> taken in context A. Possible racing ??
+> 
+> If 'pm8001_ha->lock' is taken in 'process_oq()' instead of
+> 'pm8001_chip_isr' then the above issue can be avoided.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  drivers/scsi/pm8001/pm8001_hwi.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_hwi.c
+> b/drivers/scsi/pm8001/pm8001_hwi.c
+> index 838e3e2..6d9973b 100644
+> --- a/drivers/scsi/pm8001/pm8001_hwi.c
+> +++ b/drivers/scsi/pm8001/pm8001_hwi.c
+> @@ -3663,7 +3663,9 @@ static int process_oq(struct pm8001_hba_info
+*pm8001_ha)
+>  	void *pMsg1 = NULL;
+>  	u8 uninitialized_var(bc);
+>  	u32 ret = MPI_IO_STATUS_FAIL;
+> +	unsigned long flags;
+> 
+> +	spin_lock_irqsave(&pm8001_ha->lock, flags);
+>  	circularQ = &pm8001_ha->outbnd_q_tbl[0];
+>  	do {
+>  		ret = mpi_msg_consume(pm8001_ha, circularQ, &pMsg1, &bc);
+> @@ -3682,6 +3684,7 @@ static int process_oq(struct pm8001_hba_info
+*pm8001_ha)
+>  				break;
+>  		}
+>  	} while (1);
+> +	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>  	return ret;
+>  }
+> 
+> @@ -4087,12 +4090,9 @@ static u32 pm8001_chip_is_our_interupt(struct
+> pm8001_hba_info *pm8001_ha)
+>  static irqreturn_t
+>  pm8001_chip_isr(struct pm8001_hba_info *pm8001_ha)
+>  {
+> -	unsigned long flags;
+> -	spin_lock_irqsave(&pm8001_ha->lock, flags);
+>  	pm8001_chip_interrupt_disable(pm8001_ha);
+>  	process_oq(pm8001_ha);
+>  	pm8001_chip_interrupt_enable(pm8001_ha);
+> -	spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>  	return IRQ_HANDLED;
+>  }
+> 
+> --
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Sorry for late reply.
-And yes, this fix is in mm-commits now.
-
-Thanks,
-Naoya
