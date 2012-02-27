@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2B0Oav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 09:30:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47132 "EHLO mx2.suse.de"
+	id S1753797Ab2B0Obt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 09:31:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36399 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab2B0Oas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 09:30:48 -0500
-Date: Mon, 27 Feb 2012 15:30:47 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: pinglinux@gmail.com, chris@cnpbagwell.com,
-        linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: wacom: Add serial and id reporting for Wacom
- Intuos4 WL
-In-Reply-To: <1330091552-9011-1-git-send-email-przemo@firszt.eu>
-Message-ID: <alpine.LNX.2.00.1202271530390.31150@pobox.suse.cz>
-References: <1330091552-9011-1-git-send-email-przemo@firszt.eu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752180Ab2B0Obs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 09:31:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="112245030"
+Date: Mon, 27 Feb 2012 15:38:13 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] MFD: TWL 6030: make twl6030_irq_set_wake static
+Message-ID: <20120227143813.GQ27687@sortiz-mobl>
+References: <1329962639-29800-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329962639-29800-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Feb 2012, Przemo Firszt wrote:
+Hi Nishan,
 
-> This patch implements reporting id and serial number of used tool.
-> Reported values are the same as for USB on of the driver for wacom Intuos4 W
+On Wed, Feb 22, 2012 at 08:03:59PM -0600, Nishanth Menon wrote:
+> twl6030_irq_set_wake is not used anywhere else in the kernel
+> except as irq_chip.irq_set_wake. No reason for it to be exported.
+> 
+> Also fixes build warning:
+> drivers/mfd/twl6030-irq.c:230:5: warning: symbol 'twl6030_irq_set_wake' was not declared. Should it be static?
+> 
+Applied as well, thanks.
 
-Applied.
+Cheers,
+Samuel.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
