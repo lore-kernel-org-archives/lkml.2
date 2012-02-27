@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2B0TrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:47:24 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64965 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753965Ab2B0TrW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:47:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.25.8 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	id S1755058Ab2B0Tst (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:48:49 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:57398 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab2B0Tsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:48:47 -0500
+X-IronPort-AV: E=Sophos;i="4.73,492,1325462400"; 
+   d="scan'208";a="10965291"
+Message-ID: <1330372125.10008.47.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Dave Martin <dave.martin@linaro.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 27 Feb 2012 19:48:45 +0000
+In-Reply-To: <20120227175327.GA2023@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+	 <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20120227175327.GA2023@linaro.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-In-Reply-To: <20120227175407.GD10608@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-10-git-send-email-wad@chromium.org>
-	<20120227175407.GD10608@redhat.com>
-Date: Mon, 27 Feb 2012 13:47:17 -0600
-Message-ID: <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 11:54 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/24, Will Drewry wrote:
->>
->>  arch/Kconfig              |    1 +
->>  include/linux/ptrace.h    |    7 +++++--
->>  include/linux/seccomp.h   |    4 +++-
->>  include/linux/tracehook.h |    6 ++++++
->>  kernel/ptrace.c           |    4 ++++
->>  kernel/seccomp.c          |   18 ++++++++++++++++++
+On Mon, 2012-02-27 at 17:53 +0000, Dave Martin wrote:
+> On Thu, Feb 23, 2012 at 05:48:22PM +0000, Stefano Stabellini wrote:
+> > We need a register to pass the hypercall number because we might not
+> > know it at compile time and HVC only takes an immediate argument.
+> > 
+> > Among the available registers r12 seems to be the best choice because it
+> > is defined as "intra-procedure call scratch register".
+> 
+> This would be massively simplified if you didn't try to inline the HVC.
+> Does it really need to be inline?
 >
-> FYI, this conflicts with the changes -mm tree.
->
-> The changes in ptrace.* confict with Denys's
-> "ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code"
->
-> The change in tracehook.h conflicts with
-> "ptrace: the killed tracee should not enter the syscall"
+> > +#define __HYPERCALL ".word 0xe1400070 + " __HVC_IMM(XEN_HYPERCALL_TAG)
+> 
+> Please, do not do this.  It won't work in Thumb, where the encodings are
+> different.
+> 
+> It is reasonable to expect anyone building Xen to have reasonably new
+> tools, you you can justifiably use
+> 
+> AFLAGS_thisfile.o := -Wa,-march=armv7-a+virt
+> 
+> in the Makefile and just use the hvc instruction directly.
 
-What's the best way to reconcile this in this day and age? I don't see
-these in kernel-next yet and I can't tell if there is a public -mm
-anywhere anymore.  I can use the patches from the mailing list with
-Denys's changes if that'd be good enough.  His cleanup will make this
-code even smaller!
+Our aim is for guest kernel binaries not to be specific to Xen -- i.e.
+they should be able to run on baremetal and other hypervisors as well.
+The differences should only be in the device-tree passed to the kernel.
 
->> --- a/kernel/seccomp.c
->> +++ b/kernel/seccomp.c
->> @@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
->>                       seccomp_send_sigsys(this_syscall, reason_code);
->>                       return -1;
->>               }
->> +             case SECCOMP_RET_TRACE: {
->> +                     int ret;
->> +                     struct pt_regs *regs = task_pt_regs(current);
->> +                     if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
->> +                         !(current->ptrace & PT_TRACE_SECCOMP))
->> +                             return -1;
->> +                     /*
->> +                      * PT_TRACE_SECCOMP and seccomp.trace indicate whether
->> +                      * tracehook_report_syscall_entry needs to signal the
->> +                      * tracer.  This avoids race conditions in hand off and
->> +                      * the requirement for TIF_SYSCALL_TRACE ensures that
->> +                      * we are in the syscall slow path.
->> +                      */
->> +                     current->seccomp.trace = 1;
->> +                     ret = tracehook_report_syscall_entry(regs);
->> +                     current->seccomp.trace = 0;
->> +                     return ret;
->
-> To be honest, this interface looks a bit strange to me...
->
-> Once again, sorry if this was already discussed. But perhaps it would
-> be better to introduce PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP instead?
->
-> SECCOMP_RET_TRACE: could simply do ptrace_event(PTRACE_EVENT_SECCOMP)
-> unconditionaly. The tracer can set the option and do PTRACE_CONT if it
-> doesn't want the system call notifications.
+> Of course, this is only practical if the HVC invocation is not inlined.
 
-Works for me - this also gets rid of the extra int for brief state
-tracking. I'll switch over to that in the next rev.  (More follow-ups
-to your reviews incoming too :).
+I suppose we could make the stub functions out of line, we just copied
+what Xen does on x86.
 
-Thanks!
-will
+The only thing which springs to mind is that 5 argument hypercalls will
+end up pushing the fifth argument to the stack only to pop it back into
+r4 for the hypercall and IIRC it also needs to preserve r4 (callee saved
+reg) which is going to involve some small amount of code to move stuff
+around too.
+
+So by inlining the functions we avoid some thunking because the compiler
+would know exactly what was happening at the hypercall site.
+
+We don't currently have any 6 argument hypercalls but the same would
+extend there.
+
+> If we can't avoid macro-ising HVC, we should do it globally, not locally
+> to the Xen code.  That way we at least keep all the horror in one place.
+
+That sounds like a good idea to me.
+
+Given that Stefano is proposing to make the ISS a (per-hypervisor)
+constant we could consider just defining the Thumb and non-Thumb
+constants instead of doing all the construction with the __HVC_IMM stuff
+-- that would remove a big bit of the macroization.
+
+Ian.
+
