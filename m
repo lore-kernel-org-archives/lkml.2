@@ -1,693 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2B0Uqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:46:55 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59071 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab2B0Uqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:46:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.223.41 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 27 Feb 2012 12:46:09 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Subject: Re: Linux 3.2.8
-Message-ID: <20120227204609.GB12105@kroah.com>
-References: <20120227204557.GA12105@kroah.com>
+	id S1754984Ab2B0UtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:49:16 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60463 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754015Ab2B0UtO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:49:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.47.37 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120227204557.GA12105@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1330374879.2542.24.camel@localhost>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	<1330140111-17201-6-git-send-email-wad@chromium.org>
+	<20120226202828.GE3990@outflux.net>
+	<CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
+	<1330361396.2542.11.camel@localhost>
+	<CAGXu5jKJ7pYeULM=CvifpQ8jUoyH6Ska2Znx9tGjhz0tn5kZmQ@mail.gmail.com>
+	<1330370733.2542.18.camel@localhost>
+	<CAGXu5jKyLHLF+HuU=SLHJLg8AaOPJXoqq1=hOBy5oOvffA-xiQ@mail.gmail.com>
+	<1330374879.2542.24.camel@localhost>
+Date: Mon, 27 Feb 2012 12:49:10 -0800
+X-Google-Sender-Auth: aTvj3_ri73mLNOplgarquLq91SA
+Message-ID: <CAGXu5jKvoxVLmLqV0DK9+hB38kPh0xTTHF=_sheRWvDoWusUyw@mail.gmail.com>
+Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+From: Kees Cook <keescook@chromium.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Will Drewry <wad@chromium.org>, Kees Cook <kees@ubuntu.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index d1bdc90..7df8a84 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 2
--SUBLEVEL = 7
-+SUBLEVEL = 8
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index c9e09ea..a850b4d 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -29,8 +29,8 @@ extern unsigned int sig_xstate_size;
- extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
- extern int init_fpu(struct task_struct *child);
--extern asmlinkage void math_state_restore(void);
--extern void __math_state_restore(void);
-+extern void __math_state_restore(struct task_struct *);
-+extern void math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
- 
- extern user_regset_active_fn fpregs_active, xfpregs_active;
-@@ -212,19 +212,11 @@ static inline void fpu_fxsave(struct fpu *fpu)
- 
- #endif	/* CONFIG_X86_64 */
- 
--/* We need a safe address that is cheap to find and that is already
--   in L1 during context switch. The best choices are unfortunately
--   different for UP and SMP */
--#ifdef CONFIG_SMP
--#define safe_address (__per_cpu_offset[0])
--#else
--#define safe_address (kstat_cpu(0).cpustat.user)
--#endif
--
- /*
-- * These must be called with preempt disabled
-+ * These must be called with preempt disabled. Returns
-+ * 'true' if the FPU state is still intact.
-  */
--static inline void fpu_save_init(struct fpu *fpu)
-+static inline int fpu_save_init(struct fpu *fpu)
- {
- 	if (use_xsave()) {
- 		fpu_xsave(fpu);
-@@ -233,33 +225,33 @@ static inline void fpu_save_init(struct fpu *fpu)
- 		 * xsave header may indicate the init state of the FP.
- 		 */
- 		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
--			return;
-+			return 1;
- 	} else if (use_fxsr()) {
- 		fpu_fxsave(fpu);
- 	} else {
- 		asm volatile("fnsave %[fx]; fwait"
- 			     : [fx] "=m" (fpu->state->fsave));
--		return;
-+		return 0;
- 	}
- 
--	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
-+	/*
-+	 * If exceptions are pending, we need to clear them so
-+	 * that we don't randomly get exceptions later.
-+	 *
-+	 * FIXME! Is this perhaps only true for the old-style
-+	 * irq13 case? Maybe we could leave the x87 state
-+	 * intact otherwise?
-+	 */
-+	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES)) {
- 		asm volatile("fnclex");
--
--	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
--	   is pending.  Clear the x87 state here by setting it to fixed
--	   values. safe_address is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"	  	/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (safe_address));
-+		return 0;
-+	}
-+	return 1;
- }
- 
--static inline void __save_init_fpu(struct task_struct *tsk)
-+static inline int __save_init_fpu(struct task_struct *tsk)
- {
--	fpu_save_init(&tsk->thread.fpu);
--	task_thread_info(tsk)->status &= ~TS_USEDFPU;
-+	return fpu_save_init(&tsk->thread.fpu);
- }
- 
- static inline int fpu_fxrstor_checking(struct fpu *fpu)
-@@ -281,39 +273,185 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
- }
- 
- /*
-- * Signal frame handlers...
-+ * Software FPU state helpers. Careful: these need to
-+ * be preemption protection *and* they need to be
-+ * properly paired with the CR0.TS changes!
-  */
--extern int save_i387_xstate(void __user *buf);
--extern int restore_i387_xstate(void __user *buf);
-+static inline int __thread_has_fpu(struct task_struct *tsk)
-+{
-+	return tsk->thread.has_fpu;
-+}
- 
--static inline void __unlazy_fpu(struct task_struct *tsk)
-+/* Must be paired with an 'stts' after! */
-+static inline void __thread_clear_has_fpu(struct task_struct *tsk)
- {
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		__save_init_fpu(tsk);
--		stts();
--	} else
--		tsk->fpu_counter = 0;
-+	tsk->thread.has_fpu = 0;
-+}
-+
-+/* Must be paired with a 'clts' before! */
-+static inline void __thread_set_has_fpu(struct task_struct *tsk)
-+{
-+	tsk->thread.has_fpu = 1;
- }
- 
-+/*
-+ * Encapsulate the CR0.TS handling together with the
-+ * software flag.
-+ *
-+ * These generally need preemption protection to work,
-+ * do try to avoid using these on their own.
-+ */
-+static inline void __thread_fpu_end(struct task_struct *tsk)
-+{
-+	__thread_clear_has_fpu(tsk);
-+	stts();
-+}
-+
-+static inline void __thread_fpu_begin(struct task_struct *tsk)
-+{
-+	clts();
-+	__thread_set_has_fpu(tsk);
-+}
-+
-+/*
-+ * FPU state switching for scheduling.
-+ *
-+ * This is a two-stage process:
-+ *
-+ *  - switch_fpu_prepare() saves the old state and
-+ *    sets the new state of the CR0.TS bit. This is
-+ *    done within the context of the old process.
-+ *
-+ *  - switch_fpu_finish() restores the new state as
-+ *    necessary.
-+ */
-+typedef struct { int preload; } fpu_switch_t;
-+
-+/*
-+ * FIXME! We could do a totally lazy restore, but we need to
-+ * add a per-cpu "this was the task that last touched the FPU
-+ * on this CPU" variable, and the task needs to have a "I last
-+ * touched the FPU on this CPU" and check them.
-+ *
-+ * We don't do that yet, so "fpu_lazy_restore()" always returns
-+ * false, but some day..
-+ */
-+#define fpu_lazy_restore(tsk) (0)
-+#define fpu_lazy_state_intact(tsk) do { } while (0)
-+
-+static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct task_struct *new)
-+{
-+	fpu_switch_t fpu;
-+
-+	fpu.preload = tsk_used_math(new) && new->fpu_counter > 5;
-+	if (__thread_has_fpu(old)) {
-+		if (__save_init_fpu(old))
-+			fpu_lazy_state_intact(old);
-+		__thread_clear_has_fpu(old);
-+		old->fpu_counter++;
-+
-+		/* Don't change CR0.TS if we just switch! */
-+		if (fpu.preload) {
-+			__thread_set_has_fpu(new);
-+			prefetch(new->thread.fpu.state);
-+		} else
-+			stts();
-+	} else {
-+		old->fpu_counter = 0;
-+		if (fpu.preload) {
-+			if (fpu_lazy_restore(new))
-+				fpu.preload = 0;
-+			else
-+				prefetch(new->thread.fpu.state);
-+			__thread_fpu_begin(new);
-+		}
-+	}
-+	return fpu;
-+}
-+
-+/*
-+ * By the time this gets called, we've already cleared CR0.TS and
-+ * given the process the FPU if we are going to preload the FPU
-+ * state - all we need to do is to conditionally restore the register
-+ * state itself.
-+ */
-+static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
-+{
-+	if (fpu.preload)
-+		__math_state_restore(new);
-+}
-+
-+/*
-+ * Signal frame handlers...
-+ */
-+extern int save_i387_xstate(void __user *buf);
-+extern int restore_i387_xstate(void __user *buf);
-+
- static inline void __clear_fpu(struct task_struct *tsk)
- {
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
-+	if (__thread_has_fpu(tsk)) {
- 		/* Ignore delayed exceptions from user space */
- 		asm volatile("1: fwait\n"
- 			     "2:\n"
- 			     _ASM_EXTABLE(1b, 2b));
--		task_thread_info(tsk)->status &= ~TS_USEDFPU;
--		stts();
-+		__thread_fpu_end(tsk);
- 	}
- }
- 
-+/*
-+ * Were we in an interrupt that interrupted kernel mode?
-+ *
-+ * We can do a kernel_fpu_begin/end() pair *ONLY* if that
-+ * pair does nothing at all: the thread must not have fpu (so
-+ * that we don't try to save the FPU state), and TS must
-+ * be set (so that the clts/stts pair does nothing that is
-+ * visible in the interrupted kernel thread).
-+ */
-+static inline bool interrupted_kernel_fpu_idle(void)
-+{
-+	return !__thread_has_fpu(current) &&
-+		(read_cr0() & X86_CR0_TS);
-+}
-+
-+/*
-+ * Were we in user mode (or vm86 mode) when we were
-+ * interrupted?
-+ *
-+ * Doing kernel_fpu_begin/end() is ok if we are running
-+ * in an interrupt context from user mode - we'll just
-+ * save the FPU state as required.
-+ */
-+static inline bool interrupted_user_mode(void)
-+{
-+	struct pt_regs *regs = get_irq_regs();
-+	return regs && user_mode_vm(regs);
-+}
-+
-+/*
-+ * Can we use the FPU in kernel mode with the
-+ * whole "kernel_fpu_begin/end()" sequence?
-+ *
-+ * It's always ok in process context (ie "not interrupt")
-+ * but it is sometimes ok even from an irq.
-+ */
-+static inline bool irq_fpu_usable(void)
-+{
-+	return !in_interrupt() ||
-+		interrupted_user_mode() ||
-+		interrupted_kernel_fpu_idle();
-+}
-+
- static inline void kernel_fpu_begin(void)
- {
--	struct thread_info *me = current_thread_info();
-+	struct task_struct *me = current;
-+
-+	WARN_ON_ONCE(!irq_fpu_usable());
- 	preempt_disable();
--	if (me->status & TS_USEDFPU)
--		__save_init_fpu(me->task);
--	else
-+	if (__thread_has_fpu(me)) {
-+		__save_init_fpu(me);
-+		__thread_clear_has_fpu(me);
-+		/* We do 'stts()' in kernel_fpu_end() */
-+	} else
- 		clts();
- }
- 
-@@ -323,14 +461,6 @@ static inline void kernel_fpu_end(void)
- 	preempt_enable();
- }
- 
--static inline bool irq_fpu_usable(void)
--{
--	struct pt_regs *regs;
--
--	return !in_interrupt() || !(regs = get_irq_regs()) || \
--		user_mode(regs) || (read_cr0() & X86_CR0_TS);
--}
--
- /*
-  * Some instructions like VIA's padlock instructions generate a spurious
-  * DNA fault but don't modify SSE registers. And these instructions
-@@ -363,20 +493,64 @@ static inline void irq_ts_restore(int TS_state)
- }
- 
- /*
-+ * The question "does this thread have fpu access?"
-+ * is slightly racy, since preemption could come in
-+ * and revoke it immediately after the test.
-+ *
-+ * However, even in that very unlikely scenario,
-+ * we can just assume we have FPU access - typically
-+ * to save the FP state - we'll just take a #NM
-+ * fault and get the FPU access back.
-+ *
-+ * The actual user_fpu_begin/end() functions
-+ * need to be preemption-safe, though.
-+ *
-+ * NOTE! user_fpu_end() must be used only after you
-+ * have saved the FP state, and user_fpu_begin() must
-+ * be used only immediately before restoring it.
-+ * These functions do not do any save/restore on
-+ * their own.
-+ */
-+static inline int user_has_fpu(void)
-+{
-+	return __thread_has_fpu(current);
-+}
-+
-+static inline void user_fpu_end(void)
-+{
-+	preempt_disable();
-+	__thread_fpu_end(current);
-+	preempt_enable();
-+}
-+
-+static inline void user_fpu_begin(void)
-+{
-+	preempt_disable();
-+	if (!user_has_fpu())
-+		__thread_fpu_begin(current);
-+	preempt_enable();
-+}
-+
-+/*
-  * These disable preemption on their own and are safe
-  */
- static inline void save_init_fpu(struct task_struct *tsk)
- {
-+	WARN_ON_ONCE(!__thread_has_fpu(tsk));
- 	preempt_disable();
- 	__save_init_fpu(tsk);
--	stts();
-+	__thread_fpu_end(tsk);
- 	preempt_enable();
- }
- 
- static inline void unlazy_fpu(struct task_struct *tsk)
- {
- 	preempt_disable();
--	__unlazy_fpu(tsk);
-+	if (__thread_has_fpu(tsk)) {
-+		__save_init_fpu(tsk);
-+		__thread_fpu_end(tsk);
-+	} else
-+		tsk->fpu_counter = 0;
- 	preempt_enable();
- }
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b650435..bb3ee36 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -456,6 +456,7 @@ struct thread_struct {
- 	unsigned long		trap_no;
- 	unsigned long		error_code;
- 	/* floating point and extended processor state */
-+	unsigned long		has_fpu;
- 	struct fpu		fpu;
- #ifdef CONFIG_X86_32
- 	/* Virtual 86 mode info */
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index a1fe5c1..d7ef849 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -242,8 +242,6 @@ static inline struct thread_info *current_thread_info(void)
-  * ever touches our thread-synchronous status, so we don't
-  * have to worry about atomic accesses.
-  */
--#define TS_USEDFPU		0x0001	/* FPU was used by this task
--					   this quantum (SMP) */
- #define TS_COMPAT		0x0002	/* 32bit syscall active (64BIT)*/
- #define TS_POLLING		0x0004	/* idle task polling need_resched,
- 					   skip sending interrupt */
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 795b79f..8598296 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -297,22 +297,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 				 *next = &next_p->thread;
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
--	bool preload_fpu;
-+	fpu_switch_t fpu;
- 
- 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
- 
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
--	__unlazy_fpu(prev_p);
--
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
-+	fpu = switch_fpu_prepare(prev_p, next_p);
- 
- 	/*
- 	 * Reload esp0.
-@@ -352,11 +341,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/* If we're going to preload the fpu context, make sure clts
--	   is run while we're batching the cpu state updates. */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -366,15 +350,14 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	 */
- 	arch_end_context_switch(next_p);
- 
--	if (preload_fpu)
--		__math_state_restore();
--
- 	/*
- 	 * Restore %gs if needed (which is common)
- 	 */
- 	if (prev->gs | next->gs)
- 		lazy_load_gs(next->gs);
- 
-+	switch_fpu_finish(next_p, fpu);
-+
- 	percpu_write(current_task, next_p);
- 
- 	return prev_p;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3bd7e6e..6a364a6 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -381,18 +381,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
- 	unsigned fsindex, gsindex;
--	bool preload_fpu;
-+	fpu_switch_t fpu;
- 
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
-+	fpu = switch_fpu_prepare(prev_p, next_p);
- 
- 	/*
- 	 * Reload esp0, LDT and the page table pointer:
-@@ -422,13 +413,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 
- 	load_TLS(next, cpu);
- 
--	/* Must be after DS reload */
--	__unlazy_fpu(prev_p);
--
--	/* Make sure cpu is ready for new context */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -469,6 +453,8 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		wrmsrl(MSR_KERNEL_GS_BASE, next->gs);
- 	prev->gsindex = gsindex;
- 
-+	switch_fpu_finish(next_p, fpu);
-+
- 	/*
- 	 * Switch the PDA and FPU contexts.
- 	 */
-@@ -487,13 +473,6 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/*
--	 * Preload the FPU context, now that we've determined that the
--	 * task is likely to be using it. 
--	 */
--	if (preload_fpu)
--		__math_state_restore();
--
- 	return prev_p;
- }
- 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index a8e3eb8..31d9d0f 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -562,25 +562,34 @@ asmlinkage void __attribute__((weak)) smp_threshold_interrupt(void)
- }
- 
- /*
-- * __math_state_restore assumes that cr0.TS is already clear and the
-- * fpu state is all ready for use.  Used during context switch.
-+ * This gets called with the process already owning the
-+ * FPU state, and with CR0.TS cleared. It just needs to
-+ * restore the FPU register state.
-  */
--void __math_state_restore(void)
-+void __math_state_restore(struct task_struct *tsk)
- {
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
-+	/* We need a safe address that is cheap to find and that is already
-+	   in L1. We've just brought in "tsk->thread.has_fpu", so use that */
-+#define safe_address (tsk->thread.has_fpu)
-+
-+	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
-+	   is pending.  Clear the x87 state here by setting it to fixed
-+	   values. safe_address is a random variable that should be in L1 */
-+	alternative_input(
-+		ASM_NOP8 ASM_NOP2,
-+		"emms\n\t"	  	/* clear stack tags */
-+		"fildl %P[addr]",	/* set F?P to defined value */
-+		X86_FEATURE_FXSAVE_LEAK,
-+		[addr] "m" (safe_address));
- 
- 	/*
- 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
- 	 */
- 	if (unlikely(restore_fpu_checking(tsk))) {
--		stts();
-+		__thread_fpu_end(tsk);
- 		force_sig(SIGSEGV, tsk);
- 		return;
- 	}
--
--	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
--	tsk->fpu_counter++;
- }
- 
- /*
-@@ -590,13 +599,12 @@ void __math_state_restore(void)
-  * Careful.. There are problems with IBM-designed IRQ13 behaviour.
-  * Don't touch unless you *really* know how it works.
-  *
-- * Must be called with kernel preemption disabled (in this case,
-- * local interrupts are disabled at the call-site in entry.S).
-+ * Must be called with kernel preemption disabled (eg with local
-+ * local interrupts as in the case of do_device_not_available).
-  */
--asmlinkage void math_state_restore(void)
-+void math_state_restore(void)
- {
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
-+	struct task_struct *tsk = current;
- 
- 	if (!tsk_used_math(tsk)) {
- 		local_irq_enable();
-@@ -613,9 +621,10 @@ asmlinkage void math_state_restore(void)
- 		local_irq_disable();
- 	}
- 
--	clts();				/* Allow maths ops (or we recurse) */
-+	__thread_fpu_begin(tsk);
-+	__math_state_restore(tsk);
- 
--	__math_state_restore();
-+	tsk->fpu_counter++;
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
- 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index a391134..7110911 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -47,7 +47,7 @@ void __sanitize_i387_state(struct task_struct *tsk)
- 	if (!fx)
- 		return;
- 
--	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
-+	BUG_ON(__thread_has_fpu(tsk));
- 
- 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
- 
-@@ -168,7 +168,7 @@ int save_i387_xstate(void __user *buf)
- 	if (!used_math())
- 		return 0;
- 
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
-+	if (user_has_fpu()) {
- 		if (use_xsave())
- 			err = xsave_user(buf);
- 		else
-@@ -176,8 +176,7 @@ int save_i387_xstate(void __user *buf)
- 
- 		if (err)
- 			return err;
--		task_thread_info(tsk)->status &= ~TS_USEDFPU;
--		stts();
-+		user_fpu_end();
- 	} else {
- 		sanitize_i387_state(tsk);
- 		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
-@@ -292,10 +291,7 @@ int restore_i387_xstate(void __user *buf)
- 			return err;
- 	}
- 
--	if (!(task_thread_info(current)->status & TS_USEDFPU)) {
--		clts();
--		task_thread_info(current)->status |= TS_USEDFPU;
--	}
-+	user_fpu_begin();
- 	if (use_xsave())
- 		err = restore_user_xstate(buf);
- 	else
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 579a0b5..4ea7678 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1456,7 +1456,7 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
- #ifdef CONFIG_X86_64
- 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- #endif
--	if (current_thread_info()->status & TS_USEDFPU)
-+	if (__thread_has_fpu(current))
- 		clts();
- 	load_gdt(&__get_cpu_var(host_gdt));
- }
+On Mon, Feb 27, 2012 at 12:34 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Mon, 2012-02-27 at 12:00 -0800, Kees Cook wrote:
+>> On Mon, Feb 27, 2012 at 11:25 AM, Eric Paris <eparis@redhat.com> wrote:
+>> > On Mon, 2012-02-27 at 10:55 -0800, Kees Cook wrote:
+>> >> On Mon, Feb 27, 2012 at 8:49 AM, Eric Paris <eparis@redhat.com> wrote:
+>> >
+>> >> You mean as used in audit_log_exit() ? It looks like that depends on a
+>> >> lot of state cached in __audit_syscall_entry() and finally triggered
+>> >> in __audit_syscall_exit() (and ..._free()). I don't think this is
+>> >> really want seccomp wants to be involved in.
+>> >>
+>> >> By CONFIG_AUDITSC, you mean CONFIG_AUDITSYSCALL? Without that set,
+>> >> audit_seccomp is a no-op.
+>> >>
+>> >> The reason compat needs to be reported (or rather, arch) is because
+>> >> just reporting syscall is ambiguous. It either needs arch or compat to
+>> >> distinguish it.
+>> >
+>> > Yes, that is what I mean and you are right.  You shouldn't push the
+>> > syscall in this record either.  If !audit_dummy_context() you are
+>> > already going to get arch, syscall, and a0-a4 in the associated audit
+>> > record.  Please do not duplicate that info.
+>>
+>> Ah, in that case, please ignore the patch I just sent. Heh.
+>>
+>> > It might make sense to have a separate audit_seccomp() path when
+>> > audit_dummy_context() which includes arch, syscall, and a0-a4.
+>>
+>> Ah! I think I understand what you mean now. If audit_dummy_context(),
+>> then the syscall, arch, and a0-a4 were not already collected. Gotcha.
+>>
+>> How do you envision it looking? I still see it as two distinct events
+>> (the syscall itself, and the rejection). Would you want those details
+>> added to the context structure to be reported at ..._exit() time? It
+>> seems like context->type couldn't be used to see if those fields were
+>> valid.
+>>
+>> Something like:
+>>
+>> void __audit_seccomp(unsigned long syscall, long signr)
+>> {
+>>         struct audit_buffer *ab;
+>>
+>>         if (!audit_dummy_context()) {
+>>                 struct audit_context *context = current->audit_context;
+>>                 context->syscall_signr = signr;
+>>                 context->syscall_ip = KSTK_EIP(current);
+>>                 return;
+>>         }
+>>
+>>         ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+>>         audit_log_abend(ab, "seccomp", signr);
+>>         audit_log_format(ab, " syscall=%ld", syscall);
+>>         audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+>>         audit_log_end(ab);
+>> }
+>>
+>> And then report syscall_ip and syscall_signr if syscall_signr != 0 in
+>> the _exit()? I think everything else from audit_log_abend() will end
+>> up in the _exit() report.
+>>
+>> > It is my fault (85e7bac3) that we have syscall at all, but I'm on a new
+>> > crusade to remove audit record duplication.  So I'd happily see a patch
+>> > in this series that removes that instead of adds to it.
+>>
+>> Well, I think the abend reporting is nice; I'd hate to see that
+>> totally removed. The seccomp case is a bit different, I agree. I could
+>> see it either way.
+>
+> Once again I send you down a bad path.  Your original patch was the
+> best.  We should consider including a0-aX in a future version.  I was
+> mistaken in foolishly believing that audit_syscall_entry() was done
+> before secure_computing().  But if you look, that isn't the case.
+> Please pretend I never said anything as you had it right the first time.
+
+Heh, okay. But now I know more about audit, so that's good. :)
+
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
