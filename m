@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab2B0Rd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:33:56 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62757 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab2B0Rdy (ORCPT
+	id S1754144Ab2B0Rep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:34:45 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58584 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab2B0Reo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:33:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.180.83.70 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
-Date: Mon, 27 Feb 2012 18:33:51 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
-        mingo@elte.hu, joro@8bytes.org, gleb@redhat.com
-Subject: [PATCH] perf tools: fix guest mode monitoring on AMD
-Message-ID: <20120227173351.GA6945@quad>
+	Mon, 27 Feb 2012 12:34:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mcgrathr@google.com designates 10.224.178.136 as permitted sender) smtp.mail=mcgrathr@google.com; dkim=pass header.i=mcgrathr@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120227172208.GC10608@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+ <1330140111-17201-8-git-send-email-wad@chromium.org> <20120227172208.GC10608@redhat.com>
+From: Roland McGrath <mcgrathr@google.com>
+Date: Mon, 27 Feb 2012 09:34:19 -0800
+Message-ID: <CAB=4xhpXB7K88sJXur5VK_-0BA0ZrSeT6UDQv3PS+FyjrSFsOw@mail.gmail.com>
+Subject: Re: [PATCH v11 08/12] signal, x86: add SIGSYS info and make it synchronous.
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit:
+On Mon, Feb 27, 2012 at 9:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> SYNCHRONOUS_MASK just tells dequeue_signal() "pick them first".
+> This is needed to make sure that the handler for, say SIGSEGV,
+> can use ucontext->ip as a faulting addr.
 
-1aed267 perf kvm: Do guest-only counting by default
- 
-introduced a bug on AMD systems whereby simple commands:
-
-$ perf stat ls
-Performance counter stats for 'ls':
-                 0 cycles                    #    0.000 GHz                    
-       0.003704596 seconds time elapsed
-
-would not count anything anymore. Same results for perf record.
-
-I tracked it down to guest mode exclusion being enabled
-by default leading to attr->exclude_guest = 1. When
-not operating under any sort of virtualization, this
-causes the PMU not to count anything.
-
-The fix disables guest exclusion by default.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 8109a90..c1017b3 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -6,7 +6,7 @@
-  * XXX We need to find a better place for these things...
-  */
- bool perf_host  = true;
--bool perf_guest = false;
-+bool perf_guest = true;
- 
- void event_attr_init(struct perf_event_attr *attr)
- {
+It's desireable to have these signals handled first just so that the thread
+state that provoked the signal is not obscured by an unrelated asynchronous
+signal having its handler setup done beforehand.
