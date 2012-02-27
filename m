@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2B0Qo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:44:56 -0500
-Received: from mail16.primus.ca ([216.254.141.183]:59456 "EHLO
-	mail-02.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753654Ab2B0Qoy (ORCPT
+	id S1754063Ab2B0Qp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 11:45:29 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:50186 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753654Ab2B0Qp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:44:54 -0500
-Message-ID: <4F4BB315.6060501@bell.net>
-Date: Mon, 27 Feb 2012 11:45:09 -0500
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH] parisc: dont unconditionally override CROSS_COMPILE for
- 64 bit.
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <4F4B9DD2.6000600@bell.net> <4F4BAF16.9060507@windriver.com>
-In-Reply-To: <4F4BAF16.9060507@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
+	Mon, 27 Feb 2012 11:45:28 -0500
+Date: Mon, 27 Feb 2012 08:45:20 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Eugeni Dodonov <eugeni@dodonov.net>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>, DRI@freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        mailing list <dri-devel@lists.freedesktop.org>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20120227084520.548ea01b@jbarnes-desktop>
+In-Reply-To: <CAC7Lmnu6Wp1aVDuCkP6+UN7jVW8jCk5PcufBn1nVANJfNQzq0A@mail.gmail.com>
+References: <alpine.DEB.2.00.1202221952430.18534@skynet.skynet.ie>
+	<CAPVoSvSvQv14dM6EWTi3YxUtxNWB8+kypDHSwkYTiWpBxL2eug@mail.gmail.com>
+	<20120227080912.5e2163ee@jbarnes-desktop>
+	<CAC7Lmnu6Wp1aVDuCkP6+UN7jVW8jCk5PcufBn1nVANJfNQzq0A@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/O9HfGuL/eGRM622r3V.7QA/"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/27/2012 11:28 AM, Paul Gortmaker wrote:
-> On 12-02-27 10:14 AM, John David Anglin wrote:
->> >  On 2/26/2012 6:26 PM, Paul Gortmaker wrote:
->>> >>  Using the 64 bit toolchains from kernel.org[1], one finds that
->>> >>  you can't build the a500_defconfig, because the Makefile will
->>> >>  stomp whatever value you have in your env. for CROSS_COMPILE.
->>> >>
->>> >>  This shows up since the kernel.org toolchains for parisc-64
->>> >>  do not have the "-gnu" prefix, and so you run into it always
->>> >>  saying hppa64-linux-gnu-gcc not found, regardless of the fact
->>> >>  you've not got "-gnu" put anywhere into CROSS_COMPILE.
->>> >>
->>> >>  [1]ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.2/
->>> >>
->>> >>  Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
->>> >>
->>> >>  diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
->>> >>  index 55cca1d..cefff6d 100644
->>> >>  --- a/arch/parisc/Makefile
->>> >>  +++ b/arch/parisc/Makefile
->>> >>  @@ -31,7 +31,9 @@ ifdef CONFIG_64BIT
->>> >>     UTS_MACHINE	:= parisc64
->>> >>     CHECKFLAGS	+= -D__LP64__=1 -m64
->>> >>     WIDTH		:= 64
->>> >>  -CROSS_COMPILE	:= hppa64-linux-gnu-
->>> >>  +ifndef CROSS_COMPILE
->>> >>  + CROSS_COMPILE	:= hppa64-linux-gnu-
->>> >>  +endif
->>> >>     else # 32-bit
->>> >>     WIDTH		:=
->>> >>     endif
->> >  This change breaks native builds.  So, I assume CROSS_COMPILE must be
->> >  previously defined.
-> You lost me here.  As in a native 32bit env. doing a build for the
-> 64 bit case is setting CROSS_COMPILE?
->
-Yes, native hppa is 32 bit .  Building a 64-bit kernel with CONFIG_64BIT 
-causes the
-setting of CROSS_COMPILE and the selection of hppa64-linux-gnu-gcc, etc.
-If CROSS_COMPILE wasn't previously defined, your change wouldn't have have
-affected the 64-bit build.
+--Sig_/O9HfGuL/eGRM622r3V.7QA/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Dave
+On Mon, 27 Feb 2012 13:33:53 -0300
+Eugeni Dodonov <eugeni@dodonov.net> wrote:
 
--- 
-John David Anglin    dave.anglin@bell.net
+> On Mon, Feb 27, 2012 at 13:09, Jesse Barnes <jbarnes@virtuousgeek.org>wro=
+te:
+>=20
+> > On Thu, 23 Feb 2012 21:19:20 +0100
+> > Torsten Kaiser <just.for.lkml@googlemail.com> wrote:
+> >
+> > > On Wed, Feb 22, 2012 at 8:56 PM, Dave Airlie <airlied@linux.ie> wrote:
+> > > > Eugeni Dodonov (4):
+> > > >      drm/i915: gen7: implement rczunit workaround
+> > > >      drm/i915: gen7: Implement an L3 caching workaround.
+> > > >      drm/i915: gen7: work around a system hang on IVB
+> > > >      drm/i915: do not enable RC6p on Sandy Bridge
+> > >
+> > > That last patch about RC6p looks wrong.
+> > >
+> > > It does:
+> > >  GEN6_RC_CTL_RC6_ENABLE |
+> > >                       (IS_GEN7(dev_priv->dev)) ? GEN6_RC_CTL_RC6p_ENA=
+BLE
+> > : 0;
+> > > But I think this was meant:
+> > >  GEN6_RC_CTL_RC6_ENABLE |
+> > >                       ((IS_GEN7(dev_priv->dev)) ?
+> > GEN6_RC_CTL_RC6p_ENABLE : 0);
+> > >
+> > > Or did I get the operator precedence wrong?
+> >
+> > You're right, no cookie for Eugeni. :)  This would have prevented RC6
+> > from ever getting enabled though, which should have the same effect as
+> > the patch intended, though at the cost of higher power consumption.
+> >
+>=20
+> Actually, no, it got RC6p enabled - so it got to have all the power savin=
+gs
+> of RC6 plus some additional ones in the range of 0.1W, but it also result=
+ed
+> in the very same problem as before, when both RC6 and RC6p were enabled.
+>=20
+> So, from what we've seen with
+> https://wiki.ubuntu.com/Kernel/PowerManagementRC6, the graphics corruptio=
+ns
+> do only happen when RC6p is enabled (either together with RC6, or
+> individually, on its own). If we have only RC6, all the issues are gone so
+> far.
+>=20
+> So this bad patch had its use after all - it served to finally isolate and
+> prove that the i915_enable_rc6-related issues are caused directly by RC6p.
 
+Oh you're right; I had the bit positions mixed up...  I thought the
+higher level bit toggled all RC6 functionality, but that's kept
+separate from this.
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/O9HfGuL/eGRM622r3V.7QA/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPS7MgAAoJEIEoDkX4Qk9hGfcP+waBb3coh9733z8cnoJlIRnC
+2KYZRw0CkEJ6Cp8qYxDOyyDnSLNqD/KN0ooFjljuSmgG/YENrC3dPbJad1HE92Wx
+yJHEQetucz2j35vvHHfFQIFEzutKku3iR0UGO69b8DZJ3zPtvS/Hl8jLwYXPgj9b
+mePLEjv2iVYdTezoMnkILSXShD2mX/c51UdpX5CQVKdxoEfkHVkDRGCGdv7bYtDy
+Q4tSS/P4aTXql4ApvGyWkA6EVnyeZbvW/nJNGxkqviY2dqm7ie7ZaWsRshCnTt/9
+RY86wCHu1rP1iGnFLEDmW20zlkuc/zGKpyP6ZIss0cB+aIHE37JA+ifSjXuEEz6k
+TI8ISWEwVcN9yMcbhQTcdVoiUgDgLandfzSNMiBpIL8aQLs5uE8mI0jGx01a4S7q
+urFh+OWuyiFvsCnnQRhtrnVIm61gjA3lkrD+BxWpXWn921JgAxolV2GwYBmFHaz5
+YMeoHi171ggb5u8HGgBFXj2O+Bu13ScRHQJCgs2B82kwG/bxQXK6UPqoS1FyzHRh
+BIvhtOR/XHpVhJGfXrpDDdRJ2sq6BCckdEPmALd/zQGynM751IzXe/maAkfxuJBY
+7ngeG5izQAs/TQYvpy16lbGJcGDHMB9+oHN64O3dYJjQemz7bJaBS+8iDS6F2b21
++jZC7a24sq9x2OdmmFcJ
+=BCvm
+-----END PGP SIGNATURE-----
+
+--Sig_/O9HfGuL/eGRM622r3V.7QA/--
