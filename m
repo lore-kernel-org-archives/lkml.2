@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2B0ASV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 19:18:21 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35082 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab2B0ASU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 19:18:20 -0500
-To: NeilBrown <neilb@suse.de>
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org,
-        "Martin K.Petersen" <martin.petersen@oracle.com>
-Subject: Re: MD and rotational attribute
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20120220122022.GA7466@x2.net.home>
-	<20120227104230.125cb9e2@notabene.brown>
-Date: Sun, 26 Feb 2012 19:18:12 -0500
-In-Reply-To: <20120227104230.125cb9e2@notabene.brown> (NeilBrown's message of
-	"Mon, 27 Feb 2012 10:42:30 +1100")
-Message-ID: <yq18vjpuo1n.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	id S1753316Ab2B0AXA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 19:23:00 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:39090 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752840Ab2B0AW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 19:22:58 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
+Date: Sun, 26 Feb 2012 19:23:12 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
+        deller@gmx.de, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F4ACBC8.009C,ss=1,re=0.000,fgs=0
+Content-Type: multipart/signed;
+  boundary="nextPart2838396.dFR3c2q4Di";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202261923.15167.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Neil" == NeilBrown  <neilb@suse.de> writes:
+--nextPart2838396.dFR3c2q4Di
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-Neil,
+On Sunday 26 February 2012 18:26:53 Paul Gortmaker wrote:
+> --- a/arch/parisc/Makefile
+> +++ b/arch/parisc/Makefile
+>
+> -CROSS_COMPILE	:= hppa64-linux-gnu-
+> +ifndef CROSS_COMPILE
+> + CROSS_COMPILE	:= hppa64-linux-gnu-
+> +endif
 
-Neil> (I would say that the name 'rotational' is a bug - the issues here
-Neil> is really whether seek is fast or slow is it not??... but no
-Neil> matter).
+this should accomplish the same thing in practice:
+	CROSS_COMPILE ?= hppa64-linux-gnu-
+-mike
 
-Both the ATA and SCSI specs use the term 'rotational' which I guess is
-how we ended up with that name.
+--nextPart2838396.dFR3c2q4Di
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Neil> What do you think Martin?  Should QUEUE_FLAG_NONROT move to
-Neil> queue_limits much like QUEUE_FLAG_CLUSTER did?
+iQIcBAABAgAGBQJPSszyAAoJEEFjO5/oN/WBQ8MP+gKO+u/03HSZFU7qi0ivEVPT
+XWmWrSEXYJyKG7tQQrczqKcwx1UcW9x+Eo9cSzkTh7YGTN4S+wACaVfIZLBTdKyW
+FPIDumZWFvJQ3r3XXd/ELhHW68ny4yTQgyqT/wNXaWw+cB5rdTvkxKyNkeu371SQ
+NryxZYAEoCLfWF0ZITPN9bNEZjj1KsoaKHBr4ApFuHxV15Bjk3RTEY8UhnZrWgQ2
+GGfZ61U7f/DbX09TTh3TxQrI06I2Cnh2OU0yW48sDDCjefKo3QRz/5HzT9ag+pPs
+P1Fqo+l+VgC4/kiAuBUj533P4S39u/INRXuf0krDYZd5FF/oFcT4X7cDdRV4HpNA
+vrCDohCtZGIpG88mjX87Sqcp3XKg1kA55ceFju51zQczzkDnKIuuQTOPeg1SMNEY
+Qsirs5nppIUXlKiG5HXwSog2O5zqp+YNuO6cEmpJRhedq7VwLfVbmS9SM2D+OBug
+DzIrfZFtm1X/7tlVySl/H5n5/1BelfEGFTm2/Kb7tUOUAbTCxChQBXVLVWlNd9YC
+HbTGXKK2wR2SEF9XrWePo2io8XLZNRskUmJ1edkQRLr6LicebM7NsPmR9fJfGIci
+N0livuklxfzDGxAe8HuwmcjGqyPnL1Ve8gIKFgb5o6hJpaOXINqvwRJdJ0vtXK4U
+jTX3Z4kLJQOSJFfPGvdb
+=KY3Z
+-----END PGP SIGNATURE-----
 
-Absolutely. I posted some patches converting both the nonrot and
-discard/secure discard queue flags a while back but they didn't go
-in. I'll freshen up the kit and resend...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+--nextPart2838396.dFR3c2q4Di--
