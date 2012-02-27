@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2B0JbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 04:31:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44305 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab2B0JbJ convert rfc822-to-8bit (ORCPT
+	id S1752600Ab2B0JcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 04:32:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44760 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab2B0JcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 04:31:09 -0500
-Message-ID: <1330335058.11248.37.camel@twins>
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Venki Pallipadi <venki@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 27 Feb 2012 10:30:58 +0100
-In-Reply-To: <20120227090819.GB1112@zhy>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
-	 <1329989454.24994.57.camel@twins>
-	 <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
-	 <20120224054150.GA17543@zhy> <20120224061350.GB17543@zhy>
-	 <1330331881.11248.28.camel@twins> <20120227090819.GB1112@zhy>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 27 Feb 2012 04:32:23 -0500
+Date: Mon, 27 Feb 2012 01:31:46 -0800
+From: tip-bot for Andrey Vagin <avagin@openvz.org>
+Message-ID: <tip-e404b321dbb2d6e438522b7dce9c1d0c6a8c5275@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        avagin@openvz.org
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        avagin@openvz.org
+In-Reply-To: <1329650167-480655-1-git-send-email-avagin@openvz.org>
+References: <1329650167-480655-1-git-send-email-avagin@openvz.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Don't print an extra separator of flags
+Git-Commit-ID: e404b321dbb2d6e438522b7dce9c1d0c6a8c5275
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Feb 2012 01:32:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 17:08 +0800, Yong Zhang wrote:
-> On Mon, Feb 27, 2012 at 09:38:01AM +0100, Peter Zijlstra wrote:
-> > On Fri, 2012-02-24 at 14:13 +0800, Yong Zhang wrote:
-> > 
-> > > This remind me that we should have moved the irq_enter()/irq_exit() to
-> > > each arch's related irq handler.
-> > > see: http://marc.info/?l=linux-kernel&m=130709505700821&w=2
-> > > 
-> > > So Peter, is there someone alread on it? or it still worth doing now?
-> > 
-> > trouble was that some people didn't feel comfortable adding that
-> > overhead to plain resched IPIs that didn't need to do anything.
-> 
-> Any ideas on where the plain resched IPIs come from?
+Commit-ID:  e404b321dbb2d6e438522b7dce9c1d0c6a8c5275
+Gitweb:     http://git.kernel.org/tip/e404b321dbb2d6e438522b7dce9c1d0c6a8c5275
+Author:     Andrey Vagin <avagin@openvz.org>
+AuthorDate: Sun, 19 Feb 2012 14:16:07 +0300
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 20 Feb 2012 20:33:31 -0500
 
-remote wakeups that don't queue I guess. 
+tracing: Don't print an extra separator of flags
 
-IIRC I looked at it a while back and while not in the majority there
-were still a few (I only added counters, didn't look where they came
-from).
+If __print_flags() is used after another __print_*() function, the
+temp seq_file buffer will not be empty on entry, and the delimiter will
+be printed even though there's just one field. We get something like:
 
-However since 518cd623 there'd be a lot more I guess..
+	|S
 
-Feel free to investigate. Also, some non-sched users of the resched ipi
-exist, eg. KVM uses it to kick a remote vcpu out from guest mode.
+instead of just:
+
+	S
+
+This is because the length of the temp seq buffer is used to determine
+if the delimiter is printed or not. But this algorithm fails when
+the seq buffer is not empty on entry, and the delimiter will be printed
+because it thinks that a previous field was already printed.
+
+Link: http://lkml.kernel.org/r/1329650167-480655-1-git-send-email-avagin@openvz.org
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_output.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 0d6ff355..3efd718 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -300,7 +300,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+ 	unsigned long mask;
+ 	const char *str;
+ 	const char *ret = p->buffer + p->len;
+-	int i;
++	int i, first = 1;
+ 
+ 	for (i = 0;  flag_array[i].name && flags; i++) {
+ 
+@@ -310,8 +310,10 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
+ 
+ 		str = flag_array[i].name;
+ 		flags &= ~mask;
+-		if (p->len && delim)
++		if (!first && delim)
+ 			trace_seq_puts(p, delim);
++		else
++			first = 0;
+ 		trace_seq_puts(p, str);
+ 	}
+ 
