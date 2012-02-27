@@ -1,104 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab2B0VlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 16:41:19 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:51774 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754860Ab2B0VlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 16:41:18 -0500
-From: James Bottomley <jbottomley@parallels.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "vapier@gentoo.org" <vapier@gentoo.org>,
-        "dave.anglin@bell.net" <dave.anglin@bell.net>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
- for 64 bit.
-Thread-Topic: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
- for 64 bit.
-Thread-Index: AQHM9ZLLA74ijEZElUmnORY0ttBzN5ZRy/kA
-Date: Mon, 27 Feb 2012 21:41:05 +0000
-Message-ID: <1330378864.2822.92.camel@dabdike.int.hansenpartnership.com>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1330376359-23731-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1330376359-23731-1-git-send-email-paul.gortmaker@windriver.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.243.235.53]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E90007C2EC5AB745A350BE376E5017D1@sw.swsoft.com>
+	id S1755131Ab2B0V4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 16:56:12 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42704 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab2B0V4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 16:56:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.154.168 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
+Message-ID: <4F4BFBEB.8080800@gmail.com>
+Date: Mon, 27 Feb 2012 13:55:55 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
+To: Venkatesh Pallipadi <venki@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v5
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com>
+In-Reply-To: <1328055439-9441-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1RLfPWI021166
 
-On Mon, 2012-02-27 at 15:59 -0500, Paul Gortmaker wrote:
-> Using the 64 bit toolchains from kernel.org[1], one finds that
-> you can't build the a500_defconfig, because the Makefile will
-> stomp whatever value you have in your env. for CROSS_COMPILE.
-> 
-> This shows up since the kernel.org toolchains for parisc-64
-> do not have the "-gnu" prefix, and so you run into it always
-> saying hppa64-linux-gnu-gcc not found, regardless of the fact
-> you've not got "-gnu" put anywhere into CROSS_COMPILE.
-> 
-> Since you can set CROSS_COMPILE from the environment and/or set
-> it in your .config file, there really is no need for it to be
-> poked at by the Makefile at all.  So just delete it.
-> 
-> [1] ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.2/
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+On 01/31/2012 04:17 PM, Venkatesh Pallipadi wrote:
+> Kernel's notion of possible cpus (from include/linux/cpumask.h)
+>   *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+>
+>   *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
+>   *  that it is possible might ever be plugged in at anytime during the
+>   *  life of that system boot.
+>
+>   #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
+>
+> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older kernels
+> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+>
+> i.e, We needlessly go through this mask based calculation everytime
+> num_possible_cpus() is called.
+>
+> The problem is there with cpu_online_mask() as well, which is fixed value at
+> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often even
+> in HOTPLUG case.
+>
+> Though most of the callers of these two routines are init time (with few
+> exceptions of runtime calls), it is cleaner to use variables
+> and not go through this repeated mask based calculation.
+>
+> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
+> Acked-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+> Acked-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+
+How is it that this patch got merged to linux-next before all the 
+cleanup patches for nr_online_cpus?
+
+ From the looks of your follow-on patches it would seem that all MIPS, 
+hexagon, and um are now broken.
+
+I know for a fact that MIPS doesn't boot because of this.
+
+David Daney
+
+
 > ---
-> 
-> [v2: no ifdef/endif -- just delete the offending line.]
-> 
-> diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-> index 55cca1d..a533367 100644
-> --- a/arch/parisc/Makefile
-> +++ b/arch/parisc/Makefile
-> @@ -31,7 +31,6 @@ ifdef CONFIG_64BIT
->  UTS_MACHINE	:= parisc64
->  CHECKFLAGS	+= -D__LP64__=1 -m64
->  WIDTH		:= 64
-> -CROSS_COMPILE	:= hppa64-linux-gnu-
->  else # 32-bit
->  WIDTH		:=
->  endif
+>   include/linux/cpumask.h |    9 +++++++--
+>   kernel/cpu.c            |   13 +++++++++++++
+>   2 files changed, 20 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+> index 4f7a632..930e255 100644
+> --- a/include/linux/cpumask.h
+> +++ b/include/linux/cpumask.h
+> @@ -27,6 +27,9 @@ typedef struct cpumask { DECLARE_BITMAP(bits, NR_CPUS); } cpumask_t;
+>   extern int nr_cpu_ids;
+>   #endif
+>
+> +extern unsigned int nr_online_cpus;
+> +extern unsigned int nr_possible_cpus;
+> +
+>   #ifdef CONFIG_CPUMASK_OFFSTACK
+>   /* Assuming NR_CPUS is huge, a runtime limit is more efficient.  Also,
+>    * not all bits may be allocated. */
+> @@ -81,8 +84,10 @@ extern const struct cpumask *const cpu_present_mask;
+>   extern const struct cpumask *const cpu_active_mask;
+>
+>   #if NR_CPUS>  1
+> -#define num_online_cpus()	cpumask_weight(cpu_online_mask)
+> -#define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
+> +
+> +#define num_online_cpus()	(nr_online_cpus)
+> +#define num_possible_cpus()	(nr_possible_cpus)
+> +
+>   #define num_present_cpus()	cpumask_weight(cpu_present_mask)
+>   #define num_active_cpus()	cpumask_weight(cpu_active_mask)
+>   #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 2060c6e..d520d34 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -604,9 +604,13 @@ EXPORT_SYMBOL(cpu_all_bits);
+>   #ifdef CONFIG_INIT_ALL_POSSIBLE
+>   static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly
+>   	= CPU_BITS_ALL;
+> +unsigned int nr_possible_cpus __read_mostly = CONFIG_NR_CPUS;
+>   #else
+>   static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
+> +unsigned int nr_possible_cpus __read_mostly;
+>   #endif
+> +EXPORT_SYMBOL(nr_possible_cpus);
+> +
+>   const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
+>   EXPORT_SYMBOL(cpu_possible_mask);
+>
+> @@ -614,6 +618,9 @@ static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
+>   const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
+>   EXPORT_SYMBOL(cpu_online_mask);
+>
+> +unsigned int nr_online_cpus __read_mostly;
+> +EXPORT_SYMBOL(nr_online_cpus);
+> +
+>   static DECLARE_BITMAP(cpu_present_bits, CONFIG_NR_CPUS) __read_mostly;
+>   const struct cpumask *const cpu_present_mask = to_cpumask(cpu_present_bits);
+>   EXPORT_SYMBOL(cpu_present_mask);
+> @@ -628,6 +635,8 @@ void set_cpu_possible(unsigned int cpu, bool possible)
+>   		cpumask_set_cpu(cpu, to_cpumask(cpu_possible_bits));
+>   	else
+>   		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
+> +
+> +	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
+>   }
+>
+>   void set_cpu_present(unsigned int cpu, bool present)
+> @@ -644,6 +653,8 @@ void set_cpu_online(unsigned int cpu, bool online)
+>   		cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+>   	else
+>   		cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
+> +
+> +	nr_online_cpus = cpumask_weight(cpu_online_mask);
+>   }
+>
+>   void set_cpu_active(unsigned int cpu, bool active)
+> @@ -662,9 +673,11 @@ void init_cpu_present(const struct cpumask *src)
+>   void init_cpu_possible(const struct cpumask *src)
+>   {
+>   	cpumask_copy(to_cpumask(cpu_possible_bits), src);
+> +	nr_possible_cpus = cpumask_weight(cpu_possible_mask);
+>   }
+>
+>   void init_cpu_online(const struct cpumask *src)
+>   {
+>   	cpumask_copy(to_cpumask(cpu_online_bits), src);
+> +	nr_online_cpus = cpumask_weight(cpu_online_mask);
+>   }
 
-We can't do that ... it crashes a standard build almost immediately
-because it doesn't pick the 64 bit compiler (and we have no biarch
-solution).
-
-We need make on a 64 bit config to work out of the box.  It breaks
-with ?= as JDA pointed out because CROSS_COMPILE is always defined.
-Does this satisfy everyone?
-
-James
-
----
-
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 55cca1d..19ab7b2 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -31,7 +31,11 @@ ifdef CONFIG_64BIT
- UTS_MACHINE	:= parisc64
- CHECKFLAGS	+= -D__LP64__=1 -m64
- WIDTH		:= 64
-+
-+# FIXME: if no default set, should really try to locate dynamically
-+ifeq ($(CROSS_COMPILE),)
- CROSS_COMPILE	:= hppa64-linux-gnu-
-+endif
- else # 32-bit
- WIDTH		:=
- endif
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
