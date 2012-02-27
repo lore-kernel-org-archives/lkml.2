@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2B0Uf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 15:35:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3974 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754390Ab2B0Uf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 15:35:26 -0500
-Message-ID: <1330374879.2542.24.camel@localhost>
-Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Drewry <wad@chromium.org>, Kees Cook <kees@ubuntu.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Date: Mon, 27 Feb 2012 15:34:39 -0500
-In-Reply-To: <CAGXu5jKyLHLF+HuU=SLHJLg8AaOPJXoqq1=hOBy5oOvffA-xiQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	 <1330140111-17201-6-git-send-email-wad@chromium.org>
-	 <20120226202828.GE3990@outflux.net>
-	 <CABqD9hbKU=EVagCfo25AZsNoq=hmzkeOxK6mE=q8m=Be-ZFb9w@mail.gmail.com>
-	 <1330361396.2542.11.camel@localhost>
-	 <CAGXu5jKJ7pYeULM=CvifpQ8jUoyH6Ska2Znx9tGjhz0tn5kZmQ@mail.gmail.com>
-	 <1330370733.2542.18.camel@localhost>
-	 <CAGXu5jKyLHLF+HuU=SLHJLg8AaOPJXoqq1=hOBy5oOvffA-xiQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754875Ab2B0Unn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 15:43:43 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42414 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab2B0Unl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 15:43:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120227121932.24852506@jbarnes-desktop>
+References: <1330206863-31381-1-git-send-email-yinghai@kernel.org>
+	<1330206863-31381-5-git-send-email-yinghai@kernel.org>
+	<20120227121932.24852506@jbarnes-desktop>
+Date: Mon, 27 Feb 2012 12:43:41 -0800
+X-Google-Sender-Auth: Ui9EevggtYWZYFjTJiGBli_Ewrw
+Message-ID: <CAE9FiQWGRgKRynj6xBoWM3CABFH6QYii1TbHBg8-9Qyz_vR6YA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] PCI: acpihp user __pci_remove_bus_device instead
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 12:00 -0800, Kees Cook wrote:
-> On Mon, Feb 27, 2012 at 11:25 AM, Eric Paris <eparis@redhat.com> wrote:
-> > On Mon, 2012-02-27 at 10:55 -0800, Kees Cook wrote:
-> >> On Mon, Feb 27, 2012 at 8:49 AM, Eric Paris <eparis@redhat.com> wrote:
-> >
-> >> You mean as used in audit_log_exit() ? It looks like that depends on a
-> >> lot of state cached in __audit_syscall_entry() and finally triggered
-> >> in __audit_syscall_exit() (and ..._free()). I don't think this is
-> >> really want seccomp wants to be involved in.
-> >>
-> >> By CONFIG_AUDITSC, you mean CONFIG_AUDITSYSCALL? Without that set,
-> >> audit_seccomp is a no-op.
-> >>
-> >> The reason compat needs to be reported (or rather, arch) is because
-> >> just reporting syscall is ambiguous. It either needs arch or compat to
-> >> distinguish it.
-> >
-> > Yes, that is what I mean and you are right.  You shouldn't push the
-> > syscall in this record either.  If !audit_dummy_context() you are
-> > already going to get arch, syscall, and a0-a4 in the associated audit
-> > record.  Please do not duplicate that info.
-> 
-> Ah, in that case, please ignore the patch I just sent. Heh.
-> 
-> > It might make sense to have a separate audit_seccomp() path when
-> > audit_dummy_context() which includes arch, syscall, and a0-a4.
-> 
-> Ah! I think I understand what you mean now. If audit_dummy_context(),
-> then the syscall, arch, and a0-a4 were not already collected. Gotcha.
-> 
-> How do you envision it looking? I still see it as two distinct events
-> (the syscall itself, and the rejection). Would you want those details
-> added to the context structure to be reported at ..._exit() time? It
-> seems like context->type couldn't be used to see if those fields were
-> valid.
-> 
-> Something like:
-> 
-> void __audit_seccomp(unsigned long syscall, long signr)
-> {
->         struct audit_buffer *ab;
-> 
->         if (!audit_dummy_context()) {
->                 struct audit_context *context = current->audit_context;
->                 context->syscall_signr = signr;
->                 context->syscall_ip = KSTK_EIP(current);
->                 return;
->         }
-> 
->         ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
->         audit_log_abend(ab, "seccomp", signr);
->         audit_log_format(ab, " syscall=%ld", syscall);
->         audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
->         audit_log_end(ab);
-> }
-> 
-> And then report syscall_ip and syscall_signr if syscall_signr != 0 in
-> the _exit()? I think everything else from audit_log_abend() will end
-> up in the _exit() report.
-> 
-> > It is my fault (85e7bac3) that we have syscall at all, but I'm on a new
-> > crusade to remove audit record duplication.  So I'd happily see a patch
-> > in this series that removes that instead of adds to it.
-> 
-> Well, I think the abend reporting is nice; I'd hate to see that
-> totally removed. The seccomp case is a bit different, I agree. I could
-> see it either way.
+On Mon, Feb 27, 2012 at 12:19 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Sat, 25 Feb 2012 13:54:23 -0800
+> Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> pci_stop_bus_device get called before in the same loop.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> ---
+>>  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+>> ===================================================================
+>> --- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
+>> +++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+>> @@ -910,7 +910,7 @@ static int disable_device(struct acpiphp
+>>                               disable_bridges(pdev->subordinate);
+>>                               pci_disable_device(pdev);
+>>                       }
+>> -                     pci_stop_and_remove_bus_device(pdev);
+>> +                     __pci_remove_bus_device(pdev);
+>>                       pci_dev_put(pdev);
+>>               }
+>>       }
+>>
+>
+> Ok applied these.  How about another that converts in-tree users to
+> pci_remove_bus_device and marks the __ version deprecated though?
 
-Once again I send you down a bad path.  Your original patch was the
-best.  We should consider including a0-aX in a future version.  I was
-mistaken in foolishly believing that audit_syscall_entry() was done
-before secure_computing().  But if you look, that isn't the case.
-Please pretend I never said anything as you had it right the first time.
+thanks.
 
--Eric
+now the only user for  __pci_remove_bus_device is acpiphp
 
+it will call stop bus devices at first, and then disable all bridges
+and then call __pci_remove_bus_device.
+
+not sure why it need  to disable all bridges.
+
+     Yinghai
