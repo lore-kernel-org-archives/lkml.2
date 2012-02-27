@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab2B0Mpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 07:45:52 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48271 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753688Ab2B0Mpv (ORCPT
+	id S1754059Ab2B0MqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 07:46:04 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18141 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab2B0MqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 07:45:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of namhyung@gmail.com designates 10.68.197.163 as permitted sender) smtp.mail=namhyung@gmail.com; dkim=pass header.i=namhyung@gmail.com
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-From: Namhyung Kim <namhyung@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1330340694.11248.64.camel@twins>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
-	 <1330338785.11248.49.camel@twins> <20120227104452.GA6082@elte.hu>
-	 <1330340694.11248.64.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Feb 2012 21:45:42 +0900
-Message-ID: <1330346742.1782.7.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 27 Feb 2012 07:46:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 27 Feb 2012 04:46:02 -0800
+Message-ID: <4F4B7B03.3060600@nvidia.com>
+Date: Mon, 27 Feb 2012 18:15:55 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2 0/3] Open drain/open source support from gpio library
+References: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>	<1329490582-22107-2-git-send-email-ldewangan@nvidia.com> <CACRpkdZTqS=BJ3x3ib8pByY6riT3nhuQuU4+Z9w4JanicBBiwA@mail.gmail.com>
+In-Reply-To: <CACRpkdZTqS=BJ3x3ib8pByY6riT3nhuQuU4+Z9w4JanicBBiwA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-02-27 (Mon), 12:04 +0100, Peter Zijlstra wrote:
-> On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
-> > I edited that code earlier today - is the form below OK, or can 
-> > you see a simpler method? It's not yet pushed out so can still 
-> > edit it. 
-> 
-> I think something like the below should do, but then I didn't really
-> think much about it, my thoughts went like:
-> 
-> ... *shees* that's ugly
->   ... that error path already does a loop
->     ... what the problem is!? -- reread changelog
->       ... err_cpu == cpu is placed wrong!
-> 
-> 
-> So I replied and marked read.. waiting to either hear if there's a good
-> reason to do ugly or find a new (tested) patch in my inbox.. :-)
-> 
-> ---
->  kernel/events/hw_breakpoint.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> index b0309f7..3330022 100644
-> --- a/kernel/events/hw_breakpoint.c
-> +++ b/kernel/events/hw_breakpoint.c
-> @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
->  
->   err_alloc:
->  	for_each_possible_cpu(err_cpu) {
-> -		if (err_cpu == cpu)
-> -			break;
->  		for (i = 0; i < TYPE_MAX; i++)
->  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-> +		if (err_cpu == cpu)
-> +			break;
->  	}
->  
->  	return -ENOMEM;
-> 
+Hi Grant,
+Although it is not too old patch but can you please review and if it is 
+OK then apply ;)  ?
 
-This would depend on the initial value of the percpu memory, and thus
-have no problem in this case. It looks better to me, too :)
+Thanks,
+Laxman
 
 
--- 
-Regards,
-Namhyung Kim
-
+On Friday 17 February 2012 11:51 PM, Linus Walleij wrote:
+> On Fri, Feb 17, 2012 at 3:56 PM, Laxman Dewangan<ldewangan@nvidia.com>  wrote:
+>
+>> This patch is as per discussion on the patch
+>> [PATCH V1] regulator: fixed: Support for open-drain gpio
+>> where it was suggested to push the handling of open drain gpios
+>> into the gpio libray.
+> Acked-by: Linus Walleij<linus.walleij@linaro.org>
+> For this patch set.
+>
+> Yours,
+> Linus Walleij
 
