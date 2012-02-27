@@ -1,139 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2B0RqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:46:22 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64561 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab2B0RqT (ORCPT
+	id S1754011Ab2B0Rra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:47:30 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55453 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab2B0Rr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:46:19 -0500
-Date: Mon, 27 Feb 2012 18:46:13 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        linux-kernel@vger.kernel.org, Paul Menage <paul@paulmenage.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120227174610.GC30232@somewhere.redhat.com>
-References: <20120221211938.GE12236@google.com>
- <20120222154501.GA1693@somewhere.redhat.com>
- <20120222182207.GC32694@google.com>
+	Mon, 27 Feb 2012 12:47:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.208.228 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
+Message-ID: <4F4BC1AD.9030600@gmail.com>
+Date: Mon, 27 Feb 2012 10:47:25 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222182207.GC32694@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        peterz@infradead.org, mingo@elte.hu, joro@8bytes.org, gleb@redhat.com
+Subject: Re: [PATCH] perf tools: fix guest mode monitoring on AMD
+References: <20120227173351.GA6945@quad>
+In-Reply-To: <20120227173351.GA6945@quad>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 10:22:07AM -0800, Tejun Heo wrote:
-> Hey, Frederic.
-> 
-> On Wed, Feb 22, 2012 at 04:45:04PM +0100, Frederic Weisbecker wrote:
-> > > A related limitation is that as different subsystems don't know which
-> > > hierarchies they'll end up on, they can't cooperate.  Wouldn't it make
-> > > more sense if task counter is a separate thing watching the resources
-> > > and triggers different actions as conifgured - be it failing forks or
-> > > freezing?
-> > 
-> > For this particular example, I think we'd better have a file in which
-> > a task can poll and get woken up when the task limit has been reached.
-> > Then that task can decide to freeze or whatever.
-> 
-> Yes, that may be a solution but to "guarantee" that the limit is never
-> breached, we need to stop it first somehow.  Probably making freezing
-> the default behavior with userland notifier (inotify event should
-> suffice) should do, which we can't do now. :(
+On 2/27/12 10:33 AM, Stephane Eranian wrote:
+> Commit:
+>
+> 1aed267 perf kvm: Do guest-only counting by default
+>
+> introduced a bug on AMD systems whereby simple commands:
+>
+> $ perf stat ls
+> Performance counter stats for 'ls':
+>                   0 cycles                    #    0.000 GHz
+>         0.003704596 seconds time elapsed
+>
+> would not count anything anymore. Same results for perf record.
+>
+> I tracked it down to guest mode exclusion being enabled
+> by default leading to attr->exclude_guest = 1. When
+> not operating under any sort of virtualization, this
+> causes the PMU not to count anything.
+>
+> The fix disables guest exclusion by default.
+>
+> Signed-off-by: Stephane Eranian<eranian@google.com>
+> ---
+>
+> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+> index 8109a90..c1017b3 100644
+> --- a/tools/perf/util/util.c
+> +++ b/tools/perf/util/util.c
+> @@ -6,7 +6,7 @@
+>    * XXX We need to find a better place for these things...
+>    */
+>   bool perf_host  = true;
+> -bool perf_guest = false;
+> +bool perf_guest = true;
 
-The limit can't be breached because forks are rejected once we reached the
-limit given by the user.
+This was recently reverted to false by 
+c4a7dca92bbb9881a5d678720f1d0c2153499749
 
-With this rejection, another task can take control of this and freeze the
-cgroup.
+See: https://lkml.org/lkml/2012/2/8/234
 
-> 
-> > > 1. We're screwed anyway.  Just don't worry about it and continue down
-> > >    on this path.  Can't get much worse, right?
-> > > 
-> > >    This approach has the apparent advantage of not having to do
-> > >    anything and is probably most likely to be taken.  This isn't ideal
-> > >    but hey nothing is. :P
-> > 
-> > Thing is we have an ABI now and it has been there for a while now. Aren't
-> > we stuck with it? I'm no big fan of that multiple hierarchies thing either
-> > but now I fear we have to support it.
-> 
-> Well, yes and no.  While maintaining userland ABI is very important,
-> its importance isn't infinite and there are different types of
-> userland ABIs.  We definitely don't want to screw with syscalls.  We
-> should keep userland visible dynamic files which are used by common
-> usertools stable at almost all costs.  When it comes over to system
-> interface which is used mostly by base system tools, it can be a bit
-> flexible.  If the ABI in question is an optional thing, we probably
-> can be slightly more flexible.
+David
 
-But cgroups falls into the general purpose category to me. Not something
-that was used only by a finite circle of a few well known and defined tools.
+>
+>   void event_attr_init(struct perf_event_attr *attr)
+>   {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> We of course can't change things drastically.  It should be done
-> carefully with rather long deprecation period, but it can be done and
-> in fact isn't too uncommon.  Stuff under /sysfs tends to be somewhat
-> volatile and sysfs itself went through several ABI incompatible
-> iterations.
-> 
-> So, we can transition in baby steps.  e.g. we can first implement
-> proper nesting behavior without changing the default behavior and then
-> the base system can be updated to mount and control all subsystems by
-> default (with configuration opt-outs) so that the hierarchy reflects
-> pstree, effectively driving people away from multiple hierarchies and
-> we can implement new features assuming the new structure.  After a few
-> years, the kernel can start whining about non-start hierarchies and
-> then eventually remove the support.  It's a long process but
-> definitely doable.
-
-Well, if we can I'll be glad.
-
-> 
-> > > 2. Make it more flexible (and likely more complex, unfortunately).
-> > >    Allow the utility type subsystems to be used in multiple
-> > >    hierarchies.  The easiest and probably dirtiest way to achieve that
-> > >    would be embedding them into cgroup core.
-> > > 
-> > >    Thinking about doing this depresses me and it's not like I have a
-> > >    cheerful personality to begin with. :(
-> > 
-> > Another solution is to support a class of multi-bindable subsystems as in
-> > this old patch from Paul:
-> > 
-> > 	https://lkml.org/lkml/2009/7/1/578
-> 
-> Heh, yeah, this would be closer to the proper way to achieve
-> multi-attach but I can't help feeling that this just buries ourselves
-> deeper into s*it and we're already knee-deep.  If multiple hierarchies
-> is an essential feature, maybe, but, if it's not, and I'm extremely
-> skeptical that it is, why the hell would we want to go that way?
-
-I don't know, it just depend what will happen on these multiple
-hierarchies.
-
-> 
-> > It sounds to me more healthy to iterate only over subsystems in fork/exit.
-> > We probably don't want to add a new iteration over cgroups themselves
-> > on these fast path.
-> 
-> Hmmm?  Don't follow why this is relevant.
-
-If you make something a cgroup core feature instead of a subsystem and you
-need to do something on these cgroups during forks, then you need to
-iterate over these as well as the subsystems.
-
-Typically adding some more loop on fork is not considered very welcome.
-
-> 
-> Thanks.
-> 
-> -- 
-> tejun
