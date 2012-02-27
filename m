@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2B0PpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 10:45:20 -0500
-Received: from mail16.primus.ca ([216.254.141.183]:49442 "EHLO
-	mail-05.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752825Ab2B0PpS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 10:45:18 -0500
-X-Greylist: delayed 1855 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Feb 2012 10:45:18 EST
-Message-ID: <4F4B9DD2.6000600@bell.net>
-Date: Mon, 27 Feb 2012 10:14:26 -0500
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1753728Ab2B0PvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 10:51:06 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:16977 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753641Ab2B0PvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 10:51:01 -0500
+Subject: [PATCH v2 0/4] SUNRPC: several fixes around PipeFS objects
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Mon, 27 Feb 2012 19:50:47 +0400
+Message-ID: <20120227154713.7941.17963.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: JBottomley@parallels.com, jejb@parisc-linux.org, kyle@mcmartin.ca,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: [PATCH] parisc: dont unconditionally override CROSS_COMPILE for
- 64 bit.
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/26/2012 6:26 PM, Paul Gortmaker wrote:
-> Using the 64 bit toolchains from kernel.org[1], one finds that
-> you can't build the a500_defconfig, because the Makefile will
-> stomp whatever value you have in your env. for CROSS_COMPILE.
->
-> This shows up since the kernel.org toolchains for parisc-64
-> do not have the "-gnu" prefix, and so you run into it always
-> saying hppa64-linux-gnu-gcc not found, regardless of the fact
-> you've not got "-gnu" put anywhere into CROSS_COMPILE.
->
-> [1] ftp://ftp.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.2/
->
-> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
->
-> diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-> index 55cca1d..cefff6d 100644
-> --- a/arch/parisc/Makefile
-> +++ b/arch/parisc/Makefile
-> @@ -31,7 +31,9 @@ ifdef CONFIG_64BIT
->   UTS_MACHINE	:= parisc64
->   CHECKFLAGS	+= -D__LP64__=1 -m64
->   WIDTH		:= 64
-> -CROSS_COMPILE	:= hppa64-linux-gnu-
-> +ifndef CROSS_COMPILE
-> + CROSS_COMPILE	:= hppa64-linux-gnu-
-> +endif
->   else # 32-bit
->   WIDTH		:=
->   endif
-This change breaks native builds.  So, I assume CROSS_COMPILE must be
-previously defined.
+v2: 
+1) Prior to calling PipeFS dentry rountines (for both type of clients - SUNPRC
+and NFS) get the client and drop the list lock instead of replacing per-net
+locks by mutexes.
 
-I couldn't figure out where it is defined.  CONFIG_CROSS_COMPILE in my
-.config was an empty string  and CROSS_COMPILE was not defined in my
-build environment.
+First two pathes fixes lockdep warnings and next two - dereferencing of
+released pipe data on eventfd close and in file operations.
 
-The default toolchain prefix on Debian systems contains "gnu-".
+The following series consists of:
 
-Given that users can use CONFIG_CROSS_COMPILE or set CROSS_COMPILE
-in their build env, maybe setting CROSS_COMPILE in the Makefile is a 
-mistake.
+---
 
-Dave
+Stanislav Kinsbursky (4):
+      SUNRPC: release per-net clients lock before calling PipeFS dentries creation
+      NFS: release per-net clients lock before calling PipeFS dentries creation
+      SUNRPC: check RPC inode's pipe reference before dereferencing
+      SUNRPC: move waitq from RPC pipe to RPC inode
 
--- 
-John David Anglin    dave.anglin@bell.net
+
+ fs/nfs/client.c                    |    2 +
+ fs/nfs/idmap.c                     |    8 +++-
+ include/linux/sunrpc/rpc_pipe_fs.h |    2 +
+ net/sunrpc/clnt.c                  |   10 ++++-
+ net/sunrpc/rpc_pipe.c              |   71 +++++++++++++++++++++++-------------
+ 5 files changed, 60 insertions(+), 33 deletions(-)
 
