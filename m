@@ -1,115 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2B0Qz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 11:55:28 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:44976 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab2B0Qz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 11:55:28 -0500
-Message-ID: <4F4BB570.60105@parallels.com>
-Date: Mon, 27 Feb 2012 20:55:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 1/4] SUNRPC: release per-net clients lock before calling
- PipeFS dentries creation
-References: <20120227154713.7941.17963.stgit@localhost6.localdomain6>	 <20120227155055.7941.18741.stgit@localhost6.localdomain6> <1330359695.5541.45.camel@lade.trondhjem.org>
-In-Reply-To: <1330359695.5541.45.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753215Ab2B0RDA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:03:00 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39620 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab2B0RC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:02:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.180.87.8 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [RFC][PATCH v2] cgroups: Run subsystem fork callback from cgroup_post_fork()
+Date: Mon, 27 Feb 2012 18:02:51 +0100
+Message-Id: <1330362171-30697-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1330057410-9375-1-git-send-email-fweisbec@gmail.com>
+References: <1330057410-9375-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.02.2012 20:21, Myklebust, Trond пишет:
-> On Mon, 2012-02-27 at 19:50 +0400, Stanislav Kinsbursky wrote:
->> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
->> creation, which can be called on mount notification, where this per-net client
->> lock is taken on clients list walk.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   net/sunrpc/clnt.c |   10 +++++++---
->>   1 files changed, 7 insertions(+), 3 deletions(-)
->>
->> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->> index bb7ed2f3..ddb5741 100644
->> --- a/net/sunrpc/clnt.c
->> +++ b/net/sunrpc/clnt.c
->> @@ -84,7 +84,7 @@ static void rpc_register_client(struct rpc_clnt *clnt)
->>   	struct sunrpc_net *sn = net_generic(clnt->cl_xprt->xprt_net, sunrpc_net_id);
->>
->>   	spin_lock(&sn->rpc_client_lock);
->> -	list_add(&clnt->cl_clients,&sn->all_clients);
->> +	list_add_tail(&clnt->cl_clients,&sn->all_clients);
->>   	spin_unlock(&sn->rpc_client_lock);
->>   }
->>
->> @@ -208,15 +208,19 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
->>   			    void *ptr)
->>   {
->>   	struct super_block *sb = ptr;
->> -	struct rpc_clnt *clnt;
->> +	struct rpc_clnt *clnt, *tmp;
->>   	int error = 0;
->>   	struct sunrpc_net *sn = net_generic(sb->s_fs_info, sunrpc_net_id);
->>
->>   	spin_lock(&sn->rpc_client_lock);
->> -	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
->> +	list_for_each_entry_safe(clnt, tmp,&sn->all_clients, cl_clients) {
->> +		atomic_inc(&clnt->cl_count);
->> +		spin_unlock(&sn->rpc_client_lock);
->>   		error = __rpc_pipefs_event(clnt, event, sb);
->> +		rpc_release_client(clnt);
->>   		if (error)
->>   			break;
->> +		spin_lock(&sn->rpc_client_lock);
->>   	}
->>   	spin_unlock(&sn->rpc_client_lock);
->>   	return error;
->>
->
-> This won't be safe. Nothing guarantees that 'tmp' remains valid after
-> you drop the spin_lock.
->
-> I think you rather need to add a check for whether clnt->cl_dentry is in
-> the right state (NULL if RPC_PIPEFS_UMOUNT or non-NULL if
-> RPC_PIPEFS_MOUNT) before deciding whether or not to atomic_inc() and
-> drop the lock, so that you can restart the loop after calling
-> __rpc_pipefs_event().
->
+When a user freezes a cgroup, the freezer sets the subsystem state
+to CGROUP_FREEZING and then iterates over the tasks in the cgroup links.
 
-Gmmm.
-Please, correct me, if I'm wrong, that you are proposing something like this:
+But there is a possible race here, although unlikely, if a task
+forks and the parent is preempted between write_unlock(tasklist_lock)
+and cgroup_post_fork(). If we freeze the cgroup while the parent
+is sleeping and the parent wakes up thereafter, its child will
+be missing from the set of tasks to freeze because:
 
-   	spin_lock(&sn->rpc_client_lock);
-again:
-	list_for_each_entry(clnt,&sn->all_clients, cl_clients) {
-		if ((event == RPC_PIPEFS_MOUNT) && clnt->cl_dentry) ||
-		    (event == RPC_PIPEFS_UMOUNT) && !clnt->cl_dentry))
-			continue;
-		atomic_inc(&clnt->cl_count);
-		spin_unlock(&sn->rpc_client_lock);
-    		error = __rpc_pipefs_event(clnt, event, sb);
-		rpc_release_client(clnt);
-		spin_lock(&sn->rpc_client_lock);
-    		if (error)
-    			break;
-		goto again;
-    	}
-    	spin_unlock(&sn->rpc_client_lock);
+- The child was not yet linked to its css_set->tasks, as is done
+from cgroup_post_fork(). cgroup_iter_start() has thus missed it.
 
+- The cgroup freezer's fork callback can handle that child but
+cgroup_fork_callbacks() has been called already.
 
+One way to fix this is to call the fork callbacks after we link
+the task to the css set. The cgroup freezer is the only user of
+this callback anyway.
+
+v2: Keep the call to cgroup_exit to put the css_set on fork error.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+---
+
+Not sure this is the right solution, especially as I still need
+a cancellable fork callback for my task counter and for this I
+need the fork callbacks to be called before the task is added
+on the tasklist. But anyway at least that reports this race.
+
+ kernel/cgroup.c |   39 ++++++++++++++-------------------------
+ kernel/fork.c   |    9 +--------
+ 2 files changed, 15 insertions(+), 33 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index c6877fe..de21e52 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4496,31 +4496,6 @@ void cgroup_fork(struct task_struct *child)
+ }
+ 
+ /**
+- * cgroup_fork_callbacks - run fork callbacks
+- * @child: the new task
+- *
+- * Called on a new task very soon before adding it to the
+- * tasklist. No need to take any locks since no-one can
+- * be operating on this task.
+- */
+-void cgroup_fork_callbacks(struct task_struct *child)
+-{
+-	if (need_forkexit_callback) {
+-		int i;
+-		/*
+-		 * forkexit callbacks are only supported for builtin
+-		 * subsystems, and the builtin section of the subsys array is
+-		 * immutable, so we don't need to lock the subsys array here.
+-		 */
+-		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
+-			struct cgroup_subsys *ss = subsys[i];
+-			if (ss->fork)
+-				ss->fork(child);
+-		}
+-	}
+-}
+-
+-/**
+  * cgroup_post_fork - called on a new task after adding it to the task list
+  * @child: the task in question
+  *
+@@ -4559,6 +4534,20 @@ void cgroup_post_fork(struct task_struct *child)
+ 		}
+ 		write_unlock(&css_set_lock);
+ 	}
++
++	if (need_forkexit_callback) {
++		int i;
++		/*
++		 * forkexit callbacks are only supported for builtin
++		 * subsystems, and the builtin section of the subsys array is
++		 * immutable, so we don't need to lock the subsys array here.
++		 */
++		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
++			struct cgroup_subsys *ss = subsys[i];
++			if (ss->fork)
++				ss->fork(child);
++		}
++	}
+ }
+ /**
+  * cgroup_exit - detach cgroup from exiting task
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 051f090..551cfe0 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1053,7 +1053,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ {
+ 	int retval;
+ 	struct task_struct *p;
+-	int cgroup_callbacks_done = 0;
+ 
+ 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+ 		return ERR_PTR(-EINVAL);
+@@ -1305,12 +1304,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->group_leader = p;
+ 	INIT_LIST_HEAD(&p->thread_group);
+ 
+-	/* Now that the task is set up, run cgroup callbacks if
+-	 * necessary. We need to run them before the task is visible
+-	 * on the tasklist. */
+-	cgroup_fork_callbacks(p);
+-	cgroup_callbacks_done = 1;
+-
+ 	/* Need tasklist lock for parent etc handling! */
+ 	write_lock_irq(&tasklist_lock);
+ 
+@@ -1413,7 +1406,7 @@ bad_fork_cleanup_cgroup:
+ #endif
+ 	if (clone_flags & CLONE_THREAD)
+ 		threadgroup_change_end(current);
+-	cgroup_exit(p, cgroup_callbacks_done);
++	cgroup_exit(p, 0);
+ 	delayacct_tsk_free(p);
+ 	module_put(task_thread_info(p)->exec_domain->module);
+ bad_fork_cleanup_count:
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.5.4
+
