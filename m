@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab2B0RRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 12:17:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45417 "EHLO mx1.redhat.com"
+	id S1753999Ab2B0RRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 12:17:51 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:60751 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab2B0RRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 12:17:38 -0500
-Date: Mon, 27 Feb 2012 18:09:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
-Message-ID: <20120227170922.GA10608@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-6-git-send-email-wad@chromium.org>
+	id S1753889Ab2B0RRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 12:17:45 -0500
+Date: Mon, 27 Feb 2012 19:17:42 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Tejun Heo <tj@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, sam@ravnborg.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+In-Reply-To: <alpine.SOC.1.00.1202241120300.1227@math.ut.ee>
+Message-ID: <alpine.SOC.1.00.1202271914310.15067@math.ut.ee>
+References: <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org>
+ <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <alpine.SOC.1.00.1202220213180.4171@math.ut.ee> <20120222174825.GA32694@google.com> <alpine.SOC.1.00.1202222025120.20496@math.ut.ee>
+ <20120223185503.GI22536@google.com> <alpine.SOC.1.00.1202241120300.1227@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330140111-17201-6-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Will.
+> > > > Can you please try the following patch?  If it still fails to boot,
+> > > > please attach the failing log.  Thank you.
+> > > 
+> > > It works on E3500! Will try other machines tomorrow.
+> > 
+> > Once confirmed, I'll push the patch through tip.  It just hides the
+> > underlying problem but we should be in no worse shape than before,
+> > it's two line change so reproduing the problem again for proper
+> > diagnosing isn't difficult, and we're getting a bit late in release
+> > cycle already.
+> 
+> It cured the V210 too but I could not test V100 since it's offline until 
+> monday.
 
-I missed the previous discussions, and I don't think I can read
-all these emails now. So I apologize in advance if this was already
-discussed.
+Tested V100 too, success!
 
-On 02/24, Will Drewry wrote:
->
->  struct seccomp {
->  	int mode;
-> +	struct seccomp_filter *filter;
->  };
-
-Minor nit, it seems that the new member can be "ifdef CONFIG_SECCOMP_FILTER"
-
-> +static long seccomp_attach_filter(struct sock_fprog *fprog)
-> +{
-> +	struct seccomp_filter *filter;
-> +	unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
-> +	long ret;
-> +
-> +	if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
-> +		return -EINVAL;
-
-OK, this limits the memory PR_SET_SECCOMP can use.
-
-But,
-
-> +	/*
-> +	 * If there is an existing filter, make it the prev and don't drop its
-> +	 * task reference.
-> +	 */
-> +	filter->prev = current->seccomp.filter;
-> +	current->seccomp.filter = filter;
-> +	return 0;
-
-this doesn't limit the number of filters, looks like a DoS.
-
-What if the application simply does prctl(PR_SET_SECCOMP, dummy_filter)
-in an endless loop?
-
-
-
-> +static struct seccomp_filter *get_seccomp_filter(struct seccomp_filter *orig)
-> +{
-> +	if (!orig)
-> +		return NULL;
-> +	/* Reference count is bounded by the number of total processes. */
-> +	atomic_inc(&orig->usage);
-> +	return orig;
-> +}
-> ...
-> +void copy_seccomp(struct seccomp *child, const struct seccomp *parent)
-> +{
-> +	/* Other fields are handled by dup_task_struct. */
-> +	child->filter = get_seccomp_filter(parent->filter);
-> +}
-
-This is purely cosmetic, but imho looks a bit confusing.
-
-We do not copy seccomp->mode and this is correct, it was already copied
-implicitely. So why do we copy ->filter? This is not "symmetrical", afaics
-you can simply do
-
-	void copy_seccomp(struct seccomp *child)
-	{
-		if (child->filter)
-			atomic_inc(child->filter->usage);
-
-But once again, this is cosmetic, feel free to ignore.
-
-Oleg.
-
+-- 
+Meelis Roos (mroos@linux.ee)
