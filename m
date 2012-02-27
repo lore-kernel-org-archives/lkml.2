@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab2B0SHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:07:30 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13114 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754208Ab2B0SH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:07:29 -0500
-Message-ID: <4F4BC652.6030300@parallels.com>
-Date: Mon, 27 Feb 2012 22:07:14 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1754324Ab2B0SIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:08:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56629 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab2B0SI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:08:29 -0500
+Date: Mon, 27 Feb 2012 19:08:14 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
+        linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH v3] ARM: LPC32xx: Ethernet support
+Message-ID: <20120227180814.GB21386@pengutronix.de>
+References: <1330364762-23203-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3 1/4] SUNRPC: release per-net clients lock before calling
- PipeFS dentries creation
-References: <20120227180509.1089.29555.stgit@localhost6.localdomain6> <20120227180529.1089.29305.stgit@localhost6.localdomain6>
-In-Reply-To: <20120227180529.1089.29305.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
+Content-Disposition: inline
+In-Reply-To: <1330364762-23203-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.02.2012 22:05, Stanislav Kinsbursky пишет:
-> v3:
-> 1) Lookup for client is performed from the beginning of the list on each PipeFS
-> event handling operation.
->
-> Lockdep is sad otherwise, because inode mutex is taken on PipeFS dentry
-> creation, which can be called on mount notification, where this per-net client
-> lock is taken on clients list walk.
->
-> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->
+
+--KFztAG8eRSV9hGtP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Feb 27, 2012 at 06:46:02PM +0100, Roland Stigge wrote:
+> This patch adds ethernet support to the LPC32xx ARM architecture. The act=
+ual
+> driver in drivers/net is contained in a separate patch.
+>=20
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+>=20
 > ---
->   net/sunrpc/clnt.c |   26 +++++++++++++++++++++-----
->   1 files changed, 21 insertions(+), 5 deletions(-)
->
-> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> index bb7ed2f3..48f3d15 100644
-> --- a/net/sunrpc/clnt.c
-> +++ b/net/sunrpc/clnt.c
-> @@ -50,7 +50,7 @@
->   			__func__, t->tk_status)
->
->   /*
-> - * All RPC clients are linked into this list
-> + * All RPC clients are linked into this list Client Cto hand;le ustatus is checke
->    */
->
->   static DECLARE_WAIT_QUEUE_HEAD(destroy_wait);
 
-Sorry for this hunk.
+Please add below this dashed line what changed since the last version. This
+makes reviewing easier.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--KFztAG8eRSV9hGtP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk9Lxo4ACgkQD27XaX1/VRsZEQCgkMQrMjtfsGsTMhPRqCk45iaz
+Y9IAoK4xd+x3dhyuUxQ4x1jyEenL+T7N
+=7Yau
+-----END PGP SIGNATURE-----
+
+--KFztAG8eRSV9hGtP--
