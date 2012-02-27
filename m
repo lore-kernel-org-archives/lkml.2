@@ -1,53 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab2B0Shd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 13:37:33 -0500
-Received: from que31.charter.net ([209.225.8.23]:47153 "EHLO que31.charter.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab2B0Shb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 13:37:31 -0500
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Feb 2012 13:37:31 EST
-X-Authority-Analysis: v=1.1 cv=JYQIUidRAECiNa+jsiaNMIhYElg3H2WoMKCJIGO75f4=
- c=1 sm=1 a=loFRCyl7yhIA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=-adrFfunblZo6f30Qg4A:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: sgruszka@redhat.com
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH 4/4] iwlegacy: remove unused enum il4965_calib_enabled_state
-Date: Mon, 27 Feb 2012 12:25:33 -0600
-Message-Id: <1330367133-26465-5-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1330367133-26465-1-git-send-email-Gregory.Dietsche@cuw.edu>
-References: <1330367133-26465-1-git-send-email-Gregory.Dietsche@cuw.edu>
+	id S1754678Ab2B0Shj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 13:37:39 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5884 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab2B0Shh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 13:37:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 27 Feb 2012 10:37:18 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Feb 2012 10:37:16 -0800
+Subject: RE: [PATCH 19/20] pinctrl: API changes to support multiple states
+ per device
+Thread-Topic: [PATCH 19/20] pinctrl: API changes to support multiple states
+ per device
+Thread-Index: Acz1LlEhXFG8QbqyRQavxx96YPoV+gATtW8w
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFCD@HQMAIL01.nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-20-git-send-email-swarren@nvidia.com>
+ <20120227090721.GB26061@shlinux2.ap.freescale.net>
+In-Reply-To: <20120227090721.GB26061@shlinux2.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the enum il4965_calib_enabled_state because it is not used.
+Dong Aisheng wrote at Monday, February 27, 2012 2:07 AM:
+> On Sun, Feb 19, 2012 at 11:45:59PM -0700, Stephen Warren wrote:
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- drivers/net/wireless/iwlegacy/common.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+> > -	.name = "POWERMAP"
+> > +	.dev_name = "pinctrl-foo",
+> > +	.name = "active",
+>
+> I guess if we really decide to use a fixed state name for hog functions,
+> we'd better not let users to write the state name, at least provide a macro.
 
-diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
-index d0de922..5f50177 100644
---- a/drivers/net/wireless/iwlegacy/common.h
-+++ b/drivers/net/wireless/iwlegacy/common.h
-@@ -956,11 +956,6 @@ enum il4965_chain_noise_state {
- 	IL_CHAIN_NOISE_DONE,
- };
- 
--enum il4965_calib_enabled_state {
--	IL_CALIB_DISABLED = 0,	/* must be 0 */
--	IL_CALIB_ENABLED = 1,
--};
--
- enum ucode_type {
- 	UCODE_NONE = 0,
- 	UCODE_INIT,
+Yes, that's a good point for adding the special-case macros. I have
+added such special-case macros to my local version of patch 20, so they'll
+be there in the repost.
+
+> > +static struct pinctrl *pinctrl_get_locked(struct device *dev)
+> > +{
+> > +	struct pinctrl *p;
+> >
+> > -error:
+> > -	list_for_each_entry(setting, &p->settings, node)
+> > -		pinmux_free_setting(setting);
+> > +	if (WARN_ON(!dev))
+> > +		return ERR_PTR(-EINVAL);
+> >
+> > -	kfree(p);
+> > +	p = find_pinctrl(dev);
+> > +	if (p == NULL)
+> > +		p = create_pinctrl(dev);
+> > +	if (IS_ERR(p))
+> > +		return p;
+> > +
+> > +	p->usecount++;
+>
+> I still can not understand what's the purpose of p->usecount?
+> For allowing multi times calling of pinctrl_get for on the same device?
+
+pinctrl_get() could be called multiple times for the same device. Rather
+than create a whole new struct pinctrl each time it's called, we just
+reference count the object so that each call returns the same one, and
+it won't be destroyed until all users have called pinctrl_put().
+
+Hopefully it is true that multiple different pieces of code won't be
+screwing with the same device's pinctrl settings, but it's simple enough
+to do this so we may as well. This somewhat of a the moral equivalent of
+the old code's p->usecount manipulations in pinctrl_enable()/disable(),
+although admittedly a little different.
+
+> > +static inline struct pinctrl * __must_check pinctrl_get_select(
+> > +					struct device *dev, const char *name)
+> > +{
+> > +	struct pinctrl *p;
+> > +	struct pinctrl_state *s;
+> > +	int ret;
+> > +
+> > +	p = pinctrl_get(dev);
+> > +	if (IS_ERR(p))
+> > +		return p;
+> > +
+> > +	s = pinctrl_lookup_state(p, name);
+> > +	if (IS_ERR(s)) {
+> > +		pinctrl_put(p);
+> > +		return ERR_PTR(PTR_ERR(s));
+> > +	}
+> > +
+> > +	ret = pinctrl_select_state(p, s);
+> > +	if (ret < 0) {
+> > +		pinctrl_put(p);
+> > +		return ERR_PTR(ret);
+>
+> s/ERR_PTR(ret)/ret ?
+
+The function returns a pointer, whereas ret is an int. ERR_PTR() is used
+to wrap the int error code into a pointer value so that the function can
+return either a valid pointer, or an error-code. See include/linux/err.h.
+
+I've fixed locally up the other issues you pointed out. Thanks.
+
 -- 
-1.7.6.4
+nvpublic
 
