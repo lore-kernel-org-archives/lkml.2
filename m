@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab2B0Tkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 14:40:47 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50618 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738Ab2B0Tkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 14:40:46 -0500
-Date: Mon, 27 Feb 2012 20:40:38 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] hw breakpoint: Fix possible memory leak
-Message-ID: <20120227194038.GA11448@elte.hu>
-References: <1330311739-24302-1-git-send-email-namhyung.kim@lge.com>
- <1330338785.11248.49.camel@twins>
- <20120227104452.GA6082@elte.hu>
- <1330340694.11248.64.camel@twins>
- <20120227115652.GA9943@elte.hu>
- <1330349551.1782.15.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1330349551.1782.15.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+	id S1754565Ab2B0TmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 14:42:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38296 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2B0TmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 14:42:05 -0500
+From: John Johansen <john.johansen@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, eparis@redhat.com
+Subject: [PATCH] Fix build failures from audit macros when following coding style
+Date: Mon, 27 Feb 2012 11:41:58 -0800
+Message-Id: <1330371718-11751-1-git-send-email-john.johansen@canonical.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Recently I was cleaning up some code and hit build failures when following
+the kernel coding style / checkpatch.pl recommendations.  In both cases
+the code had the form of
 
-* Namhyung Kim <namhyung@gmail.com> wrote:
+  if (X)
+	Y;
+  else
+	Z;
 
-> 2012-02-27 (월), 12:56 +0100, Ingo Molnar:
-> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Mon, 2012-02-27 at 11:44 +0100, Ingo Molnar wrote:
-> > > > I edited that code earlier today - is the form below OK, or can 
-> > > > you see a simpler method? It's not yet pushed out so can still 
-> > > > edit it. 
-> > > 
-> > > I think something like the below should do, but then I didn't really
-> > > think much about it, my thoughts went like:
-> > > 
-> > > ... *shees* that's ugly
-> > >   ... that error path already does a loop
-> > >     ... what the problem is!? -- reread changelog
-> > >       ... err_cpu == cpu is placed wrong!
-> > > 
-> > > 
-> > > So I replied and marked read.. waiting to either hear if there's a good
-> > > reason to do ugly or find a new (tested) patch in my inbox.. :-)
-> > > 
-> > > ---
-> > >  kernel/events/hw_breakpoint.c |    4 ++--
-> > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-> > > index b0309f7..3330022 100644
-> > > --- a/kernel/events/hw_breakpoint.c
-> > > +++ b/kernel/events/hw_breakpoint.c
-> > > @@ -658,10 +658,10 @@ int __init init_hw_breakpoint(void)
-> > >  
-> > >   err_alloc:
-> > >  	for_each_possible_cpu(err_cpu) {
-> > > -		if (err_cpu == cpu)
-> > > -			break;
-> > >  		for (i = 0; i < TYPE_MAX; i++)
-> > >  			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-> > > +		if (err_cpu == cpu)
-> > > +			break;
-> > >  	}
-> > 
-> > Looks a lot nicer - I'll wait for an updated patch.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> 
-> Ingo, do you want me to resend? If so, I really don't know how 
-> to give the credit to Peter in this case.
+where Y or Z were either the macros audit_log_string or COMMON_AUDIT_DATA_INIT
 
-Just mention it in the changelog that this solution was his 
-idea. It was you who did most of the work: found the bug, wrote 
-the patch, wrote the changelog and tested the final patch ;-)
+and the failure was
+  error: 'else' without a previous 'if'
 
-Thanks,
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+---
+ include/linux/audit.h     |    2 +-
+ include/linux/lsm_audit.h |    8 +++++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-	Ingo
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 9ff7a2c..583010f 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -676,7 +676,7 @@ extern void		    audit_log_n_hex(struct audit_buffer *ab,
+ extern void		    audit_log_n_string(struct audit_buffer *ab,
+ 					       const char *buf,
+ 					       size_t n);
+-#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b));
++#define audit_log_string(a,b) audit_log_n_string(a, b, strlen(b))
+ extern void		    audit_log_n_untrustedstring(struct audit_buffer *ab,
+ 							const char *string,
+ 							size_t n);
+diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
+index 88e78de..7a0841c 100644
+--- a/include/linux/lsm_audit.h
++++ b/include/linux/lsm_audit.h
+@@ -143,9 +143,11 @@ int ipv6_skb_to_auditdata(struct sk_buff *skb,
+ 		struct common_audit_data *ad, u8 *proto);
+ 
+ /* Initialize an LSM audit data structure. */
+-#define COMMON_AUDIT_DATA_INIT(_d, _t) \
+-	{ memset((_d), 0, sizeof(struct common_audit_data)); \
+-	 (_d)->type = LSM_AUDIT_DATA_##_t; }
++#define COMMON_AUDIT_DATA_INIT(_d, _t)				\
++do {								\
++	memset((_d), 0, sizeof(struct common_audit_data));	\
++	(_d)->type = LSM_AUDIT_DATA_##_t;			\
++} while (0)
+ 
+ void common_lsm_audit(struct common_audit_data *a);
+ 
+-- 
+1.7.9
+
