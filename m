@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2B0DL6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Feb 2012 22:11:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab2B0DL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Feb 2012 22:11:57 -0500
-Date: Sun, 26 Feb 2012 22:11:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120227031146.GA25187@redhat.com>
-References: <1330036246-21633-1-git-send-email-tj@kernel.org>
- <20120223144336.58742e1b.akpm@linux-foundation.org>
- <20120223230123.GL22536@google.com>
- <20120223231204.GM22536@google.com>
- <20120224142033.GA5095@redhat.com>
- <20120225214421.GA3401@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1753525Ab2B0DXZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Feb 2012 22:23:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47815 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab2B0DXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Feb 2012 22:23:24 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.228.69 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
+Message-ID: <4F4AF727.2040105@gmail.com>
+Date: Sun, 26 Feb 2012 20:23:19 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120225214421.GA3401@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yuanfang Chen <cyfmxc@gmail.com>
+CC: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: perf record: can I specify multiple events and use different
+ sample-after value
+References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com> <4F4484AC.9050500@lge.com> <87ehtnhz9w.fsf@gmail.com> <CAJh9x3prNK+mB7ZACPr_8Gr4nMw5rG45nWwuF__P1=9cB+UN1A@mail.gmail.com> <4F45E9C5.4020900@lge.com> <CAJh9x3o7HLGBWrwBaGgxXS-C9noQbKwh5BP_PAHomOOS6x9SYw@mail.gmail.com> <CAJh9x3o4ELjmrmYhba_R-8G6TciuXY9M3PpjAeCtFNaPmvpKHA@mail.gmail.com> <4F468EBB.9000209@gmail.com> <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
+In-Reply-To: <CAJh9x3rxK42wFXqCASex1YwMKofWdZ=g-OnH43BHDtUjeMabbA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 06:44:21AM +0900, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Fri, Feb 24, 2012 at 09:20:33AM -0500, Vivek Goyal wrote:
-> > Ok. I will write a patch. Things have changed a lot since last time.
-> > I think there is only one tricky part and that is waiting for any
-> > scheduled work to finish during blkg destruction.  Because group destruction
-> > happens under both queue and blkcg spin locks, I think I will have to take
-> > the group off list, drop locks, wait for worker thread to finish and then
-> > take locks again and walk through list again to kill remaining groups.
-> 
-> Rather than embedding work_struct into blkg and tying work and blkg
-> destruction, why not just create a spinlock protected alloc-pending
-> list?  On blkg creation, link blkg onto that list and kick shared work
-> item and on destruction, just unlink it.  Worker function can walk the
-> list and try to alloc for all and reschedule if alloc fails.
+On 2/24/12 3:41 PM, Yuanfang Chen wrote:
+> I think I'll settle with perf record for now. Still, unlike trace
+> event, sample count is not meaningful for PMU event. Output of "perf
+> script" does not include period value. One line of code will do the
+> work.
+>
+> lude 17342 750118.202915: raw 0x3c: 86754      ffffffff8115f6b9
+> __mem_cgroup_commit_char
+> lude 17342 750118.203025: raw 0x3c: 1027634   ffffffff811344b9
+> __mem_cgroup_commit_char
+>
+> 86754, 1027634 is the period value. But I'm not sure which is the PMU
+> value, is it just period value, or period x sample after. If so, what
+> is the sample after value?
 
-Ok. This sounds better than embeding work_struct in blkg, I can embed it
-in request_queue and make the worker walk the list of blkg pending 
-alloc of stats. Will try that. Thanks for the idea.
+You lost me. You modified perf-script to print the period?
 
-Thanks
-Vivek
+Are you asking for the PMU counter value for 0x3c?
+
+What perf commands are you running?
+
+David
