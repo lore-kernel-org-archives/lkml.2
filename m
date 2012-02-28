@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab2B1QQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:16:04 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41851 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab2B1QQC convert rfc822-to-8bit (ORCPT
+	id S965745Ab2B1QQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:16:39 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43677 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965331Ab2B1QQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:16:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F4CFB6D.4000403@nod.at>
-References: <1328911856-19260-1-git-send-email-richard@nod.at>
-	<1328911856-19260-2-git-send-email-richard@nod.at>
-	<20120225133816.GA15864@1984>
-	<4F4CFB6D.4000403@nod.at>
-Date: Tue, 28 Feb 2012 17:15:59 +0100
-Message-ID: <CAA93jw5AfWbU8Gsx1WtJSkTox7bMAjkeuojaMXgwWgdAyROMGw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] iptables: Merge libip6t_LOG and libipt_LOG into libxt_LOG
-From: Dave Taht <dave.taht@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, jengelh@medozas.de, rostedt@goodmis.org,
-        basti@b-bl.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Feb 2012 11:16:38 -0500
+Message-ID: <1330445795.2822.134.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] [SCSI] sr: fix multi-drive performance, remove BKL
+ replacement
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 28 Feb 2012 10:16:35 -0600
+In-Reply-To: <20120228170930.132f7c1e@stein>
+References: <20120228153244.70413d34@stein>
+	 <1330441201.2822.126.camel@dabdike.int.hansenpartnership.com>
+	 <20120228170930.132f7c1e@stein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 5:06 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 25.02.2012 14:38, schrieb Pablo Neira Ayuso:
->> On Fri, Feb 10, 2012 at 11:10:51PM +0100, Richard Weinberger wrote:
->>> libip6t_LOG and libipt_LOG share a lot of common code, merge them
->>> to recude duplicate code.
->>
->> I have applied this to the net-next branch of iptables.
->>
->> See git.netfilter.org
->>
->> I'll merge it to master once linux kernel 3.3 is released.
->
-> Okay. What about the ring buffer feature?
-> Is there anything missing?
+On Tue, 2012-02-28 at 17:09 +0100, Stefan Richter wrote:
+> On Feb 28 James Bottomley wrote:
+> > On Tue, 2012-02-28 at 15:32 +0100, Stefan Richter wrote:
+> > > Commit 2a48fc0ab242 "block: autoconvert trivial BKL users to private
+> > > mutex" and other commits at the time mechanically swapped BKL for
+> > > per-driver global mutexes.  If the sr driver is any indication, these
+> > > replacements have still not been checked by anybody for their
+> > > necessessity, removed where possible, or the sections they serialize
+> > > reduced to a necessary minimum.
+> > > 
+> > > The sr_mutex in particular very noticably degraded performance of
+> > > CD-DA ripping with multiple drives in parallel.  When several
+> > > instances of "grip" are used with two or more drives, their GUIs
+> > > became laggier, as did the KDE file manager GUI, and drive utilization
+> > > was reduced.  (During ripping, drive lights flicker instead of staying
+> > > on most of the time.)  IOW time to rip a stack of CDs was increased.
+> > > I didn't measure this but it is highly noticeable.
+> > > 
+> > > On the other hand, I don't see what state sr_mutex would protect.
+> > > So I removed it entirely and that works fine for me.
+> > > 
+> > I'm afraid you can't do that:  The problem is that we have an entangled
+> > set of reference counts that need to be taken and released atomically.
+> > If we don't surround them with a mutex you get undefined results from
+> > racing last release with new acquire.  You can see this usage in sd.c.
+> 
+> While I do remove sr_mutex aroud scsi_cd_get/put() calls, these ones
+> internally use another lock: sr_ref_mutex.  Always did, still do, since
+> neither Arnd's mechanical BKL pushdown and BKL-to-mutex conversions
+> patches nor my patch changed that.  This sr_ref_mutex also protects sr's
+> reference counting outside of the three block_device_operations methods
+> which I changed.
+> 
+> I suppose I could have mentioned right away in the changelog that the
+> sr driver's own reference counting serialization remains in place, via that
+> other mutex.
 
-I'm under the impression that the ecn related changes didn't make it
-as yet. I'm in a position to test that stuff this month, if it needs
-further testing and hasn't actually made it in.
+OK, agreed ... the thing that caught my eye was the get/open and the
+release/put, but I think that's completely safe.
 
-> Thanks,
-> //richard
->
->
+> > The sr.c use case looks like bd_mutex would mediate ... but that's
+> > because it doesn't use driver shutdown and has no power management
+> > functions ... I think I have vague memories that someone is working on
+> > pm for cdroms?
+> > 
+> > I don't think the mutex needs to be on the ioctls, though, which is
+> > what's causing your performance problems, right?
+> 
+> I guess sr_block_open/release are less of an issue; after all they are
+> still partly serialized across all sr devices (the sections which are
+> under the mentioned sr_ref_mutex protection).
+
+They're also per bdev serialised by bd_mutex, so yes.
+
+James
 
 
-
--- 
-Dave Täht
-SKYPE: davetaht
-US Tel: 1-239-829-5608
-http://www.bufferbloat.net
