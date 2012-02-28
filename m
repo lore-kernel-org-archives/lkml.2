@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab2B1WaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:30:08 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:38721 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab2B1WaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:30:04 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
+	id S1757403Ab2B1WbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:31:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756205Ab2B1WbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 17:31:22 -0500
+Date: Tue, 28 Feb 2012 17:31:09 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 24/24] PCI, pciehp: Remove not needed bus number range checking
-Date: Tue, 28 Feb 2012 14:07:43 -0800
-Message-Id: <1330466863-28469-25-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F4D5078.0032,ss=1,re=0.000,fgs=0
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120228223109.GL9920@redhat.com>
+References: <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <20120223213847.GK19691@redhat.com>
+ <20120223223457.GJ22536@google.com>
+ <20120228211627.GH9920@redhat.com>
+ <1330464100.11248.94.camel@twins>
+ <20120228213526.GI9920@redhat.com>
+ <1330465434.11248.98.camel@twins>
+ <20120228215439.GJ9920@redhat.com>
+ <1330466421.11248.107.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330466421.11248.107.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found hotplug adding one EM with bridge fail, bios only leave one bus range
- for slot.
+On Tue, Feb 28, 2012 at 11:00:21PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-28 at 16:54 -0500, Vivek Goyal wrote:
+> > On Tue, Feb 28, 2012 at 10:43:54PM +0100, Peter Zijlstra wrote:
+> > > On Tue, 2012-02-28 at 16:35 -0500, Vivek Goyal wrote:
+> > > > For
+> > > > cpu controller, it is priority at the group level no fixed minimum/maximum
+> > > > % shares. And that's a limitation of treating task and group at same level.
+> > > 
+> > > Depends on what you mean by min/max %, you can do it on the group level
+> > > by using bandwidth caps (for max) or inverted (max on everybody else,
+> > > for min).
+> > 
+> > I was referring to using pure proportional controller. max bandwidth is
+> > new and I am looking for a quick documentation file which describes
+> > what are the knobs and how to use it. Did not find any in
+> > Documentation/cgroups/. Is there any documentation available?
+> 
+> Its written in C, its at kernel/sched/fair.c ;-)
 
-[ 1169.621444] pciehp: No bus number available for hot-added bridge 0000:55:00.0
-[ 1169.633277] pcieport 0000:40:03.0: PCI bridge to [bus 55-55]
+/me does not know enough of scheduler code to parse it fast. But now I found
+Documentation/scheduler/sched-bwc.txt to explain what max bandwidth
+control is.
 
-With busn_res tracking and allocating, we don't need that checking anymore.
+> 
+> > I am assuming that max are being specified for groups in some absolute
+> > quantity. That is fine. It will not still be max %, as again for % you
+> > need fixed number of entities at any level and that's not the case with
+> > tasks.
+> > 
+> > Minimum for one group (max for everyone else) will also only work if 
+> > task and groups are not at same level.
+> 
+> I'm really not seeing this.
 
-Parent bridges' bus number will be extended safely.
+Assume I have following hierarchy.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/hotplug/pciehp_pci.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+				 root
+			       /  |  \
+			   Tasks  G1  G2
 
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index 47d9dc0..e21171c 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -37,18 +37,8 @@
- static int __ref pciehp_add_bridge(struct pci_dev *dev)
- {
- 	struct pci_bus *parent = dev->bus;
--	int pass, busnr, start = parent->secondary;
--	int end = parent->subordinate;
-+	int pass, busnr = parent->secondary;
- 
--	for (busnr = start; busnr <= end; busnr++) {
--		if (!pci_find_bus(pci_domain_nr(parent), busnr))
--			break;
--	}
--	if (busnr-- > end) {
--		err("No bus number available for hot-added bridge %s\n",
--				pci_name(dev));
--		return -1;
--	}
- 	for (pass = 0; pass < 2; pass++)
- 		busnr = pci_scan_bridge(parent, dev, busnr, pass);
- 	if (!dev->subordinate)
--- 
-1.7.7
+Assume I have given upper limit of 20% to G1. (period=50ms, quota=10ms), 
+then it still does not gurantee the minimum bandwidth for G2. If I 
+upper limit G2 also, then I am assuming it just gives minimum gurantee
+for any tasks in root. (Right now I am assuming just 1 cpu in the system
+for simplicity).
 
+So to get a minimum % bandwdith gurantee for G2, I shall have to move
+"Tasks" in a children group. Now both upper limit/proportional weight 
+on G3 will help to determine minimum % share of G2.
+
+				 root
+			       /  |  \
+			      G3  G1  G2
+			      |
+			     Tasks
+
+Please correct me if I have understood the whole thing wrong.
+
+Thanks
+Vivek
