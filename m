@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2B1JOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:14:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36730 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab2B1JOH convert rfc822-to-8bit (ORCPT
+	id S1755136Ab2B1JOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:14:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51328 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2B1JOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:14:07 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.175.36 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
+	Tue, 28 Feb 2012 04:14:52 -0500
+Date: Tue, 28 Feb 2012 01:13:42 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-30ce2f7eef095d1b8d070740f1948629814fe3c7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        namhyung.kim@lge.com, fweisbec@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1330391978-28070-1-git-send-email-namhyung.kim@lge.com>
+References: <1330391978-28070-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/hwbp: Fix a possible memory leak
+Git-Commit-ID: 30ce2f7eef095d1b8d070740f1948629814fe3c7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4F4C1F76.70403@zytor.com>
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
-	<4F4BF11E.4090000@zytor.com>
-	<CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
-	<4F4C1F76.70403@zytor.com>
-Date: Tue, 28 Feb 2012 10:14:07 +0100
-Message-ID: <CAKL7Q7q8oRRQH4bh3JDpB_pGcKTJkOwzhKmOmAtk6sode8kU=g@mail.gmail.com>
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-From: "Joshua C." <joshuacov@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Bodo Eggert <7eggert@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 28 Feb 2012 01:14:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/28 H. Peter Anvin <hpa@zytor.com>:
-> On 02/27/2012 04:08 PM, Joshua C. wrote:
->>
->> If so I'm not sure about it. We check the BIOS data area as defined
->> for IBM PCs (1981), so a fair amount of user should benefit from the
->> change. Those non-BIOS boots can set the numlock=0 and won't be
->> affected by this. I think this isa lot easier to implement than doing
->> it in the BIOS bootstrap code.
->>
->
-> Here is a patch to query the BIOS state properly; if you could fill out
-> the rest of the patch then we can merge this in easily enough.
->
->        -hpa
+Commit-ID:  30ce2f7eef095d1b8d070740f1948629814fe3c7
+Gitweb:     http://git.kernel.org/tip/30ce2f7eef095d1b8d070740f1948629814fe3c7
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 28 Feb 2012 10:19:38 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 28 Feb 2012 09:52:54 +0100
 
-I think this should be the missing part:
+perf/hwbp: Fix a possible memory leak
 
-@@ -1432,7 +1439,17 @@ int __init kbd_init(void)
- {
- 	int i;
- 	int error;
--
-+	
-+#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
-+	int KBD_DEFLEDS = 0;
-+	char * bios_kbd_lock_status=boot_params.kbd_status
-+	
-+	/* Numlock status bit set? */
-+	if ((*bios_kbd_lock_status & 0x20) && numlock)
-+	KBD_DEFLEDS = 1 << VC_NUMLOCK;
-+#endif
-+	
-         for (i = 0; i < MAX_NR_CONSOLES; i++) {
- 		kbd_table[i].ledflagstate = KBD_DEFLEDS;
- 		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
+If kzalloc() for TYPE_DATA failed on a given cpu, previous chunk
+of TYPE_INST will be leaked. Fix it.
+
+Thanks to Peter Zijlstra for suggesting this better solution. It
+should work as long as the initial value of the region is all
+0's and that's the case of static (per-cpu) memory allocation.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1330391978-28070-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/events/hw_breakpoint.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index b7971d6..ee706ce 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -651,10 +651,10 @@ int __init init_hw_breakpoint(void)
+ 
+  err_alloc:
+ 	for_each_possible_cpu(err_cpu) {
+-		if (err_cpu == cpu)
+-			break;
+ 		for (i = 0; i < TYPE_MAX; i++)
+ 			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
++		if (err_cpu == cpu)
++			break;
+ 	}
+ 
+ 	return -ENOMEM;
