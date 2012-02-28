@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab2B1IRP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:17:15 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55555 "EHLO mx2.mail.elte.hu"
+	id S932486Ab2B1IR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:17:28 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:48682 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755600Ab2B1IRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:17:13 -0500
-Date: Tue, 28 Feb 2012 09:16:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: John Stultz <john.stultz@linaro.org>
+	id S1756511Ab2B1IR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:17:27 -0500
+Message-ID: <1330417040.2340.344.camel@work-vm>
+Subject: Re: [PATCH 1/7] time: Condense timekeeper.xtime into xtime_sec
+From: John Stultz <john.stultz@linaro.org>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 5/7] time: Shadow cycle_last in timekeeper structure
-Message-ID: <20120228081659.GF21106@elte.hu>
+Date: Tue, 28 Feb 2012 00:17:20 -0800
+In-Reply-To: <20120228080647.GC21106@elte.hu>
 References: <1330388974-27793-1-git-send-email-john.stultz@linaro.org>
- <1330388974-27793-6-git-send-email-john.stultz@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330388974-27793-6-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	 <1330388974-27793-2-git-send-email-john.stultz@linaro.org>
+	 <20120228080647.GC21106@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022808-5112-0000-0000-000005ABC1CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-02-28 at 09:06 +0100, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
+> > +
+> > +static void timekeeper_set_xtime(struct timekeeper *tk,
+> > +					const struct timespec *ts)
+> 
+> Pointless (because ugly) line break.
+> 
+> > +{
+> > +	tk->xtime_sec = ts->tv_sec;
+> > +	tk->xtime_nsec = ts->tv_nsec << tk->shift;
+> > +}
+> > +
+> > +
+> > +static void timekeeper_xtime_add(struct timekeeper *tk,
+> > +					const struct timespec *ts)
+> 
+> Pointless (because ugly) line break.
 
-* John Stultz <john.stultz@linaro.org> wrote:
+Ack on your other comments, but I'm not sure I'm following you here.
+What would you rather see in this case?
 
-> @@ -184,7 +186,7 @@ static inline s64 timekeeping_get_ns(void)
->  	cycle_now = clock->read(clock);
->  
->  	/* calculate the delta since the last update_wall_time: */
-> -	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
-> +	cycle_delta = (cycle_now - timekeeper.cycle_last) & clock->mask;
+(I know the 80col limit was discussed recently, but it didn't sound like
+the consensus was for extending it.)
 
-Just a general code design observation: the way how the global 
-'timekeeper' structure is accessed is rather ugly.
+thanks
+-john
 
-The standard method is to pass it in to timekeeping_get_ns() 
-(and other methods) as a parameter, with the highest level 
-taking the address via &timekeeping.
-
-That will also make the code shorter and more obvious: the 
-familar tk->cycle_last pattern instead of the current mixed uses 
-of timekeeping.cycle_last and tk->cycle_last.
-
-There's many similar patterns throughout this code, they need to 
-be fixed as well.
-
-Thanks,
-
-	Ingo
