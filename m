@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab2B1Nam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:30:42 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57215 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400Ab2B1Nak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:30:40 -0500
-Date: Tue, 28 Feb 2012 05:30:13 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: deepthi@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH RFC] acpi: Fix unprotected smp_processor_id() in
- acpi_processor_cst_has_changed()
-Message-ID: <20120228133013.GE2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120223205805.GA31838@linux.vnet.ibm.com>
- <20120228071943.GE1112@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228071943.GE1112@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022813-6148-0000-0000-000003D0964C
+	id S1757146Ab2B1Nbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:31:55 -0500
+Received: from ozlabs.org ([203.10.76.45]:52272 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754129Ab2B1Nby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 08:31:54 -0500
+From: Michael Ellerman <michael@ellerman.id.au>
+To: <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] perf: Fix perf_event_for_each() to use sibling
+Date: Wed, 29 Feb 2012 00:31:32 +1100
+Message-Id: <1330435892-31518-1-git-send-email-michael@ellerman.id.au>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 03:19:43PM +0800, Yong Zhang wrote:
-> On Thu, Feb 23, 2012 at 12:58:05PM -0800, Paul E. McKenney wrote:
-> > The acpi_processor_cst_has_changed() function is invoked from a
-> > CPU_ONLINE or CPU_DEAD function, which might well execute on CPU 0
-> > even though the CPU being hotplugged is some other CPU.  In addition,
-> > acpi_processor_cst_has_changed() invokes smp_processor_id() without
-> > protection, resulting in splats when onlining CPUs.
-> > 
-> > This commit therefore changes the smp_processor_id() to pr->id, as is
-> > used elsewhere in the code, for example, in acpi_processor_add().
-> > 
-> > This works for me, but I don't claim to understand ACPI.
-> > 
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> 
-> Got the same warning.
-> And the patch works on my side.
-> 
-> Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+In perf_event_for_each() we call a function on an event, and then
+iterate over the siblings of the event.
 
-Thank you, I have added your Tested-by (and Srivatsa's Reviewed-by,
-for that matter).
+However we don't call the function on the siblings, we call it
+repeatedly on the original event - it seems "obvious" that we should
+be calling it with sibling as the argument.
 
-Any takers for this, or should I just push it up the -tip tree?
+It looks like this broke in commit 75f937f24bd9 ("Fix ctx->mutex
+vs counter->mutex inversion").
 
-							Thanx, Paul
+The only effect of the bug is that the PERF_IOC_FLAG_GROUP parameter
+to the ioctls doesn't work.
 
-> > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> > index 0e8e2de..9e57b06 100644
-> > --- a/drivers/acpi/processor_idle.c
-> > +++ b/drivers/acpi/processor_idle.c
-> > @@ -1159,8 +1159,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
-> >  	 * to make the code that updates C-States be called once.
-> >  	 */
-> >  
-> > -	if (smp_processor_id() == 0 &&
-> > -			cpuidle_get_driver() == &acpi_idle_driver) {
-> > +	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
-> >  
-> >  		cpuidle_pause_and_lock();
-> >  		/* Protect against cpu-hotplug */
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Only stand for myself
-> 
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+---
+
+This one seems so simple that I keep thinking I've missed something,
+I'm sure someone will tell me if I have ;)
+
+AFAICS tools/perf never exercises this, ie. it always individually
+enables counters - which might explain how it could be broken and
+no one has noticed.
+---
+ kernel/events/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1b5c081..b82121b 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3097,7 +3097,7 @@ static void perf_event_for_each(struct perf_event *event,
+ 	perf_event_for_each_child(event, func);
+ 	func(event);
+ 	list_for_each_entry(sibling, &event->sibling_list, group_entry)
+-		perf_event_for_each_child(event, func);
++		perf_event_for_each_child(sibling, func);
+ 	mutex_unlock(&ctx->mutex);
+ }
+ 
+-- 
+1.7.5.4
 
