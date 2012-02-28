@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab2B1Rwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:52:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54472 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756618Ab2B1Rwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:52:49 -0500
-Message-ID: <4F4D13DB.1040205@zytor.com>
-Date: Tue, 28 Feb 2012 09:50:19 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>, Davidlohr Bueso <dave@gnu.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC][PATCH 6/6] USB: ffs-test: Don't duplicate {get,put}_unaligned*()
- functions
-References: <1330436245-24875-1-git-send-email-matt@console-pimps.org> <1330436245-24875-7-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1330436245-24875-7-git-send-email-matt@console-pimps.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S965862Ab2B1RxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:53:04 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:58295 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965392Ab2B1RxC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:53:02 -0500
+Subject: Re: [PATCH 1/2] sched: entity load-tracking re-work - Fix for ARM
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20120228174559.GC1129@e103034-lin.cambridge.arm.com>
+Date: Tue, 28 Feb 2012 19:52:56 +0200
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3E8017B2-836A-466A-92F1-E625F49E554D@antoniou-consulting.com>
+References: <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com> <1330511859-22032-2-git-send-email-panto@antoniou-consulting.com> <20120228174559.GC1129@e103034-lin.cambridge.arm.com>
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 05:37 AM, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+
+On Feb 28, 2012, at 7:45 PM, Morten Rasmussen wrote:
+
+> On Wed, Feb 29, 2012 at 10:37:38AM +0000, Pantelis Antoniou wrote:
+>> @@ -1110,9 +1110,9 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+>> 	struct cfs_rq *cfs_rq = group_cfs_rq(se);
+>> 	struct task_group *tg = cfs_rq->tg;
+>> 	int runnable_avg;
+>> +	u64 contrib;
+>> 
+>> -	se->avg.load_avg_contrib = (cfs_rq->tg_load_contrib * tg->shares);
+>> -	se->avg.load_avg_contrib /= atomic64_read(&tg->load_avg) + 1;
 > 
-> Use the header file in tools/include instead of duplicating the endian
-> functions.
+> It seems that contrib is never assigned?
+> Fix:
+> +	contrib = (cfs_rq->tg_load_contrib * tg->shares);
 > 
-> Cc: Davidlohr Bueso <dave@gnu.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+>> +	se->avg.load_avg_contrib = div_u64(contrib, atomic64_read(&tg->load_avg) + 1);
+> 
+> Regards,
+> Morten
+> 
 
-Greg and Dave, since the rest of this series is all in the x86
-directory, mind if I pick it up and put it in the -tip tree including
-this patch?
+Hmm, yeah,
 
-	-hpa
+2 line patch and brown paper bag time.
 
+Thanks
+
+-- Pantelis
