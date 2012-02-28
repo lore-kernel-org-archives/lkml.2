@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965165Ab2B1B13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:27:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965108Ab2B1BLk (ORCPT
+	id S965105Ab2B1BLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:11:39 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964974Ab2B1BLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:11:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.197.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:11:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.138 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010433.479310733@linuxfoundation.org>
+Message-Id: <20120228010433.276663038@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:15 -0800
+Date: Mon, 27 Feb 2012 17:05:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 46/72] ASoC: wm8962: Fix sidetone enumeration texts
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [ 44/72] usb-storage: fix freezing of the scanning thread
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +27,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 31794bc37bf2db84f085da52b72bfba65739b2d2 upstream.
+commit bb94a406682770a35305daaa241ccdb7cab399de upstream.
 
-The sidetone enumeration texts have left and right swapped.
+This patch (as1521b) fixes the interaction between usb-storage's
+scanning thread and the freezer.  The current implementation has a
+race: If the device is unplugged shortly after being plugged in and
+just as a system sleep begins, the scanning thread may get frozen
+before the khubd task.  Khubd won't be able to freeze until the
+disconnect processing is complete, and the disconnect processing can't
+proceed until the scanning thread finishes, so the sleep transition
+will fail.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+The implementation in the 3.2 kernel suffers from an additional
+problem.  There the scanning thread calls set_freezable_with_signal(),
+and the signals sent by the freezer will mess up the thread's I/O
+delays, which are all interruptible.
+
+The solution to both problems is the same: Replace the kernel thread
+used for scanning with a delayed-work routine on the system freezable
+work queue.  Freezable work queues have the nice property that you can
+cancel a work item even while the work queue is frozen, and no signals
+are needed.
+
+The 3.2 version of this patch solves the problem in Bugzilla #42730.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/storage/usb.c |   91 ++++++++++++++++------------------------------
+ drivers/usb/storage/usb.h |    7 ++-
+ 2 files changed, 36 insertions(+), 62 deletions(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2559,7 +2559,7 @@ static int dsp2_event(struct snd_soc_dap
- 	return 0;
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -788,15 +788,19 @@ static void quiesce_and_remove_host(stru
+ 	struct Scsi_Host *host = us_to_host(us);
+ 
+ 	/* If the device is really gone, cut short reset delays */
+-	if (us->pusb_dev->state == USB_STATE_NOTATTACHED)
++	if (us->pusb_dev->state == USB_STATE_NOTATTACHED) {
+ 		set_bit(US_FLIDX_DISCONNECTING, &us->dflags);
++		wake_up(&us->delay_wait);
++	}
+ 
+-	/* Prevent SCSI-scanning (if it hasn't started yet)
+-	 * and wait for the SCSI-scanning thread to stop.
++	/* Prevent SCSI scanning (if it hasn't started yet)
++	 * or wait for the SCSI-scanning routine to stop.
+ 	 */
+-	set_bit(US_FLIDX_DONT_SCAN, &us->dflags);
+-	wake_up(&us->delay_wait);
+-	wait_for_completion(&us->scanning_done);
++	cancel_delayed_work_sync(&us->scan_dwork);
++
++	/* Balance autopm calls if scanning was cancelled */
++	if (test_bit(US_FLIDX_SCAN_PENDING, &us->dflags))
++		usb_autopm_put_interface_no_suspend(us->pusb_intf);
+ 
+ 	/* Removing the host will perform an orderly shutdown: caches
+ 	 * synchronized, disks spun down, etc.
+@@ -823,52 +827,28 @@ static void release_everything(struct us
+ 	scsi_host_put(us_to_host(us));
  }
  
--static const char *st_text[] = { "None", "Right", "Left" };
-+static const char *st_text[] = { "None", "Left", "Right" };
+-/* Thread to carry out delayed SCSI-device scanning */
+-static int usb_stor_scan_thread(void * __us)
++/* Delayed-work routine to carry out SCSI-device scanning */
++static void usb_stor_scan_dwork(struct work_struct *work)
+ {
+-	struct us_data *us = (struct us_data *)__us;
++	struct us_data *us = container_of(work, struct us_data,
++			scan_dwork.work);
+ 	struct device *dev = &us->pusb_intf->dev;
  
- static const struct soc_enum str_enum =
- 	SOC_ENUM_SINGLE(WM8962_DAC_DSP_MIXING_1, 2, 3, st_text);
+-	dev_dbg(dev, "device found\n");
+-
+-	set_freezable_with_signal();
+-	/*
+-	 * Wait for the timeout to expire or for a disconnect
+-	 *
+-	 * We can't freeze in this thread or we risk causing khubd to
+-	 * fail to freeze, but we can't be non-freezable either. Nor can
+-	 * khubd freeze while waiting for scanning to complete as it may
+-	 * hold the device lock, causing a hang when suspending devices.
+-	 * So we request a fake signal when freezing and use
+-	 * interruptible sleep to kick us out of our wait early when
+-	 * freezing happens.
+-	 */
+-	if (delay_use > 0) {
+-		dev_dbg(dev, "waiting for device to settle "
+-				"before scanning\n");
+-		wait_event_interruptible_timeout(us->delay_wait,
+-				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
+-				delay_use * HZ);
+-	}
+-
+-	/* If the device is still connected, perform the scanning */
+-	if (!test_bit(US_FLIDX_DONT_SCAN, &us->dflags)) {
+-
+-		/* For bulk-only devices, determine the max LUN value */
+-		if (us->protocol == USB_PR_BULK &&
+-				!(us->fflags & US_FL_SINGLE_LUN)) {
+-			mutex_lock(&us->dev_mutex);
+-			us->max_lun = usb_stor_Bulk_max_lun(us);
+-			mutex_unlock(&us->dev_mutex);
+-		}
+-		scsi_scan_host(us_to_host(us));
+-		dev_dbg(dev, "scan complete\n");
++	dev_dbg(dev, "starting scan\n");
+ 
+-		/* Should we unbind if no devices were detected? */
++	/* For bulk-only devices, determine the max LUN value */
++	if (us->protocol == USB_PR_BULK && !(us->fflags & US_FL_SINGLE_LUN)) {
++		mutex_lock(&us->dev_mutex);
++		us->max_lun = usb_stor_Bulk_max_lun(us);
++		mutex_unlock(&us->dev_mutex);
+ 	}
++	scsi_scan_host(us_to_host(us));
++	dev_dbg(dev, "scan complete\n");
++
++	/* Should we unbind if no devices were detected? */
+ 
+ 	usb_autopm_put_interface(us->pusb_intf);
+-	complete_and_exit(&us->scanning_done, 0);
++	clear_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+ }
+ 
+ static unsigned int usb_stor_sg_tablesize(struct usb_interface *intf)
+@@ -915,7 +895,7 @@ int usb_stor_probe1(struct us_data **pus
+ 	init_completion(&us->cmnd_ready);
+ 	init_completion(&(us->notify));
+ 	init_waitqueue_head(&us->delay_wait);
+-	init_completion(&us->scanning_done);
++	INIT_DELAYED_WORK(&us->scan_dwork, usb_stor_scan_dwork);
+ 
+ 	/* Associate the us_data structure with the USB device */
+ 	result = associate_dev(us, intf);
+@@ -946,7 +926,6 @@ EXPORT_SYMBOL_GPL(usb_stor_probe1);
+ /* Second part of general USB mass-storage probing */
+ int usb_stor_probe2(struct us_data *us)
+ {
+-	struct task_struct *th;
+ 	int result;
+ 	struct device *dev = &us->pusb_intf->dev;
+ 
+@@ -987,20 +966,14 @@ int usb_stor_probe2(struct us_data *us)
+ 		goto BadDevice;
+ 	}
+ 
+-	/* Start up the thread for delayed SCSI-device scanning */
+-	th = kthread_create(usb_stor_scan_thread, us, "usb-stor-scan");
+-	if (IS_ERR(th)) {
+-		dev_warn(dev,
+-				"Unable to start the device-scanning thread\n");
+-		complete(&us->scanning_done);
+-		quiesce_and_remove_host(us);
+-		result = PTR_ERR(th);
+-		goto BadDevice;
+-	}
+-
++	/* Submit the delayed_work for SCSI-device scanning */
+ 	usb_autopm_get_interface_no_resume(us->pusb_intf);
+-	wake_up_process(th);
++	set_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+ 
++	if (delay_use > 0)
++		dev_dbg(dev, "waiting for device to settle before scanning\n");
++	queue_delayed_work(system_freezable_wq, &us->scan_dwork,
++			delay_use * HZ);
+ 	return 0;
+ 
+ 	/* We come here if there are any problems */
+--- a/drivers/usb/storage/usb.h
++++ b/drivers/usb/storage/usb.h
+@@ -47,6 +47,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/completion.h>
+ #include <linux/mutex.h>
++#include <linux/workqueue.h>
+ #include <scsi/scsi_host.h>
+ 
+ struct us_data;
+@@ -72,7 +73,7 @@ struct us_unusual_dev {
+ #define US_FLIDX_DISCONNECTING	3	/* disconnect in progress   */
+ #define US_FLIDX_RESETTING	4	/* device reset in progress */
+ #define US_FLIDX_TIMED_OUT	5	/* SCSI midlayer timed out  */
+-#define US_FLIDX_DONT_SCAN	6	/* don't scan (disconnect)  */
++#define US_FLIDX_SCAN_PENDING	6	/* scanning not yet done    */
+ #define US_FLIDX_REDO_READ10	7	/* redo READ(10) command    */
+ #define US_FLIDX_READ10_WORKED	8	/* previous READ(10) succeeded */
+ 
+@@ -147,8 +148,8 @@ struct us_data {
+ 	/* mutual exclusion and synchronization structures */
+ 	struct completion	cmnd_ready;	 /* to sleep thread on	    */
+ 	struct completion	notify;		 /* thread begin/end	    */
+-	wait_queue_head_t	delay_wait;	 /* wait during scan, reset */
+-	struct completion	scanning_done;	 /* wait for scan thread    */
++	wait_queue_head_t	delay_wait;	 /* wait during reset	    */
++	struct delayed_work	scan_dwork;	 /* for async scanning      */
+ 
+ 	/* subdriver information */
+ 	void			*extra;		 /* Any extra data          */
 
 
