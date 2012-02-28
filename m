@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965400Ab2B1BYj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:24:39 -0500
+	id S965453Ab2B1BTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:19:14 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:58867 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965331Ab2B1BTP (ORCPT
+	with ESMTP id S965191Ab2B1BTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:19:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.69 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010429.649073322@linuxfoundation.org>
+Message-Id: <20120228010431.185435769@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:04:32 -0800
+Date: Mon, 27 Feb 2012 17:04:49 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Karel Znamenacek <karel@ryston.cz>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 03/72] ARM: at91: USB AT91 gadget registration for module
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <jdelvare@suse.de>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 20/72] 3c59x: shorten timer period for slave devices
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,70 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit e8c9dc93e27d891636defbc269f182a83e6abba8 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Registration of at91_udc as a module will enable SoC
-related code.
+[ Upstream commit 3013dc0cceb9baaf25d5624034eeaa259bf99004 ]
 
-Fix following an idea from Karel Znamenacek.
+Jean Delvare reported bonding on top of 3c59x adapters was not detecting
+network cable removal fast enough.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Karel Znamenacek <karel@ryston.cz>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+3c59x indeed uses a 60 seconds timer to check link status if carrier is
+on, and 5 seconds if carrier is off.
+
+This patch reduces timer period to 5 seconds if device is a bonding
+slave.
+
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/3com/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -83,7 +83,7 @@ void __init at91_add_device_usbh(struct
-  *  USB Device (Gadget)
-  * -------------------------------------------------------------------- */
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -1842,7 +1842,7 @@ vortex_timer(unsigned long data)
+ 		ok = 1;
+ 	}
  
--#ifdef CONFIG_USB_AT91
-+#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
- static struct at91_udc_data udc_data;
+-	if (!netif_carrier_ok(dev))
++	if (dev->flags & IFF_SLAVE || !netif_carrier_ok(dev))
+ 		next_tick = 5*HZ;
  
- static struct resource udc_resources[] = {
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -84,7 +84,7 @@ void __init at91_add_device_usbh(struct
-  *  USB Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#ifdef CONFIG_USB_AT91
-+#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
- static struct at91_udc_data udc_data;
- 
- static struct resource udc_resources[] = {
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -87,7 +87,7 @@ void __init at91_add_device_usbh(struct
-  *  USB Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#ifdef CONFIG_USB_AT91
-+#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
- static struct at91_udc_data udc_data;
- 
- static struct resource udc_resources[] = {
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -92,7 +92,7 @@ void __init at91_add_device_usbh(struct
-  *  USB Device (Gadget)
-  * -------------------------------------------------------------------- */
- 
--#ifdef CONFIG_USB_AT91
-+#if defined(CONFIG_USB_AT91) || defined(CONFIG_USB_AT91_MODULE)
- static struct at91_udc_data udc_data;
- 
- static struct resource udc_resources[] = {
+ 	if (vp->medialock)
 
 
