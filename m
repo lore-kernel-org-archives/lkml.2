@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030235Ab2B1SvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 13:51:06 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34829 "EHLO
+	id S1030249Ab2B1SvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 13:51:14 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47407 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030223Ab2B1SvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 13:51:02 -0500
+	id S966054Ab2B1SvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 13:51:12 -0500
 From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH trivial next 8/9] staging: ramster: Use vsprintf extention %pf with builtin_return_address
-Date: Tue, 28 Feb 2012 10:49:37 -0800
-Message-Id: <f92c6a1e643f30ad8d92ba95a0017a1865fae8c8.1330454853.git.joe@perches.com>
+To: Felipe Balbi <balbi@ti.com>, Jiri Kosina <trivial@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH trivial next 9/9] gadget: Use vsprintf extention %pf with builtin_return_address
+Date: Tue, 28 Feb 2012 10:49:38 -0800
+Message-Id: <1bc7879deffd667985a3bcfce70e19418c704143.1330454853.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1330454853.git.joe@perches.com>
 References: <cover.1330454853.git.joe@perches.com>
@@ -28,31 +28,22 @@ name not the address.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/ramster/cluster/heartbeat.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/u_serial.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/ramster/cluster/heartbeat.c b/drivers/staging/ramster/cluster/heartbeat.c
-index 0020949..fe1db52 100644
---- a/drivers/staging/ramster/cluster/heartbeat.c
-+++ b/drivers/staging/ramster/cluster/heartbeat.c
-@@ -398,7 +398,7 @@ int r2hb_register_callback(const char *region_uuid,
- 	up_write(&r2hb_callback_sem);
- 	ret = 0;
- out:
--	mlog(ML_CLUSTER, "returning %d on behalf of %p for funcs %p\n",
-+	mlog(ML_CLUSTER, "returning %d on behalf of %pf for funcs %pf\n",
- 	     ret, __builtin_return_address(0), hc);
- 	return ret;
- }
-@@ -409,7 +409,7 @@ void r2hb_unregister_callback(const char *region_uuid,
- {
- 	BUG_ON(hc->hc_magic != R2HB_CB_MAGIC);
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index 6597a68..a553bee 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -920,7 +920,7 @@ static int gs_put_char(struct tty_struct *tty, unsigned char ch)
+ 	unsigned long	flags;
+ 	int		status;
  
--	mlog(ML_CLUSTER, "on behalf of %p for funcs %p\n",
-+	mlog(ML_CLUSTER, "on behalf of %pf for funcs %pf\n",
- 	     __builtin_return_address(0), hc);
+-	pr_vdebug("gs_put_char: (%d,%p) char=0x%x, called from %p\n",
++	pr_vdebug("gs_put_char: (%d,%p) char=0x%x, called from %pf\n",
+ 		port->port_num, tty, ch, __builtin_return_address(0));
  
- 	/* XXX Can this happen _with_ a region reference? */
+ 	spin_lock_irqsave(&port->port_lock, flags);
 -- 
 1.7.8.111.gad25c.dirty
 
