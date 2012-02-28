@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965299Ab2B1U0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 15:26:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56445 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964871Ab2B1U0R (ORCPT
+	id S965503Ab2B1U1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 15:27:39 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17344 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964871Ab2B1U1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 15:26:17 -0500
-Date: Tue, 28 Feb 2012 12:26:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Steven Truelove <steven.truelove@utoronto.ca>
-Cc: wli@holomorphy.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] Correct alignment of huge page requests.
-Message-Id: <20120228122616.de510ae2.akpm@linux-foundation.org>
-In-Reply-To: <1330401628-30818-1-git-send-email-steven.truelove@utoronto.ca>
-References: <1330401628-30818-1-git-send-email-steven.truelove@utoronto.ca>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 15:27:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 28 Feb 2012 12:27:35 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 0/6] pinctrl: API rework, pinconfig in mapping table, ...
+Date: Tue, 28 Feb 2012 13:27:26 -0700
+Message-ID: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Feb 2012 23:00:28 -0500
-Steven Truelove <steven.truelove@utoronto.ca> wrote:
+This is the current set of patches I have outstanding for pinctrl.
 
-> When calling shmget() with SHM_HUGETLB, shmget aligns the request size to PAGE_SIZE, but this is not sufficient.  Modified hugetlb_file_setup() to align requests to the huge page size.  Also modified mmap_pgoff() to avoid duplicating this check and to align against the start address.
-> 
+The locking rework change is still under discussion; I haven't seen a
+nak/ack since I was asked to move it later in the series and I explained
+the difficulties in doing so while maintaining correctness.
 
-I don't think this is quite right.
+The other changes have fixes based on review feedback.
 
-Suppose huge_page_size is 4096, addr=4095, len=4098.  So we're mapping
-three pages: the last byte of the first page, all of the second page
-and the first byte of the third page. 
+The last patch is a fix for the Tegra30 pinctrl driver that showed up
+once I was able to test on real HW. You should be able to apply this
+out-of-order if you want. I'd even be happy if you squashed it into the
+original commit that added the driver, if you branch doesn't need to be
+git-stable.
 
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -938,6 +938,8 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->  	struct path path;
->  	struct dentry *root;
->  	struct qstr quick_string;
-> +	struct hstate *hstate;
-> +	int num_pages;
->  
->  	*user = NULL;
->  	if (!hugetlbfs_vfsmount)
-> @@ -967,10 +969,11 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->  	if (!inode)
->  		goto out_dentry;
->  
-> +	hstate = hstate_inode(inode);
-> +	num_pages = ALIGN(size, huge_page_size(hstate)) >>
-> +			huge_page_shift(hstate);
->  	error = -ENOMEM;
-> -	if (hugetlb_reserve_pages(inode, 0,
-> -			size >> huge_page_shift(hstate_inode(inode)), NULL,
-> -			acctflag))
-> +	if (hugetlb_reserve_pages(inode, 0, num_pages, NULL, acctflag))
->  		goto out_inode;
->  
->  	d_instantiate(path.dentry, inode);
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 3f758c7..1f44ccf 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1098,8 +1098,12 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
->  		 * taken when vm_ops->mmap() is called
->  		 * A dummy user value is used because we are not locking
->  		 * memory so no accounting is necessary
-> +		 * Length is increased by the amount necessary to align
-> +		 * the base address to the huge page size.
-> +		 * hugetlb_file_setup() aligns the end of the buffer to
-> +		 * the huge page size.
->  		 */
-> -		len = ALIGN(len, huge_page_size(&default_hstate));
-> +		len += ALIGN(addr, huge_page_size(&default_hstate)) - addr;
->  		file = hugetlb_file_setup(HUGETLB_ANON_FILE, len, VM_NORESERVE,
->  						&user, HUGETLB_ANONHUGE_INODE);
+Stephen Warren (6):
+  pinctrl: Fix and simplify locking
+  pinctrl: Refactor struct pinctrl handling in core.c vs pinmux.c
+  pinctrl: Add usecount to pins for muxing
+  pinctrl: API changes to support multiple states per device
+  pinctrl: Enhance mapping table to support pin config operations
+  pinctrl: fix case of Tegra30's foo_groups[] arrays
 
-mmap_pgoff() will change `len' from 4098 to 4099.  hugetlb_file_setup()
-will round that up to 8192 and will decide to reserve two pages, not
-three.
+ Documentation/pinctrl.txt         |  196 +++-
+ arch/arm/mach-u300/core.c         |   28 +-
+ drivers/pinctrl/core.c            |  630 ++++++++----
+ drivers/pinctrl/core.h            |   92 ++-
+ drivers/pinctrl/pinconf.c         |  272 +++++-
+ drivers/pinctrl/pinconf.h         |   40 +
+ drivers/pinctrl/pinctrl-tegra30.c | 1992 ++++++++++++++++++------------------
+ drivers/pinctrl/pinmux.c          |  464 +++------
+ drivers/pinctrl/pinmux.h          |   59 +-
+ drivers/tty/serial/sirfsoc_uart.c |   12 +-
+ include/linux/pinctrl/consumer.h  |   55 +-
+ include/linux/pinctrl/machine.h   |  148 +++-
+ include/linux/pinctrl/pinctrl.h   |    1 -
+ 13 files changed, 2282 insertions(+), 1707 deletions(-)
 
