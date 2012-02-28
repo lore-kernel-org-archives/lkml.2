@@ -1,127 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2B1GtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 01:49:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43841 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2B1GtL (ORCPT
+	id S1753816Ab2B1GwV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 01:52:21 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:44608 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab2B1GwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 01:49:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.124.17 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F4C78E3.7080807@openvz.org>
-Date: Tue, 28 Feb 2012 10:49:07 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Tue, 28 Feb 2012 01:52:18 -0500
+Message-ID: <b983ece9dc6209269876869188303518.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1330140111-17201-6-git-send-email-wad@chromium.org>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+    <1330140111-17201-6-git-send-email-wad@chromium.org>
+Date: Tue, 28 Feb 2012 07:51:57 +0100
+Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, "Will Drewry" <wad@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 00/21] mm: lru_lock splitting
-References: <20120223133728.12988.5432.stgit@zurg> <20120228105236.448c0bf3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120228105236.448c0bf3.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 3ddf0642c34c0a2e6ef249022ab545db
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 23 Feb 2012 17:51:36 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> v3 changes:
->> * inactive-ratio reworked again, now it always calculated from from scratch
->> * hierarchical pte reference bits filter in memory-cgroup reclaimer
->> * fixed two bugs in locking, found by Hugh Dickins
->> * locking functions slightly simplified
->> * new patch for isolated pages accounting
->> * new patch with lru interleaving
->>
->> This patchset is based on next-20120210
->>
->> git: https://github.com/koct9i/linux/commits/lruvec-v3
->>
-> I'm sorry I can't have enough review time in these days but the whole series
-> seems good to me.
->
->
-> BTW, how about trying to merge patch 1/21 ->  13or14/21 first ?
-> This series adds many changes to various place under /mm. So, step-by-step
-> merging will be better I think.
-> (Just says as this because I tend to split a long series of patch to
->   small sets of patches and merge them one by one to reduce my own maintainance cost.)
+Hello,
 
-I agree, the amount of required cleanups has exceeded the limit.
-I'll send them as separate patchset, maybe tomorrow.
+On Sat, February 25, 2012 04:21, Will Drewry wrote:
+> @@ -169,6 +170,7 @@ void free_task(struct task_struct *tsk)
+> 	free_thread_info(tsk->stack);
+> 	rt_mutex_debug_task_free(tsk);
+> 	ftrace_graph_exit_task(tsk);
+> +	put_seccomp_filter(tsk->seccomp.filter);
+> 	free_task_struct(tsk);
+> }
+> EXPORT_SYMBOL(free_task);
+> @@ -1113,6 +1115,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> 		goto fork_out;
+>
+> 	ftrace_graph_init_task(p);
+> +	copy_seccomp(&p->seccomp, &current->seccomp);
+
+I agree it's more symmetrical when get_seccomp_filter() is used here
+directly instead of copy_seccomp(). That should put Kees at ease.
+
+> +static void seccomp_filter_log_failure(int syscall)
+> +{
+> +	int compat = 0;
+> +#ifdef CONFIG_COMPAT
+> +	compat = is_compat_task();
+> +#endif
+> +	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+> +		current->comm, task_pid_nr(current),
+> +		(compat ? "compat " : ""),
+> +		syscall, KSTK_EIP(current));
+> +}
+
+This should be at least rate limited, but could be dropped altogether,
+as it's mostly useful for debugging filters. There is no kernel message
+when a process is killed because it exceeds a ulimit either. The death
+by SIGSYS is hopefully clear enough for users, and filter writers can
+return different errno values when debugging where it goes wrong.
+
+> +/**
+> + * bpf_load: checks and returns a pointer to the requested offset
+> + * @nr: int syscall passed as a void * to bpf_run_filter
+> + * @off: offset into struct seccomp_data to load from
+
+Must be aligned, that's worth mentioning.
+
+> + * @size: number of bytes to load (must be 4)
+> + * @buffer: temporary storage supplied by bpf_run_filter (4 bytes)
+
+'@buf'.
+
+> +/**
+> + * copy_seccomp: manages inheritance on fork
+> + * @child: forkee's seccomp
+> + * @parent: forker's seccomp
+> + *
+> + * Ensures that @child inherits filters if in use.
+> + */
+> +void copy_seccomp(struct seccomp *child, const struct seccomp *parent)
+> +{
+> +	/* Other fields are handled by dup_task_struct. */
+> +	child->filter = get_seccomp_filter(parent->filter);
+> +}
+> +#endif	/* CONFIG_SECCOMP_FILTER */
+
+Yeah, just get rid of this and use get_seccomp_filter directly, and make
+it return void instead of a pointer.
 
 >
-> At final lock splitting, performance number should be in changelog.
+> /*
+>  * Secure computing mode 1 allows only read/write/exit/sigreturn.
+> @@ -34,10 +293,11 @@ static int mode1_syscalls_32[] = {
+> void __secure_computing(int this_syscall)
+> {
+> 	int mode = current->seccomp.mode;
+> -	int * syscall;
+> +	int exit_code = SIGKILL;
+> +	int *syscall;
+>
+> 	switch (mode) {
+> -	case 1:
+> +	case SECCOMP_MODE_STRICT:
+> 		syscall = mode1_syscalls;
+> #ifdef CONFIG_COMPAT
+> 		if (is_compat_task())
+> @@ -48,6 +308,14 @@ void __secure_computing(int this_syscall)
+> 				return;
+> 		} while (*++syscall);
+> 		break;
+> +#ifdef CONFIG_SECCOMP_FILTER
+> +	case SECCOMP_MODE_FILTER:
+> +		if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
+> +			return;
+> +		seccomp_filter_log_failure(this_syscall);
+> +		exit_code = SIGSYS;
 
-For sure
+Wouldn't it make more sense to always kill with SIGSYS, also for mode 1?
+I suppose it's too late for that now.
 
->
-> Thanks,
-> -Kame
->
->> ---
->>
->> Konstantin Khlebnikov (21):
->>        memcg: unify inactive_ratio calculation
->>        memcg: make mm_match_cgroup() hirarchical
->>        memcg: fix page_referencies cgroup filter on global reclaim
->>        memcg: use vm_swappiness from target memory cgroup
->>        mm: rename lruvec->lists into lruvec->pages_lru
->>        mm: lruvec linking functions
->>        mm: add lruvec->pages_count
->>        mm: unify inactive_list_is_low()
->>        mm: add lruvec->reclaim_stat
->>        mm: kill struct mem_cgroup_zone
->>        mm: move page-to-lruvec translation upper
->>        mm: push lruvec into update_page_reclaim_stat()
->>        mm: push lruvecs from pagevec_lru_move_fn() to iterator
->>        mm: introduce lruvec locking primitives
->>        mm: handle lruvec relocks on lumpy reclaim
->>        mm: handle lruvec relocks in compaction
->>        mm: handle lruvec relock in memory controller
->>        mm: add to lruvec isolated pages counters
->>        memcg: check lru vectors emptiness in pre-destroy
->>        mm: split zone->lru_lock
->>        mm: zone lru vectors interleaving
->>
->>
->>   include/linux/huge_mm.h    |    3
->>   include/linux/memcontrol.h |   75 ------
->>   include/linux/mm.h         |   66 +++++
->>   include/linux/mm_inline.h  |   19 +-
->>   include/linux/mmzone.h     |   39 ++-
->>   include/linux/swap.h       |    6
->>   mm/Kconfig                 |   16 +
->>   mm/compaction.c            |   31 +--
->>   mm/huge_memory.c           |   14 +
->>   mm/internal.h              |  204 +++++++++++++++++
->>   mm/ksm.c                   |    2
->>   mm/memcontrol.c            |  343 +++++++++++-----------------
->>   mm/migrate.c               |    2
->>   mm/page_alloc.c            |   70 +-----
->>   mm/rmap.c                  |    2
->>   mm/swap.c                  |  217 ++++++++++--------
->>   mm/vmscan.c                |  534 ++++++++++++++++++++++++--------------------
->>   mm/vmstat.c                |    6
->>   18 files changed, 932 insertions(+), 717 deletions(-)
->>
->> --
->> Signature
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->>
->
+> +/**
+> + * prctl_set_seccomp: configures current->seccomp.mode
+> + * @seccomp_mode: requested mode to use
+> + * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
+> + *
+> + * This function may be called repeatedly with a @seccomp_mode of
+> + * SECCOMP_MODE_FILTER to install additional filters.  Every filter
+> + * successfully installed will be evaluated (in reverse order) for each system
+> + * call the task makes.
+> + *
+> + * It is not possible to transition change the current->seccomp.mode after
+> + * one has been set on a task.
+
+That reads awkwardly, do you mean the mode can't be changed once it's set?
+
+---
+
+Reviewed-by: Indan Zupancic <indan@nul.nu>
+
+All in all I'm quite happy with how the code is now, at least this bit.
+I'm still unsure about the networking patch and the 32-bit BPF on 64-bit
+archs mismatch.
+
+As for the unlimited filter count, I'm not sure how to fix that.
+The problem is that filters are inherited and shared. Limiting the
+list length (tree depth) helps a bit, then the total memory usage
+is limited by max number of processes. It may make sense to limit
+the total instruction count instead of the number of filters.
+
+Greetings,
+
+Indan
+
 
