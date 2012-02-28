@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab2B1Xhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 18:37:38 -0500
-Received: from hulk.biessmann.org ([62.75.166.25]:46583 "EHLO
-	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757480Ab2B1Xhg (ORCPT
+	id S1757510Ab2B1Xlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 18:41:45 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37089 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757480Ab2B1Xlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 18:37:36 -0500
-Message-ID: <4F4D6532.4010906@biessmann.de>
-Date: Wed, 29 Feb 2012 00:37:22 +0100
-From: =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <andreas@biessmann.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 28 Feb 2012 18:41:44 -0500
+Message-ID: <4F4D663D.2040100@xenotime.net>
+Date: Tue, 28 Feb 2012 15:41:49 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Bernhard Walle <bernhard@bwalle.de>
-CC: mmarek@suse.cz, lacombar@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/Kbuild.include: Fix portability problem of "echo
- -e"
-References: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
-In-Reply-To: <1330277718-2667-1-git-send-email-bernhard@bwalle.de>
-X-Enigmail-Version: 1.3.5
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Build regressions/improvements in v3.3-rc5 (C lang questions)
+References: <1330462222-25201-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1330462222-25201-1-git-send-email-geert@linux-m68k.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-SPAM_bar: --
-X-SPAM_score: -28
-X-ChkData-Signature: e0aecb94051a5869b5deb36feca7a8f1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/28/2012 12:50 PM, Geert Uytterhoeven wrote:
 
-On 26.02.12 18:35, Bernhard Walle wrote:
-> "echo -e" is a GNU extension. When cross-compiling the kernel on a
-> BSD-like operating system (Mac OS X in my case), this doesn't work.
-> 
-> One could install a GNU version of echo, put that in the $PATH before
-> the system echo and use "/usr/bin/env echo", but the solution with
-> printf is simpler.
-> 
-> Since it is no disadvantage on Linux, I hope that gets accepted even if
-> cross-compiling the Linux kernel on another Unix operating system is
-> quite a rare use case.
-> 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+> Below is the list of build error/warning regressions/improvements in
+> v3.3-rc5[1] compared to v3.2[2].
 
-Tested-by: Andreas Bieﬂmann <andreas@biessmann.de>
 
-Without that patch cross-compiling kernel for omap2 devices on BSD-style
-hosts is broken.
-For x86 targets the impact is not that hard but CFI is omitted even
-though it is supported by assembler (in one case this led to a devious
-error message pointing to a assembler bug in my cross toolchain).
+>   + src/drivers/usb/misc/sisusbvga/sisusb.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 982
+>   + src/fs/ecryptfs/miscdev.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 448, 488
 
-So please consider applying this patch.
+
+Do the (2) above mean that some platform's gcc is borked?
+(I don't see these on i386 or x86_64.)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+>   + src/fs/ecryptfs/miscdev.c: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int':  => 433, 433:60
+
+I can see that warning on 32-bit i386 (X86_32), but if I change the
+"%lu" to "%u", it causes this warning on 64-bit x86_64:
+
+fs/ecryptfs/miscdev.c:433:38: warning: format '%u' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+
+so how is this supposed to be handled?
+
+Thanks.
+
