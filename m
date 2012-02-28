@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2B1IgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:36:16 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39541 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab2B1IgO (ORCPT
+	id S932566Ab2B1Iii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:38:38 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:39216 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932524Ab2B1Iih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:36:14 -0500
-Date: Tue, 28 Feb 2012 08:35:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
-Message-ID: <20120228083545.GA18045@n2100.arm.linux.org.uk>
-References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com> <20120227104858.GR22562@n2100.arm.linux.org.uk> <20120227110204.GA30199@n2100.arm.linux.org.uk> <CAOAMb1BjC2bF=rpJAhRUrB_U2mp8HGWxfcp+=TZ1etWzjUEwig@mail.gmail.com>
+	Tue, 28 Feb 2012 03:38:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of peter.ujfalusi@ti.com designates 10.112.45.74 as permitted sender) smtp.mail=peter.ujfalusi@ti.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOAMb1BjC2bF=rpJAhRUrB_U2mp8HGWxfcp+=TZ1etWzjUEwig@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/2] MFD: twl6040: Conversion to i2c driver
+Date: Tue, 28 Feb 2012 10:34:50 +0200
+Message-Id: <1330418092-12314-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 10:35:30AM +0900, Chanho Min wrote:
-> On Mon, Feb 27, 2012 at 8:02 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Feb 27, 2012 at 10:48:58AM +0000, Russell King - ARM Linux wrote:
-> >> I'd much prefer to only clear those interrupts which actually need to be
-> >> cleared at this point.  So, I'd suggest this approach instead:
-> >
-> > Thinking about this a little more, we definitely want to mask and clear
-> > interrupts at probe time as well:
-> >
-> I'm not satisfied with this completely. RIS has some pending
-> interrupts even if interrupts are masked/disabled in IMSC. If your
-> patch is applied, interrupt can be pended as bellows and RXFE of the
-> flag register is set as well.
+Hello,
 
-RXFE _will_ be set.  Think about it - RXFE means Receive Fifo Empty.
-If the receive fifo is empty, it _will_ be set.
+Changes since v3:
+- Combined the main patch (conversion to i2c driver) with changes in Kconfig
+  files to avoid build breakage on other platforms
+- Added the received Acks from maintainers
 
-And RIS is the _Raw_ interrupt status.  That's the status _before_ the
-mask is acted upon.
+Samuel: is it possible for you to stop carrying the twl6040 changes you have at
+the moment in your for-next branch (can you drop the patches)?
+This series will make sure I will not brake x86_64 allmodconfig build.
 
-> writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
->        UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-> ...
-> Interrupt is occured and pended in RIS
+As we agreed this series will go via the audio tree (Liam) since it has
+dependency on earlier work of mine going through ASoC tree.
 
-But it won't be delivered because the mask register is zero.
+Thank you.
 
-> ..
-> writew(uap->im, uap->port.membase + UART011_IMSC);
-> 
-> Root cause is that Rx interrupt set but Rx fifo is empty. If we just
-> remove the sentence for clearing LCRH, nothing happens and interrupt
-> handler don't this misbehave.
+------
+Intro mail from the original series:
 
-No.
+This series will convert the twl6040 MFD driver to an i2c driver.
+Compared to older twl4030/5030/TPS the twl6040 is a standalone audio IC. It is
+better if the twl6040-core (and all of it's child devices) does not depend on
+the twl-core since it has nothing to with it.
+
+With this conversion the dependency on twl can be dropped from the twl6040
+driver stack (core, vibra, audio).
+
+Between the first and second patch the audio will not probe on OMAP4, but I felt
+it is better this way at least for the first RFC series to not have too big
+change within one patch. The two patch can be squashed together later if no
+objections.
+
+
+Regards,
+Peter
+---
+Peter Ujfalusi (2):
+  MFD: twl-core: Detach twl6040 from the pmic mfd driver
+  MFD: twl6040: Convert to i2c driver, and separate it from twl core
+
+ arch/arm/mach-omap2/board-4430sdp.c    |   12 ++--
+ arch/arm/mach-omap2/board-generic.c    |    2 +-
+ arch/arm/mach-omap2/board-omap4panda.c |   13 ++--
+ arch/arm/mach-omap2/twl-common.c       |   37 +++++++++--
+ arch/arm/mach-omap2/twl-common.h       |   10 +--
+ drivers/input/misc/Kconfig             |    3 +-
+ drivers/input/misc/twl6040-vibra.c     |    4 +-
+ drivers/mfd/Kconfig                    |   11 +++-
+ drivers/mfd/twl-core.c                 |   58 +++++++++-------
+ drivers/mfd/twl6040-core.c             |  114 +++++++++++++++++++-------------
+ include/linux/i2c/twl.h                |   12 ----
+ include/linux/mfd/twl6040.h            |   27 ++++++++
+ sound/soc/codecs/Kconfig               |    3 +-
+ sound/soc/codecs/twl6040.c             |    3 +-
+ sound/soc/omap/Kconfig                 |    2 +-
+ 15 files changed, 192 insertions(+), 119 deletions(-)
+
+-- 
+1.7.8.4
+
