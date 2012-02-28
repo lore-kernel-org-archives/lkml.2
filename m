@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966130Ab2B1Whl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:37:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58290 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965907Ab2B1Whk (ORCPT
+	id S966140Ab2B1Wn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:43:56 -0500
+Received: from mga14.intel.com ([143.182.124.37]:16783 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757346Ab2B1Wnz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:37:40 -0500
-Date: Tue, 28 Feb 2012 14:37:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] memcg: add dirty page accounting infrastructure
-Message-Id: <20120228143738.b84d49ff.akpm@linux-foundation.org>
-In-Reply-To: <20120228144746.971869014@intel.com>
-References: <20120228140022.614718843@intel.com>
-	<20120228144746.971869014@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 17:43:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="71546816"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>
+CC: EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: RE: [PATCH 2/3] x86, RAS: Add a decoded msg buffer
+Thread-Topic: [PATCH 2/3] x86, RAS: Add a decoded msg buffer
+Thread-Index: AQHM9jOtUmbuajAxpkKVcYLgsy1w3pZS50zw
+Date: Tue, 28 Feb 2012 22:43:52 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F03FD68@ORSMSX104.amr.corp.intel.com>
+References: <1330445487-15020-1-git-send-email-bp@amd64.org>
+ <1330445487-15020-3-git-send-email-bp@amd64.org>
+In-Reply-To: <1330445487-15020-3-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 22:00:24 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
++	if (left <= 50) {
++		/* enlarge arbitrarily by 50 chars */
++		err_str_sz += 50;
++		left += 50;
++
++		err_str = krealloc(err_str, err_str_sz, GFP_KERNEL);
++		if (!err_str) {
++			pr_err("Error enlarging decode buffer.\n");
++			return;
++		}
++	}
 
-> From: Greg Thelen <gthelen@google.com>
-> 
-> Add memcg routines to count dirty, writeback, and unstable_NFS pages.
-> These routines are not yet used by the kernel to count such pages.  A
-> later change adds kernel calls to these new routines.
-> 
-> As inode pages are marked dirty, if the dirtied page's cgroup differs
-> from the inode's cgroup, then mark the inode shared across several
-> cgroup.
-> 
-> ...
->
-> @@ -1885,6 +1888,44 @@ void mem_cgroup_update_page_stat(struct 
->  			ClearPageCgroupFileMapped(pc);
->  		idx = MEM_CGROUP_STAT_FILE_MAPPED;
->  		break;
-> +
-> +	case MEMCG_NR_FILE_DIRTY:
-> +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
-> +		if (val > 0) {
-> +			if (TestSetPageCgroupFileDirty(pc))
-> +				val = 0;
-> +		} else {
-> +			if (!TestClearPageCgroupFileDirty(pc))
-> +				val = 0;
-> +		}
+This looks worrying to me.  Some bad stuff has happened, we are perhaps
+in machine check context, and you want to start allocating memory!
 
-Made me scratch my head for a while, but I see now that the `val' arg
-to (the undocumented) mem_cgroup_update_page_stat() can only ever have
-the values 1 or -1.  I hope.
+Is there some upper bound for how long this string can get? Why not
+just allocate a generous amount at boot time?
 
->
-> ...
->
+-Tony
