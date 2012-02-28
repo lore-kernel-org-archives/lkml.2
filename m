@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab2B1Bdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:33:43 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2B1BHS (ORCPT
+	id S932446Ab2B1BHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932434Ab2B1BHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.225.194 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.162 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010212.876820253@linuxfoundation.org>
+Message-Id: <20120228010212.369270454@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:55 -0800
+Date: Mon, 27 Feb 2012 17:02:52 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: [ 52/73] i387: do not preload FPU state at task switch time
+Subject: [ 49/73] i387: fix x86-64 preemption-unsafe user stack save/restore
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,192 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit b3b0870ef3ffed72b92415423da864f440f57ad6 upstream.
+commit 15d8791cae75dca27bfda8ecfe87dca9379d6bb0 upstream.
 
-Yes, taking the trap to re-load the FPU/MMX state is expensive, but so
-is spending several days looking for a bug in the state save/restore
-code.  And the preload code has some rather subtle interactions with
-both paravirtualization support and segment state restore, so it's not
-nearly as simple as it should be.
+Commit 5b1cbac37798 ("i387: make irq_fpu_usable() tests more robust")
+added a sanity check to the #NM handler to verify that we never cause
+the "Device Not Available" exception in kernel mode.
 
-Also, now that we no longer necessarily depend on a single bit (ie
-TS_USEDFPU) for keeping track of the state of the FPU, we migth be able
-to do better.  If we are really switching between two processes that
-keep touching the FP state, save/restore is inevitable, but in the case
-of having one process that does most of the FPU usage, we may actually
-be able to do much better than the preloading.
+However, that check actually pinpointed a (fundamental) race where we do
+cause that exception as part of the signal stack FPU state save/restore
+code.
 
-In particular, we may be able to keep track of which CPU the process ran
-on last, and also per CPU keep track of which process' FP state that CPU
-has.  For modern CPU's that don't destroy the FPU contents on save time,
-that would allow us to do a lazy restore by just re-enabling the
-existing FPU state - with no restore cost at all!
+Because we use the floating point instructions themselves to save and
+restore state directly from user mode, we cannot do that atomically with
+testing the TS_USEDFPU bit: the user mode access itself may cause a page
+fault, which causes a task switch, which saves and restores the FP/MMX
+state from the kernel buffers.
+
+This kind of "recursive" FP state save is fine per se, but it means that
+when the signal stack save/restore gets restarted, it will now take the
+'#NM' exception we originally tried to avoid.  With preemption this can
+happen even without the page fault - but because of the user access, we
+cannot just disable preemption around the save/restore instruction.
+
+There are various ways to solve this, including using the
+"enable/disable_page_fault()" helpers to not allow page faults at all
+during the sequence, and fall back to copying things by hand without the
+use of the native FP state save/restore instructions.
+
+However, the simplest thing to do is to just allow the #NM from kernel
+space, but fix the race in setting and clearing CR0.TS that this all
+exposed: the TS bit changes and the TS_USEDFPU bit absolutely have to be
+atomic wrt scheduling, so while the actual state save/restore can be
+interrupted and restarted, the act of actually clearing/setting CR0.TS
+and the TS_USEDFPU bit together must not.
+
+Instead of just adding random "preempt_disable/enable()" calls to what
+is already excessively ugly code, this introduces some helper functions
+that mostly mirror the "kernel_fpu_begin/end()" functionality, just for
+the user state instead.
+
+Those helper functions should probably eventually replace the other
+ad-hoc CR0.TS and TS_USEDFPU tests too, but I'll need to think about it
+some more: the task switching functionality in particular needs to
+expose the difference between the 'prev' and 'next' threads, while the
+new helper functions intentionally were written to only work with
+'current'.
 
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h  |    1 -
- arch/x86/kernel/process_32.c |   20 --------------------
- arch/x86/kernel/process_64.c |   23 -----------------------
- arch/x86/kernel/traps.c      |   35 +++++++++++------------------------
- 4 files changed, 11 insertions(+), 68 deletions(-)
+ arch/x86/include/asm/i387.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c     |    1 -
+ arch/x86/kernel/xsave.c     |   10 +++-------
+ 3 files changed, 45 insertions(+), 8 deletions(-)
 
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -30,7 +30,6 @@ extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
- extern int init_fpu(struct task_struct *child);
- extern void math_state_restore(void);
--extern void __math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
- 
- extern user_regset_active_fn fpregs_active, xfpregs_active;
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -293,23 +293,11 @@ __switch_to(struct task_struct *prev_p,
- 				 *next = &next_p->thread;
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
--	bool preload_fpu;
- 
- 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
- 
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
- 	__unlazy_fpu(prev_p);
- 
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
--
- 	/*
- 	 * Reload esp0.
- 	 */
-@@ -348,11 +336,6 @@ __switch_to(struct task_struct *prev_p,
- 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/* If we're going to preload the fpu context, make sure clts
--	   is run while we're batching the cpu state updates. */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -362,9 +345,6 @@ __switch_to(struct task_struct *prev_p,
- 	 */
- 	arch_end_context_switch(next_p);
- 
--	if (preload_fpu)
--		__math_state_restore();
--
- 	/*
- 	 * Restore %gs if needed (which is common)
- 	 */
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -377,18 +377,6 @@ __switch_to(struct task_struct *prev_p,
- 	int cpu = smp_processor_id();
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
- 	unsigned fsindex, gsindex;
--	bool preload_fpu;
--
--	/*
--	 * If the task has used fpu the last 5 timeslices, just do a full
--	 * restore of the math state immediately to avoid the trap; the
--	 * chances of needing FPU soon are obviously high now
--	 */
--	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
--
--	/* we're going to use this soon, after a few expensive things */
--	if (preload_fpu)
--		prefetch(next->fpu.state);
- 
- 	/*
- 	 * Reload esp0, LDT and the page table pointer:
-@@ -421,10 +409,6 @@ __switch_to(struct task_struct *prev_p,
- 	/* Must be after DS reload */
- 	__unlazy_fpu(prev_p);
- 
--	/* Make sure cpu is ready for new context */
--	if (preload_fpu)
--		clts();
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
-@@ -483,13 +467,6 @@ __switch_to(struct task_struct *prev_p,
- 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--	/*
--	 * Preload the FPU context, now that we've determined that the
--	 * task is likely to be using it. 
--	 */
--	if (preload_fpu)
--		__math_state_restore();
--
- 	return prev_p;
- }
- 
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -717,28 +717,6 @@ asmlinkage void __attribute__((weak)) sm
+@@ -400,6 +400,48 @@ static inline void irq_ts_restore(int TS
  }
  
  /*
-- * __math_state_restore assumes that cr0.TS is already clear and the
-- * fpu state is all ready for use.  Used during context switch.
-- */
--void __math_state_restore(void)
--{
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
--
--	/*
--	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
--	 */
--	if (unlikely(restore_fpu_checking(tsk))) {
++ * The question "does this thread have fpu access?"
++ * is slightly racy, since preemption could come in
++ * and revoke it immediately after the test.
++ *
++ * However, even in that very unlikely scenario,
++ * we can just assume we have FPU access - typically
++ * to save the FP state - we'll just take a #NM
++ * fault and get the FPU access back.
++ *
++ * The actual user_fpu_begin/end() functions
++ * need to be preemption-safe, though.
++ *
++ * NOTE! user_fpu_end() must be used only after you
++ * have saved the FP state, and user_fpu_begin() must
++ * be used only immediately before restoring it.
++ * These functions do not do any save/restore on
++ * their own.
++ */
++static inline int user_has_fpu(void)
++{
++	return current_thread_info()->status & TS_USEDFPU;
++}
++
++static inline void user_fpu_end(void)
++{
++	preempt_disable();
++	current_thread_info()->status &= ~TS_USEDFPU;
++	stts();
++	preempt_enable();
++}
++
++static inline void user_fpu_begin(void)
++{
++	preempt_disable();
++	if (!user_has_fpu()) {
++		clts();
++		current_thread_info()->status |= TS_USEDFPU;
++	}
++	preempt_enable();
++}
++
++/*
+  * These disable preemption on their own and are safe
+  */
+ static inline void save_init_fpu(struct task_struct *tsk)
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -777,7 +777,6 @@ EXPORT_SYMBOL_GPL(math_state_restore);
+ dotraplinkage void __kprobes
+ do_device_not_available(struct pt_regs *regs, long error_code)
+ {
+-	WARN_ON_ONCE(!user_mode_vm(regs));
+ #ifdef CONFIG_MATH_EMULATION
+ 	if (read_cr0() & X86_CR0_EM) {
+ 		struct math_emu_info info = { };
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -168,7 +168,7 @@ int save_i387_xstate(void __user *buf)
+ 	if (!used_math())
+ 		return 0;
+ 
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
++	if (user_has_fpu()) {
+ 		if (use_xsave())
+ 			err = xsave_user(buf);
+ 		else
+@@ -176,8 +176,7 @@ int save_i387_xstate(void __user *buf)
+ 
+ 		if (err)
+ 			return err;
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
 -		stts();
--		force_sig(SIGSEGV, tsk);
--		return;
--	}
--
--	__thread_set_has_fpu(thread);	/* clts in caller! */
--	tsk->fpu_counter++;
--}
--
--/*
-  * 'math_state_restore()' saves the current math information in the
-  * old math state array, and gets the new ones from the current task
-  *
-@@ -768,9 +746,18 @@ void math_state_restore(void)
- 		local_irq_disable();
++		user_fpu_end();
+ 	} else {
+ 		sanitize_i387_state(tsk);
+ 		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
+@@ -292,10 +291,7 @@ int restore_i387_xstate(void __user *buf
+ 			return err;
  	}
  
--	clts();				/* Allow maths ops (or we recurse) */
-+	__thread_fpu_begin(thread);
- 
--	__math_state_restore();
-+	/*
-+	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
-+	 */
-+	if (unlikely(restore_fpu_checking(tsk))) {
-+		__thread_fpu_end(thread);
-+		force_sig(SIGSEGV, tsk);
-+		return;
-+	}
-+
-+	tsk->fpu_counter++;
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
- 
+-	if (!(task_thread_info(current)->status & TS_USEDFPU)) {
+-		clts();
+-		task_thread_info(current)->status |= TS_USEDFPU;
+-	}
++	user_fpu_begin();
+ 	if (use_xsave())
+ 		err = restore_user_xstate(buf);
+ 	else
 
 
