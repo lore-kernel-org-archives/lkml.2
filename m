@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965312Ab2B1B0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:26:38 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
+	id S965152Ab2B1B05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:26:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965134Ab2B1BLr (ORCPT
+	with ESMTP id S965124Ab2B1BLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:11:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:11:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.134 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010433.819076125@linuxfoundation.org>
+Message-Id: <20120228010433.658724342@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:19 -0800
+Date: Mon, 27 Feb 2012 17:05:17 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris D Schimp <silverchris@gmail.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Roland Stigge <stigge@antcom.de>
-Subject: [ 50/72] hwmon: (max6639) Fix FAN_FROM_REG calculation
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [ 48/72] ALSA: hda/realtek - Fix surround output regression on Acer Aspire 5935
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris D Schimp <silverchris@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b63d97a36edb1aecf8c13e5f5783feff4d64c24b upstream.
+commit ef8d60fb79614a86a82720dc2402631dbcafb315 upstream.
 
-RPM calculation from tachometer value does not depend on PPR.
-Also, do not report negative RPM values.
+The previous fix for the speaker on Acer Aspire 59135 introduced
+another problem for surround outputs.  It changed the connections on
+the line-in/mic pins for limiting the routes, but it left the modified
+connections.  Thus wrong connection indices were written when set to
+4ch or 6ch mode.
 
-Signed-off-by: Chris D Schimp <silverchris@gmail.com>
-[guenter.roeck@ericsson.com: do not report negative RPM values]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Roland Stigge <stigge@antcom.de>
+This patch fixes it by restoring the right connections just after
+parsing the tree but before the initialization.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42740
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/max6639.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/hwmon/max6639.c
-+++ b/drivers/hwmon/max6639.c
-@@ -72,8 +72,8 @@ static unsigned short normal_i2c[] = { 0
- 
- static const int rpm_ranges[] = { 2000, 4000, 8000, 16000 };
- 
--#define FAN_FROM_REG(val, div, rpm_range)	((val) == 0 ? -1 : \
--	(val) == 255 ? 0 : (rpm_ranges[rpm_range] * 30) / ((div + 1) * (val)))
-+#define FAN_FROM_REG(val, rpm_range)	((val) == 0 || (val) == 255 ? \
-+				0 : (rpm_ranges[rpm_range] * 30) / (val))
- #define TEMP_LIMIT_TO_REG(val)	SENSORS_LIMIT((val) / 1000, 0, 255)
- 
- /*
-@@ -333,7 +333,7 @@ static ssize_t show_fan_input(struct dev
- 		return PTR_ERR(data);
- 
- 	return sprintf(buf, "%d\n", FAN_FROM_REG(data->fan[attr->index],
--		       data->ppr, data->rpm_range));
-+		       data->rpm_range));
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4229,12 +4229,20 @@ static void alc889_fixup_dac_route(struc
+ 				   const struct alc_fixup *fix, int action)
+ {
+ 	if (action == ALC_FIXUP_ACT_PRE_PROBE) {
++		/* fake the connections during parsing the tree */
+ 		hda_nid_t conn1[2] = { 0x0c, 0x0d };
+ 		hda_nid_t conn2[2] = { 0x0e, 0x0f };
+ 		snd_hda_override_conn_list(codec, 0x14, 2, conn1);
+ 		snd_hda_override_conn_list(codec, 0x15, 2, conn1);
+ 		snd_hda_override_conn_list(codec, 0x18, 2, conn2);
+ 		snd_hda_override_conn_list(codec, 0x1a, 2, conn2);
++	} else if (action == ALC_FIXUP_ACT_PROBE) {
++		/* restore the connections */
++		hda_nid_t conn[5] = { 0x0c, 0x0d, 0x0e, 0x0f, 0x26 };
++		snd_hda_override_conn_list(codec, 0x14, 5, conn);
++		snd_hda_override_conn_list(codec, 0x15, 5, conn);
++		snd_hda_override_conn_list(codec, 0x18, 5, conn);
++		snd_hda_override_conn_list(codec, 0x1a, 5, conn);
+ 	}
  }
  
- static ssize_t show_alarm(struct device *dev,
 
 
