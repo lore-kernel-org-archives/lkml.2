@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965284Ab2B1BMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:23 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965269Ab2B1BMT (ORCPT
+	id S965313Ab2B1BQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:16:52 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965271Ab2B1BMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010435.279253960@linuxfoundation.org>
+Message-Id: <20120228010435.375310727@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:36 -0800
+Date: Mon, 27 Feb 2012 17:05:37 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Corinna Vinschen <vinschen@redhat.com>,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 67/72] [media] imon: dont wedge hardware after early callbacks
+        alan@lxorguk.ukuu.org.uk, Nikolaus Schulz <mail@microschulz.de>,
+        Riku Voipio <riku.voipio@iki.fi>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 68/72] hwmon: (f75375s) Fix register write order when setting fans to full speed
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,105 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarod Wilson <jarod@redhat.com>
+From: Nikolaus Schulz <schulz@macnetix.de>
 
-commit 8791d63af0cf113725ae4cb8cba9492814c59a93 upstream.
+commit c1c1a3d012fe5e82a9a025fb4b5a4f8ee67a53f6 upstream.
 
-This patch is just a minor update to one titled "imon: Input from ffdc
-device type ignored" from Corinna Vinschen. An earlier patch to prevent
-an oops when we got early callbacks also has the nasty side-effect of
-wedging imon hardware, as we don't acknowledge the urb. Rework the check
-slightly here to bypass processing the packet, as the driver isn't yet
-fully initialized, but still acknowlege the urb and submit a new rx_urb.
-Do this for both interfaces -- irrelevant for ffdc hardware, but
-relevant for newer hardware, though newer hardware doesn't spew the
-constant stream of data as soon as the hardware is initialized like the
-older ffdc devices, so they'd be less likely to trigger this anyway...
+By hwmon sysfs interface convention, setting pwm_enable to zero sets a fan
+to full speed.  In the f75375s driver, this need be done by enabling
+manual fan control, plus duty mode for the F875387 chip, and then setting
+the maximum duty cycle.  Fix a bug where the two necessary register writes
+were swapped, effectively discarding the setting to full-speed.
 
-Tested with both an ffdc device and an 0042 device.
-
-Reported-by: Corinna Vinschen <vinschen@redhat.com>
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Nikolaus Schulz <mail@microschulz.de>
+Cc: Riku Voipio <riku.voipio@iki.fi>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/imon.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ drivers/hwmon/f75375s.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/media/rc/imon.c
-+++ b/drivers/media/rc/imon.c
-@@ -47,7 +47,7 @@
- #define MOD_AUTHOR	"Jarod Wilson <jarod@wilsonet.com>"
- #define MOD_DESC	"Driver for SoundGraph iMON MultiMedia IR/Display"
- #define MOD_NAME	"imon"
--#define MOD_VERSION	"0.9.3"
-+#define MOD_VERSION	"0.9.4"
- 
- #define DISPLAY_MINOR_BASE	144
- #define DEVICE_NAME	"lcd%d"
-@@ -1658,9 +1658,17 @@ static void usb_rx_callback_intf0(struct
- 		return;
- 
- 	ictx = (struct imon_context *)urb->context;
--	if (!ictx || !ictx->dev_present_intf0)
-+	if (!ictx)
- 		return;
- 
-+	/*
-+	 * if we get a callback before we're done configuring the hardware, we
-+	 * can't yet process the data, as there's nowhere to send it, but we
-+	 * still need to submit a new rx URB to avoid wedging the hardware
-+	 */
-+	if (!ictx->dev_present_intf0)
-+		goto out;
-+
- 	switch (urb->status) {
- 	case -ENOENT:		/* usbcore unlink successful! */
- 		return;
-@@ -1678,6 +1686,7 @@ static void usb_rx_callback_intf0(struct
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -304,8 +304,6 @@ static int set_pwm_enable_direct(struct
+ 	case 0: /* Full speed */
+ 		fanmode  |= (3 << FAN_CTRL_MODE(nr));
+ 		data->pwm[nr] = 255;
+-		f75375_write8(client, F75375_REG_FAN_PWM_DUTY(nr),
+-				data->pwm[nr]);
  		break;
+ 	case 1: /* PWM */
+ 		fanmode  |= (3 << FAN_CTRL_MODE(nr));
+@@ -318,6 +316,9 @@ static int set_pwm_enable_direct(struct
  	}
- 
-+out:
- 	usb_submit_urb(ictx->rx_urb_intf0, GFP_ATOMIC);
+ 	f75375_write8(client, F75375_REG_FAN_TIMER, fanmode);
+ 	data->pwm_enable[nr] = val;
++	if (val == 0)
++		f75375_write8(client, F75375_REG_FAN_PWM_DUTY(nr),
++				data->pwm[nr]);
+ 	return 0;
  }
  
-@@ -1690,9 +1699,17 @@ static void usb_rx_callback_intf1(struct
- 		return;
- 
- 	ictx = (struct imon_context *)urb->context;
--	if (!ictx || !ictx->dev_present_intf1)
-+	if (!ictx)
- 		return;
- 
-+	/*
-+	 * if we get a callback before we're done configuring the hardware, we
-+	 * can't yet process the data, as there's nowhere to send it, but we
-+	 * still need to submit a new rx URB to avoid wedging the hardware
-+	 */
-+	if (!ictx->dev_present_intf1)
-+		goto out;
-+
- 	switch (urb->status) {
- 	case -ENOENT:		/* usbcore unlink successful! */
- 		return;
-@@ -1710,6 +1727,7 @@ static void usb_rx_callback_intf1(struct
- 		break;
- 	}
- 
-+out:
- 	usb_submit_urb(ictx->rx_urb_intf1, GFP_ATOMIC);
- }
- 
-@@ -2242,7 +2260,7 @@ find_endpoint_failed:
- 	mutex_unlock(&ictx->lock);
- 	usb_free_urb(rx_urb);
- rx_urb_alloc_failed:
--	dev_err(ictx->dev, "unable to initialize intf0, err %d\n", ret);
-+	dev_err(ictx->dev, "unable to initialize intf1, err %d\n", ret);
- 
- 	return NULL;
- }
 
 
