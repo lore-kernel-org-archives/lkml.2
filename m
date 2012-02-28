@@ -1,192 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab2B1AWU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:22:20 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57507 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125Ab2B1AWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:22:17 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 28 Feb 2012 09:20:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 05/21] mm: rename lruvec->lists into
- lruvec->pages_lru
-Message-Id: <20120228092049.4a36b022.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120223135200.12988.92340.stgit@zurg>
-References: <20120223133728.12988.5432.stgit@zurg>
-	<20120223135200.12988.92340.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756134Ab2B1A1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:27:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49190 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755577Ab2B1A1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 19:27:43 -0500
+Message-ID: <4F4C1F76.70403@zytor.com>
+Date: Mon, 27 Feb 2012 16:27:34 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: "Joshua C." <joshuacov@googlemail.com>
+CC: linux-kernel@vger.kernel.org, Bodo Eggert <7eggert@gmx.de>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+In-Reply-To: <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/mixed;
+ boundary="------------040209050900080909070204"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 17:52:00 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+This is a multi-part message in MIME format.
+--------------040209050900080909070204
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-> This is much more unique and grep-friendly name.
+On 02/27/2012 04:08 PM, Joshua C. wrote:
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-
-I worries this kind of change can cause many hunks and make merging difficult..
-But this seems not very destructive..
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-I have no strong opinions to this naming. How other mm developpers think ?
-
-I personally think making this kind of changes in the head of patch set tend do
-make it difficult to merge full sets of patche series.
-
-Thanks,
--Kame
-
-> ---
->  include/linux/mm_inline.h |    2 +-
->  include/linux/mmzone.h    |    2 +-
->  mm/memcontrol.c           |    6 +++---
->  mm/page_alloc.c           |    2 +-
->  mm/swap.c                 |    4 ++--
->  mm/vmscan.c               |    6 +++---
->  6 files changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-> index 227fd3e..8415596 100644
-> --- a/include/linux/mm_inline.h
-> +++ b/include/linux/mm_inline.h
-> @@ -27,7 +27,7 @@ add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
->  	struct lruvec *lruvec;
->  
->  	lruvec = mem_cgroup_lru_add_list(zone, page, lru);
-> -	list_add(&page->lru, &lruvec->lists[lru]);
-> +	list_add(&page->lru, &lruvec->pages_lru[lru]);
->  	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
->  }
->  
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 3e1f7ff..ddd0fd2 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -160,7 +160,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
->  }
->  
->  struct lruvec {
-> -	struct list_head lists[NR_LRU_LISTS];
-> +	struct list_head pages_lru[NR_LRU_LISTS];
->  };
->  
->  /* Mask used at gathering information at once (see memcontrol.c) */
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 77f5d48..8f8c7c4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1050,7 +1050,7 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
->   * the lruvec for the given @zone and the memcg @page is charged to.
->   *
->   * The callsite is then responsible for physically linking the page to
-> - * the returned lruvec->lists[@lru].
-> + * the returned lruvec->pages_lru[@lru].
->   */
->  struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
->  				       enum lru_list lru)
-> @@ -3592,7 +3592,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  
->  	zone = &NODE_DATA(node)->node_zones[zid];
->  	mz = mem_cgroup_zoneinfo(memcg, node, zid);
-> -	list = &mz->lruvec.lists[lru];
-> +	list = &mz->lruvec.pages_lru[lru];
->  
->  	loop = mz->lru_size[lru];
->  	/* give some margin against EBUSY etc...*/
-> @@ -4716,7 +4716,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
->  	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
->  		mz = &pn->zoneinfo[zone];
->  		for_each_lru(lru)
-> -			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
-> +			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
->  		mz->usage_in_excess = 0;
->  		mz->on_tree = false;
->  		mz->memcg = memcg;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 38f6744..5f19392 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4363,7 +4363,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->  
->  		zone_pcp_init(zone);
->  		for_each_lru(lru)
-> -			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
-> +			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
->  		zone->reclaim_stat.recent_rotated[0] = 0;
->  		zone->reclaim_stat.recent_rotated[1] = 0;
->  		zone->reclaim_stat.recent_scanned[0] = 0;
-> diff --git a/mm/swap.c b/mm/swap.c
-> index fff1ff7..17993c0 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -238,7 +238,7 @@ static void pagevec_move_tail_fn(struct page *page, void *arg)
->  
->  		lruvec = mem_cgroup_lru_move_lists(page_zone(page),
->  						   page, lru, lru);
-> -		list_move_tail(&page->lru, &lruvec->lists[lru]);
-> +		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
->  		(*pgmoved)++;
->  	}
->  }
-> @@ -482,7 +482,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
->  		 * We moves tha page into tail of inactive.
->  		 */
->  		lruvec = mem_cgroup_lru_move_lists(zone, page, lru, lru);
-> -		list_move_tail(&page->lru, &lruvec->lists[lru]);
-> +		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
->  		__count_vm_event(PGROTATED);
->  	}
->  
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8b59cb5..e41ad52 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1164,7 +1164,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  		lru += LRU_ACTIVE;
->  	if (file)
->  		lru += LRU_FILE;
-> -	src = &lruvec->lists[lru];
-> +	src = &lruvec->pages_lru[lru];
->  
->  	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
->  		struct page *page;
-> @@ -1663,7 +1663,7 @@ static void move_active_pages_to_lru(struct zone *zone,
->  		SetPageLRU(page);
->  
->  		lruvec = mem_cgroup_lru_add_list(zone, page, lru);
-> -		list_move(&page->lru, &lruvec->lists[lru]);
-> +		list_move(&page->lru, &lruvec->pages_lru[lru]);
->  		pgmoved += hpage_nr_pages(page);
->  
->  		if (put_page_testzero(page)) {
-> @@ -3592,7 +3592,7 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
->  			__dec_zone_state(zone, NR_UNEVICTABLE);
->  			lruvec = mem_cgroup_lru_move_lists(zone, page,
->  						LRU_UNEVICTABLE, lru);
-> -			list_move(&page->lru, &lruvec->lists[lru]);
-> +			list_move(&page->lru, &lruvec->pages_lru[lru]);
->  			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
->  			pgrescued++;
->  		}
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> If so I'm not sure about it. We check the BIOS data area as defined
+> for IBM PCs (1981), so a fair amount of user should benefit from the
+> change. Those non-BIOS boots can set the numlock=0 and won't be
+> affected by this. I think this isa lot easier to implement than doing
+> it in the BIOS bootstrap code.
 > 
 
+Here is a patch to query the BIOS state properly; if you could fill out
+the rest of the patch then we can merge this in easily enough.
+
+	-hpa
+
+--------------040209050900080909070204
+Content-Type: text/plain;
+ name="diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="diff"
+
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2Jvb3QvbWFpbi5jIGIvYXJjaC94ODYvYm9vdC9tYWlu
+LmMKaW5kZXggNDAzNThjOC4uY2Y2MDgzZCAxMDA2NDQKLS0tIGEvYXJjaC94ODYvYm9vdC9t
+YWluLmMKKysrIGIvYXJjaC94ODYvYm9vdC9tYWluLmMKQEAgLTU3LDE0ICs1NywyMCBAQCBz
+dGF0aWMgdm9pZCBjb3B5X2Jvb3RfcGFyYW1zKHZvaWQpCiB9CiAKIC8qCi0gKiBTZXQgdGhl
+IGtleWJvYXJkIHJlcGVhdCByYXRlIHRvIG1heGltdW0uICBVbmNsZWFyIHdoeSB0aGlzCisg
+KiBRdWVyeSB0aGUga2V5Ym9hcmQgbG9jayBzdGF0dXMgYXMgZ2l2ZW4gYnkgdGhlIEJJT1Ms
+IGFuZAorICogc2V0IHRoZSBrZXlib2FyZCByZXBlYXQgcmF0ZSB0byBtYXhpbXVtLiAgVW5j
+bGVhciB3aHkgdGhlIGxhdHRlcgogICogaXMgZG9uZSBoZXJlOyB0aGlzIG1pZ2h0IGJlIHBv
+c3NpYmxlIHRvIGtpbGwgb2ZmIGFzIHN0YWxlIGNvZGUuCiAgKi8KLXN0YXRpYyB2b2lkIGtl
+eWJvYXJkX3NldF9yZXBlYXQodm9pZCkKK3N0YXRpYyB2b2lkIGtleWJvYXJkX2luaXQodm9p
+ZCkKIHsKLQlzdHJ1Y3QgYmlvc3JlZ3MgaXJlZzsKKwlzdHJ1Y3QgYmlvc3JlZ3MgaXJlZywg
+b3JlZzsKIAlpbml0cmVncygmaXJlZyk7Ci0JaXJlZy5heCA9IDB4MDMwNTsKKworCWlyZWcu
+YWggPSAweDAyOwkJLyogR2V0IGtleWJvYXJkIHN0YXR1cyAqLworCWludGNhbGwoMHgxNiwg
+JmlyZWcsICZvcmVnKTsKKwlib290X3BhcmFtcy5rYmRfc3RhdHVzID0gb3JlZy5hbDsKKwor
+CWlyZWcuYXggPSAweDAzMDU7CS8qIFNldCBrZXlib2FyZCByZXBlYXQgcmF0ZSAqLwogCWlu
+dGNhbGwoMHgxNiwgJmlyZWcsIE5VTEwpOwogfQogCkBAIC0xNTEsOCArMTU3LDggQEAgdm9p
+ZCBtYWluKHZvaWQpCiAJLyogRGV0ZWN0IG1lbW9yeSBsYXlvdXQgKi8KIAlkZXRlY3RfbWVt
+b3J5KCk7CiAKLQkvKiBTZXQga2V5Ym9hcmQgcmVwZWF0IHJhdGUgKHdoeT8pICovCi0Ja2V5
+Ym9hcmRfc2V0X3JlcGVhdCgpOworCS8qIFNldCBrZXlib2FyZCByZXBlYXQgcmF0ZSAod2h5
+PykgYW5kIHF1ZXJ5IHRoZSBsb2NrIGZsYWdzICovCisJa2V5Ym9hcmRfaW5pdCgpOwogCiAJ
+LyogUXVlcnkgTUNBIGluZm9ybWF0aW9uICovCiAJcXVlcnlfbWNhKCk7CmRpZmYgLS1naXQg
+YS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9ib290cGFyYW0uaCBiL2FyY2gveDg2L2luY2x1ZGUv
+YXNtL2Jvb3RwYXJhbS5oCmluZGV4IDJmOTBjNTEuLmViNDVhYTYgMTAwNjQ0Ci0tLSBhL2Fy
+Y2gveDg2L2luY2x1ZGUvYXNtL2Jvb3RwYXJhbS5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUv
+YXNtL2Jvb3RwYXJhbS5oCkBAIC0xMTIsNyArMTEyLDggQEAgc3RydWN0IGJvb3RfcGFyYW1z
+IHsKIAlfX3U4ICBlODIwX2VudHJpZXM7CQkJCS8qIDB4MWU4ICovCiAJX191OCAgZWRkYnVm
+X2VudHJpZXM7CQkJCS8qIDB4MWU5ICovCiAJX191OCAgZWRkX21icl9zaWdfYnVmX2VudHJp
+ZXM7CQkJLyogMHgxZWEgKi8KLQlfX3U4ICBfcGFkNls2XTsJCQkJCS8qIDB4MWViICovCisJ
+X191OCAga2JkX3N0YXR1czsJCQkJLyogMHgxZWIgKi8KKwlfX3U4ICBfcGFkNls1XTsJCQkJ
+CS8qIDB4MWVjICovCiAJc3RydWN0IHNldHVwX2hlYWRlciBoZHI7ICAgIC8qIHNldHVwIGhl
+YWRlciAqLwkvKiAweDFmMSAqLwogCV9fdTggIF9wYWQ3WzB4MjkwLTB4MWYxLXNpemVvZihz
+dHJ1Y3Qgc2V0dXBfaGVhZGVyKV07CiAJX191MzIgZWRkX21icl9zaWdfYnVmZmVyW0VERF9N
+QlJfU0lHX01BWF07CS8qIDB4MjkwICovCg==
+--------------040209050900080909070204--
