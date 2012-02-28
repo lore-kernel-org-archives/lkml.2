@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965808Ab2B1QWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:22:38 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:45025 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720Ab2B1QWg (ORCPT
+	id S1755433Ab2B1QYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:24:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:64177 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab2B1QYT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:22:36 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 28 Feb 2012 17:22:28 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] [SCSI] sr: fix multi-drive performance, remove BKL
- replacement
-Message-ID: <20120228172228.78e22e14@stein>
-In-Reply-To: <20120228170930.132f7c1e@stein>
-References: <20120228153244.70413d34@stein>
-	<1330441201.2822.126.camel@dabdike.int.hansenpartnership.com>
-	<20120228170930.132f7c1e@stein>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 11:24:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112267805"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jan Beulich <jbeulich@suse.com>, "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] RFC: Prepare PAD for native and xen platform
+Thread-Topic: [PATCH 1/2] RFC: Prepare PAD for native and xen platform
+Thread-Index: AQHM9Kz1m4MGy1d3TzK01xgwJYdnxZZSeQog
+Date: Tue, 28 Feb 2012 16:24:09 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923350AD088@SHSMSX101.ccr.corp.intel.com>
+ <4F46530B020000780007F751@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
+ <20120226173458.GB18098@phenom.dumpdata.com>
+In-Reply-To: <20120226173458.GB18098@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 28 Stefan Richter wrote:
-> On Feb 28 James Bottomley wrote:
-> > On Tue, 2012-02-28 at 15:32 +0100, Stefan Richter wrote:
-> > > Commit 2a48fc0ab242 "block: autoconvert trivial BKL users to private
-> > > mutex" and other commits at the time mechanically swapped BKL for
-> > > per-driver global mutexes.  If the sr driver is any indication, these
-> > > replacements have still not been checked by anybody for their
-> > > necessessity, removed where possible, or the sections they serialize
-> > > reduced to a necessary minimum.
-> > > 
-> > > The sr_mutex in particular very noticably degraded performance of
-> > > CD-DA ripping with multiple drives in parallel.  When several
-> > > instances of "grip" are used with two or more drives, their GUIs
-> > > became laggier, as did the KDE file manager GUI, and drive utilization
-> > > was reduced.  (During ripping, drive lights flicker instead of staying
-> > > on most of the time.)  IOW time to rip a stack of CDs was increased.
-> > > I didn't measure this but it is highly noticeable.
-> > > 
-> > > On the other hand, I don't see what state sr_mutex would protect.
-> > > So I removed it entirely and that works fine for me.
-> > > 
-> > I'm afraid you can't do that:  The problem is that we have an entangled
-> > set of reference counts that need to be taken and released atomically.
-> > If we don't surround them with a mutex you get undefined results from
-> > racing last release with new acquire.  You can see this usage in sd.c.
+Konrad Rzeszutek Wilk wrote:
+> On Sun, Feb 26, 2012 at 08:25:41AM +0000, Liu, Jinsong wrote:
+>> Liu, Jinsong wrote:
+>>> Jan Beulich wrote:
+>>>>>>> "Liu, Jinsong" <jinsong.liu@intel.com> 02/23/12 2:29 PM >>>
+>>>>> --- a/drivers/acpi/Kconfig
+>>>>> +++ b/drivers/acpi/Kconfig
+>>>>> @@ -213,10 +213,11 @@ config ACPI_HOTPLUG_CPU
+>>>>>    default y
+>>>>  >
+>>>>> config ACPI_PROCESSOR_AGGREGATOR
+>>>>> -    tristate "Processor Aggregator"
+>>>>> +    bool "Processor Aggregator"
+>>>> 
+>>>> There must be ways to address whatever strange problem you see
+>>>> without making this piece of code non-modular.
+>>>> 
+>>> 
+>>> Yes, another approach is x86_init approach, defining acpi_pad_ops at
+>>> x86_init.c and overwritten when xen_start_kernel. This patch is just
+>>> a RFC patch, to evaluate which approch is more reasonable :-)
+>>> 
+>> 
+>> Have a more think about it, x86_init approach still need to disable
+>> acpi_pad module. 
+>> Seems we have to set acpi_pad as bool, as long as it need to hook to
+>> native acpi_pad fucs/variables. 
 > 
-> While I do remove sr_mutex aroud scsi_cd_get/put() calls, these ones
-> internally use another lock: sr_ref_mutex.  Always did, still do, since
-> neither Arnd's mechanical BKL pushdown and BKL-to-mutex conversions
-> patches nor my patch changed that.  This sr_ref_mutex also protects sr's
-> reference counting outside of the three block_device_operations methods
-> which I changed.
+> What about the other approach I suggested where there are some
+> function overrides in osl.c? Something similar to
+> https://lkml.org/lkml/2012/1/17/401, specifically
+> https://lkml.org/lkml/2012/1/17/403 - that way you are not turning
+> the modules into being built in, but intead have the function table
+> already in the kernel (as some form of EXPORT_SYMBOL_GPL or a
+> registration function). 
 > 
-> I suppose I could have mentioned right away in the changelog that the
-> sr driver's own reference counting serialization remains in place, via that
-> other mutex.
 
-PS:
-Entirely independently of this, it is important to remember that sr has
-been and still is broken WRT hot removal/ hot unbinding of devices.
-http://marc.info/?t=132484687700001
-I haven't tried the last proposed patches from Jun'ichi Nomura or from Bart
-Van Assche yet.  While I tested my BKL-replacement-removal patch, I made
-sure to quit all processes that accessed /dev/sr*, including udisks-daemon,
-every time before I unplugged a CD-ROM drive.  Or actually /almost/ every
-time; sometimes I missed to kill udisks-daemon but was lucky enough not to
-hit that bug in these sessions.
--- 
-Stefan Richter
--=====-===-- --=- ===--
-http://arcgraph.de/sr/
+Thanks for the example (it's good itself :-), but per my understanding they are different cases.
+
+In the osl example case, tboot_late_init call acpi_os_set_prepare_sleep to register func, so it works no matter tboot.c built as y/n/m (through currently it's bool).
+
+However, in our case, we just cannot do so. We need
+1. predefine a hook to native acpi pad funcs, take effect when static compile stage;
+2. when xen init, redirect the hook to xen acpi pad funcs, take effect at running time;
+(The point is, we cannot do init twice for native and xen acpi pad, so we have to statically predefine a hook to native acpi_pad)
+
+For the reason above, I think we have to remove acpi_pad module, as long as we need to hook to native acpi_pad funcs. Thoughts?
+
+Regards,
+Jinsong
