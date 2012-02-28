@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab2B1JwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:52:13 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57420 "EHLO mx3.mail.elte.hu"
+	id S1756811Ab2B1KAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:00:34 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56488 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab2B1JwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:52:10 -0500
-Date: Tue, 28 Feb 2012 10:51:32 +0100
+	id S1754175Ab2B1KAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:00:31 -0500
+Date: Tue, 28 Feb 2012 10:59:53 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, nab@linux-iscsi.org,
-        jkosina@suse.cz, jj@chaosbits.net, davem@davemloft.net,
-        linville@tuxdriver.com, johannes@sipsolutions.net,
-        josh@joshtriplett.org, a.p.zijlstra@chello.nl, dhowells@redhat.com,
-        Julia.Lawall@lip6.fr, deepthi@linux.vnet.ibm.com,
-        neven.m.abou.gazala@intel.com, hughd@google.com
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.4
-Message-ID: <20120228095132.GA16511@elte.hu>
-References: <20120227172248.GA5338@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        systemtap@sourceware.org, anderson@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: Re: Re: [PATCH v3 -tip] [BUGFIX] x86/kprobes: Fix to recover
+ instructions on optimized path
+Message-ID: <20120228095953.GA17149@elte.hu>
+References: <20120223083703.GA26781@elte.hu>
+ <20120224095412.8462.55698.stgit@localhost.localdomain>
+ <20120227093421.GA10078@elte.hu>
+ <4F4C4182.1040706@hitachi.com>
+ <20120228084828.GK21106@elte.hu>
+ <4F4CA3BC.7050909@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120227172248.GA5338@linux.vnet.ibm.com>
+In-Reply-To: <4F4CA3BC.7050909@hitachi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,34 +39,58 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> Hello, Ingo,
+> (2012/02/28 17:48), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >> (2012/02/27 18:34), Ingo Molnar wrote:
+> >>>
+> >>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> >>>
+> >>>> +
+> >>>> +#ifdef CONFIG_OPTPROBES
+> >>>> +static unsigned long __recover_optprobed_insn(struct kprobe *kp,
+> >>>> +					      kprobe_opcode_t *buf,
+> >>>> +					      unsigned long addr)
+> >>>> +{
+> >>>> +	long offs = addr - (unsigned long)kp->addr - 1;
+> >>>> +	struct optimized_kprobe *op = container_of(kp, struct optimized_kprobe, kp);
+> >>>> +
+> >>>> +	/*
+> >>>> +	 * If the kprobe can be optimized, original bytes which can be
+> >>>> +	 * overwritten by jump destination address. In this case, original
+> >>>> +	 * bytes must be recovered from op->optinsn.copied_insn buffer.
+> >>>> +	 */
+> >>>> +	memcpy(buf, (void *)addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
+> >>>> +	if (addr == (unsigned long)kp->addr) {
+> >>>> +		buf[0] = kp->opcode;
+> >>>> +		memcpy(buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
+> >>>> +	} else
+> >>>> +		memcpy(buf, op->optinsn.copied_insn + offs, RELATIVE_ADDR_SIZE - offs);
+> >>>> +
+> >>>> +	return (unsigned long)buf;
+> >>>> +}
+> >>>> +#endif
+> >>>
+> >>> Why not stick this into a new kprobes-opt.c file?
+> >>
+> >> Would you mean that I should split all optprobe stuffs into 
+> >> new file?
+> > 
+> > Yeah, that would be sensible I think - and it might help avoid 
+> > similar complications in the future.
+> > 
+> > Could (and probably should) be done in a separate patch - to 
+> > keep the bits that you already fixed and tested intact.
 > 
-> The major features of this series are making RCU more aggressive about
-> entering dyntick-idle mode in order to improve energy efficiency,
-> converting a few more call_rcu()s to kfree_rcu()s, applying a number
-> of rcutree fixes and cleanups to rcutiny, removing CONFIG_SMP #ifdefs
-> from treercu, allowing RCU CPU stall times to be set via sysfs, adding
-> CPU-stall capability to rcutorture, adding more RCU-abuse diagnostics,
-> updating documentation, and fixing yet more issue located in the
-> still-ongoing top-to-bottom inspection of RCU, this time with a special
-> focus on the CPU-hotplug code path.
+> OK, I'll make a separate patch.
 
-I stuck this nice list into the merge commit, for future 
-generations.
+Could be done on top of your existing patch, to keep things 
+simpler for you - a split-up patch done before your fix would 
+create a lot of conflicts in the fix patch.
 
-> Three of the kfree_rcu() conversions have not yet received 
-> acks (s390, tcm_fc, and mac80211), but the maintainers have 
-> been CCed on multiple LKML postings and -next testing has not 
-> shown any problems.
-> 
-> These commits have been posted to LKML (https://lkml.org/lkml/2012/2/3/459
-> and https://lkml.org/lkml/2012/2/21/228) and have received -next testing.
-> They are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-
-Pulled, thanks a lot Paul!
+Thanks,
 
 	Ingo
