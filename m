@@ -1,197 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2B1GEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 01:04:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34797 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2B1GEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 01:04:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.145.81 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F4C6E56.7080508@openvz.org>
-Date: Tue, 28 Feb 2012 10:04:06 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Hugh Dickins <hughd@google.com>,
+	id S1755480Ab2B1GGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 01:06:21 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:38549 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752881Ab2B1GGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 01:06:20 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: James Bottomley <jbottomley@parallels.com>
+Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
+Date: Tue, 28 Feb 2012 01:06:20 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
+        "dave.anglin@bell.net" <dave.anglin@bell.net>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 05/21] mm: rename lruvec->lists into lruvec->pages_lru
-References: <20120223133728.12988.5432.stgit@zurg>	<20120223135200.12988.92340.stgit@zurg> <20120228092049.4a36b022.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120228092049.4a36b022.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <201202272004.55187.vapier@gentoo.org> <1330399020.2822.106.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1330399020.2822.106.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2671552.CgOXUbQQLd";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202280106.23643.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 23 Feb 2012 17:52:00 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> This is much more unique and grep-friendly name.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> I worries this kind of change can cause many hunks and make merging difficult..
-> But this seems not very destructive..
->
-> Reviewed-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->
-> I have no strong opinions to this naming. How other mm developpers think ?
->
-> I personally think making this kind of changes in the head of patch set tend do
-> make it difficult to merge full sets of patche series.
+--nextPart2671552.CgOXUbQQLd
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-This rename allows to easily highlight lru-lists manipulations,
-because some of them are in non-trivial places.
+On Monday 27 February 2012 22:17:01 James Bottomley wrote:
+> On Mon, 2012-02-27 at 20:04 -0500, Mike Frysinger wrote:
+> > On Monday 27 February 2012 17:03:10 James Bottomley wrote:
+> > > --- a/arch/parisc/Makefile
+> > > +++ b/arch/parisc/Makefile
+> > >=20
+> > > -CROSS_COMPILE	:=3D hppa64-linux-gnu-
+> > > +
+> > > +# if no default set, try to find the corresponding 64 bit compiler
+> > > +ifeq ($(CROSS_COMPILE),)
+> > > +CROSS_COMPILE	:=3D $(shell $(CC) -dumpmachine | sed
+> > > s/hppa-\\\(.*\\\)/hppa64-\\1-/) +endif
+> >=20
+> > fails when using "hppa2.0-xxx".  perhaps:
+> > CROSS_COMPILE ?=3D $(shell $(CC) -dumpmachine | sed
+> > 's/^hppa[^-]*-/hppa64-/')
+> >=20
+> > don't even need the ifeq check then
+>=20
+> How is that different from Carlos' suggestion?
 
->
-> Thanks,
-> -Kame
->
->> ---
->>   include/linux/mm_inline.h |    2 +-
->>   include/linux/mmzone.h    |    2 +-
->>   mm/memcontrol.c           |    6 +++---
->>   mm/page_alloc.c           |    2 +-
->>   mm/swap.c                 |    4 ++--
->>   mm/vmscan.c               |    6 +++---
->>   6 files changed, 11 insertions(+), 11 deletions(-)
->>
->> diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
->> index 227fd3e..8415596 100644
->> --- a/include/linux/mm_inline.h
->> +++ b/include/linux/mm_inline.h
->> @@ -27,7 +27,7 @@ add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
->>   	struct lruvec *lruvec;
->>
->>   	lruvec = mem_cgroup_lru_add_list(zone, page, lru);
->> -	list_add(&page->lru,&lruvec->lists[lru]);
->> +	list_add(&page->lru,&lruvec->pages_lru[lru]);
->>   	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
->>   }
->>
->> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->> index 3e1f7ff..ddd0fd2 100644
->> --- a/include/linux/mmzone.h
->> +++ b/include/linux/mmzone.h
->> @@ -160,7 +160,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
->>   }
->>
->>   struct lruvec {
->> -	struct list_head lists[NR_LRU_LISTS];
->> +	struct list_head pages_lru[NR_LRU_LISTS];
->>   };
->>
->>   /* Mask used at gathering information at once (see memcontrol.c) */
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 77f5d48..8f8c7c4 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1050,7 +1050,7 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
->>    * the lruvec for the given @zone and the memcg @page is charged to.
->>    *
->>    * The callsite is then responsible for physically linking the page to
->> - * the returned lruvec->lists[@lru].
->> + * the returned lruvec->pages_lru[@lru].
->>    */
->>   struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
->>   				       enum lru_list lru)
->> @@ -3592,7 +3592,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->>
->>   	zone =&NODE_DATA(node)->node_zones[zid];
->>   	mz = mem_cgroup_zoneinfo(memcg, node, zid);
->> -	list =&mz->lruvec.lists[lru];
->> +	list =&mz->lruvec.pages_lru[lru];
->>
->>   	loop = mz->lru_size[lru];
->>   	/* give some margin against EBUSY etc...*/
->> @@ -4716,7 +4716,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
->>   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
->>   		mz =&pn->zoneinfo[zone];
->>   		for_each_lru(lru)
->> -			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
->> +			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
->>   		mz->usage_in_excess = 0;
->>   		mz->on_tree = false;
->>   		mz->memcg = memcg;
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 38f6744..5f19392 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -4363,7 +4363,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->>
->>   		zone_pcp_init(zone);
->>   		for_each_lru(lru)
->> -			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
->> +			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
->>   		zone->reclaim_stat.recent_rotated[0] = 0;
->>   		zone->reclaim_stat.recent_rotated[1] = 0;
->>   		zone->reclaim_stat.recent_scanned[0] = 0;
->> diff --git a/mm/swap.c b/mm/swap.c
->> index fff1ff7..17993c0 100644
->> --- a/mm/swap.c
->> +++ b/mm/swap.c
->> @@ -238,7 +238,7 @@ static void pagevec_move_tail_fn(struct page *page, void *arg)
->>
->>   		lruvec = mem_cgroup_lru_move_lists(page_zone(page),
->>   						   page, lru, lru);
->> -		list_move_tail(&page->lru,&lruvec->lists[lru]);
->> +		list_move_tail(&page->lru,&lruvec->pages_lru[lru]);
->>   		(*pgmoved)++;
->>   	}
->>   }
->> @@ -482,7 +482,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
->>   		 * We moves tha page into tail of inactive.
->>   		 */
->>   		lruvec = mem_cgroup_lru_move_lists(zone, page, lru, lru);
->> -		list_move_tail(&page->lru,&lruvec->lists[lru]);
->> +		list_move_tail(&page->lru,&lruvec->pages_lru[lru]);
->>   		__count_vm_event(PGROTATED);
->>   	}
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 8b59cb5..e41ad52 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1164,7 +1164,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->>   		lru += LRU_ACTIVE;
->>   	if (file)
->>   		lru += LRU_FILE;
->> -	src =&lruvec->lists[lru];
->> +	src =&lruvec->pages_lru[lru];
->>
->>   	for (scan = 0; scan<  nr_to_scan&&  !list_empty(src); scan++) {
->>   		struct page *page;
->> @@ -1663,7 +1663,7 @@ static void move_active_pages_to_lru(struct zone *zone,
->>   		SetPageLRU(page);
->>
->>   		lruvec = mem_cgroup_lru_add_list(zone, page, lru);
->> -		list_move(&page->lru,&lruvec->lists[lru]);
->> +		list_move(&page->lru,&lruvec->pages_lru[lru]);
->>   		pgmoved += hpage_nr_pages(page);
->>
->>   		if (put_page_testzero(page)) {
->> @@ -3592,7 +3592,7 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
->>   			__dec_zone_state(zone, NR_UNEVICTABLE);
->>   			lruvec = mem_cgroup_lru_move_lists(zone, page,
->>   						LRU_UNEVICTABLE, lru);
->> -			list_move(&page->lru,&lruvec->lists[lru]);
->> +			list_move(&page->lru,&lruvec->pages_lru[lru]);
->>   			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
->>   			pgrescued++;
->>   		}
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+sorry, but i'm not seeing any e-mails from Carlos in this thread.  what is =
+his=20
+suggestion ?
 
+> The reason it doesn't work is the same ... CROSS_COMPILE is defined to be
+> empty.
+
+my suggestion was purely an incremental improvement on the patch you posted=
+=2E =20
+it improves two things:
+	- detection when the default tuple is hppa2.0-xxx rather than hppa-xxx
+	- one line for set-variable-only-when-its-unset rather than three lines
+=2Dmike
+
+--nextPart2671552.CgOXUbQQLd
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPTG7fAAoJEEFjO5/oN/WB0yEP/jWUkZIrGVdlh9svcO3Bnd5w
+g1uiq5f0ku6DVeAX/yF5zxUXFdvKUECvbVeOFOxxE8TDwJA/6d22vpDEhzA1FW53
+8YiHbTUOwRQO999dzPThk6JxI+4tMkBEMHYQDAbUXNki4mY1S+vKtLWJBZ7t0VFB
+Lc+oG9hf46maFZM1nPK8Pj2b5rOlx8KE0qJPNx+9xaUZuERfVy+wyCvdq2d3KnmO
+83SmZGcr+GJL7iKJTlX+0t+JSJYA3Sbiap9/toQc5WDXYk7lyCy37aCQypzwEtKA
+tD4KCRHAOGgW+xAvk+lrjSGc5T80BNvsv3t1IdjvP7Ak6iwyQ86RCUCb/q+QxZZQ
+xjd2RshmoUiSj5xR4yH0yjugT32fO0zFjT414qcYJStFx8uphcBp5GpJyq7mj6FH
+DIA3BuUotgHWJRKsh2BTkJHVC+DDnCtq6oudd2xXCn74S/dSd3DZo69MKOTUbyqh
+1O+w+9UZXkeQWTn8I+Z1tWTioIR7MNfce+kwwwEf0HILVFBsFinQxi5Gy16h/A9J
+VJvdi496Aat+26e2763+6UBFQewzTeFlaSoVx2Pyk38fkJcOL82HN/TCu+q3FDN6
+Xz+oPQKE22ksVxFGyJLbr0kt14dr9m8pt/KB7tlEXVFD2cYx/oJ2MTRtOb5OISoq
+zr+JZCrNOQ8VXc1+GTjV
+=lvLb
+-----END PGP SIGNATURE-----
+
+--nextPart2671552.CgOXUbQQLd--
