@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965031Ab2B1Owe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:52:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30147 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964980Ab2B1Owd (ORCPT
+	id S1755942Ab2B1Ozj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:55:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47929 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab2B1Ozh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:52:33 -0500
-X-Authority-Analysis: v=2.0 cv=Z7xu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=GQe9zCMQTfAA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=zHUl26Y9TrHd5ecO_v8A:9 a=H5DWtS_jRK40nINXT4sA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330440751.25686.216.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Tue, 28 Feb 2012 09:52:31 -0500
-In-Reply-To: <20120228144318.GF1694@m.brq.redhat.com>
-References: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	 <20120228132159.GA1694@m.brq.redhat.com>
-	 <20120228133712.GL3683@opensource.wolfsonmicro.com>
-	 <1330437729.25686.211.camel@gandalf.stny.rr.com>
-	 <20120228140335.GM3683@opensource.wolfsonmicro.com>
-	 <20120228144318.GF1694@m.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 28 Feb 2012 09:55:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.43.134.199 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <1330439166.11248.92.camel@twins>
+References: <1330442692.3719.7.camel@lappy> <1330435782.11248.89.camel@twins>
+ <CA+1xoqfMad+s4-E-Nn29m3=bVASEkH38ZNvWg2vY99ZizdAT3Q@mail.gmail.com>
+ <1330438853.11248.90.camel@twins> <CA+1xoqdRES=RwUw8C+8=6neu7t0JZeBAxSaoT2+VA-Z+pvD6oQ@mail.gmail.com>
+ <1330439166.11248.92.camel@twins>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 28 Feb 2012 16:55:17 +0200
+Message-ID: <CA+1xoqeEa2E7iu+RPiHTYoQO3739UKQm_PjAbxZA0-f+ped+tA@mail.gmail.com>
+Subject: Re: lockdep: Warning & NULL ptr deref
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Dave Jones <davej@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-28 at 15:43 +0100, Jiri Olsa wrote:
-> On Tue, Feb 28, 2012 at 02:03:35PM +0000, Mark Brown wrote:
-> > On Tue, Feb 28, 2012 at 09:02:09AM -0500, Steven Rostedt wrote:
-> > > On Tue, 2012-02-28 at 13:37 +0000, Mark Brown wrote:
-> > 
-> > > > ARM.  If it was not possible to switch off PERF_EVENTS it shouldn't be a
-> > > > config option in the code as this is just creating complexity and
-> > > > potential breakage.
-> > 
-> > > It is possible to switch off PERF_EVENTS, just not on x86 :-/
-> > 
-> > Well, if you insist on using these restricted architectures :P
-> 
-> reproduced ;) looking for fix..
-> 
-> jirka
-> 
-> 
-> [jolsa@m tip]$ make   ARCH=arm CROSS_COMPILE=armv5tel-redhat-linux-gnueabi- uImage 
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
-> make[1]: `include/generated/mach-types.h' is up to date.
->   CALL    scripts/checksyscalls.sh
->   CHK     include/generated/compile.h
->   CC      kernel/trace/trace_export.o
-> In file included from kernel/trace/trace_export.c:197:
-> kernel/trace/trace_entries.h:58: error: â€˜perf_ftrace_event_registerâ€™
-> undeclared here (not in a function)
-> make[2]: *** [kernel/trace/trace_export.o] Error 1
-> make[1]: *** [kernel/trace] Error 2
-> make: *** [kernel] Error 2
+On Tue, Feb 28, 2012 at 4:26 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-02-28 at 16:23 +0200, Sasha Levin wrote:
+>> On Tue, Feb 28, 2012 at 4:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2012-02-28 at 16:19 +0200, Sasha Levin wrote:
+>> >> On Tue, Feb 28, 2012 at 3:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> > On Tue, 2012-02-28 at 10:24 -0500, Sasha Levin wrote:
+>> >> >>
+>> >> >> I'll send some patches to prevent the NULL deref itself which happens
+>> >> >> since a chunk of the code in lockdep.c assumed hlock_class() can't
+>> >> >> return NULL.
+>> >> >>
+>> >> > There's tons of code actually assuming that..
+>> >> >
+>> >> >> This won't fix the actual problem though, I'm not sure exactly how a
+>> >> >> held lock wouldn't have a class initialized to it.
+>> >> >
+>> >> > static inline struct lock_class *hlock_class(struct held_lock *hlock)
+>> >> > {
+>> >> >        if (!hlock->class_idx) {
+>> >> >                /*
+>> >> >                 * Someone passed in garbage, we give up.
+>> >> >                 */
+>> >> >                DEBUG_LOCKS_WARN_ON(1);
+>> >> >                return NULL;
+>> >> >        }
+>> >> >        return lock_classes + hlock->class_idx - 1;
+>> >> > }
+>> >> >
+>> >> > Typically that translates to severe memory corruption.
+>> >>
+>> >> I can also reproduce it easily by triggering sysrq once or twice after
+>> >> trinity has stopped.
+>> >
+>> > What's trinity ?
+>>
+>> Dave Jones' fuzzer tool. The git tree is located here:
+>> http://codemonkey.org.uk/projects/trinity/trinity.git
+>
+> Hmm, cute, does a kernel without lockdep explode too? If its proper
+> memory corruption one would expect that.
 
-Hmm, I'm surprised my cross build test didn't catch this.
-
-Crap, I think I only ran the defconfig tests, and not the test that also
-enables tracing.
-
-I'll update my config to do both automatically.
-
-Thanks!
-
--- Steve
-
-
+Looks like it only happens when lockdep is there, it also happens in
+the same lockdep line of code all the time.
