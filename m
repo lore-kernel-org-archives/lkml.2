@@ -1,124 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965144Ab2B1Ks6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:48:58 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:1217 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964994Ab2B1Ks5 (ORCPT
+	id S1757037Ab2B1Kt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:49:28 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:57399 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964994Ab2B1KtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:48:57 -0500
-X-IronPort-AV: E=Sophos;i="4.73,495,1325462400"; 
-   d="scan'208";a="10978449"
-Message-ID: <1330426133.31269.70.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Dave Martin <dave.martin@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 28 Feb 2012 10:48:53 +0000
-In-Reply-To: <20120228102040.GB2063@linaro.org>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
-	 <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1330360043.8557.302.camel@zakaz.uk.xensource.com>
-	 <20120227180355.GB2023@linaro.org>
-	 <1330371219.10008.34.camel@dagon.hellion.org.uk>
-	 <20120228102040.GB2063@linaro.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 05:49:25 -0500
+Message-ID: <4F4CB10C.2000100@st.com>
+Date: Tue, 28 Feb 2012 11:48:44 +0100
+From: Armando Visconti <armando.visconti@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
+To: Daniel Ritz <daniel.ritz@gmx.ch>
+Cc: Viresh KUMAR <viresh.kumar@st.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: linux-next: Tree for Feb 27 (usbtouchscreen)
+References: <20120227182029.545a7db32550ce94c9faffb4@canb.auug.org.au> <4F4BC717.1000304@xenotime.net> <4F4BF7E2.3080203@gmx.ch>
+In-Reply-To: <4F4BF7E2.3080203@gmx.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-28 at 10:20 +0000, Dave Martin wrote:
-> On Mon, Feb 27, 2012 at 07:33:39PM +0000, Ian Campbell wrote:
-> > On Mon, 2012-02-27 at 18:03 +0000, Dave Martin wrote:
-> > > > Since we support only ARMv7+ there are "T2" and "T3" encodings available
-> > > > which do allow direct mov of an immediate into R12, but are 32 bit Thumb
-> > > > instructions.
-> > > > 
-> > > > Should we use r7 instead to maximise instruction density for Thumb code?
-> > > 
-> > > The difference seems trivial when put into context, even if you code a
-> > > special Thumb version of the code to maximise density (the Thumb-2 code
-> > > which gets built from assembler in the kernel is very suboptimal in
-> > > size, but there simply isn't a high proportion of asm code in the kernel
-> > > anyway.)  I wouldn't consider the ARM/Thumb differences as an important
-> > > factor when deciding on a register.
-> > 
-> > OK, that's useful information. thanks.
-> > 
-> > > One argument for _not_ using r12 for this purpose is that it is then
-> > > harder to put a generic "HVC" function (analogous to the "syscall"
-> > > syscall) out-of-line, since r12 could get destroyed by the call.
-> > 
-> > For an out of line syscall(2) wouldn't the syscall number either be in a
-> > standard C calling convention argument register or on the stack when the
-> > function was called, since it is just a normal argument at that point?
-> > As you point out it cannot be passed in r12 (and could never be, due to
-> > the clobbering).
-> > 
-> > The syscall function itself would have to move the arguments and syscall
-> > nr etc around before issuing the syscall.
-> > 
-> > I think the same is true of a similar hypercall(2)
-> > 
-> > > If you don't think you will ever care about putting HVC out of line
-> > > though, it may not matter.
-> 
-> If you have both inline and out-of-line hypercalls, it's hard to ensure
-> that you never have to shuffle the registers in either case.
+Hi Daniel,
 
-Agreed.
+See my replies inline.
 
-I think we want to optimise for the inline case since those are the
-majority.
+> Hi
+>
+> I had a quick look with gitweb. The following change causes the problem, comments inline:
+>
+>> From: Armando Visconti<armando.visconti@st.com>
+>> Date: Fri, 24 Feb 2012 08:51:37 +0000 (-0800)
+>> Subject: Input: usbtouchscreen - add support for Data Modul EasyTouch TP 72037
+>> X-Git-Tag: next-20120227~55^2~4
+>> X-Git-Url:
+> http://git.kernel.org/gitweb.cgi?p=linux%2Fkernel%2Fgit%2Fnext%2Flinux-next.git;a=commitdiff_plain;h=e6307aa07c5a11022f0ccee19a8ff0ba033eeb93
+>>
+>> Input: usbtouchscreen - add support for Data Modul EasyTouch TP 72037
+>>
+>> The Data Modul TP 72037 EasyTouch controller is derived from EGALAX
+>> controller and is capable of detecting dual contacts. Packets can be 5
+>> bytes or 10 bytes long, depending whether one or two contacts are
+>> detected. Format is same as EGALAX touch controller, but with x and y
+>> coordinates inverted.
+>>
+>> Signed-off-by: Armando Visconti<armando.visconti@st.com>
+>> Signed-off-by: Viresh Kumar<viresh.kumar@st.com>
+>> Signed-off-by: Dmitry Torokhov<dtor@mail.ru>
+>> ---
+>>
+>> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+>> index 2b21a70..2acf16f 100644
+>> --- a/drivers/input/touchscreen/Kconfig
+>> +++ b/drivers/input/touchscreen/Kconfig
+>> @@ -607,6 +607,7 @@ config TOUCHSCREEN_USB_COMPOSITE
+>>   	  - JASTEC USB Touch Controller/DigiTech DTR-02U
+>>   	  - Zytronic controllers
+>>   	  - Elo TouchSystems 2700 IntelliTouch
+>> +	  - EasyTouch USB Touch Controller from Data Modul
+>>
+>>   	  Have a look at<http://linux.chapter7.ch/touchkit/>  for
+>>   	  a usage description and the required user-space stuff.
+>> @@ -711,6 +712,14 @@ config TOUCHSCREEN_USB_NEXIO
+>>   	bool "NEXIO/iNexio device support" if EXPERT
+>>   	depends on TOUCHSCREEN_USB_COMPOSITE
+>>
+>> +config TOUCHSCREEN_USB_EASYTOUCH
+>> +	default y
+>> +	bool "EasyTouch USB Touch controller device support" if EMBEDDED
+>> +	depends on TOUCHSCREEN_USB_COMPOSITE
+>> +	help
+>> +	  Say Y here if you have a EasyTouch USB Touch controller device support.
+>> +	  If unsure, say N.
+>> +
+>>   config TOUCHSCREEN_TOUCHIT213
+>>   	tristate "Sahara TouchIT-213 touchscreen"
+>>   	select SERIO
+>> diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
+>> index 9dbd8b4..5813089 100644
+>> --- a/drivers/input/touchscreen/usbtouchscreen.c
+>> +++ b/drivers/input/touchscreen/usbtouchscreen.c
+>> @@ -17,6 +17,7 @@
+>>    *  - Zytronic capacitive touchscreen
+>>    *  - NEXIO/iNexio
+>>    *  - Elo TouchSystems 2700 IntelliTouch
+>> + *  - EasyTouch USB Dual/Multi touch controller from Data Modul
+>>    *
+>>    * Copyright (C) 2004-2007 by Daniel Ritz<daniel.ritz@gmx.ch>
+>>    * Copyright (C) by Todd E. Johnson (mtouchusb.c)
+>> @@ -140,6 +141,7 @@ enum {
+>>   	DEVTYPE_TC45USB,
+>>   	DEVTYPE_NEXIO,
+>>   	DEVTYPE_ELO,
+>> +	DEVTYPE_ETOUCH,
+>>   };
+>>
+>>   #define USB_DEVICE_HID_CLASS(vend, prod) \
+>> @@ -245,6 +247,10 @@ static const struct usb_device_id usbtouch_devices[] = {
+>>   	{USB_DEVICE(0x04e7, 0x0020), .driver_info = DEVTYPE_ELO},
+>>   #endif
+>>
+>> +#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+>> +	{USB_DEVICE(0x7374, 0x0001), .driver_info = DEVTYPE_ETOUCH},
+>> +#endif
+>> +
+>>   	{}
+>>   };
+>>
+>> @@ -326,6 +332,47 @@ static int egalax_get_pkt_len(unsigned char *buf, int len)
+>>   }
+>>   #endif
+>>
+>> +/*****************************************************************************
+>> + * EasyTouch part
+>> + */
+>> +
+>> +#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+>
+> here, some lines are missing:
+>    #ifndef MULTI_PACKET
+>    #define MULTI_PACKET
+>    #endif
+> adding these will fix the compile error.
+>
 
-The only non-inline case is the special "privcmd ioctl" which is the
-mechanism that allows the Xen toolstack to make hypercalls. It's
-somewhat akin to syscall(2). By the time you get to it you will already
-have done a system call for the ioctl, pulled the arguments from the
-ioctl argument structure etc, plus such hypercalls are not really
-performance critical.
+Correct.
+Thanks for pointing out this stupid mistake...
+We'll change it.
 
-> Shuffling can be reduced but only at the expense of strange argument
-> ordering in some cases when calling from C -- the complexity is probably
-> not worth it.  Linux doesn't bother for its own syscalls.
-> 
-> Note that even in assembler, a branch from one section to a label in
-> another section may cause r12 to get destroyed, so you will need to be
-> careful about how you code the hypervisor trap handler.  However, this
-> is not different from coding exception handlers in general, so I don't
-> know that it constitutes a conclusive argument on its own.
+>> +
+>> +#define EGALAX_PKT_TYPE_MASK		0xFE
+>> +#define EGALAX_PKT_TYPE_REPT		0x80
+>> +#define EGALAX_PKT_TYPE_REPT2		0xB0
+>> +#define EGALAX_PKT_TYPE_DIAG		0x0A
+>
+> The names here are wrong. The prefix EGALAX_ is only for eGalax controllers and some
+> of them are already defined in the eGalax part of the driver. This will re-define them
+> which is not good. Please use ETOUCH_... instead.
+>
 
-We are happy to arrange that this doesn't occur on our trap entry paths,
-at least until the guest register state has been saved. Currently the
-hypercall dispatcher is in C and gets r12 from the on-stack saved state.
-We will likely eventually optimise the hypercall path directly in ASM
-and in that case we are happy to take steps to ensure we don't clobber
-r12 before we need it.
+Yes, it makes sense.
 
-> My instinctive preference would therefore be for r7 (which also seems to
-> be good enough for Linux syscalls) -- but it really depends how many
-> arguments you expect to need to support.
+>> +
+>> +static int etouch_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
+>> +{
+>> +	if ((pkt[0]&  EGALAX_PKT_TYPE_MASK) != EGALAX_PKT_TYPE_REPT&&
+>> +		(pkt[0]&  EGALAX_PKT_TYPE_MASK) != EGALAX_PKT_TYPE_REPT2)
+>> +		return 0;
+>> +
+>> +	dev->x = ((pkt[1]&  0x1F)<<  7) | (pkt[2]&  0x7F);
+>> +	dev->y = ((pkt[3]&  0x1F)<<  7) | (pkt[4]&  0x7F);
+>> +	dev->touch = pkt[0]&  0x01;
+>> +
+>> +	return 1;
+>> +}
+>> +
+>> +static int etouch_get_pkt_len(unsigned char *buf, int len)
+>> +{
+>> +	switch (buf[0]&  EGALAX_PKT_TYPE_MASK) {
+>> +	case EGALAX_PKT_TYPE_REPT:
+>> +	case EGALAX_PKT_TYPE_REPT2:
+>> +		return 5;
+>
+> The description states that packets can be 10 bytes long, but this case is not
+> handled here. How does the 10 byte packet look like? Is it two five byte packets?
+> How is the format? What is contained in the other 5 bytes?
+>
 
-Apparently r7 is the frame pointer for gcc in thumb mode which I think
-is a good reason to avoid it.
+It is handled by usbtouch_process_multi() calling the packet processing
+twice. The format is '5 bytes' for a single contact and 10 bytes (5 + 5)
+for dual contact.
 
-We currently have some 5 argument hypercalls and there have been
-occasional suggestions for interfaces which use 6 -- although none of
-them have come to reality.
+In the 10 bytes packet the info for first contact starts with 0x80 as
+for a normal EGALAX, while the info for the second contact starts with
+a 0xB0.
 
-Ian.
+So, in case of 10 bytes packet, usbtouch_process_multi() will call the
+processing routines twice.
+
+
+> Anyway: if it's two 5 byte packets, shouldn't the data from both packets be used
+> for _one_ input event for increased accuracy or something?
+> If it's not two 5 byte packets, the function must return 10 for a 10 byte packet.
+> Otherwise the driver will have to sync for each packet (which works fine but is slower).
+>
+
+Initially I have done exactly the way you are suggesting.
+
+But then, it seemed to me more appropriate to reuse the capability of
+the usbtouch_process_multi() to process more data in the same packet.
+
+And pls note that I'm not using MT protocol to send the info up to the
+input device. The contacts info are sent as separate events.
+
+So, what to do here?
+
+
+>> +
+>> +	case EGALAX_PKT_TYPE_DIAG:
+>> +		if (len<  2)
+>> +			return -1;
+>> +
+>> +		return buf[1] + 2;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +#endif
+>>
+>>   /*****************************************************************************
+>>    * PanJit Part
+>> @@ -1175,6 +1222,18 @@ static struct usbtouch_device_info usbtouch_dev_info[] = {
+>>   		.exit		= nexio_exit,
+>>   	},
+>>   #endif
+>> +#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
+>> +	[DEVTYPE_ETOUCH] = {
+>> +		.min_xc		= 0x0,
+>> +		.max_xc		= 0x07ff,
+>> +		.min_yc		= 0x0,
+>> +		.max_yc		= 0x07ff,
+>> +		.rept_size	= 16,
+>> +		.process_pkt	= usbtouch_process_multi,
+>> +		.get_pkt_len	= etouch_get_pkt_len,
+>> +		.read_data	= etouch_read_data,
+>> +	},
+>> +#endif
+>>   };
+>>
+>>
+>
+> Cheers
+> -daniel
+
+Thanks for reviewing.
+
+Rgds,
+Arm
+
+-- 
+-- "Every step appears to be the unavoidable consequence of the
+-- preceding one." (A. Einstein)
+-- 
+Armando Visconti                  Mobile: (+39) 346 8879146
+Senior SW Engineer                Fax:    (+39) 02 93519290
+CPG                               Work:   (+39) 02 93519683
+Computer System Division          e-mail: armando.visconti@st.com
+ST Microelectronics               TINA:   051  4683
+
 
