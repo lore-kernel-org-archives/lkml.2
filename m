@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886Ab2B1Bd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:33:27 -0500
+	id S1756515Ab2B1Bdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:33:43 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474Ab2B1BH2 (ORCPT
+	with ESMTP id S932456Ab2B1BHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:18 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.225.194 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010213.499296575@linuxfoundation.org>
+Message-Id: <20120228010212.876820253@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:59 -0800
+Date: Mon, 27 Feb 2012 17:02:55 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: [ 56/73] usb-storage: fix freezing of the scanning thread
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 52/73] i387: do not preload FPU state at task switch time
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,210 +26,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit bb94a406682770a35305daaa241ccdb7cab399de upstream.
+commit b3b0870ef3ffed72b92415423da864f440f57ad6 upstream.
 
-This patch (as1521b) fixes the interaction between usb-storage's
-scanning thread and the freezer.  The current implementation has a
-race: If the device is unplugged shortly after being plugged in and
-just as a system sleep begins, the scanning thread may get frozen
-before the khubd task.  Khubd won't be able to freeze until the
-disconnect processing is complete, and the disconnect processing can't
-proceed until the scanning thread finishes, so the sleep transition
-will fail.
+Yes, taking the trap to re-load the FPU/MMX state is expensive, but so
+is spending several days looking for a bug in the state save/restore
+code.  And the preload code has some rather subtle interactions with
+both paravirtualization support and segment state restore, so it's not
+nearly as simple as it should be.
 
-The implementation in the 3.2 kernel suffers from an additional
-problem.  There the scanning thread calls set_freezable_with_signal(),
-and the signals sent by the freezer will mess up the thread's I/O
-delays, which are all interruptible.
+Also, now that we no longer necessarily depend on a single bit (ie
+TS_USEDFPU) for keeping track of the state of the FPU, we migth be able
+to do better.  If we are really switching between two processes that
+keep touching the FP state, save/restore is inevitable, but in the case
+of having one process that does most of the FPU usage, we may actually
+be able to do much better than the preloading.
 
-The solution to both problems is the same: Replace the kernel thread
-used for scanning with a delayed-work routine on the system freezable
-work queue.  Freezable work queues have the nice property that you can
-cancel a work item even while the work queue is frozen, and no signals
-are needed.
+In particular, we may be able to keep track of which CPU the process ran
+on last, and also per CPU keep track of which process' FP state that CPU
+has.  For modern CPU's that don't destroy the FPU contents on save time,
+that would allow us to do a lazy restore by just re-enabling the
+existing FPU state - with no restore cost at all!
 
-The 3.2 version of this patch solves the problem in Bugzilla #42730.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/usb.c |   91 ++++++++++++++++------------------------------
- drivers/usb/storage/usb.h |    7 ++-
- 2 files changed, 36 insertions(+), 62 deletions(-)
+ arch/x86/include/asm/i387.h  |    1 -
+ arch/x86/kernel/process_32.c |   20 --------------------
+ arch/x86/kernel/process_64.c |   23 -----------------------
+ arch/x86/kernel/traps.c      |   35 +++++++++++------------------------
+ 4 files changed, 11 insertions(+), 68 deletions(-)
 
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -788,15 +788,19 @@ static void quiesce_and_remove_host(stru
- 	struct Scsi_Host *host = us_to_host(us);
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -30,7 +30,6 @@ extern void fpu_init(void);
+ extern void mxcsr_feature_mask_init(void);
+ extern int init_fpu(struct task_struct *child);
+ extern void math_state_restore(void);
+-extern void __math_state_restore(void);
+ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
  
- 	/* If the device is really gone, cut short reset delays */
--	if (us->pusb_dev->state == USB_STATE_NOTATTACHED)
-+	if (us->pusb_dev->state == USB_STATE_NOTATTACHED) {
- 		set_bit(US_FLIDX_DISCONNECTING, &us->dflags);
-+		wake_up(&us->delay_wait);
-+	}
+ extern user_regset_active_fn fpregs_active, xfpregs_active;
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -293,23 +293,11 @@ __switch_to(struct task_struct *prev_p,
+ 				 *next = &next_p->thread;
+ 	int cpu = smp_processor_id();
+ 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
+-	bool preload_fpu;
  
--	/* Prevent SCSI-scanning (if it hasn't started yet)
--	 * and wait for the SCSI-scanning thread to stop.
-+	/* Prevent SCSI scanning (if it hasn't started yet)
-+	 * or wait for the SCSI-scanning routine to stop.
- 	 */
--	set_bit(US_FLIDX_DONT_SCAN, &us->dflags);
--	wake_up(&us->delay_wait);
--	wait_for_completion(&us->scanning_done);
-+	cancel_delayed_work_sync(&us->scan_dwork);
-+
-+	/* Balance autopm calls if scanning was cancelled */
-+	if (test_bit(US_FLIDX_SCAN_PENDING, &us->dflags))
-+		usb_autopm_put_interface_no_suspend(us->pusb_intf);
+ 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
  
- 	/* Removing the host will perform an orderly shutdown: caches
- 	 * synchronized, disks spun down, etc.
-@@ -823,52 +827,28 @@ static void release_everything(struct us
- 	scsi_host_put(us_to_host(us));
- }
- 
--/* Thread to carry out delayed SCSI-device scanning */
--static int usb_stor_scan_thread(void * __us)
-+/* Delayed-work routine to carry out SCSI-device scanning */
-+static void usb_stor_scan_dwork(struct work_struct *work)
- {
--	struct us_data *us = (struct us_data *)__us;
-+	struct us_data *us = container_of(work, struct us_data,
-+			scan_dwork.work);
- 	struct device *dev = &us->pusb_intf->dev;
- 
--	dev_dbg(dev, "device found\n");
--
--	set_freezable_with_signal();
 -	/*
--	 * Wait for the timeout to expire or for a disconnect
--	 *
--	 * We can't freeze in this thread or we risk causing khubd to
--	 * fail to freeze, but we can't be non-freezable either. Nor can
--	 * khubd freeze while waiting for scanning to complete as it may
--	 * hold the device lock, causing a hang when suspending devices.
--	 * So we request a fake signal when freezing and use
--	 * interruptible sleep to kick us out of our wait early when
--	 * freezing happens.
+-	 * If the task has used fpu the last 5 timeslices, just do a full
+-	 * restore of the math state immediately to avoid the trap; the
+-	 * chances of needing FPU soon are obviously high now
 -	 */
--	if (delay_use > 0) {
--		dev_dbg(dev, "waiting for device to settle "
--				"before scanning\n");
--		wait_event_interruptible_timeout(us->delay_wait,
--				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
--				delay_use * HZ);
--	}
+-	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
 -
--	/* If the device is still connected, perform the scanning */
--	if (!test_bit(US_FLIDX_DONT_SCAN, &us->dflags)) {
+ 	__unlazy_fpu(prev_p);
+ 
+-	/* we're going to use this soon, after a few expensive things */
+-	if (preload_fpu)
+-		prefetch(next->fpu.state);
 -
--		/* For bulk-only devices, determine the max LUN value */
--		if (us->protocol == USB_PR_BULK &&
--				!(us->fflags & US_FL_SINGLE_LUN)) {
--			mutex_lock(&us->dev_mutex);
--			us->max_lun = usb_stor_Bulk_max_lun(us);
--			mutex_unlock(&us->dev_mutex);
--		}
--		scsi_scan_host(us_to_host(us));
--		dev_dbg(dev, "scan complete\n");
-+	dev_dbg(dev, "starting scan\n");
+ 	/*
+ 	 * Reload esp0.
+ 	 */
+@@ -348,11 +336,6 @@ __switch_to(struct task_struct *prev_p,
+ 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
+ 		__switch_to_xtra(prev_p, next_p, tss);
  
--		/* Should we unbind if no devices were detected? */
-+	/* For bulk-only devices, determine the max LUN value */
-+	if (us->protocol == USB_PR_BULK && !(us->fflags & US_FL_SINGLE_LUN)) {
-+		mutex_lock(&us->dev_mutex);
-+		us->max_lun = usb_stor_Bulk_max_lun(us);
-+		mutex_unlock(&us->dev_mutex);
- 	}
-+	scsi_scan_host(us_to_host(us));
-+	dev_dbg(dev, "scan complete\n");
-+
-+	/* Should we unbind if no devices were detected? */
+-	/* If we're going to preload the fpu context, make sure clts
+-	   is run while we're batching the cpu state updates. */
+-	if (preload_fpu)
+-		clts();
+-
+ 	/*
+ 	 * Leave lazy mode, flushing any hypercalls made here.
+ 	 * This must be done before restoring TLS segments so
+@@ -362,9 +345,6 @@ __switch_to(struct task_struct *prev_p,
+ 	 */
+ 	arch_end_context_switch(next_p);
  
- 	usb_autopm_put_interface(us->pusb_intf);
--	complete_and_exit(&us->scanning_done, 0);
-+	clear_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+-	if (preload_fpu)
+-		__math_state_restore();
+-
+ 	/*
+ 	 * Restore %gs if needed (which is common)
+ 	 */
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -377,18 +377,6 @@ __switch_to(struct task_struct *prev_p,
+ 	int cpu = smp_processor_id();
+ 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
+ 	unsigned fsindex, gsindex;
+-	bool preload_fpu;
+-
+-	/*
+-	 * If the task has used fpu the last 5 timeslices, just do a full
+-	 * restore of the math state immediately to avoid the trap; the
+-	 * chances of needing FPU soon are obviously high now
+-	 */
+-	preload_fpu = tsk_used_math(next_p) && next_p->fpu_counter > 5;
+-
+-	/* we're going to use this soon, after a few expensive things */
+-	if (preload_fpu)
+-		prefetch(next->fpu.state);
+ 
+ 	/*
+ 	 * Reload esp0, LDT and the page table pointer:
+@@ -421,10 +409,6 @@ __switch_to(struct task_struct *prev_p,
+ 	/* Must be after DS reload */
+ 	__unlazy_fpu(prev_p);
+ 
+-	/* Make sure cpu is ready for new context */
+-	if (preload_fpu)
+-		clts();
+-
+ 	/*
+ 	 * Leave lazy mode, flushing any hypercalls made here.
+ 	 * This must be done before restoring TLS segments so
+@@ -483,13 +467,6 @@ __switch_to(struct task_struct *prev_p,
+ 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
+ 		__switch_to_xtra(prev_p, next_p, tss);
+ 
+-	/*
+-	 * Preload the FPU context, now that we've determined that the
+-	 * task is likely to be using it. 
+-	 */
+-	if (preload_fpu)
+-		__math_state_restore();
+-
+ 	return prev_p;
  }
  
- static unsigned int usb_stor_sg_tablesize(struct usb_interface *intf)
-@@ -915,7 +895,7 @@ int usb_stor_probe1(struct us_data **pus
- 	init_completion(&us->cmnd_ready);
- 	init_completion(&(us->notify));
- 	init_waitqueue_head(&us->delay_wait);
--	init_completion(&us->scanning_done);
-+	INIT_DELAYED_WORK(&us->scan_dwork, usb_stor_scan_dwork);
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -717,28 +717,6 @@ asmlinkage void __attribute__((weak)) sm
+ }
  
- 	/* Associate the us_data structure with the USB device */
- 	result = associate_dev(us, intf);
-@@ -946,7 +926,6 @@ EXPORT_SYMBOL_GPL(usb_stor_probe1);
- /* Second part of general USB mass-storage probing */
- int usb_stor_probe2(struct us_data *us)
- {
--	struct task_struct *th;
- 	int result;
- 	struct device *dev = &us->pusb_intf->dev;
- 
-@@ -987,20 +966,14 @@ int usb_stor_probe2(struct us_data *us)
- 		goto BadDevice;
- 	}
- 
--	/* Start up the thread for delayed SCSI-device scanning */
--	th = kthread_create(usb_stor_scan_thread, us, "usb-stor-scan");
--	if (IS_ERR(th)) {
--		dev_warn(dev,
--				"Unable to start the device-scanning thread\n");
--		complete(&us->scanning_done);
--		quiesce_and_remove_host(us);
--		result = PTR_ERR(th);
--		goto BadDevice;
+ /*
+- * __math_state_restore assumes that cr0.TS is already clear and the
+- * fpu state is all ready for use.  Used during context switch.
+- */
+-void __math_state_restore(void)
+-{
+-	struct thread_info *thread = current_thread_info();
+-	struct task_struct *tsk = thread->task;
+-
+-	/*
+-	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+-	 */
+-	if (unlikely(restore_fpu_checking(tsk))) {
+-		stts();
+-		force_sig(SIGSEGV, tsk);
+-		return;
 -	}
 -
-+	/* Submit the delayed_work for SCSI-device scanning */
- 	usb_autopm_get_interface_no_resume(us->pusb_intf);
--	wake_up_process(th);
-+	set_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+-	__thread_set_has_fpu(thread);	/* clts in caller! */
+-	tsk->fpu_counter++;
+-}
+-
+-/*
+  * 'math_state_restore()' saves the current math information in the
+  * old math state array, and gets the new ones from the current task
+  *
+@@ -768,9 +746,18 @@ void math_state_restore(void)
+ 		local_irq_disable();
+ 	}
  
-+	if (delay_use > 0)
-+		dev_dbg(dev, "waiting for device to settle before scanning\n");
-+	queue_delayed_work(system_freezable_wq, &us->scan_dwork,
-+			delay_use * HZ);
- 	return 0;
+-	clts();				/* Allow maths ops (or we recurse) */
++	__thread_fpu_begin(thread);
  
- 	/* We come here if there are any problems */
---- a/drivers/usb/storage/usb.h
-+++ b/drivers/usb/storage/usb.h
-@@ -47,6 +47,7 @@
- #include <linux/blkdev.h>
- #include <linux/completion.h>
- #include <linux/mutex.h>
-+#include <linux/workqueue.h>
- #include <scsi/scsi_host.h>
+-	__math_state_restore();
++	/*
++	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
++	 */
++	if (unlikely(restore_fpu_checking(tsk))) {
++		__thread_fpu_end(thread);
++		force_sig(SIGSEGV, tsk);
++		return;
++	}
++
++	tsk->fpu_counter++;
+ }
+ EXPORT_SYMBOL_GPL(math_state_restore);
  
- struct us_data;
-@@ -72,7 +73,7 @@ struct us_unusual_dev {
- #define US_FLIDX_DISCONNECTING	3	/* disconnect in progress   */
- #define US_FLIDX_RESETTING	4	/* device reset in progress */
- #define US_FLIDX_TIMED_OUT	5	/* SCSI midlayer timed out  */
--#define US_FLIDX_DONT_SCAN	6	/* don't scan (disconnect)  */
-+#define US_FLIDX_SCAN_PENDING	6	/* scanning not yet done    */
- #define US_FLIDX_REDO_READ10	7	/* redo READ(10) command    */
- #define US_FLIDX_READ10_WORKED	8	/* previous READ(10) succeeded */
- 
-@@ -147,8 +148,8 @@ struct us_data {
- 	/* mutual exclusion and synchronization structures */
- 	struct completion	cmnd_ready;	 /* to sleep thread on	    */
- 	struct completion	notify;		 /* thread begin/end	    */
--	wait_queue_head_t	delay_wait;	 /* wait during scan, reset */
--	struct completion	scanning_done;	 /* wait for scan thread    */
-+	wait_queue_head_t	delay_wait;	 /* wait during reset	    */
-+	struct delayed_work	scan_dwork;	 /* for async scanning      */
- 
- 	/* subdriver information */
- 	void			*extra;		 /* Any extra data          */
 
 
