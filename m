@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965242Ab2B1BTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:19:01 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
+	id S965512Ab2B1BT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:19:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58867 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965179Ab2B1BL6 (ORCPT
+	with ESMTP id S965409Ab2B1BTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:11:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.208.228 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.170 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010431.689825220@linuxfoundation.org>
+Message-Id: <20120228010430.025960508@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:04:55 -0800
+Date: Mon, 27 Feb 2012 17:04:36 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Yurij M. Plotnikov" <Yurij.Plotnikov@oktetlabs.ru>,
-        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Till Kamppeter <till.kamppeter@gmail.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/72] ipv4: reset flowi parameters on route connect
+Subject: [ 07/72] ipheth: Add iPhone 4S
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,86 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Tim Gardner <tim.gardner@canonical.com>
 
-From: Julian Anastasov <ja@ssi.bg>
+commit 72ba009b8a159e995e40d3b4e5d7d265acead983 upstream.
 
-[ Upstream commit e6b45241c57a83197e5de9166b3b0d32ac562609 ]
+BugLink: http://bugs.launchpad.net/bugs/900802
 
-Eric Dumazet found that commit 813b3b5db83
-(ipv4: Use caller's on-stack flowi as-is in output
-route lookups.) that comes in 3.0 added a regression.
-The problem appears to be that resulting flowi4_oif is
-used incorrectly as input parameter to some routing lookups.
-The result is that when connecting to local port without
-listener if the IP address that is used is not on a loopback
-interface we incorrectly assign RTN_UNICAST to the output
-route because no route is matched by oif=lo. The RST packet
-can not be sent immediately by tcp_v4_send_reset because
-it expects RTN_LOCAL.
-
-	So, change ip_route_connect and ip_route_newports to
-update the flowi4 fields that are input parameters because
-we do not want unnecessary binding to oif.
-
-	To make it clear what are the input parameters that
-can be modified during lookup and to show which fields of
-floiw4 are reused add a new function to update the flowi4
-structure: flowi4_update_output.
-
-Thanks to Yurij M. Plotnikov for providing a bug report including a
-program to reproduce the problem.
-
-Thanks to Eric Dumazet for tracking the problem down to
-tcp_v4_send_reset and providing initial fix.
-
-Reported-by: Yurij M. Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Till Kamppeter <till.kamppeter@gmail.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/flow.h  |   10 ++++++++++
- include/net/route.h |    4 ++++
- 2 files changed, 14 insertions(+)
 
---- a/include/net/flow.h
-+++ b/include/net/flow.h
-@@ -90,6 +90,16 @@ static inline void flowi4_init_output(st
- 	fl4->fl4_dport = dport;
- 	fl4->fl4_sport = sport;
- }
-+
-+/* Reset some input parameters after previous lookup */
-+static inline void flowi4_update_output(struct flowi4 *fl4, int oif, __u8 tos,
-+					__be32 daddr, __be32 saddr)
-+{
-+	fl4->flowi4_oif = oif;
-+	fl4->flowi4_tos = tos;
-+	fl4->daddr = daddr;
-+	fl4->saddr = saddr;
-+}
- 				      
+---
+ drivers/net/usb/ipheth.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -60,6 +60,7 @@
+ #define USB_PRODUCT_IPHONE_3GS  0x1294
+ #define USB_PRODUCT_IPHONE_4	0x1297
+ #define USB_PRODUCT_IPHONE_4_VZW 0x129c
++#define USB_PRODUCT_IPHONE_4S	0x12a0
  
- struct flowi6 {
---- a/include/net/route.h
-+++ b/include/net/route.h
-@@ -270,6 +270,7 @@ static inline struct rtable *ip_route_co
- 		if (IS_ERR(rt))
- 			return rt;
- 		ip_rt_put(rt);
-+		flowi4_update_output(fl4, oif, tos, fl4->daddr, fl4->saddr);
- 	}
- 	security_sk_classify_flow(sk, flowi4_to_flowi(fl4));
- 	return ip_route_output_flow(net, fl4, sk);
-@@ -284,6 +285,9 @@ static inline struct rtable *ip_route_ne
- 		fl4->fl4_dport = dport;
- 		fl4->fl4_sport = sport;
- 		ip_rt_put(rt);
-+		flowi4_update_output(fl4, sk->sk_bound_dev_if,
-+				     RT_CONN_FLAGS(sk), fl4->daddr,
-+				     fl4->saddr);
- 		security_sk_classify_flow(sk, flowi4_to_flowi(fl4));
- 		return ip_route_output_flow(sock_net(sk), fl4, sk);
- 	}
+ #define IPHETH_USBINTF_CLASS    255
+ #define IPHETH_USBINTF_SUBCLASS 253
+@@ -103,6 +104,10 @@ static struct usb_device_id ipheth_table
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4_VZW,
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(
++		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4S,
++		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
++		IPHETH_USBINTF_PROTO) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, ipheth_table);
 
 
