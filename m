@@ -1,97 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab2B1CQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:16:00 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43139 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab2B1CLR (ORCPT
+	id S932344Ab2B1CT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:19:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54968 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755660Ab2B1CTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:11:17 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/18] PCI: Add busn_res tracking in core
-Date: Mon, 27 Feb 2012 18:09:55 -0800
-Message-Id: <1330395009-29260-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330395009-29260-1-git-send-email-yinghai@kernel.org>
-References: <1330395009-29260-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090203.4F4C37BE.0089,ss=1,re=0.000,fgs=0
+	Mon, 27 Feb 2012 21:19:23 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201202260059.02347.rjw@sisk.pl>
+References: <CAJ0PZbSODSJvV-_Gje9Hm9Ek22Z9m+PAcsf071OCmAOtsnKzyg@mail.gmail.com>
+	<1329897815-15871-1-git-send-email-myungjoo.ham@samsung.com>
+	<1329897815-15871-2-git-send-email-myungjoo.ham@samsung.com>
+	<201202260059.02347.rjw@sisk.pl>
+Date: Tue, 28 Feb 2012 11:19:22 +0900
+X-Google-Sender-Auth: 4DAfiGqz5uNbkrtglJm0HzsGgGc
+Message-ID: <CAJ0PZbSn8A6fOeq5_wDDQD7hEbb92N7CDA62YtT1gr1Rx6+7bw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] CPUfreq ondemand: update sampling rate without
+ waiting for next sampling
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update pci_scan_root_bus, and pci_scan_bus to insert root bus busn into
-iobusn_resource tree.
+2012/2/26 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Wednesday, February 22, 2012, MyungJoo Ham wrote:
+>> When a new sampling rate is shorter than the current one, (e.g., 1 sec
+>> --> 10 ms) regardless how short the new one is, the current ondemand
+>> mechanism wait for the previously set timer to be expired.
+>>
+>> For example, if the user has just expressed that the sampling rate
+>> should be 10 ms from now and the previous was 1000 ms, the new rate may
+>> become effective 999 ms later, which could be not acceptable for the
+>> user if the user has intended to speed up sampling because the system is
+>> expected to react to CPU load fluctuation quickly from __now__.
+>>
+>> In order to address this issue, we need to cancel the previously set
+>> timer (schedule_delayed_work) and reset the timer if resetting timer is
+>> expected to trigger the delayed_work ealier.
+>>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+[]
+>> +
+>> +             if (!delayed_work_pending(&dbs_info->work))
+>> +                     goto next;
+>> +
+>
+> What about doing
+>
+>                        mutex_unlock(&dbs_info->timer_mutex);
+>                        continue;
+>
+> here instead of the jump?
+>
 
--v2: not add pci_scan_root_bus_max...
+Like patch 2/2 of this patchset, I'll remove goto in the loop.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c  |   11 +++++++++--
- drivers/pci/remove.c |    1 +
- 2 files changed, 10 insertions(+), 2 deletions(-)
+>
+>> +             timer = &dbs_info->work.timer;
+>> +             appointed_at = timer->expires;
+>> +
+>
+> I would do
+>
+>                next_sampling = jiffies + usecs_to_jiffies(new_rate);
+>
+> and compare that with timer->expires.  Then, the if () below would look better.
+> Or perhaps use new_rate_jiffies = usecs_to_jiffies(new_rate) and use that here
+> and below?
+>
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 3c0eecb..e09f9b2 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1734,7 +1734,9 @@ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
- 	if (!b)
- 		return NULL;
- 
-+	pci_bus_insert_busn_res(b, bus, 255);
- 	b->subordinate = pci_scan_child_bus(b);
-+	pci_bus_update_busn_res_end(b, b->subordinate);
- 	pci_bus_add_devices(b);
- 	return b;
- }
-@@ -1750,9 +1752,11 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
- 	b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
--	if (b)
-+	if (b) {
-+		pci_bus_insert_busn_res(b, bus, 255);
- 		b->subordinate = pci_scan_child_bus(b);
--	else
-+		pci_bus_update_busn_res_end(b, b->subordinate);
-+	} else
- 		pci_free_resource_list(&resources);
- 	return b;
- }
-@@ -1768,7 +1772,10 @@ struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *ops,
- 	pci_add_resource(&resources, &iomem_resource);
- 	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
- 	if (b) {
-+		pci_bus_insert_busn_res(b, bus, 255);
- 		b->subordinate = pci_scan_child_bus(b);
-+		pci_bus_update_busn_res_end(b, b->subordinate);
-+
- 		pci_bus_add_devices(b);
- 	} else {
- 		pci_free_resource_list(&resources);
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index fd77e2b..04a4861 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -68,6 +68,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
- 
- 	down_write(&pci_bus_sem);
- 	list_del(&pci_bus->node);
-+	pci_bus_release_busn_res(pci_bus);
- 	up_write(&pci_bus_sem);
- 	if (!pci_bus->is_added)
- 		return;
+Oh.. yes, this surely looks ugly. I'll update this.
+
+>> +             if (time_before(jiffies + usecs_to_jiffies(new_rate),
+>> +                             appointed_at)) {
+>> +
+>> +                     mutex_unlock(&dbs_info->timer_mutex);
+>
+> I'm not sure if this isn't going to be racy.  Have you verified that?
+
+This unlock is added to avoid race condition against do_dbs_timer().
+Unless the delay is 0 (polling_interval = 0ms?), do_dbs_timer() or
+mutex_lock() took several ms, do_dbs_timer() won't be running again
+holding the mutex after cancel_delayed_work_sync().
+
+I've tested a few cases only backported on kernel 3.0; however, I'll
+do more extensive testing on this part before submitting the next
+iteration of the patchset and try to run this code with 3.3-rc5.
+
+>
+>> +                     cancel_delayed_work_sync(&dbs_info->work);
+>> +                     mutex_lock(&dbs_info->timer_mutex);
+>> +
+>> +                     schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
+>> +                                              usecs_to_jiffies(new_rate));
+>> +
+>> +             }
+>> +next:
+>> +             mutex_unlock(&dbs_info->timer_mutex);
+>> +     }
+>> +}
+>> +
+>>  static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+>>                                  const char *buf, size_t count)
+>>  {
+>> @@ -265,7 +321,7 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+>>       ret = sscanf(buf, "%u", &input);
+>>       if (ret != 1)
+>>               return -EINVAL;
+>> -     dbs_tuners_ins.sampling_rate = max(input, min_sampling_rate);
+>> +     update_sampling_rate(input);
+>>       return count;
+>>  }
+>
+> Thanks,
+> Rafael
+
+Thank you.
+
+
+Cheers!
+MyungJoo.
+
 -- 
-1.7.7
-
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
