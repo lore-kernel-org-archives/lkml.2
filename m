@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab2B1BGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:06:48 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	id S932402Ab2B1BGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:06:53 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab2B1BGp (ORCPT
+	with ESMTP id S932385Ab2B1BGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.138 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010205.059228398@linuxfoundation.org>
+Message-Id: <20120228010205.390093868@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:09 -0800
+Date: Mon, 27 Feb 2012 17:02:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 06/73] powerpc/perf: power_pmu_start restores incorrect values, breaking frequency events
+        alan@lxorguk.ukuu.org.uk, garyhade@us.ibm.com,
+        Yinghai Lu <yinghai.lu@oracle.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 08/73] PCI: workaround hard-wired bus number V2
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Yinghai Lu <yinghai.lu@oracle.com>
 
-commit 9a45a9407c69d068500923480884661e2b9cc421 upstream.
+commit 71f6bd4a23130cd2f4b036010c5790b1295290b9 upstream.
 
-perf on POWER stopped working after commit e050e3f0a71b (perf: Fix
-broken interrupt rate throttling). That patch exposed a bug in
-the POWER perf_events code.
+Fixes PCI device detection on IBM xSeries IBM 3850 M2 / x3950 M2
+when using ACPI resources (_CRS).
+This is default, a manual workaround (without this patch)
+would be pci=nocrs boot param.
 
-Since the PMCs count upwards and take an exception when the top bit
-is set, we want to write 0x80000000 - left in power_pmu_start. We were
-instead programming in left which effectively disables the counter
-until we eventually hit 0x80000000. This could take seconds or longer.
+V2: Add dev_warn if the workaround is hit. This should reveal
+how common such setups are (via google) and point to possible
+problems if things are still not working as expected.
+-> Suggested by Jan Beulich.
 
-With the patch applied I get the expected number of samples:
-
-          SAMPLE events:       9948
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Tested-by: garyhade@us.ibm.com
+Signed-off-by: Yinghai Lu <yinghai.lu@oracle.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/perf_event.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/pci/probe.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -865,6 +865,7 @@ static void power_pmu_start(struct perf_
- {
- 	unsigned long flags;
- 	s64 left;
-+	unsigned long val;
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -657,6 +657,11 @@ int __devinit pci_scan_bridge(struct pci
+ 	dev_dbg(&dev->dev, "scanning [bus %02x-%02x] behind bridge, pass %d\n",
+ 		secondary, subordinate, pass);
  
- 	if (!event->hw.idx || !event->hw.sample_period)
- 		return;
-@@ -880,7 +881,12 @@ static void power_pmu_start(struct perf_
- 
- 	event->hw.state = 0;
- 	left = local64_read(&event->hw.period_left);
--	write_pmc(event->hw.idx, left);
++	if (!primary && (primary != bus->number) && secondary && subordinate) {
++		dev_warn(&dev->dev, "Primary bus is hard wired to 0\n");
++		primary = bus->number;
++	}
 +
-+	val = 0;
-+	if (left < 0x80000000L)
-+		val = 0x80000000L - left;
-+
-+	write_pmc(event->hw.idx, val);
- 
- 	perf_event_update_userpage(event);
- 	perf_pmu_enable(event->pmu);
+ 	/* Check if setup is sensible at all */
+ 	if (!pass &&
+ 	    (primary != bus->number || secondary <= bus->number)) {
 
 
