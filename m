@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab2B1Tyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:54:55 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:61761 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab2B1Tyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:54:54 -0500
-Date: Tue, 28 Feb 2012 20:54:51 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Grant Grundler <grantgrundler@gmail.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
-	for 64 bit.
-Message-ID: <20120228195451.GA3042@merkur.ravnborg.org>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <4F4CF3CF.5090605@bell.net> <CANEJEGv2Zgtd8TGOzSNO8opMLQT8RsGRP=m2rBPUBBOJ9f+fKQ@mail.gmail.com> <201202281337.14094.vapier@gentoo.org>
+	id S1757350Ab2B1UBH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 15:01:07 -0500
+Received: from nm27.bullet.mail.sp2.yahoo.com ([98.139.91.97]:33870 "HELO
+	nm27.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757290Ab2B1UBF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 15:01:05 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 909303.55675.bm@omp1068.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=lHyrt5Z1Zo/upkPoggKHgjmR4PW9NZ4UGH0hj4WYUwyidE1vNVWQtNl9WwqwFWLx21pnT/+m6N+hor5YqvIENAfaAsZLgxcTvS+ssa1/23rAYZugQQ6Vy27nwvPDEhhl3EgJ7KJQXGkB0swOznhw1caZPedGyDNUbuP8LhFdAe0=;
+X-YMail-OSG: SxnZRLoVM1kWIGEydD2sRZWMOXBW8ZoERGvH6fFbcAdE8z0
+ OBkAthQarKoILcMO9XnH2vYbYMIiU4HAxRRqg__Zws2CpHT4HhVZBGfGl.C2
+ jJjd6yQo6kPFTVFvTr0tB.KYldMzQcLtaskHi891.J0EDBlb.6fWJNPo.QnD
+ ZSr91JCJrLcRU9DovRHL24_ZDToqYRbKnsRUsTo_s0dXF0uq68wKZQsF29uR
+ yqEam6aEEw0cGSe62dzHG2m_D7ZpseCS9r4cc695r1Bg7gqhryWifQ31YzHF
+ nLH35UnfgBM1Dsfj1S1rKSi2obKUyabLcBfMuqMRYytKlnnhR_BVQKY6QwDt
+ 6xwaFFVPwFclRgdQMIzgQJXC3UHA6d5WREIdRvrmiKdFh7QRx1RjMQU.4HA.
+ _TDj7Sjz4FFeVfcfN7wfHbkiYaKixTbwsbKQ4Ma89F8JNa1YddcS8RZRqm.k
+ 9c0Oni64-
+X-Mailer: YahooMailWebService/0.8.116.338427
+Message-ID: <1330459264.72081.YahooMailNeo@web112013.mail.gq1.yahoo.com>
+Date: Tue, 28 Feb 2012 12:01:04 -0800 (PST)
+From: Ron Chen <ron_chen_123@yahoo.com>
+Reply-To: Ron Chen <ron_chen_123@yahoo.com>
+Subject: inotify & NFS error
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201202281337.14094.vapier@gentoo.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 01:37:10PM -0500, Mike Frysinger wrote:
-> On Tuesday 28 February 2012 13:22:50 Grant Grundler wrote:
-> > On Tue, Feb 28, 2012 at 7:33 AM, John David Anglin wrote:
-> > > On 2/28/2012 10:21 AM, Mike Frysinger wrote:
-> > >> we've been using hppa2.0 for years.  gnuconfig certainly recognizes it:
-> > >> $ grep hppa /usr/share/gnuconfig/config.**sub
-> > >> 
-> > >>         | h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] |
-> > >> 
-> > >> hppa64 \
-> > >> 
-> > >>         | hppa-* | hppa1.[01]-* | hppa2.0-* | hppa2.0[nw]-* | hppa64-* \
-> > >> 
-> > >> and i've seen diff projects key off of the hppa2.0* to enable newer
-> > >> features by
-> > >> default.
-> > > 
-> > > Some of the above are specific to HP-UX, but hppa1.1, hppa2.0, hppa and
-> > > hppa64 are
-> > > valid for Linux based on config.guess.
-> > 
-> > Mike, et al,
-> > I'd suggest NOT using hppa2.0 as a surrogate for 64-bit build. I'd prefer
-> > hppa64 if 64-bit is meant.
-> > 
-> > hppa2.0 can also mean PA2.0 compliant binary compiled using ILP32 model.
-> > right?
-> 
-> i don't think that's what the proposed change does.  James' patch runs $(CC) 
-> to find the active tuple, then replaces the first part with "hppa64" to get a 
-> 64bit toolchain automatically.  but that magic only works when the tuple is 
-> "hppa-xxx" and so will fail when the system is using "hppa2.0-xxx".
-> 
-> short story: the proposed change will additionally support turning "hppa2.0-
-> linux-gnu" into "hppa64-linux-gnu" rather than the existing "only turns hppa-
-> linux-gnu" into "hppa64-linux-gnu".
+I know that it is not possible (read: not technically feasible) for the inotify interface to support for NFS or other shared filesystems.
 
-There is a small helper:
+However, I think it is at least useful to tell the application developer that the file is on NFS and thus return of some sort (via errno), and thus when inotify_add_watch(2) is passed with a pathname on NFS, some sort of error will return.
 
-    cc-cross-prefix
+I am one of the maintainers of Open Grid Scheduler (the official open-source Sun Grid Engine). I think having a reliable way of determining whether inotify gets events would greatly benefit applications that are commonly run in clustered environments (like Open Grid Scheduler, Grid Engine, and other HPC job schedulers). Most applications can switch back to polling when inotify is absent, but if the applications themselves do not know, then they can in the worst case sit there waiting forever.
 
-Which may be used ifyou have two or mroe candidated for CROSS_COMPILE.
-
->From mips:
- CROSS_COMPILE := $(call cc-cross-prefix, $(tool-archpref)-linux-  $(tool-archpref)-linux-gnu-  $(tool-archpref)-unknown-linux-gnu-)
-
-Dunno if this would help parisc in this case..
-
-	Sam
+ -Ron
