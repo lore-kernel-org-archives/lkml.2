@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab2B1KAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:00:34 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56488 "EHLO mx2.mail.elte.hu"
+	id S1756982Ab2B1KAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:00:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2B1KAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:00:31 -0500
-Date: Tue, 28 Feb 2012 10:59:53 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        systemtap@sourceware.org, anderson@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: Re: Re: [PATCH v3 -tip] [BUGFIX] x86/kprobes: Fix to recover
- instructions on optimized path
-Message-ID: <20120228095953.GA17149@elte.hu>
-References: <20120223083703.GA26781@elte.hu>
- <20120224095412.8462.55698.stgit@localhost.localdomain>
- <20120227093421.GA10078@elte.hu>
- <4F4C4182.1040706@hitachi.com>
- <20120228084828.GK21106@elte.hu>
- <4F4CA3BC.7050909@hitachi.com>
+	id S1754175Ab2B1KAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:00:53 -0500
+Message-ID: <4F4CA5C2.4050605@redhat.com>
+Date: Tue, 28 Feb 2012 12:00:34 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F4CA3BC.7050909@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Amit Shah <amit.shah@redhat.com>,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, kvm list <kvm@vger.kernel.org>
+Subject: Re: [KVM paravirt issue?] Re: vsyscall=emulate regression
+References: <20120203082748.GB782@amit.redhat.com> <20120214122205.GA29418@amit.redhat.com> <CALCETrVCzErebXrVk8Bi+k1TjigD3XvJsmZFVZb=ksmSCOTVLg@mail.gmail.com> <20120215110122.GA3136@amit.redhat.com> <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com> <4F3D2C09.1020803@redhat.com> <CALCETrUhGY8C8JLz6DrbBxukV58K=2jrMSfDyAm=eF7OWbKx7g@mail.gmail.com> <4F3D395B.1000708@redhat.com> <CALCETrXjJtKLhe2rRkuy57Ai+5X2-+qh9eMbE5y-UhX=CPWftA@mail.gmail.com> <4F3D3F59.80807@redhat.com> <4F471344.1010002@zytor.com> <CALCETrVk=3D0q2FHLhfZGhv4apFsJ1jnZAUWgwjRoFxT7OqPgQ@mail.gmail.com>
+In-Reply-To: <CALCETrVk=3D0q2FHLhfZGhv4apFsJ1jnZAUWgwjRoFxT7OqPgQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> (2012/02/28 17:48), Ingo Molnar wrote:
-> > 
-> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> > 
-> >> (2012/02/27 18:34), Ingo Molnar wrote:
+On 02/24/2012 08:58 PM, Andy Lutomirski wrote:
+> On Thu, Feb 23, 2012 at 8:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 02/16/2012 09:39 AM, Avi Kivity wrote:
 > >>>
-> >>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> >>>
-> >>>> +
-> >>>> +#ifdef CONFIG_OPTPROBES
-> >>>> +static unsigned long __recover_optprobed_insn(struct kprobe *kp,
-> >>>> +					      kprobe_opcode_t *buf,
-> >>>> +					      unsigned long addr)
-> >>>> +{
-> >>>> +	long offs = addr - (unsigned long)kp->addr - 1;
-> >>>> +	struct optimized_kprobe *op = container_of(kp, struct optimized_kprobe, kp);
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * If the kprobe can be optimized, original bytes which can be
-> >>>> +	 * overwritten by jump destination address. In this case, original
-> >>>> +	 * bytes must be recovered from op->optinsn.copied_insn buffer.
-> >>>> +	 */
-> >>>> +	memcpy(buf, (void *)addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
-> >>>> +	if (addr == (unsigned long)kp->addr) {
-> >>>> +		buf[0] = kp->opcode;
-> >>>> +		memcpy(buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
-> >>>> +	} else
-> >>>> +		memcpy(buf, op->optinsn.copied_insn + offs, RELATIVE_ADDR_SIZE - offs);
-> >>>> +
-> >>>> +	return (unsigned long)buf;
-> >>>> +}
-> >>>> +#endif
-> >>>
-> >>> Why not stick this into a new kprobes-opt.c file?
-> >>
-> >> Would you mean that I should split all optprobe stuffs into 
-> >> new file?
-> > 
-> > Yeah, that would be sensible I think - and it might help avoid 
-> > similar complications in the future.
-> > 
-> > Could (and probably should) be done in a separate patch - to 
-> > keep the bits that you already fixed and tested intact.
-> 
-> OK, I'll make a separate patch.
+> >>> Yes, this is on purpose
+> >
+> > Why?
+>
+> I think the "this" refers to the PF_INSTR fault when executing at
+> 0xffffffffff600xxx.  That's definitely intentional -- it's how
+> vsyscall emulation works.
+>
+> I think it's unintentional that some kvm versions apparently forget to
+> set the PF_INSTR bit.
+>
 
-Could be done on top of your existing patch, to keep things 
-simpler for you - a split-up patch done before your fix would 
-create a lot of conflicts in the fix patch.
+Correct.  Can you provide the version that failed, so we can fix it?
 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	Ingo
