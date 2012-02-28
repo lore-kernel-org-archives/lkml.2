@@ -1,136 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab2B1AaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:30:10 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:53401 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2B1AaG (ORCPT
+	id S964771Ab2B1Aaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:30:52 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:53340 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756323Ab2B1A3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:30:06 -0500
+	Mon, 27 Feb 2012 19:29:49 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 4/7] time: Update timekeeper structure using a local shadow
-Date: Mon, 27 Feb 2012 16:29:31 -0800
-Message-Id: <1330388974-27793-5-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 5/7] time: Shadow cycle_last in timekeeper structure
+Date: Mon, 27 Feb 2012 16:29:32 -0800
+Message-Id: <1330388974-27793-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1330388974-27793-1-git-send-email-john.stultz@linaro.org>
 References: <1330388974-27793-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022800-7408-0000-0000-00000302491B
+x-cbid: 12022800-3352-0000-0000-000002F03F30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uses a local shadow structure to update the timekeeper. This
-will allow for reduced timekeeper.rlock hold time.
+The clocksource cycle_last value is problematic for working on
+shadow copies of the timekeeper, because the clocksource is global.
+
+Since its mostly used only for timekeeping, move cycle_last into
+the timekeeper. Unfortunately there are some uses for cycle_last
+outside of timekeeping (such as tsc_read, which makes sure we haven't
+skipped to a core that the TSC is behind the last read), so we
+keep the clocksource cycle_last updated as well.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Eric Dumazet <eric.dumazet@gmail.com>
 CC: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/timekeeping.c |   42 ++++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
+ kernel/time/timekeeping.c |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 4962284..6c36d19 100644
+index 6c36d19..ebfb037 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -1051,6 +1051,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
- static void update_wall_time(void)
- {
- 	struct clocksource *clock;
-+	struct timekeeper tk;
- 	cycle_t offset;
- 	int shift = 0, maxshift;
- 	unsigned long flags;
-@@ -1063,10 +1064,11 @@ static void update_wall_time(void)
- 	if (unlikely(timekeeping_suspended))
- 		goto out;
+@@ -29,7 +29,8 @@ struct timekeeper {
+ 	u32	mult;
+ 	/* The shift value of the current clocksource. */
+ 	int	shift;
+-
++	/* cycle value at last accumulation point */
++	cycle_t cycle_last;
+ 	/* Number of clock cycles in one NTP interval. */
+ 	cycle_t cycle_interval;
+ 	/* Number of clock shifted nano seconds in one NTP interval. */
+@@ -138,7 +139,8 @@ static void timekeeper_setup_internals(struct clocksource *clock)
+ 	u64 tmp, ntpinterval;
  
--	clock = timekeeper.clock;
-+	tk = timekeeper;
-+	clock = tk.clock;
+ 	timekeeper.clock = clock;
+-	clock->cycle_last = clock->read(clock);
++	timekeeper.cycle_last = clock->read(clock);
++	clock->cycle_last = timekeeper.cycle_last;
  
+ 	/* Do the ns -> cycle conversion first, using original mult */
+ 	tmp = NTP_INTERVAL_LENGTH;
+@@ -184,7 +186,7 @@ static inline s64 timekeeping_get_ns(void)
+ 	cycle_now = clock->read(clock);
+ 
+ 	/* calculate the delta since the last update_wall_time: */
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
++	cycle_delta = (cycle_now - timekeeper.cycle_last) & clock->mask;
+ 
+ 	nsec = cycle_delta * timekeeper.mult + timekeeper.xtime_nsec;
+ 	return nsec >> timekeeper.shift;
+@@ -200,7 +202,7 @@ static inline s64 timekeeping_get_ns_raw(void)
+ 	cycle_now = clock->read(clock);
+ 
+ 	/* calculate the delta since the last update_wall_time: */
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
++	cycle_delta = (cycle_now - timekeeper.cycle_last) & clock->mask;
+ 
+ 	/* return delta convert to nanoseconds. */
+ 	return clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+@@ -248,8 +250,9 @@ static void timekeeping_forward_now(void)
+ 
+ 	clock = timekeeper.clock;
+ 	cycle_now = clock->read(clock);
+-	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+-	clock->cycle_last = cycle_now;
++	cycle_delta = (cycle_now - timekeeper.cycle_last) & clock->mask;
++	timekeeper.cycle_last = cycle_now;
++	timekeeper.clock->cycle_last = cycle_now;
+ 
+ 	timekeeper.xtime_nsec += cycle_delta * timekeeper.mult;
+ 
+@@ -749,7 +752,8 @@ static void timekeeping_resume(void)
+ 		__timekeeping_inject_sleeptime(&ts);
+ 	}
+ 	/* re-base the last cycle value */
+-	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
++	timekeeper.cycle_last = timekeeper.clock->read(timekeeper.clock);
++	timekeeper.clock->cycle_last = timekeeper.cycle_last;
+ 	timekeeper.ntp_error = 0;
+ 	timekeeping_suspended = 0;
+ 
+@@ -1016,7 +1020,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 
+ 	/* Accumulate one shifted interval */
+ 	offset -= tk->cycle_interval << shift;
+-	tk->clock->cycle_last += tk->cycle_interval << shift;
++	tk->cycle_last += tk->cycle_interval << shift;
+ 
+ 	tk->xtime_nsec += tk->xtime_interval << shift;
+ 	while (tk->xtime_nsec >= nsecps) {
+@@ -1070,7 +1074,7 @@ static void update_wall_time(void)
  #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
--	offset = timekeeper.cycle_interval;
-+	offset = tk.cycle_interval;
+ 	offset = tk.cycle_interval;
  #else
- 	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
+-	offset = (clock->read(clock) - clock->cycle_last) & clock->mask;
++	offset = (clock->read(clock) - tk.cycle_last) & clock->mask;
  #endif
-@@ -1079,19 +1081,19 @@ static void update_wall_time(void)
- 	 * chunk in one go, and then try to consume the next smaller
- 	 * doubled multiple.
- 	 */
--	shift = ilog2(offset) - ilog2(timekeeper.cycle_interval);
-+	shift = ilog2(offset) - ilog2(tk.cycle_interval);
- 	shift = max(0, shift);
- 	/* Bound shift to one less then what overflows tick_length */
- 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
- 	shift = min(shift, maxshift);
--	while (offset >= timekeeper.cycle_interval) {
--		offset = logarithmic_accumulation(&timekeeper, offset, shift);
--		if(offset < timekeeper.cycle_interval<<shift)
-+	while (offset >= tk.cycle_interval) {
-+		offset = logarithmic_accumulation(&tk, offset, shift);
-+		if (offset < tk.cycle_interval<<shift)
- 			shift--;
- 	}
- 
- 	/* correct the clock when NTP error is too big */
--	timekeeping_adjust(&timekeeper, offset);
-+	timekeeping_adjust(&tk, offset);
  
  	/*
- 	 * Since in the loop above, we accumulate any amount of time
-@@ -1109,10 +1111,10 @@ static void update_wall_time(void)
- 	 * We'll correct this error next time through this function, when
- 	 * xtime_nsec is not as small.
- 	 */
--	if (unlikely((s64)timekeeper.xtime_nsec < 0)) {
--		s64 neg = -(s64)timekeeper.xtime_nsec;
--		timekeeper.xtime_nsec = 0;
--		timekeeper.ntp_error += neg << timekeeper.ntp_error_shift;
-+	if (unlikely((s64)tk.xtime_nsec < 0)) {
-+		s64 neg = -(s64)tk.xtime_nsec;
-+		tk.xtime_nsec = 0;
-+		tk.ntp_error += neg << tk.ntp_error_shift;
- 	}
+@@ -1143,6 +1147,7 @@ static void update_wall_time(void)
  
- 	/*
-@@ -1124,23 +1126,23 @@ static void update_wall_time(void)
- 	* the vsyscall implementations are converted to use xtime_nsec
- 	* (shifted nanoseconds), this can be killed.
- 	*/
--	remainder = timekeeper.xtime_nsec & ((1<<timekeeper.shift)-1);
--	timekeeper.xtime_nsec -= remainder;
--	timekeeper.xtime_nsec += 1<<timekeeper.shift;
--	timekeeper.ntp_error += remainder <<
--					timekeeper.ntp_error_shift;
-+	remainder = tk.xtime_nsec & ((1<<tk.shift)-1);
-+	tk.xtime_nsec -= remainder;
-+	tk.xtime_nsec += 1<<tk.shift;
-+	tk.ntp_error += remainder << tk.ntp_error_shift;
  
- 	/*
- 	 * Finally, make sure that after the rounding
- 	 * xtime.tv_nsec isn't larger then NSEC_PER_SEC
- 	 */
--	if (unlikely(timekeeper.xtime_nsec >=
--			(NSEC_PER_SEC << timekeeper.shift))) {
--		timekeeper.xtime_nsec -= NSEC_PER_SEC << timekeeper.shift;
--		timekeeper.xtime_sec++;
-+	if (unlikely(tk.xtime_nsec >= (NSEC_PER_SEC << tk.shift))) {
-+		tk.xtime_nsec -= NSEC_PER_SEC << tk.shift;
-+		tk.xtime_sec++;
- 		second_overflow();
- 	}
- 
-+
-+	timekeeper = tk;
+ 	timekeeper = tk;
++	timekeeper.clock->cycle_last = timekeeper.cycle_last;
  	timekeeping_update(&timekeeper, false);
  
  out:
