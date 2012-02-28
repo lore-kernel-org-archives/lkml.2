@@ -1,133 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab2B1Kpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:45:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab2B1Kpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:45:39 -0500
-Date: Tue, 28 Feb 2012 12:45:28 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-Message-ID: <20120228104528.GB24600@redhat.com>
-References: <4F4AF1FB.6000903@cn.fujitsu.com>
- <4F4B9C57.3010407@siemens.com>
- <4F4C8EEB.8040709@cn.fujitsu.com>
- <4F4C9F8C.1060901@siemens.com>
- <4F4CA17F.4020504@cn.fujitsu.com>
- <4F4CAA43.3020805@siemens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F4CAA43.3020805@siemens.com>
+	id S965117Ab2B1Krj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:47:39 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:49873 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964994Ab2B1Kri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:47:38 -0500
+Message-ID: <1330426059.2139.21.camel@megeve>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
+To: David Miller <davem@davemloft.net>
+Cc: javier.martinez@collabora.co.uk, javier@collabora.co.uk,
+        eric.dumazet@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 Feb 2012 11:47:39 +0100
+In-Reply-To: <20120227.140535.1623396420455657443.davem@davemloft.net>
+References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk>
+	 <20120224.153616.117399887784547022.davem@davemloft.net>
+	 <4F4B8C66.5060206@collabora.co.uk>
+	 <20120227.140535.1623396420455657443.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 11:19:47AM +0100, Jan Kiszka wrote:
-> On 2012-02-28 10:42, Wen Congyang wrote:
-> > At 02/28/2012 05:34 PM, Jan Kiszka Wrote:
-> >> On 2012-02-28 09:23, Wen Congyang wrote:
-> >>> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
-> >>>> On 2012-02-27 04:01, Wen Congyang wrote:
-> >>>>> We can know the guest is paniced when the guest runs on xen.
-> >>>>> But we do not have such feature on kvm. This patch implemnts
-> >>>>> this feature, and the implementation is the same as xen:
-> >>>>> register panic notifier, and call hypercall when the guest
-> >>>>> is paniced.
-> >>>>>
-> >>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> >>>>> ---
-> >>>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
-> >>>>>  arch/x86/kvm/svm.c       |    8 ++++++--
-> >>>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
-> >>>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
-> >>>>>  include/linux/kvm.h      |    1 +
-> >>>>>  include/linux/kvm_para.h |    1 +
-> >>>>>  6 files changed, 37 insertions(+), 6 deletions(-)
-> >>>>>
-> >>>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> >>>>> index f0c6fd6..b928d1d 100644
-> >>>>> --- a/arch/x86/kernel/kvm.c
-> >>>>> +++ b/arch/x86/kernel/kvm.c
-> >>>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
-> >>>>>  	.notifier_call = kvm_pv_reboot_notify,
-> >>>>>  };
-> >>>>>  
-> >>>>> +static int
-> >>>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
-> >>>>> +{
-> >>>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
-> >>>>> +	return NOTIFY_DONE;
-> >>>>> +}
-> >>>>> +
-> >>>>> +static struct notifier_block kvm_pv_panic_nb = {
-> >>>>> +	.notifier_call = kvm_pv_panic_notify,
-> >>>>> +};
-> >>>>> +
-> >>>>
-> >>>> You should split up host and guest-side changes.
-> >>>>
-> >>>>>  static u64 kvm_steal_clock(int cpu)
-> >>>>>  {
-> >>>>>  	u64 steal;
-> >>>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
-> >>>>>  
-> >>>>>  	paravirt_ops_setup();
-> >>>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
-> >>>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
-> >>>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
-> >>>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
-> >>>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
-> >>>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> >>>>> index 0b7690e..38b4705 100644
-> >>>>> --- a/arch/x86/kvm/svm.c
-> >>>>> +++ b/arch/x86/kvm/svm.c
-> >>>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
-> >>>>>  
-> >>>>>  static int vmmcall_interception(struct vcpu_svm *svm)
-> >>>>>  {
-> >>>>> +	int ret;
-> >>>>> +
-> >>>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
-> >>>>>  	skip_emulated_instruction(&svm->vcpu);
-> >>>>> -	kvm_emulate_hypercall(&svm->vcpu);
-> >>>>> -	return 1;
-> >>>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
-> >>>>> +
-> >>>>> +	/* Ignore the error? */
-> >>>>> +	return ret == 0 ? 0 : 1;
-> >>>>
-> >>>> Why can't kvm_emulate_hypercall return the right value?
-> >>>
-> >>> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
-> >>> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
-> >>> If vcpu's CPL > 0, does kvm need to exit and tell it to
-> >>> qemu?
-> >>
-> >> No, there is currently no exit to userspace due to hypercalls, neither
-> >> of HV nor KVM kind.
-> >>
-> >> The point is that the return code of kvm_emulate_hypercall is unused so
-> >> far, so you can easily redefine it to encode continue vs. exit to
-> >> userspace. Once someone has different needs, this could still be
-> >> refactored again.
-> > 
-> > So, it is OK to change the return value of kvm_hv_hypercall() if vcpu's
-> > CPL > 0?
-> 
-> Yes, change it to encode what vendor modules need to return to their
-> callers.
-> 
-Better introduce new request flag and set it in your hypercall emulation. See
-how triple fault is handled.
+Hi David
 
---
-			Gleb.
+On Mon, 2012-02-27 at 14:05 -0500, David Miller wrote:
+> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Date: Mon, 27 Feb 2012 15:00:06 +0100
+> 
+> > Primary for performance reasons. D-bus is an IPC system for processes in
+> > the same machine so traversing the whole TCP/IP stack seems a little
+> > overkill to me.
+> 
+> You haven't actually tested what the cost of this actually is, so what
+> you're saying is mere speculation.  In many cases TCP/UDP over
+> loopback is actually faster than AF_UNIX.
+> 
+you're right we haven't tested this, but because of the other points in
+Javier's mail, which are the special semantics we need for this to fit
+the D-Bus usage:
+
+> - total order is guaranteed: If sender A sends a message before B,
+then
+> receiver C and D should both get message A first and then B.
+> 
+> - slow readers: dropping packets vs blocking the sender. Although
+>   datagrams are not reliable on IP, datagrams on Unix sockets are
+never
+>   lost. So if one receiver has its buffer full the sender is blocked
+> instead of dropping packets. That way we guarantee a reliable
+> communication channel.
+> 
+> - multicast group acess control: controlling who can join the
+multicast
+> group.
+> 
+> - multicast on loopback is not supported: which means we have to use a
+> NIC (i.e: eth0). 
+
+Because of all of this, UDP/IP multicast wasn't even considered as an
+option. We might be wrong in some/all of those, so could you please
+comment on them to check if that's so?
+
+thanks
+
