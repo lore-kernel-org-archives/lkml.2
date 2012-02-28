@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab2B1Bmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:42:53 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2B1BGD (ORCPT
+	id S932238Ab2B1BnW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:43:22 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756358Ab2B1BGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:03 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.234 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.223.199 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010206.197257650@linuxfoundation.org>
+Message-Id: <20120228010205.892323627@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:16 -0800
+Date: Mon, 27 Feb 2012 17:02:14 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Rudholm <johan.rudholm@stericsson.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 13/73] mmc: core: check for zero length ioctl data
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
+        Sebastien Bacher <seb128@ubuntu.com>,
+        John Johansen <john.johansen@canonical.com>
+Subject: [ 11/73] eCryptfs: Copy up lower inode attrs after setting lower xattr
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,135 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Rudholm <johan.rudholm@stericsson.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 4d6144de8ba263eb3691a737c547e5b2fdc45287 upstream.
+commit 545d680938be1e86a6c5250701ce9abaf360c495 upstream.
 
-If the read or write buffer size associated with the command sent
-through the mmc_blk_ioctl is zero, do not prepare data buffer.
+After passing through a ->setxattr() call, eCryptfs needs to copy the
+inode attributes from the lower inode to the eCryptfs inode, as they
+may have changed in the lower filesystem's ->setxattr() path.
 
-This enables a ioctl(2) call to for instance send a MMC_SWITCH to set
-a byte in the ext_csd.
+One example is if an extended attribute containing a POSIX Access
+Control List is being set. The new ACL may cause the lower filesystem to
+modify the mode of the lower inode and the eCryptfs inode would need to
+be updated to reflect the new mode.
 
-Signed-off-by: Johan Rudholm <johan.rudholm@stericsson.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+https://launchpad.net/bugs/926292
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Sebastien Bacher <seb128@ubuntu.com>
+Cc: John Johansen <john.johansen@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/block.c |   82 +++++++++++++++++++++++++----------------------
- 1 file changed, 45 insertions(+), 37 deletions(-)
+ fs/ecryptfs/inode.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -251,6 +251,9 @@ static struct mmc_blk_ioc_data *mmc_blk_
- 		goto idata_err;
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -1119,6 +1119,8 @@ ecryptfs_setxattr(struct dentry *dentry,
  	}
  
-+	if (!idata->buf_bytes)
-+		return idata;
-+
- 	idata->buf = kzalloc(idata->buf_bytes, GFP_KERNEL);
- 	if (!idata->buf) {
- 		err = -ENOMEM;
-@@ -297,25 +300,6 @@ static int mmc_blk_ioctl_cmd(struct bloc
- 	if (IS_ERR(idata))
- 		return PTR_ERR(idata);
- 
--	cmd.opcode = idata->ic.opcode;
--	cmd.arg = idata->ic.arg;
--	cmd.flags = idata->ic.flags;
--
--	data.sg = &sg;
--	data.sg_len = 1;
--	data.blksz = idata->ic.blksz;
--	data.blocks = idata->ic.blocks;
--
--	sg_init_one(data.sg, idata->buf, idata->buf_bytes);
--
--	if (idata->ic.write_flag)
--		data.flags = MMC_DATA_WRITE;
--	else
--		data.flags = MMC_DATA_READ;
--
--	mrq.cmd = &cmd;
--	mrq.data = &data;
--
- 	md = mmc_blk_get(bdev->bd_disk);
- 	if (!md) {
- 		err = -EINVAL;
-@@ -328,6 +312,48 @@ static int mmc_blk_ioctl_cmd(struct bloc
- 		goto cmd_done;
- 	}
- 
-+	cmd.opcode = idata->ic.opcode;
-+	cmd.arg = idata->ic.arg;
-+	cmd.flags = idata->ic.flags;
-+
-+	if (idata->buf_bytes) {
-+		data.sg = &sg;
-+		data.sg_len = 1;
-+		data.blksz = idata->ic.blksz;
-+		data.blocks = idata->ic.blocks;
-+
-+		sg_init_one(data.sg, idata->buf, idata->buf_bytes);
-+
-+		if (idata->ic.write_flag)
-+			data.flags = MMC_DATA_WRITE;
-+		else
-+			data.flags = MMC_DATA_READ;
-+
-+		/* data.flags must already be set before doing this. */
-+		mmc_set_data_timeout(&data, card);
-+
-+		/* Allow overriding the timeout_ns for empirical tuning. */
-+		if (idata->ic.data_timeout_ns)
-+			data.timeout_ns = idata->ic.data_timeout_ns;
-+
-+		if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
-+			/*
-+			 * Pretend this is a data transfer and rely on the
-+			 * host driver to compute timeout.  When all host
-+			 * drivers support cmd.cmd_timeout for R1B, this
-+			 * can be changed to:
-+			 *
-+			 *     mrq.data = NULL;
-+			 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
-+			 */
-+			data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
-+		}
-+
-+		mrq.data = &data;
-+	}
-+
-+	mrq.cmd = &cmd;
-+
- 	mmc_claim_host(card->host);
- 
- 	if (idata->ic.is_acmd) {
-@@ -336,24 +362,6 @@ static int mmc_blk_ioctl_cmd(struct bloc
- 			goto cmd_rel_host;
- 	}
- 
--	/* data.flags must already be set before doing this. */
--	mmc_set_data_timeout(&data, card);
--	/* Allow overriding the timeout_ns for empirical tuning. */
--	if (idata->ic.data_timeout_ns)
--		data.timeout_ns = idata->ic.data_timeout_ns;
--
--	if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
--		/*
--		 * Pretend this is a data transfer and rely on the host driver
--		 * to compute timeout.  When all host drivers support
--		 * cmd.cmd_timeout for R1B, this can be changed to:
--		 *
--		 *     mrq.data = NULL;
--		 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
--		 */
--		data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
--	}
--
- 	mmc_wait_for_req(card->host, &mrq);
- 
- 	if (cmd.error) {
+ 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
++	if (!rc)
++		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
+ out:
+ 	return rc;
+ }
 
 
