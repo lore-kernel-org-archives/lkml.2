@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811Ab2B1BHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:05 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964781Ab2B1BG7 (ORCPT
+	id S965305Ab2B1BfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:35:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932353Ab2B1BHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.195.71 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010211.345213882@linuxfoundation.org>
+Message-Id: <20120228010211.978691826@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:46 -0800
+Date: Mon, 27 Feb 2012 17:02:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 43/73] xhci: Fix oops caused by more USB2 ports than USB3 ports.
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 47/73] i387: make irq_fpu_usable() tests more robust
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 3278a55a1aebe2bbd47fbb5196209e5326a88b56 upstream.
+commit 5b1cbac37798805c1fee18c8cebe5c0a13975b17 upstream.
 
-The code to set the device removable bits in the USB 2.0 roothub
-descriptor was accidentally looking at the USB 3.0 port registers
-instead of the USB 2.0 registers.  This can cause an oops if there are
-more USB 2.0 registers than USB 3.0 registers.
+Some code - especially the crypto layer - wants to use the x86
+FP/MMX/AVX register set in what may be interrupt (typically softirq)
+context.
 
-This should be backported to kernels as old as 2.6.39, that contain the
-commit 4bbb0ace9a3de8392527e3c87926309d541d3b00 "xhci: Return a USB 3.0
-hub descriptor for USB3 roothub."
+That *can* be ok, but the tests for when it was ok were somewhat
+suspect.  We cannot touch the thread-specific status bits either, so
+we'd better check that we're not going to try to save FP state or
+anything like that.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Now, it may be that the TS bit is always cleared *before* we set the
+USEDFPU bit (and only set when we had already cleared the USEDFP
+before), so the TS bit test may actually have been sufficient, but it
+certainly was not obviously so.
+
+So this explicitly verifies that we will not touch the TS_USEDFPU bit,
+and adds a few related sanity-checks.  Because it seems that somehow
+AES-NI is corrupting user FP state.  The cause is not clear, and this
+patch doesn't fix it, but while debugging it I really wanted the code to
+be more obviously correct and robust.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/i387.h |   54 +++++++++++++++++++++++++++++++++++++-------
+ arch/x86/kernel/traps.c     |    1 
+ 2 files changed, 47 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -75,7 +75,7 @@ static void xhci_usb2_hub_descriptor(str
- 	 */
- 	memset(port_removable, 0, sizeof(port_removable));
- 	for (i = 0; i < ports; i++) {
--		portsc = xhci_readl(xhci, xhci->usb3_ports[i]);
-+		portsc = xhci_readl(xhci, xhci->usb2_ports[i]);
- 		/* If a device is removable, PORTSC reports a 0, same as in the
- 		 * hub descriptor DeviceRemovable bits.
- 		 */
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -307,9 +307,54 @@ static inline void __clear_fpu(struct ta
+ 	}
+ }
+ 
++/*
++ * Were we in an interrupt that interrupted kernel mode?
++ *
++ * We can do a kernel_fpu_begin/end() pair *ONLY* if that
++ * pair does nothing at all: TS_USEDFPU must be clear (so
++ * that we don't try to save the FPU state), and TS must
++ * be set (so that the clts/stts pair does nothing that is
++ * visible in the interrupted kernel thread).
++ */
++static inline bool interrupted_kernel_fpu_idle(void)
++{
++	return !(current_thread_info()->status & TS_USEDFPU) &&
++		(read_cr0() & X86_CR0_TS);
++}
++
++/*
++ * Were we in user mode (or vm86 mode) when we were
++ * interrupted?
++ *
++ * Doing kernel_fpu_begin/end() is ok if we are running
++ * in an interrupt context from user mode - we'll just
++ * save the FPU state as required.
++ */
++static inline bool interrupted_user_mode(void)
++{
++	struct pt_regs *regs = get_irq_regs();
++	return regs && user_mode_vm(regs);
++}
++
++/*
++ * Can we use the FPU in kernel mode with the
++ * whole "kernel_fpu_begin/end()" sequence?
++ *
++ * It's always ok in process context (ie "not interrupt")
++ * but it is sometimes ok even from an irq.
++ */
++static inline bool irq_fpu_usable(void)
++{
++	return !in_interrupt() ||
++		interrupted_user_mode() ||
++		interrupted_kernel_fpu_idle();
++}
++
+ static inline void kernel_fpu_begin(void)
+ {
+ 	struct thread_info *me = current_thread_info();
++
++	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
+ 	if (me->status & TS_USEDFPU)
+ 		__save_init_fpu(me->task);
+@@ -323,14 +368,6 @@ static inline void kernel_fpu_end(void)
+ 	preempt_enable();
+ }
+ 
+-static inline bool irq_fpu_usable(void)
+-{
+-	struct pt_regs *regs;
+-
+-	return !in_interrupt() || !(regs = get_irq_regs()) || \
+-		user_mode(regs) || (read_cr0() & X86_CR0_TS);
+-}
+-
+ /*
+  * Some instructions like VIA's padlock instructions generate a spurious
+  * DNA fault but don't modify SSE registers. And these instructions
+@@ -367,6 +404,7 @@ static inline void irq_ts_restore(int TS
+  */
+ static inline void save_init_fpu(struct task_struct *tsk)
+ {
++	WARN_ON_ONCE(task_thread_info(tsk)->status & TS_USEDFPU);
+ 	preempt_disable();
+ 	__save_init_fpu(tsk);
+ 	stts();
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -777,6 +777,7 @@ EXPORT_SYMBOL_GPL(math_state_restore);
+ dotraplinkage void __kprobes
+ do_device_not_available(struct pt_regs *regs, long error_code)
+ {
++	WARN_ON_ONCE(!user_mode_vm(regs));
+ #ifdef CONFIG_MATH_EMULATION
+ 	if (read_cr0() & X86_CR0_EM) {
+ 		struct math_emu_info info = { };
 
 
