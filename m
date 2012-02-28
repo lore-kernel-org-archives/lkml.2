@@ -1,302 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab2B1A4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:56:23 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48012 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab2B1A4V (ORCPT
+	id S1755369Ab2B1A5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:57:08 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46989 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754443Ab2B1A5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:56:21 -0500
-Date: Mon, 27 Feb 2012 14:18:31 -0800
+	Mon, 27 Feb 2012 19:57:06 -0500
+Date: Mon, 27 Feb 2012 16:19:19 -0800
 From: Matt Helsley <matthltc@us.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>,
+To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
         Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
         John Stultz <john.stultz@linaro.org>,
         Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Subject: Re: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while
  event queue is not empty
-Message-ID: <20120227221831.GF7666@count0.beaverton.ibm.com>
+Message-ID: <20120228001919.GG7666@count0.beaverton.ibm.com>
 References: <201202070200.55505.rjw@sisk.pl>
+ <201202220031.46219.rjw@sisk.pl>
  <201202220034.58836.rjw@sisk.pl>
  <20120224051649.GB7666@count0.beaverton.ibm.com>
- <201202262157.18496.rjw@sisk.pl>
+ <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201202262157.18496.rjw@sisk.pl>
+In-Reply-To: <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022800-7408-0000-0000-0000030268A5
+x-cbid: 12022800-6148-0000-0000-000003CCF66F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 26, 2012 at 09:57:18PM +0100, Rafael J. Wysocki wrote:
-> On Friday, February 24, 2012, Matt Helsley wrote:
+On Fri, Feb 24, 2012 at 08:25:30PM -0800, Arve Hjønnevåg wrote:
+> On Thu, Feb 23, 2012 at 9:16 PM, Matt Helsley <matthltc@us.ibm.com> wrote:
 > > On Wed, Feb 22, 2012 at 12:34:58AM +0100, Rafael J. Wysocki wrote:
-> > > From: Arve Hjønnevåg <arve@android.com>
-> > > 
-> > > Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
-> > > an evdev client event queue, such that it will be active whenever the
-> > > queue is not empty.  Then, all events in the queue will be regarded
-> > > as wakeup events in progress and pm_get_wakeup_count() will block (or
-> > > return false if woken up by a signal) until they are removed from the
-> > > queue.  In consequence, if the checking of wakeup events is enabled
-> > > (e.g. throught the /sys/power/wakeup_count interface), the system
-> > > won't be able to go into a sleep state until the queue is empty.
-> > > 
-> > > This allows user space processes to handle situations in which they
-> > > want to do a select() on an evdev descriptor, so they go to sleep
-> > > until there are some events to read from the device's queue, and then
-> > > they don't want the system to go into a sleep state until all the
-> > > events are read (presumably for further processing).  Of course, if
-> > > they don't want the system to go into a sleep state _after_ all the
-> > > events have been read from the queue, they have to use a separate
-> > > mechanism that will prevent the system from doing that and it has
-> > > to be activated before reading the first event (that also may be the
-> > > last one).
-> > 
+> >> From: Arve Hjønnevåg <arve@android.com>
+> >>
+> >> Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
+> >> an evdev client event queue, such that it will be active whenever the
+> >> queue is not empty.  Then, all events in the queue will be regarded
+> >> as wakeup events in progress and pm_get_wakeup_count() will block (or
+> >> return false if woken up by a signal) until they are removed from the
+> >> queue.  In consequence, if the checking of wakeup events is enabled
+> >> (e.g. throught the /sys/power/wakeup_count interface), the system
+> >> won't be able to go into a sleep state until the queue is empty.
+> >>
+> >> This allows user space processes to handle situations in which they
+> >> want to do a select() on an evdev descriptor, so they go to sleep
+> >> until there are some events to read from the device's queue, and then
+> >> they don't want the system to go into a sleep state until all the
+> >> events are read (presumably for further processing).  Of course, if
+> >> they don't want the system to go into a sleep state _after_ all the
+> >> events have been read from the queue, they have to use a separate
+> >> mechanism that will prevent the system from doing that and it has
+> >> to be activated before reading the first event (that also may be the
+> >> last one).
+> >
 > > I haven't seen this idea mentioned before but I must admit I haven't
 > > been following this thread too closely so apologies (and don't bother
 > > rehashing) if it has:
-> > 
+> >
 > > Could you just add this to epoll so that any fd userspace chooses would be
 > > capable of doing this without introducing potentially ecclectic ioctl
 > > interfaces?
-> > 
-> > struct epoll_event ev;
-> > 
-> > epfd = epoll_create1(EPOLL_STAY_AWAKE_SET);
-> > ev.data.ptr = foo;
-> > epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
-> > 
-> > Which could be useful because you can put one epollfd in another's epoll
-> > set. Or maybe as an EPOLLKEEPAWAKE flag in the event struct sort of like
-> > EPOLLET:
-> > 
-> > epfd = epoll_create1(0);
-> > ev.events = EPOLLIN|EPOLLKEEPAWAKE;
-> > epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
+> >
 > 
-> Do you mean something like the patch below, or something different?
+> This is an interesting idea, but I'm not sure how well it would work.
+> 
+> I looked at the epoll code and it looks like it is possible to
+> activate the wakeup-source from the wait queue function it uses. The
+> epoll callback will happen without holding evdev client buffer_lock,
+> so the wakeup-source and buffer state will not always be in sync (this
+> may be OK, but require more thought). This callback is also called if
+> no data was added to the queue we are polling on because another
+> client has grabbed the input device (is this a bug or intended?).
+> 
+> There is no call into the epoll code when input queue is emptied, so
+> we can't deactivate the wakeup-source until epoll_wait is called
+> again. This also should be workable, but result in different stats.
+> 
+> It does not look like the normal poll and select interfaces can be
+> extended the same way (since they remove themselves from the
+> wait-queue before returning to user-space), so user-space has to be
 
-Yeah, this was sort of what I was thinking of. It nicely avoids the
-ioctl() bits. I guess my only issue is the fop mimics the epoll
-interface -- should it just be an fop to manage the file as a wakeup
-source rather than a generic hook into epoll?
+Yup, that is exactly why epoll is so well suited to this.
+
+> changed to use epoll even if select or poll would be a better fit.
+
+Either way, modification of application code is necessary, right?
+
+> I don't know how many other drivers this would work for. The input
+> driver will wake up user-space from the same thread or interrupt
+> handler that queued the event, but other drivers may defer this to
+> another thread which makes an epoll wakeup-source insufficient.
+
+I don't understand how this would be insufficient. So long as the
+interrupt causes the wakeup source to prevent the machine from suspending
+before finishing interrupt handling does it matter whether the event
+handling itself is deferred?
+
+In case there's some confusion: I'm not saying that this idea will solve
+all of the problems, especially:
+
+> >> Of course, if
+> >> they don't want the system to go into a sleep state _after_ all the
+> >> events have been read from the queue, they have to use a separate
+> >> mechanism that will prevent the system from doing that and it has
+> >> to be activated before reading the first event (that also may be
+> >> the
+> >> last one).
+
+(endquote)
+
+> 
+> ...
+> >> +     snprintf(name, sizeof(name), "%s-%d",
+> >> +              dev_name(&evdev->dev), task_tgid_vnr(current));
+> >
+> > This does not look like it will work well with tasks in different pid
+> > namespaces. What should happen, I think, is the wakeup_source should hold a
+> > reference to either the struct pid of current or current itself. Then
+> > when someone reads the file you should get the pid vnr in the reader's
+> > pid namespace. That way instead of a bogus pid vnr 0 would show up if
+> > "current" here is not in the reader's pid namepsace.
+> >
+> 
+> The pid here is only used for debugging purposes, and used less than
+> the dev_name. I don't think tracking pid namespaces is worth the
+> trouble here, so if this is a real problem we can just drop the pid
+> from the name for now.
+
+I think dropping the pid would be the best choice. If it's absolutely
+necessary in the output then it should be made to work with pid namespaces
+because the interface will be maintained forever.
 
 Cheers,
-	-Matt Helsley
-
-> 
-> Rafael
-> 
-> ---
->  drivers/input/evdev.c     |   55 ++++++++++++++++++++++++++++++++++++++++++++++
->  fs/eventpoll.c            |   15 +++++++++++-
->  include/linux/eventpoll.h |    6 +++++
->  include/linux/fs.h        |    1 
->  4 files changed, 76 insertions(+), 1 deletion(-)
-> 
-> Index: linux/include/linux/fs.h
-> ===================================================================
-> --- linux.orig/include/linux/fs.h
-> +++ linux/include/linux/fs.h
-> @@ -1604,6 +1604,7 @@ struct file_operations {
->  	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
->  	int (*readdir) (struct file *, void *, filldir_t);
->  	unsigned int (*poll) (struct file *, struct poll_table_struct *);
-> +	void (*epoll_ctl) (struct file *, int, unsigned int);
->  	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
->  	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
->  	int (*mmap) (struct file *, struct vm_area_struct *);
-> Index: linux/fs/eventpoll.c
-> ===================================================================
-> --- linux.orig/fs/eventpoll.c
-> +++ linux/fs/eventpoll.c
-> @@ -609,6 +609,10 @@ static int ep_remove(struct eventpoll *e
->  	unsigned long flags;
->  	struct file *file = epi->ffd.file;
->  
-> +	/* Notify the underlying driver that the polling has completed */
-> +	if (file->f_op->epoll_ctl)
-> +		file->f_op->epoll_ctl(file, EPOLL_CTL_DEL, epi->event.events);
-> +
->  	/*
->  	 * Removes poll wait queue hooks. We _have_ to do this without holding
->  	 * the "ep->lock" otherwise a deadlock might occur. This because of the
-> @@ -1094,6 +1098,10 @@ static int ep_insert(struct eventpoll *e
->  	epq.epi = epi;
->  	init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
->  
-> +	/* Notify the underlying driver that we want to poll it */
-> +	if (tfile->f_op->epoll_ctl)
-> +		tfile->f_op->epoll_ctl(tfile, EPOLL_CTL_ADD, event->events);
-> +
->  	/*
->  	 * Attach the item to the poll hooks and get current event bits.
->  	 * We can safely use the file* here because its usage count has
-> @@ -1185,6 +1193,7 @@ error_unregister:
->   */
->  static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_event *event)
->  {
-> +	struct file *file = epi->ffd.file;
->  	int pwake = 0;
->  	unsigned int revents;
->  
-> @@ -1196,11 +1205,15 @@ static int ep_modify(struct eventpoll *e
->  	epi->event.events = event->events;
->  	epi->event.data = event->data; /* protected by mtx */
->  
-> +	/* Notify the underlying driver of the change */
-> +	if (file->f_op->epoll_ctl)
-> +		file->f_op->epoll_ctl(file, EPOLL_CTL_MOD, event->events);
-> +
->  	/*
->  	 * Get current event bits. We can safely use the file* here because
->  	 * its usage count has been increased by the caller of this function.
->  	 */
-> -	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
-> +	revents = file->f_op->poll(file, NULL);
->  
->  	/*
->  	 * If the item is "hot" and it is not registered inside the ready
-> Index: linux/drivers/input/evdev.c
-> ===================================================================
-> --- linux.orig/drivers/input/evdev.c
-> +++ linux/drivers/input/evdev.c
-> @@ -16,6 +16,7 @@
->  #define EVDEV_BUF_PACKETS	8
->  
->  #include <linux/poll.h>
-> +#include <linux/eventpoll.h>
->  #include <linux/sched.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> @@ -43,6 +44,7 @@ struct evdev_client {
->  	unsigned int tail;
->  	unsigned int packet_head; /* [future] position of the first element of next packet */
->  	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-> +	struct wakeup_source *wakeup_source;
->  	struct fasync_struct *fasync;
->  	struct evdev *evdev;
->  	struct list_head node;
-> @@ -75,10 +77,12 @@ static void evdev_pass_event(struct evde
->  		client->buffer[client->tail].value = 0;
->  
->  		client->packet_head = client->tail;
-> +		__pm_relax(client->wakeup_source);
->  	}
->  
->  	if (event->type == EV_SYN && event->code == SYN_REPORT) {
->  		client->packet_head = client->head;
-> +		__pm_stay_awake(client->wakeup_source);
->  		kill_fasync(&client->fasync, SIGIO, POLL_IN);
->  	}
->  
-> @@ -255,6 +259,8 @@ static int evdev_release(struct inode *i
->  	mutex_unlock(&evdev->mutex);
->  
->  	evdev_detach_client(evdev, client);
-> +	wakeup_source_unregister(client->wakeup_source);
-> +
->  	kfree(client);
->  
->  	evdev_close_device(evdev);
-> @@ -373,6 +379,8 @@ static int evdev_fetch_next_event(struct
->  	if (have_event) {
->  		*event = client->buffer[client->tail++];
->  		client->tail &= client->bufsize - 1;
-> +		if (client->packet_head == client->tail)
-> +			__pm_relax(client->wakeup_source);
->  	}
->  
->  	spin_unlock_irq(&client->buffer_lock);
-> @@ -433,6 +441,52 @@ static unsigned int evdev_poll(struct fi
->  	return mask;
->  }
->  
-> +static void evdev_client_attach_wakeup_source(struct evdev_client *client)
-> +{
-> +	struct wakeup_source *ws;
-> +
-> +	ws = wakeup_source_register(dev_name(&client->evdev->dev));
-> +	spin_lock_irq(&client->buffer_lock);
-> +	client->wakeup_source = ws;
-> +	if (client->packet_head != client->tail)
-> +		__pm_stay_awake(client->wakeup_source);
-> +	spin_unlock_irq(&client->buffer_lock);
-> +}
-> +
-> +static void evdev_client_detach_wakeup_source(struct evdev_client *client)
-> +{
-> +	struct wakeup_source *ws;
-> +
-> +	spin_lock_irq(&client->buffer_lock);
-> +	ws = client->wakeup_source;
-> +	client->wakeup_source = NULL;
-> +	spin_unlock_irq(&client->buffer_lock);
-> +	wakeup_source_unregister(ws);
-> +}
-> +
-> +static void evdev_epoll_ctl(struct file *file, int op,
-> +				    unsigned int events)
-> +{
-> +	struct evdev_client *client = file->private_data;
-> +
-> +	switch (op) {
-> +	case EPOLL_CTL_ADD:
-> +		if ((events & EPOLLWAKEUP) && !client->wakeup_source)
-> +			evdev_client_attach_wakeup_source(client);
-> +		break;
-> +	case EPOLL_CTL_DEL:
-> +		if (events & EPOLLWAKEUP)
-> +			evdev_client_detach_wakeup_source(client);
-> +		break;
-> +	case EPOLL_CTL_MOD:
-> +		/* 'events' is the new events mask (after the change) */
-> +		if ((events & EPOLLWAKEUP) && !client->wakeup_source)
-> +			evdev_client_attach_wakeup_source(client);
-> +		else if (!(events & EPOLLWAKEUP))
-> +			evdev_client_detach_wakeup_source(client);
-> +	}
-> +}
-> +
->  #ifdef CONFIG_COMPAT
->  
->  #define BITS_PER_LONG_COMPAT (sizeof(compat_long_t) * 8)
-> @@ -845,6 +899,7 @@ static const struct file_operations evde
->  	.read		= evdev_read,
->  	.write		= evdev_write,
->  	.poll		= evdev_poll,
-> +	.epoll_ctl	= evdev_epoll_ctl,
->  	.open		= evdev_open,
->  	.release	= evdev_release,
->  	.unlocked_ioctl	= evdev_ioctl,
-> Index: linux/include/linux/eventpoll.h
-> ===================================================================
-> --- linux.orig/include/linux/eventpoll.h
-> +++ linux/include/linux/eventpoll.h
-> @@ -26,6 +26,12 @@
->  #define EPOLL_CTL_DEL 2
->  #define EPOLL_CTL_MOD 3
->  
-> +/*
-> + * Request the handling of system wakeup events so as to prevent automatic
-> + * system suspends from happening while those events are being processed.
-> + */
-> +#define EPOLLWAKEUP (1 << 29)
-> +
->  /* Set the One Shot behaviour for the target file descriptor */
->  #define EPOLLONESHOT (1 << 30)
->  
-> 
+	-Matt
 
