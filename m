@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030515Ab2B1WeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:34:25 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46881 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030241Ab2B1WeW (ORCPT
+	id S966130Ab2B1Whl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:37:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58290 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965907Ab2B1Whk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:34:22 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 5/5] watchdog: use dev_ functions
-To: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 28 Feb 2012 22:48:37 +0000
-Message-ID: <20120228224835.8961.25351.stgit@bob.linux.org.uk>
-In-Reply-To: <20120228224710.8961.46003.stgit@bob.linux.org.uk>
-References: <20120228224710.8961.46003.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 28 Feb 2012 17:37:40 -0500
+Date: Tue, 28 Feb 2012 14:37:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] memcg: add dirty page accounting infrastructure
+Message-Id: <20120228143738.b84d49ff.akpm@linux-foundation.org>
+In-Reply-To: <20120228144746.971869014@intel.com>
+References: <20120228140022.614718843@intel.com>
+	<20120228144746.971869014@intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, 28 Feb 2012 22:00:24 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-While they are registered all our watchdogs now have a valid device object
-so we can in turn use that to report problems nicely.
+> From: Greg Thelen <gthelen@google.com>
+> 
+> Add memcg routines to count dirty, writeback, and unstable_NFS pages.
+> These routines are not yet used by the kernel to count such pages.  A
+> later change adds kernel calls to these new routines.
+> 
+> As inode pages are marked dirty, if the dirtied page's cgroup differs
+> from the inode's cgroup, then mark the inode shared across several
+> cgroup.
+> 
+> ...
+>
+> @@ -1885,6 +1888,44 @@ void mem_cgroup_update_page_stat(struct 
+>  			ClearPageCgroupFileMapped(pc);
+>  		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+>  		break;
+> +
+> +	case MEMCG_NR_FILE_DIRTY:
+> +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+> +		if (val > 0) {
+> +			if (TestSetPageCgroupFileDirty(pc))
+> +				val = 0;
+> +		} else {
+> +			if (!TestClearPageCgroupFileDirty(pc))
+> +				val = 0;
+> +		}
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Made me scratch my head for a while, but I see now that the `val' arg
+to (the undocumented) mem_cgroup_update_page_stat() can only ever have
+the values 1 or -1.  I hope.
 
- drivers/watchdog/watchdog_dev.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index 7edab6d..b38361e 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -110,8 +110,7 @@ static int watchdog_stop(struct watchdog_device *wddev)
- 	int err = -EBUSY;
- 
- 	if (test_bit(WDOG_NO_WAY_OUT, &wddev->status)) {
--		pr_info("%s: nowayout prevents watchdog to be stopped!\n",
--							wddev->info->identity);
-+		dev_info(wddev->dev, "nowayout prevents watchdog being stopped!\n");
- 		return err;
- 	}
- 
-@@ -353,7 +352,7 @@ static int watchdog_release(struct inode *inode, struct file *file)
- 
- 	/* If the watchdog was not stopped, send a keepalive ping */
- 	if (err < 0) {
--		pr_crit("%s: watchdog did not stop!\n", wdd->info->identity);
-+		dev_crit(wdd->dev, "watchdog did not stop!\n");
- 		watchdog_ping(wdd);
- 	}
- 
-
+>
+> ...
+>
