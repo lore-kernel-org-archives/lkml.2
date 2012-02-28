@@ -1,115 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965828Ab2B1Qvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:51:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28384 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964782Ab2B1Qvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:51:43 -0500
-Date: Tue, 28 Feb 2012 17:43:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-Message-ID: <20120228164335.GC3664@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-10-git-send-email-wad@chromium.org> <20120227175407.GD10608@redhat.com> <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
+	id S965824Ab2B1Qyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:54:41 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43732 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab2B1Qyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 11:54:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.230.201 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Tue, 28 Feb 2012 08:53:22 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Autif Khan <autifk@gmail.com>
+Cc: rusty@rustcorp.com.au, jhovold@gmail.com, stern@rowland.harvard.edu,
+        mchehab@redhat.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers: usb: serial: sierra - upgrade to 1.7.40
+Message-ID: <20120228165322.GB11133@kroah.com>
+References: <1330447152-5770-1-git-send-email-autifk@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1330447152-5770-1-git-send-email-autifk@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27, Will Drewry wrote:
-> On Mon, Feb 27, 2012 at 11:54 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 02/24, Will Drewry wrote:
-> >>
-> >>  arch/Kconfig              |    1 +
-> >>  include/linux/ptrace.h    |    7 +++++--
-> >>  include/linux/seccomp.h   |    4 +++-
-> >>  include/linux/tracehook.h |    6 ++++++
-> >>  kernel/ptrace.c           |    4 ++++
-> >>  kernel/seccomp.c          |   18 ++++++++++++++++++
-> >
-> > FYI, this conflicts with the changes -mm tree.
-> >
-> > The changes in ptrace.* confict with Denys's
-> > "ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code"
-> >
-> > The change in tracehook.h conflicts with
-> > "ptrace: the killed tracee should not enter the syscall"
->
-> What's the best way to reconcile this in this day and age?
+On Tue, Feb 28, 2012 at 11:39:12AM -0500, Autif Khan wrote:
+> driver was upgraded from 1.7.16 to 1.7.40
+> source of the driver at the time of this change:
+> http://www.sierrawireless.com/resources/support/drivers/linux/v3.2_1740_kernel-3.0.directIP.tar
+> 
+> The driver compiles (monolithic and module)
+> I have not tested it on any device
 
-Of course I'd prefer if you make this change on top of Denys's patch ;)
+I need reasons for this update.  What changed, and why is what we need
+to know.  No "wholesale" upgrade of a file is allowed, you need to break
+the changes up into logical pieces, and send them with a proper
+description of what happened here.
 
-Besides, if you agree with PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP you
-need only one trivial change in ptrace.h.
+Also, please cc: and properly credit the original authors of these
+changes, and the maintainer of the driver, to give them a chance to
+review it.
 
-> I don't see
-> these in kernel-next yet and I can't tell if there is a public -mm
-> anywhere anymore.
+So, sorry, I can't take these 3 patches unless they are broken up
+properly, and I would like to get an ack from the driver
+maintainer/author.
 
-Strange... I didn't check, but every patch in
-http://marc.info/?l=linux-mm-commits has this note:
+thanks,
 
-	The -mm tree is included into linux-next and is updated
-	there every 3-4 working days
-
-> >> --- a/kernel/seccomp.c
-> >> +++ b/kernel/seccomp.c
-> >> @@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
-> >>                       seccomp_send_sigsys(this_syscall, reason_code);
-> >>                       return -1;
-> >>               }
-> >> +             case SECCOMP_RET_TRACE: {
-> >> +                     int ret;
-> >> +                     struct pt_regs *regs = task_pt_regs(current);
-> >> +                     if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
-> >> +                         !(current->ptrace & PT_TRACE_SECCOMP))
-> >> +                             return -1;
-> >> +                     /*
-> >> +                      * PT_TRACE_SECCOMP and seccomp.trace indicate whether
-> >> +                      * tracehook_report_syscall_entry needs to signal the
-> >> +                      * tracer.  This avoids race conditions in hand off and
-> >> +                      * the requirement for TIF_SYSCALL_TRACE ensures that
-> >> +                      * we are in the syscall slow path.
-> >> +                      */
-> >> +                     current->seccomp.trace = 1;
-> >> +                     ret = tracehook_report_syscall_entry(regs);
-> >> +                     current->seccomp.trace = 0;
-> >> +                     return ret;
-> >
-> > To be honest, this interface looks a bit strange to me...
-> >
-> > Once again, sorry if this was already discussed. But perhaps it would
-> > be better to introduce PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP instead?
-> >
-> > SECCOMP_RET_TRACE: could simply do ptrace_event(PTRACE_EVENT_SECCOMP)
-> > unconditionaly. The tracer can set the option and do PTRACE_CONT if it
-> > doesn't want the system call notifications.
->
-> Works for me - this also gets rid of the extra int for brief state
-> tracking. I'll switch over to that in the next rev.
-
-Great. In this case this patch becomes really trivial. Just 2 defines
-in ptrace.h and the unconditional ptrace_event() under SECCOMP_RET_TRACE.
-
-But probably you should check fatal_signal_pending(current) after
-ptrace_event() returns, ptrace_event() returns void.
-
-Oleg.
-
+greg k-h
