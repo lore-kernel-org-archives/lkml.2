@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab2B1NIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:08:44 -0500
-Received: from antcom.de ([188.40.178.216]:34245 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753769Ab2B1NIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:08:43 -0500
-Message-ID: <4F4CD1D8.8030102@antcom.de>
-Date: Tue, 28 Feb 2012 14:08:40 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1757037Ab2B1NLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:11:54 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:47469 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755950Ab2B1NLx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 08:11:53 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: baruch@tkos.co.il
-CC: alexander.h.duyck@intel.com, ian.campbell@citrix.com,
-        netdev@vger.kernel.org, eilong@broadcom.com,
-        Kevin Wells <kevin.wells@nxp.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, jeffrey.t.kirsher@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] ARM: LPC32xx: Ethernet driver
+Date: Tue, 28 Feb 2012 13:11:06 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E83@saturn3.aculab.com>
+In-Reply-To: <4F4CD1D8.8030102@antcom.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] ARM: LPC32xx: Ethernet driver
+Thread-Index: Acz2GgYbgXipltaeS2K6nmrDiWrHNwAAEpfg
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Roland Stigge" <stigge@antcom.de>, <baruch@tkos.co.il>
+Cc: <alexander.h.duyck@intel.com>, <ian.campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <eilong@broadcom.com>,
+        "Kevin Wells" <kevin.wells@nxp.com>,
+        "Wolfram Sang" <w.sang@pengutronix.de>, <jeffrey.t.kirsher@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+X-OriginalArrivalTime: 28 Feb 2012 13:11:07.0861 (UTC) FILETIME=[6EFDC850:01CCF61A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 2012-02-26 03:28 +100, David Miller wrote:
->> Please use a module_param() instead of a top level kernel parameter.
->
-> Actually, remove this entirely, we don't add module parameters
-> to force the ethernet address. That should be done in userland
-> in some fashion.
->
-> We've had many discussions about this recently, and this is the
-> consistent policy we want to enforce in all drivers from now on.
-
-Thanks for the note! I actually found out that in many cases, the
-bootloader already initialized the hardware with the target MAC address
-so we can use this one.
-
-For the case that it _isn't_ initialized already, is it the right thing
-to use a hard coded default MAC address to be replaced by the final one
-in userspace? (I found such examples in some current micrel/ and amd/
+ 
+> Thanks for the note! I actually found out that in many cases, the
+> bootloader already initialized the hardware with the target 
+> MAC address so we can use this one.
+> 
+> For the case that it _isn't_ initialized already, is it the right
+thing
+> to use a hard coded default MAC address to be replaced by the final
+one
+> in userspace? (I found such examples in some current micrel/ and amd/
 drivers.)
 
-Thanks in advance,
+Using a fixed address is a very bad idea ...
 
-Roland
+	David
+
+
