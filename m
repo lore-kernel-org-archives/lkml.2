@@ -1,65 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2B1LKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 06:10:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56776 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757049Ab2B1LK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 06:10:28 -0500
-Date: Tue, 28 Feb 2012 11:10:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-Message-ID: <20120228111026.GC3683@opensource.wolfsonmicro.com>
-References: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1757089Ab2B1LPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 06:15:24 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:37769 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752415Ab2B1LPX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 06:15:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tarun.kanti@ti.com designates 10.229.136.65 as permitted sender) smtp.mail=tarun.kanti@ti.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
-Content-Disposition: inline
-In-Reply-To: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
+	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
+	<87ty2bu91e.fsf@ti.com>
+	<CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+Date: Tue, 28 Feb 2012 16:45:21 +0530
+Message-ID: <CAC83Zv+fiObi8n4OEBeeuP-iPVasipe0N9yNSn-yZXtv5FMgaQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
+From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 28, 2012 at 3:09 PM, DebBarma, Tarun Kanti
+<tarun.kanti@ti.com> wrote:
+> On Tue, Feb 28, 2012 at 5:24 AM, Kevin Hilman <khilman@ti.com> wrote:
+>> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+>>
+>>> Since we already have bank->context.wake_en to keep track
+>>> of gpios which are wakeup enabled, there is no need to have
+>>> this field any more.
+>>>
+>>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>
+>> I'm not crazy about this change...
+>>
+>>> ---
+>>>  drivers/gpio/gpio-omap.c |   11 +++++------
+>>>  1 files changed, 5 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>>> index 64f15d5..b62e861 100644
+>>> --- a/drivers/gpio/gpio-omap.c
+>>> +++ b/drivers/gpio/gpio-omap.c
+>>> @@ -53,7 +53,6 @@ struct gpio_bank {
+>>>       void __iomem *base;
+>>>       u16 irq;
+>>>       u16 virtual_irq_start;
+>>> -     u32 suspend_wakeup;
+>>>       u32 non_wakeup_gpios;
+>>>       u32 enabled_non_wakeup_gpios;
+>>>       struct gpio_regs context;
+>>> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       if (enable)
+>>> -             bank->suspend_wakeup |= gpio_bit;
+>>> +             bank->context.wake_en |= gpio_bit;
+>>>       else
+>>> -             bank->suspend_wakeup &= ~gpio_bit;
+>>> +             bank->context.wake_en &= ~gpio_bit;
+>>
+>> The bank->context values are expected to be copies of the actual
+>> register contents, and here that is clearly not the case.
+> Right, it should have been this:
+>
+>        if (enable)
+> -               bank->suspend_wakeup |= gpio_bit;
+> +               bank->context.wake_en |= gpio_bit;
+>        else
+> -               bank->suspend_wakeup &= ~gpio_bit;
+> +               bank->context.wake_en &= ~gpio_bit;
+> +
+> +       __raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
+>
+>>
+>> With this change, you're using the context register to track changes
+>> that you *might* eventually write to the register.
+> The above change ensures that bank->context.wake_en reflects the
+> latest register value.
+> There are two distinct paths through which bank->context.wake_en is
+> updated now, viz:
+> Path1:-
+> chip.irq_set_type() --> gpio_irq_type() --> _set_gpio_triggering() -->
+> set_gpio_trigger()
+>
+> Path2:-
+> chip.irq_set_wake() --> gpio_wake_enable() --> irq_set_wake()
+Sorry, it should have been:
+chip.irq_set_wake() --> gpio_wake_enable() --> _set_gpio_wakeup()
 
---zCKi3GIZzVBPywwA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Feb 28, 2012 at 11:02:46AM +0000, Mark Brown wrote:
-
-> Ensure that we always have a definition of perf_trace_event_register()
-> by making the definition unconditional.
-
-Oops, sent too soon - the code still fails to link as the ifdefs are
-more complex than I'd realised.
-
---zCKi3GIZzVBPywwA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPTLX8AAoJEBus8iNuMP3dy7sP/RAZpcuCOEHuMog8S2cKDNP4
-M0RKN7fj/zvxEL1p1P/7n7wSSI4KE+fkKJRePpZSWcF1BZpnejMdUUFktX+Qijgc
-JE/SYJobxLDofHnu5DHYYcqRVO8erMeULbL977ejQX6OM4OrCUuTAUxg/noYBfYr
-X2NJCJA/jX+F3QKuhEL5nFLngi88WsDtfwriRO7aKDbbbWIBWSlfgl2JhKj93TC+
-SxZUL6+iMqzq3mgA//3olpK2IIAq1vS1GO6VJwYJ99qXRIoF2RvaofdDwRBf1ovP
-fpy+6ZFZLbmZIkk2s4rCgMDolJ8ZDEhn8B1OjjVV4vEOoKofkTJ2mFEv1/7EwyX6
-k8zqGmeShor8V7tTUdsiEGpng34cEz6QiUizwXp4NtlYXBwrXpfF4mCh4jucQTWB
-1UbyB0TaijYbWxMlNbvgE4VjNilomtFFn57ygguapsNsj6eAi+jZMH/BZas4QVK2
-JKUCkmkp+HHXhslqF3Z4Kll+FbW6jZcnxhJKxkPnFpqOmYiD5udCgQlBo2BPCA/w
-MzKoji7ompQzGg/xFdsfs4Vab8ayVIO94DlmAdTU5HHNex8RHMiKU7rP7ZLd9IQT
-CTPy8YdOfGztQXU+a2aRhXD5l6biOc2hLD4QjS2pN60xia5QTy/+kH4jfflBpyIt
-zREEzM38t8DTj34QCsi/
-=aY44
------END PGP SIGNATURE-----
-
---zCKi3GIZzVBPywwA--
+>
+>>
+>> IMO, this is more confusing than having a separate field to track this.
+> So, there is no need have a separate field to keep track of this.
+> I hope my understanding is right.
+> --
+> Tarun
+>
+>>
+>> Kevin
+>>
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       bank->context.wake_en = __raw_readl(mask_reg);
+>>> -     __raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
+>>> +     __raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>>       return 0;
+>>> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
+>>>       if (!bank->mod_usage || !bank->loses_context)
+>>>               return 0;
+>>>
+>>> -     if (!bank->regs->wkup_en || !bank->suspend_wakeup)
+>>> +     if (!bank->regs->wkup_en || !bank->context.wake_en)
+>>>               return 0;
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       _gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+>>> -     _gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
+>>> +     _gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>>       return 0;
