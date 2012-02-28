@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964884Ab2B1KMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:12:54 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43488 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2B1KMw (ORCPT
+	id S1756973Ab2B1KQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:16:04 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49330 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab2B1KQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:12:52 -0500
-X-IronPort-AV: E=Sophos;i="4.73,495,1325462400"; 
-   d="scan'208";a="10977242"
-Message-ID: <1330423970.31269.45.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 28 Feb 2012 10:12:50 +0000
-In-Reply-To: <CAFEAcA8PzT9mfnEz60CYvwQWX1OEvejrZvkpuPL2LpTPosp8cA@mail.gmail.com>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
-	 <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1330360043.8557.302.camel@zakaz.uk.xensource.com>
-	 <CAFEAcA8PzT9mfnEz60CYvwQWX1OEvejrZvkpuPL2LpTPosp8cA@mail.gmail.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 05:16:01 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, viro@zeniv.linux.org.uk, hughd@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hugetlbfs: Add new rw_semaphore to fix truncate/read race
+In-Reply-To: <20120227151135.7d4076c6.akpm@linux-foundation.org>
+References: <1330280398-27956-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120227151135.7d4076c6.akpm@linux-foundation.org>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 28 Feb 2012 15:45:25 +0530
+Message-ID: <87ipirclhe.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12022810-8878-0000-0000-00000177897A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 21:05 +0000, Peter Maydell wrote:
-> On 27 February 2012 16:27, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
-> > immediate (which can only target r0..r7).
-> >
-> > Since we support only ARMv7+ there are "T2" and "T3" encodings available
-> > which do allow direct mov of an immediate into R12, but are 32 bit Thumb
-> > instructions.
-> >
-> > Should we use r7 instead to maximise instruction density for Thumb code?
+On Mon, 27 Feb 2012 15:11:35 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Sun, 26 Feb 2012 23:49:58 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
-> makes it worth avoiding in this context.
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > Drop using inode->i_mutex from read, since that can result in deadlock with
+> > mmap. Ideally we can extend the patch to make sure we don't increase i_size
+> > in mmap. But that will break userspace, because application will have to now
+> > use truncate(2) to increase i_size in hugetlbfs.
+> > 
+> > AFAIU i_mutex was added in hugetlbfs_read as per
+> > http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html
+> 
+> This patch comes somewhat out of the blue and I'm unsure what's going on.
+> 
+> You say there's some (potential?) deadlock with mmap, but it is
+> undescribed.  Have people observed this deadlock?  Has it caused
+> lockdep warnings?  Please update the changelog to fully describe the
+> bug.
 
-I think it does.
+Viro explained the deadlock in detail here:
 
-It actually sounds as if using r12 is fine here, the impact on code
-density should be pretty small -- there aren't really all that many call
-sites which involve hypercalls.
+http://mid.gmane.org/20120217002726.GL23916@ZenIV.linux.org.uk
 
-By way of an example I measured an x86 kernel which should be using more
-hypercalls due to pv paging etc and found that 0.014% of the lines in
-"objdump -d" contained a call to the hypercall_page. (I know not all
-lines of objdump -d output are instructions but it's a reasonable approx
-IMHO).
+I will also update the commit message with this information.
 
-So I think using 3 16 bit instructions slots instead of 2 won't make
-much impact in practice.
+> 
+> Also, the new truncate_sem is undoumented.  This leaves readers to work
+> out for themselves what it might be for.  Please let's add code
+> comments which completely describe the race, and how this lock prevents
+> it.
+> 
+> We should also document our locking rules.  When should code take this
+> lock?  What are its ranking rules with respect to i_mutex, i_mmap_mutex
+> and possibly others?
+> 
 
-Thanks,
-Ian.
+Will update the patch with these details
+
+Thanks
+-aneesh
 
