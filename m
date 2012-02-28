@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab2B1N2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:28:51 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19319 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400Ab2B1N2u (ORCPT
+	id S932624Ab2B1N3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:29:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49834 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932400Ab2B1N3t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:28:50 -0500
-Date: Tue, 28 Feb 2012 16:30:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Rusty Russell <rusty.russell@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 1/2] vmalloc: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
-Message-ID: <20120228133037.GG2817@mwanda>
-References: <1330421640-5137-1-git-send-email-dmitry.antipov@linaro.org>
- <20120228094415.GA2868@mwanda>
- <4F4CC19D.9040608@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bpVaumkpfGNUagdU"
-Content-Disposition: inline
-In-Reply-To: <4F4CC19D.9040608@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F4CD68B.00F3,ss=1,re=0.000,fgs=0
+	Tue, 28 Feb 2012 08:29:49 -0500
+Message-ID: <1330435782.11248.89.camel@twins>
+Subject: Re: lockdep: Warning & NULL ptr deref
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Dave Jones <davej@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 28 Feb 2012 14:29:42 +0100
+In-Reply-To: <1330442692.3719.7.camel@lappy>
+References: <1330442692.3719.7.camel@lappy>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-02-28 at 10:24 -0500, Sasha Levin wrote:
+> 
+> I'll send some patches to prevent the NULL deref itself which happens
+> since a chunk of the code in lockdep.c assumed hlock_class() can't
+> return NULL.
+> 
+There's tons of code actually assuming that..
 
---bpVaumkpfGNUagdU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This won't fix the actual problem though, I'm not sure exactly how a
+> held lock wouldn't have a class initialized to it. 
 
-On Tue, Feb 28, 2012 at 03:59:25PM +0400, Dmitry Antipov wrote:
-> On 02/28/2012 01:44 PM, Dan Carpenter wrote:
-> >On Tue, Feb 28, 2012 at 01:33:59PM +0400, Dmitry Antipov wrote:
-> >>  - Fix vmap() to return ZERO_SIZE_PTR if 0 pages are requested;
-> >>  - fix __vmalloc_node_range() to return ZERO_SIZE_PTR if 0 bytes
-> >>    are requested;
-> >>  - fix __vunmap() to check passed pointer with ZERO_OR_NULL_PTR.
-> >>
-> >
-> >Why?
->=20
-> 1) it was requested by the subsystem (co?)maintainer, see http://lkml.org=
-/lkml/2012/1/27/475;
-> 2) this looks to be a convenient way to trace/debug zero-size allocation =
-errors (although
->    I don't advocate it as a best way).
+static inline struct lock_class *hlock_class(struct held_lock *hlock)                        
+{               
+        if (!hlock->class_idx) {                                                             
+                /*
+                 * Someone passed in garbage, we give up.                                    
+                 */                                                                          
+                DEBUG_LOCKS_WARN_ON(1);                                                      
+                return NULL;
+        }
+        return lock_classes + hlock->class_idx - 1; 
+}
 
-Could you include that in the changelog when the final version is
-ready?
-
-regards,
-dan carpenter
-
---bpVaumkpfGNUagdU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPTNb9AAoJEOnZkXI/YHqRrqcP/jaoljPhqho4mWZ4LW0hUsec
-8t25uxiUsI/POB5AgBC250hQCLSQrLWJM/piQhKdV6cIMOtccBaiQdoUHVGVKpmT
-xe7EopnUnwn9OC45sY7iwGmLJ1BCw+1PJ4bpfFfJuxXs2+rMbToeR4sfiWt/T19d
-VA7N3sORxDCRgGT77VpCW+XG8xguvObQ4WhBtHOKxVfANxYlOwvC54vxzfpF1txo
-//RwLAXAC4hADMaeQHuneIT5NnI68t2O4QYjBb3OZI5q/uvyBe/dOnKdJZqgSPxz
-v6f0TCLY/Pueg/0+e0/ZB/4zUyIWOmt0oU8nAThZvdUYUtpGwjT8AZRoX8I7nJaP
-KOjWqsy1Z1FYnP7OnDMXkmQoPJqsR1gmtfhTXpdB5i/UZ6ofClnTuxsZ+/epAr1X
-S7fwIxCXGJuIfwxwb3+Y87dCzpV2KDjKvMPdlP6xwJ2KdHfB1MkuJAf4yCJfvFFf
-mBIPmnToOJmZJJLMzqHvRwhDX/bQSnAeFTVcEbCcaDnh3ERPqutqFeR5ugDth99r
-54SYTX6+iLAQg6fIOP34RzIrZ0bNlvV8V2DQxzZRTik0HjLK27eYQGeZMiMvkZMW
-6H9W0aCM7LfEdayERkjlR0IVQeVHI25+/JHPyk8YshZE5FFLELP5k1JMErsSh037
-DPmjyPhdmL5LytWbA5HX
-=b7tR
------END PGP SIGNATURE-----
-
---bpVaumkpfGNUagdU--
+Typically that translates to severe memory corruption.
