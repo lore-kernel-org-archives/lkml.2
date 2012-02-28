@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab2B1Iit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:38:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36816 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab2B1Iir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:38:47 -0500
-Date: Tue, 28 Feb 2012 08:38:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mattias NILSSON <mattias.i.nilsson@stericsson.com>,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: RFC: what do we do with system controllers?
-Message-ID: <20120228083833.GB18045@n2100.arm.linux.org.uk>
-References: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756852Ab2B1Ijm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:39:42 -0500
+Received: from mail.gw90.de ([188.40.100.199]:57800 "EHLO mail.gw90.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255Ab2B1Ijk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:39:40 -0500
+X-Greylist: delayed 1527 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Feb 2012 03:39:40 EST
+Message-ID: <1330416849.3899.11.camel@mattotaupa>
+Subject: Re: regression(?) 3.3-rc4 -> 3.3-rc5: drm intel hangs
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+To: Norbert Preining <preining@logic.at>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+Date: Tue, 28 Feb 2012 09:14:09 +0100
+In-Reply-To: <20120228040327.GA9973@gamma.logic.tuwien.ac.at>
+References: <20120228040327.GA9973@gamma.logic.tuwien.ac.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-JF8B4/rmE1LkA8Dzlj+/"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 06:48:12AM +0100, Linus Walleij wrote:
-> Mainly addressed to Greg but anyone is welcome to join the
-> discussion...
-> 
-> Several ARM platforms have system controllers. In this I
-> include all custom terminology such as:
-> 
-> - System Control
-> - Chip Controller
-> - Core Module control registers
-> - Power Reset Control Management Units
-> - Multimedia Communications Port
 
-Why do you include this?  If you include this, you should include things
-like SSP/SPI ports, I2C and other such buses.
+--=-JF8B4/rmE1LkA8Dzlj+/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+Dear Norbert,
+
+
+Am Dienstag, den 28.02.2012, 13:03 +0900 schrieb Norbert Preining:
+> Dear all,
+>=20
+> (please Cc)
+>=20
+> since upgrade to 3.3-rc5 I see the following behaviour repeatedly:
+>=20
+> Feb 28 11:42:47 mithrandir kernel: [15627.756071] [drm:i915_hangcheck_ela=
+psed] *ERROR* Hangcheck timer elapsed... GPU hung
+> Feb 28 11:42:47 mithrandir kernel: [15627.756087] [drm] capturing error e=
+vent; look for more information in /debug/dri/0/i915_error_state
+> Feb 28 11:42:47 mithrandir kernel: [15627.758428] [drm:i915_wait_request]=
+ *ERROR* i915_wait_request returns -11 (awaiting 7 at 4, next 8)
+> Feb 28 11:42:47 mithrandir kernel: [15628.260094] [drm:i915_reset] *ERROR=
+* Failed to reset chip.
+>=20
+> Is this is known issue?
+
+I do not know. But it would be interesting to know if you just see this
+in your log files or if you also see some effects like screen
+corruptions. You can increase the log level by adding `drm.debug=3D0x06`
+to the Linux kernel command line [1].
+
+[=E2=80=A6]
+
+
+Thanks,
+
+Paul
+
+
+[1] http://intellinuxgraphics.org/how_to_report_bug.html
+
+--=-JF8B4/rmE1LkA8Dzlj+/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk9MjNEACgkQPX1aK2wOHVgeRQCfVSuOzFibatQxa/V4tGRpRY2p
+ZyMAoIF7lcjH5Owva45l/0IKXOaJGJH4
+=9Nk0
+-----END PGP SIGNATURE-----
+
+--=-JF8B4/rmE1LkA8Dzlj+/--
+
