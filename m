@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab2B1BTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:19:24 -0500
+	id S1756465Ab2B1BXG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:23:06 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:50099 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965409Ab2B1BTV (ORCPT
+	with ESMTP id S965487Ab2B1BTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:19:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.138 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.104 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010429.839754043@linuxfoundation.org>
+Message-Id: <20120228010429.937533618@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:04:34 -0800
+Date: Mon, 27 Feb 2012 17:04:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, garyhade@us.ibm.com,
-        Yinghai Lu <yinghai.lu@oracle.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 05/72] PCI: workaround hard-wired bus number V2
+        alan@lxorguk.ukuu.org.uk, Gary Morain <gmorain@google.com>,
+        Paul Stewart <pstew@google.com>,
+        Abhijit Pradhan <abhijit@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 06/72] mac80211: Fix a rwlock bad magic bug
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +33,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai.lu@oracle.com>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit 71f6bd4a23130cd2f4b036010c5790b1295290b9 upstream.
+commit b57e6b560fc2a2742910ac5ca0eb2c46e45aeac2 upstream.
 
-Fixes PCI device detection on IBM xSeries IBM 3850 M2 / x3950 M2
-when using ACPI resources (_CRS).
-This is default, a manual workaround (without this patch)
-would be pci=nocrs boot param.
+read_lock(&tpt_trig->trig.leddev_list_lock) is accessed via the path
+ieee80211_open (->) ieee80211_do_open (->) ieee80211_mod_tpt_led_trig
+(->) ieee80211_start_tpt_led_trig (->) tpt_trig_timer before initializing
+it.
+the intilization of this read/write lock happens via the path
+ieee80211_led_init (->) led_trigger_register, but we are doing
+'ieee80211_led_init'  after 'ieeee80211_if_add' where we
+register netdev_ops.
+so we access leddev_list_lock before initializing it and causes the
+following bug in chrome laptops with AR928X cards with the following
+script
 
-V2: Add dev_warn if the workaround is hit. This should reveal
-how common such setups are (via google) and point to possible
-problems if things are still not working as expected.
--> Suggested by Jan Beulich.
+while true
+do
+sudo modprobe -v ath9k
+sleep 3
+sudo modprobe -r ath9k
+sleep 3
+done
 
-Tested-by: garyhade@us.ibm.com
-Signed-off-by: Yinghai Lu <yinghai.lu@oracle.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+	BUG: rwlock bad magic on CPU#1, wpa_supplicant/358, f5b9eccc
+	Pid: 358, comm: wpa_supplicant Not tainted 3.0.13 #1
+	Call Trace:
+
+	[<8137b9df>] rwlock_bug+0x3d/0x47
+	[<81179830>] do_raw_read_lock+0x19/0x29
+	[<8137f063>] _raw_read_lock+0xd/0xf
+	[<f9081957>] tpt_trig_timer+0xc3/0x145 [mac80211]
+	[<f9081f3a>] ieee80211_mod_tpt_led_trig+0x152/0x174 [mac80211]
+	[<f9076a3f>] ieee80211_do_open+0x11e/0x42e [mac80211]
+	[<f9075390>] ? ieee80211_check_concurrent_iface+0x26/0x13c [mac80211]
+	[<f9076d97>] ieee80211_open+0x48/0x4c [mac80211]
+	[<812dbed8>] __dev_open+0x82/0xab
+	[<812dc0c9>] __dev_change_flags+0x9c/0x113
+	[<812dc1ae>] dev_change_flags+0x18/0x44
+	[<8132144f>] devinet_ioctl+0x243/0x51a
+	[<81321ba9>] inet_ioctl+0x93/0xac
+	[<812cc951>] sock_ioctl+0x1c6/0x1ea
+	[<812cc78b>] ? might_fault+0x20/0x20
+	[<810b1ebb>] do_vfs_ioctl+0x46e/0x4a2
+	[<810a6ebb>] ? fget_light+0x2f/0x70
+	[<812ce549>] ? sys_recvmsg+0x3e/0x48
+	[<810b1f35>] sys_ioctl+0x46/0x69
+	[<8137fa77>] sysenter_do_call+0x12/0x2
+
+Cc: Gary Morain <gmorain@google.com>
+Cc: Paul Stewart <pstew@google.com>
+Cc: Abhijit Pradhan <abhijit@qca.qualcomm.com>
+Cc: Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>
+Cc: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Acked-by: Johannes Berg <johannes.berg@intel.com>
+Tested-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/mac80211/main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -651,6 +651,11 @@ int __devinit pci_scan_bridge(struct pci
- 	dev_dbg(&dev->dev, "scanning [bus %02x-%02x] behind bridge, pass %d\n",
- 		secondary, subordinate, pass);
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -885,6 +885,8 @@ int ieee80211_register_hw(struct ieee802
+ 		wiphy_debug(local->hw.wiphy, "Failed to initialize wep: %d\n",
+ 			    result);
  
-+	if (!primary && (primary != bus->number) && secondary && subordinate) {
-+		dev_warn(&dev->dev, "Primary bus is hard wired to 0\n");
-+		primary = bus->number;
-+	}
++	ieee80211_led_init(local);
 +
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
- 	    (primary != bus->number || secondary <= bus->number)) {
+ 	rtnl_lock();
+ 
+ 	result = ieee80211_init_rate_ctrl_alg(local,
+@@ -906,8 +908,6 @@ int ieee80211_register_hw(struct ieee802
+ 
+ 	rtnl_unlock();
+ 
+-	ieee80211_led_init(local);
+-
+ 	local->network_latency_notifier.notifier_call =
+ 		ieee80211_max_network_latency;
+ 	result = pm_qos_add_notifier(PM_QOS_NETWORK_LATENCY,
 
 
