@@ -1,80 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab2B1Cna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:43:30 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44815 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab2B1Cn3 (ORCPT
+	id S1756744Ab2B1CoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:44:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49893 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab2B1CoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:43:29 -0500
-Date: Tue, 28 Feb 2012 13:43:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Keniston <jkenisto@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: linux-next: manual merge of the uprobes tree with Linus' tree
-Message-Id: <20120228134319.033a60df8db2925d91604c18@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__28_Feb_2012_13_43_19_+1100_y+uvz=l=xLyNXO=m"
+	Mon, 27 Feb 2012 21:44:16 -0500
+Date: Mon, 27 Feb 2012 18:43:43 -0800
+From: tip-bot for Olof Johansson <olof@lixom.net>
+Message-ID: <tip-83e7ee6657dfcd6b0ee2406d11024b558064252a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        olof@lixom.net, tglx@linutronix.de, matt.fleming@intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        olof@lixom.net, tglx@linutronix.de, matt.fleming@intel.com
+In-Reply-To: <1329081869-20779-2-git-send-email-olof@lixom.net>
+References: <1329081869-20779-2-git-send-email-olof@lixom.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/eficross] x86, efi: Refactor efi_init() a bit
+Git-Commit-ID: 83e7ee6657dfcd6b0ee2406d11024b558064252a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Feb 2012 18:44:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Feb_2012_13_43_19_+1100_y+uvz=l=xLyNXO=m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  83e7ee6657dfcd6b0ee2406d11024b558064252a
+Gitweb:     http://git.kernel.org/tip/83e7ee6657dfcd6b0ee2406d11024b558064252a
+Author:     Olof Johansson <olof@lixom.net>
+AuthorDate: Sun, 12 Feb 2012 13:24:25 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 23 Feb 2012 18:53:56 -0800
 
-Hi Srikar,
+x86, efi: Refactor efi_init() a bit
 
-Today's linux-next merge of the uprobes tree got a conflict in
-kernel/fork.c between commit d80e731ecab4 ("epoll: introduce POLLFREE to
-flush ->signalfd_wqh before kfree()") from Linus' tree and commit
-1f9eb65410a6 ("uprobes/core: handle breakpoint and signal step
-exception") from the uprobes tree.
+Break out some of the init steps into helper functions.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Only change to execution flow is the removal of the warning when the
+kernel memdesc structure differ in size from what firmware specifies
+since it's a bogus warning (it's a valid difference per spec).
 
-diff --cc kernel/fork.c
-index 14dac32,df711bb..0000000
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@@ -66,7 -66,7 +66,8 @@@
-  #include <linux/user-return-notifier.h>
-  #include <linux/oom.h>
-  #include <linux/khugepaged.h>
- +#include <linux/signalfd.h>
-+ #include <linux/uprobes.h>
- =20
-  #include <asm/pgtable.h>
-  #include <asm/pgalloc.h>
+v4:
+* Removed memdesc warning as per above
 
---Signature=_Tue__28_Feb_2012_13_43_19_+1100_y+uvz=l=xLyNXO=m
-Content-Type: application/pgp-signature
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Link: http://lkml.kernel.org/r/1329081869-20779-2-git-send-email-olof@lixom.net
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/platform/efi/efi.c |   89 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 54 insertions(+), 35 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPTD9HAAoJEECxmPOUX5FEfl8P/iXu9n/bUI3xWldqwiuF/OXs
-AKre78G6dRQaMxnmylzFD+hL8cOIVwItHgicnlC/Prrjttn8CfjTAi/6xDpCC6rU
-QsadHhiSU076TyP01PHqRt8IPNAsTcvc4hjyIqxWNt1XO6J+NNc/sDxZxR6lpAbK
-ANS8Bq4n//ZLCSTerePgHb5y7II+e67HBzdqlOImXJKuYPYlPx+TQbioPYRCFwfz
-z7FQeQsXIZAvdnU45kcZxt1MRvTBvMJB9yOaqBG5C/4X8pVi3SABloyH3kEXGrbm
-PYdmW89vyLSR+NfxHafGHVc3KTgh9He7XcWSUSWgUCq3diUErlTgDtKX1bYLe3v7
-sD3ULFPB0e9v3uBXHlkbFg6w/h/2PovP40c3jXP3Fs//hPsaGoS550KC2B4yrBfv
-BjGpUmNOLiyj8QxALfGOugB08dOVCenihQ6zat8bGx0L3pWO42Iy7nc1rErQquD6
-Kpd1y84yjeywkDZXZj53qBOQBIXCG03tsnMG8ZilfflfhKVtBDuknkBh1AXRiqj7
-pX90qhK9qQNkIHz5VOHLQRdMI7F72XLwMqehI8Y/kiBu1beRYlj8dMLg46u9c57G
-OIjBjNVllm5pRUfPijc3ls0zpD7GNOPaPHH5HlX585w6LShP1TCRinHi07JEX3mq
-nSp1lCsH45EU5vmVX0RP
-=Njhj
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Feb_2012_13_43_19_+1100_y+uvz=l=xLyNXO=m--
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 4cf9bd0..6d88dca 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -429,23 +429,8 @@ static void __init efi_free_boot_services(void)
+ 	}
+ }
+ 
+-void __init efi_init(void)
++static void __init efi_systab_init(void *phys)
+ {
+-	efi_config_table_t *config_tables;
+-	efi_runtime_services_t *runtime;
+-	efi_char16_t *c16;
+-	char vendor[100] = "unknown";
+-	int i = 0;
+-	void *tmp;
+-
+-#ifdef CONFIG_X86_32
+-	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+-#else
+-	efi_phys.systab = (efi_system_table_t *)
+-		(boot_params.efi_info.efi_systab |
+-		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
+-#endif
+-
+ 	efi.systab = early_ioremap((unsigned long)efi_phys.systab,
+ 				   sizeof(efi_system_table_t));
+ 	if (efi.systab == NULL)
+@@ -464,22 +449,12 @@ void __init efi_init(void)
+ 		       "%d.%02d, expected 1.00 or greater!\n",
+ 		       efi.systab->hdr.revision >> 16,
+ 		       efi.systab->hdr.revision & 0xffff);
++}
+ 
+-	/*
+-	 * Show what we know for posterity
+-	 */
+-	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+-	if (c16) {
+-		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+-			vendor[i] = *c16++;
+-		vendor[i] = '\0';
+-	} else
+-		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
+-	early_iounmap(tmp, 2);
+-
+-	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
+-	       efi.systab->hdr.revision >> 16,
+-	       efi.systab->hdr.revision & 0xffff, vendor);
++static void __init efi_config_init(u64 tables, int nr_tables)
++{
++	efi_config_table_t *config_tables;
++	int i;
+ 
+ 	/*
+ 	 * Let's see what config tables the firmware passed to us.
+@@ -526,6 +501,11 @@ void __init efi_init(void)
+ 	printk("\n");
+ 	early_iounmap(config_tables,
+ 			  efi.systab->nr_tables * sizeof(efi_config_table_t));
++}
++
++static void __init efi_runtime_init(void)
++{
++	efi_runtime_services_t *runtime;
+ 
+ 	/*
+ 	 * Check out the runtime services table. We need to map
+@@ -554,7 +534,10 @@ void __init efi_init(void)
+ 		printk(KERN_ERR "Could not map the EFI runtime service "
+ 		       "table!\n");
+ 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
++}
+ 
++static void __init efi_memmap_init(void)
++{
+ 	/* Map the EFI memory map */
+ 	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
+ 				   memmap.nr_map * memmap.desc_size);
+@@ -562,12 +545,48 @@ void __init efi_init(void)
+ 		printk(KERN_ERR "Could not map the EFI memory map!\n");
+ 	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
+ 
+-	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+-		printk(KERN_WARNING
+-		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+-
+ 	if (add_efi_memmap)
+ 		do_add_efi_memmap();
++}
++
++void __init efi_init(void)
++{
++	efi_char16_t *c16;
++	char vendor[100] = "unknown";
++	int i = 0;
++	void *tmp;
++
++#ifdef CONFIG_X86_32
++	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
++#else
++	efi_phys.systab = (efi_system_table_t *)
++		(boot_params.efi_info.efi_systab |
++		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
++#endif
++
++	efi_systab_init(efi_phys.systab);
++
++	/*
++	 * Show what we know for posterity
++	 */
++	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
++	if (c16) {
++		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
++			vendor[i] = *c16++;
++		vendor[i] = '\0';
++	} else
++		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
++	early_iounmap(tmp, 2);
++
++	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
++	       efi.systab->hdr.revision >> 16,
++	       efi.systab->hdr.revision & 0xffff, vendor);
++
++	efi_config_init(efi.systab->tables, efi.systab->nr_tables);
++
++	efi_runtime_init();
++
++	efi_memmap_init();
+ 
+ #ifdef CONFIG_X86_32
+ 	x86_platform.get_wallclock = efi_get_time;
