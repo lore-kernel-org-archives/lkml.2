@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965109Ab2B1B3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:29:03 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964938Ab2B1BIB (ORCPT
+	id S964930Ab2B1BH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:57 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964871Ab2B1BHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:08:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.224.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.129 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010214.905593290@linuxfoundation.org>
+Message-Id: <20120228010209.362485044@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:07 -0800
+Date: Mon, 27 Feb 2012 17:02:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 64/73] ipvs: fix matching of fwmark templates during scheduling
+        alan@lxorguk.ukuu.org.uk, Shawn Lu <shawn.lu@ericsson.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 32/73] tcp_v4_send_reset: binding oif to iif in no sock case
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Horman <horms@verge.net.au>
 
-commit e0aac52e17a3db68fe2ceae281780a70fc69957f upstream.
+From: Shawn Lu <shawn.lu@ericsson.com>
 
-	Commit f11017ec2d1859c661f4e2b12c4a8d250e1f47cf (2.6.37)
-moved the fwmark variable in subcontext that is invalidated before
-reaching the ip_vs_ct_in_get call. As vaddr is provided as pointer
-in the param structure make sure the fwmark variable is in
-same context. As the fwmark templates can not be matched,
-more and more template connections are created and the
-controlled connections can not go to single real server.
+[ Upstream commit e2446eaab5585555a38ea0df4e01ff313dbb4ac9 ]
 
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Binding RST packet outgoing interface to incoming interface
+for tcp v4 when there is no socket associate with it.
+when sk is not NULL, using sk->sk_bound_dev_if instead.
+(suggested by Eric Dumazet).
+
+This has few benefits:
+1. tcp_v6_send_reset already did that.
+2. This helps tcp connect with SO_BINDTODEVICE set. When
+connection is lost, we still able to sending out RST using
+same interface.
+3. we are sending reply, it is most likely to be succeed
+if iif is used
+
+Signed-off-by: Shawn Lu <shawn.lu@ericsson.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/netfilter/ipvs/ip_vs_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_ipv4.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -233,6 +233,7 @@ ip_vs_sched_persist(struct ip_vs_service
- 	__be16 dport = 0;		/* destination port to forward */
- 	unsigned int flags;
- 	struct ip_vs_conn_param param;
-+	const union nf_inet_addr fwmark = { .ip = htonl(svc->fwmark) };
- 	union nf_inet_addr snet;	/* source network of the client,
- 					   after masking */
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -650,6 +650,11 @@ static void tcp_v4_send_reset(struct soc
+ 				      arg.iov[0].iov_len, IPPROTO_TCP, 0);
+ 	arg.csumoffset = offsetof(struct tcphdr, check) / 2;
+ 	arg.flags = (sk && inet_sk(sk)->transparent) ? IP_REPLY_ARG_NOSRCCHECK : 0;
++	/* When socket is gone, all binding information is lost.
++	 * routing might fail in this case. using iif for oif to
++	 * make sure we can deliver it
++	 */
++	arg.bound_dev_if = sk ? sk->sk_bound_dev_if : inet_iif(skb);
  
-@@ -268,7 +269,6 @@ ip_vs_sched_persist(struct ip_vs_service
- 	{
- 		int protocol = iph.protocol;
- 		const union nf_inet_addr *vaddr = &iph.daddr;
--		const union nf_inet_addr fwmark = { .ip = htonl(svc->fwmark) };
- 		__be16 vport = 0;
- 
- 		if (dst_port == svc->port) {
+ 	net = dev_net(skb_dst(skb)->dev);
+ 	ip_send_reply(net->ipv4.tcp_sock, skb, ip_hdr(skb)->saddr,
 
 
