@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab2B1BHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab2B1BHX (ORCPT
+	id S964849Ab2B1BdD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:33:03 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481Ab2B1BH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.138 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.234 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010213.201264229@linuxfoundation.org>
+Message-Id: <20120228010213.648212641@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:57 -0800
+Date: Mon, 27 Feb 2012 17:03:00 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>
-Subject: [ 54/73] i387: move TS_USEDFPU flag from thread_info to task_struct
+        alan@lxorguk.ukuu.org.uk, Alex Shi <alex.shi@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 57/73] USB: Dont fail USB3 probe on missing legacy PCI IRQ.
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,292 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit f94edacf998516ac9d849f7bc6949a703977a7f3 upstream.
+commit 68d07f64b8a11a852d48d1b05b724c3e20c0d94b upstream
 
-This moves the bit that indicates whether a thread has ownership of the
-FPU from the TS_USEDFPU bit in thread_info->status to a word of its own
-(called 'has_fpu') in task_struct->thread.has_fpu.
+Intel has a PCI USB xhci host controller on a new platform. It doesn't
+have a line IRQ definition in BIOS.  The Linux driver refuses to
+initialize this controller, but Windows works well because it only depends
+on MSI.
 
-This fixes two independent bugs at the same time:
+Actually, Linux also can work for MSI.  This patch avoids the line IRQ
+checking for USB3 HCDs in usb core PCI probe.  It allows the xHCI driver
+to try to enable MSI or MSI-X first.  It will fail the probe if MSI
+enabling failed and there's no legacy PCI IRQ.
 
- - changing 'thread_info->status' from the scheduler causes nasty
-   problems for the other users of that variable, since it is defined to
-   be thread-synchronous (that's what the "TS_" part of the naming was
-   supposed to indicate).
+This patch should be backported to kernels as old as 2.6.32.
 
-   So perfectly valid code could (and did) do
+[Maintainer note: This patch is a backport of commit
+68d07f64b8a11a852d48d1b05b724c3e20c0d94b "USB: Don't fail USB3 probe on
+missing legacy PCI IRQ." to the 3.0 kernel.  Note, the original patch
+description was wrong.  We should not back port this to kernels older
+than 2.6.36, since that was the first kernel to support MSI and MSI-X
+for xHCI hosts.  These systems will just not work without MSI support,
+so the probe should fail on kernels older than 2.6.36.]
 
-	ti->status |= TS_RESTORE_SIGMASK;
-
-   and the compiler was free to do that as separate load, or and store
-   instructions.  Which can cause problems with preemption, since a task
-   switch could happen in between, and change the TS_USEDFPU bit. The
-   change to TS_USEDFPU would be overwritten by the final store.
-
-   In practice, this seldom happened, though, because the 'status' field
-   was seldom used more than once, so gcc would generally tend to
-   generate code that used a read-modify-write instruction and thus
-   happened to avoid this problem - RMW instructions are naturally low
-   fat and preemption-safe.
-
- - On x86-32, the current_thread_info() pointer would, during interrupts
-   and softirqs, point to a *copy* of the real thread_info, because
-   x86-32 uses %esp to calculate the thread_info address, and thus the
-   separate irq (and softirq) stacks would cause these kinds of odd
-   thread_info copy aliases.
-
-   This is normally not a problem, since interrupts aren't supposed to
-   look at thread information anyway (what thread is running at
-   interrupt time really isn't very well-defined), but it confused the
-   heck out of irq_fpu_usable() and the code that tried to squirrel
-   away the FPU state.
-
-   (It also caused untold confusion for us poor kernel developers).
-
-It also turns out that using 'task_struct' is actually much more natural
-for most of the call sites that care about the FPU state, since they
-tend to work with the task struct for other reasons anyway (ie
-scheduling).  And the FPU data that we are going to save/restore is
-found there too.
-
-Thanks to Arjan Van De Ven <arjan@linux.intel.com> for pointing us to
-the %esp issue.
-
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Reported-and-tested-by: Raphael Prevost <raphael@buro.asia>
-Acked-and-tested-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Peter Anvin <hpa@zytor.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h        |   44 ++++++++++++++++++-------------------
- arch/x86/include/asm/processor.h   |    1 
- arch/x86/include/asm/thread_info.h |    2 -
- arch/x86/kernel/traps.c            |   11 ++++-----
- arch/x86/kernel/xsave.c            |    2 -
- arch/x86/kvm/vmx.c                 |    2 -
- 6 files changed, 30 insertions(+), 32 deletions(-)
+ drivers/usb/core/hcd-pci.c |    5 ++++-
+ drivers/usb/core/hcd.c     |    6 ++++--
+ drivers/usb/host/xhci.c    |    5 +++++
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -264,21 +264,21 @@ static inline int restore_fpu_checking(s
-  * be preemption protection *and* they need to be
-  * properly paired with the CR0.TS changes!
-  */
--static inline int __thread_has_fpu(struct thread_info *ti)
-+static inline int __thread_has_fpu(struct task_struct *tsk)
- {
--	return ti->status & TS_USEDFPU;
-+	return tsk->thread.has_fpu;
- }
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -187,7 +187,10 @@ int usb_hcd_pci_probe(struct pci_dev *de
+ 		return -ENODEV;
+ 	dev->current_state = PCI_D0;
  
- /* Must be paired with an 'stts' after! */
--static inline void __thread_clear_has_fpu(struct thread_info *ti)
-+static inline void __thread_clear_has_fpu(struct task_struct *tsk)
- {
--	ti->status &= ~TS_USEDFPU;
-+	tsk->thread.has_fpu = 0;
- }
+-	if (!dev->irq) {
++	/* The xHCI driver supports MSI and MSI-X,
++	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
++	 */
++	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
+ 		dev_err(&dev->dev,
+ 			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
+ 			pci_name(dev));
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2435,8 +2435,10 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 			&& device_can_wakeup(&hcd->self.root_hub->dev))
+ 		dev_dbg(hcd->self.controller, "supports USB remote wakeup\n");
  
- /* Must be paired with a 'clts' before! */
--static inline void __thread_set_has_fpu(struct thread_info *ti)
-+static inline void __thread_set_has_fpu(struct task_struct *tsk)
- {
--	ti->status |= TS_USEDFPU;
-+	tsk->thread.has_fpu = 1;
- }
+-	/* enable irqs just before we start the controller */
+-	if (usb_hcd_is_primary_hcd(hcd)) {
++	/* enable irqs just before we start the controller,
++	 * if the BIOS provides legacy PCI irqs.
++	 */
++	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
+ 		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
+ 		if (retval)
+ 			goto err_request_irq;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -444,6 +444,11 @@ int xhci_run(struct usb_hcd *hcd)
  
- /*
-@@ -288,16 +288,16 @@ static inline void __thread_set_has_fpu(
-  * These generally need preemption protection to work,
-  * do try to avoid using these on their own.
-  */
--static inline void __thread_fpu_end(struct thread_info *ti)
-+static inline void __thread_fpu_end(struct task_struct *tsk)
- {
--	__thread_clear_has_fpu(ti);
-+	__thread_clear_has_fpu(tsk);
- 	stts();
- }
- 
--static inline void __thread_fpu_begin(struct thread_info *ti)
-+static inline void __thread_fpu_begin(struct task_struct *tsk)
- {
- 	clts();
--	__thread_set_has_fpu(ti);
-+	__thread_set_has_fpu(tsk);
- }
- 
- /*
-@@ -308,21 +308,21 @@ extern int restore_i387_xstate(void __us
- 
- static inline void __unlazy_fpu(struct task_struct *tsk)
- {
--	if (__thread_has_fpu(task_thread_info(tsk))) {
-+	if (__thread_has_fpu(tsk)) {
- 		__save_init_fpu(tsk);
--		__thread_fpu_end(task_thread_info(tsk));
-+		__thread_fpu_end(tsk);
- 	} else
- 		tsk->fpu_counter = 0;
- }
- 
- static inline void __clear_fpu(struct task_struct *tsk)
- {
--	if (__thread_has_fpu(task_thread_info(tsk))) {
-+	if (__thread_has_fpu(tsk)) {
- 		/* Ignore delayed exceptions from user space */
- 		asm volatile("1: fwait\n"
- 			     "2:\n"
- 			     _ASM_EXTABLE(1b, 2b));
--		__thread_fpu_end(task_thread_info(tsk));
-+		__thread_fpu_end(tsk);
- 	}
- }
- 
-@@ -337,7 +337,7 @@ static inline void __clear_fpu(struct ta
-  */
- static inline bool interrupted_kernel_fpu_idle(void)
- {
--	return !__thread_has_fpu(current_thread_info()) &&
-+	return !__thread_has_fpu(current) &&
- 		(read_cr0() & X86_CR0_TS);
- }
- 
-@@ -371,12 +371,12 @@ static inline bool irq_fpu_usable(void)
- 
- static inline void kernel_fpu_begin(void)
- {
--	struct thread_info *me = current_thread_info();
-+	struct task_struct *me = current;
- 
- 	WARN_ON_ONCE(!irq_fpu_usable());
- 	preempt_disable();
- 	if (__thread_has_fpu(me)) {
--		__save_init_fpu(me->task);
-+		__save_init_fpu(me);
- 		__thread_clear_has_fpu(me);
- 		/* We do 'stts()' in kernel_fpu_end() */
- 	} else
-@@ -441,13 +441,13 @@ static inline void irq_ts_restore(int TS
-  */
- static inline int user_has_fpu(void)
- {
--	return __thread_has_fpu(current_thread_info());
-+	return __thread_has_fpu(current);
- }
- 
- static inline void user_fpu_end(void)
- {
- 	preempt_disable();
--	__thread_fpu_end(current_thread_info());
-+	__thread_fpu_end(current);
- 	preempt_enable();
- }
- 
-@@ -455,7 +455,7 @@ static inline void user_fpu_begin(void)
- {
- 	preempt_disable();
- 	if (!user_has_fpu())
--		__thread_fpu_begin(current_thread_info());
-+		__thread_fpu_begin(current);
- 	preempt_enable();
- }
- 
-@@ -464,10 +464,10 @@ static inline void user_fpu_begin(void)
-  */
- static inline void save_init_fpu(struct task_struct *tsk)
- {
--	WARN_ON_ONCE(!__thread_has_fpu(task_thread_info(tsk)));
-+	WARN_ON_ONCE(!__thread_has_fpu(tsk));
- 	preempt_disable();
- 	__save_init_fpu(tsk);
--	__thread_fpu_end(task_thread_info(tsk));
-+	__thread_fpu_end(tsk);
- 	preempt_enable();
- }
- 
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -454,6 +454,7 @@ struct thread_struct {
- 	unsigned long		trap_no;
- 	unsigned long		error_code;
- 	/* floating point and extended processor state */
-+	unsigned long		has_fpu;
- 	struct fpu		fpu;
- #ifdef CONFIG_X86_32
- 	/* Virtual 86 mode info */
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -242,8 +242,6 @@ static inline struct thread_info *curren
-  * ever touches our thread-synchronous status, so we don't
-  * have to worry about atomic accesses.
-  */
--#define TS_USEDFPU		0x0001	/* FPU was used by this task
--					   this quantum (SMP) */
- #define TS_COMPAT		0x0002	/* 32bit syscall active (64BIT)*/
- #define TS_POLLING		0x0004	/* idle task polling need_resched,
- 					   skip sending interrupt */
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -728,12 +728,11 @@ asmlinkage void __attribute__((weak)) sm
-  */
- void math_state_restore(void)
- {
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
-+	struct task_struct *tsk = current;
- 
- 	/* We need a safe address that is cheap to find and that is already
--	   in L1. We just brought in "thread->task", so use that */
--#define safe_address (thread->task)
-+	   in L1. We're just bringing in "tsk->thread.has_fpu", so use that */
-+#define safe_address (tsk->thread.has_fpu)
- 
- 	if (!tsk_used_math(tsk)) {
- 		local_irq_enable();
-@@ -750,7 +749,7 @@ void math_state_restore(void)
- 		local_irq_disable();
- 	}
- 
--	__thread_fpu_begin(thread);
-+	__thread_fpu_begin(tsk);
- 
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
-@@ -766,7 +765,7 @@ void math_state_restore(void)
- 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
- 	 */
- 	if (unlikely(restore_fpu_checking(tsk))) {
--		__thread_fpu_end(thread);
-+		__thread_fpu_end(tsk);
- 		force_sig(SIGSEGV, tsk);
- 		return;
- 	}
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -47,7 +47,7 @@ void __sanitize_i387_state(struct task_s
- 	if (!fx)
- 		return;
- 
--	BUG_ON(__thread_has_fpu(task_thread_info(tsk)));
-+	BUG_ON(__thread_has_fpu(tsk));
- 
- 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
- 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -948,7 +948,7 @@ static void __vmx_load_host_state(struct
- #ifdef CONFIG_X86_64
- 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- #endif
--	if (__thread_has_fpu(current_thread_info()))
-+	if (__thread_has_fpu(current))
- 		clts();
- 	load_gdt(&__get_cpu_var(host_gdt));
- }
+ 	if (ret) {
+ legacy_irq:
++		if (!pdev->irq) {
++			xhci_err(xhci, "No msi-x/msi found and "
++					"no IRQ in BIOS\n");
++			return -EINVAL;
++		}
+ 		/* fall back to legacy interrupt*/
+ 		ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
+ 					hcd->irq_descr, hcd);
 
 
