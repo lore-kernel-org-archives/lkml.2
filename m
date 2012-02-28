@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab2B1BMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:42 -0500
+	id S965403Ab2B1BMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:12:49 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965337Ab2B1BMg (ORCPT
+	with ESMTP id S965365Ab2B1BMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.237.40 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.132.40 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.498428423@linuxfoundation.org>
+Message-Id: <20120228010434.778180682@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:27 -0800
+Date: Mon, 27 Feb 2012 17:05:30 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 58/72] genirq: Handle pending irqs in irq_startup()
+        alan@lxorguk.ukuu.org.uk, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 61/72] ipvs: fix matching of fwmark templates during scheduling
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,109 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Simon Horman <horms@verge.net.au>
 
-commit b4bc724e82e80478cba5fe9825b62e71ddf78757 upstream.
+commit e0aac52e17a3db68fe2ceae281780a70fc69957f upstream.
 
-An interrupt might be pending when irq_startup() is called, but the
-startup code does not invoke the resend logic. In some cases this
-prevents the device from issuing another interrupt which renders the
-device non functional.
+	Commit f11017ec2d1859c661f4e2b12c4a8d250e1f47cf (2.6.37)
+moved the fwmark variable in subcontext that is invalidated before
+reaching the ip_vs_ct_in_get call. As vaddr is provided as pointer
+in the param structure make sure the fwmark variable is in
+same context. As the fwmark templates can not be matched,
+more and more template connections are created and the
+controlled connections can not go to single real server.
 
-Call the resend function in irq_startup() to keep things going.
-
-Reported-and-tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/autoprobe.c |    4 ++--
- kernel/irq/chip.c      |   17 ++++++++++-------
- kernel/irq/internals.h |    2 +-
- kernel/irq/manage.c    |    2 +-
- 4 files changed, 14 insertions(+), 11 deletions(-)
+ net/netfilter/ipvs/ip_vs_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/autoprobe.c
-+++ b/kernel/irq/autoprobe.c
-@@ -53,7 +53,7 @@ unsigned long probe_irq_on(void)
- 			if (desc->irq_data.chip->irq_set_type)
- 				desc->irq_data.chip->irq_set_type(&desc->irq_data,
- 							 IRQ_TYPE_PROBE);
--			irq_startup(desc);
-+			irq_startup(desc, false);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -70,7 +70,7 @@ unsigned long probe_irq_on(void)
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && irq_settings_can_probe(desc)) {
- 			desc->istate |= IRQS_AUTODETECT | IRQS_WAITING;
--			if (irq_startup(desc))
-+			if (irq_startup(desc, false))
- 				desc->istate |= IRQS_PENDING;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -157,19 +157,22 @@ static void irq_state_set_masked(struct
- 	irqd_set(&desc->irq_data, IRQD_IRQ_MASKED);
- }
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -232,6 +232,7 @@ ip_vs_sched_persist(struct ip_vs_service
+ 	__be16 dport = 0;		/* destination port to forward */
+ 	unsigned int flags;
+ 	struct ip_vs_conn_param param;
++	const union nf_inet_addr fwmark = { .ip = htonl(svc->fwmark) };
+ 	union nf_inet_addr snet;	/* source network of the client,
+ 					   after masking */
  
--int irq_startup(struct irq_desc *desc)
-+int irq_startup(struct irq_desc *desc, bool resend)
- {
-+	int ret = 0;
-+
- 	irq_state_clr_disabled(desc);
- 	desc->depth = 0;
+@@ -267,7 +268,6 @@ ip_vs_sched_persist(struct ip_vs_service
+ 	{
+ 		int protocol = iph.protocol;
+ 		const union nf_inet_addr *vaddr = &iph.daddr;
+-		const union nf_inet_addr fwmark = { .ip = htonl(svc->fwmark) };
+ 		__be16 vport = 0;
  
- 	if (desc->irq_data.chip->irq_startup) {
--		int ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
-+		ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
- 		irq_state_clr_masked(desc);
--		return ret;
-+	} else {
-+		irq_enable(desc);
- 	}
--
--	irq_enable(desc);
--	return 0;
-+	if (resend)
-+		check_irq_resend(desc, desc->irq_data.irq);
-+	return ret;
- }
- 
- void irq_shutdown(struct irq_desc *desc)
-@@ -646,7 +649,7 @@ __irq_set_handler(unsigned int irq, irq_
- 		irq_settings_set_noprobe(desc);
- 		irq_settings_set_norequest(desc);
- 		irq_settings_set_nothread(desc);
--		irq_startup(desc);
-+		irq_startup(desc, true);
- 	}
- out:
- 	irq_put_desc_busunlock(desc, flags);
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -67,7 +67,7 @@ extern int __irq_set_trigger(struct irq_
- extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
- extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
- 
--extern int irq_startup(struct irq_desc *desc);
-+extern int irq_startup(struct irq_desc *desc, bool resend);
- extern void irq_shutdown(struct irq_desc *desc);
- extern void irq_enable(struct irq_desc *desc);
- extern void irq_disable(struct irq_desc *desc);
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1027,7 +1027,7 @@ __setup_irq(unsigned int irq, struct irq
- 			desc->istate |= IRQS_ONESHOT;
- 
- 		if (irq_settings_can_autoenable(desc))
--			irq_startup(desc);
-+			irq_startup(desc, true);
- 		else
- 			/* Undo nested disables: */
- 			desc->depth = 1;
+ 		if (dst_port == svc->port) {
 
 
