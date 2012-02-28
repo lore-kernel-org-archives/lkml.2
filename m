@@ -1,120 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2B1Jea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:34:30 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:15256 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2B1Je0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:34:26 -0500
-Message-ID: <4F4C9F8C.1060901@siemens.com>
-Date: Tue, 28 Feb 2012 10:34:04 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755798Ab2B1JjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:39:09 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:36765 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754519Ab2B1JjI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 04:39:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tarun.kanti@ti.com designates 10.224.184.74 as permitted sender) smtp.mail=tarun.kanti@ti.com
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C8EEB.8040709@cn.fujitsu.com>
-In-Reply-To: <4F4C8EEB.8040709@cn.fujitsu.com>
+In-Reply-To: <87ty2bu91e.fsf@ti.com>
+References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
+	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
+	<87ty2bu91e.fsf@ti.com>
+Date: Tue, 28 Feb 2012 15:09:05 +0530
+Message-ID: <CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
+From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-28 09:23, Wen Congyang wrote:
-> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
->> On 2012-02-27 04:01, Wen Congyang wrote:
->>> We can know the guest is paniced when the guest runs on xen.
->>> But we do not have such feature on kvm. This patch implemnts
->>> this feature, and the implementation is the same as xen:
->>> register panic notifier, and call hypercall when the guest
->>> is paniced.
->>>
->>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>> ---
->>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
->>>  arch/x86/kvm/svm.c       |    8 ++++++--
->>>  arch/x86/kvm/vmx.c       |    8 ++++++--
->>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
->>>  include/linux/kvm.h      |    1 +
->>>  include/linux/kvm_para.h |    1 +
->>>  6 files changed, 37 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->>> index f0c6fd6..b928d1d 100644
->>> --- a/arch/x86/kernel/kvm.c
->>> +++ b/arch/x86/kernel/kvm.c
->>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
->>>  	.notifier_call = kvm_pv_reboot_notify,
->>>  };
->>>  
->>> +static int
->>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
->>> +{
->>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
->>> +	return NOTIFY_DONE;
->>> +}
->>> +
->>> +static struct notifier_block kvm_pv_panic_nb = {
->>> +	.notifier_call = kvm_pv_panic_notify,
->>> +};
->>> +
+On Tue, Feb 28, 2012 at 5:24 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+>
+>> Since we already have bank->context.wake_en to keep track
+>> of gpios which are wakeup enabled, there is no need to have
+>> this field any more.
 >>
->> You should split up host and guest-side changes.
+>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>
+> I'm not crazy about this change...
+>
+>> ---
+>>  drivers/gpio/gpio-omap.c |   11 +++++------
+>>  1 files changed, 5 insertions(+), 6 deletions(-)
 >>
->>>  static u64 kvm_steal_clock(int cpu)
->>>  {
->>>  	u64 steal;
->>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
->>>  
->>>  	paravirt_ops_setup();
->>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
->>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
->>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
->>>  		spin_lock_init(&async_pf_sleepers[i].lock);
->>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
->>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->>> index 0b7690e..38b4705 100644
->>> --- a/arch/x86/kvm/svm.c
->>> +++ b/arch/x86/kvm/svm.c
->>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
->>>  
->>>  static int vmmcall_interception(struct vcpu_svm *svm)
->>>  {
->>> +	int ret;
->>> +
->>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
->>>  	skip_emulated_instruction(&svm->vcpu);
->>> -	kvm_emulate_hypercall(&svm->vcpu);
->>> -	return 1;
->>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
->>> +
->>> +	/* Ignore the error? */
->>> +	return ret == 0 ? 0 : 1;
+>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>> index 64f15d5..b62e861 100644
+>> --- a/drivers/gpio/gpio-omap.c
+>> +++ b/drivers/gpio/gpio-omap.c
+>> @@ -53,7 +53,6 @@ struct gpio_bank {
+>>       void __iomem *base;
+>>       u16 irq;
+>>       u16 virtual_irq_start;
+>> -     u32 suspend_wakeup;
+>>       u32 non_wakeup_gpios;
+>>       u32 enabled_non_wakeup_gpios;
+>>       struct gpio_regs context;
+>> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
 >>
->> Why can't kvm_emulate_hypercall return the right value?
-> 
-> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
-> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
-> If vcpu's CPL > 0, does kvm need to exit and tell it to
-> qemu?
+>>       spin_lock_irqsave(&bank->lock, flags);
+>>       if (enable)
+>> -             bank->suspend_wakeup |= gpio_bit;
+>> +             bank->context.wake_en |= gpio_bit;
+>>       else
+>> -             bank->suspend_wakeup &= ~gpio_bit;
+>> +             bank->context.wake_en &= ~gpio_bit;
+>
+> The bank->context values are expected to be copies of the actual
+> register contents, and here that is clearly not the case.
+Right, it should have been this:
 
-No, there is currently no exit to userspace due to hypercalls, neither
-of HV nor KVM kind.
+        if (enable)
+-               bank->suspend_wakeup |= gpio_bit;
++               bank->context.wake_en |= gpio_bit;
+        else
+-               bank->suspend_wakeup &= ~gpio_bit;
++               bank->context.wake_en &= ~gpio_bit;
++
++       __raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
 
-The point is that the return code of kvm_emulate_hypercall is unused so
-far, so you can easily redefine it to encode continue vs. exit to
-userspace. Once someone has different needs, this could still be
-refactored again.
+>
+> With this change, you're using the context register to track changes
+> that you *might* eventually write to the register.
+The above change ensures that bank->context.wake_en reflects the
+latest register value.
+There are two distinct paths through which bank->context.wake_en is
+updated now, viz:
+Path1:-
+chip.irq_set_type() --> gpio_irq_type() --> _set_gpio_triggering() -->
+set_gpio_trigger()
 
-Jan
+Path2:-
+chip.irq_set_wake() --> gpio_wake_enable() --> irq_set_wake()
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+>
+> IMO, this is more confusing than having a separate field to track this.
+So, there is no need have a separate field to keep track of this.
+I hope my understanding is right.
+--
+Tarun
+
+>
+> Kevin
+>
+>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>
+>> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
+>>
+>>       spin_lock_irqsave(&bank->lock, flags);
+>>       bank->context.wake_en = __raw_readl(mask_reg);
+>> -     __raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
+>> +     __raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
+>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>
+>>       return 0;
+>> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
+>>       if (!bank->mod_usage || !bank->loses_context)
+>>               return 0;
+>>
+>> -     if (!bank->regs->wkup_en || !bank->suspend_wakeup)
+>> +     if (!bank->regs->wkup_en || !bank->context.wake_en)
+>>               return 0;
+>>
+>>       spin_lock_irqsave(&bank->lock, flags);
+>>       _gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+>> -     _gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
+>> +     _gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
+>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>
+>>       return 0;
