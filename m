@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030316Ab2B1WIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:08:39 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25838 "EHLO
+	id S1030425Ab2B1WIr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:08:47 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25910 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030241Ab2B1WId (ORCPT
+	with ESMTP id S1030241Ab2B1WIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:08:33 -0500
+	Tue, 28 Feb 2012 17:08:41 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,75 +18,70 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/24] PCI: Add pci_bus_extend/shrink_top()
-Date: Tue, 28 Feb 2012 14:07:35 -0800
-Message-Id: <1330466863-28469-17-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 14/24] PCI, powerpc: Register busn_res for root buses
+Date: Tue, 28 Feb 2012 14:07:33 -0800
+Message-Id: <1330466863-28469-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
 References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F4D505A.0028,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090209.4F4D5059.00A5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-extend or shrink bus and parent buses top (subordinate)
-
-extended range is verified safe range, and stop at recorded parent_res.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- drivers/pci/probe.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
+ arch/powerpc/include/asm/pci-bridge.h |    1 +
+ arch/powerpc/kernel/pci-common.c      |   10 +++++++++-
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 1c07aba..96259f8 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -655,6 +655,42 @@ static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
- 	}
- }
+diff --git a/arch/powerpc/include/asm/pci-bridge.h b/arch/powerpc/include/asm/pci-bridge.h
+index 5d48765..11cebf0 100644
+--- a/arch/powerpc/include/asm/pci-bridge.h
++++ b/arch/powerpc/include/asm/pci-bridge.h
+@@ -30,6 +30,7 @@ struct pci_controller {
+ 	int first_busno;
+ 	int last_busno;
+ 	int self_busno;
++	struct resource busn;
  
-+static void __devinit pci_bus_update_top(struct pci_bus *parent,
-+		 long size, struct resource *parent_res)
-+{
-+	struct resource *res;
+ 	void __iomem *io_base_virt;
+ #ifdef CONFIG_PPC64
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 910b9de..ee8c0c9 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1648,6 +1648,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 	/* Wire up PHB bus resources */
+ 	pcibios_setup_phb_resources(hose, &resources);
+ 
++	hose->busn.start = hose->first_busno;
++	hose->busn.end	 = hose->last_busno;
++	hose->busn.flags = IORESOURCE_BUS;
++	pci_add_resource(&resources, &hose->busn);
 +
-+	if (!size)
-+		return;
-+
-+	while (parent) {
-+		res = &parent->busn_res;
-+		if (res == parent_res)
-+			break;
-+		res->end += size;
-+		parent->subordinate += size;
-+		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS,
-+					 parent->subordinate);
-+		dev_printk(KERN_DEBUG, &parent->dev,
-+				"busn_res: %s %02lx to %pR\n",
-+				(size > 0) ? "extended" : "shrunk",
-+				abs(size), res);
-+		parent = parent->parent;
+ 	/* Create an empty bus for the toplevel */
+ 	bus = pci_create_root_bus(hose->parent, hose->first_busno,
+ 				  hose->ops, hose, &resources);
+@@ -1670,8 +1675,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		of_scan_bus(node, bus);
+ 	}
+ 
+-	if (mode == PCI_PROBE_NORMAL)
++	if (mode == PCI_PROBE_NORMAL) {
++		pci_bus_update_busn_res_end(bus, 255);
+ 		hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
++		pci_bus_update_busn_res_end(bus, bus->subordinate);
 +	}
-+}
-+
-+static void __devinit pci_bus_extend_top(struct pci_bus *parent,
-+		 long size, struct resource *parent_res)
-+{
-+	pci_bus_update_top(parent, size, parent_res);
-+}
-+
-+static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
-+		 long size, struct resource *parent_res)
-+{
-+	pci_bus_update_top(parent, -size, parent_res);
-+}
-+
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
+ 
+ 	/* Platform gets a chance to do some global fixups before
+ 	 * we proceed to resource allocation
 -- 
 1.7.7
 
