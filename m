@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab2B1Nhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:37:33 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56876 "EHLO
+	id S964930Ab2B1Nhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:37:35 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56902 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756545Ab2B1Nh3 (ORCPT
+	by vger.kernel.org with ESMTP id S1756545Ab2B1Nhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:37:29 -0500
+	Tue, 28 Feb 2012 08:37:34 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: [RFC][PATCH 0/6] Add endian functions to tools/include
-Date: Tue, 28 Feb 2012 13:37:19 +0000
-Message-Id: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Nick Bowler <nbowler@elliptictech.com>
+Subject: [RFC][PATCH 5/6] x86, efi: Fix endian issues and unaligned accesses
+Date: Tue, 28 Feb 2012 13:37:24 +0000
+Message-Id: <1330436245-24875-6-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
+References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-There's a few host tools in the kernel that are rolling their own
-versions of the {get,put}_unaligned_le*() functions. This series
-copies the include/linux/unaligned/*_byteshift.h headers to
-tools/include for their use.
+We may need to convert the endianness of the data we read from/write
+to 'buf', so let's use {get,put}_unaligned_le32() to do that. Failure
+to do so can result in accessing invalid memory, leading to a
+segfault.  Stephen Rothwell noticed this bug while cross-building an
+x86_64 allmodconfig kernel on PowerPC.
 
-I don't think it really makes sense for these to be exported to
-userspace (i.e. installed by make headers_install) because they're
-only used by hostprogs within the kernel, but this series is RFC for a
-reason - because I'm not sure where they belong.
+We need to read from and write to 'buf' a byte at a time otherwise
+it's possible we'll perform an unaligned access, which can lead to bus
+errors when cross-building an x86 kernel on risc architectures.
 
-Matt Fleming (6):
-  tools/include: Add byteshift headers for endian access
-  x86, relocs: Don't open code put_unaligned_le32()
-  x86, mkpiggy: Don't open code put_unaligned_le32()
-  x86, boot: Restrict CFLAGS for hostprogs
-  x86, efi: Fix endian issues and unaligned accesses
-  USB: ffs-test: Don't duplicate {get,put}_unaligned*() functions
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/tools/build.c |   31 +++++++++++++++----------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
- arch/x86/boot/Makefile             |    5 ++-
- arch/x86/boot/compressed/Makefile  |    1 +
- arch/x86/boot/compressed/mkpiggy.c |   11 +-----
- arch/x86/boot/compressed/relocs.c  |    6 +--
- arch/x86/boot/tools/build.c        |   31 ++++++++--------
- tools/include/tools/be_byteshift.h |   70 ++++++++++++++++++++++++++++++++++++
- tools/include/tools/le_byteshift.h |   70 ++++++++++++++++++++++++++++++++++++
- tools/usb/Makefile                 |    2 +-
- tools/usb/ffs-test.c               |   29 +--------------
- 9 files changed, 165 insertions(+), 60 deletions(-)
- create mode 100644 tools/include/tools/be_byteshift.h
- create mode 100644 tools/include/tools/le_byteshift.h
-
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index 4e9bd6b..f2ac95e 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -34,6 +34,7 @@
+ #include <fcntl.h>
+ #include <sys/mman.h>
+ #include <asm/boot.h>
++#include <tools/le_byteshift.h>
+ 
+ typedef unsigned char  u8;
+ typedef unsigned short u16;
+@@ -41,6 +42,7 @@ typedef unsigned long  u32;
+ 
+ #define DEFAULT_MAJOR_ROOT 0
+ #define DEFAULT_MINOR_ROOT 0
++#define DEFAULT_ROOT_DEV (DEFAULT_MAJOR_ROOT << 8 | DEFAULT_MINOR_ROOT)
+ 
+ /* Minimal number of setup sectors */
+ #define SETUP_SECT_MIN 5
+@@ -159,7 +161,7 @@ int main(int argc, char ** argv)
+ 		die("read-error on `setup'");
+ 	if (c < 1024)
+ 		die("The setup must be at least 1024 bytes");
+-	if (buf[510] != 0x55 || buf[511] != 0xaa)
++	if (get_unaligned_le16(&buf[510]) != 0xAA55)
+ 		die("Boot block hasn't got boot flag (0xAA55)");
+ 	fclose(file);
+ 
+@@ -171,8 +173,7 @@ int main(int argc, char ** argv)
+ 	memset(buf+c, 0, i-c);
+ 
+ 	/* Set the default root device */
+-	buf[508] = DEFAULT_MINOR_ROOT;
+-	buf[509] = DEFAULT_MAJOR_ROOT;
++	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
+ 
+ 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
+ 
+@@ -192,44 +193,42 @@ int main(int argc, char ** argv)
+ 
+ 	/* Patch the setup code with the appropriate size parameters */
+ 	buf[0x1f1] = setup_sectors-1;
+-	buf[0x1f4] = sys_size;
+-	buf[0x1f5] = sys_size >> 8;
+-	buf[0x1f6] = sys_size >> 16;
+-	buf[0x1f7] = sys_size >> 24;
++	put_unaligned_le32(sys_size, &buf[0x1f4]);
+ 
+ #ifdef CONFIG_EFI_STUB
+ 	file_sz = sz + i + ((sys_size * 16) - sz);
+ 
+-	pe_header = *(unsigned int *)&buf[0x3c];
++	pe_header = get_unaligned_le32(&buf[0x3c]);
+ 
+ 	/* Size of code */
+-	*(unsigned int *)&buf[pe_header + 0x1c] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0x1c]);
+ 
+ 	/* Size of image */
+-	*(unsigned int *)&buf[pe_header + 0x50] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+ 
+ #ifdef CONFIG_X86_32
+ 	/* Address of entry point */
+-	*(unsigned int *)&buf[pe_header + 0x28] = i;
++	put_unaligned_le32(i, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+-	*(unsigned int *)&buf[pe_header + 0xb0] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
+ 
+ 	/* .text size of initialised data */
+-	*(unsigned int *)&buf[pe_header + 0xb8] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xb8]);
+ #else
+ 	/*
+ 	 * Address of entry point. startup_32 is at the beginning and
+ 	 * the 64-bit entry point (startup_64) is always 512 bytes
+ 	 * after.
+ 	 */
+-	*(unsigned int *)&buf[pe_header + 0x28] = i + 512;
++	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
+ 
+ 	/* .text size */
+-	*(unsigned int *)&buf[pe_header + 0xc0] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
+ 
+ 	/* .text size of initialised data */
+-	*(unsigned int *)&buf[pe_header + 0xc8] = file_sz;
++	put_unaligned_le32(file_sz, &buf[pe_header + 0xc8]);
++
+ #endif /* CONFIG_X86_32 */
+ #endif /* CONFIG_EFI_STUB */
+ 
 -- 
 1.7.4.4
 
