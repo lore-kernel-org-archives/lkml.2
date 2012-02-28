@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab2B1ICG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:02:06 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:3642 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119Ab2B1ICE convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 28 Feb 2012 03:02:04 -0500
-Message-Id: <4F4C983002000078000751AE@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 28 Feb 2012 08:02:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] consolidate WARN_...ONCE() static variables
-References: <4F4BAAFA0200007800074F8F@nat28.tlf.novell.com>
- <20120227160302.ef9f6af4.akpm@linux-foundation.org>
- <4F4C93520200007800075197@nat28.tlf.novell.com>
- <20120227234451.3a00a76a.akpm@linux-foundation.org>
-In-Reply-To: <20120227234451.3a00a76a.akpm@linux-foundation.org>
+	id S932353Ab2B1IDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:03:22 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:37805 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755350Ab2B1IDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:03:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomi.valkeinen@ti.com designates 10.112.82.134 as permitted sender) smtp.mail=tomi.valkeinen@ti.com
+Subject: Re: OMAP4 HDMI PHY bug work-around for stable
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: stable@kernel.org, stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+In-Reply-To: <1328787865.1909.64.camel@deskari>
+References: <1328787865.1909.64.camel@deskari>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-t9KbM1gr8f/ep2e1fxOW"
+Date: Tue, 28 Feb 2012 10:03:13 +0200
+Message-ID: <1330416193.2123.4.camel@deskari>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.02.12 at 08:44, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 28 Feb 2012 07:41:54 +0000 "Jan Beulich" <JBeulich@suse.com> wrote:
-> 
->> >>> On 28.02.12 at 01:03, Andrew Morton <akpm@linux-foundation.org> wrote:
->> > On Mon, 27 Feb 2012 15:10:34 +0000
->> > "Jan Beulich" <JBeulich@suse.com> wrote:
->> > 
->> >> Due to the alignment of following variables, these typically consume
->> >> more than just the single byte that 'bool' requires, and as there are
->> >> a few hundred instances, the cache pollution (not so much the waste of
->> >> memory) sums up. Put these variables into their own section, outside
->> >> of any half way frequently used memory range.
->> >> 
->> >> v2: Do the same also to the __warned variable of rcu_lockdep_assert().
->> >> (Don't, however, include the ones used by printk_once() and alike, as
->> >> they can potentially be hot.)
->> > 
->> > I have a bad feeling that I still don't understand this patch.  Ho hum.
->> > 
->> > What are the rules for the new .data.unlikely section?  When should
->> > people put variables into this section?  Perhaps we can document this
->> > somewhere?
->> 
->> If I knew the "where" part of this, I could put together a few sentences.
->> I just grep-ed through Documentation/, without finding e.g. any rules
->> or guidelines for using {,un}likely()...
->>
-> 
-> At the definition site in vmlinux.lds?
 
-Sorry, Andrew, but this makes no sense to me. For one, vmlinux.lds{,h}
-don't define anything, they merely gather together all input sections.
-Second, the very similar use of .text.unlikely there isn't being explained
-in any way either (which makes sense given that that's a compiler
-generated section, which I just derived the new section's name from).
+--=-t9KbM1gr8f/ep2e1fxOW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-If anything, I would expect a place where all the special sections (.init*,
-.exit*, etc) are being explained, but this (if existing at all) is scattered
-around. While I don't mind adding a few words to something that
-already exists, I'm not really eager to write something from scratch.
+Hi,
 
-Finally, if we're really looking forward to having this used in a broader
-manner (and particularly with objects wider than bool), then the
-section name should get changed again anyway (and perhaps some
-further abstraction be created): The goal of the patch is not only to
-get the symbols out of potentially hot cache lines, but (secondary,
-but nevertheless) also to avoid the non-negligible waste of space due
-to padding (taking into consideration that the compiler doesn't really
-do a good job in this regard, nor does it make meaningful attempts
-at providing the necessary infrastructure for doing so manually).
+I haven't seen these merged nor any comment for these. Perhaps
+stable@kernel.org was wrong address, so adding stable@vger.kernel.org
+too.
 
-Jan
+I have added one additional fix into for-3.2-stable branch, which fixes
+a problem with panel detection that the GPIO changes brought.
+
+ Tomi
+
+On Thu, 2012-02-09 at 13:44 +0200, Tomi Valkeinen wrote:
+> Hi,
+>=20
+> There is a hardware bug on OMAP4, which may cause the HDMI output to
+> break irreversibly. A work-around for the bug has been merged into
+> mainline, but is missing from stable.
+>=20
+> I've backported the necessary patches on top of 3.0, 3.1 and 3.2 stable
+> trees, and pushed the following branches to:
+>=20
+> git://gitorious.org/linux-omap-dss2/linux.git
+>=20
+> fixes/for-3.0-stable
+> fixes/for-3.1-stable
+> fixes/for-3.2-stable
+>=20
+> 3.0 and 3.1 branches additionally contain a patch "OMAP: DSS2: HDMI: use
+> default dividers", which fixes a problem with the HDMI clock divider.
+> Without that the HDMI output won't start at all on those versions.
+>=20
+> The branches contain the following backported patches:
+>=20
+>       OMAP: DSS2: HDMI: use default dividers
+>       OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
+>       OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
+>       OMAPDSS: remove wrong HDMI HPD muxing
+>       OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
+>       OMAP: 4430SDP/Panda: add HDMI HPD gpio
+>       OMAPDSS: HDMI: PHY burnout fix
+>=20
+> Of those, the actual fix is in the last one, but as the GPIOs for HDMI
+> were a mess, they needed some cleanup patches before the fix could be
+> made.
+>=20
+> I'm not familiar with the process with stable kernels, so are the
+> branches above fine to get them merged? Or should I send the patches
+> with git-send-email?
+>=20
+>  Tomi
+>=20
+
+
+--=-t9KbM1gr8f/ep2e1fxOW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPTIo8AAoJEPo9qoy8lh71HrAP/1OV51NZOyWKYXoyU8bZLzpd
+YpbDRo/ZA+9rfQGC2agGZL7izttdg92WrowvPbYTZWIjJqu3vi9V9xtOtPLF9EMU
+11cy0y4NXAVo+ZKFecyt47YxnKRCebv4RR2YgGTTsuLTdbKP3/a7wdxUbVGV5w7w
+tQO8NzLIiMUlcrtFe17CVdODMMJnL3v2aZMo9yG2A435FpfchGlLg99Xmx1sCmAO
+LAWHpuoLUHqnUKfvGjVdeVVseDmGQikNnXVkZOElRPNSlHz+VzXUiWSnZNXL4Lty
+L2i/Tpe2a/H+4mCkQHCwrbXYq9GmwBXxk2JEc6hZX7R+54+adzvZtW3OqS639KTB
+DVfn8/QQy6FfUgNqPNmNeTkniDVHVdSXMyL9OwabvktBAiT8TuVEkAVWvEPty8hY
+9niN1k+2UFehTB2ClV3AceaW9QTvmdVeZwHLwwEt8tyPIYXKZ6mauYjfmFgzWENf
+36Fih14uzplhwlSwh7a5dDbwDfvT2QUl9VjUrrjLbfDkEoF1/BkDCx5AYboRF4Ug
+DMX+d4J17tj7jcXKA7QqWU5kyo28yDcv9SZZnnW9omY3AT/9n28nrOsU+vOY2tRm
+7imrqZmuWOa5lxQP7PIYBmRlYHAkwiYWaRSaryS/uYjEt7UP6hWeWPA22Y6Qt9Jd
++jVOVzUPb6mfdGWNhFYe
+=jh8A
+-----END PGP SIGNATURE-----
+
+--=-t9KbM1gr8f/ep2e1fxOW--
 
