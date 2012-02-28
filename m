@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab2B1MXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 07:23:04 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45842 "EHLO zene.cmpxchg.org"
+	id S965474Ab2B1MZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 07:25:32 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:45855 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab2B1MXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 07:23:01 -0500
-Date: Tue, 28 Feb 2012 13:22:50 +0100
+	id S1754865Ab2B1MZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 07:25:31 -0500
+Date: Tue, 28 Feb 2012 13:25:27 +0100
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -14,124 +14,64 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
         Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 4/6] memcg: use new logic for page stat accounting.
-Message-ID: <20120228122250.GB1702@cmpxchg.org>
+Subject: Re: [PATCH 6/6] memcg: fix performance of
+ mem_cgroup_begin_update_page_stat()
+Message-ID: <20120228122527.GD1702@cmpxchg.org>
 References: <20120217182426.86aebfde.kamezawa.hiroyu@jp.fujitsu.com>
- <20120217182743.2d5f629e.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120217182851.2f8ee503.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120217182743.2d5f629e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120217182851.2f8ee503.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 06:27:43PM +0900, KAMEZAWA Hiroyuki wrote:
-> >From 5bf592d432e4552db74e94a575afcd83aa652a9d Mon Sep 17 00:00:00 2001
+On Fri, Feb 17, 2012 at 06:28:51PM +0900, KAMEZAWA Hiroyuki wrote:
+> >From 07d3ce332ee4bc1eaef4b8fb2019b0c06bd7afb1 Mon Sep 17 00:00:00 2001
 > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 2 Feb 2012 11:49:59 +0900
-> Subject: [PATCH 4/6] memcg: use new logic for page stat accounting.
+> Date: Mon, 6 Feb 2012 12:14:47 +0900
+> Subject: [PATCH 6/6] memcg: fix performance of mem_cgroup_begin_update_page_stat()
 > 
-> Now, page-stat-per-memcg is recorded into per page_cgroup flag by
-> duplicating page's status into the flag. The reason is that memcg
-> has a feature to move a page from a group to another group and we
-> have race between "move" and "page stat accounting",
+> mem_cgroup_begin_update_page_stat() should be very fast because
+> it's called very frequently. Now, it needs to look up page_cgroup
+> and its memcg....this is slow.
 > 
-> Under current logic, assume CPU-A and CPU-B. CPU-A does "move"
-> and CPU-B does "page stat accounting".
+> This patch adds a global variable to check "any memcg is moving or not".
+> With this, the caller doesn't need to visit page_cgroup and memcg.
 > 
-> When CPU-A goes 1st,
+> Here is a test result. A test program makes page faults onto a file,
+> MAP_SHARED and makes each page's page_mapcount(page) > 1, and free
+> the range by madvise() and page fault again.  This program causes
+> 26214400 times of page fault onto a file(size was 1G.) and shows
+> shows the cost of mem_cgroup_begin_update_page_stat().
 > 
->             CPU-A                           CPU-B
->                                     update "struct page" info.
->     move_lock_mem_cgroup(memcg)
->     see pc->flags
->     copy page stat to new group
->     overwrite pc->mem_cgroup.
->     move_unlock_mem_cgroup(memcg)
->                                     move_lock_mem_cgroup(mem)
->                                     set pc->flags
->                                     update page stat accounting
->                                     move_unlock_mem_cgroup(mem)
+> Before this patch for mem_cgroup_begin_update_page_stat()
+> [kamezawa@bluextal test]$ time ./mmap 1G
 > 
-> stat accounting is guarded by move_lock_mem_cgroup() and "move"
-> logic (CPU-A) doesn't see changes in "struct page" information.
+> real    0m21.765s
+> user    0m5.999s
+> sys     0m15.434s
 > 
-> But it's costly to have the same information both in 'struct page' and
-> 'struct page_cgroup'. And, there is a potential problem.
+>     27.46%     mmap  mmap               [.] reader
+>     21.15%     mmap  [kernel.kallsyms]  [k] page_fault
+>      9.17%     mmap  [kernel.kallsyms]  [k] filemap_fault
+>      2.96%     mmap  [kernel.kallsyms]  [k] __do_fault
+>      2.83%     mmap  [kernel.kallsyms]  [k] __mem_cgroup_begin_update_page_stat
 > 
-> For example, assume we have PG_dirty accounting in memcg.
-> PG_..is a flag for struct page.
-> PCG_ is a flag for struct page_cgroup.
-> (This is just an example. The same problem can be found in any
->  kind of page stat accounting.)
+> After this patch
+> [root@bluextal test]# time ./mmap 1G
 > 
-> 	  CPU-A                               CPU-B
->       TestSet PG_dirty
->       (delay)                        TestClear PG_dirty
->                                      if (TestClear(PCG_dirty))
->                                           memcg->nr_dirty--
->       if (TestSet(PCG_dirty))
->           memcg->nr_dirty++
+> real    0m21.373s
+> user    0m6.113s
+> sys     0m15.016s
 > 
-> Here, memcg->nr_dirty = +1, this is wrong.
-> This race was reported by  Greg Thelen <gthelen@google.com>.
-> Now, only FILE_MAPPED is supported but fortunately, it's serialized by
-> page table lock and this is not real bug, _now_,
+> In usual path, calls to __mem_cgroup_begin_update_page_stat() goes away.
 > 
-> If this potential problem is caused by having duplicated information in
-> struct page and struct page_cgroup, we may be able to fix this by using
-> original 'struct page' information.
-> But we'll have a problem in "move account"
+> Note: we may be able to remove this optimization in future if
+>       we can get pointer to memcg directly from struct page.
 > 
-> Assume we use only PG_dirty.
-> 
->          CPU-A                   CPU-B
->     TestSet PG_dirty
->     (delay)                    move_lock_mem_cgroup()
->                                if (PageDirty(page))
->                                       new_memcg->nr_dirty++
->                                pc->mem_cgroup = new_memcg;
->                                move_unlock_mem_cgroup()
->     move_lock_mem_cgroup()
->     memcg = pc->mem_cgroup
->     new_memcg->nr_dirty++
-> 
-> accounting information may be double-counted. This was original
-> reason to have PCG_xxx flags but it seems PCG_xxx has another problem.
-> 
-> I think we need a bigger lock as
-> 
->      move_lock_mem_cgroup(page)
->      TestSetPageDirty(page)
->      update page stats (without any checks)
->      move_unlock_mem_cgroup(page)
-> 
-> This fixes both of problems and we don't have to duplicate page flag
-> into page_cgroup. Please note: move_lock_mem_cgroup() is held
-> only when there are possibility of "account move" under the system.
-> So, in most path, status update will go without atomic locks.
-> 
-> This patch introduce mem_cgroup_begin_update_page_stat() and
-> mem_cgroup_end_update_page_stat() both should be called at modifying
-> 'struct page' information if memcg takes care of it. as
-> 
->      mem_cgroup_begin_update_page_stat()
->      modify page information
->      mem_cgroup_update_page_stat()
->      => never check any 'struct page' info, just update counters.
->      mem_cgroup_end_update_page_stat().
-> 
-> This patch is slow because we need to call begin_update_page_stat()/
-> end_update_page_stat() regardless of accounted will be changed or not.
-> A following patch adds an easy optimization and reduces the cost.
-> 
-> Changes since v4
->  - removed unused argument *lock
->  - added more comments.
-> Changes since v3
->  - fixed typos
-> 
+> Acked-by: Greg Thelen <gthelen@google.com>
 > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
