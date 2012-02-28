@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965704Ab2B1QFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:05:30 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43639 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964917Ab2B1QF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:05:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.84.170 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	id S965714Ab2B1QGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:06:17 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964917Ab2B1QGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 11:06:15 -0500
+Message-ID: <4F4CFB6D.4000403@nod.at>
+Date: Tue, 28 Feb 2012 17:06:05 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <4F4CB89C.4060500@redhat.com>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
- <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
- <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
- <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
- <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
- <4F440945.1020904@zytor.com> <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202211339590.5354@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202211340330.5354@i5.linux-foundation.org> <4F4CB89C.4060500@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 28 Feb 2012 08:05:07 -0800
-X-Google-Sender-Auth: gXiPqkxNvTEQ2ajNovKcEH2bUGQ
-Message-ID: <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i387: split up <asm/i387.h> into exported and
- internal interfaces
-To: Avi Kivity <avi@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@gmail.com>,
-        Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org, basti@b-bl.de
+Subject: Re: [PATCH 1/2] iptables: Merge libip6t_LOG and libipt_LOG into libxt_LOG
+References: <1328911856-19260-1-git-send-email-richard@nod.at> <1328911856-19260-2-git-send-email-richard@nod.at> <20120225133816.GA15864@1984>
+In-Reply-To: <20120225133816.GA15864@1984>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig02FA765F188DF0053A95F999"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 3:21 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> Can you elaborate on what you don't like in the kvm code (apart from "it
-> does virtualiztion")?
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig02FA765F188DF0053A95F999
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It doesn't fit any of the patterns of the x87 save/restore code, and I
-don't know what it does.
+Am 25.02.2012 14:38, schrieb Pablo Neira Ayuso:
+> On Fri, Feb 10, 2012 at 11:10:51PM +0100, Richard Weinberger wrote:
+>> libip6t_LOG and libipt_LOG share a lot of common code, merge them
+>> to recude duplicate code.
+>=20
+> I have applied this to the net-next branch of iptables.
+>=20
+> See git.netfilter.org
+>=20
+> I'll merge it to master once linux kernel 3.3 is released.
 
-It does clts on its own, in random places without actually restoring
-the FPU state. Why is that ok? I don't know. And I don't think it is,
-but I didn't change any of it. Why doesn't that thing corrupt the lazy
-state save of some other process, for example?
+Okay. What about the ring buffer feature?
+Is there anything missing?
 
-Doing a "clts()" without restoring the FPU state immediately
-afterwards is fundamentally *wrong*. It's crazy. Insane. You can now
-use the FPU, but with whatever random state that is in it that caused
-TS to be set to begin with.
+Thanks,
+//richard
 
-And if you don't have any FPU state to restore, because you want to
-use your own kernel state, you should use the
-"kernel_fpu_begin()/end()" things that we have had forever.
 
-Here's an example of the kind of UTTER AND ABSOLUTE SHIT that kvm FPU
-state restore is:
 
-  static void emulator_get_fpu(struct x86_emulate_ctxt *ctxt)
-  {
-        preempt_disable();
-        kvm_load_guest_fpu(emul_to_vcpu(ctxt));
-        /*
-         * CR0.TS may reference the host fpu state, not the guest fpu state,
-         * so it may be clear at this point.
-         */
-        clts();
-  }
+--------------enig02FA765F188DF0053A95F999
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-that whole "comment" says nothing at all. And clearing CR0.TS *after*
-loading the FPU state is a f*cking joke, since you need it clear to
-load the FPU state to begin with. So as far as I can tell,
-kvm_load_guest_fpu() will have cleared the FPU state already, but *it*
-did it by:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-        unlazy_fpu(current);
-        fpu_restore_checking(&vcpu->arch.guest_fpu);
+iQEcBAEBAgAGBQJPTPtuAAoJEN9758yqZn9eH4EH/140Y4gT/nM0K9OSRZoQXEPO
+qwJipEcXcJPa0LVD2NxWntxSEwj9pgvpxZBQBAX4H4KvMmVkAiEEcg34HXrEt/5D
+pkJA+A9nn1Sw3Fjit+L5WX+J0SVrki/GTbHcCg+4vY2r/nI8KVfw1xY+H/otx1dQ
+i7NWNTDwzfjFdnQfwh6UdAZ9X23CMd6gmn4elUEYDlGJ5HuQ1Qe7lyAAm6WZt7qg
+hN9qmeq8avzXKQRTfESAgPGDeqbERSy1IF7d5JqYS8sBdPfVseRF6TdyQcxwx4Ht
+l0Pr2Mx3c3oLl0n3XjJiN+ElmgiCtyu7CnPXAsAShdU2s/gSu556FRSk46AEBLo=
+=RL9t
+-----END PGP SIGNATURE-----
 
-where "unlazy_fpu()" will have *set* TS if it wasn't set before, so
-fpu_restore_checking() will now TAKE A FAULT, and in that fault
-handler it will clear TS so that it can reload the state we just saved
-(yes, really), only to then return to fpu_restore_checking() and
-reload yet *another* state.
-
-The code is crap. It's insane. It may work, but if it does, it does so
-by pure chance and happenstance. The code is CLEARLY INSANE.
-
-I wasn't going to touch it. It had been written by a
-random-code-generator that had strung the various FPU accessor
-functions up in random order until it compiled.
-
-                  Linus
+--------------enig02FA765F188DF0053A95F999--
