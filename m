@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2B1ArA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:47:00 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53531 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab2B1Aq7 (ORCPT
+	id S1754695Ab2B1Arp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:47:45 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61509 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2B1Aro convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:46:59 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 28 Feb 2012 09:45:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 13/21] mm: push lruvecs from pagevec_lru_move_fn() to
- iterator
-Message-Id: <20120228094533.f91b7720.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120223135242.12988.38183.stgit@zurg>
-References: <20120223133728.12988.5432.stgit@zurg>
-	<20120223135242.12988.38183.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Feb 2012 19:47:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.gortmaker@gmail.com designates 10.68.224.230 as permitted sender) smtp.mail=paul.gortmaker@gmail.com; dkim=pass header.i=paul.gortmaker@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <1330389383.16334.22.camel@joe2Laptop>
+References: <1330388976-30633-1-git-send-email-paul.gortmaker@windriver.com>
+	<1330389383.16334.22.camel@joe2Laptop>
+Date: Mon, 27 Feb 2012 19:47:43 -0500
+X-Google-Sender-Auth: 86JTQ9Ic0UM8Jgp2jCG1iX3PFOE
+Message-ID: <CAP=VYLqnRXd_LR67+xz2k6YKX7YJiA7cgYwZ8pN3aQMgDN0dzw@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: do not try to sanity test cover letters
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Joe Perches <joe@perches.com>
+Cc: apw@canonical.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 17:52:42 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+On Mon, Feb 27, 2012 at 7:36 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2012-02-27 at 19:29 -0500, Paul Gortmaker wrote:
+>> One possibly common workflow is this:
+>>
+>>       git format-patch -o mypatches --cover-letter ^start end
+>>       ./scripts/checkpatch.pl mypatches/*
+>
+> I use a script for this and don't put the check
+> in checkpatch but put the check in bash.
 
-> Push lruvec pointer from pagevec_lru_move_fn() to iterator function.
-> Push lruvec pointer into lru_add_page_tail()
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Sure, and I can do the same.  But my question to you is whether
+you think the above is a common workflow, and if the false positives
+that it generates will decrease the number of people likely to make
+using it a part of their routine?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Paul.
+--
 
-
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
