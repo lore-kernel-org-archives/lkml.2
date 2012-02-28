@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965038Ab2B1BKj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:10:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964999Ab2B1BIQ (ORCPT
+	id S965021Ab2B1BK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:10:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964899Ab2B1BIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:08:16 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.134 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:08:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.131.74 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010214.566493554@linuxfoundation.org>
+Message-Id: <20120228010215.974304968@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:05 -0800
+Date: Mon, 27 Feb 2012 17:03:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 62/73] [SCSI] scsi_scan: Fix Poison overwritten warning caused by using freed shost
+        alan@lxorguk.ukuu.org.uk, Maxime Bizon <mbizon@freebox.fr>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [ 70/73] epoll: introduce POLLFREE to flush ->signalfd_wqh before kfree()
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,101 +27,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huajun Li <huajun.li.lee@gmail.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 267a6ad4aefaafbde607804c60945bcf97f91c1b upstream.
+commit d80e731ecab420ddcb79ee9d0ac427acbc187b4b upstream.
 
-In do_scan_async(), calling scsi_autopm_put_host(shost) may reference
-freed shost, and cause Posison overwitten warning.
-Yes, this case can happen, for example, an USB is disconnected just
-when do_scan_async() thread starts to run, then scsi_host_put() called
-in scsi_finish_async_scan() will lead to shost be freed(because the
-refcount of shost->shost_gendev decreases to 1 after USB disconnects),
-at this point, if references shost again, system will show following
-warning msg.
+This patch is intentionally incomplete to simplify the review.
+It ignores ep_unregister_pollwait() which plays with the same wqh.
+See the next change.
 
-To make scsi_autopm_put_host(shost) always reference a valid shost,
-put it just before scsi_host_put() in function
-scsi_finish_async_scan().
+epoll assumes that the EPOLL_CTL_ADD'ed file controls everything
+f_op->poll() needs. In particular it assumes that the wait queue
+can't go away until eventpoll_release(). This is not true in case
+of signalfd, the task which does EPOLL_CTL_ADD uses its ->sighand
+which is not connected to the file.
 
-[  299.281565] =============================================================================
-[  299.281634] BUG kmalloc-4096 (Tainted: G          I ): Poison overwritten
-[  299.281682] -----------------------------------------------------------------------------
-[  299.281684]
-[  299.281752] INFO: 0xffff880056c305d0-0xffff880056c305d0. First byte
-0x6a instead of 0x6b
-[  299.281816] INFO: Allocated in scsi_host_alloc+0x4a/0x490 age=1688
-cpu=1 pid=2004
-[  299.281870] 	__slab_alloc+0x617/0x6c1
-[  299.281901] 	__kmalloc+0x28c/0x2e0
-[  299.281931] 	scsi_host_alloc+0x4a/0x490
-[  299.281966] 	usb_stor_probe1+0x5b/0xc40 [usb_storage]
-[  299.282010] 	storage_probe+0xa4/0xe0 [usb_storage]
-[  299.282062] 	usb_probe_interface+0x172/0x330 [usbcore]
-[  299.282105] 	driver_probe_device+0x257/0x3b0
-[  299.282138] 	__driver_attach+0x103/0x110
-[  299.282171] 	bus_for_each_dev+0x8e/0xe0
-[  299.282201] 	driver_attach+0x26/0x30
-[  299.282230] 	bus_add_driver+0x1c4/0x430
-[  299.282260] 	driver_register+0xb6/0x230
-[  299.282298] 	usb_register_driver+0xe5/0x270 [usbcore]
-[  299.282337] 	0xffffffffa04ab03d
-[  299.282364] 	do_one_initcall+0x47/0x230
-[  299.282396] 	sys_init_module+0xa0f/0x1fe0
-[  299.282429] INFO: Freed in scsi_host_dev_release+0x18a/0x1d0 age=85
-cpu=0 pid=2008
-[  299.282482] 	__slab_free+0x3c/0x2a1
-[  299.282510] 	kfree+0x296/0x310
-[  299.282536] 	scsi_host_dev_release+0x18a/0x1d0
-[  299.282574] 	device_release+0x74/0x100
-[  299.282606] 	kobject_release+0xc7/0x2a0
-[  299.282637] 	kobject_put+0x54/0xa0
-[  299.282668] 	put_device+0x27/0x40
-[  299.282694] 	scsi_host_put+0x1d/0x30
-[  299.282723] 	do_scan_async+0x1fc/0x2b0
-[  299.282753] 	kthread+0xdf/0xf0
-[  299.282782] 	kernel_thread_helper+0x4/0x10
-[  299.282817] INFO: Slab 0xffffea00015b0c00 objects=7 used=7 fp=0x
-      (null) flags=0x100000000004080
-[  299.282882] INFO: Object 0xffff880056c30000 @offset=0 fp=0x          (null)
-[  299.282884]
-...
+This patch adds the special event, POLLFREE, currently only for
+epoll. It expects that init_poll_funcptr()'ed hook should do the
+necessary cleanup. Perhaps it should be defined as EPOLLFREE in
+eventpoll.
 
-Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+__cleanup_sighand() is changed to do wake_up_poll(POLLFREE) if
+->signalfd_wqh is not empty, we add the new signalfd_cleanup()
+helper.
+
+ep_poll_callback(POLLFREE) simply does list_del_init(task_list).
+This make this poll entry inconsistent, but we don't care. If you
+share epoll fd which contains our sigfd with another process you
+should blame yourself. signalfd is "really special". I simply do
+not know how we can define the "right" semantics if it used with
+epoll.
+
+The main problem is, epoll calls signalfd_poll() once to establish
+the connection with the wait queue, after that signalfd_poll(NULL)
+returns the different/inconsistent results depending on who does
+EPOLL_CTL_MOD/signalfd_read/etc. IOW: apart from sigmask, signalfd
+has nothing to do with the file, it works with the current thread.
+
+In short: this patch is the hack which tries to fix the symptoms.
+It also assumes that nobody can take tasklist_lock under epoll
+locks, this seems to be true.
+
+Note:
+
+	- we do not have wake_up_all_poll() but wake_up_poll()
+	  is fine, poll/epoll doesn't use WQ_FLAG_EXCLUSIVE.
+
+	- signalfd_cleanup() uses POLLHUP along with POLLFREE,
+	  we need a couple of simple changes in eventpoll.c to
+	  make sure it can't be "lost".
+
+Reported-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/eventpoll.c             |    4 ++++
+ fs/signalfd.c              |   11 +++++++++++
+ include/asm-generic/poll.h |    2 ++
+ include/linux/signalfd.h   |    5 ++++-
+ kernel/fork.c              |    5 ++++-
+ 5 files changed, 25 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -1815,6 +1815,7 @@ static void scsi_finish_async_scan(struc
- 	}
- 	spin_unlock(&async_scan_lock);
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -827,6 +827,10 @@ static int ep_poll_callback(wait_queue_t
+ 	struct epitem *epi = ep_item_from_wait(wait);
+ 	struct eventpoll *ep = epi->ep;
  
-+	scsi_autopm_put_host(shost);
- 	scsi_host_put(shost);
- 	kfree(data);
- }
-@@ -1841,7 +1842,6 @@ static int do_scan_async(void *_data)
++	/* the caller holds eppoll_entry->whead->lock */
++	if ((unsigned long)key & POLLFREE)
++		list_del_init(&wait->task_list);
++
+ 	spin_lock_irqsave(&ep->lock, flags);
  
- 	do_scsi_scan_host(shost);
- 	scsi_finish_async_scan(data);
--	scsi_autopm_put_host(shost);
- 	return 0;
+ 	/*
+--- a/fs/signalfd.c
++++ b/fs/signalfd.c
+@@ -30,6 +30,17 @@
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
+ 
++void signalfd_cleanup(struct sighand_struct *sighand)
++{
++	wait_queue_head_t *wqh = &sighand->signalfd_wqh;
++
++	if (likely(!waitqueue_active(wqh)))
++		return;
++
++	/* wait_queue_t->func(POLLFREE) should do remove_wait_queue() */
++	wake_up_poll(wqh, POLLHUP | POLLFREE);
++}
++
+ struct signalfd_ctx {
+ 	sigset_t sigmask;
+ };
+--- a/include/asm-generic/poll.h
++++ b/include/asm-generic/poll.h
+@@ -28,6 +28,8 @@
+ #define POLLRDHUP       0x2000
+ #endif
+ 
++#define POLLFREE	0x4000	/* currently only for epoll */
++
+ struct pollfd {
+ 	int fd;
+ 	short events;
+--- a/include/linux/signalfd.h
++++ b/include/linux/signalfd.h
+@@ -61,13 +61,16 @@ static inline void signalfd_notify(struc
+ 		wake_up(&tsk->sighand->signalfd_wqh);
  }
  
-@@ -1869,7 +1869,7 @@ void scsi_scan_host(struct Scsi_Host *sh
- 	p = kthread_run(do_scan_async, data, "scsi_scan_%d", shost->host_no);
- 	if (IS_ERR(p))
- 		do_scan_async(data);
--	/* scsi_autopm_put_host(shost) is called in do_scan_async() */
-+	/* scsi_autopm_put_host(shost) is called in scsi_finish_async_scan() */
++extern void signalfd_cleanup(struct sighand_struct *sighand);
++
+ #else /* CONFIG_SIGNALFD */
+ 
+ static inline void signalfd_notify(struct task_struct *tsk, int sig) { }
+ 
++static inline void signalfd_cleanup(struct sighand_struct *sighand) { }
++
+ #endif /* CONFIG_SIGNALFD */
+ 
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _LINUX_SIGNALFD_H */
+-
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -67,6 +67,7 @@
+ #include <linux/user-return-notifier.h>
+ #include <linux/oom.h>
+ #include <linux/khugepaged.h>
++#include <linux/signalfd.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -917,8 +918,10 @@ static int copy_sighand(unsigned long cl
+ 
+ void __cleanup_sighand(struct sighand_struct *sighand)
+ {
+-	if (atomic_dec_and_test(&sighand->count))
++	if (atomic_dec_and_test(&sighand->count)) {
++		signalfd_cleanup(sighand);
+ 		kmem_cache_free(sighand_cachep, sighand);
++	}
  }
- EXPORT_SYMBOL(scsi_scan_host);
+ 
  
 
 
