@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab2B1K0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:26:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45356 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab2B1K0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:26:51 -0500
-Date: Tue, 28 Feb 2012 11:27:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Zhengwang Ruan <ruan.zhengwang@gmail.com>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Trace: initialize variable to clear warning
-Message-ID: <20120228102703.GA6090@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Zhengwang Ruan <ruan.zhengwang@gmail.com>, rostedt@goodmis.org,
-	fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
+	id S965018Ab2B1K1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:27:19 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46777 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab2B1K1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:27:17 -0500
+Date: Tue, 28 Feb 2012 10:23:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+Message-ID: <20120228102337.GF18045@n2100.arm.linux.org.uk>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com> <20120227104858.GR22562@n2100.arm.linux.org.uk> <20120227110204.GA30199@n2100.arm.linux.org.uk> <CAOAMb1BjC2bF=rpJAhRUrB_U2mp8HGWxfcp+=TZ1etWzjUEwig@mail.gmail.com> <20120228083545.GA18045@n2100.arm.linux.org.uk> <CAOAMb1CJ=G45G3JsxwP23GSdEOnDmY5xVoQmWLXaKJJv2cLOLg@mail.gmail.com> <20120228092140.GD18045@n2100.arm.linux.org.uk> <CAOAMb1Cqfrk-b-yd1CMt2Hac7_j3i6WL8D8yQJDWjg_S18dAsw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOAMb1Cqfrk-b-yd1CMt2Hac7_j3i6WL8D8yQJDWjg_S18dAsw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 05:09:34PM +0800, Zhengwang Ruan wrote:
-> GCC warns that 'page2' is used without being initialized previously before
-> being used, this is to clear it.
-> 
-> Signed-off-by: Zhengwang Ruan <ruan.zhengwang@gmail.com>
-> ---
->  kernel/trace/trace.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index a3f1bc5..47376ba 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3694,7 +3694,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
->  	int nr_pages = 1;
->  	ssize_t written;
->  	void *page1;
-> -	void *page2;
-> +	void *uninitialized_var(page2);
->  	int offset;
->  	int size;
->  	int len;
+On Tue, Feb 28, 2012 at 06:46:12PM +0900, Chanho Min wrote:
+> > Because the flags are manipulated to give the illusion of a one byte
+> > FIFO, as stated in the TRM.
+> Yes. It is the problem that rx interrupt is pended with this status as
+> I mentioned.
 
-We had this already - gcc 4.5 warns incorrectly about this, you should
-upgrade to 4.6: http://marc.info/?l=linux-kernel&m=132083844427859
+Which is why my patch explicitly clears the receive interrupt status
+before requesting the interrupt.  Have you read my patch?
+ 
+> > And we don't set the mask register to 1 until later.
+> In the last part of startup, set to 1. Interrupt can be occurred just
+> after it.
+> 
+> uap->im = UART011_RTIM;
+> if (!pl011_dma_rx_running(uap))
+>  uap->im |= UART011_RXIM;
+>  writew(uap->im, uap->port.membase + UART011_IMSC);
+> 
+> > But we want to do the transmit interrupt provocation with the FIFO disabled.
+> I know. It's test only.
 
--- 
-Regards/Gruss,
-Boris.
+Wrong, it's fundamental to the UARTs operation.
