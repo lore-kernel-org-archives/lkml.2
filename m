@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965432Ab2B1BNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:13:19 -0500
+	id S965422Ab2B1BNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:13:17 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965388Ab2B1BMr (ORCPT
+	with ESMTP id S965394Ab2B1BNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.229.71 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:13:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.193 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.139158484@linuxfoundation.org>
+Message-Id: <20120228010430.995745477@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:23 -0800
+Date: Mon, 27 Feb 2012 17:04:47 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: [ 54/72] ARM: omap: fix oops in arch/arm/mach-omap2/vp.c when pmic is not found
+        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 18/72] ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit d980e0f8d858c6963d676013e976ff00ab7acb2b upstream.
+commit b46c0f74657d1fe1c1b0c1452631cc38a9e6987f upstream.
 
-When the PMIC is not found, voltdm->pmic will be NULL.  vp.c's
-initialization function tries to dereferences this, which causes an
-oops:
+armv7's flush_cache_all() flushes caches via set/way. To
+determine the cache attributes (line size, number of sets,
+etc.) the assembly first writes the CSSELR register to select a
+cache level and then reads the CCSIDR register. The CSSELR register
+is banked per-cpu and is used to determine which cache level CCSIDR
+reads. If the task is migrated between when the CSSELR is written and
+the CCSIDR is read the CCSIDR value may be for an unexpected cache
+level (for example L1 instead of L2) and incorrect cache flushing
+could occur.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] *pgd=00000000
-Internal error: Oops: 5 [#1] PREEMPT
-Modules linked in:
-CPU: 0    Not tainted  (3.3.0-rc2+ #204)
-PC is at omap_vp_init+0x5c/0x15c
-LR is at omap_vp_init+0x58/0x15c
-pc : [<c03db880>]    lr : [<c03db87c>]    psr: 60000013
-sp : c181ff30  ip : c181ff68  fp : c181ff64
-r10: c0407808  r9 : c040786c  r8 : c0407814
-r7 : c0026868  r6 : c00264fc  r5 : c040ad6c  r4 : 00000000
-r3 : 00000040  r2 : 000032c8  r1 : 0000fa00  r0 : 000032c8
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 80004019  DAC: 00000015
-Process swapper (pid: 1, stack limit = 0xc181e2e8)
-Stack: (0xc181ff30 to 0xc1820000)
-ff20:                                     c0381d00 c02e9c6d c0383582 c040786c
-ff40: c040ad6c c00264fc c0026868 c0407814 00000000 c03d9de4 c181ff8c c181ff68
-ff60: c03db448 c03db830 c02e982c c03fdfb8 c03fe004 c0039988 00000013 00000000
-ff80: c181ff9c c181ff90 c03d9df8 c03db390 c181ffdc c181ffa0 c0008798 c03d9df0
-ffa0: c181ffc4 c181ffb0 c0055a44 c0187050 c0039988 c03fdfb8 c03fe004 c0039988
-ffc0: 00000013 00000000 00000000 00000000 c181fff4 c181ffe0 c03d1284 c0008708
-ffe0: 00000000 c03d1208 00000000 c181fff8 c0039988 c03d1214 1077ce40 01f7ee08
-Backtrace:
-[<c03db824>] (omap_vp_init+0x0/0x15c) from [<c03db448>] (omap_voltage_late_init+0xc4/0xfc)
-[<c03db384>] (omap_voltage_late_init+0x0/0xfc) from [<c03d9df8>] (omap2_common_pm_late_init+0x14/0x54)
- r8:00000000 r7:00000013 r6:c0039988 r5:c03fe004 r4:c03fdfb8
-[<c03d9de4>] (omap2_common_pm_late_init+0x0/0x54) from [<c0008798>] (do_one_initcall+0x9c/0x164)
-[<c00086fc>] (do_one_initcall+0x0/0x164) from [<c03d1284>] (kernel_init+0x7c/0x120)
-[<c03d1208>] (kernel_init+0x0/0x120) from [<c0039988>] (do_exit+0x0/0x2cc)
- r5:c03d1208 r4:00000000
-Code: e5ca300b e5900034 ebf69027 e5994024 (e5941000)
----[ end trace aed617dddaf32c3d ]---
-Kernel panic - not syncing: Attempted to kill init!
+Disable interrupts across the write and read so that the correct
+cache attributes are read and used for the cache flushing
+routine. We disable interrupts instead of disabling preemption
+because the critical section is only 3 instructions and we want
+to call v7_dcache_flush_all from __v7_setup which doesn't have a
+full kernel stack with a struct thread_info.
 
+This fixes a problem we see in scm_call() when flush_cache_all()
+is called from preemptible context and sometimes the L2 cache is
+not properly flushed out.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Igor Grinberg <grinberg@compulab.co.il>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/vp.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mm/cache-v7.S |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/arm/mach-omap2/vp.c
-+++ b/arch/arm/mach-omap2/vp.c
-@@ -41,6 +41,11 @@ void __init omap_vp_init(struct voltaged
- 	u32 val, sys_clk_rate, timeout, waittime;
- 	u32 vddmin, vddmax, vstepmin, vstepmax;
- 
-+	if (!voltdm->pmic || !voltdm->pmic->uv_to_vsel) {
-+		pr_err("%s: No PMIC info for vdd_%s\n", __func__, voltdm->name);
-+		return;
-+	}
-+
- 	if (!voltdm->read || !voltdm->write) {
- 		pr_err("%s: No read/write API for accessing vdd_%s regs\n",
- 			__func__, voltdm->name);
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -54,9 +54,15 @@ loop1:
+ 	and	r1, r1, #7			@ mask of the bits for current cache only
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
++#ifdef CONFIG_PREEMPT
++	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++#endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
+ 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
++#ifdef CONFIG_PREEMPT
++	restore_irqs_notrace r9
++#endif
+ 	and	r2, r1, #7			@ extract the length of the cache lines
+ 	add	r2, r2, #4			@ add 4 (line length offset)
+ 	ldr	r4, =0x3ff
 
 
