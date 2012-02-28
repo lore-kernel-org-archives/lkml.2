@@ -1,156 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099Ab2B1HBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 02:01:23 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60733 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab2B1HBW (ORCPT
+	id S1754777Ab2B1HJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 02:09:43 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50012 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2B1HJl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 02:01:22 -0500
+	Tue, 28 Feb 2012 02:09:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.204.128.75 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <001801ccf5e3$69d79860$3d86c920$%cho@samsung.com>
-References: <001801ccf5e3$69d79860$3d86c920$%cho@samsung.com>
-Date: Tue, 28 Feb 2012 16:01:21 +0900
-X-Google-Sender-Auth: otSG6pmkyumd3c7L5SxRSBckPEE
-Message-ID: <CAH9JG2Vg8o_mm0gM042T0-kjMUoAdLzF+DeGErD7R86H0xqXZQ@mail.gmail.com>
-Subject: Re: [PATCH v9 0/2] iommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-From: Kyungmin Park <kyungmin.park@samsung.com>
-To: pullip.cho@samsung.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAF1ZMEdh19eNbknfNskQxKeo0sjP7ELOAdRi9zD5VEqTLBXj6Q@mail.gmail.com>
+References: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
+	<afc622a1003230511o108556f4s5d1282bd3122b3d9@mail.gmail.com>
+	<BANLkTimKw3mg8N-gBxh3jbo9msaHOF3qPA@mail.gmail.com>
+	<CAF1ZMEdh19eNbknfNskQxKeo0sjP7ELOAdRi9zD5VEqTLBXj6Q@mail.gmail.com>
+Date: Tue, 28 Feb 2012 16:09:40 +0900
+Message-ID: <CAKYAXd8O1ibkkv0wrPxJFxuCwtsdW1Z66WAxKN15FX2VZvV0gQ@mail.gmail.com>
+Subject: Re: data consistency of high page
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "Dennis.Yxun" <dennis.yxun@gmail.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-mips <linux-mips@linux-mips.org>, yan@mips.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2012/2/28 Dennis.Yxun <dennis.yxun@gmail.com>:
+> Hi NamJae:
+>  We hit pretty much the same problem, highmem + cache consistence
+> but our hardware should have cache alias problem
+>  Could you try attached following patch?
+Hi Dennis.
+I already fixed it as your patch in our system before.
+your patch looks reasonable to me.
+Would you post this patch with adding the below ?
 
-Some comments.
-1. It's not same patch series. since it has additional feature,
-exynos5 series support which don't covered at previous time.
-2. It assumes that name conversion is based on exynos5 as default. now
-you use gsc at exynos4 even though there's no gsc block. It should be
-fimc.
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Tested-by: Namjae Jeon <linkinjeon@gmail.com>
 
-So I suggest to send exynos4 series patch as before and send
-additional exynos5 patch series next.
+Thanks~
 
-Thank you,
-Kyungmin Park
-
-On 2/28/12, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> Changes since v8:
-> - exynos_iommu_map/unmap() just works for the page sizes
->    that System MMU supports. (Joerg's comment)
-> - 1 platform device for 1 H/W though a multimedia accelerator
->    with several System MMUs attached.
->    This make controlling System MMU simpler.
-> - Information between System MMU and the accelerators:
->    Shifted to accelerator's device structure from System MMU's
 >
-> Changes since v7:
-> - Rebased with the recent commits of the following git branches
->   * git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git/next
->   * git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git/for-next
-> - Changed magic numbers into macros
-> - Setting owner of a System MMU in 'iommu' field of dev_archdata
-> - Verbose message in the default fault handler
-> - Some bug fixes.
+> dmesg:
+> [    0.000000] PID hash table entries: 1024 (order: 0, 4096
+> bytes)
+> [    0.000000] Dentry cache hash table entries: 32768 (order: 5, 131072
+> bytes)
+> [    0.000000] Inode-cache hash table entries: 16384 (order: 4, 65536
+> bytes)
+> [    0.000000] Primary instruction cache 16kB, VIPT, 4-way, linesize 32
+> bytes.
+> [    0.000000] Primary data cache 16kB, 4-way, VIPT, no aliases, linesize 32
+> byt
+> es
+> [    0.000000] MIPS secondary cache 128kB, 8-way, linesize 32
+> bytes.
+> [    0.000000] Writing ErrCtl
+> register=00000000
+> [    0.000000] Readback ErrCtl
+> register=00000000
+> [    0.000000] Memory: 510548k/262144k available (2728k kernel code, 13740k
+> rese
+> rved, 630k data, 5784k init, 262144k highmem)
 >
-> Changes since v6:
-> - Totally rewrite exynos_iommu_map() and exynos_iommu_unmap() according
->   to the change in iommu_map() and iommu_unmap().
-> - Change special slab for Lv2 page table to kmalloc().
+> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+> index 00d70c8..536b7f9 100644
+> --- a/arch/mips/mm/cache.c
+> +++ b/arch/mips/mm/cache.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/mm.h>
+> +#include <linux/highmem.h>
 >
-> Changes since v5:
-> - Relation between device and a domain become n:1 (Joerg's comment)
-> - Implements iommu_commit(). --> Removed
+>  #include <asm/cacheflush.h>
+>  #include <asm/processor.h>
+> @@ -83,8 +84,13 @@ void __flush_dcache_page(struct page *page)
+>         struct address_space *mapping = page_mapping(page);
+>         unsigned long addr;
 >
-> Changes since v4:
-> - exynos_iommu_unmap()returns unmapped size in page order
->   (Ohad Ben-Cohen's comment)
-> - Fixed typo error of resource names
-> - Fixed missing #include<mach/sysmmu.h>
->   in arch/arm/mach-exynos4/mach-armlex4210.c
+> -       if (PageHighMem(page))
+> +       if (PageHighMem(page) &&
+> +               (addr = (unsigned long) kmap_atomic(page, KM_SYNC_DCACHE)))
+> {
+> +               flush_data_cache_page(addr);
+> +               kunmap_atomic((void *)addr, KM_SYNC_DCACHE);
+>                 return;
+> +       }
 >
-> Changes since v3:
-> - Used DEFINE_RES_MEM and DEFINE_RES_IRQ macros
->   to define resources of System MMU (Russell King's comment)
-> - Fixed removal of CONFIG_S5P_SLEEP definition
->  (Sylwester Nawrocki's comment)
 >
-> Changes since v2:
-> - Add lock for System MMU private data.
->   And fixes the following problems pointed by Joerg Rodel:
-> - Fix wrong argument to kmalloc() and get_free_pages()
-> - Merged patches into 2 due to bisectability
 >
-> Changes since v1:
-> Fixes of the following problems pointed by Russell King.:
->  - Missing unlocking a spinlock in exynos_iommu_attach_dev().
->  - atomic_t -> int in sysmmu_drvdata.activations
->  - sysmmu_platdata -> sysmmu_drvdata
->  - Change in error messages in irq handler
->  - Removed casting in format of error message
->  - omap_iommu_ops -> exynos_iommu_ops in the last patch
->
-> Patch Summary:
-> [PATCH v8 1/2] ARM: EXYNOS: Change System MMU platform device definitions
-> [PATCH v8 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
->
-> The first patche enhances System MMU platform device definition:
->  - Removed System MMU for MDMA0 in TOP block because it is not
->    used. Use MDMA2 in LCD block.
->  - Removed System MMU ID. Instead, a System MMU is bound to a device
->    that the System MMU is dedicated during machin initialization.
->    If a device driver wants to handle System MMU, it must bind its
->    device with System MMU with sysmmu_set_owner().
->  - clkdev
->
-> The last patch implements IOMMU API:
->  - System MMU device driver is removed from arch/arm/plat-s5p
->     to move it to driver/iommu directory.
->  - Implements IOMMU API and System MMU driver that is moved from
->     arch/arm/plat-s5p.
->
-> Diffstats:
-> arch/arm/mach-exynos/Kconfig                    |   11 +-
->  arch/arm/mach-exynos/Makefile                   |    2 +-
->  arch/arm/mach-exynos/clock-exynos4.c            |   74 +-
->  arch/arm/mach-exynos/clock-exynos4.h            |    2 +
->  arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
->  arch/arm/mach-exynos/clock-exynos4212.c         |   28 +-
->  arch/arm/mach-exynos/clock-exynos5.c            |   85 ++
->  arch/arm/mach-exynos/dev-sysmmu.c               |  454 ++++++-----
->  arch/arm/mach-exynos/include/mach/irqs.h        |  179 ++--
->  arch/arm/mach-exynos/include/mach/map.h         |   38 +
->  arch/arm/mach-exynos/include/mach/memory.h      |    1 +
->  arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
->  arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 -
->  arch/arm/mach-exynos/include/mach/sysmmu.h      |   83 +-
->  arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
->  arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
->  arch/arm/plat-s5p/Kconfig                       |    8 -
->  arch/arm/plat-s5p/Makefile                      |    1 -
->  arch/arm/plat-s5p/sysmmu.c                      |  313 -------
->  arch/arm/plat-samsung/include/plat/devs.h       |    1 -
->  arch/arm/plat-samsung/include/plat/sysmmu.h     |   95 --
->  drivers/iommu/Kconfig                           |   22 +
->  drivers/iommu/Makefile                          |    1 +
->  drivers/iommu/exynos-iommu.c                    | 1076
-> +++++++++++++++++++++++
->  24 files changed, 1698 insertions(+), 822 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> On Tue, Apr 5, 2011 at 4:17 PM, NamJae Jeon <linkinjeon@gmail.com> wrote:
+>>
+>> Hi.
+>>
+>> As you know, there is cache operation about highpage in arm arch.
+>>
+>> arch/arm/mm/flush.c
+>>
+>> -----------------------------------------------------------------------------------------------
+>> if (!PageHighMem(page)) {
+>>                __cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
+>>        } else {
+>>                void *addr = kmap_high_get(page);
+>>                if (addr) {
+>>                        __cpuc_flush_dcache_area(addr, PAGE_SIZE);
+>>                        kunmap_high(page);
+>>                } else if (cache_is_vipt()) {
+>>                        /* unmapped pages might still be cached */
+>>                        addr = kmap_atomic(page);
+>>                        __cpuc_flush_dcache_area(addr, PAGE_SIZE);
+>>                        kunmap_atomic(addr);
+>>                }
+>>        }
+>>
+>> -------------------------------------------------------------------------------------------------
+>>
+>> currently, mips kernel just return without cache operation.
+>>
+>> Would you plz tell me your opinion ?
+>>
+>> Thanks.
+>>
+>>
+>> 2010/3/23 NamJae Jeon <linkinjeon@gmail.com>:
+>> > Hi. Ralf.
+>> >
+>> > I'm Namjae.jeon. nice to meet you.
+>> >
+>> > I face cache aliasing problem on mips 34ke.
+>> >
+>> > Our target cache is 34kB 4way i/d-cache , 32bytes linesize.
+>> >
+>> > As you know, there is possibility of cache aliasing on 8kB per way.
+>> >
+>> > But mips arch of kernel mainline can not properly  handile this case.
+>> >
+>> > For example, highmem handling in __fluash_dcache_page function is just
+>> > return.
+>> >
+>> > So, if argument page is page in highmem, it can not flush in dcache
+>> > line.
+>> >
+>> > I want to listen your opinion.
+>> >
+>> > Thanks.
+>> >
+>> >
+>> > 2010/3/23 Minchan Kim <minchan.kim@gmail.com>:
+>> >> Hi, Ralf.
+>> >>
+>> >> Below is thread long time ago.
+>> >> At that time, we can't end up the problem by some reason.
+>> >> Sorry for that.
+>> >>
+>> >> The problem would occur, again.
+>> >>
+>> >> On Fri, Oct 16, 2009 at 6:24 PM, Ralf Baechle <ralf@linux-mips.org>
+>> >> wrote:
+>> >>> On Fri, Oct 16, 2009 at 02:17:19PM +0900, Minchan Kim wrote:
+>> >>>
+>> >>>> Many code of kernel fs usually allocate high page and flush.
+>> >>>> But flush_dcache_page of mips checks PageHighMem to avoid flush
+>> >>>> so that data consistency is broken, I think.
+>> >>>
+>> >>> What processor and cache configuration?
+>> >>>
+>> >>>> I found it's by you and Atsushi-san on 585fa724.
+>> >>>> Why do we need the check?
+>> >>>> Could you elaborte please?
+>> >>>
+>> >>> The if statement exists because __flush_dcache_page would crash if a
+>> >>> page
+>> >>> is not mapped.  This of course isn't correct but that wasn't a problem
+>> >>> since highmem still is only supported on machines that don't have
+>> >>> aliases.
+>> >>>
+>> >>>  Ralf
+>> >>>
+>> >>
+>> >> Our system is following as.
+>> >>
+>> >> mips 34ke
+>> >> primary i-cache 32kB VIPT 4way 32 byte line size.
+>> >> primary d-cache 32kB 4way  32 bytes linesize
+>> >>
+>> >> If you have further questions, Namjae, Could you follow question of
+>> >> Ralf?
+>> >>
+>> >> --
+>> >> Kind regards,
+>> >> Minchan Kim
+>> >>
+>> >
+>>
 >
