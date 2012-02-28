@@ -1,93 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965820Ab2B1Qub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:50:31 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53310 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965803Ab2B1Qu2 (ORCPT
+	id S1756483Ab2B1QvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:51:05 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:41301 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753075Ab2B1QvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:50:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.3 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Tue, 28 Feb 2012 08:47:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: stable@kernel.org, stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: OMAP4 HDMI PHY bug work-around for stable
-Message-ID: <20120228164702.GB11021@kroah.com>
-References: <1328787865.1909.64.camel@deskari>
- <1330416193.2123.4.camel@deskari>
+	Tue, 28 Feb 2012 11:51:04 -0500
+Date: Tue, 28 Feb 2012 11:51:01 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, Roland Stigge <stigge@antcom.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        <kevin.wells@nxp.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
+In-Reply-To: <201202281553.41332.arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1202281107260.1456-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330416193.2123.4.camel@deskari>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 10:03:13AM +0200, Tomi Valkeinen wrote:
-> Hi,
+On Tue, 28 Feb 2012, Arnd Bergmann wrote:
+
+> On Tuesday 28 February 2012, Alan Stern wrote:
+> > It's heading in the intended direction, although the details might not 
+> > all be quite right -- I didn't check them very closely.
+> > 
+> > One big thing about it is wrong: Many or most of the functions you
+> > exported don't really need to be.  Instead, ohci-hcd.c should define
+> > ohci_driver (a bus-agnostic hc_driver structure) and export that.  
+> > Then the bus-glue files can copy the structure for their own use during
+> > initialization (rather than duplicating the definition all over the
+> > place) and override individual methods as needed.
+> > 
+> > It's a more "object-oriented" approach.  :-)
 > 
-> I haven't seen these merged nor any comment for these. Perhaps
-> stable@kernel.org was wrong address, so adding stable@vger.kernel.org
-> too.
+> Yes, that makes sense. I did not try to actually understand how the
+> driver works internally, just tried the mechanical conversion in a way
+> that did not require changing any code besides the sb800_prefetch
+> function that had to be moved.
+> 
+> There are still a few symbols that are used by most or all hw specific
+> drivers and that will have to remain exported:
+> 
+> ohci_init, ohci_run, ohci_stop, ohci_finish_controller_resume, and
+> ohci_hcd_init
 
-Yes, stable@kernel.org has been "dead" since last October.
+Let's see.  ohci-hcd should get a new bus-agnostic ohci_start routine.  
+This would call ohci_run internally, so the bus-glue files wouldn't
+need to know about it.
 
-> I have added one additional fix into for-3.2-stable branch, which fixes
-> a problem with panel detection that the GPIO changes brought.
+Similarly, ohci_init and ohci_hcd_init could perhaps become part of a
+bus-agnostic ohci_reset routine.  Both ohci_start and ohci_reset would
+be stored as fields in the ohci_driver structure, so they wouldn't need
+to be exported.
 
-Sorry, but I don't accept pull requests.  I need patches in email form,
-as described in the file, Documentation/stable_kernel_rules.txt.  Please
-feel free to send them from your git tree that way.
+On the other hand, ohci_finish_controller_resume really does need to be
+exported; I don't see any way around that.
 
-> On Thu, 2012-02-09 at 13:44 +0200, Tomi Valkeinen wrote:
-> > Hi,
-> > 
-> > There is a hardware bug on OMAP4, which may cause the HDMI output to
-> > break irreversibly. A work-around for the bug has been merged into
-> > mainline, but is missing from stable.
-> > 
-> > I've backported the necessary patches on top of 3.0, 3.1 and 3.2 stable
-> > trees, and pushed the following branches to:
+> And then there are a few symbols that are only used by one or two
+> drivers, possibly correctly or not:
+> 
+> ohci_dump (spear)
 
-3.1 is long dead, so I can't do anything with those patches, sorry.
+That's for debugging.  Okay to export, although I don't know that the 
+spear driver actually needs it.
 
-> > git://gitorious.org/linux-omap-dss2/linux.git
-> > 
-> > fixes/for-3.0-stable
-> > fixes/for-3.1-stable
-> > fixes/for-3.2-stable
-> > 
-> > 3.0 and 3.1 branches additionally contain a patch "OMAP: DSS2: HDMI: use
-> > default dividers", which fixes a problem with the HDMI clock divider.
-> > Without that the HDMI output won't start at all on those versions.
-> > 
-> > The branches contain the following backported patches:
-> > 
-> >       OMAP: DSS2: HDMI: use default dividers
-> >       OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
-> >       OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
-> >       OMAPDSS: remove wrong HDMI HPD muxing
-> >       OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
-> >       OMAP: 4430SDP/Panda: add HDMI HPD gpio
-> >       OMAPDSS: HDMI: PHY burnout fix
-> > 
-> > Of those, the actual fix is in the last one, but as the GPIOs for HDMI
-> > were a mess, they needed some cleanup patches before the fix could be
-> > made.
+> ohci_usb_reset (at91, pci)
 
-That seems like a lot of backporting for a single fix, but I'll be glad
-to review them when you send them.
+Not sure about this one...
 
-> > I'm not familiar with the process with stable kernels, so are the
-> > branches above fine to get them merged? Or should I send the patches
-> > with git-send-email?
+> ohci_shutdown (ps3)
 
-Again, please read Documentation/stable_kernel_rules.txt, it explains
-how this all works.
+This will be stored as the .shutdown field in ohci_driver.
 
-thanks,
+> ohci_restart (pci)
 
-greg k-h
+This one appears to be present just to handle a quirk of the NEC chip.  
+As such it ought to be moved entirely into ohci-pci.c.
+
+> ohci_hub_control (da8xx)
+
+This will be stored in ohci_driver.
+
+> These ones do not need to get exported following your suggestion:
+> 
+> ohci_urb_enqueue, ohci_urb_dequeue, ohci_endpoint_disable,
+> ohci_get_frame, ohci_irq, ohci_bus_suspend, ohci_bus_resume,
+> ohci_hub_status_data, and ohci_start_port_reset
+> 
+> I would do implementation the other way round and let the bus specific
+> driver provide a sparsely populated version of struct hc_driver
+> that is completed by a function in the common ohci parts. That would
+> keep the logicto combine the two in one place rather than duplicating
+> it everywhere, but it's a bit more overhead in the case where you
+> build only a single bus glue.
+> 
+> Certainly either way is possible, whichever you prefer.
+
+It's almost bikeshedding...
+
+I like the idea of exporting ohci_driver, because then its member
+methods don't have to be exported.  Instead of calling
+ohci_hub_control() directly, a bus-glue file can override it and then
+internally invoke (ohci_driver->hub_control)().
+
+In theory we could do both: export ohci_driver _and_ export a routine
+to overwrite the uninitialized fields of a different structure with the
+corresponding fields from ohci_driver.  On the other hand, that routine
+would look pretty mind-numbing:
+
+	if (!drv->reset)
+		drv->reset = ohci_driver.reset;
+	if (!drv->start)
+		drv->start = ohci_driver.start;
+	if (!drv->stop)
+		drv->stop = ohci_Driver.stop;
+	...
+
+My preference is to have the bus-glue files do an explicit structure 
+copy and then overwrite by hand the fields that need to be changed.  
+The number of overrides in each file will be pretty small.
+
+Alan Stern
+
