@@ -1,49 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab2B1OcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:32:22 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44132 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2B1OcU (ORCPT
+	id S1755871Ab2B1Ocy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:32:54 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:43788 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab2B1Ocx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:32:20 -0500
-Date: Tue, 28 Feb 2012 14:32:17 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        kernel@pengutronix.de
-Subject: Re: [PATCH 1/3] mfd: Add basic support for the Congatec CGEB BIOS
- interface
-Message-ID: <20120228143217.GB25472@sirena.org.uk>
-References: <1328102793-4313-1-git-send-email-s.hauer@pengutronix.de>
- <1328102793-4313-2-git-send-email-s.hauer@pengutronix.de>
- <20120220163927.GY5387@sortiz-mobl>
- <20120220180752.GV3852@pengutronix.de>
- <20120227135827.GM27687@sortiz-mobl>
- <20120227172443.GD3852@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120227172443.GD3852@pengutronix.de>
-X-Cookie: Non-sequiturs make me eat lampshades.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Tue, 28 Feb 2012 09:32:53 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 28 Feb 2012 15:32:44 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] [SCSI] sr: fix multi-drive performance, remove BKL
+ replacement
+Message-ID: <20120228153244.70413d34@stein>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 06:24:43PM +0100, Sascha Hauer wrote:
-> On Mon, Feb 27, 2012 at 02:58:27PM +0100, Samuel Ortiz wrote:
+Commit 2a48fc0ab242 "block: autoconvert trivial BKL users to private
+mutex" and other commits at the time mechanically swapped BKL for
+per-driver global mutexes.  If the sr driver is any indication, these
+replacements have still not been checked by anybody for their
+necessessity, removed where possible, or the sections they serialize
+reduced to a necessary minimum.
 
-> > Yes, this seems to be the trend apparently. Could you try pushing that into
-> > the x86/platform, please ? If they put you under fire, I guess I could take
-> > this patchset. But they have several "BIOS interfaces" there already...
+The sr_mutex in particular very noticably degraded performance of
+CD-DA ripping with multiple drives in parallel.  When several
+instances of "grip" are used with two or more drives, their GUIs
+became laggier, as did the KDE file manager GUI, and drive utilization
+was reduced.  (During ripping, drive lights flicker instead of staying
+on most of the time.)  IOW time to rip a stack of CDs was increased.
+I didn't measure this but it is highly noticeable.
 
-> Ok, I'll put on my asbestos suit and give it a try.
+On the other hand, I don't see what state sr_mutex would protect.
+So I removed it entirely and that works fine for me.
 
-You might want to jump into the thread Linus Walleij started about
-system controllers today.
+Tested with up to six CD-ROM drives connected at the same time (1x
+IDE, 5x FireWire), 12 grip instances running (2 per drive, one for
+ripping and the other just polling the TOC as a test), and of course
+udisks-daemon sitting in the background and polling the CD-ROM drives
+as usual.  GUI lags are reduced and ripping throughput increased to
+a level how I remember it from BKL era.
+
+Also tested:  Erasing and writing a CD-RW with K3B/cdrecord while grip
+and udisks-daemon poll the CD-RW drive and other grip instances rip
+CD-DA from three other CD-ROM drives.
+
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/scsi/sr.c |   23 ++++++-----------------
+ 1 file changed, 6 insertions(+), 17 deletions(-)
+
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -75,7 +75,6 @@ MODULE_ALIAS_SCSI_DEVICE(TYPE_WORM);
+ 	 CDC_CD_R|CDC_CD_RW|CDC_DVD|CDC_DVD_R|CDC_DVD_RAM|CDC_GENERIC_PACKET| \
+ 	 CDC_MRW|CDC_MRW_W|CDC_RAM)
+ 
+-static DEFINE_MUTEX(sr_mutex);
+ static int sr_probe(struct device *);
+ static int sr_remove(struct device *);
+ static int sr_done(struct scsi_cmnd *);
+@@ -508,27 +507,23 @@ static int sr_prep_fn(struct request_que
+ 
+ static int sr_block_open(struct block_device *bdev, fmode_t mode)
+ {
+-	struct scsi_cd *cd;
++	struct scsi_cd *cd = scsi_cd_get(bdev->bd_disk);
+ 	int ret = -ENXIO;
+ 
+-	mutex_lock(&sr_mutex);
+-	cd = scsi_cd_get(bdev->bd_disk);
+ 	if (cd) {
+ 		ret = cdrom_open(&cd->cdi, bdev, mode);
+ 		if (ret)
+ 			scsi_cd_put(cd);
+ 	}
+-	mutex_unlock(&sr_mutex);
+ 	return ret;
+ }
+ 
+ static int sr_block_release(struct gendisk *disk, fmode_t mode)
+ {
+ 	struct scsi_cd *cd = scsi_cd(disk);
+-	mutex_lock(&sr_mutex);
++
+ 	cdrom_release(&cd->cdi, mode);
+ 	scsi_cd_put(cd);
+-	mutex_unlock(&sr_mutex);
+ 	return 0;
+ }
+ 
+@@ -540,8 +535,6 @@ static int sr_block_ioctl(struct block_d
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+ 
+-	mutex_lock(&sr_mutex);
+-
+ 	/*
+ 	 * Send SCSI addressing ioctls directly to mid level, send other
+ 	 * ioctls to cdrom/block level.
+@@ -549,13 +542,12 @@ static int sr_block_ioctl(struct block_d
+ 	switch (cmd) {
+ 	case SCSI_IOCTL_GET_IDLUN:
+ 	case SCSI_IOCTL_GET_BUS_NUMBER:
+-		ret = scsi_ioctl(sdev, cmd, argp);
+-		goto out;
++		return scsi_ioctl(sdev, cmd, argp);
+ 	}
+ 
+ 	ret = cdrom_ioctl(&cd->cdi, bdev, mode, cmd, arg);
+ 	if (ret != -ENOSYS)
+-		goto out;
++		return ret;
+ 
+ 	/*
+ 	 * ENODEV means that we didn't recognise the ioctl, or that we
+@@ -566,12 +558,9 @@ static int sr_block_ioctl(struct block_d
+ 	ret = scsi_nonblockable_ioctl(sdev, cmd, argp,
+ 					(mode & FMODE_NDELAY) != 0);
+ 	if (ret != -ENODEV)
+-		goto out;
+-	ret = scsi_ioctl(sdev, cmd, argp);
++		return ret;
+ 
+-out:
+-	mutex_unlock(&sr_mutex);
+-	return ret;
++	return scsi_ioctl(sdev, cmd, argp);
+ }
+ 
+ static unsigned int sr_block_check_events(struct gendisk *disk,
+
+
+-- 
+Stefan Richter
+-=====-===-- --=- ===--
+http://arcgraph.de/sr/
