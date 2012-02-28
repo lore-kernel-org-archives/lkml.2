@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab2B1Q0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:26:38 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51216 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab2B1Q0g (ORCPT
+	id S1756280Ab2B1Qc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:32:26 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:50287 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab2B1QcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:26:36 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Sleep,
- ACPI: Teach acpi_cpu_soft_notify() to handle CPU hotplug in
- suspend/resume path
-To: lenb@kernel.org, rjw@sisk.pl
-Cc: deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Tue, 28 Feb 2012 21:56:04 +0530
-Message-ID: <20120228155137.3061.97133.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Tue, 28 Feb 2012 11:32:25 -0500
+Message-ID: <4F4D01C0.3050808@collabora.co.uk>
+Date: Tue, 28 Feb 2012 17:33:04 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: David Lamparter <equinox@diac24.net>
+CC: Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
+        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
+        eric.dumazet@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk> <20120224.153616.117399887784547022.davem@davemloft.net> <4F4B8C66.5060206@collabora.co.uk> <20120227.140535.1623396420455657443.davem@davemloft.net> <1330426059.2139.21.camel@megeve> <20120228142846.GD187520@jupiter.n2.diac24.net> <4F4CF1BF.7080503@collabora.co.uk>
+In-Reply-To: <4F4CF1BF.7080503@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12022816-2000-0000-0000-00000692E5E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_cpu_soft_notify handles only CPU_ONLINE and CPU_DEAD events. However,
-during a system-wide suspend/hibernation operation, CPU_ONLINE_FROZEN and
-CPU_DEAD_FROZEN events are sent as part of CPU hotplug.
+On 02/28/2012 04:24 PM, Javier Martinez Canillas wrote:
+> On 02/28/2012 03:28 PM, David Lamparter wrote:
+>> On Tue, Feb 28, 2012 at 11:47:39AM +0100, Rodrigo Moya wrote:
+>>> > - slow readers: dropping packets vs blocking the sender. Although
+>>> >   datagrams are not reliable on IP, datagrams on Unix sockets are
+>>> never
+>>> >   lost. So if one receiver has its buffer full the sender is blocked
+>>> > instead of dropping packets. That way we guarantee a reliable
+>>> > communication channel.
+>> 
+>> This sounds like a terribly nice way to f*ck the entire D-Bus system by
+>> having one broken (or malicious) desktop application. What's the
+>> intended way of coping with users that block the socket by not reading?
+>> 
+>> 
+>> -David L.
+> 
+> The problem is that D-bus expects a reliable transport method (TCP or
+> SOCK_STREAM Unix socks) but this is not the case with multicast Unix
+> sockets. Since our implementation is for SOCK_SEQPACKET and SOCK_DGRAM
+> socket types.
+> 
+> So, you have to either add another layer to the D-bus protocol to make
+> it reliable (acks, retransmissions, flow control, etc) or avoid losing
+> D-bus messages (by blocking the sender if one of the receivers has its
+> buffer full).
+> 
 
-Those events are really no different from regular CPU hotplug in this context,
-and hence acpi shouldn't ignore them. So, teach acpi_cpu_soft_notify() to
-handle those events as well.
+Also, this problem exists with current D-bus implementation. If a
+malicious desktop application doesn't read its socket then the messages
+sent to it will be buffered in the daemon:
+https://bugs.freedesktop.org/show_bug.cgi?id=33606
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+dbus-daemon memory usage will ballooning until
+max_incoming_bytes/max_outgoing_bytes limit is reached (1GB for session
+bus in default configuration)
 
-I am no ACPI expert! So requesting a thorough review of this patch..
+<limit name="max_incoming_bytes">1000000000</limit>
+<limit name="max_outgoing_bytes">1000000000</limit>
 
- drivers/acpi/processor_driver.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+It only works because not many applications are broken and user-space
+memory is virtualized. But if you bypass the daemon and use a multicast
+transport layer (as in our multicast Unix socket implementation) you
+don't have that much memory to buffer the packets.
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 2801b41..3a87b13 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -422,6 +422,12 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct acpi_processor *pr = per_cpu(processors, cpu);
- 
-+	/*
-+	 * Regular CPU hotplug, and CPU hotplug as part of the suspend/resume
-+	 * sequence are really no different for us. So, let us handle both.
-+	 */
-+	action &= ~CPU_TASKS_FROZEN;
-+
- 	if (action == CPU_ONLINE && pr) {
- 		/* CPU got physically hotplugged and onlined the first time:
- 		 * Initialize missing things
+So you have to either block the senders or:
 
+- drop the slow reader
+- kill the spammer
+- have an infinite amount of memory
+
+Regards,
+Javier
