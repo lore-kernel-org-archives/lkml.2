@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965428Ab2B1BOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:14:12 -0500
+	id S965355Ab2B1BOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:14:32 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965372Ab2B1BMp (ORCPT
+	with ESMTP id S965356Ab2B1BMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.220.7 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:40 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.956400374@linuxfoundation.org>
+Message-Id: <20120228010434.680053711@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:32 -0800
+Date: Mon, 27 Feb 2012 17:05:29 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Christian Riesch <christian.riesch@omicron.at>,
-        Cyril Chemparathy <cyril@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 63/72] davinci_emac: Do not free all rx dma descriptors during init
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 60/72] [SCSI] scsi_pm: Fix bug in the SCSI power management handler
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,70 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Riesch <christian.riesch@omicron.at>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 5d69703263d588dbb03f4e57091afd8942d96e6d upstream.
+commit fea6d607e154cf96ab22254ccb48addfd43d4cb5 upstream.
 
-This patch fixes a regression that was introduced by
+This patch (as1520) fixes a bug in the SCSI layer's power management
+implementation.
 
-commit 0a5f38467765ee15478db90d81e40c269c8dda20
-davinci_emac: Add Carrier Link OK check in Davinci RX Handler
+LUN scanning can be carried out asynchronously in do_scan_async(), and
+sd uses an asynchronous thread for the time-consuming parts of disk
+probing in sd_probe_async().  Currently nothing coordinates these
+async threads with system sleep transitions; they can and do attempt
+to continue scanning/probing SCSI devices even after the host adapter
+has been suspended.  As one might expect, the outcome is not ideal.
 
-Said commit adds a check whether the carrier link is ok. If the link is
-not ok, the skb is freed and no new dma descriptor added to the rx dma
-channel. This causes trouble during initialization when the carrier
-status has not yet been updated. If a lot of packets are received while
-netif_carrier_ok returns false, all dma descriptors are freed and the
-rx dma transfer is stopped.
+This is what the "prepare" stage of system suspend was created for.
+After the prepare callback has been called for a host, target, or
+device, drivers are not allowed to register any children underneath
+them.  Currently the SCSI prepare callback is not implemented; this
+patch rectifies that omission.
 
-The bug occurs when the board is connected to a network with lots of
-traffic and the ifconfig down/up is done, e.g., when reconfiguring
-the interface with DHCP.
+For SCSI hosts, the prepare routine calls scsi_complete_async_scans()
+to wait until async scanning is finished.  It might be slightly more
+efficient to wait only until the host in question has been scanned,
+but there's currently no way to do that.  Besides, during a sleep
+transition we will ultimately have to wait until all the host scanning
+has finished anyway.
 
-The bug can be reproduced by flood pinging the davinci board while doing
-ifconfig eth0 down
-ifconfig eth0 up
-on the board.
+For SCSI devices, the prepare routine calls async_synchronize_full()
+to wait until sd probing is finished.  The routine does nothing for
+SCSI targets, because asynchronous target scanning is done only as
+part of host scanning.
 
-After that, the rx path stops working and the overrun value reported
-by ifconfig is counting up.
-
-This patch reverts commit 0a5f38467765ee15478db90d81e40c269c8dda20
-and instead issues warnings only if cpdma_chan_submit returns -ENOMEM.
-
-Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
-Cc: <stable@vger.kernel.org>
-Cc: Cyril Chemparathy <cyril@ti.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Tested-by: Rajashekhara, Sudhakar <sudhakar.raj@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/davinci_emac.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_pm.c   |   16 ++++++++++++++++
+ drivers/scsi/scsi_priv.h |    1 +
+ 2 files changed, 17 insertions(+)
 
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1007,7 +1007,7 @@ static void emac_rx_handler(void *token,
- 	int			ret;
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -7,6 +7,7 @@
  
- 	/* free and bail if we are shutting down */
--	if (unlikely(!netif_running(ndev) || !netif_carrier_ok(ndev))) {
-+	if (unlikely(!netif_running(ndev))) {
- 		dev_kfree_skb_any(skb);
- 		return;
- 	}
-@@ -1036,7 +1036,9 @@ static void emac_rx_handler(void *token,
- recycle:
- 	ret = cpdma_chan_submit(priv->rxchan, skb, skb->data,
- 			skb_tailroom(skb), GFP_KERNEL);
--	if (WARN_ON(ret < 0))
-+
-+	WARN_ON(ret == -ENOMEM);
-+	if (unlikely(ret < 0))
- 		dev_kfree_skb_any(skb);
+ #include <linux/pm_runtime.h>
+ #include <linux/export.h>
++#include <linux/async.h>
+ 
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_device.h>
+@@ -69,6 +70,19 @@ static int scsi_bus_resume_common(struct
+ 	return err;
  }
  
++static int scsi_bus_prepare(struct device *dev)
++{
++	if (scsi_is_sdev_device(dev)) {
++		/* sd probing uses async_schedule.  Wait until it finishes. */
++		async_synchronize_full();
++
++	} else if (scsi_is_host_device(dev)) {
++		/* Wait until async scanning is finished */
++		scsi_complete_async_scans();
++	}
++	return 0;
++}
++
+ static int scsi_bus_suspend(struct device *dev)
+ {
+ 	return scsi_bus_suspend_common(dev, PMSG_SUSPEND);
+@@ -87,6 +101,7 @@ static int scsi_bus_poweroff(struct devi
+ #else /* CONFIG_PM_SLEEP */
+ 
+ #define scsi_bus_resume_common		NULL
++#define scsi_bus_prepare		NULL
+ #define scsi_bus_suspend		NULL
+ #define scsi_bus_freeze			NULL
+ #define scsi_bus_poweroff		NULL
+@@ -195,6 +210,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
+ #endif /* CONFIG_PM_RUNTIME */
+ 
+ const struct dev_pm_ops scsi_bus_pm_ops = {
++	.prepare =		scsi_bus_prepare,
+ 	.suspend =		scsi_bus_suspend,
+ 	.resume =		scsi_bus_resume_common,
+ 	.freeze =		scsi_bus_freeze,
+--- a/drivers/scsi/scsi_priv.h
++++ b/drivers/scsi/scsi_priv.h
+@@ -110,6 +110,7 @@ extern void scsi_exit_procfs(void);
+ #endif /* CONFIG_PROC_FS */
+ 
+ /* scsi_scan.c */
++extern int scsi_complete_async_scans(void);
+ extern int scsi_scan_host_selected(struct Scsi_Host *, unsigned int,
+ 				   unsigned int, unsigned int, int);
+ extern void scsi_forget_host(struct Scsi_Host *);
 
 
