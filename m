@@ -1,119 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab2B1O4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:56:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38305 "EHLO mx2.suse.de"
+	id S965371Ab2B1O5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:57:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43154 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965095Ab2B1O40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:56:26 -0500
-Date: Tue, 28 Feb 2012 15:56:24 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tomer Margalit <tomermargalit@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        scipioenterprises@yahoo.com, Nezer Zaidenberg <nzaidenberg@mac.com>,
-        "Zaidenberg, Nezer" <Nezer.Zaidenberg@edfenergy.com>
-Subject: Re: Failing a bio right
-Message-ID: <20120228145624.GE4125@quack.suse.cz>
-References: <CAG3n4CS5vyx2sn9t0geQoxa+kE+Nk9Q-0fwTCU6o9iQ33bORjA@mail.gmail.com>
- <20120120140157.GA11241@quack.suse.cz>
- <CAG3n4CRS5soJkZK4UaAQn8A1jZmTkDJGiks6zrmem9WczSKQ4w@mail.gmail.com>
- <20120123201410.GH28526@quack.suse.cz>
- <CAG3n4CRN75s+coxLjA=teZT-aJVBfuFnKUXQZbhZvAt8fJWEqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG3n4CRN75s+coxLjA=teZT-aJVBfuFnKUXQZbhZvAt8fJWEqA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965189Ab2B1O4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 09:56:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112219364"
+Message-Id: <20120228144747.360548589@intel.com>
+User-Agent: quilt/0.51-1
+Date: Tue, 28 Feb 2012 22:00:29 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>
+cc: Linux Memory Management List <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 7/9] mm: pass __GFP_WRITE to memcg charge and reclaim routines
+References: <20120228140022.614718843@intel.com>
+Content-Disposition: inline; filename=memcg-pass-__GFP_WRITE-to-reclaim.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+__GFP_WRITE will be tested in vmscan to find out the write tasks.
 
-On Tue 28-02-12 16:34:59, Tomer Margalit wrote:
-> I had a bug and that's what probably caused the problems (still need to
-> verify).
-> 
-> However, I still get the I/O error on device warning.
-> Is that warning expected? And is this the right way of interrupting a
-> disk write?
-  The warning is expected from kernel POV because the buffer layer does not
-expect writes can be interrupted. From user POV they are unexpected I
-guess. But you'd have to modify end_io functions in buffer layer to handle
-your new behavior to avoid those messages.
+For good interactive performance, we try to focus dirty reclaim waits on
+them and avoid blocking unrelated tasks.
 
-								Honza
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ include/linux/gfp.h |    2 +-
+ mm/filemap.c        |   13 +++++++------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-> On Mon, Jan 23, 2012 at 10:14 PM, Jan Kara <jack@suse.cz> wrote:
-> >
-> > On Sun 22-01-12 11:29:44, Tomer Margalit wrote:
-> > > Hi Jav,
-> > >
-> > > Thanks for the reply.
-> > >
-> > > On Fri, Jan 20, 2012 at 4:01 PM, Jan Kara <jack@suse.cz> wrote:
-> > > >  Hello,
-> > > >
-> > > > On Thu 19-01-12 18:04:19, Tomer Margalit wrote:
-> > > >> I have a make_request function that blocks writes (by using
-> > > >> wait_event_interruptible on some event).
-> > > >> I want the user to be able to stop the function if it takes too long
-> > > >> (that's the reason for the interruptible version).
-> > > >> So when the call is interrupted I call bio_endio with the EINTR error
-> > > >> to signal the interruption.
-> > > >> Usually this works fine, but after a lot of writes, the system says
-> > > >> "lost page write due to I/O error on device".
-> > > >  This is because end_buffer_write_sync() doesn't really distinguish
-> > > > errors.  So when some error happens it complains about I/O error.
-> > > >
-> > > >> At this point the process hangs.
-> > > >  That is strange - you should probably collect stack trace of the failing
-> > > > process (e.g. via 'echo w >/proc/sysrq-trigger'). That should tell us more.
-> > > >
-> > >
-> > > I cannot get a stack trace of the process since it hangs (probably in
-> > > the write) - for instance doing 'gdb -p PID` or `strace -p PID` causes
-> > > those to hang as well. The process doesn't segfault either.
-> >  That's why I told you to use 'echo w >/proc/sysrq-trigger' and looking
-> > at dmesg.
-> >
-> > > >> Is this the right way to do what I'm trying to do?
-> > > >  I'm not sure how is it supposed to work. Writes happen usually in an
-> > >
-> > > The bdev I am creating is a virtual disk that replicates writes to a
-> > > remote location. My intention is that it will behave like a socket -
-> > > i.e. block until writes can be done. Actually the bdev is additionally
-> > > meant to be semi-synchronous, so that after a buffer is filled, all
-> > > writes are blocked until some buffers are sent to the remote end.
-> > >
-> > > This works in principle, but when I try to cancel a write which is
-> > > taking too long (for instance 100MB), it doesn't do anything (since
-> > > it's stuck in the kernel).
-> > >
-> > > > async manner (through page cache and flusher thread) or are you using
-> > > > direct IO? Also if a write is interrupted at this point, you just lost the
-> > >
-> > > All of this behavior happens when I do the final fsync(2) after all
-> > > the data has been written.
-> > >
-> > > > content of the buffer (as it is marked clean and !uptodate). Users usually
-> > > > don't like that.
-> > > >
-> > >
-> > > I don't mind about contents lost since the user doesn't want to wait
-> > > until the end of the write (if done without flush it may take as long
-> > > as it requires, but flushing means wait until writes are done).
-> > >
-> > > As a side note, I use the fsync since I have also implemented a
-> > > marking mechanism for the bdev - and before creating a mark I need to
-> > > make sure all previous writes have been flushed.
-> >  OK, I see. Let's see what the stack traces of the hung process are.
-> >
-> >                                                                Honza
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--- linux.orig/include/linux/gfp.h	2012-02-28 10:22:24.000000000 +0800
++++ linux/include/linux/gfp.h	2012-02-28 10:22:42.936316697 +0800
+@@ -129,7 +129,7 @@ struct vm_area_struct;
+ /* Control page allocator reclaim behavior */
+ #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
+ 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
+-			__GFP_NORETRY|__GFP_NOMEMALLOC)
++			__GFP_NORETRY|__GFP_NOMEMALLOC|__GFP_WRITE)
+ 
+ /* Control slab gfp mask during early boot */
+ #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
+--- linux.orig/mm/filemap.c	2012-02-28 10:22:25.000000000 +0800
++++ linux/mm/filemap.c	2012-02-28 10:24:12.320318821 +0800
+@@ -2340,21 +2340,22 @@ struct page *grab_cache_page_write_begin
+ 	int status;
+ 	gfp_t gfp_mask;
+ 	struct page *page;
+-	gfp_t gfp_notmask = 0;
++	gfp_t lru_gfp_mask = GFP_KERNEL | __GFP_WRITE;
+ 
+ 	gfp_mask = mapping_gfp_mask(mapping) | __GFP_WRITE;
+-	if (flags & AOP_FLAG_NOFS)
+-		gfp_notmask = __GFP_FS;
++	if (flags & AOP_FLAG_NOFS) {
++		gfp_mask &= ~__GFP_FS;
++		lru_gfp_mask &= ~__GFP_FS;
++	}
+ repeat:
+ 	page = find_lock_page(mapping, index);
+ 	if (page)
+ 		goto found;
+ 
+-	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
++	page = __page_cache_alloc(gfp_mask);
+ 	if (!page)
+ 		return NULL;
+-	status = add_to_page_cache_lru(page, mapping, index,
+-						GFP_KERNEL & ~gfp_notmask);
++	status = add_to_page_cache_lru(page, mapping, index, lru_gfp_mask);
+ 	if (unlikely(status)) {
+ 		page_cache_release(page);
+ 		if (status == -EEXIST)
+
+
