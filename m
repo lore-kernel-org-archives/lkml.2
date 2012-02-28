@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab2B1BGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:06:43 -0500
+	id S932316Ab2B1BGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:06:35 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2B1BGk (ORCPT
+	with ESMTP id S932300Ab2B1BGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.103 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.74.74 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010204.717188447@linuxfoundation.org>
+Message-Id: <20120228010208.704235436@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:07 -0800
+Date: Mon, 27 Feb 2012 17:02:31 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris D Schimp <silverchris@gmail.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Roland Stigge <stigge@antcom.de>
-Subject: [ 04/73] hwmon: (max6639) Fix PPR register initialization to set both channels
+        alan@lxorguk.ukuu.org.uk, Thomas Graf <tgraf@suug.ch>,
+        Jesper Dangaard Brouer <hawk@comx.dk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 28/73] net: Dont proxy arp respond if iif == rt->dst.dev if private VLAN is disabled
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,62 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris D Schimp <silverchris@gmail.com>
 
-commit 2f2da1ac0ba5b6cc6e1957c4da5ff20e67d8442b upstream.
+From: Thomas Graf <tgraf@suug.ch>
 
-Initialize PPR register for both channels, and set correct PPR register bits.
-Also remove unnecessary variable initializations.
+[ Upstream commit 70620c46ac2b45c24b0f22002fdf5ddd1f7daf81 ]
 
-Signed-off-by: Chris D Schimp <silverchris@gmail.com>
-[guenter.roeck@ericsson.com: Merged two patches into one]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Roland Stigge <stigge@antcom.de>
+Commit 653241 (net: RFC3069, private VLAN proxy arp support) changed
+the behavior of arp proxy to send arp replies back out on the interface
+the request came in even if the private VLAN feature is disabled.
+
+Previously we checked rt->dst.dev != skb->dev for in scenarios, when
+proxy arp is enabled on for the netdevice and also when individual proxy
+neighbour entries have been added.
+
+This patch adds the check back for the pneigh_lookup() scenario.
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: Jesper Dangaard Brouer <hawk@comx.dk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hwmon/max6639.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ net/ipv4/arp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/max6639.c
-+++ b/drivers/hwmon/max6639.c
-@@ -429,9 +429,9 @@ static int max6639_init_client(struct i2
- 	struct max6639_data *data = i2c_get_clientdata(client);
- 	struct max6639_platform_data *max6639_info =
- 		client->dev.platform_data;
--	int i = 0;
-+	int i;
- 	int rpm_range = 1; /* default: 4000 RPM */
--	int err = 0;
-+	int err;
- 
- 	/* Reset chip to default values, see below for GCONFIG setup */
- 	err = i2c_smbus_write_byte_data(client, MAX6639_REG_GCONFIG,
-@@ -446,11 +446,6 @@ static int max6639_init_client(struct i2
- 	else
- 		data->ppr = 2;
- 	data->ppr -= 1;
--	err = i2c_smbus_write_byte_data(client,
--			MAX6639_REG_FAN_PPR(i),
--			data->ppr << 5);
--	if (err)
--		goto exit;
- 
- 	if (max6639_info)
- 		rpm_range = rpm_range_to_reg(max6639_info->rpm_range);
-@@ -458,6 +453,13 @@ static int max6639_init_client(struct i2
- 
- 	for (i = 0; i < 2; i++) {
- 
-+		/* Set Fan pulse per revolution */
-+		err = i2c_smbus_write_byte_data(client,
-+				MAX6639_REG_FAN_PPR(i),
-+				data->ppr << 6);
-+		if (err)
-+			goto exit;
-+
- 		/* Fans config PWM, RPM */
- 		err = i2c_smbus_write_byte_data(client,
- 			MAX6639_REG_FAN_CONFIG1(i),
+--- a/net/ipv4/arp.c
++++ b/net/ipv4/arp.c
+@@ -906,7 +906,8 @@ static int arp_process(struct sk_buff *s
+ 			if (addr_type == RTN_UNICAST  &&
+ 			    (arp_fwd_proxy(in_dev, dev, rt) ||
+ 			     arp_fwd_pvlan(in_dev, dev, rt, sip, tip) ||
+-			     pneigh_lookup(&arp_tbl, net, &tip, dev, 0))) {
++			     (rt->dst.dev != dev &&
++			      pneigh_lookup(&arp_tbl, net, &tip, dev, 0)))) {
+ 				n = neigh_event_ns(&arp_tbl, sha, &sip, dev);
+ 				if (n)
+ 					neigh_release(n);
 
 
