@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030474Ab2B1WL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:11:57 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:27872 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030333Ab2B1WIm (ORCPT
+	id S1030185Ab2B1WIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:08:32 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25698 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965660Ab2B1WIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:08:42 -0500
+	Tue, 28 Feb 2012 17:08:24 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -19,79 +19,69 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 20/24] PCI: kill pci_fixup_parent_subordinate_busnr()
-Date: Tue, 28 Feb 2012 14:07:39 -0800
-Message-Id: <1330466863-28469-21-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/24] x86, PCI: add print all root info for nocrs path
+Date: Tue, 28 Feb 2012 14:07:20 -0800
+Message-Id: <1330466863-28469-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
 References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F4D505E.0027,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090204.4F4D504E.007C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we can safely extend parent top and shrink them according iobusn_resource tree.
-
-Don't need that any more.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c |   32 --------------------------------
- 1 files changed, 0 insertions(+), 32 deletions(-)
+ arch/x86/pci/amd_bus.c  |    2 +-
+ arch/x86/pci/bus_numa.c |    8 ++++++++
+ arch/x86/pci/bus_numa.h |    1 +
+ 3 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index f22a209..ba51902 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -639,22 +639,6 @@ struct pci_bus *__ref pci_add_new_bus(struct pci_bus *parent, struct pci_dev *de
- 	return child;
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index 0b6abbe..5f30a98 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -291,7 +291,7 @@ static int __init early_fill_mp_bus_info(void)
+ 		}
+ 	}
+ 
+-	print_pci_root_info(info, "bus:", true);
++	print_all_pci_root_info("ht link", true);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
+index 7251011..df0c552 100644
+--- a/arch/x86/pci/bus_numa.c
++++ b/arch/x86/pci/bus_numa.c
+@@ -94,6 +94,14 @@ void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink)
+ 				 &root_res->res);
  }
  
--static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
--{
--	struct pci_bus *parent = child->parent;
--
--	/* Attempts to fix that up are really dangerous unless
--	   we're going to re-assign all bus numbers. */
--	if (!pcibios_assign_all_busses())
--		return;
--
--	while (parent->parent && parent->subordinate < max) {
--		parent->subordinate = max;
--		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS, max);
--		parent = parent->parent;
--	}
--}
--
- static void __devinit pci_bus_update_top(struct pci_bus *parent,
- 		 long size, struct resource *parent_res)
++void print_all_pci_root_info(char *name, bool nodelink)
++{
++	struct pci_root_info *info;
++
++	list_for_each_entry(info, pci_root_infos, list)
++		print_pci_root_info(info, name, nodelink);
++}
++
+ void __devinit update_res(struct pci_root_info *info, resource_size_t start,
+ 			  resource_size_t end, unsigned long flags, int merge)
  {
-@@ -990,23 +974,7 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 
- 		if (!is_cardbus) {
- 			child->bridge_ctl = bctl;
--			/*
--			 * Adjust subordinate busnr in parent buses.
--			 * We do this before scanning for children because
--			 * some devices may not be detected if the bios
--			 * was lazy.
--			 */
--			pci_fixup_parent_subordinate_busnr(child, max);
--			/* Now we can scan all subordinate buses... */
- 			max = pci_scan_child_bus(child);
--			/*
--			 * now fix it up again since we have found
--			 * the real value of max.
--			 */
--			pci_fixup_parent_subordinate_busnr(child, max);
--
--		} else {
--			pci_fixup_parent_subordinate_busnr(child, max);
- 		}
- 		/*
- 		 * Set the subordinate bus number to its real value.
+diff --git a/arch/x86/pci/bus_numa.h b/arch/x86/pci/bus_numa.h
+index d19ac93..deada6a 100644
+--- a/arch/x86/pci/bus_numa.h
++++ b/arch/x86/pci/bus_numa.h
+@@ -23,6 +23,7 @@ extern struct list_head pci_root_infos;
+ struct pci_root_info *alloc_pci_root_info(int bus_min, int bus_max,
+ 						int node, int link);
+ void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink);
++void print_all_pci_root_info(char *name, bool nodelink);
+ extern void update_res(struct pci_root_info *info, resource_size_t start,
+ 		      resource_size_t end, unsigned long flags, int merge);
+ #endif
 -- 
 1.7.7
 
