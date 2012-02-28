@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2B1Pdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:33:51 -0500
-Received: from mail16.primus.ca ([216.254.141.183]:39381 "EHLO
-	mail-09.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752470Ab2B1Pdt (ORCPT
+	id S1756200Ab2B1Pio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:38:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41785 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab2B1Pin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:33:49 -0500
-Message-ID: <4F4CF3CF.5090605@bell.net>
-Date: Tue, 28 Feb 2012 10:33:35 -0500
-From: John David Anglin <dave.anglin@bell.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 28 Feb 2012 10:38:43 -0500
+Date: Tue, 28 Feb 2012 15:38:37 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: do not try to sanity test cover letters
+Message-ID: <20120228153836.GL8110@shadowen.org>
+References: <1330388976-30633-1-git-send-email-paul.gortmaker@windriver.com>
+ <1330389383.16334.22.camel@joe2Laptop>
+ <CAP=VYLqnRXd_LR67+xz2k6YKX7YJiA7cgYwZ8pN3aQMgDN0dzw@mail.gmail.com>
+ <1330390211.16334.24.camel@joe2Laptop>
 MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
- for 64 bit.
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <201202280106.23643.vapier@gentoo.org> <1330438245.2822.114.camel@dabdike.int.hansenpartnership.com> <201202281021.05897.vapier@gentoo.org>
-In-Reply-To: <201202281021.05897.vapier@gentoo.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330390211.16334.24.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/28/2012 10:21 AM, Mike Frysinger wrote:
-> we've been using hppa2.0 for years.  gnuconfig certainly recognizes it:
-> $ grep hppa /usr/share/gnuconfig/config.sub
->          | h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] | hppa64 \
->          | hppa-* | hppa1.[01]-* | hppa2.0-* | hppa2.0[nw]-* | hppa64-* \
->
-> and i've seen diff projects key off of the hppa2.0* to enable newer features by
-> default.
-Some of the above are specific to HP-UX, but hppa1.1, hppa2.0, hppa and 
-hppa64 are
-valid for Linux based on config.guess.
+On Mon, Feb 27, 2012 at 04:50:11PM -0800, Joe Perches wrote:
+> On Mon, 2012-02-27 at 19:47 -0500, Paul Gortmaker wrote:
+> > On Mon, Feb 27, 2012 at 7:36 PM, Joe Perches <joe@perches.com> wrote:
+> > > On Mon, 2012-02-27 at 19:29 -0500, Paul Gortmaker wrote:
+> > >> One possibly common workflow is this:
+> > >>
+> > >>       git format-patch -o mypatches --cover-letter ^start end
+> > >>       ./scripts/checkpatch.pl mypatches/*
+> > >
+> > > I use a script for this and don't put the check
+> > > in checkpatch but put the check in bash.
+> > 
+> > Sure, and I can do the same.  But my question to you is whether
+> > you think the above is a common workflow, and if the false positives
+> > that it generates will decrease the number of people likely to make
+> > using it a part of their routine?
+> 
+> Dunno.  I generally think that tools should report
+> errors when the input given them is inappropriate.
 
-Dave
+Tend to agree, the more complex we make checkpatch the more often it
+will be wrong.  And it is wrong enough already.
 
--- 
-John David Anglin    dave.anglin@bell.net
-
+-apw
