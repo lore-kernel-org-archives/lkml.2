@@ -1,47 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab2B1KAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:00:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2B1KAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:00:53 -0500
-Message-ID: <4F4CA5C2.4050605@redhat.com>
-Date: Tue, 28 Feb 2012 12:00:34 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S932608Ab2B1KBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:01:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62190 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932119Ab2B1KBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:01:33 -0500
+Message-ID: <4F4CA17F.4020504@cn.fujitsu.com>
+Date: Tue, 28 Feb 2012 17:42:23 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Amit Shah <amit.shah@redhat.com>,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, kvm list <kvm@vger.kernel.org>
-Subject: Re: [KVM paravirt issue?] Re: vsyscall=emulate regression
-References: <20120203082748.GB782@amit.redhat.com> <20120214122205.GA29418@amit.redhat.com> <CALCETrVCzErebXrVk8Bi+k1TjigD3XvJsmZFVZb=ksmSCOTVLg@mail.gmail.com> <20120215110122.GA3136@amit.redhat.com> <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com> <4F3D2C09.1020803@redhat.com> <CALCETrUhGY8C8JLz6DrbBxukV58K=2jrMSfDyAm=eF7OWbKx7g@mail.gmail.com> <4F3D395B.1000708@redhat.com> <CALCETrXjJtKLhe2rRkuy57Ai+5X2-+qh9eMbE5y-UhX=CPWftA@mail.gmail.com> <4F3D3F59.80807@redhat.com> <4F471344.1010002@zytor.com> <CALCETrVk=3D0q2FHLhfZGhv4apFsJ1jnZAUWgwjRoFxT7OqPgQ@mail.gmail.com>
-In-Reply-To: <CALCETrVk=3D0q2FHLhfZGhv4apFsJ1jnZAUWgwjRoFxT7OqPgQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C8EEB.8040709@cn.fujitsu.com> <4F4C9F8C.1060901@siemens.com>
+In-Reply-To: <4F4C9F8C.1060901@siemens.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-28 17:39:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-28 17:39:53,
+	Serialize complete at 2012-02-28 17:39:53
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 08:58 PM, Andy Lutomirski wrote:
-> On Thu, Feb 23, 2012 at 8:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 02/16/2012 09:39 AM, Avi Kivity wrote:
-> >>>
-> >>> Yes, this is on purpose
-> >
-> > Why?
->
-> I think the "this" refers to the PF_INSTR fault when executing at
-> 0xffffffffff600xxx.  That's definitely intentional -- it's how
-> vsyscall emulation works.
->
-> I think it's unintentional that some kvm versions apparently forget to
-> set the PF_INSTR bit.
->
+At 02/28/2012 05:34 PM, Jan Kiszka Wrote:
+> On 2012-02-28 09:23, Wen Congyang wrote:
+>> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
+>>> On 2012-02-27 04:01, Wen Congyang wrote:
+>>>> We can know the guest is paniced when the guest runs on xen.
+>>>> But we do not have such feature on kvm. This patch implemnts
+>>>> this feature, and the implementation is the same as xen:
+>>>> register panic notifier, and call hypercall when the guest
+>>>> is paniced.
+>>>>
+>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>>> ---
+>>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
+>>>>  arch/x86/kvm/svm.c       |    8 ++++++--
+>>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
+>>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
+>>>>  include/linux/kvm.h      |    1 +
+>>>>  include/linux/kvm_para.h |    1 +
+>>>>  6 files changed, 37 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+>>>> index f0c6fd6..b928d1d 100644
+>>>> --- a/arch/x86/kernel/kvm.c
+>>>> +++ b/arch/x86/kernel/kvm.c
+>>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>>>>  	.notifier_call = kvm_pv_reboot_notify,
+>>>>  };
+>>>>  
+>>>> +static int
+>>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+>>>> +{
+>>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
+>>>> +	return NOTIFY_DONE;
+>>>> +}
+>>>> +
+>>>> +static struct notifier_block kvm_pv_panic_nb = {
+>>>> +	.notifier_call = kvm_pv_panic_notify,
+>>>> +};
+>>>> +
+>>>
+>>> You should split up host and guest-side changes.
+>>>
+>>>>  static u64 kvm_steal_clock(int cpu)
+>>>>  {
+>>>>  	u64 steal;
+>>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
+>>>>  
+>>>>  	paravirt_ops_setup();
+>>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
+>>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
+>>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+>>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
+>>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+>>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>>>> index 0b7690e..38b4705 100644
+>>>> --- a/arch/x86/kvm/svm.c
+>>>> +++ b/arch/x86/kvm/svm.c
+>>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
+>>>>  
+>>>>  static int vmmcall_interception(struct vcpu_svm *svm)
+>>>>  {
+>>>> +	int ret;
+>>>> +
+>>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+>>>>  	skip_emulated_instruction(&svm->vcpu);
+>>>> -	kvm_emulate_hypercall(&svm->vcpu);
+>>>> -	return 1;
+>>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
+>>>> +
+>>>> +	/* Ignore the error? */
+>>>> +	return ret == 0 ? 0 : 1;
+>>>
+>>> Why can't kvm_emulate_hypercall return the right value?
+>>
+>> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
+>> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
+>> If vcpu's CPL > 0, does kvm need to exit and tell it to
+>> qemu?
+> 
+> No, there is currently no exit to userspace due to hypercalls, neither
+> of HV nor KVM kind.
+> 
+> The point is that the return code of kvm_emulate_hypercall is unused so
+> far, so you can easily redefine it to encode continue vs. exit to
+> userspace. Once someone has different needs, this could still be
+> refactored again.
 
-Correct.  Can you provide the version that failed, so we can fix it?
+So, it is OK to change the return value of kvm_hv_hypercall() if vcpu's
+CPL > 0?
 
--- 
-error compiling committee.c: too many arguments to function
+Thanks
+Wen Congyang
+> 
+> Jan
+> 
 
