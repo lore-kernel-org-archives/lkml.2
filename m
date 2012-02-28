@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab2B1Lf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 06:35:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13341 "EHLO mx1.redhat.com"
+	id S965203Ab2B1Lf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 06:35:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448Ab2B1LfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 06:35:25 -0500
+	id S1751448Ab2B1Lf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 06:35:27 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 1/4] GFS2: Fix race between lru_list and glock ref count
-Date: Tue, 28 Feb 2012 11:11:02 +0000
-Message-Id: <1330427465-5417-2-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 2/4] GFS2: Read in rindex if necessary during unlink
+Date: Tue, 28 Feb 2012 11:11:03 +0000
+Message-Id: <1330427465-5417-3-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1330427465-5417-1-git-send-email-swhiteho@redhat.com>
 References: <1330427465-5417-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a narrow race window between the glock ref count
-hitting zero and glocks being removed from the lru_list.
+From: Bob Peterson <rpeterso@redhat.com>
 
+This patch fixes a problem whereby you were unable to delete
+files until other file system operations were done (such as
+statfs, touch, writes, etc.) that caused the rindex to be
+read in.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 376816f..351a3e7 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -167,14 +167,19 @@ void gfs2_glock_add_to_lru(struct gfs2_glock *gl)
- 	spin_unlock(&lru_lock);
- }
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index a7d611b..c87faf4 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1035,14 +1035,19 @@ static int gfs2_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct buffer_head *bh;
+ 	struct gfs2_holder ghs[3];
+ 	struct gfs2_rgrpd *rgd;
+-	int error = -EROFS;
++	int error;
  
--static void gfs2_glock_remove_from_lru(struct gfs2_glock *gl)
-+static void __gfs2_glock_remove_from_lru(struct gfs2_glock *gl)
- {
--	spin_lock(&lru_lock);
- 	if (!list_empty(&gl->gl_lru)) {
- 		list_del_init(&gl->gl_lru);
- 		atomic_dec(&lru_count);
- 		clear_bit(GLF_LRU, &gl->gl_flags);
- 	}
-+}
-+
-+static void gfs2_glock_remove_from_lru(struct gfs2_glock *gl)
-+{
-+	spin_lock(&lru_lock);
-+	__gfs2_glock_remove_from_lru(gl);
- 	spin_unlock(&lru_lock);
- }
++	error = gfs2_rindex_update(sdp);
++	if (error)
++		return error;
+ 	gfs2_holder_init(dip->i_gl, LM_ST_EXCLUSIVE, 0, ghs);
+ 	gfs2_holder_init(ip->i_gl,  LM_ST_EXCLUSIVE, 0, ghs + 1);
  
-@@ -217,11 +222,12 @@ void gfs2_glock_put(struct gfs2_glock *gl)
- 	struct gfs2_sbd *sdp = gl->gl_sbd;
- 	struct address_space *mapping = gfs2_glock2aspace(gl);
+ 	rgd = gfs2_blk2rgrpd(sdp, ip->i_no_addr);
+-	if (!rgd)
++	if (!rgd) {
++		error = -EROFS;
+ 		goto out_inodes;
++	}
+ 	gfs2_holder_init(rgd->rd_gl, LM_ST_EXCLUSIVE, 0, ghs + 2);
  
--	if (atomic_dec_and_test(&gl->gl_ref)) {
-+	if (atomic_dec_and_lock(&gl->gl_ref, &lru_lock)) {
-+		__gfs2_glock_remove_from_lru(gl);
-+		spin_unlock(&lru_lock);
- 		spin_lock_bucket(gl->gl_hash);
- 		hlist_bl_del_rcu(&gl->gl_list);
- 		spin_unlock_bucket(gl->gl_hash);
--		gfs2_glock_remove_from_lru(gl);
- 		GLOCK_BUG_ON(gl, !list_empty(&gl->gl_holders));
- 		GLOCK_BUG_ON(gl, mapping && mapping->nrpages);
- 		trace_gfs2_glock_put(gl);
+ 
 -- 
 1.7.4
 
