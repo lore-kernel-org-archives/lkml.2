@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965648Ab2B1Pv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:51:28 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:21360 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965614Ab2B1Pv1 (ORCPT
+	id S1756232Ab2B1PxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:53:25 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:59218 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751078Ab2B1PxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:51:27 -0500
-Date: Tue, 28 Feb 2012 16:51:24 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, linux@arm.linux.org.uk
-Subject: Re: [PATCH] kernel.h: Include <linux/bug.h> to avoid build
-	breakage with ARRAY_SIZE()
-Message-ID: <20120228155124.GA2827@merkur.ravnborg.org>
-References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
+	Tue, 28 Feb 2012 10:53:23 -0500
+Message-ID: <1330444410.8460.160.camel@deadeye>
+Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Roland Stigge <stigge@antcom.de>, David Laight <David.Laight@aculab.com>,
+        <baruch@tkos.co.il>, <alexander.h.duyck@intel.com>,
+        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
+        <eilong@broadcom.com>, Kevin Wells <kevin.wells@nxp.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, <jeffrey.t.kirsher@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Date: Tue, 28 Feb 2012 15:53:30 +0000
+In-Reply-To: <201202281341.01690.arnd@arndb.de>
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E83@saturn3.aculab.com>
+	 <4F4CD781.2090802@antcom.de> <201202281341.01690.arnd@arndb.de>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18740.005
+X-TM-AS-Result: No--22.177500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 10:41:39AM -0300, Fabio Estevam wrote:
-> Building imx_v6_v7_defconfig generated the following build error:
+On Tue, 2012-02-28 at 13:41 +0000, Arnd Bergmann wrote:
+> On Tuesday 28 February 2012, Roland Stigge wrote:
+> > Yes, that's why we previously had a cmdline param for it (but removed it
+> > upon request from the netdev maintainer).
+> > 
+> > So if the hardware defaults to 00:00:00:00:00:00, what is the
+> > "consistent policy we want to enforce in all drivers"?
+> > 
+> > A link or hint would be sufficient.
 > 
-> arch/arm/mach-imx/cpu_op-mx51.c: In function 'mx51_get_cpu_op':
-> arch/arm/mach-imx/cpu_op-mx51.c:27: error: implicit declaration of function 'BUILD_BUG_ON_ZERO'
+> I think the most common strategy for platform drivers these days is
 > 
-> commit 6f863554 (kernel.h: doesn't explicitly use bug.h, so don't include it.)
-> has removed asm/debug.h from linux/kernel.h.
-> 
-> Quoting Russell King (http://www.spinics.net/lists/arm-kernel/msg161916.html)
-> 
-> "linux/kernel.h _does_ use bug stuff - in ARRAY_SIZE().
-> 
-> ARRAY_SIZE() uses __must_be_array(), which is defined in linux/compiler-gcc.h,
-> which is obtained via linux/compiler.h and linux/linkage.h.
-> 
-> linux/compiler-gcc.h defines __must_be_array() to be:
-> #define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
+> 1. use what the hardware provides
+> 2. call of_get_mac_address(dev->of_node, ...)
+> 3. use random_ether_addr
 
-In which case linux/compiler-gcc.h uses bug.h - so this is where you
-should add the include.
-Not in kernel.h that just happens to use __must_be_array()
-We do not want to add "#include bug.h" to all header files
-that happens to use __must_be_array.
+The 3rd option should now be eth_hw_addr_random().
 
-	Sam
+Ben.
+
+> in that order. of_get_mac_address just returns NULL when there
+> is no device tree or no local-mac-address property, so you can
+> put it into the driver right away.
+> 
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
