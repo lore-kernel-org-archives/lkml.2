@@ -1,386 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab2B1Nrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:47:52 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:48701 "EHLO e5.ny.us.ibm.com"
+	id S932662Ab2B1NuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:50:01 -0500
+Received: from antcom.de ([188.40.178.216]:40486 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932451Ab2B1Nru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:47:50 -0500
-Date: Tue, 28 Feb 2012 05:47:18 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH 2/2 RFC] srcu: implement Peter's checking algorithm
-Message-ID: <20120228134718.GF2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4F42EF53.6060400@cn.fujitsu.com>
- <20120221015037.GE2384@linux.vnet.ibm.com>
- <4F435966.9020106@cn.fujitsu.com>
- <20120221172442.GG2375@linux.vnet.ibm.com>
- <4F44B580.6040003@cn.fujitsu.com>
- <4F4744E9.1060109@cn.fujitsu.com>
- <20120224200109.GH2399@linux.vnet.ibm.com>
- <4F4B3840.6000504@cn.fujitsu.com>
- <20120227183035.GE2463@linux.vnet.ibm.com>
- <4F4C331A.7090007@cn.fujitsu.com>
+	id S932451Ab2B1NuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 08:50:00 -0500
+Message-ID: <4F4CDB84.7070502@antcom.de>
+Date: Tue, 28 Feb 2012 14:49:56 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F4C331A.7090007@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022813-5930-0000-0000-0000059F4856
+To: Arnd Bergmann <arnd@arndb.de>
+CC: David Laight <David.Laight@aculab.com>, baruch@tkos.co.il,
+        alexander.h.duyck@intel.com, ian.campbell@citrix.com,
+        netdev@vger.kernel.org, eilong@broadcom.com,
+        Kevin Wells <kevin.wells@nxp.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, jeffrey.t.kirsher@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E83@saturn3.aculab.com> <4F4CD781.2090802@antcom.de> <201202281341.01690.arnd@arndb.de>
+In-Reply-To: <201202281341.01690.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 09:51:22AM +0800, Lai Jiangshan wrote:
-> On 02/28/2012 02:30 AM, Paul E. McKenney wrote:
-> > On Mon, Feb 27, 2012 at 04:01:04PM +0800, Lai Jiangshan wrote:
-> >> >From 40724998e2d121c2b5a5bd75114625cfd9d4f9a9 Mon Sep 17 00:00:00 2001
-> >> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> >> Date: Mon, 27 Feb 2012 14:22:47 +0800
-> >> Subject: [PATCH 2/2] srcu: implement Peter's checking algorithm
-> >>
-> >> This patch implement the algorithm as Peter's:
-> >> https://lkml.org/lkml/2012/2/1/119
-> >>
-> >> o	Make the checking lock-free and we can perform parallel checking,
-> >> 	Although almost parallel checking makes no sense, but we need it
-> >> 	when 1) the original checking task is preempted for long, 2)
-> >> 	sychronize_srcu_expedited(), 3) avoid lock(see next)
-> >>
-> >> o	Since it is lock-free, we save a mutex in state machine for
-> >> 	call_srcu().
-> >>
-> >> o	Remove the SRCU_REF_MASK and remove the coupling with the flipping.
-> >> 	(so we can remove the preempt_disable() in future, but use
-> >> 	 __this_cpu_inc() instead.)
-> >>
-> >> o	reduce a smp_mb(), simplify the comments and make the smp_mb() pairs
-> >> 	more intuitive.
-> > 
-> > Hello, Lai,
-> > 
-> > Interesting approach!
-> > 
-> > What happens given the following sequence of events?
-> > 
-> > o	CPU 0 in srcu_readers_active_idx_check() invokes
-> > 	srcu_readers_seq_idx(), getting some number back.
-> > 
-> > o	CPU 0 invokes srcu_readers_active_idx(), summing the
-> > 	->c[] array up through CPU 3.
-> > 
-> > o	CPU 1 invokes __srcu_read_lock(), and increments its counter
-> > 	but not yet its ->seq[] element.
+On 02/28/2012 02:41 PM, Arnd Bergmann wrote:
+>> So if the hardware defaults to 00:00:00:00:00:00, what is the
+>> "consistent policy we want to enforce in all drivers"?
+>>
+>> A link or hint would be sufficient.
 > 
+> I think the most common strategy for platform drivers these days is
 > 
-> Any __srcu_read_lock() whose increment of active counter is not seen
-> by srcu_readers_active_idx() is considerred as
-> "reader-started-after-this-srcu_readers_active_idx_check()",
-> We don't need to wait.
+> 1. use what the hardware provides
+> 2. call of_get_mac_address(dev->of_node, ...)
+> 3. use random_ether_addr
 > 
-> As you said, this srcu C.S 's increment seq is not seen by above
-> srcu_readers_seq_idx().
-> 
-> > 
-> > o	CPU 0 completes its summing of the ->c[] array, incorrectly
-> > 	obtaining zero.
-> > 
-> > o	CPU 0 invokes srcu_readers_seq_idx(), getting the same
-> > 	number back that it got last time.
-> 
-> If it incorrectly get zero, it means __srcu_read_unlock() is seen
-> in srcu_readers_active_idx(), and it means the increment of
-> seq is seen in this srcu_readers_seq_idx(), it is different
-> from the above seq that it got last time.
-> 
-> increment of seq is not seen by above srcu_readers_seq_idx(),
-> but is seen by later one, so the two returned seq is different,
-> this is the core of Peter's algorithm, and this was written
-> in the comments(Sorry for my bad English). Or maybe I miss
-> your means in this mail.
+> in that order. of_get_mac_address just returns NULL when there
+> is no device tree or no local-mac-address property, so you can
+> put it into the driver right away.
 
-OK, good, this analysis agrees with what I was thinking.
+Cool, thanks - will do!
 
-So my next question is about the lock freedom.  This lock freedom has to
-be limited in nature and carefully implemented.  The reasons for this are:
-
-1.	Readers can block in any case, which can of course block both
-	synchronize_srcu_expedited() and synchronize_srcu().
-
-2.	Because only one CPU at a time can be incrementing ->completed,
-	some sort of lock with preemption disabling will of course be
-	needed.  Alternatively, an rt_mutex could be used for its
-	priority-inheritance properties.
-
-3.	Once some CPU has incremented ->completed, all CPUs that might
-	still be summing up the old indexes must stop.  If they don't,
-	they might incorrectly call a too-short grace period in case of
-	->seq[]-sum overflow on 32-bit systems.
-
-Or did you have something else in mind?
-
-							Thanx, Paul
-
-> Thanks,
-> Lai
-> 
-> > 
-> > o	In parallel with the previous step, CPU 1 executes out of order
-> > 	(as permitted by the lack of a second memory barrier in
-> > 	__srcu_read_lock()), starting up the critical section before
-> > 	incrementing its ->seq[] element.
-> > 
-> > o	Because CPU 0 is not aware that CPU 1 is an SRCU reader, it
-> > 	completes the SRCU grace period before CPU 1 completes its
-> > 	SRCU read-side critical section.
-> > 
-> > This actually might be safe, but I need to think more about it.  In the
-> > meantime, I figured I should ask your thoughts.
-> > 
-> > 							Thanx, Paul
-> > 
-> >> Inspired-by: Peter Zijlstra <peterz@infradead.org>
-> >> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> >> ---
-> >>  include/linux/srcu.h |    7 +--
-> >>  kernel/srcu.c        |  137 ++++++++++++++++++++-----------------------------
-> >>  2 files changed, 57 insertions(+), 87 deletions(-)
-> >>
-> >> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> >> index 5b49d41..15354db 100644
-> >> --- a/include/linux/srcu.h
-> >> +++ b/include/linux/srcu.h
-> >> @@ -32,18 +32,13 @@
-> >>
-> >>  struct srcu_struct_array {
-> >>  	unsigned long c[2];
-> >> +	unsigned long seq[2];
-> >>  };
-> >>
-> >> -/* Bit definitions for field ->c above and ->snap below. */
-> >> -#define SRCU_USAGE_BITS		1
-> >> -#define SRCU_REF_MASK		(ULONG_MAX >> SRCU_USAGE_BITS)
-> >> -#define SRCU_USAGE_COUNT	(SRCU_REF_MASK + 1)
-> >> -
-> >>  struct srcu_struct {
-> >>  	unsigned completed;
-> >>  	struct srcu_struct_array __percpu *per_cpu_ref;
-> >>  	struct mutex mutex;
-> >> -	unsigned long snap[NR_CPUS];
-> >>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >>  	struct lockdep_map dep_map;
-> >>  #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> >> diff --git a/kernel/srcu.c b/kernel/srcu.c
-> >> index 47ee35d..376b583 100644
-> >> --- a/kernel/srcu.c
-> >> +++ b/kernel/srcu.c
-> >> @@ -73,10 +73,25 @@ EXPORT_SYMBOL_GPL(init_srcu_struct);
-> >>  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> >>
-> >>  /*
-> >> + * Returns approximate total sequence of readers on the specified rank
-> >> + * of per-CPU counters.
-> >> + */
-> >> +static unsigned long srcu_readers_seq_idx(struct srcu_struct *sp, int idx)
-> >> +{
-> >> +	int cpu;
-> >> +	unsigned long sum = 0;
-> >> +	unsigned long t;
-> >> +
-> >> +	for_each_possible_cpu(cpu) {
-> >> +		t = ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, cpu)->seq[idx]);
-> >> +		sum += t;
-> >> +	}
-> >> +	return sum;
-> >> +}
-> >> +
-> >> +/*
-> >>   * Returns approximate number of readers active on the specified rank
-> >> - * of per-CPU counters.  Also snapshots each counter's value in the
-> >> - * corresponding element of sp->snap[] for later use validating
-> >> - * the sum.
-> >> + * of per-CPU counters.
-> >>   */
-> >>  static unsigned long srcu_readers_active_idx(struct srcu_struct *sp, int idx)
-> >>  {
-> >> @@ -87,26 +102,36 @@ static unsigned long srcu_readers_active_idx(struct srcu_struct *sp, int idx)
-> >>  	for_each_possible_cpu(cpu) {
-> >>  		t = ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx]);
-> >>  		sum += t;
-> >> -		sp->snap[cpu] = t;
-> >>  	}
-> >> -	return sum & SRCU_REF_MASK;
-> >> +	return sum;
-> >>  }
-> >>
-> >> -/*
-> >> - * To be called from the update side after an index flip.  Returns true
-> >> - * if the modulo sum of the counters is stably zero, false if there is
-> >> - * some possibility of non-zero.
-> >> - */
-> >>  static bool srcu_readers_active_idx_check(struct srcu_struct *sp, int idx)
-> >>  {
-> >>  	int cpu;
-> >> +	unsigned long seq;
-> >> +
-> >> +	seq = srcu_readers_seq_idx(sp, idx);
-> >> +
-> >> +	/*
-> >> +	 * smp_mb() A pairs with smp_mb() B for critical section.
-> >> +	 * It ensures that the SRCU read-side critical section whose
-> >> +	 * read-lock is not seen by the following srcu_readers_active_idx()
-> >> +	 * will see any updates that before the current task performed before.
-> >> +	 * (So we don't need to care these readers this time)
-> >> +	 *
-> >> +	 * Also, if we see the increment of the seq, we must see the
-> >> +	 * increment of the active counter in the following
-> >> +	 * srcu_readers_active_idx().
-> >> +	 */
-> >> +	smp_mb(); /* A */
-> >>
-> >>  	/*
-> >>  	 * Note that srcu_readers_active_idx() can incorrectly return
-> >>  	 * zero even though there is a pre-existing reader throughout.
-> >>  	 * To see this, suppose that task A is in a very long SRCU
-> >>  	 * read-side critical section that started on CPU 0, and that
-> >> -	 * no other reader exists, so that the modulo sum of the counters
-> >> +	 * no other reader exists, so that the sum of the counters
-> >>  	 * is equal to one.  Then suppose that task B starts executing
-> >>  	 * srcu_readers_active_idx(), summing up to CPU 1, and then that
-> >>  	 * task C starts reading on CPU 0, so that its increment is not
-> >> @@ -122,53 +147,26 @@ static bool srcu_readers_active_idx_check(struct srcu_struct *sp, int idx)
-> >>  		return false;
-> >>
-> >>  	/*
-> >> -	 * Since the caller recently flipped ->completed, we can see at
-> >> -	 * most one increment of each CPU's counter from this point
-> >> -	 * forward.  The reason for this is that the reader CPU must have
-> >> -	 * fetched the index before srcu_readers_active_idx checked
-> >> -	 * that CPU's counter, but not yet incremented its counter.
-> >> -	 * Its eventual counter increment will follow the read in
-> >> -	 * srcu_readers_active_idx(), and that increment is immediately
-> >> -	 * followed by smp_mb() B.  Because smp_mb() D is between
-> >> -	 * the ->completed flip and srcu_readers_active_idx()'s read,
-> >> -	 * that CPU's subsequent load of ->completed must see the new
-> >> -	 * value, and therefore increment the counter in the other rank.
-> >> -	 */
-> >> -	smp_mb(); /* A */
-> >> -
-> >> -	/*
-> >> -	 * Now, we check the ->snap array that srcu_readers_active_idx()
-> >> -	 * filled in from the per-CPU counter values. Since
-> >> -	 * __srcu_read_lock() increments the upper bits of the per-CPU
-> >> -	 * counter, an increment/decrement pair will change the value
-> >> -	 * of the counter.  Since there is only one possible increment,
-> >> -	 * the only way to wrap the counter is to have a huge number of
-> >> -	 * counter decrements, which requires a huge number of tasks and
-> >> -	 * huge SRCU read-side critical-section nesting levels, even on
-> >> -	 * 32-bit systems.
-> >> -	 *
-> >> -	 * All of the ways of confusing the readings require that the scan
-> >> -	 * in srcu_readers_active_idx() see the read-side task's decrement,
-> >> -	 * but not its increment.  However, between that decrement and
-> >> -	 * increment are smb_mb() B and C.  Either or both of these pair
-> >> -	 * with smp_mb() A above to ensure that the scan below will see
-> >> -	 * the read-side tasks's increment, thus noting a difference in
-> >> -	 * the counter values between the two passes.
-> >> +	 * Validation step, smp_mb() D pairs with smp_mb() C. If the above
-> >> +	 * srcu_readers_active_idx() see a decrement of the active counter
-> >> +	 * in srcu_read_unlock(), it should see one of these for corresponding
-> >> +	 * srcu_read_lock():
-> >> +	 * 	See the increment of the active counter,
-> >> +	 * 	Failed to see the increment of the active counter.
-> >> +	 * The second one can cause srcu_readers_active_idx() incorrectly
-> >> +	 * return zero, but it means the above srcu_readers_seq_idx() does not
-> >> +	 * see the increment of the seq(ref: comments of smp_mb() A),
-> >> +	 * and the following srcu_readers_seq_idx() sees the increment of
-> >> +	 * the seq. The seq is changed.
-> >>  	 *
-> >> -	 * Therefore, if srcu_readers_active_idx() returned zero, and
-> >> -	 * none of the counters changed, we know that the zero was the
-> >> -	 * correct sum.
-> >> -	 *
-> >> -	 * Of course, it is possible that a task might be delayed
-> >> -	 * for a very long time in __srcu_read_lock() after fetching
-> >> -	 * the index but before incrementing its counter.  This
-> >> -	 * possibility will be dealt with in __synchronize_srcu().
-> >> +	 * This smp_mb() D pairs with smp_mb() C for critical section.
-> >> +	 * then any of the current task's subsequent code will happen after
-> >> +	 * that SRCU read-side critical section whose read-unlock is seen in
-> >> +	 * srcu_readers_active_idx().
-> >>  	 */
-> >> -	for_each_possible_cpu(cpu)
-> >> -		if (sp->snap[cpu] !=
-> >> -		    ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx]))
-> >> -			return false;  /* False zero reading! */
-> >> -	return true;
-> >> +	smp_mb(); /* D */
-> >> +
-> >> +	return srcu_readers_seq_idx(sp, idx) == seq;
-> >>  }
-> >>
-> >>  /**
-> >> @@ -216,9 +214,9 @@ int __srcu_read_lock(struct srcu_struct *sp)
-> >>  	preempt_disable();
-> >>  	idx = rcu_dereference_index_check(sp->completed,
-> >>  					  rcu_read_lock_sched_held()) & 0x1;
-> >> -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) +=
-> >> -		SRCU_USAGE_COUNT + 1;
-> >> +	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += 1;
-> >>  	smp_mb(); /* B */  /* Avoid leaking the critical section. */
-> >> +	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->seq[idx]) += 1;
-> >>  	preempt_enable();
-> >>  	return idx;
-> >>  }
-> >> @@ -258,17 +256,6 @@ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
-> >>  	int trycount = 0;
-> >>
-> >>  	/*
-> >> -	 * If a reader fetches the index before the ->completed increment,
-> >> -	 * but increments its counter after srcu_readers_active_idx_check()
-> >> -	 * sums it, then smp_mb() D will pair with __srcu_read_lock()'s
-> >> -	 * smp_mb() B to ensure that the SRCU read-side critical section
-> >> -	 * will see any updates that the current task performed before its
-> >> -	 * call to synchronize_srcu(), or to synchronize_srcu_expedited(),
-> >> -	 * as the case may be.
-> >> -	 */
-> >> -	smp_mb(); /* D */
-> >> -
-> >> -	/*
-> >>  	 * SRCU read-side critical sections are normally short, so wait
-> >>  	 * a small amount of time before possibly blocking.
-> >>  	 */
-> >> @@ -281,18 +268,6 @@ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
-> >>  				schedule_timeout_interruptible(1);
-> >>  		}
-> >>  	}
-> >> -
-> >> -	/*
-> >> -	 * The following smp_mb() E pairs with srcu_read_unlock()'s
-> >> -	 * smp_mb C to ensure that if srcu_readers_active_idx_check()
-> >> -	 * sees srcu_read_unlock()'s counter decrement, then any
-> >> -	 * of the current task's subsequent code will happen after
-> >> -	 * that SRCU read-side critical section.
-> >> -	 *
-> >> -	 * It also ensures the order between the above waiting and
-> >> -	 * the next flipping.
-> >> -	 */
-> >> -	smp_mb(); /* E */
-> >>  }
-> >>
-> >>  static void srcu_flip(struct srcu_struct *sp)
-> >> -- 
-> >> 1.7.4.4
-> >>
-> > 
-> > 
-> 
-
+Roland
