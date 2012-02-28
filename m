@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2B1Bma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:42:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab2B1BGK (ORCPT
+	id S932195Ab2B1Bmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:42:53 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab2B1BGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.234 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010206.857053379@linuxfoundation.org>
+Message-Id: <20120228010206.197257650@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:20 -0800
+Date: Mon, 27 Feb 2012 17:02:16 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/73] net: Make qdisc_skb_cb upper size bound explicit.
+        alan@lxorguk.ukuu.org.uk, Johan Rudholm <johan.rudholm@stericsson.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 13/73] mmc: core: check for zero length ioctl data
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,82 +27,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Johan Rudholm <johan.rudholm@stericsson.com>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 4d6144de8ba263eb3691a737c547e5b2fdc45287 upstream.
 
-[ Upstream commit 16bda13d90c8d5da243e2cfa1677e62ecce26860 ]
+If the read or write buffer size associated with the command sent
+through the mmc_blk_ioctl is zero, do not prepare data buffer.
 
-Just like skb->cb[], so that qdisc_skb_cb can be encapsulated inside
-of other data structures.
+This enables a ioctl(2) call to for instance send a MMC_SWITCH to set
+a byte in the ext_csd.
 
-This is intended to be used by IPoIB so that it can remember
-addressing information stored at hard_header_ops->create() time that
-it can fetch when the packet gets to the transmit routine.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Rudholm <johan.rudholm@stericsson.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sch_generic.h |    9 ++++++++-
- net/sched/sch_choke.c     |    3 +--
- net/sched/sch_netem.c     |    3 +--
- net/sched/sch_sfb.c       |    3 +--
- 4 files changed, 11 insertions(+), 7 deletions(-)
 
---- a/include/net/sch_generic.h
-+++ b/include/net/sch_generic.h
-@@ -219,9 +219,16 @@ struct tcf_proto {
+---
+ drivers/mmc/card/block.c |   82 +++++++++++++++++++++++++----------------------
+ 1 file changed, 45 insertions(+), 37 deletions(-)
+
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -251,6 +251,9 @@ static struct mmc_blk_ioc_data *mmc_blk_
+ 		goto idata_err;
+ 	}
  
- struct qdisc_skb_cb {
- 	unsigned int		pkt_len;
--	long			data[];
-+	unsigned char		data[24];
- };
- 
-+static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
-+{
-+	struct qdisc_skb_cb *qcb;
-+	BUILD_BUG_ON(sizeof(skb->cb) < sizeof(unsigned int) + sz);
-+	BUILD_BUG_ON(sizeof(qcb->data) < sz);
-+}
++	if (!idata->buf_bytes)
++		return idata;
 +
- static inline int qdisc_qlen(struct Qdisc *q)
- {
- 	return q->q.qlen;
---- a/net/sched/sch_choke.c
-+++ b/net/sched/sch_choke.c
-@@ -225,8 +225,7 @@ struct choke_skb_cb {
+ 	idata->buf = kzalloc(idata->buf_bytes, GFP_KERNEL);
+ 	if (!idata->buf) {
+ 		err = -ENOMEM;
+@@ -297,25 +300,6 @@ static int mmc_blk_ioctl_cmd(struct bloc
+ 	if (IS_ERR(idata))
+ 		return PTR_ERR(idata);
  
- static inline struct choke_skb_cb *choke_skb_cb(const struct sk_buff *skb)
- {
--	BUILD_BUG_ON(sizeof(skb->cb) <
--		sizeof(struct qdisc_skb_cb) + sizeof(struct choke_skb_cb));
-+	qdisc_cb_private_validate(skb, sizeof(struct choke_skb_cb));
- 	return (struct choke_skb_cb *)qdisc_skb_cb(skb)->data;
- }
+-	cmd.opcode = idata->ic.opcode;
+-	cmd.arg = idata->ic.arg;
+-	cmd.flags = idata->ic.flags;
+-
+-	data.sg = &sg;
+-	data.sg_len = 1;
+-	data.blksz = idata->ic.blksz;
+-	data.blocks = idata->ic.blocks;
+-
+-	sg_init_one(data.sg, idata->buf, idata->buf_bytes);
+-
+-	if (idata->ic.write_flag)
+-		data.flags = MMC_DATA_WRITE;
+-	else
+-		data.flags = MMC_DATA_READ;
+-
+-	mrq.cmd = &cmd;
+-	mrq.data = &data;
+-
+ 	md = mmc_blk_get(bdev->bd_disk);
+ 	if (!md) {
+ 		err = -EINVAL;
+@@ -328,6 +312,48 @@ static int mmc_blk_ioctl_cmd(struct bloc
+ 		goto cmd_done;
+ 	}
  
---- a/net/sched/sch_netem.c
-+++ b/net/sched/sch_netem.c
-@@ -117,8 +117,7 @@ struct netem_skb_cb {
++	cmd.opcode = idata->ic.opcode;
++	cmd.arg = idata->ic.arg;
++	cmd.flags = idata->ic.flags;
++
++	if (idata->buf_bytes) {
++		data.sg = &sg;
++		data.sg_len = 1;
++		data.blksz = idata->ic.blksz;
++		data.blocks = idata->ic.blocks;
++
++		sg_init_one(data.sg, idata->buf, idata->buf_bytes);
++
++		if (idata->ic.write_flag)
++			data.flags = MMC_DATA_WRITE;
++		else
++			data.flags = MMC_DATA_READ;
++
++		/* data.flags must already be set before doing this. */
++		mmc_set_data_timeout(&data, card);
++
++		/* Allow overriding the timeout_ns for empirical tuning. */
++		if (idata->ic.data_timeout_ns)
++			data.timeout_ns = idata->ic.data_timeout_ns;
++
++		if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
++			/*
++			 * Pretend this is a data transfer and rely on the
++			 * host driver to compute timeout.  When all host
++			 * drivers support cmd.cmd_timeout for R1B, this
++			 * can be changed to:
++			 *
++			 *     mrq.data = NULL;
++			 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
++			 */
++			data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
++		}
++
++		mrq.data = &data;
++	}
++
++	mrq.cmd = &cmd;
++
+ 	mmc_claim_host(card->host);
  
- static inline struct netem_skb_cb *netem_skb_cb(struct sk_buff *skb)
- {
--	BUILD_BUG_ON(sizeof(skb->cb) <
--		sizeof(struct qdisc_skb_cb) + sizeof(struct netem_skb_cb));
-+	qdisc_cb_private_validate(skb, sizeof(struct netem_skb_cb));
- 	return (struct netem_skb_cb *)qdisc_skb_cb(skb)->data;
- }
+ 	if (idata->ic.is_acmd) {
+@@ -336,24 +362,6 @@ static int mmc_blk_ioctl_cmd(struct bloc
+ 			goto cmd_rel_host;
+ 	}
  
---- a/net/sched/sch_sfb.c
-+++ b/net/sched/sch_sfb.c
-@@ -93,8 +93,7 @@ struct sfb_skb_cb {
+-	/* data.flags must already be set before doing this. */
+-	mmc_set_data_timeout(&data, card);
+-	/* Allow overriding the timeout_ns for empirical tuning. */
+-	if (idata->ic.data_timeout_ns)
+-		data.timeout_ns = idata->ic.data_timeout_ns;
+-
+-	if ((cmd.flags & MMC_RSP_R1B) == MMC_RSP_R1B) {
+-		/*
+-		 * Pretend this is a data transfer and rely on the host driver
+-		 * to compute timeout.  When all host drivers support
+-		 * cmd.cmd_timeout for R1B, this can be changed to:
+-		 *
+-		 *     mrq.data = NULL;
+-		 *     cmd.cmd_timeout = idata->ic.cmd_timeout_ms;
+-		 */
+-		data.timeout_ns = idata->ic.cmd_timeout_ms * 1000000;
+-	}
+-
+ 	mmc_wait_for_req(card->host, &mrq);
  
- static inline struct sfb_skb_cb *sfb_skb_cb(const struct sk_buff *skb)
- {
--	BUILD_BUG_ON(sizeof(skb->cb) <
--		sizeof(struct qdisc_skb_cb) + sizeof(struct sfb_skb_cb));
-+	qdisc_cb_private_validate(skb, sizeof(struct sfb_skb_cb));
- 	return (struct sfb_skb_cb *)qdisc_skb_cb(skb)->data;
- }
- 
+ 	if (cmd.error) {
 
 
