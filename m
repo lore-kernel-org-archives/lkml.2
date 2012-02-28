@@ -1,68 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab2B1CG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:06:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60323 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab2B1CGn (ORCPT
+	id S1756607Ab2B1CHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:07:22 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:25655 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab2B1CEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:06:43 -0500
-Date: Tue, 28 Feb 2012 13:06:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the devicetree tree with the powerpc
- tree
-Message-Id: <20120228130634.3c511b096bc78f9b99e804fe@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV"
+	Mon, 27 Feb 2012 21:04:50 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 03/11] x86, PCI: Fix memleak with get_current_resources
+Date: Mon, 27 Feb 2012 18:03:43 -0800
+Message-Id: <1330394631-28978-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
+References: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A020206.4F4C363F.0082,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+in pci_scan_acpi_root, when pci_use_crs is set, get_current_resources is used
+to get pci_root_info, and it will allocate name and res array.
 
-Hi Grant,
+later if pci_create_root_bus can not create bus (could be already there...)
+it will only free bus res list. but the name and res array is not freed.
 
-Today's linux-next merge of the devicetree tree got a conflict in
-arch/powerpc/platforms/iseries/Kconfig between commit 3d066d77cf46
-("powerpc: remove CONFIG_PPC_ISERIES from the architecture Kconfig
-files") from the powerpc tree and commit 0f22dd395fc4 ("of: Only compile
-OF_DYNAMIC on PowerPC pseries and iseries") from the devicetree tree.
+let get_current_resource take info pointer instead have local info.
 
-The former commit removes the file (as the legacy iSeries platform is
-being removed), so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/pci/acpi.c |   49 ++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 30 insertions(+), 19 deletions(-)
 
---Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV
-Content-Type: application/pgp-signature
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 7cc0a44..304ccf0 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -305,49 +305,55 @@ static void add_resources(struct pci_root_info *info)
+ 	}
+ }
+ 
++static void free_pci_root_info(struct pci_root_info *info)
++{
++	kfree(info->name);
++	kfree(info->res);
++	memset(info, 0, sizeof(struct pci_root_info));
++}
++
+ static void
+-get_current_resources(struct acpi_device *device, int busnum,
++get_current_resources(struct pci_root_info *info,
++		      struct acpi_device *device, int busnum,
+ 		      int domain, struct list_head *resources)
+ {
+-	struct pci_root_info info;
+ 	size_t size;
+ 
+-	info.bridge = device;
+-	info.res_num = 0;
+-	info.resources = resources;
++	info->bridge = device;
++	info->res_num = 0;
++	info->resources = resources;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
+-				&info);
+-	if (!info.res_num)
++				info);
++	if (!info->res_num)
+ 		return;
+ 
+-	size = sizeof(*info.res) * info.res_num;
+-	info.res = kmalloc(size, GFP_KERNEL);
+-	if (!info.res)
++	size = sizeof(*info->res) * info->res_num;
++	info->res = kmalloc(size, GFP_KERNEL);
++	if (!info->res)
+ 		return;
+ 
+-	info.name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+-	if (!info.name)
++	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
++	if (!info->name)
+ 		goto name_alloc_fail;
+ 
+-	info.res_num = 0;
++	info->res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+-				&info);
++				info);
+ 
+ 	if (pci_use_crs) {
+-		add_resources(&info);
++		add_resources(info);
+ 
+ 		return;
+ 	}
+ 
+-	kfree(info.name);
+-
+ name_alloc_fail:
+-	kfree(info.res);
++	free_pci_root_info(info);
+ }
+ 
+ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ {
+ 	struct acpi_device *device = root->device;
++	struct pci_root_info info;
+ 	int domain = root->segment;
+ 	int busnum = root->secondary.start;
+ 	LIST_HEAD(resources);
+@@ -392,6 +398,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 
+ 	sd->domain = domain;
+ 	sd->node = node;
++	memset(&info, 0, sizeof(struct pci_root_info));
+ 	/*
+ 	 * Maybe the desired pci bus has been already scanned. In such case
+ 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
+@@ -405,7 +412,8 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(sd);
+ 	} else {
+-		get_current_resources(device, busnum, domain, &resources);
++		get_current_resources(&info, device, busnum, domain,
++					&resources);
+ 
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+@@ -419,6 +427,9 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 			bus->subordinate = pci_scan_child_bus(bus);
+ 		else
+ 			pci_free_resource_list(&resources);
++
++		if (!bus && pci_use_crs)
++			free_pci_root_info(&info);
+ 	}
+ 
+ 	/* After the PCI-E bus has been walked and all devices discovered,
+-- 
+1.7.7
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPTDaqAAoJEECxmPOUX5FEGbAP/3JdMyyxVFac+ddRSktCQKLh
-fQJVx68d4RGVEL7+7feXnsVmokACmSa9Q92s/BDjVIAaDatwTG+mhYxGLb7oKN5L
-dX8Gap3ncFAfTNMfwNz+fYBuIMFu7B1BTaC2cSjYVT4uPMNMCVA63ntjr+KC8Nyp
-b6wXS5L/lJvFlCnlbGaMc+ECwg7GkS7szez1lkuTV5cFI3Xc4YuTeMRREyF2qBcB
-CNqjbjTnvusZtqeTbZIFEicMfveYtukMpC0Y13HXKjqJh6z+y1ZVvcMtUEzyQUUj
-+r9XoM099P+zQgCj8vp3TEhpj/4b7CFnKb4PH28BeJ7cbl8wAyQtNz/mQS8wZd+P
-FrstW+xDnxs/OIEPeyhjZ9dC87QcMTBH31yibpfekcwhO0dpSNLa02PlKbgmg5nu
-bvXv2lZvpq2Ek1yqYAH/Vd0NP+KhT+UXgg9MULT/ZNtu3ivV0yo0tfN8URCKvfUM
-SeO8lA/TBP+MPcSAMD29qwKKkGsNgEGXT85mKH55i8iSwUAlpcNjsGwrZJM3VJ9X
-t/debZfDrG3cnIxdK61ED4X4qugeWeyISnjKt9W+UtnQNaVDRwAJnU5sFdmdXfVu
-l0f6OjQgJL0DgvIf1Anza8m5mKFOdhC0OLGeLLzgi5Ewzw1yyVoMKRTi8LPcMMkC
-/tFGkGd77s9YK2RYTSmf
-=bAL0
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV--
