@@ -1,113 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab2B1Icp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:32:45 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46110 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab2B1Icn (ORCPT
+	id S932534Ab2B1IfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:35:12 -0500
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:55615 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756196Ab2B1IfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:32:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel@ffwll.ch designates 10.180.107.99 as permitted sender) smtp.mail=daniel@ffwll.ch; dkim=pass header.i=daniel@ffwll.ch
-Date: Tue, 28 Feb 2012 09:32:48 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-Subject: Re: regression(?) 3.3-rc4 -> 3.3-rc5: drm intel hangs
-Message-ID: <20120228083248.GA4249@phenom.ffwll.local>
-Mail-Followup-To: Norbert Preining <preining@logic.at>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-References: <20120228040327.GA9973@gamma.logic.tuwien.ac.at>
+	Tue, 28 Feb 2012 03:35:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of peter.ujfalusi@ti.com designates 10.152.129.69 as permitted sender) smtp.mail=peter.ujfalusi@ti.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228040327.GA9973@gamma.logic.tuwien.ac.at>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 1/2] MFD: twl-core: Detach twl6040 from the pmic mfd driver
+Date: Tue, 28 Feb 2012 10:34:51 +0200
+Message-Id: <1330418092-12314-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <1330418092-12314-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1330418092-12314-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 01:03:27PM +0900, Norbert Preining wrote:
-> Dear all,
-> 
-> (please Cc)
-> 
-> since upgrade to 3.3-rc5 I see the following behaviour repeatedly:
-> 
-> Feb 28 11:42:47 mithrandir kernel: [15627.756071]
-> [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> Feb 28 11:42:47 mithrandir kernel: [15627.756087] [drm] capturing error
-> event; look for more information in /debug/dri/0/i915_error_state
+On OMAP4 platform audio has separate IC, it is no longer part
+of the pmic chip.
+Prevent twl-core to claim the 0x4b address, which belongs to
+the twl6040 audio IC.
 
-Wee need this i915_error_state file from debugfs (you might need to mount
-that first again) to diagnose gpu hangs. Also, it only contains
-information after a crash, so you need to rehang your machine if you've
-rebooted since then.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/twl-core.c |   58 +++++++++++++++++++++++++++--------------------
+ 1 files changed, 33 insertions(+), 25 deletions(-)
 
-Thanks, Daniel
-
-> Feb 28 11:42:47 mithrandir kernel: [15627.758428] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 7 at 4, next 8)
-> Feb 28 11:42:47 mithrandir kernel: [15628.260094] [drm:i915_reset] *ERROR* Failed to reset chip.
-> 
-> Is this is known issue?
-> 
-> hardware Intel GM45 Chipset
-> more dmesg parts:
-> [    0.566805] agpgart-intel 0000:00:00.0: Intel GM45 Chipset
-> [    0.566925] agpgart-intel 0000:00:00.0: detected gtt size: 2097152K total, 262144K mappable
-> [    0.569079] agpgart-intel 0000:00:00.0: detected 65536K stolen memory
-> [    0.569278] agpgart-intel 0000:00:00.0: AGP aperture is 256M @ 0xc0000000
-> ...
-> [    2.032297] [drm] Initialized drm 1.1.0 20060810
-> [    2.032372] i915 0000:00:02.0: power state changed by ACPI to D0
-> [    2.032429] i915 0000:00:02.0: power state changed by ACPI to D0
-> [    2.032489] i915 0000:00:02.0: setting latency timer to 64
-> [    2.085250] i915 0000:00:02.0: irq 43 for MSI/MSI-X
-> [    2.085260] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-> [    2.085318] [drm] Driver supports precise vblank timestamp query.
-> [    2.085439] [drm:intel_dsm_pci_probe] *ERROR* failed to get supported _DSM functions
-> [    2.085527] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
-> [    2.769842] fbcon: inteldrmfb (fb0) is primary device
-> [    2.771391] [drm] Changing LVDS panel from (+hsync, +vsync) to (-hsync, -vsync)
-> [    3.304756] Console: switching to colour frame buffer device 200x56
-> [    3.308853] fb0: inteldrmfb frame buffer device
-> [    3.308855] drm: registered panic notifier
-> [    3.329552] acpi device:01: registered as cooling_device2
-> [    3.329713] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:00/input/input2
-> [    3.329766] ACPI: Video Device [OVGA] (multi-head: yes  rom: no  post: no)
-> [    3.329881] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-> 
-> 
-> Best wishes
-> 
-> Norbert
-> ------------------------------------------------------------------------
-> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> JAIST, Japan                                 TeX Live & Debian Developer
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> LUPPITT (n.)
-> The piece of leather which hangs off the bottom of your shoe before
-> you can be bothered to get it mended.
-> 			--- Douglas Adams, The Meaning of Liff
-> 
-> ------------------------------------------------------------------------------
-> Keep Your Developer Skills Current with LearnDevNow!
-> The most comprehensive online learning library for Microsoft developers
-> is just $99.99! Visual Studio, SharePoint, SQL - plus HTML5, CSS3, MVC3,
-> Metro Style Apps, more. Free future releases when you subscribe now!
-> http://p.sf.net/sfu/learndevnow-d2d
-> --
-> _______________________________________________
-> Dri-devel mailing list
-> Dri-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/dri-devel
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 8ce3959..9ac003a 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -115,8 +115,8 @@
+ #define twl_has_watchdog()        false
+ #endif
+ 
+-#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
+-	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
++#if defined(CONFIG_MFD_TWL4030_AUDIO) || \
++	defined(CONFIG_MFD_TWL4030_AUDIO_MODULE)
+ #define twl_has_codec()	true
+ #else
+ #define twl_has_codec()	false
+@@ -146,6 +146,7 @@
+ #define SUB_CHIP_ID1 1
+ #define SUB_CHIP_ID2 2
+ #define SUB_CHIP_ID3 3
++#define SUB_CHIP_ID_INVAL 0xff
+ 
+ #define TWL_MODULE_LAST TWL4030_MODULE_LAST
+ 
+@@ -317,7 +318,7 @@ static struct twl_mapping twl6030_map[] = {
+ 	 * so they continue to match the order in this table.
+ 	 */
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_USB },
+-	{ SUB_CHIP_ID3, TWL6030_BASEADD_AUDIO },
++	{ SUB_CHIP_ID_INVAL, TWL6030_BASEADD_AUDIO },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_DIEID },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_PIH },
+@@ -379,6 +380,11 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -436,6 +442,11 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -836,15 +847,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 			return PTR_ERR(child);
+ 	}
+ 
+-	if (twl_has_codec() && pdata->audio && twl_class_is_6030()) {
+-		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
+-		child = add_child(sub_chip_id, "twl6040",
+-				pdata->audio, sizeof(*pdata->audio),
+-				false, 0, 0);
+-		if (IS_ERR(child))
+-			return PTR_ERR(child);
+-	}
+-
+ 	/* twl4030 regulators */
+ 	if (twl_has_regulator() && twl_class_is_4030()) {
+ 		child = add_regulator(TWL4030_REG_VPLL1, pdata->vpll1,
+@@ -1165,18 +1167,21 @@ int twl6030_exit_irq(void);
+ 
+ static int twl_remove(struct i2c_client *client)
+ {
+-	unsigned i;
++	unsigned i, num_slaves;
+ 	int status;
+ 
+-	if (twl_class_is_4030())
++	if (twl_class_is_4030()) {
+ 		status = twl4030_exit_irq();
+-	else
++		num_slaves = TWL_NUM_SLAVES;
++	} else {
+ 		status = twl6030_exit_irq();
++		num_slaves = TWL_NUM_SLAVES - 1;
++	}
+ 
+ 	if (status < 0)
+ 		return status;
+ 
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
+ 
+ 		if (twl->client && twl->client != client)
+@@ -1192,7 +1197,7 @@ static int __devinit
+ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ {
+ 	int				status;
+-	unsigned			i;
++	unsigned			i, num_slaves;
+ 	struct twl4030_platform_data	*pdata = client->dev.platform_data;
+ 	struct device_node		*node = client->dev.of_node;
+ 	u8 temp;
+@@ -1246,7 +1251,17 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		return -EBUSY;
+ 	}
+ 
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	if ((id->driver_data) & TWL6030_CLASS) {
++		twl_id = TWL6030_CLASS_ID;
++		twl_map = &twl6030_map[0];
++		num_slaves = TWL_NUM_SLAVES - 1;
++	} else {
++		twl_id = TWL4030_CLASS_ID;
++		twl_map = &twl4030_map[0];
++		num_slaves = TWL_NUM_SLAVES;
++	}
++
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
+ 
+ 		twl->address = client->addr + i;
+@@ -1265,13 +1280,6 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		mutex_init(&twl->xfer_lock);
+ 	}
+ 	inuse = true;
+-	if ((id->driver_data) & TWL6030_CLASS) {
+-		twl_id = TWL6030_CLASS_ID;
+-		twl_map = &twl6030_map[0];
+-	} else {
+-		twl_id = TWL4030_CLASS_ID;
+-		twl_map = &twl4030_map[0];
+-	}
+ 
+ 	/* setup clock framework */
+ 	clocks_init(&client->dev, pdata->clock);
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.8.4
+
