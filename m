@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab2B1BG2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:06:28 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2B1BGZ (ORCPT
+	id S932310Ab2B1BjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:39:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2B1BGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.8 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010208.003446779@linuxfoundation.org>
+Message-Id: <20120228010208.524275418@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:27 -0800
+Date: Mon, 27 Feb 2012 17:02:30 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Li Wei <lw@cn.fujitsu.com>,
+        alan@lxorguk.ukuu.org.uk,
+        "Yurij M. Plotnikov" <Yurij.Plotnikov@oktetlabs.ru>,
+        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/73] ipv4: fix for ip_options_rcv_srr() daddr update.
+Subject: [ 27/73] ipv4: reset flowi parameters on route connect
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,30 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Li Wei <lw@cn.fujitsu.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit b12f62efb8ec0b9523bdb6c2d412c07193086de9 ]
+[ Upstream commit e6b45241c57a83197e5de9166b3b0d32ac562609 ]
 
-When opt->srr_is_hit is set skb_rtable(skb) has been updated for
-'nexthop' and iph->daddr should always equals to skb_rtable->rt_dst
-holds, We need update iph->daddr either.
+Eric Dumazet found that commit 813b3b5db83
+(ipv4: Use caller's on-stack flowi as-is in output
+route lookups.) that comes in 3.0 added a regression.
+The problem appears to be that resulting flowi4_oif is
+used incorrectly as input parameter to some routing lookups.
+The result is that when connecting to local port without
+listener if the IP address that is used is not on a loopback
+interface we incorrectly assign RTN_UNICAST to the output
+route because no route is matched by oif=lo. The RST packet
+can not be sent immediately by tcp_v4_send_reset because
+it expects RTN_LOCAL.
 
-Signed-off-by: Li Wei <lw@cn.fujitsu.com>
+	So, change ip_route_connect and ip_route_newports to
+update the flowi4 fields that are input parameters because
+we do not want unnecessary binding to oif.
+
+	To make it clear what are the input parameters that
+can be modified during lookup and to show which fields of
+floiw4 are reused add a new function to update the flowi4
+structure: flowi4_update_output.
+
+Thanks to Yurij M. Plotnikov for providing a bug report including a
+program to reproduce the problem.
+
+Thanks to Eric Dumazet for tracking the problem down to
+tcp_v4_send_reset and providing initial fix.
+
+Reported-by: Yurij M. Plotnikov <Yurij.Plotnikov@oktetlabs.ru>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_options.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/flow.h  |   10 ++++++++++
+ include/net/route.h |    4 ++++
+ 2 files changed, 14 insertions(+)
 
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -640,6 +640,7 @@ int ip_options_rcv_srr(struct sk_buff *s
+--- a/include/net/flow.h
++++ b/include/net/flow.h
+@@ -90,6 +90,16 @@ static inline void flowi4_init_output(st
+ 	fl4->fl4_dport = dport;
+ 	fl4->fl4_sport = sport;
+ }
++
++/* Reset some input parameters after previous lookup */
++static inline void flowi4_update_output(struct flowi4 *fl4, int oif, __u8 tos,
++					__be32 daddr, __be32 saddr)
++{
++	fl4->flowi4_oif = oif;
++	fl4->flowi4_tos = tos;
++	fl4->daddr = daddr;
++	fl4->saddr = saddr;
++}
+ 				      
+ 
+ struct flowi6 {
+--- a/include/net/route.h
++++ b/include/net/route.h
+@@ -270,6 +270,7 @@ static inline struct rtable *ip_route_co
+ 		if (IS_ERR(rt))
+ 			return rt;
+ 		ip_rt_put(rt);
++		flowi4_update_output(fl4, oif, tos, fl4->daddr, fl4->saddr);
  	}
- 	if (srrptr <= srrspace) {
- 		opt->srr_is_hit = 1;
-+		iph->daddr = nexthop;
- 		opt->is_changed = 1;
+ 	security_sk_classify_flow(sk, flowi4_to_flowi(fl4));
+ 	return ip_route_output_flow(net, fl4, sk);
+@@ -284,6 +285,9 @@ static inline struct rtable *ip_route_ne
+ 		fl4->fl4_dport = dport;
+ 		fl4->fl4_sport = sport;
+ 		ip_rt_put(rt);
++		flowi4_update_output(fl4, sk->sk_bound_dev_if,
++				     RT_CONN_FLAGS(sk), fl4->daddr,
++				     fl4->saddr);
+ 		security_sk_classify_flow(sk, flowi4_to_flowi(fl4));
+ 		return ip_route_output_flow(sock_net(sk), fl4, sk);
  	}
- 	return 0;
 
 
