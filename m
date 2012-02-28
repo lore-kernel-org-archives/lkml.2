@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2B1Ri7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:38:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab2B1Ri5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:38:57 -0500
-Message-ID: <4F4D111A.8020001@redhat.com>
-Date: Tue, 28 Feb 2012 19:38:34 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S965759Ab2B1Rny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:43:54 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:52943 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756620Ab2B1Rnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:43:52 -0500
+Date: Tue, 28 Feb 2012 09:43:52 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrei Warkentin <andreiw@vmware.com>,
+        kgdb-bugreport@lists.sourceforge.net, Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Message-ID: <1379096961.1660631.1330451032375.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <4F4CFB94.2080302@windriver.com>
+Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, joro@8bytes.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH] perf/x86: Fix HO/GO counting with SVM disabled
-References: <20120227182325.GA12302@8bytes.org> <1330444544-15665-1-git-send-email-joerg.roedel@amd.com> <4F4D0DD6.9030302@redhat.com> <4F4D10A9.5010707@gmail.com>
-In-Reply-To: <4F4D10A9.5010707@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.60.13]
+X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 07:36 PM, David Ahern wrote:
-> On 2/28/12 10:24 AM, Avi Kivity wrote:
->> On 02/28/2012 05:55 PM, Joerg Roedel wrote:
->>>
->>>   __init int amd_pmu_init(void)
->>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->>> index 5fa553b..773fee2 100644
->>> --- a/arch/x86/kvm/svm.c
->>> +++ b/arch/x86/kvm/svm.c
->>> @@ -29,6 +29,7 @@
->>>   #include<linux/ftrace_event.h>
->>>   #include<linux/slab.h>
->>>
->>> +#include<asm/perf_event.h>
->>>   #include<asm/tlbflush.h>
->>>   #include<asm/desc.h>
->>>   #include<asm/kvm_para.h>
->>> @@ -575,6 +576,8 @@ static void svm_hardware_disable(void *garbage)
->>>           wrmsrl(MSR_AMD64_TSC_RATIO, TSC_RATIO_DEFAULT);
->>>
->>>       cpu_svm_disable();
->>> +
->>> +    x86_pmu_disable_virt();
->>>   }
->>>
->>>   static int svm_hardware_enable(void *garbage)
->>> @@ -622,6 +625,8 @@ static int svm_hardware_enable(void *garbage)
->>>
->>>       svm_init_erratum_383();
->>>
->>> +    x86_pmu_enable_virt();
->>> +
->>>       return 0;
->>>   }
->>>
->>
->> These should go into x86.c.  If the functions later gain meaning on
->> Intel, we want them to be called (and nothing in the name suggests
->> they're AMD specific).
->>
->
-> I was to suggest the reverse: since this patch addesses an AMD bug,
-> why not push those functions into perf_event_amd.c and make them
-> dependent on CONFIG_CPU_SUP_AMD as well.
+Hi,
 
-It depends on which direction you expect the code to grow.  These hooks
-seem reasonable, so I think they should be generic.
+----- Original Message -----
+> From: "Jason Wessel" <jason.wessel@windriver.com>
+> To: "Andrei Warkentin" <awarkentin@vmware.com>
+> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
+> kgdb-bugreport@lists.sourceforge.net, "Matt Mackall" <mpm@selenic.com>, "Andrei Warkentin"
+> <andrey.warkentin@gmail.com>
+> Sent: Tuesday, February 28, 2012 11:06:44 AM
+> Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+> 
 
--- 
-error compiling committee.c: too many arguments to function
+> 
+> All that netpoll_poll() did was to call netpoll_poll_dev().  I have
+> not yet looked at the differences between kgdboe and the netkdb code
+> you proposed but I would have suspected it also falls victim to the
+> ethernet preemption problem which prevented kgdboe from ever being
+> considered for a mainline merge.  Certainly there are ways to fix
+> this
+> problem but most involved changes to scheduling, core net code, or
+> substantial driver specific changes.
+> 
 
+I see, I read up on the issues w.r.t. preemption. Could this be worked
+around by modifiying affected drivers to bypass locking if they are
+used in KDB context? Make some accessor netdev-specific lock/unlocks
+that won't do anything if running in KDB context.
+
+> 
+> > 
+> > This is slight OT, but...are WiFi drivers sufficiently similar that
+> > netpoll "just works?"
+> 
+> Yes and no.  Yes, you could use the NET_POLL api to transmit packets
+> if the driver implemented polling hooks, but no in the sense that
+> most
+> of the time you need a user space driver to manage the keys which are
+> time sensitive for things like WPA (usually the job of wpa
+> supplicant).  This is going to prevent you from having WiFi work at
+> all while the kernel is in the critical exception state.
+> 
+
+Ah right. I was thinking just open networking. I should give that a try...
+
+A
