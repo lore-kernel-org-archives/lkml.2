@@ -1,59 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2B1GiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 01:38:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58438 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324Ab2B1GiI (ORCPT
+	id S1753826Ab2B1Gju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 01:39:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37088 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab2B1Gjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 01:38:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Wells <kevin.wells@nxp.com>
-Subject: Re: [PATCH v3] ARM: LPC32xx: Ethernet support
-Date: Tue, 28 Feb 2012 06:38:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Roland Stigge <stigge@antcom.de>, Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1330364762-23203-1-git-send-email-stigge@antcom.de> <4F4BFDD2.8060007@antcom.de> <083DF309106F364B939360100EC290F81F365B2B2A@eu1rdcrdc1wx030.exi.nxp.com>
-In-Reply-To: <083DF309106F364B939360100EC290F81F365B2B2A@eu1rdcrdc1wx030.exi.nxp.com>
+	Tue, 28 Feb 2012 01:39:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.149.147 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F4C76B1.8000503@openvz.org>
+Date: Tue, 28 Feb 2012 10:39:45 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 20/21] mm: split zone->lru_lock
+References: <20120223133728.12988.5432.stgit@zurg>	<20120223135323.12988.1605.stgit@zurg> <20120228104913.0fc13bfd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120228104913.0fc13bfd.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202280638.04634.arnd@arndb.de>
-X-Provags-ID: V02:K0:GhssLNmpVKss5K8MY20TRt7jOpWFp+CQ9o40ScSFWKv
- 0wgLHi47wX1agGGPJpqJ6ozxm7DCQYNISlKz7sUK4LD2X0+9Gu
- TICXRFwcoS/PSoC1giEBoEwLaVdFFqHW/Crg4teFLJOaVHJv9h
- q34/Xc8itX9h+hdwzKDZ6OPoamp/HCHoa+Is0HvvVrlqxJri2A
- 3RGPZlpvxw/vdV4ULQY+wD9DHAb/5WbhBEes5fh7FWRJdCy48U
- gB0w/iH1TGRSPOYWRF+yumJqRpV2XsJc9BZoMEslKY7buSO89c
- lFaw9hoVdXiphWgKMhv/Zs2sNo9k60S0BJJQr5+hVxkmkzy8eR
- qXeUhSq5roLkc/U6GJTE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 February 2012, Kevin Wells wrote:
-> >
-> >For the driver, some style fixes were applied, and the cmdline
-> >"ethaddr" was removed, relying on the bootloader to set it correctly
-> > (and it actually does, it actually needs to prepare TFTP booting).
-> 
-> I'm not sure I'd trust the bootloader to always set the MAC address
-> in hardware prior to calling the kernel. A lot of u-boot MAC drivers,
-> including the 32x0's, only set the MAC address on the call to
-> eth_init(), which is only called when the network interface is used.
-> If you do a MTD based kernel boot, the MAC address will probably be
-> invalid if you try to do a NFS mount for the filesystem.
+KAMEZAWA Hiroyuki wrote:
+> On Thu, 23 Feb 2012 17:53:23 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> Looks like all ready for splitting zone->lru_lock into per-lruvec pieces.
+>>
+>> lruvec locking loop protected with rcu, actually there is irq-disabling instead
+>> of rcu_read_lock(). Memory controller already releases its lru-vectors after
+>> syncronize_rcu() in cgroup_diput(). Probably it should be replaced with synchronize_sched()
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> Do we need rcu_read_lock() even if we check isolated pages at pre_destroy() ?
+> If pre_destroy() ends, pages under a memcg being destroyed were moved to other
+> cgroup while it's usolated.
+>
+> So,
+>   - PageLRU(page) guarantees lruvec is valid.
+>   - if !PageLRU(page), the caller of lru_lock should know what it does.
+>     Once isolated, pre_destroy() never ends and page_lruvec(page) is always stable.
 
-In the long run, the MAC address should probably be set by the boot
-loader through the device tree that is passed to the kernel, overriding
-the one in the registers when set.
+This will be racy, because lruvec can be changed and released between checking PageLRU() and page_lruvec() or
+between page_lruvec() and spin_lock(), so we need to protect whole operation with single locking interval.
 
-When we do that, we won't need the command line argument any more.
-Some drivers have it anyway, but IMHO the cleaner approach would
-be having fewer methods to pass it.
+>
+> Thanks,
+> -Kame
+>
+>> ---
+>>   include/linux/mmzone.h |    3 +-
+>>   mm/compaction.c        |    2 +
+>>   mm/internal.h          |   66 +++++++++++++++++++++++++-----------------------
+>>   mm/page_alloc.c        |    2 +
+>>   mm/swap.c              |    2 +
+>>   5 files changed, 40 insertions(+), 35 deletions(-)
+>>
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index 2e3a298..9880150 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -304,6 +304,8 @@ struct zone_reclaim_stat {
+>>   };
+>>
+>>   struct lruvec {
+>> +	spinlock_t		lru_lock;
+>> +
+>>   	struct list_head	pages_lru[NR_LRU_LISTS];
+>>   	unsigned long		pages_count[NR_LRU_COUNTERS];
+>>
+>> @@ -386,7 +388,6 @@ struct zone {
+>>   	ZONE_PADDING(_pad1_)
+>>
+>>   	/* Fields commonly accessed by the page reclaim scanner */
+>> -	spinlock_t		lru_lock;
+>>   	struct lruvec		lruvec;
+>>
+>>   	unsigned long		pages_scanned;	   /* since last reclaim */
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index fa74cbe..8661bb58 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -306,7 +306,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>   			lruvec = NULL;
+>>   		}
+>>   		if (need_resched() ||
+>> -		    (lruvec&&  spin_is_contended(&zone->lru_lock))) {
+>> +		    (lruvec&&  spin_is_contended(&lruvec->lru_lock))) {
+>>   			if (lruvec)
+>>   				unlock_lruvec_irq(lruvec);
+>>   			lruvec = NULL;
+>> diff --git a/mm/internal.h b/mm/internal.h
+>> index 6dd2e70..9a9fd53 100644
+>> --- a/mm/internal.h
+>> +++ b/mm/internal.h
+>> @@ -15,27 +15,27 @@
+>>
+>>   static inline void lock_lruvec(struct lruvec *lruvec, unsigned long *flags)
+>>   {
+>> -	spin_lock_irqsave(&lruvec_zone(lruvec)->lru_lock, *flags);
+>> +	spin_lock_irqsave(&lruvec->lru_lock, *flags);
+>>   }
+>>
+>>   static inline void lock_lruvec_irq(struct lruvec *lruvec)
+>>   {
+>> -	spin_lock_irq(&lruvec_zone(lruvec)->lru_lock);
+>> +	spin_lock_irq(&lruvec->lru_lock);
+>>   }
+>>
+>>   static inline void unlock_lruvec(struct lruvec *lruvec, unsigned long *flags)
+>>   {
+>> -	spin_unlock_irqrestore(&lruvec_zone(lruvec)->lru_lock, *flags);
+>> +	spin_unlock_irqrestore(&lruvec->lru_lock, *flags);
+>>   }
+>>
+>>   static inline void unlock_lruvec_irq(struct lruvec *lruvec)
+>>   {
+>> -	spin_unlock_irq(&lruvec_zone(lruvec)->lru_lock);
+>> +	spin_unlock_irq(&lruvec->lru_lock);
+>>   }
+>>
+>>   static inline void wait_lruvec_unlock(struct lruvec *lruvec)
+>>   {
+>> -	spin_unlock_wait(&lruvec_zone(lruvec)->lru_lock);
+>> +	spin_unlock_wait(&lruvec->lru_lock);
+>>   }
+>>
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> @@ -46,37 +46,39 @@ static inline void wait_lruvec_unlock(struct lruvec *lruvec)
+>>   static inline struct lruvec *__relock_page_lruvec(struct lruvec *locked_lruvec,
+>>   						  struct page *page)
+>>   {
+>> -	/* Currenyly only one lru_lock per-zone */
+>> -	return page_lruvec(page);
+>> +	struct lruvec *lruvec;
+>> +
+>> +	do {
+>> +		lruvec = page_lruvec(page);
+>> +		if (likely(lruvec == locked_lruvec))
+>> +			return lruvec;
+>> +		spin_unlock(&locked_lruvec->lru_lock);
+>> +		spin_lock(&lruvec->lru_lock);
+>> +		locked_lruvec = lruvec;
+>> +	} while (1);
+>>   }
+>>
+>>   static inline struct lruvec *relock_page_lruvec_irq(struct lruvec *lruvec,
+>>   						    struct page *page)
+>>   {
+>> -	struct zone *zone = page_zone(page);
+>> -
+>>   	if (!lruvec) {
+>> -		spin_lock_irq(&zone->lru_lock);
+>> -	} else if (zone != lruvec_zone(lruvec)) {
+>> -		unlock_lruvec_irq(lruvec);
+>> -		spin_lock_irq(&zone->lru_lock);
+>> +		local_irq_disable();
+>> +		lruvec = page_lruvec(page);
+>> +		spin_lock(&lruvec->lru_lock);
+>>   	}
+>> -	return page_lruvec(page);
+>> +	return __relock_page_lruvec(lruvec, page);
+>>   }
+>>
+>>   static inline struct lruvec *relock_page_lruvec(struct lruvec *lruvec,
+>>   						struct page *page,
+>>   						unsigned long *flags)
+>>   {
+>> -	struct zone *zone = page_zone(page);
+>> -
+>>   	if (!lruvec) {
+>> -		spin_lock_irqsave(&zone->lru_lock, *flags);
+>> -	} else if (zone != lruvec_zone(lruvec)) {
+>> -		unlock_lruvec(lruvec, flags);
+>> -		spin_lock_irqsave(&zone->lru_lock, *flags);
+>> +		local_irq_save(*flags);
+>> +		lruvec = page_lruvec(page);
+>> +		spin_lock(&lruvec->lru_lock);
+>>   	}
+>> -	return page_lruvec(page);
+>> +	return __relock_page_lruvec(lruvec, page);
+>>   }
+>>
+>>   /*
+>> @@ -87,22 +89,24 @@ static inline struct lruvec *relock_page_lruvec(struct lruvec *lruvec,
+>>   static inline bool __lock_page_lruvec_irq(struct lruvec **lruvec,
+>>   					  struct page *page)
+>>   {
+>> -	struct zone *zone;
+>>   	bool ret = false;
+>>
+>> +	rcu_read_lock();
+>> +	/*
+>> +	 * If we see there PageLRU(), it means page has valid lruvec link.
+>> +	 * We need protect whole operation with single rcu-interval, otherwise
+>> +	 * lruvec which hold this LRU sign can run out before we secure it.
+>> +	 */
+>>   	if (PageLRU(page)) {
+>>   		if (!*lruvec) {
+>> -			zone = page_zone(page);
+>> -			spin_lock_irq(&zone->lru_lock);
+>> -		} else
+>> -			zone = lruvec_zone(*lruvec);
+>> -
+>> -		if (PageLRU(page)) {
+>>   			*lruvec = page_lruvec(page);
+>> +			lock_lruvec_irq(*lruvec);
+>> +		}
+>> +		*lruvec = __relock_page_lruvec(*lruvec, page);
+>> +		if (PageLRU(page))
+>>   			ret = true;
+>> -		} else
+>> -			*lruvec =&zone->lruvec;
+>>   	}
+>> +	rcu_read_unlock();
+>>
+>>   	return ret;
+>>   }
+>> @@ -110,7 +114,7 @@ static inline bool __lock_page_lruvec_irq(struct lruvec **lruvec,
+>>   /* Wait for lruvec unlock before locking other lruvec for the same page */
+>>   static inline void __wait_lruvec_unlock(struct lruvec *lruvec)
+>>   {
+>> -	/* Currently only one lru_lock per-zone */
+>> +	wait_lruvec_unlock(lruvec);
+>>   }
+>>
+>>   #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index ab42446..beadcc9 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -4294,6 +4294,7 @@ void init_zone_lruvec(struct zone *zone, struct lruvec *lruvec)
+>>   	enum lru_list lru;
+>>
+>>   	memset(lruvec, 0, sizeof(struct lruvec));
+>> +	spin_lock_init(&lruvec->lru_lock);
+>>   	for_each_lru(lru)
+>>   		INIT_LIST_HEAD(&lruvec->pages_lru[lru]);
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> @@ -4369,7 +4370,6 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>>   #endif
+>>   		zone->name = zone_names[j];
+>>   		spin_lock_init(&zone->lock);
+>> -		spin_lock_init(&zone->lru_lock);
+>>   		zone_seqlock_init(zone);
+>>   		zone->zone_pgdat = pgdat;
+>>
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index 998c71c..8156181 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -700,7 +700,7 @@ void lru_add_page_tail(struct lruvec *lruvec,
+>>   	VM_BUG_ON(!PageHead(page));
+>>   	VM_BUG_ON(PageCompound(page_tail));
+>>   	VM_BUG_ON(PageLRU(page_tail));
+>> -	VM_BUG_ON(NR_CPUS != 1&&  !spin_is_locked(&lruvec_zone(lruvec)->lru_lock));
+>> +	VM_BUG_ON(NR_CPUS != 1&&  !spin_is_locked(&lruvec->lru_lock));
+>>
+>>   	SetPageLRU(page_tail);
+>>
+>>
+>>
+>
 
-	Arnd
