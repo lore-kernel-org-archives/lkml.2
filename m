@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964841Ab2B1Bd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:33:58 -0500
+	id S965122Ab2B1Be3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:34:29 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932434Ab2B1BHR (ORCPT
+	with ESMTP id S932436Ab2B1BHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.104 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.134 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010209.542479164@linuxfoundation.org>
+Message-Id: <20120228010212.514772067@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:36 -0800
+Date: Mon, 27 Feb 2012 17:02:53 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/73] tcp: allow tcp_sacktag_one() to tag ranges not aligned with skbs
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 50/73] i387: move TS_USEDFPU clearing out of __save_init_fpu and into callers
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,116 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Neal Cardwell <ncardwell@google.com>
+commit b6c66418dcad0fcf83cd1d0a39482db37bf4fc41 upstream.
 
-[ Upstream commit cc9a672ee522d4805495b98680f4a3db5d0a0af9 ]
+Touching TS_USEDFPU without touching CR0.TS is confusing, so don't do
+it.  By moving it into the callers, we always do the TS_USEDFPU next to
+the CR0.TS accesses in the source code, and it's much easier to see how
+the two go hand in hand.
 
-This commit allows callers of tcp_sacktag_one() to pass in sequence
-ranges that do not align with skb boundaries, as tcp_shifted_skb()
-needs to do in an upcoming fix in this patch series.
-
-In fact, now tcp_sacktag_one() does not need to depend on an input skb
-at all, which makes its semantics and dependencies more clear.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1289,25 +1289,26 @@ static int tcp_match_skb_to_sack(struct
- 	return in_sack;
+---
+ arch/x86/include/asm/i387.h |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -259,7 +259,6 @@ static inline void fpu_save_init(struct
+ static inline void __save_init_fpu(struct task_struct *tsk)
+ {
+ 	fpu_save_init(&tsk->thread.fpu);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
  }
  
--static u8 tcp_sacktag_one(struct sk_buff *skb, struct sock *sk,
--			  struct tcp_sacktag_state *state,
-+/* Mark the given newly-SACKed range as such, adjusting counters and hints. */
-+static u8 tcp_sacktag_one(struct sock *sk,
-+			  struct tcp_sacktag_state *state, u8 sacked,
-+			  u32 start_seq, u32 end_seq,
- 			  int dup_sack, int pcount)
+ static inline int fpu_fxrstor_checking(struct fpu *fpu)
+@@ -290,6 +289,7 @@ static inline void __unlazy_fpu(struct t
  {
- 	struct tcp_sock *tp = tcp_sk(sk);
--	u8 sacked = TCP_SKB_CB(skb)->sacked;
- 	int fack_count = state->fack_count;
+ 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+ 		__save_init_fpu(tsk);
++		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+ 		stts();
+ 	} else
+ 		tsk->fpu_counter = 0;
+@@ -356,9 +356,11 @@ static inline void kernel_fpu_begin(void
  
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
- 		if (tp->undo_marker && tp->undo_retrans &&
--		    after(TCP_SKB_CB(skb)->end_seq, tp->undo_marker))
-+		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
- 			state->reord = min(fack_count, state->reord);
- 	}
+ 	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
+-	if (me->status & TS_USEDFPU)
++	if (me->status & TS_USEDFPU) {
+ 		__save_init_fpu(me->task);
+-	else
++		me->status &= ~TS_USEDFPU;
++		/* We do 'stts()' in kernel_fpu_end() */
++	} else
+ 		clts();
+ }
  
- 	/* Nothing to do; acked frame is about to be dropped (was ACKed). */
--	if (!after(TCP_SKB_CB(skb)->end_seq, tp->snd_una))
-+	if (!after(end_seq, tp->snd_una))
- 		return sacked;
- 
- 	if (!(sacked & TCPCB_SACKED_ACKED)) {
-@@ -1326,13 +1327,13 @@ static u8 tcp_sacktag_one(struct sk_buff
- 				/* New sack for not retransmitted frame,
- 				 * which was in hole. It is reordering.
- 				 */
--				if (before(TCP_SKB_CB(skb)->seq,
-+				if (before(start_seq,
- 					   tcp_highest_sack_seq(tp)))
- 					state->reord = min(fack_count,
- 							   state->reord);
- 
- 				/* SACK enhanced F-RTO (RFC4138; Appendix B) */
--				if (!after(TCP_SKB_CB(skb)->end_seq, tp->frto_highmark))
-+				if (!after(end_seq, tp->frto_highmark))
- 					state->flag |= FLAG_ONLY_ORIG_SACKED;
- 			}
- 
-@@ -1350,8 +1351,7 @@ static u8 tcp_sacktag_one(struct sk_buff
- 
- 		/* Lost marker hint past SACKed? Tweak RFC3517 cnt */
- 		if (!tcp_is_fack(tp) && (tp->lost_skb_hint != NULL) &&
--		    before(TCP_SKB_CB(skb)->seq,
--			   TCP_SKB_CB(tp->lost_skb_hint)->seq))
-+		    before(start_seq, TCP_SKB_CB(tp->lost_skb_hint)->seq))
- 			tp->lost_cnt_hint += pcount;
- 
- 		if (fack_count > tp->fackets_out)
-@@ -1407,7 +1407,11 @@ static int tcp_shifted_skb(struct sock *
- 	}
- 
- 	/* We discard results */
--	tcp_sacktag_one(skb, sk, state, dup_sack, pcount);
-+	tcp_sacktag_one(sk, state,
-+			TCP_SKB_CB(skb)->sacked,
-+			TCP_SKB_CB(skb)->seq,
-+			TCP_SKB_CB(skb)->end_seq,
-+			dup_sack, pcount);
- 
- 	/* Difference in this won't matter, both ACKed by the same cumul. ACK */
- 	TCP_SKB_CB(prev)->sacked |= (TCP_SKB_CB(skb)->sacked & TCPCB_EVER_RETRANS);
-@@ -1646,10 +1650,14 @@ static struct sk_buff *tcp_sacktag_walk(
- 			break;
- 
- 		if (in_sack) {
--			TCP_SKB_CB(skb)->sacked = tcp_sacktag_one(skb, sk,
--								  state,
--								  dup_sack,
--								  tcp_skb_pcount(skb));
-+			TCP_SKB_CB(skb)->sacked =
-+				tcp_sacktag_one(sk,
-+						state,
-+						TCP_SKB_CB(skb)->sacked,
-+						TCP_SKB_CB(skb)->seq,
-+						TCP_SKB_CB(skb)->end_seq,
-+						dup_sack,
-+						tcp_skb_pcount(skb));
- 
- 			if (!before(TCP_SKB_CB(skb)->seq,
- 				    tcp_highest_sack_seq(tp)))
+@@ -449,6 +451,7 @@ static inline void save_init_fpu(struct
+ 	WARN_ON_ONCE(!(task_thread_info(tsk)->status & TS_USEDFPU));
+ 	preempt_disable();
+ 	__save_init_fpu(tsk);
++	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+ 	stts();
+ 	preempt_enable();
+ }
 
 
