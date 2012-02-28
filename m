@@ -1,147 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2B1CHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:07:22 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:25655 "EHLO
+	id S1756504Ab2B1CHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:07:21 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:25658 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab2B1CEu (ORCPT
+	with ESMTP id S1752143Ab2B1CEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Feb 2012 21:04:50 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/11] x86, PCI: Fix memleak with get_current_resources
-Date: Mon, 27 Feb 2012 18:03:43 -0800
-Message-Id: <1330394631-28978-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 04/11] PCI: rename pci_host_bridge() to find_pci_root_bridge()
+Date: Mon, 27 Feb 2012 18:03:44 -0800
+Message-Id: <1330394631-28978-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
 References: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020206.4F4C363F.0082,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020206.4F4C363E.00C4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in pci_scan_acpi_root, when pci_use_crs is set, get_current_resources is used
-to get pci_root_info, and it will allocate name and res array.
+Separate find_pci_root_bus out.
 
-later if pci_create_root_bus can not create bus (could be already there...)
-it will only free bus res list. but the name and res array is not freed.
-
-let get_current_resource take info pointer instead have local info.
+-v2: according to Bjorn, remove extra null checking.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/acpi.c |   49 ++++++++++++++++++++++++++++++-------------------
- 1 files changed, 30 insertions(+), 19 deletions(-)
+ drivers/pci/host-bridge.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 7cc0a44..304ccf0 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -305,49 +305,55 @@ static void add_resources(struct pci_root_info *info)
- 	}
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index dfaff3f..b3ddcc5 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -16,15 +16,22 @@ void add_to_pci_host_bridges(struct pci_host_bridge *bridge)
+ 	list_add_tail(&bridge->list, &pci_host_bridges);
  }
  
-+static void free_pci_root_info(struct pci_root_info *info)
-+{
-+	kfree(info->name);
-+	kfree(info->res);
-+	memset(info, 0, sizeof(struct pci_root_info));
+-static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
++static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
+ {
+ 	struct pci_bus *bus;
+-	struct pci_host_bridge *bridge;
+ 
+ 	bus = dev->bus;
+ 	while (bus->parent)
+ 		bus = bus->parent;
+ 
++	return bus;
 +}
 +
- static void
--get_current_resources(struct acpi_device *device, int busnum,
-+get_current_resources(struct pci_root_info *info,
-+		      struct acpi_device *device, int busnum,
- 		      int domain, struct list_head *resources)
- {
--	struct pci_root_info info;
- 	size_t size;
- 
--	info.bridge = device;
--	info.res_num = 0;
--	info.resources = resources;
-+	info->bridge = device;
-+	info->res_num = 0;
-+	info->resources = resources;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
--				&info);
--	if (!info.res_num)
-+				info);
-+	if (!info->res_num)
- 		return;
- 
--	size = sizeof(*info.res) * info.res_num;
--	info.res = kmalloc(size, GFP_KERNEL);
--	if (!info.res)
-+	size = sizeof(*info->res) * info->res_num;
-+	info->res = kmalloc(size, GFP_KERNEL);
-+	if (!info->res)
- 		return;
- 
--	info.name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
--	if (!info.name)
-+	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
-+	if (!info->name)
- 		goto name_alloc_fail;
- 
--	info.res_num = 0;
-+	info->res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
--				&info);
-+				info);
- 
- 	if (pci_use_crs) {
--		add_resources(&info);
-+		add_resources(info);
- 
- 		return;
- 	}
- 
--	kfree(info.name);
--
- name_alloc_fail:
--	kfree(info.res);
-+	free_pci_root_info(info);
- }
- 
- struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- {
- 	struct acpi_device *device = root->device;
-+	struct pci_root_info info;
- 	int domain = root->segment;
- 	int busnum = root->secondary.start;
- 	LIST_HEAD(resources);
-@@ -392,6 +398,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 
- 	sd->domain = domain;
- 	sd->node = node;
-+	memset(&info, 0, sizeof(struct pci_root_info));
- 	/*
- 	 * Maybe the desired pci bus has been already scanned. In such case
- 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
-@@ -405,7 +412,8 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(sd);
- 	} else {
--		get_current_resources(device, busnum, domain, &resources);
-+		get_current_resources(&info, device, busnum, domain,
-+					&resources);
- 
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
-@@ -419,6 +427,9 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 			bus->subordinate = pci_scan_child_bus(bus);
- 		else
- 			pci_free_resource_list(&resources);
++static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
++{
++	struct pci_bus *bus = find_pci_root_bus(dev);
++	struct pci_host_bridge *bridge;
 +
-+		if (!bus && pci_use_crs)
-+			free_pci_root_info(&info);
- 	}
+ 	list_for_each_entry(bridge, &pci_host_bridges, list) {
+ 		if (bridge->bus == bus)
+ 			return bridge;
+@@ -42,7 +49,7 @@ void __weak pcibios_resource_to_bus(struct pci_dev *dev,
+ 				    struct pci_bus_region *region,
+ 				    struct resource *res)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+ 	resource_size_t offset = 0;
  
- 	/* After the PCI-E bus has been walked and all devices discovered,
+@@ -70,12 +77,13 @@ static bool region_contains(struct pci_bus_region *region1,
+ void __weak pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 				    struct pci_bus_region *region)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+-	struct pci_bus_region bus_region;
+ 	resource_size_t offset = 0;
+ 
+ 	list_for_each_entry(window, &bridge->windows, list) {
++		struct pci_bus_region bus_region;
++
+ 		if (resource_type(res) != resource_type(window->res))
+ 			continue;
+ 
 -- 
 1.7.7
 
