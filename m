@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965176Ab2B1LK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 06:10:27 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56771 "EHLO
+	id S1757097Ab2B1LKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 06:10:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56776 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757049Ab2B1LK0 (ORCPT
+	by vger.kernel.org with ESMTP id S1757049Ab2B1LK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 06:10:26 -0500
+	Tue, 28 Feb 2012 06:10:28 -0500
+Date: Tue, 28 Feb 2012 11:10:26 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-Date: Tue, 28 Feb 2012 11:10:23 +0000
-Message-Id: <1330427423-25499-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
+Message-ID: <20120228111026.GC3683@opensource.wolfsonmicro.com>
 References: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zCKi3GIZzVBPywwA"
+Content-Disposition: inline
+In-Reply-To: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's -next fails to build for me:
 
-  CC      kernel/trace/trace_export.o
-In file included from kernel/trace/trace_export.c:197: kernel/trace/trace_entries.h:58: error: 'perf_ftrace_event_register' undeclared here (not in a function)
-make[2]: *** [kernel/trace/trace_export.o] Error 1
-make[1]: *** [kernel/trace] Error 2
-make: *** [kernel] Error 2
+--zCKi3GIZzVBPywwA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-because as of ced390 (ftrace, perf: Add support to use function
-tracepoint in perf) perf_trace_event_register() is declared in trace.h
-only if CONFIG_PERF_EVENTS is enabled but I don't have that set.
+On Tue, Feb 28, 2012 at 11:02:46AM +0000, Mark Brown wrote:
 
-Ensure that we always have a definition of perf_trace_event_register()
-by providing a definition if CONFIG_PERF_EVENTS is disabled.
+> Ensure that we always have a definition of perf_trace_event_register()
+> by making the definition unconditional.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Oops, sent too soon - the code still fails to link as the ifdefs are
+more complex than I'd realised.
 
-This one had the build test run all the way...
+--zCKi3GIZzVBPywwA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- kernel/trace/trace.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 54faec7..2aef24e 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -842,6 +842,8 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
- #else
- #define perf_ftrace_event_register NULL
- #endif /* CONFIG_FUNCTION_TRACER */
-+#else
-+#define perf_ftrace_event_register NULL
- #endif /* CONFIG_PERF_EVENTS */
- 
- #endif /* _LINUX_KERNEL_TRACE_H */
--- 
-1.7.9.1
+iQIcBAEBAgAGBQJPTLX8AAoJEBus8iNuMP3dy7sP/RAZpcuCOEHuMog8S2cKDNP4
+M0RKN7fj/zvxEL1p1P/7n7wSSI4KE+fkKJRePpZSWcF1BZpnejMdUUFktX+Qijgc
+JE/SYJobxLDofHnu5DHYYcqRVO8erMeULbL977ejQX6OM4OrCUuTAUxg/noYBfYr
+X2NJCJA/jX+F3QKuhEL5nFLngi88WsDtfwriRO7aKDbbbWIBWSlfgl2JhKj93TC+
+SxZUL6+iMqzq3mgA//3olpK2IIAq1vS1GO6VJwYJ99qXRIoF2RvaofdDwRBf1ovP
+fpy+6ZFZLbmZIkk2s4rCgMDolJ8ZDEhn8B1OjjVV4vEOoKofkTJ2mFEv1/7EwyX6
+k8zqGmeShor8V7tTUdsiEGpng34cEz6QiUizwXp4NtlYXBwrXpfF4mCh4jucQTWB
+1UbyB0TaijYbWxMlNbvgE4VjNilomtFFn57ygguapsNsj6eAi+jZMH/BZas4QVK2
+JKUCkmkp+HHXhslqF3Z4Kll+FbW6jZcnxhJKxkPnFpqOmYiD5udCgQlBo2BPCA/w
+MzKoji7ompQzGg/xFdsfs4Vab8ayVIO94DlmAdTU5HHNex8RHMiKU7rP7ZLd9IQT
+CTPy8YdOfGztQXU+a2aRhXD5l6biOc2hLD4QjS2pN60xia5QTy/+kH4jfflBpyIt
+zREEzM38t8DTj34QCsi/
+=aY44
+-----END PGP SIGNATURE-----
 
+--zCKi3GIZzVBPywwA--
