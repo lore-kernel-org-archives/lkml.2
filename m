@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030434Ab2B1U2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 15:28:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17424 "EHLO
+	id S1030446Ab2B1U2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 15:28:34 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17481 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030422Ab2B1U2H (ORCPT
+	with ESMTP id S1030312Ab2B1U23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 15:28:07 -0500
+	Tue, 28 Feb 2012 15:28:29 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 28 Feb 2012 12:27:40 -0800
+	by hqnvupgp08.nvidia.com on Tue, 28 Feb 2012 12:27:39 -0800
 From: Stephen Warren <swarren@nvidia.com>
 To: Linus Walleij <linus.walleij@stericsson.com>
 CC: Linus Walleij <linus.walleij@linaro.org>, <B29396@freescale.com>,
         <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
         <thomas.abraham@linaro.org>, <tony@atomide.com>,
         <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 6/6] pinctrl: fix case of Tegra30's foo_groups[] arrays
-Date: Tue, 28 Feb 2012 13:27:32 -0700
-Message-ID: <1330460852-23486-7-git-send-email-swarren@nvidia.com>
+Subject: [PATCH V2 5/6] pinctrl: Enhance mapping table to support pin config operations
+Date: Tue, 28 Feb 2012 13:27:31 -0700
+Message-ID: <1330460852-23486-6-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
 References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
@@ -28,2259 +28,1169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra's pin groups all have lower-case names. Fix the foo_groups[] arrays
-in the driver to be lower-case to match.
+The pinctrl mapping table can now contain entries to:
+* Set the mux function of a pin group
+* Apply a set of pin config options to a pin or a group
+
+This allows pinctrl_select_state() to apply pin configs settings as well
+as mux settings.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v2: New patch.
+v2: Added numerous extra PIN_MAP_*() special-case macros. Fixed kerneldoc
+typo. Delete pinctrl_get_pin_id() and replace it with pin_get_from_name().
+Various minor fixes. Updates due to rebase.
 
- drivers/pinctrl/pinctrl-tegra30.c | 1992 ++++++++++++++++++------------------
- 1 files changed, 996 insertions(+), 996 deletions(-)
+ Documentation/pinctrl.txt       |   76 +++++++++++++++---
+ arch/arm/mach-u300/core.c       |   12 ++--
+ drivers/pinctrl/core.c          |  152 ++++++++++++++++++++++++++++++------
+ drivers/pinctrl/core.h          |   35 +++++++-
+ drivers/pinctrl/pinconf.c       |  165 +++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinconf.h       |   40 ++++++++++
+ drivers/pinctrl/pinmux.c        |   69 ++++++++++------
+ drivers/pinctrl/pinmux.h        |   23 +++++-
+ include/linux/pinctrl/machine.h |  145 +++++++++++++++++++++++++++-------
+ 9 files changed, 610 insertions(+), 107 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-tegra30.c b/drivers/pinctrl/pinctrl-tegra30.c
-index 1ea1e6a..4d7571d 100644
---- a/drivers/pinctrl/pinctrl-tegra30.c
-+++ b/drivers/pinctrl/pinctrl-tegra30.c
-@@ -2014,1242 +2014,1242 @@ enum tegra_mux {
- 	TEGRA_MUX_VI_ALT3,
- };
- static const char * const blink_groups[] = {
--	"CLK_32K_OUT_PA0",
-+	"clk_32k_out_pa0",
- };
- 
- static const char * const cec_groups[] = {
--	"HDMI_CEC_PEE3",
--	"OWR",
-+	"hdmi_cec_pee3",
-+	"owr",
- };
- 
- static const char * const clk_12m_out_groups[] = {
--	"PV3",
-+	"pv3",
- };
- 
- static const char * const clk_32k_in_groups[] = {
--	"CLK_32K_IN",
-+	"clk_32k_in",
- };
- 
- static const char * const core_pwr_req_groups[] = {
--	"CORE_PWR_REQ",
-+	"core_pwr_req",
- };
- 
- static const char * const cpu_pwr_req_groups[] = {
--	"CPU_PWR_REQ",
-+	"cpu_pwr_req",
- };
- 
- static const char * const crt_groups[] = {
--	"CRT_HSYNC_PV6",
--	"CRT_VSYNC_PV7",
-+	"crt_hsync_pv6",
-+	"crt_vsync_pv7",
- };
- 
- static const char * const dap_groups[] = {
--	"CLK1_REQ_PEE2",
--	"CLK2_REQ_PCC5",
-+	"clk1_req_pee2",
-+	"clk2_req_pcc5",
- };
- 
- static const char * const ddr_groups[] = {
--	"VI_D0_PT4",
--	"VI_D1_PD5",
--	"VI_D10_PT2",
--	"VI_D11_PT3",
--	"VI_D2_PL0",
--	"VI_D3_PL1",
--	"VI_D4_PL2",
--	"VI_D5_PL3",
--	"VI_D6_PL4",
--	"VI_D7_PL5",
--	"VI_D8_PL6",
--	"VI_D9_PL7",
--	"VI_HSYNC_PD7",
--	"VI_VSYNC_PD6",
-+	"vi_d0_pt4",
-+	"vi_d1_pd5",
-+	"vi_d10_pt2",
-+	"vi_d11_pt3",
-+	"vi_d2_pl0",
-+	"vi_d3_pl1",
-+	"vi_d4_pl2",
-+	"vi_d5_pl3",
-+	"vi_d6_pl4",
-+	"vi_d7_pl5",
-+	"vi_d8_pl6",
-+	"vi_d9_pl7",
-+	"vi_hsync_pd7",
-+	"vi_vsync_pd6",
- };
- 
- static const char * const dev3_groups[] = {
--	"CLK3_REQ_PEE1",
-+	"clk3_req_pee1",
- };
- 
- static const char * const displaya_groups[] = {
--	"DAP3_DIN_PP1",
--	"DAP3_DOUT_PP2",
--	"DAP3_FS_PP0",
--	"DAP3_SCLK_PP3",
--	"PBB3",
--	"PBB4",
--	"PBB5",
--	"PBB6",
--	"LCD_CS0_N_PN4",
--	"LCD_CS1_N_PW0",
--	"LCD_D0_PE0",
--	"LCD_D1_PE1",
--	"LCD_D10_PF2",
--	"LCD_D11_PF3",
--	"LCD_D12_PF4",
--	"LCD_D13_PF5",
--	"LCD_D14_PF6",
--	"LCD_D15_PF7",
--	"LCD_D16_PM0",
--	"LCD_D17_PM1",
--	"LCD_D18_PM2",
--	"LCD_D19_PM3",
--	"LCD_D2_PE2",
--	"LCD_D20_PM4",
--	"LCD_D21_PM5",
--	"LCD_D22_PM6",
--	"LCD_D23_PM7",
--	"LCD_D3_PE3",
--	"LCD_D4_PE4",
--	"LCD_D5_PE5",
--	"LCD_D6_PE6",
--	"LCD_D7_PE7",
--	"LCD_D8_PF0",
--	"LCD_D9_PF1",
--	"LCD_DC0_PN6",
--	"LCD_DC1_PD2",
--	"LCD_DE_PJ1",
--	"LCD_HSYNC_PJ3",
--	"LCD_M1_PW1",
--	"LCD_PCLK_PB3",
--	"LCD_PWR0_PB2",
--	"LCD_PWR1_PC1",
--	"LCD_PWR2_PC6",
--	"LCD_SCK_PZ4",
--	"LCD_SDIN_PZ2",
--	"LCD_SDOUT_PN5",
--	"LCD_VSYNC_PJ4",
--	"LCD_WR_N_PZ3",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_fs_pp0",
-+	"dap3_sclk_pp3",
-+	"pbb3",
-+	"pbb4",
-+	"pbb5",
-+	"pbb6",
-+	"lcd_cs0_n_pn4",
-+	"lcd_cs1_n_pw0",
-+	"lcd_d0_pe0",
-+	"lcd_d1_pe1",
-+	"lcd_d10_pf2",
-+	"lcd_d11_pf3",
-+	"lcd_d12_pf4",
-+	"lcd_d13_pf5",
-+	"lcd_d14_pf6",
-+	"lcd_d15_pf7",
-+	"lcd_d16_pm0",
-+	"lcd_d17_pm1",
-+	"lcd_d18_pm2",
-+	"lcd_d19_pm3",
-+	"lcd_d2_pe2",
-+	"lcd_d20_pm4",
-+	"lcd_d21_pm5",
-+	"lcd_d22_pm6",
-+	"lcd_d23_pm7",
-+	"lcd_d3_pe3",
-+	"lcd_d4_pe4",
-+	"lcd_d5_pe5",
-+	"lcd_d6_pe6",
-+	"lcd_d7_pe7",
-+	"lcd_d8_pf0",
-+	"lcd_d9_pf1",
-+	"lcd_dc0_pn6",
-+	"lcd_dc1_pd2",
-+	"lcd_de_pj1",
-+	"lcd_hsync_pj3",
-+	"lcd_m1_pw1",
-+	"lcd_pclk_pb3",
-+	"lcd_pwr0_pb2",
-+	"lcd_pwr1_pc1",
-+	"lcd_pwr2_pc6",
-+	"lcd_sck_pz4",
-+	"lcd_sdin_pz2",
-+	"lcd_sdout_pn5",
-+	"lcd_vsync_pj4",
-+	"lcd_wr_n_pz3",
- };
- 
- static const char * const displayb_groups[] = {
--	"DAP3_DIN_PP1",
--	"DAP3_DOUT_PP2",
--	"DAP3_FS_PP0",
--	"DAP3_SCLK_PP3",
--	"PBB3",
--	"PBB4",
--	"PBB5",
--	"PBB6",
--	"LCD_CS0_N_PN4",
--	"LCD_CS1_N_PW0",
--	"LCD_D0_PE0",
--	"LCD_D1_PE1",
--	"LCD_D10_PF2",
--	"LCD_D11_PF3",
--	"LCD_D12_PF4",
--	"LCD_D13_PF5",
--	"LCD_D14_PF6",
--	"LCD_D15_PF7",
--	"LCD_D16_PM0",
--	"LCD_D17_PM1",
--	"LCD_D18_PM2",
--	"LCD_D19_PM3",
--	"LCD_D2_PE2",
--	"LCD_D20_PM4",
--	"LCD_D21_PM5",
--	"LCD_D22_PM6",
--	"LCD_D23_PM7",
--	"LCD_D3_PE3",
--	"LCD_D4_PE4",
--	"LCD_D5_PE5",
--	"LCD_D6_PE6",
--	"LCD_D7_PE7",
--	"LCD_D8_PF0",
--	"LCD_D9_PF1",
--	"LCD_DC0_PN6",
--	"LCD_DC1_PD2",
--	"LCD_DE_PJ1",
--	"LCD_HSYNC_PJ3",
--	"LCD_M1_PW1",
--	"LCD_PCLK_PB3",
--	"LCD_PWR0_PB2",
--	"LCD_PWR1_PC1",
--	"LCD_PWR2_PC6",
--	"LCD_SCK_PZ4",
--	"LCD_SDIN_PZ2",
--	"LCD_SDOUT_PN5",
--	"LCD_VSYNC_PJ4",
--	"LCD_WR_N_PZ3",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_fs_pp0",
-+	"dap3_sclk_pp3",
-+	"pbb3",
-+	"pbb4",
-+	"pbb5",
-+	"pbb6",
-+	"lcd_cs0_n_pn4",
-+	"lcd_cs1_n_pw0",
-+	"lcd_d0_pe0",
-+	"lcd_d1_pe1",
-+	"lcd_d10_pf2",
-+	"lcd_d11_pf3",
-+	"lcd_d12_pf4",
-+	"lcd_d13_pf5",
-+	"lcd_d14_pf6",
-+	"lcd_d15_pf7",
-+	"lcd_d16_pm0",
-+	"lcd_d17_pm1",
-+	"lcd_d18_pm2",
-+	"lcd_d19_pm3",
-+	"lcd_d2_pe2",
-+	"lcd_d20_pm4",
-+	"lcd_d21_pm5",
-+	"lcd_d22_pm6",
-+	"lcd_d23_pm7",
-+	"lcd_d3_pe3",
-+	"lcd_d4_pe4",
-+	"lcd_d5_pe5",
-+	"lcd_d6_pe6",
-+	"lcd_d7_pe7",
-+	"lcd_d8_pf0",
-+	"lcd_d9_pf1",
-+	"lcd_dc0_pn6",
-+	"lcd_dc1_pd2",
-+	"lcd_de_pj1",
-+	"lcd_hsync_pj3",
-+	"lcd_m1_pw1",
-+	"lcd_pclk_pb3",
-+	"lcd_pwr0_pb2",
-+	"lcd_pwr1_pc1",
-+	"lcd_pwr2_pc6",
-+	"lcd_sck_pz4",
-+	"lcd_sdin_pz2",
-+	"lcd_sdout_pn5",
-+	"lcd_vsync_pj4",
-+	"lcd_wr_n_pz3",
- };
- 
- static const char * const dtv_groups[] = {
--	"GMI_A17_PB0",
--	"GMI_A18_PB1",
--	"GMI_CS0_N_PJ0",
--	"GMI_CS1_N_PJ2",
-+	"gmi_a17_pb0",
-+	"gmi_a18_pb1",
-+	"gmi_cs0_n_pj0",
-+	"gmi_cs1_n_pj2",
- };
- 
- static const char * const extperiph1_groups[] = {
--	"CLK1_OUT_PW4",
-+	"clk1_out_pw4",
- };
- 
- static const char * const extperiph2_groups[] = {
--	"CLK2_OUT_PW5",
-+	"clk2_out_pw5",
- };
- 
- static const char * const extperiph3_groups[] = {
--	"CLK3_OUT_PEE0",
-+	"clk3_out_pee0",
- };
- 
- static const char * const gmi_groups[] = {
--	"DAP1_DIN_PN1",
--	"DAP1_DOUT_PN2",
--	"DAP1_FS_PN0",
--	"DAP1_SCLK_PN3",
--	"DAP2_DIN_PA4",
--	"DAP2_DOUT_PA5",
--	"DAP2_FS_PA2",
--	"DAP2_SCLK_PA3",
--	"DAP4_DIN_PP5",
--	"DAP4_DOUT_PP6",
--	"DAP4_FS_PP4",
--	"DAP4_SCLK_PP7",
--	"GEN2_I2C_SCL_PT5",
--	"GEN2_I2C_SDA_PT6",
--	"GMI_A16_PJ7",
--	"GMI_A17_PB0",
--	"GMI_A18_PB1",
--	"GMI_A19_PK7",
--	"GMI_AD0_PG0",
--	"GMI_AD1_PG1",
--	"GMI_AD10_PH2",
--	"GMI_AD11_PH3",
--	"GMI_AD12_PH4",
--	"GMI_AD13_PH5",
--	"GMI_AD14_PH6",
--	"GMI_AD15_PH7",
--	"GMI_AD2_PG2",
--	"GMI_AD3_PG3",
--	"GMI_AD4_PG4",
--	"GMI_AD5_PG5",
--	"GMI_AD6_PG6",
--	"GMI_AD7_PG7",
--	"GMI_AD8_PH0",
--	"GMI_AD9_PH1",
--	"GMI_ADV_N_PK0",
--	"GMI_CLK_PK1",
--	"GMI_CS0_N_PJ0",
--	"GMI_CS1_N_PJ2",
--	"GMI_CS2_N_PK3",
--	"GMI_CS3_N_PK4",
--	"GMI_CS4_N_PK2",
--	"GMI_CS6_N_PI3",
--	"GMI_CS7_N_PI6",
--	"GMI_DQS_PI2",
--	"GMI_IORDY_PI5",
--	"GMI_OE_N_PI1",
--	"GMI_RST_N_PI4",
--	"GMI_WAIT_PI7",
--	"GMI_WP_N_PC7",
--	"GMI_WR_N_PI0",
--	"PU0",
--	"PU1",
--	"PU2",
--	"PU3",
--	"PU4",
--	"PU5",
--	"PU6",
--	"SDMMC4_CLK_PCC4",
--	"SDMMC4_CMD_PT7",
--	"SDMMC4_DAT0_PAA0",
--	"SDMMC4_DAT1_PAA1",
--	"SDMMC4_DAT2_PAA2",
--	"SDMMC4_DAT3_PAA3",
--	"SDMMC4_DAT4_PAA4",
--	"SDMMC4_DAT5_PAA5",
--	"SDMMC4_DAT6_PAA6",
--	"SDMMC4_DAT7_PAA7",
--	"SPI1_CS0_N_PX6",
--	"SPI1_MOSI_PX4",
--	"SPI1_SCK_PX5",
--	"SPI2_CS0_N_PX3",
--	"SPI2_MISO_PX1",
--	"SPI2_MOSI_PX0",
--	"SPI2_SCK_PX2",
--	"UART2_CTS_N_PJ5",
--	"UART2_RTS_N_PJ6",
--	"UART3_CTS_N_PA1",
--	"UART3_RTS_N_PC0",
--	"UART3_RXD_PW7",
--	"UART3_TXD_PW6",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_fs_pn0",
-+	"dap1_sclk_pn3",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_fs_pp4",
-+	"dap4_sclk_pp7",
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+	"gmi_a16_pj7",
-+	"gmi_a17_pb0",
-+	"gmi_a18_pb1",
-+	"gmi_a19_pk7",
-+	"gmi_ad0_pg0",
-+	"gmi_ad1_pg1",
-+	"gmi_ad10_ph2",
-+	"gmi_ad11_ph3",
-+	"gmi_ad12_ph4",
-+	"gmi_ad13_ph5",
-+	"gmi_ad14_ph6",
-+	"gmi_ad15_ph7",
-+	"gmi_ad2_pg2",
-+	"gmi_ad3_pg3",
-+	"gmi_ad4_pg4",
-+	"gmi_ad5_pg5",
-+	"gmi_ad6_pg6",
-+	"gmi_ad7_pg7",
-+	"gmi_ad8_ph0",
-+	"gmi_ad9_ph1",
-+	"gmi_adv_n_pk0",
-+	"gmi_clk_pk1",
-+	"gmi_cs0_n_pj0",
-+	"gmi_cs1_n_pj2",
-+	"gmi_cs2_n_pk3",
-+	"gmi_cs3_n_pk4",
-+	"gmi_cs4_n_pk2",
-+	"gmi_cs6_n_pi3",
-+	"gmi_cs7_n_pi6",
-+	"gmi_dqs_pi2",
-+	"gmi_iordy_pi5",
-+	"gmi_oe_n_pi1",
-+	"gmi_rst_n_pi4",
-+	"gmi_wait_pi7",
-+	"gmi_wp_n_pc7",
-+	"gmi_wr_n_pi0",
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+	"pu6",
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
-+	"spi1_cs0_n_px6",
-+	"spi1_mosi_px4",
-+	"spi1_sck_px5",
-+	"spi2_cs0_n_px3",
-+	"spi2_miso_px1",
-+	"spi2_mosi_px0",
-+	"spi2_sck_px2",
-+	"uart2_cts_n_pj5",
-+	"uart2_rts_n_pj6",
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+	"uart3_rxd_pw7",
-+	"uart3_txd_pw6",
- };
- 
- static const char * const gmi_alt_groups[] = {
--	"GMI_A16_PJ7",
--	"GMI_CS3_N_PK4",
--	"GMI_CS7_N_PI6",
--	"GMI_WP_N_PC7",
-+	"gmi_a16_pj7",
-+	"gmi_cs3_n_pk4",
-+	"gmi_cs7_n_pi6",
-+	"gmi_wp_n_pc7",
- };
- 
- static const char * const hda_groups[] = {
--	"CLK1_REQ_PEE2",
--	"DAP1_DIN_PN1",
--	"DAP1_DOUT_PN2",
--	"DAP1_FS_PN0",
--	"DAP1_SCLK_PN3",
--	"DAP2_DIN_PA4",
--	"DAP2_DOUT_PA5",
--	"DAP2_FS_PA2",
--	"DAP2_SCLK_PA3",
--	"PEX_L0_CLKREQ_N_PDD2",
--	"PEX_L0_PRSNT_N_PDD0",
--	"PEX_L0_RST_N_PDD1",
--	"PEX_L1_CLKREQ_N_PDD6",
--	"PEX_L1_PRSNT_N_PDD4",
--	"PEX_L1_RST_N_PDD5",
--	"PEX_L2_CLKREQ_N_PCC7",
--	"PEX_L2_PRSNT_N_PDD7",
--	"PEX_L2_RST_N_PCC6",
--	"PEX_WAKE_N_PDD3",
--	"SPDIF_IN_PK6",
-+	"clk1_req_pee2",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_fs_pn0",
-+	"dap1_sclk_pn3",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_l0_prsnt_n_pdd0",
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l1_clkreq_n_pdd6",
-+	"pex_l1_prsnt_n_pdd4",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l2_clkreq_n_pcc7",
-+	"pex_l2_prsnt_n_pdd7",
-+	"pex_l2_rst_n_pcc6",
-+	"pex_wake_n_pdd3",
-+	"spdif_in_pk6",
- };
- 
- static const char * const hdcp_groups[] = {
--	"GEN2_I2C_SCL_PT5",
--	"GEN2_I2C_SDA_PT6",
--	"LCD_PWR0_PB2",
--	"LCD_PWR2_PC6",
--	"LCD_SCK_PZ4",
--	"LCD_SDOUT_PN5",
--	"LCD_WR_N_PZ3",
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+	"lcd_pwr0_pb2",
-+	"lcd_pwr2_pc6",
-+	"lcd_sck_pz4",
-+	"lcd_sdout_pn5",
-+	"lcd_wr_n_pz3",
- };
- 
- static const char * const hdmi_groups[] = {
--	"HDMI_INT_PN7",
-+	"hdmi_int_pn7",
- };
- 
- static const char * const hsi_groups[] = {
--	"ULPI_DATA0_PO1",
--	"ULPI_DATA1_PO2",
--	"ULPI_DATA2_PO3",
--	"ULPI_DATA3_PO4",
--	"ULPI_DATA4_PO5",
--	"ULPI_DATA5_PO6",
--	"ULPI_DATA6_PO7",
--	"ULPI_DATA7_PO0",
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
- };
- 
- static const char * const i2c1_groups[] = {
--	"GEN1_I2C_SCL_PC4",
--	"GEN1_I2C_SDA_PC5",
--	"SPDIF_IN_PK6",
--	"SPDIF_OUT_PK5",
--	"SPI2_CS1_N_PW2",
--	"SPI2_CS2_N_PW3",
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"spi2_cs1_n_pw2",
-+	"spi2_cs2_n_pw3",
- };
- 
- static const char * const i2c2_groups[] = {
--	"GEN2_I2C_SCL_PT5",
--	"GEN2_I2C_SDA_PT6",
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
- };
- 
- static const char * const i2c3_groups[] = {
--	"CAM_I2C_SCL_PBB1",
--	"CAM_I2C_SDA_PBB2",
--	"SDMMC4_CMD_PT7",
--	"SDMMC4_DAT4_PAA4",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat4_paa4",
- };
- 
- static const char * const i2c4_groups[] = {
--	"DDC_SCL_PV4",
--	"DDC_SDA_PV5",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
- };
- 
- static const char * const i2cpwr_groups[] = {
--	"PWR_I2C_SCL_PZ6",
--	"PWR_I2C_SDA_PZ7",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
- };
- 
- static const char * const i2s0_groups[] = {
--	"DAP1_DIN_PN1",
--	"DAP1_DOUT_PN2",
--	"DAP1_FS_PN0",
--	"DAP1_SCLK_PN3",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_fs_pn0",
-+	"dap1_sclk_pn3",
- };
- 
- static const char * const i2s1_groups[] = {
--	"DAP2_DIN_PA4",
--	"DAP2_DOUT_PA5",
--	"DAP2_FS_PA2",
--	"DAP2_SCLK_PA3",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
- };
- 
- static const char * const i2s2_groups[] = {
--	"DAP3_DIN_PP1",
--	"DAP3_DOUT_PP2",
--	"DAP3_FS_PP0",
--	"DAP3_SCLK_PP3",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_fs_pp0",
-+	"dap3_sclk_pp3",
- };
- 
- static const char * const i2s3_groups[] = {
--	"DAP4_DIN_PP5",
--	"DAP4_DOUT_PP6",
--	"DAP4_FS_PP4",
--	"DAP4_SCLK_PP7",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_fs_pp4",
-+	"dap4_sclk_pp7",
- };
- 
- static const char * const i2s4_groups[] = {
--	"PBB0",
--	"PBB7",
--	"PCC1",
--	"PCC2",
--	"SDMMC4_DAT4_PAA4",
--	"SDMMC4_DAT5_PAA5",
--	"SDMMC4_DAT6_PAA6",
--	"SDMMC4_DAT7_PAA7",
-+	"pbb0",
-+	"pbb7",
-+	"pcc1",
-+	"pcc2",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
- };
- 
- static const char * const invalid_groups[] = {
--	"KB_ROW3_PR3",
--	"SDMMC4_CLK_PCC4",
-+	"kb_row3_pr3",
-+	"sdmmc4_clk_pcc4",
- };
- 
- static const char * const kbc_groups[] = {
--	"KB_COL0_PQ0",
--	"KB_COL1_PQ1",
--	"KB_COL2_PQ2",
--	"KB_COL3_PQ3",
--	"KB_COL4_PQ4",
--	"KB_COL5_PQ5",
--	"KB_COL6_PQ6",
--	"KB_COL7_PQ7",
--	"KB_ROW0_PR0",
--	"KB_ROW1_PR1",
--	"KB_ROW10_PS2",
--	"KB_ROW11_PS3",
--	"KB_ROW12_PS4",
--	"KB_ROW13_PS5",
--	"KB_ROW14_PS6",
--	"KB_ROW15_PS7",
--	"KB_ROW2_PR2",
--	"KB_ROW3_PR3",
--	"KB_ROW4_PR4",
--	"KB_ROW5_PR5",
--	"KB_ROW6_PR6",
--	"KB_ROW7_PR7",
--	"KB_ROW8_PS0",
--	"KB_ROW9_PS1",
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_row2_pr2",
-+	"kb_row3_pr3",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row6_pr6",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
- };
- 
- static const char * const mio_groups[] = {
--	"KB_COL6_PQ6",
--	"KB_COL7_PQ7",
--	"KB_ROW10_PS2",
--	"KB_ROW11_PS3",
--	"KB_ROW12_PS4",
--	"KB_ROW13_PS5",
--	"KB_ROW14_PS6",
--	"KB_ROW15_PS7",
--	"KB_ROW6_PR6",
--	"KB_ROW7_PR7",
--	"KB_ROW8_PS0",
--	"KB_ROW9_PS1",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_row6_pr6",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
- };
- 
- static const char * const nand_groups[] = {
--	"GMI_AD0_PG0",
--	"GMI_AD1_PG1",
--	"GMI_AD10_PH2",
--	"GMI_AD11_PH3",
--	"GMI_AD12_PH4",
--	"GMI_AD13_PH5",
--	"GMI_AD14_PH6",
--	"GMI_AD15_PH7",
--	"GMI_AD2_PG2",
--	"GMI_AD3_PG3",
--	"GMI_AD4_PG4",
--	"GMI_AD5_PG5",
--	"GMI_AD6_PG6",
--	"GMI_AD7_PG7",
--	"GMI_AD8_PH0",
--	"GMI_AD9_PH1",
--	"GMI_ADV_N_PK0",
--	"GMI_CLK_PK1",
--	"GMI_CS0_N_PJ0",
--	"GMI_CS1_N_PJ2",
--	"GMI_CS2_N_PK3",
--	"GMI_CS3_N_PK4",
--	"GMI_CS4_N_PK2",
--	"GMI_CS6_N_PI3",
--	"GMI_CS7_N_PI6",
--	"GMI_DQS_PI2",
--	"GMI_IORDY_PI5",
--	"GMI_OE_N_PI1",
--	"GMI_RST_N_PI4",
--	"GMI_WAIT_PI7",
--	"GMI_WP_N_PC7",
--	"GMI_WR_N_PI0",
--	"KB_COL0_PQ0",
--	"KB_COL1_PQ1",
--	"KB_COL2_PQ2",
--	"KB_COL3_PQ3",
--	"KB_COL4_PQ4",
--	"KB_COL5_PQ5",
--	"KB_COL6_PQ6",
--	"KB_COL7_PQ7",
--	"KB_ROW0_PR0",
--	"KB_ROW1_PR1",
--	"KB_ROW10_PS2",
--	"KB_ROW11_PS3",
--	"KB_ROW12_PS4",
--	"KB_ROW13_PS5",
--	"KB_ROW14_PS6",
--	"KB_ROW15_PS7",
--	"KB_ROW2_PR2",
--	"KB_ROW3_PR3",
--	"KB_ROW4_PR4",
--	"KB_ROW5_PR5",
--	"KB_ROW6_PR6",
--	"KB_ROW7_PR7",
--	"KB_ROW8_PS0",
--	"KB_ROW9_PS1",
--	"SDMMC4_CLK_PCC4",
--	"SDMMC4_CMD_PT7",
-+	"gmi_ad0_pg0",
-+	"gmi_ad1_pg1",
-+	"gmi_ad10_ph2",
-+	"gmi_ad11_ph3",
-+	"gmi_ad12_ph4",
-+	"gmi_ad13_ph5",
-+	"gmi_ad14_ph6",
-+	"gmi_ad15_ph7",
-+	"gmi_ad2_pg2",
-+	"gmi_ad3_pg3",
-+	"gmi_ad4_pg4",
-+	"gmi_ad5_pg5",
-+	"gmi_ad6_pg6",
-+	"gmi_ad7_pg7",
-+	"gmi_ad8_ph0",
-+	"gmi_ad9_ph1",
-+	"gmi_adv_n_pk0",
-+	"gmi_clk_pk1",
-+	"gmi_cs0_n_pj0",
-+	"gmi_cs1_n_pj2",
-+	"gmi_cs2_n_pk3",
-+	"gmi_cs3_n_pk4",
-+	"gmi_cs4_n_pk2",
-+	"gmi_cs6_n_pi3",
-+	"gmi_cs7_n_pi6",
-+	"gmi_dqs_pi2",
-+	"gmi_iordy_pi5",
-+	"gmi_oe_n_pi1",
-+	"gmi_rst_n_pi4",
-+	"gmi_wait_pi7",
-+	"gmi_wp_n_pc7",
-+	"gmi_wr_n_pi0",
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_row2_pr2",
-+	"kb_row3_pr3",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row6_pr6",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
- };
- 
- static const char * const nand_alt_groups[] = {
--	"GMI_CS6_N_PI3",
--	"GMI_CS7_N_PI6",
--	"GMI_RST_N_PI4",
-+	"gmi_cs6_n_pi3",
-+	"gmi_cs7_n_pi6",
-+	"gmi_rst_n_pi4",
- };
- 
- static const char * const owr_groups[] = {
--	"PU0",
--	"PV2",
--	"KB_ROW5_PR5",
--	"OWR",
-+	"pu0",
-+	"pv2",
-+	"kb_row5_pr5",
-+	"owr",
- };
- 
- static const char * const pcie_groups[] = {
--	"PEX_L0_CLKREQ_N_PDD2",
--	"PEX_L0_PRSNT_N_PDD0",
--	"PEX_L0_RST_N_PDD1",
--	"PEX_L1_CLKREQ_N_PDD6",
--	"PEX_L1_PRSNT_N_PDD4",
--	"PEX_L1_RST_N_PDD5",
--	"PEX_L2_CLKREQ_N_PCC7",
--	"PEX_L2_PRSNT_N_PDD7",
--	"PEX_L2_RST_N_PCC6",
--	"PEX_WAKE_N_PDD3",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_l0_prsnt_n_pdd0",
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l1_clkreq_n_pdd6",
-+	"pex_l1_prsnt_n_pdd4",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l2_clkreq_n_pcc7",
-+	"pex_l2_prsnt_n_pdd7",
-+	"pex_l2_rst_n_pcc6",
-+	"pex_wake_n_pdd3",
- };
- 
- static const char * const pwm0_groups[] = {
--	"GMI_AD8_PH0",
--	"PU3",
--	"SDMMC3_DAT3_PB4",
--	"SDMMC3_DAT5_PD0",
--	"UART3_RTS_N_PC0",
-+	"gmi_ad8_ph0",
-+	"pu3",
-+	"sdmmc3_dat3_pb4",
-+	"sdmmc3_dat5_pd0",
-+	"uart3_rts_n_pc0",
- };
- 
- static const char * const pwm1_groups[] = {
--	"GMI_AD9_PH1",
--	"PU4",
--	"SDMMC3_DAT2_PB5",
--	"SDMMC3_DAT4_PD1",
-+	"gmi_ad9_ph1",
-+	"pu4",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat4_pd1",
- };
- 
- static const char * const pwm2_groups[] = {
--	"GMI_AD10_PH2",
--	"PU5",
--	"SDMMC3_CLK_PA6",
-+	"gmi_ad10_ph2",
-+	"pu5",
-+	"sdmmc3_clk_pa6",
- };
- 
- static const char * const pwm3_groups[] = {
--	"GMI_AD11_PH3",
--	"PU6",
--	"SDMMC3_CMD_PA7",
-+	"gmi_ad11_ph3",
-+	"pu6",
-+	"sdmmc3_cmd_pa7",
- };
- 
- static const char * const pwr_int_n_groups[] = {
--	"PWR_INT_N",
-+	"pwr_int_n",
- };
- 
- static const char * const rsvd1_groups[] = {
--	"GMI_AD0_PG0",
--	"GMI_AD1_PG1",
--	"GMI_AD12_PH4",
--	"GMI_AD13_PH5",
--	"GMI_AD14_PH6",
--	"GMI_AD15_PH7",
--	"GMI_AD2_PG2",
--	"GMI_AD3_PG3",
--	"GMI_AD4_PG4",
--	"GMI_AD5_PG5",
--	"GMI_AD6_PG6",
--	"GMI_AD7_PG7",
--	"GMI_ADV_N_PK0",
--	"GMI_CLK_PK1",
--	"GMI_CS0_N_PJ0",
--	"GMI_CS1_N_PJ2",
--	"GMI_CS2_N_PK3",
--	"GMI_CS3_N_PK4",
--	"GMI_CS4_N_PK2",
--	"GMI_DQS_PI2",
--	"GMI_IORDY_PI5",
--	"GMI_OE_N_PI1",
--	"GMI_WAIT_PI7",
--	"GMI_WP_N_PC7",
--	"GMI_WR_N_PI0",
--	"PU1",
--	"PU2",
--	"PV0",
--	"PV1",
--	"SDMMC3_DAT0_PB7",
--	"SDMMC3_DAT1_PB6",
--	"SDMMC3_DAT2_PB5",
--	"SDMMC3_DAT3_PB4",
--	"VI_PCLK_PT0",
-+	"gmi_ad0_pg0",
-+	"gmi_ad1_pg1",
-+	"gmi_ad12_ph4",
-+	"gmi_ad13_ph5",
-+	"gmi_ad14_ph6",
-+	"gmi_ad15_ph7",
-+	"gmi_ad2_pg2",
-+	"gmi_ad3_pg3",
-+	"gmi_ad4_pg4",
-+	"gmi_ad5_pg5",
-+	"gmi_ad6_pg6",
-+	"gmi_ad7_pg7",
-+	"gmi_adv_n_pk0",
-+	"gmi_clk_pk1",
-+	"gmi_cs0_n_pj0",
-+	"gmi_cs1_n_pj2",
-+	"gmi_cs2_n_pk3",
-+	"gmi_cs3_n_pk4",
-+	"gmi_cs4_n_pk2",
-+	"gmi_dqs_pi2",
-+	"gmi_iordy_pi5",
-+	"gmi_oe_n_pi1",
-+	"gmi_wait_pi7",
-+	"gmi_wp_n_pc7",
-+	"gmi_wr_n_pi0",
-+	"pu1",
-+	"pu2",
-+	"pv0",
-+	"pv1",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat3_pb4",
-+	"vi_pclk_pt0",
- };
- 
- static const char * const rsvd2_groups[] = {
--	"CLK1_OUT_PW4",
--	"CLK2_OUT_PW5",
--	"CLK2_REQ_PCC5",
--	"CLK3_OUT_PEE0",
--	"CLK3_REQ_PEE1",
--	"CLK_32K_IN",
--	"CLK_32K_OUT_PA0",
--	"CORE_PWR_REQ",
--	"CPU_PWR_REQ",
--	"CRT_HSYNC_PV6",
--	"CRT_VSYNC_PV7",
--	"DAP3_DIN_PP1",
--	"DAP3_DOUT_PP2",
--	"DAP3_FS_PP0",
--	"DAP3_SCLK_PP3",
--	"DAP4_DIN_PP5",
--	"DAP4_DOUT_PP6",
--	"DAP4_FS_PP4",
--	"DAP4_SCLK_PP7",
--	"DDC_SCL_PV4",
--	"DDC_SDA_PV5",
--	"GEN1_I2C_SCL_PC4",
--	"GEN1_I2C_SDA_PC5",
--	"PBB0",
--	"PBB7",
--	"PCC1",
--	"PCC2",
--	"PV0",
--	"PV1",
--	"PV2",
--	"PV3",
--	"HDMI_CEC_PEE3",
--	"HDMI_INT_PN7",
--	"JTAG_RTCK_PU7",
--	"PWR_I2C_SCL_PZ6",
--	"PWR_I2C_SDA_PZ7",
--	"PWR_INT_N",
--	"SDMMC1_CLK_PZ0",
--	"SDMMC1_CMD_PZ1",
--	"SDMMC1_DAT0_PY7",
--	"SDMMC1_DAT1_PY6",
--	"SDMMC1_DAT2_PY5",
--	"SDMMC1_DAT3_PY4",
--	"SDMMC3_DAT0_PB7",
--	"SDMMC3_DAT1_PB6",
--	"SDMMC4_RST_N_PCC3",
--	"SPDIF_OUT_PK5",
--	"SYS_CLK_REQ_PZ5",
--	"UART3_CTS_N_PA1",
--	"UART3_RXD_PW7",
--	"UART3_TXD_PW6",
--	"ULPI_CLK_PY0",
--	"ULPI_DIR_PY1",
--	"ULPI_NXT_PY2",
--	"ULPI_STP_PY3",
--	"VI_D0_PT4",
--	"VI_D10_PT2",
--	"VI_D11_PT3",
--	"VI_HSYNC_PD7",
--	"VI_VSYNC_PD6",
-+	"clk1_out_pw4",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"clk3_out_pee0",
-+	"clk3_req_pee1",
-+	"clk_32k_in",
-+	"clk_32k_out_pa0",
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"crt_hsync_pv6",
-+	"crt_vsync_pv7",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_fs_pp0",
-+	"dap3_sclk_pp3",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_fs_pp4",
-+	"dap4_sclk_pp7",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+	"pbb0",
-+	"pbb7",
-+	"pcc1",
-+	"pcc2",
-+	"pv0",
-+	"pv1",
-+	"pv2",
-+	"pv3",
-+	"hdmi_cec_pee3",
-+	"hdmi_int_pn7",
-+	"jtag_rtck_pu7",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+	"pwr_int_n",
-+	"sdmmc1_clk_pz0",
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat0_py7",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc4_rst_n_pcc3",
-+	"spdif_out_pk5",
-+	"sys_clk_req_pz5",
-+	"uart3_cts_n_pa1",
-+	"uart3_rxd_pw7",
-+	"uart3_txd_pw6",
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
-+	"vi_d0_pt4",
-+	"vi_d10_pt2",
-+	"vi_d11_pt3",
-+	"vi_hsync_pd7",
-+	"vi_vsync_pd6",
- };
- 
- static const char * const rsvd3_groups[] = {
--	"CAM_I2C_SCL_PBB1",
--	"CAM_I2C_SDA_PBB2",
--	"CLK1_OUT_PW4",
--	"CLK1_REQ_PEE2",
--	"CLK2_OUT_PW5",
--	"CLK2_REQ_PCC5",
--	"CLK3_OUT_PEE0",
--	"CLK3_REQ_PEE1",
--	"CLK_32K_IN",
--	"CLK_32K_OUT_PA0",
--	"CORE_PWR_REQ",
--	"CPU_PWR_REQ",
--	"CRT_HSYNC_PV6",
--	"CRT_VSYNC_PV7",
--	"DAP2_DIN_PA4",
--	"DAP2_DOUT_PA5",
--	"DAP2_FS_PA2",
--	"DAP2_SCLK_PA3",
--	"DDC_SCL_PV4",
--	"DDC_SDA_PV5",
--	"GEN1_I2C_SCL_PC4",
--	"GEN1_I2C_SDA_PC5",
--	"PBB0",
--	"PBB7",
--	"PCC1",
--	"PCC2",
--	"PV0",
--	"PV1",
--	"PV2",
--	"PV3",
--	"HDMI_CEC_PEE3",
--	"HDMI_INT_PN7",
--	"JTAG_RTCK_PU7",
--	"KB_ROW0_PR0",
--	"KB_ROW1_PR1",
--	"KB_ROW2_PR2",
--	"KB_ROW3_PR3",
--	"LCD_D0_PE0",
--	"LCD_D1_PE1",
--	"LCD_D10_PF2",
--	"LCD_D11_PF3",
--	"LCD_D12_PF4",
--	"LCD_D13_PF5",
--	"LCD_D14_PF6",
--	"LCD_D15_PF7",
--	"LCD_D16_PM0",
--	"LCD_D17_PM1",
--	"LCD_D18_PM2",
--	"LCD_D19_PM3",
--	"LCD_D2_PE2",
--	"LCD_D20_PM4",
--	"LCD_D21_PM5",
--	"LCD_D22_PM6",
--	"LCD_D23_PM7",
--	"LCD_D3_PE3",
--	"LCD_D4_PE4",
--	"LCD_D5_PE5",
--	"LCD_D6_PE6",
--	"LCD_D7_PE7",
--	"LCD_D8_PF0",
--	"LCD_D9_PF1",
--	"LCD_DC0_PN6",
--	"LCD_DC1_PD2",
--	"LCD_DE_PJ1",
--	"LCD_HSYNC_PJ3",
--	"LCD_M1_PW1",
--	"LCD_PCLK_PB3",
--	"LCD_PWR1_PC1",
--	"LCD_VSYNC_PJ4",
--	"OWR",
--	"PEX_L0_CLKREQ_N_PDD2",
--	"PEX_L0_PRSNT_N_PDD0",
--	"PEX_L0_RST_N_PDD1",
--	"PEX_L1_CLKREQ_N_PDD6",
--	"PEX_L1_PRSNT_N_PDD4",
--	"PEX_L1_RST_N_PDD5",
--	"PEX_L2_CLKREQ_N_PCC7",
--	"PEX_L2_PRSNT_N_PDD7",
--	"PEX_L2_RST_N_PCC6",
--	"PEX_WAKE_N_PDD3",
--	"PWR_I2C_SCL_PZ6",
--	"PWR_I2C_SDA_PZ7",
--	"PWR_INT_N",
--	"SDMMC1_CLK_PZ0",
--	"SDMMC1_CMD_PZ1",
--	"SDMMC4_RST_N_PCC3",
--	"SYS_CLK_REQ_PZ5",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+	"clk1_out_pw4",
-+	"clk1_req_pee2",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"clk3_out_pee0",
-+	"clk3_req_pee1",
-+	"clk_32k_in",
-+	"clk_32k_out_pa0",
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"crt_hsync_pv6",
-+	"crt_vsync_pv7",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+	"pbb0",
-+	"pbb7",
-+	"pcc1",
-+	"pcc2",
-+	"pv0",
-+	"pv1",
-+	"pv2",
-+	"pv3",
-+	"hdmi_cec_pee3",
-+	"hdmi_int_pn7",
-+	"jtag_rtck_pu7",
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row3_pr3",
-+	"lcd_d0_pe0",
-+	"lcd_d1_pe1",
-+	"lcd_d10_pf2",
-+	"lcd_d11_pf3",
-+	"lcd_d12_pf4",
-+	"lcd_d13_pf5",
-+	"lcd_d14_pf6",
-+	"lcd_d15_pf7",
-+	"lcd_d16_pm0",
-+	"lcd_d17_pm1",
-+	"lcd_d18_pm2",
-+	"lcd_d19_pm3",
-+	"lcd_d2_pe2",
-+	"lcd_d20_pm4",
-+	"lcd_d21_pm5",
-+	"lcd_d22_pm6",
-+	"lcd_d23_pm7",
-+	"lcd_d3_pe3",
-+	"lcd_d4_pe4",
-+	"lcd_d5_pe5",
-+	"lcd_d6_pe6",
-+	"lcd_d7_pe7",
-+	"lcd_d8_pf0",
-+	"lcd_d9_pf1",
-+	"lcd_dc0_pn6",
-+	"lcd_dc1_pd2",
-+	"lcd_de_pj1",
-+	"lcd_hsync_pj3",
-+	"lcd_m1_pw1",
-+	"lcd_pclk_pb3",
-+	"lcd_pwr1_pc1",
-+	"lcd_vsync_pj4",
-+	"owr",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_l0_prsnt_n_pdd0",
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l1_clkreq_n_pdd6",
-+	"pex_l1_prsnt_n_pdd4",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l2_clkreq_n_pcc7",
-+	"pex_l2_prsnt_n_pdd7",
-+	"pex_l2_rst_n_pcc6",
-+	"pex_wake_n_pdd3",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+	"pwr_int_n",
-+	"sdmmc1_clk_pz0",
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc4_rst_n_pcc3",
-+	"sys_clk_req_pz5",
- };
- 
- static const char * const rsvd4_groups[] = {
--	"CLK1_OUT_PW4",
--	"CLK1_REQ_PEE2",
--	"CLK2_OUT_PW5",
--	"CLK2_REQ_PCC5",
--	"CLK3_OUT_PEE0",
--	"CLK3_REQ_PEE1",
--	"CLK_32K_IN",
--	"CLK_32K_OUT_PA0",
--	"CORE_PWR_REQ",
--	"CPU_PWR_REQ",
--	"CRT_HSYNC_PV6",
--	"CRT_VSYNC_PV7",
--	"DAP4_DIN_PP5",
--	"DAP4_DOUT_PP6",
--	"DAP4_FS_PP4",
--	"DAP4_SCLK_PP7",
--	"DDC_SCL_PV4",
--	"DDC_SDA_PV5",
--	"GEN1_I2C_SCL_PC4",
--	"GEN1_I2C_SDA_PC5",
--	"GEN2_I2C_SCL_PT5",
--	"GEN2_I2C_SDA_PT6",
--	"GMI_A19_PK7",
--	"GMI_AD0_PG0",
--	"GMI_AD1_PG1",
--	"GMI_AD10_PH2",
--	"GMI_AD11_PH3",
--	"GMI_AD12_PH4",
--	"GMI_AD13_PH5",
--	"GMI_AD14_PH6",
--	"GMI_AD15_PH7",
--	"GMI_AD2_PG2",
--	"GMI_AD3_PG3",
--	"GMI_AD4_PG4",
--	"GMI_AD5_PG5",
--	"GMI_AD6_PG6",
--	"GMI_AD7_PG7",
--	"GMI_AD8_PH0",
--	"GMI_AD9_PH1",
--	"GMI_ADV_N_PK0",
--	"GMI_CLK_PK1",
--	"GMI_CS2_N_PK3",
--	"GMI_CS4_N_PK2",
--	"GMI_DQS_PI2",
--	"GMI_IORDY_PI5",
--	"GMI_OE_N_PI1",
--	"GMI_RST_N_PI4",
--	"GMI_WAIT_PI7",
--	"GMI_WR_N_PI0",
--	"PCC2",
--	"PU0",
--	"PU1",
--	"PU2",
--	"PU3",
--	"PU4",
--	"PU5",
--	"PU6",
--	"PV0",
--	"PV1",
--	"PV2",
--	"PV3",
--	"HDMI_CEC_PEE3",
--	"HDMI_INT_PN7",
--	"JTAG_RTCK_PU7",
--	"KB_COL2_PQ2",
--	"KB_COL3_PQ3",
--	"KB_COL4_PQ4",
--	"KB_COL5_PQ5",
--	"KB_ROW0_PR0",
--	"KB_ROW1_PR1",
--	"KB_ROW2_PR2",
--	"KB_ROW4_PR4",
--	"LCD_CS0_N_PN4",
--	"LCD_CS1_N_PW0",
--	"LCD_D0_PE0",
--	"LCD_D1_PE1",
--	"LCD_D10_PF2",
--	"LCD_D11_PF3",
--	"LCD_D12_PF4",
--	"LCD_D13_PF5",
--	"LCD_D14_PF6",
--	"LCD_D15_PF7",
--	"LCD_D16_PM0",
--	"LCD_D17_PM1",
--	"LCD_D18_PM2",
--	"LCD_D19_PM3",
--	"LCD_D2_PE2",
--	"LCD_D20_PM4",
--	"LCD_D21_PM5",
--	"LCD_D22_PM6",
--	"LCD_D23_PM7",
--	"LCD_D3_PE3",
--	"LCD_D4_PE4",
--	"LCD_D5_PE5",
--	"LCD_D6_PE6",
--	"LCD_D7_PE7",
--	"LCD_D8_PF0",
--	"LCD_D9_PF1",
--	"LCD_DC0_PN6",
--	"LCD_DC1_PD2",
--	"LCD_DE_PJ1",
--	"LCD_HSYNC_PJ3",
--	"LCD_M1_PW1",
--	"LCD_PCLK_PB3",
--	"LCD_PWR1_PC1",
--	"LCD_SDIN_PZ2",
--	"LCD_VSYNC_PJ4",
--	"OWR",
--	"PEX_L0_CLKREQ_N_PDD2",
--	"PEX_L0_PRSNT_N_PDD0",
--	"PEX_L0_RST_N_PDD1",
--	"PEX_L1_CLKREQ_N_PDD6",
--	"PEX_L1_PRSNT_N_PDD4",
--	"PEX_L1_RST_N_PDD5",
--	"PEX_L2_CLKREQ_N_PCC7",
--	"PEX_L2_PRSNT_N_PDD7",
--	"PEX_L2_RST_N_PCC6",
--	"PEX_WAKE_N_PDD3",
--	"PWR_I2C_SCL_PZ6",
--	"PWR_I2C_SDA_PZ7",
--	"PWR_INT_N",
--	"SPI1_MISO_PX7",
--	"SYS_CLK_REQ_PZ5",
--	"UART3_CTS_N_PA1",
--	"UART3_RTS_N_PC0",
--	"UART3_RXD_PW7",
--	"UART3_TXD_PW6",
--	"VI_D0_PT4",
--	"VI_D1_PD5",
--	"VI_D10_PT2",
--	"VI_D11_PT3",
--	"VI_D2_PL0",
--	"VI_D3_PL1",
--	"VI_D4_PL2",
--	"VI_D5_PL3",
--	"VI_D6_PL4",
--	"VI_D7_PL5",
--	"VI_D8_PL6",
--	"VI_D9_PL7",
--	"VI_HSYNC_PD7",
--	"VI_PCLK_PT0",
--	"VI_VSYNC_PD6",
-+	"clk1_out_pw4",
-+	"clk1_req_pee2",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"clk3_out_pee0",
-+	"clk3_req_pee1",
-+	"clk_32k_in",
-+	"clk_32k_out_pa0",
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"crt_hsync_pv6",
-+	"crt_vsync_pv7",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_fs_pp4",
-+	"dap4_sclk_pp7",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+	"gmi_a19_pk7",
-+	"gmi_ad0_pg0",
-+	"gmi_ad1_pg1",
-+	"gmi_ad10_ph2",
-+	"gmi_ad11_ph3",
-+	"gmi_ad12_ph4",
-+	"gmi_ad13_ph5",
-+	"gmi_ad14_ph6",
-+	"gmi_ad15_ph7",
-+	"gmi_ad2_pg2",
-+	"gmi_ad3_pg3",
-+	"gmi_ad4_pg4",
-+	"gmi_ad5_pg5",
-+	"gmi_ad6_pg6",
-+	"gmi_ad7_pg7",
-+	"gmi_ad8_ph0",
-+	"gmi_ad9_ph1",
-+	"gmi_adv_n_pk0",
-+	"gmi_clk_pk1",
-+	"gmi_cs2_n_pk3",
-+	"gmi_cs4_n_pk2",
-+	"gmi_dqs_pi2",
-+	"gmi_iordy_pi5",
-+	"gmi_oe_n_pi1",
-+	"gmi_rst_n_pi4",
-+	"gmi_wait_pi7",
-+	"gmi_wr_n_pi0",
-+	"pcc2",
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+	"pu6",
-+	"pv0",
-+	"pv1",
-+	"pv2",
-+	"pv3",
-+	"hdmi_cec_pee3",
-+	"hdmi_int_pn7",
-+	"jtag_rtck_pu7",
-+	"kb_col2_pq2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row4_pr4",
-+	"lcd_cs0_n_pn4",
-+	"lcd_cs1_n_pw0",
-+	"lcd_d0_pe0",
-+	"lcd_d1_pe1",
-+	"lcd_d10_pf2",
-+	"lcd_d11_pf3",
-+	"lcd_d12_pf4",
-+	"lcd_d13_pf5",
-+	"lcd_d14_pf6",
-+	"lcd_d15_pf7",
-+	"lcd_d16_pm0",
-+	"lcd_d17_pm1",
-+	"lcd_d18_pm2",
-+	"lcd_d19_pm3",
-+	"lcd_d2_pe2",
-+	"lcd_d20_pm4",
-+	"lcd_d21_pm5",
-+	"lcd_d22_pm6",
-+	"lcd_d23_pm7",
-+	"lcd_d3_pe3",
-+	"lcd_d4_pe4",
-+	"lcd_d5_pe5",
-+	"lcd_d6_pe6",
-+	"lcd_d7_pe7",
-+	"lcd_d8_pf0",
-+	"lcd_d9_pf1",
-+	"lcd_dc0_pn6",
-+	"lcd_dc1_pd2",
-+	"lcd_de_pj1",
-+	"lcd_hsync_pj3",
-+	"lcd_m1_pw1",
-+	"lcd_pclk_pb3",
-+	"lcd_pwr1_pc1",
-+	"lcd_sdin_pz2",
-+	"lcd_vsync_pj4",
-+	"owr",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_l0_prsnt_n_pdd0",
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l1_clkreq_n_pdd6",
-+	"pex_l1_prsnt_n_pdd4",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l2_clkreq_n_pcc7",
-+	"pex_l2_prsnt_n_pdd7",
-+	"pex_l2_rst_n_pcc6",
-+	"pex_wake_n_pdd3",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+	"pwr_int_n",
-+	"spi1_miso_px7",
-+	"sys_clk_req_pz5",
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+	"uart3_rxd_pw7",
-+	"uart3_txd_pw6",
-+	"vi_d0_pt4",
-+	"vi_d1_pd5",
-+	"vi_d10_pt2",
-+	"vi_d11_pt3",
-+	"vi_d2_pl0",
-+	"vi_d3_pl1",
-+	"vi_d4_pl2",
-+	"vi_d5_pl3",
-+	"vi_d6_pl4",
-+	"vi_d7_pl5",
-+	"vi_d8_pl6",
-+	"vi_d9_pl7",
-+	"vi_hsync_pd7",
-+	"vi_pclk_pt0",
-+	"vi_vsync_pd6",
- };
- 
- static const char * const rtck_groups[] = {
--	"JTAG_RTCK_PU7",
-+	"jtag_rtck_pu7",
- };
- 
- static const char * const sata_groups[] = {
--	"GMI_CS6_N_PI3",
-+	"gmi_cs6_n_pi3",
- };
- 
- static const char * const sdmmc1_groups[] = {
--	"SDMMC1_CLK_PZ0",
--	"SDMMC1_CMD_PZ1",
--	"SDMMC1_DAT0_PY7",
--	"SDMMC1_DAT1_PY6",
--	"SDMMC1_DAT2_PY5",
--	"SDMMC1_DAT3_PY4",
-+	"sdmmc1_clk_pz0",
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat0_py7",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat3_py4",
- };
- 
- static const char * const sdmmc2_groups[] = {
--	"DAP1_DIN_PN1",
--	"DAP1_DOUT_PN2",
--	"DAP1_FS_PN0",
--	"DAP1_SCLK_PN3",
--	"KB_ROW10_PS2",
--	"KB_ROW11_PS3",
--	"KB_ROW12_PS4",
--	"KB_ROW13_PS5",
--	"KB_ROW14_PS6",
--	"KB_ROW15_PS7",
--	"KB_ROW6_PR6",
--	"KB_ROW7_PR7",
--	"KB_ROW8_PS0",
--	"KB_ROW9_PS1",
--	"SPDIF_IN_PK6",
--	"SPDIF_OUT_PK5",
--	"VI_D1_PD5",
--	"VI_D2_PL0",
--	"VI_D3_PL1",
--	"VI_D4_PL2",
--	"VI_D5_PL3",
--	"VI_D6_PL4",
--	"VI_D7_PL5",
--	"VI_D8_PL6",
--	"VI_D9_PL7",
--	"VI_PCLK_PT0",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_fs_pn0",
-+	"dap1_sclk_pn3",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_row6_pr6",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"vi_d1_pd5",
-+	"vi_d2_pl0",
-+	"vi_d3_pl1",
-+	"vi_d4_pl2",
-+	"vi_d5_pl3",
-+	"vi_d6_pl4",
-+	"vi_d7_pl5",
-+	"vi_d8_pl6",
-+	"vi_d9_pl7",
-+	"vi_pclk_pt0",
- };
- 
- static const char * const sdmmc3_groups[] = {
--	"SDMMC3_CLK_PA6",
--	"SDMMC3_CMD_PA7",
--	"SDMMC3_DAT0_PB7",
--	"SDMMC3_DAT1_PB6",
--	"SDMMC3_DAT2_PB5",
--	"SDMMC3_DAT3_PB4",
--	"SDMMC3_DAT4_PD1",
--	"SDMMC3_DAT5_PD0",
--	"SDMMC3_DAT6_PD3",
--	"SDMMC3_DAT7_PD4",
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_cmd_pa7",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat3_pb4",
-+	"sdmmc3_dat4_pd1",
-+	"sdmmc3_dat5_pd0",
-+	"sdmmc3_dat6_pd3",
-+	"sdmmc3_dat7_pd4",
- };
- 
- static const char * const sdmmc4_groups[] = {
--	"CAM_I2C_SCL_PBB1",
--	"CAM_I2C_SDA_PBB2",
--	"CAM_MCLK_PCC0",
--	"PBB0",
--	"PBB3",
--	"PBB4",
--	"PBB5",
--	"PBB6",
--	"PBB7",
--	"PCC1",
--	"SDMMC4_CLK_PCC4",
--	"SDMMC4_CMD_PT7",
--	"SDMMC4_DAT0_PAA0",
--	"SDMMC4_DAT1_PAA1",
--	"SDMMC4_DAT2_PAA2",
--	"SDMMC4_DAT3_PAA3",
--	"SDMMC4_DAT4_PAA4",
--	"SDMMC4_DAT5_PAA5",
--	"SDMMC4_DAT6_PAA6",
--	"SDMMC4_DAT7_PAA7",
--	"SDMMC4_RST_N_PCC3",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+	"cam_mclk_pcc0",
-+	"pbb0",
-+	"pbb3",
-+	"pbb4",
-+	"pbb5",
-+	"pbb6",
-+	"pbb7",
-+	"pcc1",
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
-+	"sdmmc4_rst_n_pcc3",
- };
- 
- static const char * const spdif_groups[] = {
--	"SDMMC3_DAT6_PD3",
--	"SDMMC3_DAT7_PD4",
--	"SPDIF_IN_PK6",
--	"SPDIF_OUT_PK5",
--	"UART2_RXD_PC3",
--	"UART2_TXD_PC2",
-+	"sdmmc3_dat6_pd3",
-+	"sdmmc3_dat7_pd4",
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
- };
- 
- static const char * const spi1_groups[] = {
--	"SPI1_CS0_N_PX6",
--	"SPI1_MISO_PX7",
--	"SPI1_MOSI_PX4",
--	"SPI1_SCK_PX5",
--	"ULPI_CLK_PY0",
--	"ULPI_DIR_PY1",
--	"ULPI_NXT_PY2",
--	"ULPI_STP_PY3",
-+	"spi1_cs0_n_px6",
-+	"spi1_miso_px7",
-+	"spi1_mosi_px4",
-+	"spi1_sck_px5",
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
- };
- 
- static const char * const spi2_groups[] = {
--	"SDMMC3_CMD_PA7",
--	"SDMMC3_DAT4_PD1",
--	"SDMMC3_DAT5_PD0",
--	"SDMMC3_DAT6_PD3",
--	"SDMMC3_DAT7_PD4",
--	"SPI1_CS0_N_PX6",
--	"SPI1_MOSI_PX4",
--	"SPI1_SCK_PX5",
--	"SPI2_CS0_N_PX3",
--	"SPI2_CS1_N_PW2",
--	"SPI2_CS2_N_PW3",
--	"SPI2_MISO_PX1",
--	"SPI2_MOSI_PX0",
--	"SPI2_SCK_PX2",
--	"ULPI_DATA4_PO5",
--	"ULPI_DATA5_PO6",
--	"ULPI_DATA6_PO7",
--	"ULPI_DATA7_PO0",
-+	"sdmmc3_cmd_pa7",
-+	"sdmmc3_dat4_pd1",
-+	"sdmmc3_dat5_pd0",
-+	"sdmmc3_dat6_pd3",
-+	"sdmmc3_dat7_pd4",
-+	"spi1_cs0_n_px6",
-+	"spi1_mosi_px4",
-+	"spi1_sck_px5",
-+	"spi2_cs0_n_px3",
-+	"spi2_cs1_n_pw2",
-+	"spi2_cs2_n_pw3",
-+	"spi2_miso_px1",
-+	"spi2_mosi_px0",
-+	"spi2_sck_px2",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
- };
- 
- static const char * const spi2_alt_groups[] = {
--	"SPI1_CS0_N_PX6",
--	"SPI1_MISO_PX7",
--	"SPI1_MOSI_PX4",
--	"SPI1_SCK_PX5",
--	"SPI2_CS1_N_PW2",
--	"SPI2_CS2_N_PW3",
-+	"spi1_cs0_n_px6",
-+	"spi1_miso_px7",
-+	"spi1_mosi_px4",
-+	"spi1_sck_px5",
-+	"spi2_cs1_n_pw2",
-+	"spi2_cs2_n_pw3",
- };
- 
- static const char * const spi3_groups[] = {
--	"SDMMC3_CLK_PA6",
--	"SDMMC3_DAT0_PB7",
--	"SDMMC3_DAT1_PB6",
--	"SDMMC3_DAT2_PB5",
--	"SDMMC3_DAT3_PB4",
--	"SDMMC4_DAT0_PAA0",
--	"SDMMC4_DAT1_PAA1",
--	"SDMMC4_DAT2_PAA2",
--	"SDMMC4_DAT3_PAA3",
--	"SPI1_MISO_PX7",
--	"SPI2_CS0_N_PX3",
--	"SPI2_CS1_N_PW2",
--	"SPI2_CS2_N_PW3",
--	"SPI2_MISO_PX1",
--	"SPI2_MOSI_PX0",
--	"SPI2_SCK_PX2",
--	"ULPI_DATA0_PO1",
--	"ULPI_DATA1_PO2",
--	"ULPI_DATA2_PO3",
--	"ULPI_DATA3_PO4",
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat3_pb4",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"spi1_miso_px7",
-+	"spi2_cs0_n_px3",
-+	"spi2_cs1_n_pw2",
-+	"spi2_cs2_n_pw3",
-+	"spi2_miso_px1",
-+	"spi2_mosi_px0",
-+	"spi2_sck_px2",
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
- };
- 
- static const char * const spi4_groups[] = {
--	"GMI_A16_PJ7",
--	"GMI_A17_PB0",
--	"GMI_A18_PB1",
--	"GMI_A19_PK7",
--	"SDMMC3_DAT4_PD1",
--	"SDMMC3_DAT5_PD0",
--	"SDMMC3_DAT6_PD3",
--	"SDMMC3_DAT7_PD4",
--	"UART2_CTS_N_PJ5",
--	"UART2_RTS_N_PJ6",
--	"UART2_RXD_PC3",
--	"UART2_TXD_PC2",
-+	"gmi_a16_pj7",
-+	"gmi_a17_pb0",
-+	"gmi_a18_pb1",
-+	"gmi_a19_pk7",
-+	"sdmmc3_dat4_pd1",
-+	"sdmmc3_dat5_pd0",
-+	"sdmmc3_dat6_pd3",
-+	"sdmmc3_dat7_pd4",
-+	"uart2_cts_n_pj5",
-+	"uart2_rts_n_pj6",
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
- };
- 
- static const char * const spi5_groups[] = {
--	"LCD_CS0_N_PN4",
--	"LCD_CS1_N_PW0",
--	"LCD_PWR0_PB2",
--	"LCD_PWR2_PC6",
--	"LCD_SCK_PZ4",
--	"LCD_SDIN_PZ2",
--	"LCD_SDOUT_PN5",
--	"LCD_WR_N_PZ3",
-+	"lcd_cs0_n_pn4",
-+	"lcd_cs1_n_pw0",
-+	"lcd_pwr0_pb2",
-+	"lcd_pwr2_pc6",
-+	"lcd_sck_pz4",
-+	"lcd_sdin_pz2",
-+	"lcd_sdout_pn5",
-+	"lcd_wr_n_pz3",
- };
- 
- static const char * const spi6_groups[] = {
--	"SPI2_CS0_N_PX3",
--	"SPI2_MISO_PX1",
--	"SPI2_MOSI_PX0",
--	"SPI2_SCK_PX2",
-+	"spi2_cs0_n_px3",
-+	"spi2_miso_px1",
-+	"spi2_mosi_px0",
-+	"spi2_sck_px2",
- };
- 
- static const char * const sysclk_groups[] = {
--	"SYS_CLK_REQ_PZ5",
-+	"sys_clk_req_pz5",
- };
- 
- static const char * const test_groups[] = {
--	"KB_COL0_PQ0",
--	"KB_COL1_PQ1",
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
- };
- 
- static const char * const trace_groups[] = {
--	"KB_COL0_PQ0",
--	"KB_COL1_PQ1",
--	"KB_COL2_PQ2",
--	"KB_COL3_PQ3",
--	"KB_COL4_PQ4",
--	"KB_COL5_PQ5",
--	"KB_COL6_PQ6",
--	"KB_COL7_PQ7",
--	"KB_ROW4_PR4",
--	"KB_ROW5_PR5",
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
- };
- 
- static const char * const uarta_groups[] = {
--	"PU0",
--	"PU1",
--	"PU2",
--	"PU3",
--	"PU4",
--	"PU5",
--	"PU6",
--	"SDMMC1_CLK_PZ0",
--	"SDMMC1_CMD_PZ1",
--	"SDMMC1_DAT0_PY7",
--	"SDMMC1_DAT1_PY6",
--	"SDMMC1_DAT2_PY5",
--	"SDMMC1_DAT3_PY4",
--	"SDMMC3_CLK_PA6",
--	"SDMMC3_CMD_PA7",
--	"UART2_CTS_N_PJ5",
--	"UART2_RTS_N_PJ6",
--	"UART2_RXD_PC3",
--	"UART2_TXD_PC2",
--	"ULPI_DATA0_PO1",
--	"ULPI_DATA1_PO2",
--	"ULPI_DATA2_PO3",
--	"ULPI_DATA3_PO4",
--	"ULPI_DATA4_PO5",
--	"ULPI_DATA5_PO6",
--	"ULPI_DATA6_PO7",
--	"ULPI_DATA7_PO0",
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+	"pu6",
-+	"sdmmc1_clk_pz0",
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat0_py7",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_cmd_pa7",
-+	"uart2_cts_n_pj5",
-+	"uart2_rts_n_pj6",
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
- };
- 
- static const char * const uartb_groups[] = {
--	"UART2_CTS_N_PJ5",
--	"UART2_RTS_N_PJ6",
--	"UART2_RXD_PC3",
--	"UART2_TXD_PC2",
-+	"uart2_cts_n_pj5",
-+	"uart2_rts_n_pj6",
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
- };
- 
- static const char * const uartc_groups[] = {
--	"UART3_CTS_N_PA1",
--	"UART3_RTS_N_PC0",
--	"UART3_RXD_PW7",
--	"UART3_TXD_PW6",
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+	"uart3_rxd_pw7",
-+	"uart3_txd_pw6",
- };
- 
- static const char * const uartd_groups[] = {
--	"GMI_A16_PJ7",
--	"GMI_A17_PB0",
--	"GMI_A18_PB1",
--	"GMI_A19_PK7",
--	"ULPI_CLK_PY0",
--	"ULPI_DIR_PY1",
--	"ULPI_NXT_PY2",
--	"ULPI_STP_PY3",
-+	"gmi_a16_pj7",
-+	"gmi_a17_pb0",
-+	"gmi_a18_pb1",
-+	"gmi_a19_pk7",
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
- };
- 
- static const char * const uarte_groups[] = {
--	"SDMMC1_DAT0_PY7",
--	"SDMMC1_DAT1_PY6",
--	"SDMMC1_DAT2_PY5",
--	"SDMMC1_DAT3_PY4",
--	"SDMMC4_DAT0_PAA0",
--	"SDMMC4_DAT1_PAA1",
--	"SDMMC4_DAT2_PAA2",
--	"SDMMC4_DAT3_PAA3",
-+	"sdmmc1_dat0_py7",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
- };
- 
- static const char * const ulpi_groups[] = {
--	"ULPI_CLK_PY0",
--	"ULPI_DATA0_PO1",
--	"ULPI_DATA1_PO2",
--	"ULPI_DATA2_PO3",
--	"ULPI_DATA3_PO4",
--	"ULPI_DATA4_PO5",
--	"ULPI_DATA5_PO6",
--	"ULPI_DATA6_PO7",
--	"ULPI_DATA7_PO0",
--	"ULPI_DIR_PY1",
--	"ULPI_NXT_PY2",
--	"ULPI_STP_PY3",
-+	"ulpi_clk_py0",
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
- };
- 
- static const char * const vgp1_groups[] = {
--	"CAM_I2C_SCL_PBB1",
-+	"cam_i2c_scl_pbb1",
- };
- 
- static const char * const vgp2_groups[] = {
--	"CAM_I2C_SDA_PBB2",
-+	"cam_i2c_sda_pbb2",
- };
- 
- static const char * const vgp3_groups[] = {
--	"PBB3",
--	"SDMMC4_DAT5_PAA5",
-+	"pbb3",
-+	"sdmmc4_dat5_paa5",
- };
- 
- static const char * const vgp4_groups[] = {
--	"PBB4",
--	"SDMMC4_DAT6_PAA6",
-+	"pbb4",
-+	"sdmmc4_dat6_paa6",
- };
- 
- static const char * const vgp5_groups[] = {
--	"PBB5",
--	"SDMMC4_DAT7_PAA7",
-+	"pbb5",
-+	"sdmmc4_dat7_paa7",
- };
- 
- static const char * const vgp6_groups[] = {
--	"PBB6",
--	"SDMMC4_RST_N_PCC3",
-+	"pbb6",
-+	"sdmmc4_rst_n_pcc3",
- };
- 
- static const char * const vi_groups[] = {
--	"CAM_MCLK_PCC0",
--	"VI_D0_PT4",
--	"VI_D1_PD5",
--	"VI_D10_PT2",
--	"VI_D11_PT3",
--	"VI_D2_PL0",
--	"VI_D3_PL1",
--	"VI_D4_PL2",
--	"VI_D5_PL3",
--	"VI_D6_PL4",
--	"VI_D7_PL5",
--	"VI_D8_PL6",
--	"VI_D9_PL7",
--	"VI_HSYNC_PD7",
--	"VI_MCLK_PT1",
--	"VI_PCLK_PT0",
--	"VI_VSYNC_PD6",
-+	"cam_mclk_pcc0",
-+	"vi_d0_pt4",
-+	"vi_d1_pd5",
-+	"vi_d10_pt2",
-+	"vi_d11_pt3",
-+	"vi_d2_pl0",
-+	"vi_d3_pl1",
-+	"vi_d4_pl2",
-+	"vi_d5_pl3",
-+	"vi_d6_pl4",
-+	"vi_d7_pl5",
-+	"vi_d8_pl6",
-+	"vi_d9_pl7",
-+	"vi_hsync_pd7",
-+	"vi_mclk_pt1",
-+	"vi_pclk_pt0",
-+	"vi_vsync_pd6",
- };
- 
- static const char * const vi_alt1_groups[] = {
--	"CAM_MCLK_PCC0",
--	"VI_MCLK_PT1",
-+	"cam_mclk_pcc0",
-+	"vi_mclk_pt1",
- };
- 
- static const char * const vi_alt2_groups[] = {
--	"VI_MCLK_PT1",
-+	"vi_mclk_pt1",
- };
- 
- static const char * const vi_alt3_groups[] = {
--	"CAM_MCLK_PCC0",
--	"VI_MCLK_PT1",
-+	"cam_mclk_pcc0",
-+	"vi_mclk_pt1",
- };
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 23426c7..bba7c97 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -206,14 +206,21 @@ using a certain resistor value - pull up and pull down - so that the pin has a
+ stable value when nothing is driving the rail it is connected to, or when it's
+ unconnected.
+ 
+-For example, a platform may do this:
++Pin configuration can be programmed either using the explicit APIs described
++immediately below, or by adding configuration entries into the mapping table;
++see section "Board/machine configuration" below.
++
++For example, a platform may do the following to pull up a pin to VDD:
+ 
+ #include <linux/pinctrl/consumer.h>
+ 
+ ret = pin_config_set("foo-dev", "FOO_GPIO_PIN", PLATFORM_X_PULL_UP);
+ 
+-To pull up a pin to VDD. The pin configuration driver implements callbacks for
+-changing pin configuration in the pin controller ops like this:
++The format and meaning of the configuration parameter, PLATFORM_X_PULL_UP
++above, is entirely defined by the pin controller driver.
++
++The pin configuration driver implements callbacks for changing pin
++configuration in the pin controller ops like this:
+ 
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/pinconf.h>
+@@ -765,7 +772,7 @@ obtain the function "gpioN" where "N" is the global GPIO pin number if no
+ special GPIO-handler is registered.
+ 
+ 
+-Pinmux board/machine configuration
++Board/machine configuration
+ ==================================
+ 
+ Boards and machines define how a certain complete running system is put
+@@ -773,9 +780,9 @@ together, including how GPIOs and devices are muxed, how regulators are
+ constrained and how the clock tree looks. Of course pinmux settings are also
+ part of this.
+ 
+-A pinmux config for a machine looks pretty much like a simple regulator
+-configuration, so for the example array above we want to enable i2c and
+-spi on the second function mapping:
++A pin controller configuration for a machine looks pretty much like a simple
++regulator configuration, so for the example array above we want to enable i2c
++and spi on the second function mapping:
+ 
+ #include <linux/pinctrl/machine.h>
+ 
+@@ -783,20 +790,23 @@ static const struct pinctrl_map __initdata mapping[] = {
+ 	{
+ 		.dev_name = "foo-spi.0",
+ 		.name = PINCTRL_STATE_DEFAULT,
++		.type = PIN_MAP_TYPE_MUX_GROUP,
+ 		.ctrl_dev_name = "pinctrl-foo",
+-		.function = "spi0",
++		.data.mux.function = "spi0",
+ 	},
+ 	{
+ 		.dev_name = "foo-i2c.0",
+ 		.name = PINCTRL_STATE_DEFAULT,
++		.type = PIN_MAP_TYPE_MUX_GROUP,
+ 		.ctrl_dev_name = "pinctrl-foo",
+-		.function = "i2c0",
++		.data.mux.function = "i2c0",
+ 	},
+ 	{
+ 		.dev_name = "foo-mmc.0",
+ 		.name = PINCTRL_STATE_DEFAULT,
++		.type = PIN_MAP_TYPE_MUX_GROUP,
+ 		.ctrl_dev_name = "pinctrl-foo",
+-		.function = "mmc0",
++		.data.mux.function = "mmc0",
+ 	},
+ };
+ 
+@@ -817,7 +827,40 @@ it even more compact which assumes you want to use pinctrl-foo and position
+ 0 for mapping, for example:
+ 
+ static struct pinctrl_map __initdata mapping[] = {
+-	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "foo-i2c.0"),
++	PIN_MAP_MUX_GROUP("foo-i2c.o", PINCTRL_STATE_DEFAULT, "pinctrl-foo", NULL, "i2c0"),
++};
++
++The mapping table may also contain pin configuration entries. It's common for
++each pin/group to have a number of configuration entries that affect it, so
++the table entries for configuration reference an array of config parameters
++and values. An example using the convenience macros is shown below:
++
++static unsigned long i2c_grp_configs[] = {
++	FOO_PIN_DRIVEN,
++	FOO_PIN_PULLUP,
++};
++
++static unsigned long i2c_pin_configs[] = {
++	FOO_OPEN_COLLECTOR,
++	FOO_SLEW_RATE_SLOW,
++};
++
++static struct pinctrl_map __initdata mapping[] = {
++	PIN_MAP_MUX_GROUP("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "i2c0"),
++	PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", i2c_grp_configs),
++	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0scl", i2c_pin_configs),
++	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0sda", i2c_pin_configs),
++};
++
++Finally, some devices expect the mapping table to contain certain specific
++named states. When running on hardware that doesn't need any pin controller
++configuration, the mapping table must still contain those named states, in
++order to explicitly indicate that the states were provided and intended to
++be empty. Table entry macro PIN_MAP_DUMMY_STATE serves the purpose of defining
++a named state without causing any pin controller to be programmed:
++
++static struct pinctrl_map __initdata mapping[] = {
++	PIN_MAP_DUMMY_STATE("foo-i2c.0", PINCTRL_STATE_DEFAULT),
+ };
+ 
+ 
+@@ -831,6 +874,7 @@ As it is possible to map a function to different groups of pins an optional
+ {
+ 	.dev_name = "foo-spi.0",
+ 	.name = "spi0-pos-A",
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "spi0",
+ 	.group = "spi0_0_grp",
+@@ -838,6 +882,7 @@ As it is possible to map a function to different groups of pins an optional
+ {
+ 	.dev_name = "foo-spi.0",
+ 	.name = "spi0-pos-B",
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "spi0",
+ 	.group = "spi0_1_grp",
+@@ -857,6 +902,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "2bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_1_grp",
+@@ -864,6 +910,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "4bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_1_grp",
+@@ -871,6 +918,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "4bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_2_grp",
+@@ -878,6 +926,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "8bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_1_grp",
+@@ -885,6 +934,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "8bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_2_grp",
+@@ -892,6 +942,7 @@ case), we define a mapping like this:
+ {
+ 	.dev_name = "foo-mmc.0",
+ 	.name = "8bit"
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "mmc0",
+ 	.group = "mmc0_3_grp",
+@@ -1014,6 +1065,7 @@ to the pin controller device name, and the state name is PINCTRL_STATE_DEFAULT.
+ {
+ 	.dev_name = "pinctrl-foo",
+ 	.name = PINCTRL_STATE_DEFAULT,
++	.type = PIN_MAP_TYPE_MUX_GROUP,
+ 	.ctrl_dev_name = "pinctrl-foo",
+ 	.function = "power_func",
+ },
+@@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
+ mux settings on the primary pin controller, there is a convenience macro for
+ this:
+ 
+-PIN_MAP_SYS_HOG("pinctrl-foo", "power_func")
++PIN_MAP_MUX_GROUP_HOG("pinctrl-foo", NULL /* group */, "power_func")
+ 
+ This gives the exact same result as the above construction.
+ 
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index 18973ca..c965bb5 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -1569,13 +1569,13 @@ static struct platform_device dma_device = {
+ /* Pinmux settings */
+ static struct pinctrl_map __initdata u300_pinmux_map[] = {
+ 	/* anonymous maps for chip power and EMIFs */
+-	PIN_MAP_SYS_HOG("pinctrl-u300", "power"),
+-	PIN_MAP_SYS_HOG("pinctrl-u300", "emif0"),
+-	PIN_MAP_SYS_HOG("pinctrl-u300", "emif1"),
++	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "power"),
++	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "emif0"),
++	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "emif1"),
+ 	/* per-device maps for MMC/SD, SPI and UART */
+-	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "mmc0", "mmci"),
+-	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "spi0", "pl022"),
+-	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-u300", "uart0", "uart0"),
++	PIN_MAP_MUX_GROUP_DEFAULT("mmci",  "pinctrl-u300", NULL, "mmc0"),
++	PIN_MAP_MUX_GROUP_DEFAULT("pl022", "pinctrl-u300", NULL, "spi0"),
++	PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-u300", NULL, "uart0"),
+ };
+ 
+ struct u300_mux_hog {
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index c6f3ca3..4eae7e5 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -502,6 +502,9 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+ 	if (IS_ERR(state))
+ 		return PTR_ERR(state);
+ 
++	if (map->type == PIN_MAP_TYPE_DUMMY_STATE)
++		return 0;
++
+ 	setting = kzalloc(sizeof(*setting), GFP_KERNEL);
+ 	if (setting == NULL) {
+ 		dev_err(p->dev,
+@@ -509,6 +512,8 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+ 		return -ENOMEM;
+ 	}
+ 
++	setting->type = map->type;
++
+ 	setting->pctldev = get_pinctrl_dev_from_devname(map->ctrl_dev_name);
+ 	if (setting->pctldev == NULL) {
+ 		dev_err(p->dev, "unknown pinctrl device %s in map entry",
+@@ -518,7 +523,18 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+ 		return -ENODEV;
+ 	}
+ 
+-	ret = pinmux_map_to_setting(map, setting);
++	switch (map->type) {
++	case PIN_MAP_TYPE_MUX_GROUP:
++		ret = pinmux_map_to_setting(map, setting);
++		break;
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		ret = pinconf_map_to_setting(map, setting);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
+ 	if (ret < 0) {
+ 		kfree(setting);
+ 		return ret;
+@@ -626,9 +642,19 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
+ 
+ 	list_for_each_entry_safe(state, n1, &p->states, node) {
+ 		list_for_each_entry_safe(setting, n2, &state->settings, node) {
+-			if (state == p->state)
+-				pinmux_disable_setting(setting);
+-			pinmux_free_setting(setting);
++			switch (setting->type) {
++			case PIN_MAP_TYPE_MUX_GROUP:
++				if (state == p->state)
++					pinmux_disable_setting(setting);
++				pinmux_free_setting(setting);
++				break;
++			case PIN_MAP_TYPE_CONFIGS_PIN:
++			case PIN_MAP_TYPE_CONFIGS_GROUP:
++				pinconf_free_setting(setting);
++				break;
++			default:
++				break;
++			}
+ 			list_del(&setting->node);
+ 			kfree(setting);
+ 		}
+@@ -703,9 +729,13 @@ static int pinctrl_select_state_locked(struct pinctrl *p,
+ 		 */
+ 		list_for_each_entry(setting, &p->state->settings, node) {
+ 			bool found = false;
++			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
++				continue;
+ 			list_for_each_entry(setting2, &state->settings, node) {
+-				if (setting2->group_selector ==
+-						setting->group_selector) {
++				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
++					continue;
++				if (setting2->data.mux.group ==
++						setting->data.mux.group) {
+ 					found = true;
+ 					break;
+ 				}
+@@ -719,7 +749,18 @@ static int pinctrl_select_state_locked(struct pinctrl *p,
+ 
+ 	/* Apply all the settings for the new state */
+ 	list_for_each_entry(setting, &state->settings, node) {
+-		ret = pinmux_enable_setting(setting);
++		switch (setting->type) {
++		case PIN_MAP_TYPE_MUX_GROUP:
++			ret = pinmux_enable_setting(setting);
++			break;
++		case PIN_MAP_TYPE_CONFIGS_PIN:
++		case PIN_MAP_TYPE_CONFIGS_GROUP:
++			ret = pinconf_apply_setting(setting);
++			break;
++		default:
++			ret = -EINVAL;
++			break;
++		}
+ 		if (ret < 0) {
+ 			/* FIXME: Difficult to return to prev state */
+ 			return ret;
+@@ -756,33 +797,48 @@ EXPORT_SYMBOL_GPL(pinctrl_select_state);
+ int pinctrl_register_mappings(struct pinctrl_map const *maps,
+ 			      unsigned num_maps)
+ {
+-	int i;
++	int i, ret;
+ 	struct pinctrl_maps *maps_node;
+ 
+ 	pr_debug("add %d pinmux maps\n", num_maps);
+ 
+ 	/* First sanity check the new mapping */
+ 	for (i = 0; i < num_maps; i++) {
++		if (!maps[i].dev_name) {
++			pr_err("failed to register map %s (%d): no device given\n",
++			       maps[i].name, i);
++			return -EINVAL;
++		}
++
+ 		if (!maps[i].name) {
+ 			pr_err("failed to register map %d: no map name given\n",
+ 			       i);
+ 			return -EINVAL;
+ 		}
+ 
+-		if (!maps[i].ctrl_dev_name) {
++		if (maps[i].type != PIN_MAP_TYPE_DUMMY_STATE &&
++				!maps[i].ctrl_dev_name) {
+ 			pr_err("failed to register map %s (%d): no pin control device given\n",
+ 			       maps[i].name, i);
+ 			return -EINVAL;
+ 		}
+ 
+-		if (!maps[i].function) {
+-			pr_err("failed to register map %s (%d): no function ID given\n",
+-			       maps[i].name, i);
+-			return -EINVAL;
+-		}
+-
+-		if (!maps[i].dev_name) {
+-			pr_err("failed to register map %s (%d): no device given\n",
++		switch (maps[i].type) {
++		case PIN_MAP_TYPE_DUMMY_STATE:
++			break;
++		case PIN_MAP_TYPE_MUX_GROUP:
++			ret = pinmux_validate_map(&maps[i], i);
++			if (ret < 0)
++				return 0;
++			break;
++		case PIN_MAP_TYPE_CONFIGS_PIN:
++		case PIN_MAP_TYPE_CONFIGS_GROUP:
++			ret = pinconf_validate_map(&maps[i], i);
++			if (ret < 0)
++				return 0;
++			break;
++		default:
++			pr_err("failed to register map %s (%d): invalid type given\n",
+ 			       maps[i].name, i);
+ 			return -EINVAL;
+ 		}
+@@ -934,6 +990,22 @@ static int pinctrl_devices_show(struct seq_file *s, void *what)
+ 	return 0;
+ }
+ 
++static inline const char *map_type(enum pinctrl_map_type type)
++{
++	static const char * const names[] = {
++		"INVALID",
++		"DUMMY_STATE",
++		"MUX_GROUP",
++		"CONFIGS_PIN",
++		"CONFIGS_GROUP",
++	};
++
++	if (type >= ARRAY_SIZE(names))
++		return "UNKNOWN";
++
++	return names[type];
++}
++
+ static int pinctrl_maps_show(struct seq_file *s, void *what)
+ {
+ 	struct pinctrl_maps *maps_node;
+@@ -945,12 +1017,27 @@ static int pinctrl_maps_show(struct seq_file *s, void *what)
+ 	mutex_lock(&pinctrl_mutex);
+ 
+ 	for_each_maps(maps_node, i, map) {
+-		seq_printf(s, "%s:\n", map->name);
+-		seq_printf(s, "  device: %s\n", map->dev_name);
+-		seq_printf(s, "  controlling device %s\n", map->ctrl_dev_name);
+-		seq_printf(s, "  function: %s\n", map->function);
+-		seq_printf(s, "  group: %s\n", map->group ? map->group :
+-			   "(default)");
++		seq_printf(s, "device %s\nstate %s\ntype %s (%d)\n",
++			   map->dev_name, map->name, map_type(map->type),
++			   map->type);
++
++		if (map->type != PIN_MAP_TYPE_DUMMY_STATE)
++			seq_printf(s, "controlling device %s\n",
++				   map->ctrl_dev_name);
++
++		switch (map->type) {
++		case PIN_MAP_TYPE_MUX_GROUP:
++			pinmux_show_map(s, map);
++			break;
++		case PIN_MAP_TYPE_CONFIGS_PIN:
++		case PIN_MAP_TYPE_CONFIGS_GROUP:
++			pinconf_show_map(s, map);
++			break;
++		default:
++			break;
++		}
++
++		seq_printf(s, "\n");
+ 	}
+ 
+ 	mutex_unlock(&pinctrl_mutex);
+@@ -977,8 +1064,23 @@ static int pinctrl_show(struct seq_file *s, void *what)
+ 			seq_printf(s, "  state: %s\n", state->name);
+ 
+ 			list_for_each_entry(setting, &state->settings, node) {
+-				seq_printf(s, "    ");
+-				pinmux_dbg_show(s, setting);
++				struct pinctrl_dev *pctldev = setting->pctldev;
++
++				seq_printf(s, "    type: %s controller %s ",
++					   map_type(setting->type),
++					   pinctrl_dev_get_name(pctldev));
++
++				switch (setting->type) {
++				case PIN_MAP_TYPE_MUX_GROUP:
++					pinmux_show_setting(s, setting);
++					break;
++				case PIN_MAP_TYPE_CONFIGS_PIN:
++				case PIN_MAP_TYPE_CONFIGS_GROUP:
++					pinconf_show_setting(s, setting);
++					break;
++				default:
++					break;
++				}
+ 			}
+ 		}
+ 	}
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 5691d31..1cae372 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -72,17 +72,44 @@ struct pinctrl_state {
+ };
+ 
+ /**
++ * struct pinctrl_setting_mux - setting data for MAP_TYPE_MUX_GROUP
++ * @group: the group selector to program
++ * @func: the function selector to program
++ */
++struct pinctrl_setting_mux {
++	unsigned group;
++	unsigned func;
++};
++
++/**
++ * struct pinctrl_setting_configs - setting data for MAP_TYPE_CONFIGS_*
++ * @group_or_pin: the group selector or pin ID to program
++ * @configs: a pointer to an array of config parameters/values to program into
++ *	hardware. Each individual pin controller defines the format and meaning
++ *	of config parameters.
++ * @num_configs: the number of entries in array @configs
++ */
++struct pinctrl_setting_configs {
++	unsigned group_or_pin;
++	unsigned long *configs;
++	unsigned num_configs;
++};
++
++/**
+  * struct pinctrl_setting - an individual mux setting
+  * @node: list node for struct pinctrl_settings's @settings field
++ * @type: the type of setting
+  * @pctldev: pin control device handling to be programmed
+- * @group_selector: the group selector to program
+- * @func_selector: the function selector to program
++ * @data: Data specific to the setting type
+  */
+ struct pinctrl_setting {
+ 	struct list_head node;
++	enum pinctrl_map_type type;
+ 	struct pinctrl_dev *pctldev;
+-	unsigned group_selector;
+-	unsigned func_selector;
++	union {
++		struct pinctrl_setting_mux mux;
++		struct pinctrl_setting_configs configs;
++	} data;
+ };
+ 
+ /**
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index e0a4537..84869f2 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -36,6 +36,24 @@ int pinconf_check_ops(struct pinctrl_dev *pctldev)
+ 	return 0;
+ }
+ 
++int pinconf_validate_map(struct pinctrl_map const *map, int i)
++{
++	if (!map->data.configs.group_or_pin) {
++		pr_err("failed to register map %s (%d): no group/pin given\n",
++		       map->name, i);
++		return -EINVAL;
++	}
++
++	if (map->data.configs.num_configs &&
++			!map->data.configs.configs) {
++		pr_err("failed to register map %s (%d): no configs ptr given\n",
++		       map->name, i);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+ 			   unsigned long *config)
+ {
+@@ -260,8 +278,155 @@ unlock:
+ }
+ EXPORT_SYMBOL(pin_config_group_set);
+ 
++int pinconf_map_to_setting(struct pinctrl_map const *map,
++			  struct pinctrl_setting *setting)
++{
++	struct pinctrl_dev *pctldev = setting->pctldev;
++
++	switch (setting->type) {
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++		setting->data.configs.group_or_pin =
++			pin_get_from_name(pctldev,
++					  map->data.configs.group_or_pin);
++		if (setting->data.configs.group_or_pin < 0)
++			return setting->data.configs.group_or_pin;
++		break;
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		setting->data.configs.group_or_pin =
++			pinctrl_get_group_selector(pctldev,
++					map->data.configs.group_or_pin);
++		if (setting->data.configs.group_or_pin < 0)
++			return setting->data.configs.group_or_pin;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	setting->data.configs.num_configs = map->data.configs.num_configs;
++	setting->data.configs.configs = map->data.configs.configs;
++
++	return 0;
++}
++
++void pinconf_free_setting(struct pinctrl_setting const *setting)
++{
++}
++
++int pinconf_apply_setting(struct pinctrl_setting const *setting)
++{
++	struct pinctrl_dev *pctldev = setting->pctldev;
++	const struct pinconf_ops *ops = pctldev->desc->confops;
++	int i, ret;
++
++	if (!ops) {
++		dev_err(pctldev->dev, "missing confops\n");
++		return -EINVAL;
++	}
++
++	switch (setting->type) {
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++		if (!ops->pin_config_set) {
++			dev_err(pctldev->dev, "missing pin_config_set op\n");
++			return -EINVAL;
++		}
++		for (i = 0; i < setting->data.configs.num_configs; i++) {
++			ret = ops->pin_config_set(pctldev,
++					setting->data.configs.group_or_pin,
++					setting->data.configs.configs[i]);
++			if (ret < 0) {
++				dev_err(pctldev->dev,
++					"pin_config_set op failed for pin %d config %08lx\n",
++					setting->data.configs.group_or_pin,
++					setting->data.configs.configs[i]);
++				return ret;
++			}
++		}
++		break;
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		if (!ops->pin_config_group_set) {
++			dev_err(pctldev->dev,
++				"missing pin_config_group_set op\n");
++			return -EINVAL;
++		}
++		for (i = 0; i < setting->data.configs.num_configs; i++) {
++			ret = ops->pin_config_group_set(pctldev,
++					setting->data.configs.group_or_pin,
++					setting->data.configs.configs[i]);
++			if (ret < 0) {
++				dev_err(pctldev->dev,
++					"pin_config_group_set op failed for group %d config %08lx\n",
++					setting->data.configs.group_or_pin,
++					setting->data.configs.configs[i]);
++				return ret;
++			}
++		}
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ #ifdef CONFIG_DEBUG_FS
+ 
++void pinconf_show_map(struct seq_file *s, struct pinctrl_map const *map)
++{
++	int i;
++
++	switch (map->type) {
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++		seq_printf(s, "pin ");
++		break;
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		seq_printf(s, "group ");
++		break;
++	default:
++		break;
++	}
++
++	seq_printf(s, "%s\n", map->data.configs.group_or_pin);
++
++	for (i = 0; i < map->data.configs.num_configs; i++)
++		seq_printf(s, "config %08lx\n", map->data.configs.configs[i]);
++}
++
++void pinconf_show_setting(struct seq_file *s,
++			  struct pinctrl_setting const *setting)
++{
++	struct pinctrl_dev *pctldev = setting->pctldev;
++	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
++	struct pin_desc *desc;
++	int i;
++
++	switch (setting->type) {
++	case PIN_MAP_TYPE_CONFIGS_PIN:
++		desc = pin_desc_get(setting->pctldev,
++				    setting->data.configs.group_or_pin);
++		seq_printf(s, "pin %s (%d)",
++			   desc->name ? desc->name : "unnamed",
++			   setting->data.configs.group_or_pin);
++		break;
++	case PIN_MAP_TYPE_CONFIGS_GROUP:
++		seq_printf(s, "group %s (%d)",
++			   pctlops->get_group_name(pctldev,
++					setting->data.configs.group_or_pin),
++			   setting->data.configs.group_or_pin);
++		break;
++	default:
++		break;
++	}
++
++	/*
++	 * FIXME: We should really get the pin controler to dump the config
++	 * values, so they can be decoded to something meaningful.
++	 */
++	for (i = 0; i < setting->data.configs.num_configs; i++)
++		seq_printf(s, " %08lx", setting->data.configs.configs[i]);
++
++	seq_printf(s, "\n");
++}
++
+ static void pinconf_dump_pin(struct pinctrl_dev *pctldev,
+ 			     struct seq_file *s, int pin)
+ {
+diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
+index 1d6ea9d..0ded227 100644
+--- a/drivers/pinctrl/pinconf.h
++++ b/drivers/pinctrl/pinconf.h
+@@ -15,6 +15,16 @@
+ 
+ int pinconf_check_ops(struct pinctrl_dev *pctldev);
+ 
++int pinconf_validate_map(struct pinctrl_map const *map, int i);
++
++int pinconf_map_to_setting(struct pinctrl_map const *map,
++			  struct pinctrl_setting *setting);
++void pinconf_free_setting(struct pinctrl_setting const *setting);
++int pinconf_apply_setting(struct pinctrl_setting const *setting);
++
++void pinconf_show_map(struct seq_file *s, struct pinctrl_map const *map);
++void pinconf_show_setting(struct seq_file *s,
++			  struct pinctrl_setting const *setting);
+ void pinconf_init_device_debugfs(struct dentry *devroot,
+ 				 struct pinctrl_dev *pctldev);
+ 
+@@ -25,6 +35,36 @@ static inline int pinconf_check_ops(struct pinctrl_dev *pctldev)
+ 	return 0;
+ }
+ 
++static inline int pinconf_validate_map(struct pinctrl_map const *map, int i)
++{
++	return 0;
++}
++
++static inline int pinconf_map_to_setting(struct pinctrl_map const *map,
++			  struct pinctrl_setting *setting)
++{
++	return 0;
++}
++
++static inline void pinconf_free_setting(struct pinctrl_setting const *setting)
++{
++}
++
++static inline int pinconf_apply_setting(struct pinctrl_setting const *setting)
++{
++	return 0;
++}
++
++static inline void pinconf_show_map(struct seq_file *s,
++				    struct pinctrl_map const *map)
++{
++}
++
++static inline void pinconf_show_setting(struct seq_file *s,
++			  struct pinctrl_setting const *setting)
++{
++}
++
+ static inline void pinconf_init_device_debugfs(struct dentry *devroot,
+ 					       struct pinctrl_dev *pctldev)
+ {
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 2d1aaf8..949512e 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -58,6 +58,17 @@ int pinmux_check_ops(struct pinctrl_dev *pctldev)
+ 	return 0;
+ }
+ 
++int pinmux_validate_map(struct pinctrl_map const *map, int i)
++{
++	if (!map->data.mux.function) {
++		pr_err("failed to register map %s (%d): no function given\n",
++		       map->name, i);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ /**
+  * pin_request() - request a single pin to be muxed in, typically for GPIO
+  * @pin: the pin number in the global pin space
+@@ -284,21 +295,21 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 	const unsigned *pins;
+ 	unsigned num_pins;
+ 
+-	setting->func_selector =
+-		pinmux_func_name_to_selector(pctldev, map->function);
+-	if (setting->func_selector < 0)
+-		return setting->func_selector;
++	setting->data.mux.func =
++		pinmux_func_name_to_selector(pctldev, map->data.mux.function);
++	if (setting->data.mux.func < 0)
++		return setting->data.mux.func;
+ 
+-	ret = pmxops->get_function_groups(pctldev, setting->func_selector,
++	ret = pmxops->get_function_groups(pctldev, setting->data.mux.func,
+ 					  &groups, &num_groups);
+ 	if (ret < 0)
+ 		return ret;
+ 	if (!num_groups)
+ 		return -EINVAL;
+ 
+-	if (map->group) {
++	if (map->data.mux.group) {
+ 		bool found = false;
+-		group = map->group;
++		group = map->data.mux.group;
+ 		for (i = 0; i < num_groups; i++) {
+ 			if (!strcmp(group, groups[i])) {
+ 				found = true;
+@@ -311,17 +322,16 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 		group = groups[0];
+ 	}
+ 
+-	setting->group_selector =
+-		pinctrl_get_group_selector(pctldev, group);
+-	if (setting->group_selector < 0)
+-		return setting->group_selector;
++	setting->data.mux.group = pinctrl_get_group_selector(pctldev, group);
++	if (setting->data.mux.group < 0)
++		return setting->data.mux.group;
+ 
+-	ret = pctlops->get_group_pins(pctldev, setting->group_selector,
+-				      &pins, &num_pins);
++	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group, &pins,
++				      &num_pins);
+ 	if (ret) {
+ 		dev_err(pctldev->dev,
+ 			"could not get pins for device %s group selector %d\n",
+-			pinctrl_dev_get_name(pctldev), setting->group_selector);
++			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
+ 			return -ENODEV;
+ 	}
+ 
+@@ -352,12 +362,12 @@ void pinmux_free_setting(struct pinctrl_setting const *setting)
+ 	int ret;
+ 	int i;
+ 
+-	ret = pctlops->get_group_pins(pctldev, setting->group_selector,
++	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
+ 				      &pins, &num_pins);
+ 	if (ret) {
+ 		dev_err(pctldev->dev,
+ 			"could not get pins for device %s group selector %d\n",
+-			pinctrl_dev_get_name(pctldev), setting->group_selector);
++			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
+ 		return;
+ 	}
+ 
+@@ -370,8 +380,8 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+ 
+-	return ops->enable(pctldev, setting->func_selector,
+-			   setting->group_selector);
++	return ops->enable(pctldev, setting->data.mux.func,
++			   setting->data.mux.group);
+ }
+ 
+ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+@@ -379,7 +389,7 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+ 
+-	ops->disable(pctldev, setting->func_selector, setting->group_selector);
++	ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+ }
+ 
+ #ifdef CONFIG_DEBUG_FS
+@@ -458,18 +468,25 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+ 	return 0;
+ }
+ 
+-void pinmux_dbg_show(struct seq_file *s, struct pinctrl_setting const *setting)
++void pinmux_show_map(struct seq_file *s, struct pinctrl_map const *map)
++{
++	seq_printf(s, "group %s\nfunction %s\n",
++		map->data.mux.group ? map->data.mux.group : "(default)",
++		map->data.mux.function);
++}
++
++void pinmux_show_setting(struct seq_file *s,
++			 struct pinctrl_setting const *setting)
+ {
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+ 
+-	seq_printf(s, "controller: %s group: %s (%u) function: %s (%u)\n",
+-		   pinctrl_dev_get_name(pctldev),
+-		   pctlops->get_group_name(pctldev, setting->group_selector),
+-		   setting->group_selector,
+-		   pmxops->get_function_name(pctldev, setting->func_selector),
+-		   setting->func_selector);
++	seq_printf(s, "group: %s (%u) function: %s (%u)\n",
++		   pctlops->get_group_name(pctldev, setting->data.mux.group),
++		   setting->data.mux.group,
++		   pmxops->get_function_name(pctldev, setting->data.mux.func),
++		   setting->data.mux.func);
+ }
+ 
+ static int pinmux_functions_open(struct inode *inode, struct file *file)
+diff --git a/drivers/pinctrl/pinmux.h b/drivers/pinctrl/pinmux.h
+index 1500ae8..6fc4700 100644
+--- a/drivers/pinctrl/pinmux.h
++++ b/drivers/pinctrl/pinmux.h
+@@ -14,6 +14,8 @@
+ 
+ int pinmux_check_ops(struct pinctrl_dev *pctldev);
+ 
++int pinmux_validate_map(struct pinctrl_map const *map, int i);
++
+ int pinmux_request_gpio(struct pinctrl_dev *pctldev,
+ 			struct pinctrl_gpio_range *range,
+ 			unsigned pin, unsigned gpio);
+@@ -29,7 +31,9 @@ void pinmux_free_setting(struct pinctrl_setting const *setting);
+ int pinmux_enable_setting(struct pinctrl_setting const *setting);
+ void pinmux_disable_setting(struct pinctrl_setting const *setting);
+ 
+-void pinmux_dbg_show(struct seq_file *s, struct pinctrl_setting const *setting);
++void pinmux_show_map(struct seq_file *s, struct pinctrl_map const *map);
++void pinmux_show_setting(struct seq_file *s,
++			 struct pinctrl_setting const *setting);
+ void pinmux_init_device_debugfs(struct dentry *devroot,
+ 				struct pinctrl_dev *pctldev);
+ 
+@@ -40,6 +44,11 @@ static inline int pinmux_check_ops(struct pinctrl_dev *pctldev)
+ 	return 0;
+ }
+ 
++static inline int pinmux_validate_map(struct pinctrl_map const *map, int i)
++{
++	return 0;
++}
++
+ static inline int pinmux_request_gpio(struct pinctrl_dev *pctldev,
+ 			struct pinctrl_gpio_range *range,
+ 			unsigned pin, unsigned gpio)
+@@ -80,12 +89,18 @@ static inline void pinmux_disable_setting(
+ {
+ }
+ 
+-static inline void pinmux_init_device_debugfs(struct dentry *devroot,
+-					      struct pinctrl_dev *pctldev)
++static inline void pinmux_show_map(struct seq_file *s,
++				   struct pinctrl_map const *map)
++{
++}
++
++static inline void pinmux_show_setting(struct seq_file *s,
++				       struct pinctrl_setting const *setting)
+ {
+ }
+ 
+-static inline void pinmux_dbg_show(struct seq_file *s, struct pinctrl *p)
++static inline void pinmux_init_device_debugfs(struct dentry *devroot,
++					      struct pinctrl_dev *pctldev)
+ {
+ }
+ 
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index 05d25c8..b572153 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -14,6 +14,41 @@
+ 
+ #include "pinctrl.h"
+ 
++enum pinctrl_map_type {
++	PIN_MAP_TYPE_INVALID,
++	PIN_MAP_TYPE_DUMMY_STATE,
++	PIN_MAP_TYPE_MUX_GROUP,
++	PIN_MAP_TYPE_CONFIGS_PIN,
++	PIN_MAP_TYPE_CONFIGS_GROUP,
++};
++
++/**
++ * struct pinctrl_map_mux - mapping table content for MAP_TYPE_MUX_GROUP
++ * @group: the name of the group whose mux function is to be configured. This
++ *	field may be left NULL, and the first applicable group for the function
++ *	will be used.
++ * @function: the mux function to select for the group
++ */
++struct pinctrl_map_mux {
++	const char *group;
++	const char *function;
++};
++
++/**
++ * struct pinctrl_map_configs - mapping table content for MAP_TYPE_CONFIGS_*
++ * @group_or_pin: the name of the pin or group whose configuration parameters
++ *	are to be configured.
++ * @configs: a pointer to an array of config parameters/values to program into
++ *	hardware. Each individual pin controller defines the format and meaning
++ *	of config parameters.
++ * @num_configs: the number of entries in array @configs
++ */
++struct pinctrl_map_configs {
++	const char *group_or_pin;
++	unsigned long *configs;
++	unsigned num_configs;
++};
++
+ /**
+  * struct pinctrl_map - boards/machines shall provide this map for devices
+  * @dev_name: the name of the device using this specific mapping, the name
+@@ -22,46 +57,96 @@
+  *	hogged by the driver itself upon registration
+  * @name: the name of this specific map entry for the particular machine.
+  *	This is the parameter passed to pinmux_lookup_state()
++ * @type: the type of mapping table entry
+  * @ctrl_dev_name: the name of the device controlling this specific mapping,
+- *	the name must be the same as in your struct device*
+- * @group: sometimes a function can map to different pin groups, so this
+- *	selects a certain specific pin group to activate for the function, if
+- *	left as NULL, the first applicable group will be used
+- * @function: a function in the driver to use for this mapping, the driver
+- *	will lookup the function referenced by this ID on the specified
+- *	pin control device
++ *	the name must be the same as in your struct device*. This field is not
++ *	used for PIN_MAP_TYPE_DUMMY_STATE
++ * @data: Data specific to the mapping type
+  */
+ struct pinctrl_map {
+ 	const char *dev_name;
+ 	const char *name;
++	enum pinctrl_map_type type;
+ 	const char *ctrl_dev_name;
+-	const char *group;
+-	const char *function;
++	union {
++		struct pinctrl_map_mux mux;
++		struct pinctrl_map_configs configs;
++	} data;
+ };
+ 
+-/*
+- * Convenience macro to set a simple map from a certain pin controller and a
+- * certain function to a named device
+- */
+-#define PIN_MAP(a, b, c, d) \
+-	{ .name = a, .ctrl_dev_name = b, .function = c, .dev_name = d }
++/* Convenience macros to create mapping table entries */
+ 
+-/*
+- * Convenience macro to map a system function onto a certain pinctrl device,
+- * to be hogged by the pin control core until the system shuts down.
+- */
+-#define PIN_MAP_SYS_HOG(a, b) \
+-	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+-	  .function = b, }
++#define PIN_MAP_DUMMY_STATE(dev, state) \
++	{								\
++		.dev_name = dev,					\
++		.name = state,						\
++		.type = PIN_MAP_TYPE_DUMMY_STATE,			\
++	}
+ 
+-/*
+- * Convenience macro to map a system function onto a certain pinctrl device
+- * using a specified group, to be hogged by the pin control core until the
+- * system shuts down.
+- */
+-#define PIN_MAP_SYS_HOG_GROUP(a, b, c) \
+-	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+-	  .function = b, .group = c, }
++#define PIN_MAP_MUX_GROUP(dev, state, pinctrl, grp, func)		\
++	{								\
++		.dev_name = dev,					\
++		.name = state,						\
++		.type = PIN_MAP_TYPE_MUX_GROUP,				\
++		.ctrl_dev_name = pinctrl,				\
++		.data.mux = {						\
++			.group = grp,					\
++			.function = func,				\
++		},							\
++	}
++
++#define PIN_MAP_MUX_GROUP_DEFAULT(dev, pinctrl, grp, func)		\
++	PIN_MAP_MUX_GROUP(dev, PINCTRL_STATE_DEFAULT, pinctrl, grp, func)
++
++#define PIN_MAP_MUX_GROUP_HOG(dev, state, grp, func)			\
++	PIN_MAP_MUX_GROUP(dev, state, dev, grp, func)
++
++#define PIN_MAP_MUX_GROUP_HOG_DEFAULT(dev, grp, func)			\
++	PIN_MAP_MUX_GROUP(dev, PINCTRL_STATE_DEFAULT, dev, grp, func)
++
++#define PIN_MAP_MUX_CONFIGS_PIN(dev, state, pinctrl, pin, cfgs)		\
++	{								\
++		.dev_name = dev,					\
++		.name = state,						\
++		.type = PIN_MAP_TYPE_CONFIGS_PIN,			\
++		.ctrl_dev_name = pinctrl,				\
++		.data.configs = {					\
++			.group_or_pin = pin,				\
++			.configs = cfgs,				\
++			.num_configs = ARRAY_SIZE(cfgs),		\
++		},							\
++	}
++
++#define PIN_MAP_MUX_CONFIGS_PIN_DEFAULT(dev, pinctrl, pin, cfgs)	\
++	PIN_MAP_MUX_CONFIGS_PIN(dev, PINCTRL_STATE_DEFAULT, pinctrl, pin, cfgs)
++
++#define PIN_MAP_MUX_CONFIGS_PIN_HOG(dev, state, pin, cfgs)		\
++	PIN_MAP_MUX_CONFIGS_PIN(dev, state, dev, pin, cfgs)
++
++#define PIN_MAP_MUX_CONFIGS_PIN_HOG_DEFAULT(dev, pin, cfgs)		\
++	PIN_MAP_MUX_CONFIGS_PIN(dev, PINCTRL_STATE_DEFAULT, dev, pin, cfgs)
++
++#define PIN_MAP_MUX_CONFIGS_GROUP(dev, state, pinctrl, grp, cfgs)	\
++	{								\
++		.dev_name = dev,					\
++		.name = state,						\
++		.type = PIN_MAP_TYPE_CONFIGS_GROUP,			\
++		.ctrl_dev_name = pinctrl,				\
++		.data.configs = {					\
++			.group_or_pin = grp,				\
++			.configs = cfgs,				\
++			.num_configs = ARRAY_SIZE(cfgs),		\
++		},							\
++	}
++
++#define PIN_MAP_MUX_CONFIGS_GROUP_DEFAULT(dev, pinctrl, grp, cfgs)	\
++	PIN_MAP_MUX_CONFIGS_GROUP(dev, PINCTRL_STATE_DEFAULT, pinctrl, grp, cfgs)
++
++#define PIN_MAP_MUX_CONFIGS_GROUP_HOG(dev, state, grp, cfgs)		\
++	PIN_MAP_MUX_CONFIGS_GROUP(dev, state, dev, grp, cfgs)
++
++#define PIN_MAP_MUX_CONFIGS_GROUP_HOG_DEFAULT(dev, grp, cfgs)		\
++	PIN_MAP_MUX_CONFIGS_GROUP(dev, PINCTRL_STATE_DEFAULT, dev, grp, cfgs)
+ 
+ #ifdef CONFIG_PINMUX
  
- #define FUNCTION(fname)					\
 -- 
 1.7.0.4
 
