@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab2B1IwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:52:18 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:35346 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753897Ab2B1IwQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:52:16 -0500
-From: Haojian Zhuang <hzhuang1@marvell.com>
-To: Zhao Ye <zhaoy@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Chao Xie <cxie4@marvell.com>, Leo Yan <leoy@marvell.com>
-CC: Zhao Ye <zhaoy@marvell.com>
-Date: Tue, 28 Feb 2012 00:41:57 -0800
-Subject: RE: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
-Thread-Topic: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
-Thread-Index: Acz16njwSxFlQo6TTEugsc4EYe9k3wAClssN
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C060A87D776@SC-VEXCH1.marvell.com>
-References: <Y>,<1330414065-2949-1-git-send-email-zhaoy@marvell.com>
-In-Reply-To: <1330414065-2949-1-git-send-email-zhaoy@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932541Ab2B1IzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:55:01 -0500
+Received: from gate.crashing.org ([63.228.1.57]:50488 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753721Ab2B1IzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:55:00 -0500
+Message-ID: <1330419272.11728.27.camel@pasglop>
+Subject: Re: [PATCH 08/18] PCI, powerpc: Register busn_res for root buses
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Tue, 28 Feb 2012 19:54:32 +1100
+In-Reply-To: <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
+References: <1330395009-29260-1-git-send-email-yinghai@kernel.org>
+	 <1330395009-29260-9-git-send-email-yinghai@kernel.org>
+	 <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhao,
+On Mon, 2012-02-27 at 22:36 -0700, Bjorn Helgaas wrote:
+> 
+> There's a lot of powerpc code that does this:
+> 
+>     bus_range = of_get_property(pcictrl, "bus-range", &len);
+>     hose->first_busno = bus_range[0];
+>     hose->last_busno = bus_range[1];
+> 
+> That *looks* like it is discovering the bus number aperture.  Is it?
+> If it is, why are we using the largest bus number found by
+> pci_scan_child_bus() rather than "last_busno"?
 
-Which code base are you using? Now it's kernel v3.3-rc5.
+We do that but we somewhat -also- rely on the core bumping it if it
+needs to make room :-)
 
-Thanks
-Haojian
-________________________________________
-From: zhaoy [zhaoy@marvell.com]
-Sent: Tuesday, February 28, 2012 3:27 PM
-To: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; nicolas.pitre@linaro.org; linux@arm.linux.org.uk; Haojian Zhuang; Chao Xie; Leo Yan
-Cc: Zhao Ye
-Subject: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
+As I said, we are swimming in dirty waters between reverse engineered
+stuff we don't know 100% and "designed" stuff.
 
-These patch is for marvell mmp2 and mmp3 platform to enable
-dmaengine, use dmaengine to manage the audio dma, video dma
-and peripheral device dma together.
+I think we should have ways to more explicitely define what we want tho,
+ie whether hose->last_busno is just what happens to be the "current" bus
+number assigned by the firmware or the hard max. Maybe a pci flag ?
 
-zhaoy (13):
-  DMA:define second level irq definition
-  dmaengine:open dmac and tdma support
-  dmaengine: mmp: add two-channel dma driver
-  dmaengine:mmp add peripheral dma driver
-  mmp2:register dma devices for mmp2 platform
-  mmp3:register dma devices for mmp3 platform
-  DMA:mmp:remove redundant dma drivers
-  DMAC:tty serial pxa use generic dma engine APIs
-  DMA:remove unnecessary dma configurations
-  dmaengine:audio:mmp audio use generic dma engine APIs
-  DMA:update defconfig for mmp3
-  mdma:dmaengine:update mdma for tdma
-  DMA:update defconfig for mmp2
+On the other hand some platforms (all the ppc4xx ones for example) set
+the flag to reassign all busses ... but have limit on bus numbers simply
+because they have a memory mapped only config space and we don't have
+enough address space to ioremap it all on 32-bit.
 
- arch/arm/configs/mmp2_defconfig           |   23 +-
- arch/arm/configs/mmp3_defconfig           |   21 +-
- arch/arm/mach-mmp/Makefile                |    4 +-
- arch/arm/mach-mmp/include/mach/irqs.h     |   18 +-
- arch/arm/mach-mmp/include/mach/mmp_dma.h  |   89 ++-
- arch/arm/mach-mmp/include/mach/regs-icu.h |   12 +-
- arch/arm/mach-mmp/irq-mmp2.c              |    4 +
- arch/arm/mach-mmp/irq-mmp3.c              |    3 +
- arch/arm/mach-mmp/mmp2.c                  |  122 ++-
- arch/arm/mach-mmp/mmp3.c                  |   78 ++-
- arch/arm/plat-pxa/include/plat/dma.h      |   33 +-
- drivers/char/mmp2_mdma.c                  |  273 ++----
- drivers/dma/Kconfig                       |   19 +
- drivers/dma/Makefile                      |    2 +
- drivers/dma/mmp_tdma.c                    |  858 +++++++++++++++
- drivers/dma/pxa_dmac.c                    | 1077 ++++++++++++++++++
- drivers/tty/serial/Kconfig                |   12 +-
- drivers/tty/serial/Makefile               |    1 +
- drivers/tty/serial/mmp_pxa.c              | 1698 +++++++++++++++++++++++++++++
- sound/soc/pxa/mmp-pcm.c                   |  232 ++--
- sound/soc/pxa/mmp-pcm.h                   |    4 +-
- sound/soc/pxa/mmp2-squ.c                  |  192 ++--
- sound/soc/pxa/mmp2-squ.h                  |    8 +-
- sound/soc/pxa/mmp2-sspa.c                 |   28 +-
- 24 files changed, 4361 insertions(+), 450 deletions(-)
- create mode 100644 drivers/dma/mmp_tdma.c
- create mode 100644 drivers/dma/pxa_dmac.c
- create mode 100644 drivers/tty/serial/mmp_pxa.c
+We need to fix them to use a fixmap entry to do atomic on-demand mapping
+of the config space and lift that restriction, but that isn't done yet.
+
+So I think those patches will need really careful handling on our side.
+
+Cheers,
+Ben.
+
 
