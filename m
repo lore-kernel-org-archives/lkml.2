@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab2B1BHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:20 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447Ab2B1BHO (ORCPT
+	id S964838Ab2B1BHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:34 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932447Ab2B1BHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.227.105 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010212.678882137@linuxfoundation.org>
+Message-Id: <20120228010213.047580839@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:54 -0800
+Date: Mon, 27 Feb 2012 17:02:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: [ 51/73] i387: dont ever touch TS_USEDFPU directly, use helper functions
+Subject: [ 53/73] i387: move AMD K7/K8 fpu fxsave/fxrstor workaround from save to restore
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,217 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 6d59d7a9f5b723a7ac1925c136e93ec83c0c3043 upstream.
+commit 4903062b5485f0e2c286a23b44c9b59d9b017d53 upstream.
 
-This creates three helper functions that do the TS_USEDFPU accesses, and
-makes everybody that used to do it by hand use those helpers instead.
+The AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception is
+pending.  In order to not leak FIP state from one process to another, we
+need to do a floating point load after the fxsave of the old process,
+and before the fxrstor of the new FPU state.  That resets the state to
+the (uninteresting) kernel load, rather than some potentially sensitive
+user information.
 
-In addition, there's a couple of helper functions for the "change both
-CR0.TS and TS_USEDFPU at the same time" case, and the places that do
-that together have been changed to use those.  That means that we have
-fewer random places that open-code this situation.
+We used to do this directly after the FPU state save, but that is
+actually very inconvenient, since it
 
-The intent is partly to clarify the code without actually changing any
-semantics yet (since we clearly still have some hard to reproduce bug in
-this area), but also to make it much easier to use another approach
-entirely to caching the CR0.TS bit for software accesses.
+ (a) corrupts what is potentially perfectly good FPU state that we might
+     want to lazy avoid restoring later and
 
-Right now we use a bit in the thread-info 'status' variable (this patch
-does not change that), but we might want to make it a full field of its
-own or even make it a per-cpu variable.
+ (b) on x86-64 it resulted in a very annoying ordering constraint, where
+     "__unlazy_fpu()" in the task switch needs to be delayed until after
+     the DS segment has been reloaded just to get the new DS value.
+
+Coupling it to the fxrstor instead of the fxsave automatically avoids
+both of these issues, and also ensures that we only do it when actually
+necessary (the FP state after a save may never actually get used).  It's
+simply a much more natural place for the leaked state cleanup.
 
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h |   75 ++++++++++++++++++++++++++++++++------------
- arch/x86/kernel/traps.c     |    2 -
- arch/x86/kernel/xsave.c     |    2 -
- arch/x86/kvm/vmx.c          |    2 -
- 4 files changed, 58 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/i387.h  |   19 -------------------
+ arch/x86/kernel/process_64.c |    5 ++---
+ arch/x86/kernel/traps.c      |   14 ++++++++++++++
+ 3 files changed, 16 insertions(+), 22 deletions(-)
 
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -280,6 +280,47 @@ static inline int restore_fpu_checking(s
- }
+@@ -211,15 +211,6 @@ static inline void fpu_fxsave(struct fpu
  
+ #endif	/* CONFIG_X86_64 */
+ 
+-/* We need a safe address that is cheap to find and that is already
+-   in L1 during context switch. The best choices are unfortunately
+-   different for UP and SMP */
+-#ifdef CONFIG_SMP
+-#define safe_address (__per_cpu_offset[0])
+-#else
+-#define safe_address (kstat_cpu(0).cpustat.user)
+-#endif
+-
  /*
-+ * Software FPU state helpers. Careful: these need to
-+ * be preemption protection *and* they need to be
-+ * properly paired with the CR0.TS changes!
-+ */
-+static inline int __thread_has_fpu(struct thread_info *ti)
-+{
-+	return ti->status & TS_USEDFPU;
-+}
-+
-+/* Must be paired with an 'stts' after! */
-+static inline void __thread_clear_has_fpu(struct thread_info *ti)
-+{
-+	ti->status &= ~TS_USEDFPU;
-+}
-+
-+/* Must be paired with a 'clts' before! */
-+static inline void __thread_set_has_fpu(struct thread_info *ti)
-+{
-+	ti->status |= TS_USEDFPU;
-+}
-+
-+/*
-+ * Encapsulate the CR0.TS handling together with the
-+ * software flag.
-+ *
-+ * These generally need preemption protection to work,
-+ * do try to avoid using these on their own.
-+ */
-+static inline void __thread_fpu_end(struct thread_info *ti)
-+{
-+	__thread_clear_has_fpu(ti);
-+	stts();
-+}
-+
-+static inline void __thread_fpu_begin(struct thread_info *ti)
-+{
-+	clts();
-+	__thread_set_has_fpu(ti);
-+}
-+
-+/*
-  * Signal frame handlers...
+  * These must be called with preempt disabled
   */
- extern int save_i387_xstate(void __user *buf);
-@@ -287,23 +328,21 @@ extern int restore_i387_xstate(void __us
+@@ -243,16 +234,6 @@ static inline void fpu_save_init(struct
  
- static inline void __unlazy_fpu(struct task_struct *tsk)
- {
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
-+	if (__thread_has_fpu(task_thread_info(tsk))) {
- 		__save_init_fpu(tsk);
--		task_thread_info(tsk)->status &= ~TS_USEDFPU;
--		stts();
-+		__thread_fpu_end(task_thread_info(tsk));
- 	} else
- 		tsk->fpu_counter = 0;
+ 	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
+ 		asm volatile("fnclex");
+-
+-	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+-	   is pending.  Clear the x87 state here by setting it to fixed
+-	   values. safe_address is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (safe_address));
  }
  
- static inline void __clear_fpu(struct task_struct *tsk)
- {
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
-+	if (__thread_has_fpu(task_thread_info(tsk))) {
- 		/* Ignore delayed exceptions from user space */
- 		asm volatile("1: fwait\n"
- 			     "2:\n"
- 			     _ASM_EXTABLE(1b, 2b));
--		task_thread_info(tsk)->status &= ~TS_USEDFPU;
--		stts();
-+		__thread_fpu_end(task_thread_info(tsk));
- 	}
- }
+ static inline void __save_init_fpu(struct task_struct *tsk)
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -378,6 +378,8 @@ __switch_to(struct task_struct *prev_p,
+ 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
+ 	unsigned fsindex, gsindex;
  
-@@ -311,14 +350,14 @@ static inline void __clear_fpu(struct ta
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-  * We can do a kernel_fpu_begin/end() pair *ONLY* if that
-- * pair does nothing at all: TS_USEDFPU must be clear (so
-+ * pair does nothing at all: the thread must not have fpu (so
-  * that we don't try to save the FPU state), and TS must
-  * be set (so that the clts/stts pair does nothing that is
-  * visible in the interrupted kernel thread).
-  */
- static inline bool interrupted_kernel_fpu_idle(void)
- {
--	return !(current_thread_info()->status & TS_USEDFPU) &&
-+	return !__thread_has_fpu(current_thread_info()) &&
- 		(read_cr0() & X86_CR0_TS);
- }
++	__unlazy_fpu(prev_p);
++
+ 	/*
+ 	 * Reload esp0, LDT and the page table pointer:
+ 	 */
+@@ -406,9 +408,6 @@ __switch_to(struct task_struct *prev_p,
  
-@@ -356,9 +395,9 @@ static inline void kernel_fpu_begin(void
+ 	load_TLS(next, cpu);
  
- 	WARN_ON_ONCE(!irq_fpu_usable());
- 	preempt_disable();
--	if (me->status & TS_USEDFPU) {
-+	if (__thread_has_fpu(me)) {
- 		__save_init_fpu(me->task);
--		me->status &= ~TS_USEDFPU;
-+		__thread_clear_has_fpu(me);
- 		/* We do 'stts()' in kernel_fpu_end() */
- 	} else
- 		clts();
-@@ -422,24 +461,21 @@ static inline void irq_ts_restore(int TS
-  */
- static inline int user_has_fpu(void)
- {
--	return current_thread_info()->status & TS_USEDFPU;
-+	return __thread_has_fpu(current_thread_info());
- }
- 
- static inline void user_fpu_end(void)
- {
- 	preempt_disable();
--	current_thread_info()->status &= ~TS_USEDFPU;
--	stts();
-+	__thread_fpu_end(current_thread_info());
- 	preempt_enable();
- }
- 
- static inline void user_fpu_begin(void)
- {
- 	preempt_disable();
--	if (!user_has_fpu()) {
--		clts();
--		current_thread_info()->status |= TS_USEDFPU;
--	}
-+	if (!user_has_fpu())
-+		__thread_fpu_begin(current_thread_info());
- 	preempt_enable();
- }
- 
-@@ -448,11 +484,10 @@ static inline void user_fpu_begin(void)
-  */
- static inline void save_init_fpu(struct task_struct *tsk)
- {
--	WARN_ON_ONCE(!(task_thread_info(tsk)->status & TS_USEDFPU));
-+	WARN_ON_ONCE(!__thread_has_fpu(task_thread_info(tsk)));
- 	preempt_disable();
- 	__save_init_fpu(tsk);
--	task_thread_info(tsk)->status &= ~TS_USEDFPU;
--	stts();
-+	__thread_fpu_end(task_thread_info(tsk));
- 	preempt_enable();
- }
- 
+-	/* Must be after DS reload */
+-	__unlazy_fpu(prev_p);
+-
+ 	/*
+ 	 * Leave lazy mode, flushing any hypercalls made here.
+ 	 * This must be done before restoring TLS segments so
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -734,7 +734,7 @@ void __math_state_restore(void)
- 		return;
- 	}
+@@ -731,6 +731,10 @@ void math_state_restore(void)
+ 	struct thread_info *thread = current_thread_info();
+ 	struct task_struct *tsk = thread->task;
  
--	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
-+	__thread_set_has_fpu(thread);	/* clts in caller! */
- 	tsk->fpu_counter++;
- }
++	/* We need a safe address that is cheap to find and that is already
++	   in L1. We just brought in "thread->task", so use that */
++#define safe_address (thread->task)
++
+ 	if (!tsk_used_math(tsk)) {
+ 		local_irq_enable();
+ 		/*
+@@ -748,6 +752,16 @@ void math_state_restore(void)
  
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -47,7 +47,7 @@ void __sanitize_i387_state(struct task_s
- 	if (!fx)
- 		return;
+ 	__thread_fpu_begin(thread);
  
--	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
-+	BUG_ON(__thread_has_fpu(task_thread_info(tsk)));
- 
- 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
- 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -948,7 +948,7 @@ static void __vmx_load_host_state(struct
- #ifdef CONFIG_X86_64
- 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- #endif
--	if (current_thread_info()->status & TS_USEDFPU)
-+	if (__thread_has_fpu(current_thread_info()))
- 		clts();
- 	load_gdt(&__get_cpu_var(host_gdt));
- }
++	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
++	   is pending.  Clear the x87 state here by setting it to fixed
++	   values. safe_address is a random variable that should be in L1 */
++	alternative_input(
++		ASM_NOP8 ASM_NOP2,
++		"emms\n\t"	  	/* clear stack tags */
++		"fildl %P[addr]",	/* set F?P to defined value */
++		X86_FEATURE_FXSAVE_LEAK,
++		[addr] "m" (safe_address));
++
+ 	/*
+ 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+ 	 */
 
 
