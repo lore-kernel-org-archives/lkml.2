@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965334Ab2B1BMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:33 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965313Ab2B1BMb (ORCPT
+	id S965369Ab2B1BMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:12:42 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965337Ab2B1BMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.243.197 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:36 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.237.40 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.234420688@linuxfoundation.org>
+Message-Id: <20120228010434.498428423@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:24 -0800
+Date: Mon, 27 Feb 2012 17:05:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Petkov Borislav <Borislav.Petkov@amd.com>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [ 55/72] x86/amd: Fix L1i and L2 cache sharing information for AMD family 15h processors
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 58/72] genirq: Handle pending irqs in irq_startup()
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,97 +26,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 32c3233885eb10ac9cb9410f2f8cd64b8df2b2a1 upstream.
+commit b4bc724e82e80478cba5fe9825b62e71ddf78757 upstream.
 
-For L1 instruction cache and L2 cache the shared CPU information
-is wrong. On current AMD family 15h CPUs those caches are shared
-between both cores of a compute unit.
+An interrupt might be pending when irq_startup() is called, but the
+startup code does not invoke the resend logic. In some cases this
+prevents the device from issuing another interrupt which renders the
+device non functional.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=42607
+Call the resend function in irq_startup() to keep things going.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Petkov Borislav <Borislav.Petkov@amd.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/20120208195229.GA17523@alberich.amd.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-and-tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |   44 +++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 8 deletions(-)
+ kernel/irq/autoprobe.c |    4 ++--
+ kernel/irq/chip.c      |   17 ++++++++++-------
+ kernel/irq/internals.h |    2 +-
+ kernel/irq/manage.c    |    2 +-
+ 4 files changed, 14 insertions(+), 11 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -326,8 +326,7 @@ static void __cpuinit amd_calc_l3_indice
- 	l3->indices = (max(max3(sc0, sc1, sc2), sc3) << 10) - 1;
+--- a/kernel/irq/autoprobe.c
++++ b/kernel/irq/autoprobe.c
+@@ -53,7 +53,7 @@ unsigned long probe_irq_on(void)
+ 			if (desc->irq_data.chip->irq_set_type)
+ 				desc->irq_data.chip->irq_set_type(&desc->irq_data,
+ 							 IRQ_TYPE_PROBE);
+-			irq_startup(desc);
++			irq_startup(desc, false);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
+@@ -70,7 +70,7 @@ unsigned long probe_irq_on(void)
+ 		raw_spin_lock_irq(&desc->lock);
+ 		if (!desc->action && irq_settings_can_probe(desc)) {
+ 			desc->istate |= IRQS_AUTODETECT | IRQS_WAITING;
+-			if (irq_startup(desc))
++			if (irq_startup(desc, false))
+ 				desc->istate |= IRQS_PENDING;
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -157,19 +157,22 @@ static void irq_state_set_masked(struct
+ 	irqd_set(&desc->irq_data, IRQD_IRQ_MASKED);
  }
  
--static void __cpuinit amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf,
--					int index)
-+static void __cpuinit amd_init_l3_cache(struct _cpuid4_info_regs *this_leaf, int index)
+-int irq_startup(struct irq_desc *desc)
++int irq_startup(struct irq_desc *desc, bool resend)
  {
- 	int node;
- 
-@@ -725,14 +724,16 @@ static DEFINE_PER_CPU(struct _cpuid4_inf
- #define CPUID4_INFO_IDX(x, y)	(&((per_cpu(ici_cpuid4_info, x))[y]))
- 
- #ifdef CONFIG_SMP
--static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
++	int ret = 0;
 +
-+static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
- {
--	struct _cpuid4_info	*this_leaf, *sibling_leaf;
--	unsigned long num_threads_sharing;
--	int index_msb, i, sibling;
-+	struct _cpuid4_info *this_leaf;
-+	int ret, i, sibling;
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ 	irq_state_clr_disabled(desc);
+ 	desc->depth = 0;
  
--	if ((index == 3) && (c->x86_vendor == X86_VENDOR_AMD)) {
-+	ret = 0;
-+	if (index == 3) {
-+		ret = 1;
- 		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
- 			if (!per_cpu(ici_cpuid4_info, i))
- 				continue;
-@@ -743,8 +744,35 @@ static void __cpuinit cache_shared_cpu_m
- 				set_bit(sibling, this_leaf->shared_cpu_map);
- 			}
- 		}
--		return;
-+	} else if ((c->x86 == 0x15) && ((index == 1) || (index == 2))) {
-+		ret = 1;
-+		for_each_cpu(i, cpu_sibling_mask(cpu)) {
-+			if (!per_cpu(ici_cpuid4_info, i))
-+				continue;
-+			this_leaf = CPUID4_INFO_IDX(i, index);
-+			for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
-+				if (!cpu_online(sibling))
-+					continue;
-+				set_bit(sibling, this_leaf->shared_cpu_map);
-+			}
-+		}
+ 	if (desc->irq_data.chip->irq_startup) {
+-		int ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
++		ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
+ 		irq_state_clr_masked(desc);
+-		return ret;
++	} else {
++		irq_enable(desc);
  	}
-+
+-
+-	irq_enable(desc);
+-	return 0;
++	if (resend)
++		check_irq_resend(desc, desc->irq_data.irq);
 +	return ret;
-+}
-+
-+static void __cpuinit cache_shared_cpu_map_setup(unsigned int cpu, int index)
-+{
-+	struct _cpuid4_info *this_leaf, *sibling_leaf;
-+	unsigned long num_threads_sharing;
-+	int index_msb, i;
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+
-+	if (c->x86_vendor == X86_VENDOR_AMD) {
-+		if (cache_shared_amd_cpu_map_setup(cpu, index))
-+			return;
-+	}
-+
- 	this_leaf = CPUID4_INFO_IDX(cpu, index);
- 	num_threads_sharing = 1 + this_leaf->base.eax.split.num_threads_sharing;
+ }
  
+ void irq_shutdown(struct irq_desc *desc)
+@@ -646,7 +649,7 @@ __irq_set_handler(unsigned int irq, irq_
+ 		irq_settings_set_noprobe(desc);
+ 		irq_settings_set_norequest(desc);
+ 		irq_settings_set_nothread(desc);
+-		irq_startup(desc);
++		irq_startup(desc, true);
+ 	}
+ out:
+ 	irq_put_desc_busunlock(desc, flags);
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -67,7 +67,7 @@ extern int __irq_set_trigger(struct irq_
+ extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
+ extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
+ 
+-extern int irq_startup(struct irq_desc *desc);
++extern int irq_startup(struct irq_desc *desc, bool resend);
+ extern void irq_shutdown(struct irq_desc *desc);
+ extern void irq_enable(struct irq_desc *desc);
+ extern void irq_disable(struct irq_desc *desc);
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1027,7 +1027,7 @@ __setup_irq(unsigned int irq, struct irq
+ 			desc->istate |= IRQS_ONESHOT;
+ 
+ 		if (irq_settings_can_autoenable(desc))
+-			irq_startup(desc);
++			irq_startup(desc, true);
+ 		else
+ 			/* Undo nested disables: */
+ 			desc->depth = 1;
 
 
