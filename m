@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab2B1UBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 15:01:07 -0500
-Received: from nm27.bullet.mail.sp2.yahoo.com ([98.139.91.97]:33870 "HELO
-	nm27.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757290Ab2B1UBF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 15:01:05 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 909303.55675.bm@omp1068.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=lHyrt5Z1Zo/upkPoggKHgjmR4PW9NZ4UGH0hj4WYUwyidE1vNVWQtNl9WwqwFWLx21pnT/+m6N+hor5YqvIENAfaAsZLgxcTvS+ssa1/23rAYZugQQ6Vy27nwvPDEhhl3EgJ7KJQXGkB0swOznhw1caZPedGyDNUbuP8LhFdAe0=;
-X-YMail-OSG: SxnZRLoVM1kWIGEydD2sRZWMOXBW8ZoERGvH6fFbcAdE8z0
- OBkAthQarKoILcMO9XnH2vYbYMIiU4HAxRRqg__Zws2CpHT4HhVZBGfGl.C2
- jJjd6yQo6kPFTVFvTr0tB.KYldMzQcLtaskHi891.J0EDBlb.6fWJNPo.QnD
- ZSr91JCJrLcRU9DovRHL24_ZDToqYRbKnsRUsTo_s0dXF0uq68wKZQsF29uR
- yqEam6aEEw0cGSe62dzHG2m_D7ZpseCS9r4cc695r1Bg7gqhryWifQ31YzHF
- nLH35UnfgBM1Dsfj1S1rKSi2obKUyabLcBfMuqMRYytKlnnhR_BVQKY6QwDt
- 6xwaFFVPwFclRgdQMIzgQJXC3UHA6d5WREIdRvrmiKdFh7QRx1RjMQU.4HA.
- _TDj7Sjz4FFeVfcfN7wfHbkiYaKixTbwsbKQ4Ma89F8JNa1YddcS8RZRqm.k
- 9c0Oni64-
-X-Mailer: YahooMailWebService/0.8.116.338427
-Message-ID: <1330459264.72081.YahooMailNeo@web112013.mail.gq1.yahoo.com>
-Date: Tue, 28 Feb 2012 12:01:04 -0800 (PST)
-From: Ron Chen <ron_chen_123@yahoo.com>
-Reply-To: Ron Chen <ron_chen_123@yahoo.com>
-Subject: inotify & NFS error
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1757357Ab2B1UGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 15:06:05 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:21076 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757294Ab2B1UGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 15:06:02 -0500
+Date: Tue, 28 Feb 2012 21:06:00 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH] kernel.h: Include <linux/bug.h> to avoid build breakage
+	with ARRAY_SIZE()
+Message-ID: <20120228200600.GB3042@merkur.ravnborg.org>
+References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com> <20120228155124.GA2827@merkur.ravnborg.org> <4F4D0438.9070200@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4D0438.9070200@windriver.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know that it is not possible (read: not technically feasible) for the inotify interface to support for NFS or other shared filesystems.
+On Tue, Feb 28, 2012 at 11:43:36AM -0500, Paul Gortmaker wrote:
+> On 12-02-28 10:51 AM, Sam Ravnborg wrote:
+> > On Tue, Feb 28, 2012 at 10:41:39AM -0300, Fabio Estevam wrote:
+> >> Building imx_v6_v7_defconfig generated the following build error:
+> >>
+> >> arch/arm/mach-imx/cpu_op-mx51.c: In function 'mx51_get_cpu_op':
+> >> arch/arm/mach-imx/cpu_op-mx51.c:27: error: implicit declaration of function 'BUILD_BUG_ON_ZERO'
+> >>
+> >> commit 6f863554 (kernel.h: doesn't explicitly use bug.h, so don't include it.)
+> >> has removed asm/debug.h from linux/kernel.h.
+> >>
+> >> Quoting Russell King (http://www.spinics.net/lists/arm-kernel/msg161916.html)
+> >>
+> >> "linux/kernel.h _does_ use bug stuff - in ARRAY_SIZE().
+> >>
+> >> ARRAY_SIZE() uses __must_be_array(), which is defined in linux/compiler-gcc.h,
+> >> which is obtained via linux/compiler.h and linux/linkage.h.
+> >>
+> >> linux/compiler-gcc.h defines __must_be_array() to be:
+> >> #define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
+> > 
+> > In which case linux/compiler-gcc.h uses bug.h - so this is where you
+> > should add the include.
+> > Not in kernel.h that just happens to use __must_be_array()
+> > We do not want to add "#include bug.h" to all header files
+> > that happens to use __must_be_array.
+> 
+> The approach I was taking was to consider something "used" if it was
+> actually in a static inline[1]. So in that sense, the kernel.h does
+> not "use" ARRAY_SIZE, but only defines it.  This seems to be what has
+> been done in the past, and folks have even converted trivial static
+> inline functions to macros just to use this concept of "used" to
+> help avoid tangling includes any further than they currently are.
 
-However, I think it is at least useful to tell the application developer that the file is on NFS and thus return of some sort (via errno), and thus when inotify_add_watch(2) is passed with a pathname on NFS, some sort of error will return.
+We have a macro which uses a macro which uses a macro from bug.h.
+Should we include bug.h with the first or the second macro?
 
-I am one of the maintainers of Open Grid Scheduler (the official open-source Sun Grid Engine). I think having a reliable way of determining whether inotify gets events would greatly benefit applications that are commonly run in clustered environments (like Open Grid Scheduler, Grid Engine, and other HPC job schedulers). Most applications can switch back to polling when inotify is absent, but if the applications themselves do not know, then they can in the worst case sit there waiting forever.
+I guess in this case it does not matter much.
 
- -Ron
+	Sam
