@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab2B1Bl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:41:58 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab2B1BGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932094Ab2B1BGM (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Feb 2012 20:06:12 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.70 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756414Ab2B1BGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 20:06:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.223.68 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010207.011478444@linuxfoundation.org>
+Message-Id: <20120228010206.550294700@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:21 -0800
+Date: Mon, 27 Feb 2012 17:02:18 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/73] IPoIB: Stop lying about hard_header_len and use skb->cb to stash LL addresses
+        alan@lxorguk.ukuu.org.uk, Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 15/73] ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,206 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-From: Roland Dreier <roland@purestorage.com>
+commit b46c0f74657d1fe1c1b0c1452631cc38a9e6987f upstream.
 
-[ Upstream commit 936d7de3d736e0737542641269436f4b5968e9ef ]
+armv7's flush_cache_all() flushes caches via set/way. To
+determine the cache attributes (line size, number of sets,
+etc.) the assembly first writes the CSSELR register to select a
+cache level and then reads the CCSIDR register. The CSSELR register
+is banked per-cpu and is used to determine which cache level CCSIDR
+reads. If the task is migrated between when the CSSELR is written and
+the CCSIDR is read the CCSIDR value may be for an unexpected cache
+level (for example L1 instead of L2) and incorrect cache flushing
+could occur.
 
-Commit a0417fa3a18a ("net: Make qdisc_skb_cb upper size bound
-explicit.") made it possible for a netdev driver to use skb->cb
-between its header_ops.create method and its .ndo_start_xmit
-method.  Use this in ipoib_hard_header() to stash away the LL address
-(GID + QPN), instead of the "ipoib_pseudoheader" hack.  This allows
-IPoIB to stop lying about its hard_header_len, which will let us fix
-the L2 check for GRO.
+Disable interrupts across the write and read so that the correct
+cache attributes are read and used for the cache flushing
+routine. We disable interrupts instead of disabling preemption
+because the critical section is only 3 instructions and we want
+to call v7_dcache_flush_all from __v7_setup which doesn't have a
+full kernel stack with a struct thread_info.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes a problem we see in scm_call() when flush_cache_all()
+is called from preemptible context and sometimes the L2 cache is
+not properly flushed out.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/infiniband/ulp/ipoib/ipoib.h           |    6 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |   55 ++++++++-----------------
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    9 ----
- 3 files changed, 24 insertions(+), 46 deletions(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib.h
-+++ b/drivers/infiniband/ulp/ipoib/ipoib.h
-@@ -44,6 +44,7 @@
- #include <linux/mutex.h>
- 
- #include <net/neighbour.h>
-+#include <net/sch_generic.h>
- 
- #include <asm/atomic.h>
- 
-@@ -117,8 +118,9 @@ struct ipoib_header {
- 	u16	reserved;
- };
- 
--struct ipoib_pseudoheader {
--	u8  hwaddr[INFINIBAND_ALEN];
-+struct ipoib_cb {
-+	struct qdisc_skb_cb	qdisc_cb;
-+	u8			hwaddr[INFINIBAND_ALEN];
- };
- 
- /* Used for all multicast joins (broadcast, IPv4 mcast and IPv6 mcast) */
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -658,7 +658,7 @@ static void ipoib_path_lookup(struct sk_
- }
- 
- static void unicast_arp_send(struct sk_buff *skb, struct net_device *dev,
--			     struct ipoib_pseudoheader *phdr)
-+			     struct ipoib_cb *cb)
- {
- 	struct ipoib_dev_priv *priv = netdev_priv(dev);
- 	struct ipoib_path *path;
-@@ -666,17 +666,15 @@ static void unicast_arp_send(struct sk_b
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 
--	path = __path_find(dev, phdr->hwaddr + 4);
-+	path = __path_find(dev, cb->hwaddr + 4);
- 	if (!path || !path->valid) {
- 		int new_path = 0;
- 
- 		if (!path) {
--			path = path_rec_create(dev, phdr->hwaddr + 4);
-+			path = path_rec_create(dev, cb->hwaddr + 4);
- 			new_path = 1;
- 		}
- 		if (path) {
--			/* put pseudoheader back on for next time */
--			skb_push(skb, sizeof *phdr);
- 			__skb_queue_tail(&path->queue, skb);
- 
- 			if (!path->query && path_rec_start(dev, path)) {
-@@ -700,12 +698,10 @@ static void unicast_arp_send(struct sk_b
- 			  be16_to_cpu(path->pathrec.dlid));
- 
- 		spin_unlock_irqrestore(&priv->lock, flags);
--		ipoib_send(dev, skb, path->ah, IPOIB_QPN(phdr->hwaddr));
-+		ipoib_send(dev, skb, path->ah, IPOIB_QPN(cb->hwaddr));
- 		return;
- 	} else if ((path->query || !path_rec_start(dev, path)) &&
- 		   skb_queue_len(&path->queue) < IPOIB_MAX_PATH_REC_QUEUE) {
--		/* put pseudoheader back on for next time */
--		skb_push(skb, sizeof *phdr);
- 		__skb_queue_tail(&path->queue, skb);
- 	} else {
- 		++dev->stats.tx_dropped;
-@@ -774,16 +770,14 @@ static int ipoib_start_xmit(struct sk_bu
- 			dev_kfree_skb_any(skb);
- 		}
- 	} else {
--		struct ipoib_pseudoheader *phdr =
--			(struct ipoib_pseudoheader *) skb->data;
--		skb_pull(skb, sizeof *phdr);
-+		struct ipoib_cb *cb = (struct ipoib_cb *) skb->cb;
- 
--		if (phdr->hwaddr[4] == 0xff) {
-+		if (cb->hwaddr[4] == 0xff) {
- 			/* Add in the P_Key for multicast*/
--			phdr->hwaddr[8] = (priv->pkey >> 8) & 0xff;
--			phdr->hwaddr[9] = priv->pkey & 0xff;
-+			cb->hwaddr[8] = (priv->pkey >> 8) & 0xff;
-+			cb->hwaddr[9] = priv->pkey & 0xff;
- 
--			ipoib_mcast_send(dev, phdr->hwaddr + 4, skb);
-+			ipoib_mcast_send(dev, cb->hwaddr + 4, skb);
- 		} else {
- 			/* unicast GID -- should be ARP or RARP reply */
- 
-@@ -792,14 +786,14 @@ static int ipoib_start_xmit(struct sk_bu
- 				ipoib_warn(priv, "Unicast, no %s: type %04x, QPN %06x %pI6\n",
- 					   skb_dst(skb) ? "neigh" : "dst",
- 					   be16_to_cpup((__be16 *) skb->data),
--					   IPOIB_QPN(phdr->hwaddr),
--					   phdr->hwaddr + 4);
-+					   IPOIB_QPN(cb->hwaddr),
-+					   cb->hwaddr + 4);
- 				dev_kfree_skb_any(skb);
- 				++dev->stats.tx_dropped;
- 				goto unlock;
- 			}
- 
--			unicast_arp_send(skb, dev, phdr);
-+			unicast_arp_send(skb, dev, cb);
- 		}
- 	}
- unlock:
-@@ -825,8 +819,6 @@ static int ipoib_hard_header(struct sk_b
- 			     const void *daddr, const void *saddr, unsigned len)
- {
- 	struct ipoib_header *header;
--	struct dst_entry *dst;
--	struct neighbour *n;
- 
- 	header = (struct ipoib_header *) skb_push(skb, sizeof *header);
- 
-@@ -834,18 +826,13 @@ static int ipoib_hard_header(struct sk_b
- 	header->reserved = 0;
- 
- 	/*
--	 * If we don't have a neighbour structure, stuff the
--	 * destination address onto the front of the skb so we can
--	 * figure out where to send the packet later.
-+	 * If we don't have a dst_entry structure, stuff the
-+	 * destination address into skb->cb so we can figure out where
-+	 * to send the packet later.
- 	 */
--	dst = skb_dst(skb);
--	n = NULL;
--	if (dst)
--		n = dst_get_neighbour_raw(dst);
--	if ((!dst || !n) && daddr) {
--		struct ipoib_pseudoheader *phdr =
--			(struct ipoib_pseudoheader *) skb_push(skb, sizeof *phdr);
--		memcpy(phdr->hwaddr, daddr, INFINIBAND_ALEN);
-+	if (!skb_dst(skb)) {
-+		struct ipoib_cb *cb = (struct ipoib_cb *) skb->cb;
-+		memcpy(cb->hwaddr, daddr, INFINIBAND_ALEN);
- 	}
- 
- 	return 0;
-@@ -1021,11 +1008,7 @@ static void ipoib_setup(struct net_devic
- 
- 	dev->flags		|= IFF_BROADCAST | IFF_MULTICAST;
- 
--	/*
--	 * We add in INFINIBAND_ALEN to allow for the destination
--	 * address "pseudoheader" for skbs without neighbour struct.
--	 */
--	dev->hard_header_len	 = IPOIB_ENCAP_LEN + INFINIBAND_ALEN;
-+	dev->hard_header_len	 = IPOIB_ENCAP_LEN;
- 	dev->addr_len		 = INFINIBAND_ALEN;
- 	dev->type		 = ARPHRD_INFINIBAND;
- 	dev->tx_queue_len	 = ipoib_sendq_size * 2;
---- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-@@ -258,21 +258,14 @@ static int ipoib_mcast_join_finish(struc
- 	netif_tx_lock_bh(dev);
- 	while (!skb_queue_empty(&mcast->pkt_queue)) {
- 		struct sk_buff *skb = skb_dequeue(&mcast->pkt_queue);
--		struct dst_entry *dst = skb_dst(skb);
--		struct neighbour *n = NULL;
- 
- 		netif_tx_unlock_bh(dev);
- 
- 		skb->dev = dev;
--		if (dst)
--			n = dst_get_neighbour_raw(dst);
--		if (!dst || !n) {
--			/* put pseudoheader back on for next time */
--			skb_push(skb, sizeof (struct ipoib_pseudoheader));
--		}
- 
- 		if (dev_queue_xmit(skb))
- 			ipoib_warn(priv, "dev_queue_xmit failed to requeue packet\n");
-+
- 		netif_tx_lock_bh(dev);
- 	}
- 	netif_tx_unlock_bh(dev);
+---
+ arch/arm/mm/cache-v7.S |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -54,9 +54,15 @@ loop1:
+ 	and	r1, r1, #7			@ mask of the bits for current cache only
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
++#ifdef CONFIG_PREEMPT
++	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++#endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
+ 	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
++#ifdef CONFIG_PREEMPT
++	restore_irqs_notrace r9
++#endif
+ 	and	r2, r1, #7			@ extract the length of the cache lines
+ 	add	r2, r2, #4			@ add 4 (line length offset)
+ 	ldr	r4, =0x3ff
 
 
