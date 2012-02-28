@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab2B1RYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:24:43 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:50381 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753406Ab2B1RYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:24:42 -0500
-Date: Tue, 28 Feb 2012 09:24:41 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Andrei Warkentin <andreiw@vmware.com>,
-        Andrei Warkentin <andrey.warkentin@gmail.com>
-Message-ID: <225599809.1658960.1330449881619.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4F4CDC50.8070505@windriver.com>
-Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
+	id S965378Ab2B1RY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:24:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964770Ab2B1RYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:24:54 -0500
+Message-ID: <4F4D0DD6.9030302@redhat.com>
+Date: Tue, 28 Feb 2012 19:24:38 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH] perf/x86: Fix HO/GO counting with SVM disabled
+References: <20120227182325.GA12302@8bytes.org> <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On 02/28/2012 05:55 PM, Joerg Roedel wrote:
+>  
+>  __init int amd_pmu_init(void)
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 5fa553b..773fee2 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/ftrace_event.h>
+>  #include <linux/slab.h>
+>  
+> +#include <asm/perf_event.h>
+>  #include <asm/tlbflush.h>
+>  #include <asm/desc.h>
+>  #include <asm/kvm_para.h>
+> @@ -575,6 +576,8 @@ static void svm_hardware_disable(void *garbage)
+>  		wrmsrl(MSR_AMD64_TSC_RATIO, TSC_RATIO_DEFAULT);
+>  
+>  	cpu_svm_disable();
+> +
+> +	x86_pmu_disable_virt();
+>  }
+>  
+>  static int svm_hardware_enable(void *garbage)
+> @@ -622,6 +625,8 @@ static int svm_hardware_enable(void *garbage)
+>  
+>  	svm_init_erratum_383();
+>  
+> +	x86_pmu_enable_virt();
+> +
+>  	return 0;
+>  }
+>  
 
------ Original Message -----
-> From: "Jason Wessel" <jason.wessel@windriver.com>
-> To: "Andrei Warkentin" <andrey.warkentin@gmail.com>
-> Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>
-> Sent: Tuesday, February 28, 2012 8:53:20 AM
-> Subject: Re: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
-> 
-> 
-> I think we are a lot closer this time.  I attached a new patch based
-> on your prior version.
-> 
-> This is the wrong place to do this.  The cleanup needs to get
-> executed
-> any time you are going to leave kdb_main(), because there are a few
-> conditions like cpu switch, and transition to kgdb where you would
-> leak the enter code on to the buffer handler without ever returning
-> to
-> the OS.  Also if you did not set CONFIG_KDB_KEYBOARD your patch did
-> not compile properly.  We could have fixed this by moving the code to
-> the input cleanup in kgdboc, but this is not needed at all if you
-> take a look at the revised version.
-> 
+These should go into x86.c.  If the functions later gain meaning on
+Intel, we want them to be called (and nothing in the name suggests
+they're AMD specific).
 
-Oh I see now. Okay. I'll keep this in mind.
+-- 
+error compiling committee.c: too many arguments to function
 
-> >
-> >
-> > Fixed previous regression where if kbd was not used
-> > to 'g' + ENTER, the cleanup code would hang.
-> 
-> 
-> Was this a regression in the out of tree code or something in the
-> mainline kdb?
-
-The first patch I sent out didn't have the kbd_last_ret bit. I found this
-while using netkgdb and kgdboc together, but I'm certain this would
-also apply if you ran kgdboc=ttyS0,kbd and broke in/resumed from serial
-without ever touching the i8042 keyboard.
-
-> 
-> I added kbd_last_ret = 0; right here so this cannot get triggered a
-> second time if the kdb main loop is entered and exited without going
-> to the shell (which can happen on a soft single step operation on
-> some archs).
-> 
-
-Looks good to me! I gave it a spin as well.
-
-Acked-by: Andrei Warkentin <andrey.warkentin@gmail.com>
-
-A
