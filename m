@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965474Ab2B1MZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 07:25:32 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45855 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab2B1MZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 07:25:31 -0500
-Date: Tue, 28 Feb 2012 13:25:27 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 6/6] memcg: fix performance of
- mem_cgroup_begin_update_page_stat()
-Message-ID: <20120228122527.GD1702@cmpxchg.org>
-References: <20120217182426.86aebfde.kamezawa.hiroyu@jp.fujitsu.com>
- <20120217182851.2f8ee503.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217182851.2f8ee503.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1757217Ab2B1M05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 07:26:57 -0500
+Received: from 124-248-200-34.sunnyvision.com ([124.248.200.34]:55473 "EHLO
+	smtp7.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab2B1M0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 07:26:55 -0500
+X-Greylist: delayed 1508 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Feb 2012 07:26:55 EST
+X-DKIM: OpenDKIM Filter v2.4.1 smtp7.edmhongkong.com 2229F4FF5F
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 09DE859497
+X-DomainKeys: Sendmail DomainKeys Filter v1.0.2 smtp1.edmhongkong.com 09DE859497
+Message-ID: <aizDyc2sQ@tpts5.seed.net.tw>
+From: edmond@datacentre.com.hk
+To: 20120228@vger.kernel.org
+Subject: Tier 3 Data Centre Super Special Offer Counting Down!
+X-Mailer: qOfxY41Xfvk29S0jCEiN8Z
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Antivirus: avast! (VPS 120228-0, 2012/02/28), Outbound message
+X-Antivirus-Status: Clean
+Date: Tue, 28 Feb 2012 20:01:29 +0800 (HKT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1SCR3Ab026767
 
-On Fri, Feb 17, 2012 at 06:28:51PM +0900, KAMEZAWA Hiroyuki wrote:
-> >From 07d3ce332ee4bc1eaef4b8fb2019b0c06bd7afb1 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 6 Feb 2012 12:14:47 +0900
-> Subject: [PATCH 6/6] memcg: fix performance of mem_cgroup_begin_update_page_stat()
-> 
-> mem_cgroup_begin_update_page_stat() should be very fast because
-> it's called very frequently. Now, it needs to look up page_cgroup
-> and its memcg....this is slow.
-> 
-> This patch adds a global variable to check "any memcg is moving or not".
-> With this, the caller doesn't need to visit page_cgroup and memcg.
-> 
-> Here is a test result. A test program makes page faults onto a file,
-> MAP_SHARED and makes each page's page_mapcount(page) > 1, and free
-> the range by madvise() and page fault again.  This program causes
-> 26214400 times of page fault onto a file(size was 1G.) and shows
-> shows the cost of mem_cgroup_begin_update_page_stat().
-> 
-> Before this patch for mem_cgroup_begin_update_page_stat()
-> [kamezawa@bluextal test]$ time ./mmap 1G
-> 
-> real    0m21.765s
-> user    0m5.999s
-> sys     0m15.434s
-> 
->     27.46%     mmap  mmap               [.] reader
->     21.15%     mmap  [kernel.kallsyms]  [k] page_fault
->      9.17%     mmap  [kernel.kallsyms]  [k] filemap_fault
->      2.96%     mmap  [kernel.kallsyms]  [k] __do_fault
->      2.83%     mmap  [kernel.kallsyms]  [k] __mem_cgroup_begin_update_page_stat
-> 
-> After this patch
-> [root@bluextal test]# time ./mmap 1G
-> 
-> real    0m21.373s
-> user    0m6.113s
-> sys     0m15.016s
-> 
-> In usual path, calls to __mem_cgroup_begin_update_page_stat() goes away.
-> 
-> Note: we may be able to remove this optimization in future if
->       we can get pointer to memcg directly from struct page.
-> 
-> Acked-by: Greg Thelen <gthelen@google.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Dear Sir / Madam,
+ 
+Hope all is well.  Our company provides the BEST DEAL for SERVER COLOCATION. 
+We have second to none data center, network equipments and professional technical team in Hong Kong.  We are currently expanding our data center and is keen to cooperate with companies who would like to have their servers located in our TIER 3 data center with HIGHEST STABILITY and LOWEST PRICE
+ 
+Dedicated Server Rental  +  Professional Managed Service
+    Crazy Price    USD164 / month
+Special Offer Enterprise Rack Mount Server
+-          - Intel(R) Xeon(R) E3-1220 Processor (3.10GHz, 8M Cache, Turbo, 4C/4T, 80W)
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+-          4GB RAM, 1x4GB, 1333MHz, DDR-3, Single Ranked UDIMMs
+
+-          500GB, 3.5", SATA III
+
+-          Remote IP-vKVM/IPMI 2.0
+
+-          Virtual media over LAN
+
+-          Intel Gigabit Ethernet LAN port
+
+Software Configuration
+OS: Linux
+ 
+Data Center Facilities
+- Shared Local & International Bandwidth
+- IP Addresses Allocation
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator
+- FM200 gas-based fire suppression system
+- 24x7 CRAC Air Conditioning and Humidity Control
+- 24x7 Security Control
+We have too many special offers which cannot show all to you.  If you are interested, just reply this email and I will further provide information about our SPECIAL OFFERS to you.
+ 
+Thanks & Regards,
+Edmond
+Chief Co-location Consultant
+DataCentre.com.hk
+
+
