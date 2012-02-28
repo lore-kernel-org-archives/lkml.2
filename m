@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965021Ab2B1BK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:10:57 -0500
+	id S964982Ab2B1BIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:08:10 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964899Ab2B1BIL (ORCPT
+	with ESMTP id S964962Ab2B1BIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:08:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.131.74 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:08:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.242.201 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010215.974304968@linuxfoundation.org>
+Message-Id: <20120228010215.452163443@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:13 -0800
+Date: Mon, 27 Feb 2012 17:03:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Maxime Bizon <mbizon@freebox.fr>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [ 70/73] epoll: introduce POLLFREE to flush ->signalfd_wqh before kfree()
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        maximilian attems <max@stro.at>, Michal Marek <mmarek@suse.cz>
+Subject: [ 67/73] builddeb: Dont create files in /tmp with predictable names
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,153 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit d80e731ecab420ddcb79ee9d0ac427acbc187b4b upstream.
+commit 6c635224602d760c1208ada337562f40d8ae93a5 upstream.
 
-This patch is intentionally incomplete to simplify the review.
-It ignores ep_unregister_pollwait() which plays with the same wqh.
-See the next change.
+The current use of /tmp for file lists is insecure.  Put them under
+$objtree/debian instead.
 
-epoll assumes that the EPOLL_CTL_ADD'ed file controls everything
-f_op->poll() needs. In particular it assumes that the wait queue
-can't go away until eventpoll_release(). This is not true in case
-of signalfd, the task which does EPOLL_CTL_ADD uses its ->sighand
-which is not connected to the file.
-
-This patch adds the special event, POLLFREE, currently only for
-epoll. It expects that init_poll_funcptr()'ed hook should do the
-necessary cleanup. Perhaps it should be defined as EPOLLFREE in
-eventpoll.
-
-__cleanup_sighand() is changed to do wake_up_poll(POLLFREE) if
-->signalfd_wqh is not empty, we add the new signalfd_cleanup()
-helper.
-
-ep_poll_callback(POLLFREE) simply does list_del_init(task_list).
-This make this poll entry inconsistent, but we don't care. If you
-share epoll fd which contains our sigfd with another process you
-should blame yourself. signalfd is "really special". I simply do
-not know how we can define the "right" semantics if it used with
-epoll.
-
-The main problem is, epoll calls signalfd_poll() once to establish
-the connection with the wait queue, after that signalfd_poll(NULL)
-returns the different/inconsistent results depending on who does
-EPOLL_CTL_MOD/signalfd_read/etc. IOW: apart from sigmask, signalfd
-has nothing to do with the file, it works with the current thread.
-
-In short: this patch is the hack which tries to fix the symptoms.
-It also assumes that nobody can take tasklist_lock under epoll
-locks, this seems to be true.
-
-Note:
-
-	- we do not have wake_up_all_poll() but wake_up_poll()
-	  is fine, poll/epoll doesn't use WQ_FLAG_EXCLUSIVE.
-
-	- signalfd_cleanup() uses POLLHUP along with POLLFREE,
-	  we need a couple of simple changes in eventpoll.c to
-	  make sure it can't be "lost".
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: maximilian attems <max@stro.at>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c             |    4 ++++
- fs/signalfd.c              |   11 +++++++++++
- include/asm-generic/poll.h |    2 ++
- include/linux/signalfd.h   |    5 ++++-
- kernel/fork.c              |    5 ++++-
- 5 files changed, 25 insertions(+), 2 deletions(-)
+ scripts/package/builddeb |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -827,6 +827,10 @@ static int ep_poll_callback(wait_queue_t
- 	struct epitem *epi = ep_item_from_wait(wait);
- 	struct eventpoll *ep = epi->ep;
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -238,14 +238,14 @@ EOF
+ fi
  
-+	/* the caller holds eppoll_entry->whead->lock */
-+	if ((unsigned long)key & POLLFREE)
-+		list_del_init(&wait->task_list);
-+
- 	spin_lock_irqsave(&ep->lock, flags);
+ # Build header package
+-(cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > /tmp/files$$)
+-(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> /tmp/files$$)
+-(cd $objtree; find .config Module.symvers include scripts -type f >> /tmp/objfiles$$)
++(cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
++(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
++(cd $objtree; find .config Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
+ destdir=$kernel_headers_dir/usr/src/linux-headers-$version
+ mkdir -p "$destdir"
+-(cd $srctree; tar -c -f - -T /tmp/files$$) | (cd $destdir; tar -xf -)
+-(cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
+-rm -f /tmp/files$$ /tmp/objfiles$$
++(cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
++(cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
++rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+ arch=$(dpkg --print-architecture)
  
- 	/*
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -30,6 +30,17 @@
- #include <linux/signalfd.h>
- #include <linux/syscalls.h>
- 
-+void signalfd_cleanup(struct sighand_struct *sighand)
-+{
-+	wait_queue_head_t *wqh = &sighand->signalfd_wqh;
-+
-+	if (likely(!waitqueue_active(wqh)))
-+		return;
-+
-+	/* wait_queue_t->func(POLLFREE) should do remove_wait_queue() */
-+	wake_up_poll(wqh, POLLHUP | POLLFREE);
-+}
-+
- struct signalfd_ctx {
- 	sigset_t sigmask;
- };
---- a/include/asm-generic/poll.h
-+++ b/include/asm-generic/poll.h
-@@ -28,6 +28,8 @@
- #define POLLRDHUP       0x2000
- #endif
- 
-+#define POLLFREE	0x4000	/* currently only for epoll */
-+
- struct pollfd {
- 	int fd;
- 	short events;
---- a/include/linux/signalfd.h
-+++ b/include/linux/signalfd.h
-@@ -61,13 +61,16 @@ static inline void signalfd_notify(struc
- 		wake_up(&tsk->sighand->signalfd_wqh);
- }
- 
-+extern void signalfd_cleanup(struct sighand_struct *sighand);
-+
- #else /* CONFIG_SIGNALFD */
- 
- static inline void signalfd_notify(struct task_struct *tsk, int sig) { }
- 
-+static inline void signalfd_cleanup(struct sighand_struct *sighand) { }
-+
- #endif /* CONFIG_SIGNALFD */
- 
- #endif /* __KERNEL__ */
- 
- #endif /* _LINUX_SIGNALFD_H */
--
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -67,6 +67,7 @@
- #include <linux/user-return-notifier.h>
- #include <linux/oom.h>
- #include <linux/khugepaged.h>
-+#include <linux/signalfd.h>
- 
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -917,8 +918,10 @@ static int copy_sighand(unsigned long cl
- 
- void __cleanup_sighand(struct sighand_struct *sighand)
- {
--	if (atomic_dec_and_test(&sighand->count))
-+	if (atomic_dec_and_test(&sighand->count)) {
-+		signalfd_cleanup(sighand);
- 		kmem_cache_free(sighand_cachep, sighand);
-+	}
- }
- 
- 
+ cat <<EOF >> debian/control
 
 
