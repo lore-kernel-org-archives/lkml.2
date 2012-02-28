@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab2B1Xlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 18:41:45 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37089 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757480Ab2B1Xlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 18:41:44 -0500
-Message-ID: <4F4D663D.2040100@xenotime.net>
-Date: Tue, 28 Feb 2012 15:41:49 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Build regressions/improvements in v3.3-rc5 (C lang questions)
-References: <1330462222-25201-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1330462222-25201-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030473Ab2B1XmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 18:42:04 -0500
+Received: from gate.crashing.org ([63.228.1.57]:42880 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757484Ab2B1XmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 18:42:02 -0500
+Message-ID: <1330472496.11728.31.camel@pasglop>
+Subject: Re: [PATCH 08/18] PCI, powerpc: Register busn_res for root buses
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Wed, 29 Feb 2012 10:41:36 +1100
+In-Reply-To: <CAErSpo72_JnUkWXrzbNdbX9wiWZtQdX2tuNjEpYrSd+sGzxfzA@mail.gmail.com>
+References: <1330395009-29260-1-git-send-email-yinghai@kernel.org>
+	 <1330395009-29260-9-git-send-email-yinghai@kernel.org>
+	 <CAErSpo4bw-V=SM+h5iP4nfv3HaAnHjwvNwu+4Oz8iyQcY_3gOQ@mail.gmail.com>
+	 <CAErSpo72_JnUkWXrzbNdbX9wiWZtQdX2tuNjEpYrSd+sGzxfzA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 12:50 PM, Geert Uytterhoeven wrote:
+On Tue, 2012-02-28 at 16:31 -0700, Bjorn Helgaas wrote:
+> We may need mechanism to say "don't trust this info from the
+> firmware," but we should be able to figure out a way that doesn't
+> penalize platforms that do everything correctly.  The current patch
+> breaks these scenarios even when the platform firmware is 100%
+> correct.
 
-> Below is the list of build error/warning regressions/improvements in
-> v3.3-rc5[1] compared to v3.2[2].
+On the other hand, our firmwares tend not to be and the vast majority of
+our platforms have separate bus number domains (In fact I'm not sure
+whether we have one that actually splits bus numbers or not, maybe some
+ancient Apple gear, I need to double check).
 
+We did use to force renumbering on macs to avoid bus number collisions
+between domains because of ancient X servers that didn't do domains
+properly but I think we dropped that.
 
->   + src/drivers/usb/misc/sisusbvga/sisusb.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 982
->   + src/fs/ecryptfs/miscdev.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 448, 488
+Cheers,
+Ben.
 
-
-Do the (2) above mean that some platform's gcc is borked?
-(I don't see these on i386 or x86_64.)
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
->   + src/fs/ecryptfs/miscdev.c: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int':  => 433, 433:60
-
-I can see that warning on 32-bit i386 (X86_32), but if I change the
-"%lu" to "%u", it causes this warning on 64-bit x86_64:
-
-fs/ecryptfs/miscdev.c:433:38: warning: format '%u' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
-
-so how is this supposed to be handled?
-
-Thanks.
 
