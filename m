@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965957Ab2B1Seu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 13:34:50 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64953 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757125Ab2B1Ser convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 13:34:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.152.115.38 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	id S965974Ab2B1SfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 13:35:13 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34773 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965107Ab2B1SfL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 13:35:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-10-git-send-email-wad@chromium.org>
-	<20120227175407.GD10608@redhat.com>
-	<CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
-	<20120228164335.GC3664@redhat.com>
-	<CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com>
-Date: Tue, 28 Feb 2012 12:34:43 -0600
-Message-ID: <CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
+In-Reply-To: <4F4D1857.4010706@redhat.com>
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
+ <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
+ <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
+ <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
+ <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
+ <4F440945.1020904@zytor.com> <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202211339590.5354@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202211340330.5354@i5.linux-foundation.org>
+ <4F4CB89C.4060500@redhat.com> <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com>
+ <4F4D0D18.4060409@redhat.com> <CA+55aFyA=b-27XbhGdDQfSRMk=xet2jOD9H8hkjEq1md29bJJA@mail.gmail.com>
+ <4F4D1857.4010706@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Feb 2012 10:34:49 -0800
+X-Google-Sender-Auth: 37PwmKExgMOdskW462t9lAVureQ
+Message-ID: <CA+55aFxgf_HHZKhN9FwOBgKoJHbkFzdCrPhMwWbWKXhb9NpkPg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i387: split up <asm/i387.h> into exported and
+ internal interfaces
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@gmail.com>,
+        Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 11:04 AM, Will Drewry <wad@chromium.org> wrote:
-> On Tue, Feb 28, 2012 at 10:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 02/27, Will Drewry wrote:
->>> On Mon, Feb 27, 2012 at 11:54 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> > On 02/24, Will Drewry wrote:
->>> >>
->>> >>  arch/Kconfig              |    1 +
->>> >>  include/linux/ptrace.h    |    7 +++++--
->>> >>  include/linux/seccomp.h   |    4 +++-
->>> >>  include/linux/tracehook.h |    6 ++++++
->>> >>  kernel/ptrace.c           |    4 ++++
->>> >>  kernel/seccomp.c          |   18 ++++++++++++++++++
->>> >
->>> > FYI, this conflicts with the changes -mm tree.
->>> >
->>> > The changes in ptrace.* confict with Denys's
->>> > "ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code"
->>> >
->>> > The change in tracehook.h conflicts with
->>> > "ptrace: the killed tracee should not enter the syscall"
->>>
->>> What's the best way to reconcile this in this day and age?
->>
->> Of course I'd prefer if you make this change on top of Denys's patch ;)
->>
->> Besides, if you agree with PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP you
->> need only one trivial change in ptrace.h.
+On Tue, Feb 28, 2012 at 10:09 AM, Avi Kivity <avi@redhat.com> wrote:
 >
-> I think that works quite well :)
->
->>> I don't see
->>> these in kernel-next yet and I can't tell if there is a public -mm
->>> anywhere anymore.
->>
->> Strange... I didn't check, but every patch in
->> http://marc.info/?l=linux-mm-commits has this note:
->>
->>        The -mm tree is included into linux-next and is updated
->>        there every 3-4 working days
->
-> It appears to have been pulled in ~8 hours ago.  I'm rebasing to next now.
->
->>> >> --- a/kernel/seccomp.c
->>> >> +++ b/kernel/seccomp.c
->>> >> @@ -354,6 +354,24 @@ int __secure_computing_int(int this_syscall)
->>> >>                       seccomp_send_sigsys(this_syscall, reason_code);
->>> >>                       return -1;
->>> >>               }
->>> >> +             case SECCOMP_RET_TRACE: {
->>> >> +                     int ret;
->>> >> +                     struct pt_regs *regs = task_pt_regs(current);
->>> >> +                     if (!(test_tsk_thread_flag(current, TIF_SYSCALL_TRACE)) ||
->>> >> +                         !(current->ptrace & PT_TRACE_SECCOMP))
->>> >> +                             return -1;
->>> >> +                     /*
->>> >> +                      * PT_TRACE_SECCOMP and seccomp.trace indicate whether
->>> >> +                      * tracehook_report_syscall_entry needs to signal the
->>> >> +                      * tracer.  This avoids race conditions in hand off and
->>> >> +                      * the requirement for TIF_SYSCALL_TRACE ensures that
->>> >> +                      * we are in the syscall slow path.
->>> >> +                      */
->>> >> +                     current->seccomp.trace = 1;
->>> >> +                     ret = tracehook_report_syscall_entry(regs);
->>> >> +                     current->seccomp.trace = 0;
->>> >> +                     return ret;
->>> >
->>> > To be honest, this interface looks a bit strange to me...
->>> >
->>> > Once again, sorry if this was already discussed. But perhaps it would
->>> > be better to introduce PTRACE_EVENT_SECCOMP/PTRACE_O_SECCOMP instead?
->>> >
->>> > SECCOMP_RET_TRACE: could simply do ptrace_event(PTRACE_EVENT_SECCOMP)
->>> > unconditionaly. The tracer can set the option and do PTRACE_CONT if it
->>> > doesn't want the system call notifications.
->>>
->>> Works for me - this also gets rid of the extra int for brief state
->>> tracking. I'll switch over to that in the next rev.
->>
->> Great. In this case this patch becomes really trivial. Just 2 defines
->> in ptrace.h and the unconditional ptrace_event() under SECCOMP_RET_TRACE.
+> This is done by preempt notifiers.  Whenever a task switch happens we
+> push the guest fpu state into memory (if loaded) and let the normal
+> stuff happen.  So the if we had a task switch during instruction
+> emulation, for example, then we'd get the "glacial and stupid path" to fire.
 
-hrm the only snag is that I can't then rely on TIF_SYSCALL_TRACE to
-ensure seccomp is in the slow-path.  Right now, on x86, seccomp is
-slow-path, but it doesn't have to be to have the syscall and args.
-However, for ptrace to behavior properly, I believed it did need to be
-in the slow path.  If SECCOMP_RET_TRACE doesn't rely on
-PTRACE_SYSCALL, then it introduces a need for seccomp to always be in
-the slow path or to flag (somehow) when it needs slow path.
+Oh christ.
 
-Any suggestions there?
+This is exactly what the scheduler has ALWAYS ALREADY DONE FOR YOU.
 
-Thanks!
-will
+That's what the i387 save-and-restore code is all about. What's the
+advantage of just re-implementing it in non-obvious ways?
+
+Stop doing it. You get *zero* advantages from just doing what the
+scheduler natively does for you, and the scheduler does it *better*.
+
+                   Linus
