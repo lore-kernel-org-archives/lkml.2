@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab2B1BEy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:04:54 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:48336 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755408Ab2B1BEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:04:53 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: James Bottomley <jbottomley@parallels.com>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
-Date: Mon, 27 Feb 2012 20:04:52 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "dave.anglin@bell.net" <dave.anglin@bell.net>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <1330378864.2822.92.camel@dabdike.int.hansenpartnership.com> <1330380189.2822.95.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1330380189.2822.95.camel@dabdike.int.hansenpartnership.com>
+	id S1756376Ab2B1BGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:06:01 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756328Ab2B1BF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 20:05:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.162 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 27 Feb 2012 17:02:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/73] 3.0.23-stable review
+Message-ID: <20120228010246.GA24299@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1709520.v6gKf0jSzM";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202272004.55187.vapier@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1709520.v6gKf0jSzM
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+This is the start of the stable review cycle for the 3.0.23 release.
+There are 73 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-On Monday 27 February 2012 17:03:10 James Bottomley wrote:
-> --- a/arch/parisc/Makefile
-> +++ b/arch/parisc/Makefile
->=20
-> -CROSS_COMPILE	:=3D hppa64-linux-gnu-
-> +
-> +# if no default set, try to find the corresponding 64 bit compiler
-> +ifeq ($(CROSS_COMPILE),)
-> +CROSS_COMPILE	:=3D $(shell $(CC) -dumpmachine | sed s/hppa-\\\(.*\\\)/hp=
-pa64-\\1-/)
-> +endif
+Responses should be made by Thu Mar  1 00:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-fails when using "hppa2.0-xxx".  perhaps:
-CROSS_COMPILE ?=3D $(shell $(CC) -dumpmachine | sed 's/^hppa[^-]*-/hppa64-/=
-')
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.23-rc1.gz
+and the diffstat can be found below.
 
-don't even need the ifeq check then
-=2Dmike
+thanks,
 
---nextPart1709520.v6gKf0jSzM
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+greg k-h
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+-------------
+ Makefile                                       |    4 +-
+ arch/arm/include/asm/assembler.h               |    5 +
+ arch/arm/mm/cache-v7.S                         |    6 +
+ arch/powerpc/kernel/perf_event.c               |    8 +-
+ arch/x86/include/asm/i387.h                    |  284 +++++++++++++++++++-----
+ arch/x86/include/asm/processor.h               |    1 +
+ arch/x86/include/asm/thread_info.h             |    2 -
+ arch/x86/kernel/cpu/intel_cacheinfo.c          |   44 +++-
+ arch/x86/kernel/process_32.c                   |   25 +--
+ arch/x86/kernel/process_64.c                   |   29 +--
+ arch/x86/kernel/traps.c                        |   41 ++--
+ arch/x86/kernel/xsave.c                        |   12 +-
+ arch/x86/kvm/vmx.c                             |    2 +-
+ drivers/cdrom/cdrom.c                          |    8 +-
+ drivers/gpu/drm/radeon/r100.c                  |    4 +-
+ drivers/gpu/drm/radeon/rs600.c                 |    4 +-
+ drivers/hwmon/ads1015.c                        |    3 +-
+ drivers/hwmon/f75375s.c                        |    5 +-
+ drivers/hwmon/max6639.c                        |   22 +-
+ drivers/infiniband/ulp/ipoib/ipoib.h           |    6 +-
+ drivers/infiniband/ulp/ipoib/ipoib_main.c      |   55 ++---
+ drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    9 +-
+ drivers/media/video/hdpvr/hdpvr-video.c        |    3 +-
+ drivers/mmc/card/block.c                       |   82 ++++---
+ drivers/net/3c59x.c                            |    2 +-
+ drivers/net/davinci_emac.c                     |    6 +-
+ drivers/net/jme.c                              |   10 +-
+ drivers/net/jme.h                              |    2 +-
+ drivers/net/usb/ipheth.c                       |    5 +
+ drivers/net/veth.c                             |    4 +-
+ drivers/net/via-velocity.c                     |    3 -
+ drivers/net/wireless/ath/ath9k/rc.c            |    2 +-
+ drivers/pci/probe.c                            |    5 +
+ drivers/scsi/scsi_pm.c                         |   16 ++
+ drivers/scsi/scsi_priv.h                       |    1 +
+ drivers/scsi/scsi_scan.c                       |    4 +-
+ drivers/usb/core/hcd-pci.c                     |    5 +-
+ drivers/usb/core/hcd.c                         |    6 +-
+ drivers/usb/core/hub.c                         |   30 ++-
+ drivers/usb/host/pci-quirks.c                  |   11 +
+ drivers/usb/host/xhci-hub.c                    |    2 +-
+ drivers/usb/host/xhci-mem.c                    |   32 ++-
+ drivers/usb/host/xhci.c                        |    5 +
+ drivers/usb/serial/cp210x.c                    |    2 +
+ drivers/usb/serial/option.c                    |  143 +-----------
+ drivers/usb/serial/ti_usb_3410_5052.c          |    6 +-
+ drivers/usb/serial/ti_usb_3410_5052.h          |    4 +
+ drivers/usb/storage/usb.c                      |   89 +++-----
+ drivers/usb/storage/usb.h                      |    7 +-
+ fs/ecryptfs/inode.c                            |    2 +
+ fs/eventpoll.c                                 |  264 ++++++++++++++++++++---
+ fs/nfs/nfs4state.c                             |    2 +
+ fs/signalfd.c                                  |   15 ++
+ include/asm-generic/poll.h                     |    2 +
+ include/linux/eventpoll.h                      |    1 +
+ include/linux/fs.h                             |    1 +
+ include/linux/signalfd.h                       |    5 +-
+ include/linux/usb/ch11.h                       |   10 +-
+ include/net/flow.h                             |   10 +
+ include/net/inet_sock.h                        |    2 +
+ include/net/route.h                            |    4 +
+ include/net/sch_generic.h                      |    9 +-
+ kernel/fork.c                                  |    5 +-
+ kernel/irq/autoprobe.c                         |    4 +-
+ kernel/irq/chip.c                              |   42 +++-
+ kernel/irq/internals.h                         |    2 +-
+ kernel/irq/manage.c                            |    2 +-
+ mm/nommu.c                                     |    7 +
+ net/core/dev.c                                 |   10 +-
+ net/core/netpoll.c                             |    2 +-
+ net/ipv4/arp.c                                 |    3 +-
+ net/ipv4/ip_forward.c                          |    2 +-
+ net/ipv4/ip_options.c                          |    4 +-
+ net/ipv4/route.c                               |   97 ++++++---
+ net/ipv4/tcp_input.c                           |   45 +++--
+ net/ipv4/tcp_ipv4.c                            |    5 +
+ net/ipv6/ip6mr.c                               |    8 +-
+ net/mac80211/main.c                            |    4 +-
+ net/netfilter/ipvs/ip_vs_core.c                |    2 +-
+ net/sched/sch_choke.c                          |    3 +-
+ net/sched/sch_netem.c                          |    7 +-
+ net/sched/sch_sfb.c                            |    3 +-
+ scripts/package/builddeb                       |   12 +-
+ sound/pci/hda/patch_conexant.c                 |   11 +-
+ sound/soc/codecs/wm8962.c                      |    2 +-
+ 85 files changed, 1062 insertions(+), 613 deletions(-)
 
-iQIcBAABAgAGBQJPTCg2AAoJEEFjO5/oN/WBrVgP/2rbzbuqJmMRAPm7iSzsN6aa
-SMx2jFS44FSt0wq7oh++RwyBTsqxpIqJDvc4Ap9bWCTW5YLlWSXW+B6NkTkTSRiK
-xfGnnP06qT+OlgmaOQbQg+Xunz0S3bY700Nlzm5mJpOxvklf4H+9iUWtGthwz35g
-q10WmGEOKJNwYoVh1YWohj/8eCK9SUUokLlnTnselKdPcxVBY6zGXR/qwXpaIMnx
-cfYbo81GBcq8yiAqZ5ZrjXxg/Nc/jnM/pibTSp9ZKLSHVEUqQlYLH9DPlC6Ko7XV
-/PBrFIVslkW7xbpAuBZO0YJLbmniNYSkNtxlieHJX+PtevdsOx/PWOKfM67csOt4
-Oahj9WT8JzWofcbUmbwYLvhtawXxm5th8fIMzlYR9HysGk5Q8EjqJVceLYmkRR/T
-jzHXEFvkRcHfR9EdOxhajQeTVLNZv5yhfEpt9jDWCt+J0rdd8hNgLdX3kgFg+c71
-CxQPWGMrmiJAsQ9c3kutl+o5rUyFUNeTDoN6iGWdkUofHKyz9SONh7wluMd1Gmk1
-/xx5wH8rl3HBFTSo4fH/TC3sHhm8kFk3vQ+fauASJyFVkij3zHG+5oVT12FtSa2s
-fEzf1e5ivnR2yrdbmMGbdmkSb+F+eDjcoI2vFCFSVNfTaTnBKVXJcGVUUnzJ0zT4
-dIZLSc4mCJnVtFd33Ndy
-=+Bpe
------END PGP SIGNATURE-----
-
---nextPart1709520.v6gKf0jSzM--
