@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965838Ab2B1Rrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:47:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12744 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965345Ab2B1Rrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:47:52 -0500
-Date: Tue, 28 Feb 2012 18:40:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jamie Lokier <jamie@shareable.org>, Mike Frysinger <vapier@gentoo.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + procfs-mark-thread-stack-correctly-in-proc-pid-maps.patch
-	added to -mm tree
-Message-ID: <20120228174049.GA11136@redhat.com>
-References: <20120228170436.GA9698@redhat.com> <CAAHN_R1hmJt4zCxGAL7z2-9URmWUFwwV9pcqkdvQZodpunEJjQ@mail.gmail.com>
+	id S965875Ab2B1RsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:48:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51297 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965345Ab2B1RsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:48:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of markus@google.com designates 10.68.203.135 as permitted sender) smtp.mail=markus@google.com; dkim=pass header.i=markus@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAHN_R1hmJt4zCxGAL7z2-9URmWUFwwV9pcqkdvQZodpunEJjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CABqD9haZpe-i8kyHJDj4umCLyZ3E877aobabvW8_+aXeC+kTbg@mail.gmail.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+ <1330140111-17201-6-git-send-email-wad@chromium.org> <b983ece9dc6209269876869188303518.squirrel@webmail.greenhost.nl>
+ <CABqD9haZpe-i8kyHJDj4umCLyZ3E877aobabvW8_+aXeC+kTbg@mail.gmail.com>
+From: Markus Gutschke <markus@chromium.org>
+Date: Tue, 28 Feb 2012 09:47:59 -0800
+X-Google-Sender-Auth: x6bkn1-TGR9JJirTONSCNznvqVo
+Message-ID: <CAE6n16kLOOrAV6_7_t_-PnfYoNsJ5yJfHveWykO7qQiFYKb3nQ@mail.gmail.com>
+Subject: Re: [PATCH v11 06/12] seccomp: add system call filtering using BPF
+To: Will Drewry <wad@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Siddhesh Poyarekar wrote:
+On Tue, Feb 28, 2012 at 09:17, Will Drewry <wad@chromium.org> wrote:
+> On Tue, Feb 28, 2012 at 12:51 AM, Indan Zupancic <indan@nul.nu> wrote:
+>> Wouldn't it make more sense to always kill with SIGSYS, also for mode 1?
+>> I suppose it's too late for that now.
 >
-> On Tue, Feb 28, 2012 at 10:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> +int vm_is_stack(struct task_struct *task,
-> >> +                           struct vm_area_struct *vma, int in_group)
-> >> +{
-> >> +     if (vm_is_stack_for_task(task, vma))
-> >> +             return 1;
-> >> +
-> >> +     if (in_group) {
-> >> +             struct task_struct *t = task;
-> >> +             while_each_thread(task, t) {
-> >> +                     if (vm_is_stack_for_task(t, vma))
-> >> +                             return 1;
-> >> +             }
-> >> +     }
-> >> +
-> >> +     return 0;
-> >> +}
-> >
-> > This is obviously wrong, while_each_thread() is not safe without
-> > tasklist or siglock or rcu.
->
-> I have fixed this in my git stash. I'll submit
+> It would but I don't want to go and change existing ABI.
 
-OK, please CC me ;)
+Just for the record, when this discussion came up about two years ago,
+it was established that other than Chrome, there are currently no
+users of Seccomp, as mode 1 is just too difficult to use for most
+potential applications.
 
-Oleg.
+Chrome doesn't rely on the exit status of a process that violated the
+seccomp restrictions, so it is highly unlikely you would break
+existing userspace, if you changed the ABI. On the other hand, as mode
+2 is so much more powerful than mode 1, it is unlikely that we will
+see future userspace applications make use of mode 1.
 
+In other words, changing the ABI is unlikely to cause harm, but also
+unlikely to do any good. I don't have any strong opinion either way;
+just providing an additional data point.
+
+
+Markus
