@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964849Ab2B1BdD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:33:03 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
+	id S964886Ab2B1Bd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:33:27 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab2B1BH3 (ORCPT
+	with ESMTP id S932474Ab2B1BH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:29 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.234 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010213.648212641@linuxfoundation.org>
+Message-Id: <20120228010213.499296575@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:00 -0800
+Date: Mon, 27 Feb 2012 17:02:59 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Shi <alex.shi@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 57/73] USB: Dont fail USB3 probe on missing legacy PCI IRQ.
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [ 56/73] usb-storage: fix freezing of the scanning thread
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,82 +27,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 68d07f64b8a11a852d48d1b05b724c3e20c0d94b upstream
+commit bb94a406682770a35305daaa241ccdb7cab399de upstream.
 
-Intel has a PCI USB xhci host controller on a new platform. It doesn't
-have a line IRQ definition in BIOS.  The Linux driver refuses to
-initialize this controller, but Windows works well because it only depends
-on MSI.
+This patch (as1521b) fixes the interaction between usb-storage's
+scanning thread and the freezer.  The current implementation has a
+race: If the device is unplugged shortly after being plugged in and
+just as a system sleep begins, the scanning thread may get frozen
+before the khubd task.  Khubd won't be able to freeze until the
+disconnect processing is complete, and the disconnect processing can't
+proceed until the scanning thread finishes, so the sleep transition
+will fail.
 
-Actually, Linux also can work for MSI.  This patch avoids the line IRQ
-checking for USB3 HCDs in usb core PCI probe.  It allows the xHCI driver
-to try to enable MSI or MSI-X first.  It will fail the probe if MSI
-enabling failed and there's no legacy PCI IRQ.
+The implementation in the 3.2 kernel suffers from an additional
+problem.  There the scanning thread calls set_freezable_with_signal(),
+and the signals sent by the freezer will mess up the thread's I/O
+delays, which are all interruptible.
 
-This patch should be backported to kernels as old as 2.6.32.
+The solution to both problems is the same: Replace the kernel thread
+used for scanning with a delayed-work routine on the system freezable
+work queue.  Freezable work queues have the nice property that you can
+cancel a work item even while the work queue is frozen, and no signals
+are needed.
 
-[Maintainer note: This patch is a backport of commit
-68d07f64b8a11a852d48d1b05b724c3e20c0d94b "USB: Don't fail USB3 probe on
-missing legacy PCI IRQ." to the 3.0 kernel.  Note, the original patch
-description was wrong.  We should not back port this to kernels older
-than 2.6.36, since that was the first kernel to support MSI and MSI-X
-for xHCI hosts.  These systems will just not work without MSI support,
-so the probe should fail on kernels older than 2.6.36.]
+The 3.2 version of this patch solves the problem in Bugzilla #42730.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd-pci.c |    5 ++++-
- drivers/usb/core/hcd.c     |    6 ++++--
- drivers/usb/host/xhci.c    |    5 +++++
- 3 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/usb/storage/usb.c |   91 ++++++++++++++++------------------------------
+ drivers/usb/storage/usb.h |    7 ++-
+ 2 files changed, 36 insertions(+), 62 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -187,7 +187,10 @@ int usb_hcd_pci_probe(struct pci_dev *de
- 		return -ENODEV;
- 	dev->current_state = PCI_D0;
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -788,15 +788,19 @@ static void quiesce_and_remove_host(stru
+ 	struct Scsi_Host *host = us_to_host(us);
  
--	if (!dev->irq) {
-+	/* The xHCI driver supports MSI and MSI-X,
-+	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
-+	 */
-+	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
- 		dev_err(&dev->dev,
- 			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
- 			pci_name(dev));
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2435,8 +2435,10 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 			&& device_can_wakeup(&hcd->self.root_hub->dev))
- 		dev_dbg(hcd->self.controller, "supports USB remote wakeup\n");
+ 	/* If the device is really gone, cut short reset delays */
+-	if (us->pusb_dev->state == USB_STATE_NOTATTACHED)
++	if (us->pusb_dev->state == USB_STATE_NOTATTACHED) {
+ 		set_bit(US_FLIDX_DISCONNECTING, &us->dflags);
++		wake_up(&us->delay_wait);
++	}
  
--	/* enable irqs just before we start the controller */
--	if (usb_hcd_is_primary_hcd(hcd)) {
-+	/* enable irqs just before we start the controller,
-+	 * if the BIOS provides legacy PCI irqs.
-+	 */
-+	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
- 		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
- 		if (retval)
- 			goto err_request_irq;
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -444,6 +444,11 @@ int xhci_run(struct usb_hcd *hcd)
+-	/* Prevent SCSI-scanning (if it hasn't started yet)
+-	 * and wait for the SCSI-scanning thread to stop.
++	/* Prevent SCSI scanning (if it hasn't started yet)
++	 * or wait for the SCSI-scanning routine to stop.
+ 	 */
+-	set_bit(US_FLIDX_DONT_SCAN, &us->dflags);
+-	wake_up(&us->delay_wait);
+-	wait_for_completion(&us->scanning_done);
++	cancel_delayed_work_sync(&us->scan_dwork);
++
++	/* Balance autopm calls if scanning was cancelled */
++	if (test_bit(US_FLIDX_SCAN_PENDING, &us->dflags))
++		usb_autopm_put_interface_no_suspend(us->pusb_intf);
  
- 	if (ret) {
- legacy_irq:
-+		if (!pdev->irq) {
-+			xhci_err(xhci, "No msi-x/msi found and "
-+					"no IRQ in BIOS\n");
-+			return -EINVAL;
-+		}
- 		/* fall back to legacy interrupt*/
- 		ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
- 					hcd->irq_descr, hcd);
+ 	/* Removing the host will perform an orderly shutdown: caches
+ 	 * synchronized, disks spun down, etc.
+@@ -823,52 +827,28 @@ static void release_everything(struct us
+ 	scsi_host_put(us_to_host(us));
+ }
+ 
+-/* Thread to carry out delayed SCSI-device scanning */
+-static int usb_stor_scan_thread(void * __us)
++/* Delayed-work routine to carry out SCSI-device scanning */
++static void usb_stor_scan_dwork(struct work_struct *work)
+ {
+-	struct us_data *us = (struct us_data *)__us;
++	struct us_data *us = container_of(work, struct us_data,
++			scan_dwork.work);
+ 	struct device *dev = &us->pusb_intf->dev;
+ 
+-	dev_dbg(dev, "device found\n");
+-
+-	set_freezable_with_signal();
+-	/*
+-	 * Wait for the timeout to expire or for a disconnect
+-	 *
+-	 * We can't freeze in this thread or we risk causing khubd to
+-	 * fail to freeze, but we can't be non-freezable either. Nor can
+-	 * khubd freeze while waiting for scanning to complete as it may
+-	 * hold the device lock, causing a hang when suspending devices.
+-	 * So we request a fake signal when freezing and use
+-	 * interruptible sleep to kick us out of our wait early when
+-	 * freezing happens.
+-	 */
+-	if (delay_use > 0) {
+-		dev_dbg(dev, "waiting for device to settle "
+-				"before scanning\n");
+-		wait_event_interruptible_timeout(us->delay_wait,
+-				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
+-				delay_use * HZ);
+-	}
+-
+-	/* If the device is still connected, perform the scanning */
+-	if (!test_bit(US_FLIDX_DONT_SCAN, &us->dflags)) {
+-
+-		/* For bulk-only devices, determine the max LUN value */
+-		if (us->protocol == USB_PR_BULK &&
+-				!(us->fflags & US_FL_SINGLE_LUN)) {
+-			mutex_lock(&us->dev_mutex);
+-			us->max_lun = usb_stor_Bulk_max_lun(us);
+-			mutex_unlock(&us->dev_mutex);
+-		}
+-		scsi_scan_host(us_to_host(us));
+-		dev_dbg(dev, "scan complete\n");
++	dev_dbg(dev, "starting scan\n");
+ 
+-		/* Should we unbind if no devices were detected? */
++	/* For bulk-only devices, determine the max LUN value */
++	if (us->protocol == USB_PR_BULK && !(us->fflags & US_FL_SINGLE_LUN)) {
++		mutex_lock(&us->dev_mutex);
++		us->max_lun = usb_stor_Bulk_max_lun(us);
++		mutex_unlock(&us->dev_mutex);
+ 	}
++	scsi_scan_host(us_to_host(us));
++	dev_dbg(dev, "scan complete\n");
++
++	/* Should we unbind if no devices were detected? */
+ 
+ 	usb_autopm_put_interface(us->pusb_intf);
+-	complete_and_exit(&us->scanning_done, 0);
++	clear_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+ }
+ 
+ static unsigned int usb_stor_sg_tablesize(struct usb_interface *intf)
+@@ -915,7 +895,7 @@ int usb_stor_probe1(struct us_data **pus
+ 	init_completion(&us->cmnd_ready);
+ 	init_completion(&(us->notify));
+ 	init_waitqueue_head(&us->delay_wait);
+-	init_completion(&us->scanning_done);
++	INIT_DELAYED_WORK(&us->scan_dwork, usb_stor_scan_dwork);
+ 
+ 	/* Associate the us_data structure with the USB device */
+ 	result = associate_dev(us, intf);
+@@ -946,7 +926,6 @@ EXPORT_SYMBOL_GPL(usb_stor_probe1);
+ /* Second part of general USB mass-storage probing */
+ int usb_stor_probe2(struct us_data *us)
+ {
+-	struct task_struct *th;
+ 	int result;
+ 	struct device *dev = &us->pusb_intf->dev;
+ 
+@@ -987,20 +966,14 @@ int usb_stor_probe2(struct us_data *us)
+ 		goto BadDevice;
+ 	}
+ 
+-	/* Start up the thread for delayed SCSI-device scanning */
+-	th = kthread_create(usb_stor_scan_thread, us, "usb-stor-scan");
+-	if (IS_ERR(th)) {
+-		dev_warn(dev,
+-				"Unable to start the device-scanning thread\n");
+-		complete(&us->scanning_done);
+-		quiesce_and_remove_host(us);
+-		result = PTR_ERR(th);
+-		goto BadDevice;
+-	}
+-
++	/* Submit the delayed_work for SCSI-device scanning */
+ 	usb_autopm_get_interface_no_resume(us->pusb_intf);
+-	wake_up_process(th);
++	set_bit(US_FLIDX_SCAN_PENDING, &us->dflags);
+ 
++	if (delay_use > 0)
++		dev_dbg(dev, "waiting for device to settle before scanning\n");
++	queue_delayed_work(system_freezable_wq, &us->scan_dwork,
++			delay_use * HZ);
+ 	return 0;
+ 
+ 	/* We come here if there are any problems */
+--- a/drivers/usb/storage/usb.h
++++ b/drivers/usb/storage/usb.h
+@@ -47,6 +47,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/completion.h>
+ #include <linux/mutex.h>
++#include <linux/workqueue.h>
+ #include <scsi/scsi_host.h>
+ 
+ struct us_data;
+@@ -72,7 +73,7 @@ struct us_unusual_dev {
+ #define US_FLIDX_DISCONNECTING	3	/* disconnect in progress   */
+ #define US_FLIDX_RESETTING	4	/* device reset in progress */
+ #define US_FLIDX_TIMED_OUT	5	/* SCSI midlayer timed out  */
+-#define US_FLIDX_DONT_SCAN	6	/* don't scan (disconnect)  */
++#define US_FLIDX_SCAN_PENDING	6	/* scanning not yet done    */
+ #define US_FLIDX_REDO_READ10	7	/* redo READ(10) command    */
+ #define US_FLIDX_READ10_WORKED	8	/* previous READ(10) succeeded */
+ 
+@@ -147,8 +148,8 @@ struct us_data {
+ 	/* mutual exclusion and synchronization structures */
+ 	struct completion	cmnd_ready;	 /* to sleep thread on	    */
+ 	struct completion	notify;		 /* thread begin/end	    */
+-	wait_queue_head_t	delay_wait;	 /* wait during scan, reset */
+-	struct completion	scanning_done;	 /* wait for scan thread    */
++	wait_queue_head_t	delay_wait;	 /* wait during reset	    */
++	struct delayed_work	scan_dwork;	 /* for async scanning      */
+ 
+ 	/* subdriver information */
+ 	void			*extra;		 /* Any extra data          */
 
 
