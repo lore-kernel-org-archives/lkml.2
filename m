@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965576Ab2B1BTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:19:44 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50099 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965562Ab2B1BTk (ORCPT
+	id S965559Ab2B1BTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:19:39 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64391 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965548Ab2B1BTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:19:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.225 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:36 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.104 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010432.499034290@linuxfoundation.org>
+Message-Id: <20120228010432.406804561@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:04 -0800
+Date: Mon, 27 Feb 2012 17:05:03 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bruno Thomsen <bruno.thomsen@gmail.com>
-Subject: [ 35/72] USB: Added Kamstrup VID/PIDs to cp210x serial driver.
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 34/72] tcp: fix tcp_shifted_skb() adjustment of lost_cnt_hint for FACK
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,27 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Thomsen <bruno.thomsen@gmail.com>
 
-commit c6c1e4491dc8d1ed2509fa6aacffa7f34614fc38 upstream.
+From: Neal Cardwell <ncardwell@google.com>
 
-Signed-off-by: Bruno Thomsen <bruno.thomsen@gmail.com>
+[ Upstream commit 0af2a0d0576205dda778d25c6c344fc6508fc81d ]
+
+This commit ensures that lost_cnt_hint is correctly updated in
+tcp_shifted_skb() for FACK TCP senders. The lost_cnt_hint adjustment
+in tcp_sacktag_one() only applies to non-FACK senders, so FACK senders
+need their own adjustment.
+
+This applies the spirit of 1e5289e121372a3494402b1b131b41bfe1cf9b7f -
+except now that the sequence range passed into tcp_sacktag_one() is
+correct we need only have a special case adjustment for FACK.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/cp210x.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/tcp_input.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -136,6 +136,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
- 	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
- 	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
-+	{ USB_DEVICE(0x17A8, 0x0001) }, /* Kamstrup Optical Eye/3-wire */
-+	{ USB_DEVICE(0x17A8, 0x0005) }, /* Kamstrup M-Bus Master MultiPort 250D */
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1406,6 +1406,10 @@ static int tcp_shifted_skb(struct sock *
+ 
+ 	BUG_ON(!pcount);
+ 
++	/* Adjust hint for FACK. Non-FACK is handled in tcp_sacktag_one(). */
++	if (tcp_is_fack(tp) && (skb == tp->lost_skb_hint))
++		tp->lost_cnt_hint += pcount;
++
+ 	TCP_SKB_CB(prev)->end_seq += shifted;
+ 	TCP_SKB_CB(skb)->seq += shifted;
+ 
 
 
