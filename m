@@ -1,134 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab2B1JW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:22:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41713 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab2B1JWE (ORCPT
+	id S1756946Ab2B1JYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:24:10 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:22173
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756409Ab2B1JYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:22:04 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.204.150.88 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
-Message-ID: <1330420952.1589.1.camel@lappy>
-Subject: rtc: INFO: possible circular locking dependency detected
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "a.zummo" <a.zummo@towertech.it>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, rtc-linux <rtc-linux@googlegroups.com>
-Date: Tue, 28 Feb 2012 11:22:32 +0200
+	Tue, 28 Feb 2012 04:24:06 -0500
+X-SpamScore: -8
+X-BigFish: VS-8(zz146fK1432N98dKa706lzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 28 Feb 2012 17:30:16 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT,
+ define hogs as that state
+Message-ID: <20120228093015.GC1249@shlinux2.ap.freescale.net>
+References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Disposition: inline
+In-Reply-To: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Feb 27, 2012 at 04:55:08PM -0700, Stephen Warren wrote:
+> This provides a single centralized name for the default state.
+> 
+> Update PIN_MAP_* macros to use this state name, instead of requiring the
+> user to pass a state name in.
+> 
+> With this change, hog entries in the mapping table are defined as those
+> with state name PINCTRL_STATE_DEFAULT, i.e. all entries have the same
+> name. This interacts badly with the nested iteration over mapping table
+> entries in pinctrl_hog_maps() and pinctrl_hog_map() which would now
+> attempt to claim each hog mapping table entry multiple times. Replacing
+> the custom hog code with a simple pinctrl_get()/pinctrl_enable().
+> 
+> Update documentation and mapping tables to use this.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+The whole patch looks good to me.
+A few trivial comments:
 
-I've stumbled on the following lockdep warning when running trinity under the KVM tool.
+> v2: Added all the hogging rework now described above; hopefully will solve
+> U300 runtime issues.
+> ---
+>  Documentation/pinctrl.txt       |    8 +-
+>  arch/arm/mach-u300/core.c       |    6 +-
+>  drivers/pinctrl/core.c          |  145 ++-------------------------------------
+>  drivers/pinctrl/core.h          |    4 +-
+>  include/linux/pinctrl/machine.h |   13 ++--
+>  include/linux/pinctrl/pinctrl.h |    2 +
+>  6 files changed, 26 insertions(+), 152 deletions(-)
+> 
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> index 5e314ce..6fe3232 100644
+> --- a/Documentation/pinctrl.txt
+> +++ b/Documentation/pinctrl.txt
+> @@ -814,7 +814,7 @@ it even more compact which assumes you want to use pinctrl-foo and position
+>  0 for mapping, for example:
+>  
+>  static struct pinctrl_map __initdata mapping[] = {
+> -       PIN_MAP("I2CMAP", "pinctrl-foo", "i2c0", "foo-i2c.0"),
+> +	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "foo-i2c.0"),
+It seemed Linus already applied your "re-order struct pinctrl_map".
+This may need change a bit according to that patch.
 
-(Is it the case of missing rtc->ops_lock in rtc_device_unregister?)
+>  
+>  
+> @@ -930,7 +930,7 @@ foo_probe()
+>  	/* Allocate a state holder named "state" etc */
+>  	struct pinctrl p;
+>  
+> -	p = pinctrl_get(&device, NULL);
+> +	p = pinctrl_get(&device, PINCTRL_STATE_DEFAULT);
+>  	if IS_ERR(p)
+>  		return PTR_ERR(p);
+>  	pinctrl_enable(p);
+> @@ -989,7 +989,7 @@ of the pin controller itself, like this:
+>  
+>  {
+>  	.dev_name = "pinctrl-foo",
+> -	.name = "POWERMAP"
+> +	.name = PINCTRL_STATE_DEFAULT,
+>  	.ctrl_dev_name = "pinctrl-foo",
+>  	.function = "power_func",
+>  },
+ditto
 
-[ 1635.602687] ======================================================
-[ 1635.603017] [ INFO: possible circular locking dependency detected ]
-[ 1635.603017] 3.3.0-rc4-next-20120224-sasha-00002-g6e53fa4-dirty #24 Not tainted
-[ 1635.603017] -------------------------------------------------------
-[ 1635.603017] trinity/29337 is trying to acquire lock:
-[ 1635.603017]  (&rtc->ops_lock){+.+.+.}, at: [<ffffffff81e209fb>] rtc_read_time+0x2b/0x60
-[ 1635.603017] 
-[ 1635.603017] but task is already holding lock:
-[ 1635.603017]  (s_active#19){++++.+}, at: [<ffffffff81254606>] sysfs_read_file+0xd6/0x1f0
-[ 1635.603017] 
-[ 1635.603017] which lock already depends on the new lock.
-[ 1635.603017] 
-[ 1635.603017] 
-[ 1635.603017] the existing dependency chain (in reverse order) is:
-[ 1635.603017] 
-[ 1635.603017] -> #1 (s_active#19){++++.+}:
-[ 1635.603017]        [<ffffffff81112a97>] validate_chain.clone.26+0x887/0x960
-[ 1635.603017]        [<ffffffff8111563b>] __lock_acquire+0x3fb/0xb80
-[ 1635.603017]        [<ffffffff81116473>] lock_acquire+0xc3/0x100
-[ 1635.603017]        [<ffffffff81255657>] sysfs_deactivate+0x157/0x1b0
-[ 1635.603017]        [<ffffffff812560db>] sysfs_addrm_finish+0x3b/0x70
-[ 1635.603017]        [<ffffffff8125420b>] sysfs_hash_and_remove+0x5b/0xb0
-[ 1635.603017]        [<ffffffff81254f14>] sysfs_remove_file+0x34/0x40
-[ 1635.603017]        [<ffffffff81af4102>] device_remove_file+0x12/0x20
-[ 1635.603017]        [<ffffffff81af413a>] device_remove_attributes+0x2a/0x50
-[ 1635.603017]        [<ffffffff81af4241>] device_remove_attrs+0x51/0x70
-[ 1635.603017]        [<ffffffff81af4bd5>] device_del+0x125/0x1c0
-[ 1635.603017]        [<ffffffff81af4c8d>] device_unregister+0x1d/0x60
-[ 1635.603017]        [<ffffffff81e2060f>] rtc_device_unregister+0x4f/0x80
-[ 1635.603017]        [<ffffffff81e23e3e>] cmos_do_probe+0x26e/0x3f0
-[ 1635.603017]        [<ffffffff8396a1dc>] cmos_platform_probe+0x46/0x4e
-[ 1635.603017]        [<ffffffff81af9302>] platform_drv_probe+0x12/0x20
-[ 1635.603017]        [<ffffffff81af79ae>] really_probe+0x6e/0x240
-[ 1635.603017]        [<ffffffff81af7cd9>] driver_probe_device+0x49/0xa0
-[ 1635.603017]        [<ffffffff81af7dd3>] __driver_attach+0xa3/0xb0
-[ 1635.603017]        [<ffffffff81af611e>] bus_for_each_dev+0x5e/0x90
-[ 1635.603017]        [<ffffffff81af7f19>] driver_attach+0x19/0x20
-[ 1635.603017]        [<ffffffff81af6ad8>] bus_add_driver+0x148/0x2a0
-[ 1635.603017]        [<ffffffff81af878f>] driver_register+0x6f/0x130
-[ 1635.603017]        [<ffffffff81af9e81>] platform_driver_register+0x41/0x50
-[ 1635.603017]        [<ffffffff8395e51e>] platform_driver_probe+0x1c/0x96
-[ 1635.603017]        [<ffffffff8396a168>] cmos_init+0x3c/0x6a
-[ 1635.603017]        [<ffffffff8391fca2>] do_one_initcall+0x7a/0x135
-[ 1635.603017]        [<ffffffff8391fea6>] kernel_init+0x149/0x1df
-[ 1635.603017]        [<ffffffff826e28b4>] kernel_thread_helper+0x4/0x10
-[ 1635.603017] 
-[ 1635.603017] -> #0 (&rtc->ops_lock){+.+.+.}:
-[ 1635.603017]        [<ffffffff811121e1>] check_prev_add+0x6b1/0x6e0
-[ 1635.603017]        [<ffffffff81112a97>] validate_chain.clone.26+0x887/0x960
-[ 1635.603017]        [<ffffffff8111563b>] __lock_acquire+0x3fb/0xb80
-[ 1635.603017]        [<ffffffff81116473>] lock_acquire+0xc3/0x100
-[ 1635.603017]        [<ffffffff826dcd05>] __mutex_lock_common+0x65/0x5b0
-[ 1635.603017]        [<ffffffff826dd380>] mutex_lock_interruptible_nested+0x40/0x50
-[ 1635.603017]        [<ffffffff81e209fb>] rtc_read_time+0x2b/0x60
-[ 1635.603017]        [<ffffffff81e22d75>] rtc_sysfs_show_time+0x15/0x40
-[ 1635.603017]        [<ffffffff81af38c2>] dev_attr_show+0x22/0x50
-[ 1635.603017]        [<ffffffff81254640>] sysfs_read_file+0x110/0x1f0
-[ 1635.603017]        [<ffffffff811db283>] vfs_read+0xc3/0x180
-[ 1635.603017]        [<ffffffff811db62f>] sys_read+0x4f/0xa0
-[ 1635.603017]        [<ffffffff826e1479>] system_call_fastpath+0x16/0x1b
-[ 1635.603017] 
-[ 1635.603017] other info that might help us debug this:
-[ 1635.603017] 
-[ 1635.603017]  Possible unsafe locking scenario:
-[ 1635.603017] 
-[ 1635.603017]        CPU0                    CPU1
-[ 1635.603017]        ----                    ----
-[ 1635.603017]   lock(s_active#19);
-[ 1635.603017]                                lock(&rtc->ops_lock);
-[ 1635.603017]                                lock(s_active#19);
-[ 1635.603017]   lock(&rtc->ops_lock);
-[ 1635.603017] 
-[ 1635.603017]  *** DEADLOCK ***
-[ 1635.603017] 
-[ 1635.603017] 2 locks held by trinity/29337:
-[ 1635.603017]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff81254571>] sysfs_read_file+0x41/0x1f0
-[ 1635.603017]  #1:  (s_active#19){++++.+}, at: [<ffffffff81254606>] sysfs_read_file+0xd6/0x1f0
-[ 1635.603017] 
-[ 1635.603017] stack backtrace:
-[ 1635.603017] Pid: 29337, comm: trinity Not tainted 3.3.0-rc4-next-20120224-sasha-00002-g6e53fa4-dirty #24
-[ 1635.603017] Call Trace:
-[ 1635.603017]  [<ffffffff81110ecf>] print_circular_bug+0x10f/0x120
-[ 1635.603017]  [<ffffffff811121e1>] check_prev_add+0x6b1/0x6e0
-[ 1635.603017]  [<ffffffff81112a97>] validate_chain.clone.26+0x887/0x960
-[ 1635.603017]  [<ffffffff8111563b>] __lock_acquire+0x3fb/0xb80
-[ 1635.603017]  [<ffffffff810e9115>] ? sched_clock_local+0x25/0x90
-[ 1635.603017]  [<ffffffff8107a3a5>] ? pvclock_clocksource_read+0x55/0xd0
-[ 1635.603017]  [<ffffffff81116473>] lock_acquire+0xc3/0x100
-[ 1635.603017]  [<ffffffff81e209fb>] ? rtc_read_time+0x2b/0x60
-[ 1635.603017]  [<ffffffff826dcd05>] __mutex_lock_common+0x65/0x5b0
-[ 1635.603017]  [<ffffffff81e209fb>] ? rtc_read_time+0x2b/0x60
-[ 1635.603017]  [<ffffffff81e209fb>] ? rtc_read_time+0x2b/0x60
-[ 1635.603017]  [<ffffffff826dd380>] mutex_lock_interruptible_nested+0x40/0x50
-[ 1635.603017]  [<ffffffff81e209fb>] rtc_read_time+0x2b/0x60
-[ 1635.603017]  [<ffffffff81e22d75>] rtc_sysfs_show_time+0x15/0x40
-[ 1635.603017]  [<ffffffff81af38c2>] dev_attr_show+0x22/0x50
-[ 1635.603017]  [<ffffffff81254606>] ? sysfs_read_file+0xd6/0x1f0
-[ 1635.603017]  [<ffffffff8117843f>] ? __get_free_pages+0xf/0x40
-[ 1635.603017]  [<ffffffff81254640>] sysfs_read_file+0x110/0x1f0
-[ 1635.603017]  [<ffffffff811db283>] vfs_read+0xc3/0x180
-[ 1635.603017]  [<ffffffff811db62f>] sys_read+0x4f/0xa0
-[ 1635.603017]  [<ffffffff826e1479>] system_call_fastpath+0x16/0x1b
+> @@ -998,7 +998,7 @@ Since it may be common to request the core to hog a few always-applicable
+>  mux settings on the primary pin controller, there is a convenience macro for
+>  this:
+>  
+> -PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
+> +PIN_MAP_SYS_HOG("pinctrl-foo", "power_func")
+>  
+>  This gives the exact same result as the above construction.
+>  
+> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+> index 336526a..c9050dd 100644
+> --- a/arch/arm/mach-u300/core.c
+> +++ b/arch/arm/mach-u300/core.c
+> @@ -1569,9 +1569,9 @@ static struct platform_device dma_device = {
+>  /* Pinmux settings */
+>  static struct pinctrl_map __initdata u300_pinmux_map[] = {
+>  	/* anonymous maps for chip power and EMIFs */
+> -	PIN_MAP_SYS_HOG("POWER", "pinctrl-u300", "power"),
+> -	PIN_MAP_SYS_HOG("EMIF0", "pinctrl-u300", "emif0"),
+> -	PIN_MAP_SYS_HOG("EMIF1", "pinctrl-u300", "emif1"),
+> +	PIN_MAP_SYS_HOG("pinctrl-u300", "power"),
+> +	PIN_MAP_SYS_HOG("pinctrl-u300", "emif0"),
+> +	PIN_MAP_SYS_HOG("pinctrl-u300", "emif1"),
+>  	/* per-device maps for MMC/SD, SPI and UART */
+>  	PIN_MAP("MMCSD", "pinctrl-u300", "mmc0", "mmci"),
+>  	PIN_MAP("SPI", "pinctrl-u300", "spi0", "pl022"),
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index 376cede..f25307b 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -44,18 +44,6 @@ struct pinctrl_maps {
+>  	unsigned num_maps;
+>  };
+>  
+> -/**
+> - * struct pinctrl_hog - a list item to stash control hogs
+> - * @node: pin control hog list node
+> - * @map: map entry responsible for this hogging
+> - * @pmx: the pin control hogged by this item
+> - */
+> -struct pinctrl_hog {
+> -	struct list_head node;
+> -	struct pinctrl_map const *map;
+> -	struct pinctrl *p;
+> -};
+> -
+>  /* Global list of pin control devices */
+>  static DEFINE_MUTEX(pinctrldev_list_mutex);
+>  static LIST_HEAD(pinctrldev_list);
+> @@ -702,103 +690,6 @@ int pinctrl_register_mappings(struct pinctrl_map const *maps,
+>  	return 0;
+>  }
+>  
+> -/* Hog a single map entry and add to the hoglist */
+> -static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
+> -			   struct pinctrl_map const *map)
+> -{
+> -	struct pinctrl_hog *hog;
+> -	struct pinctrl *p;
+> -	int ret;
+> -
+> -	hog = kzalloc(sizeof(*hog), GFP_KERNEL);
+> -	if (!hog) {
+> -		dev_err(pctldev->dev, "failed to alloc struct pinctrl_hog\n");
+> -		return -ENOMEM;
+> -	}
+> -
+> -	p = pinctrl_get_locked(pctldev->dev, map->name);
+> -	if (IS_ERR(p)) {
+> -		kfree(hog);
+> -		dev_err(pctldev->dev,
+> -			"could not get the %s pin control mapping for hogging\n",
+> -			map->name);
+> -		return PTR_ERR(p);
+> -	}
+> -
+> -	ret = pinctrl_enable(p);
+> -	if (ret) {
+> -		pinctrl_put(p);
+> -		kfree(hog);
+> -		dev_err(pctldev->dev,
+> -			"could not enable the %s pin control mapping for hogging\n",
+> -			map->name);
+> -		return ret;
+> -	}
+> -
+> -	hog->map = map;
+> -	hog->p = p;
+> -
+> -	dev_info(pctldev->dev, "hogged map %s, function %s\n", map->name,
+> -		 map->function);
+> -	list_add_tail(&hog->node, &pctldev->pinctrl_hogs);
+> -
+> -	return 0;
+> -}
+> -
+> -/**
+> - * pinctrl_hog_maps() - hog specific map entries on controller device
+> - * @pctldev: the pin control device to hog entries on
+> - *
+> - * When the pin controllers are registered, there may be some specific pinmux
+> - * map entries that need to be hogged, i.e. get+enabled until the system shuts
+> - * down.
+> - */
+> -static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
+> -{
+> -	struct device *dev = pctldev->dev;
+> -	const char *devname = dev_name(dev);
+> -	int ret;
+> -	struct pinctrl_maps *maps_node;
+> -	int i;
+> -	struct pinctrl_map const *map;
+> -
+> -	INIT_LIST_HEAD(&pctldev->pinctrl_hogs);
+> -
+> -	mutex_lock(&pinctrl_maps_mutex);
+> -	for_each_maps(maps_node, i, map) {
+> -		if (!strcmp(map->ctrl_dev_name, devname) &&
+> -		    !strcmp(map->dev_name, devname)) {
+> -			/* OK time to hog! */
+> -			ret = pinctrl_hog_map(pctldev, map);
+> -			if (ret) {
+> -				mutex_unlock(&pinctrl_maps_mutex);
+> -				return ret;
+> -			}
+> -		}
+> -	}
+> -	mutex_unlock(&pinctrl_maps_mutex);
+> -
+> -	return 0;
+> -}
+> -
+> -/**
+> - * pinctrl_unhog_maps() - unhog specific map entries on controller device
+> - * @pctldev: the pin control device to unhog entries on
+> - */
+> -static void pinctrl_unhog_maps(struct pinctrl_dev *pctldev)
+> -{
+> -	struct list_head *node, *tmp;
+> -
+> -	list_for_each_safe(node, tmp, &pctldev->pinctrl_hogs) {
+> -		struct pinctrl_hog *hog =
+> -			list_entry(node, struct pinctrl_hog, node);
+> -		pinctrl_disable(hog->p);
+> -		pinctrl_put(hog->p);
+> -		list_del(node);
+> -		kfree(hog);
+> -	}
+> -}
+> -
+>  #ifdef CONFIG_DEBUG_FS
+>  
+>  static int pinctrl_pins_show(struct seq_file *s, void *what)
+> @@ -889,19 +780,6 @@ static int pinctrl_gpioranges_show(struct seq_file *s, void *what)
+>  	return 0;
+>  }
+>  
+> -static int pinmux_hogs_show(struct seq_file *s, void *what)
+> -{
+> -	struct pinctrl_dev *pctldev = s->private;
+> -	struct pinctrl_hog *hog;
+> -
+> -	seq_puts(s, "Pin control map hogs held by device\n");
+> -
+> -	list_for_each_entry(hog, &pctldev->pinctrl_hogs, node)
+> -		seq_printf(s, "%s\n", hog->map->name);
+> -
+> -	return 0;
+> -}
+> -
+>  static int pinctrl_devices_show(struct seq_file *s, void *what)
+>  {
+>  	struct pinctrl_dev *pctldev;
+> @@ -988,11 +866,6 @@ static int pinctrl_gpioranges_open(struct inode *inode, struct file *file)
+>  	return single_open(file, pinctrl_gpioranges_show, inode->i_private);
+>  }
+>  
+> -static int pinmux_hogs_open(struct inode *inode, struct file *file)
+> -{
+> -	return single_open(file, pinmux_hogs_show, inode->i_private);
+> -}
+> -
+>  static int pinctrl_devices_open(struct inode *inode, struct file *file)
+>  {
+>  	return single_open(file, pinctrl_devices_show, NULL);
+> @@ -1029,13 +902,6 @@ static const struct file_operations pinctrl_gpioranges_ops = {
+>  	.release	= single_release,
+>  };
+>  
+> -static const struct file_operations pinmux_hogs_ops = {
+> -	.open		= pinmux_hogs_open,
+> -	.read		= seq_read,
+> -	.llseek		= seq_lseek,
+> -	.release	= single_release,
+> -};
+> -
+>  static const struct file_operations pinctrl_devices_ops = {
+>  	.open		= pinctrl_devices_open,
+>  	.read		= seq_read,
+> @@ -1078,8 +944,6 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
+>  			    device_root, pctldev, &pinctrl_groups_ops);
+>  	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
+>  			    device_root, pctldev, &pinctrl_gpioranges_ops);
+> -	debugfs_create_file("pinmux-hogs", S_IFREG | S_IRUGO,
+> -			    device_root, pctldev, &pinmux_hogs_ops);
+I see you remove the pinnmux-hogs sysfs file here.
+I guess you may want to merge it into pinctrl-maps sysfs file since
+they're almost same(only difference is device name).
+
+Do you think if we can add a special flag for that type of map in sysfs
+(e.g. a "Hog" flag behind the regular map debug info)?
+Then users do not need to check device's name to see if it's a hogged function.
+
+(Anyway, it should be in another patch)
+
+>  	pinmux_init_device_debugfs(device_root, pctldev);
+>  	pinconf_init_device_debugfs(device_root, pctldev);
+>  }
+> @@ -1188,7 +1052,9 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+>  	mutex_lock(&pinctrldev_list_mutex);
+>  	list_add_tail(&pctldev->node, &pinctrldev_list);
+>  	mutex_unlock(&pinctrldev_list_mutex);
+> -	pinctrl_hog_maps(pctldev);
+> +	pctldev->p = pinctrl_get(pctldev->dev, PINCTRL_STATE_DEFAULT);
+> +	if (!IS_ERR(pctldev->p))
+> +		pinctrl_enable(pctldev->p);
+This change looks good to me.
+
+>  	pinctrl_init_device_debugfs(pctldev);
+>  
+>  	return pctldev;
+> @@ -1211,7 +1077,10 @@ void pinctrl_unregister(struct pinctrl_dev *pctldev)
+>  		return;
+>  
+>  	pinctrl_remove_device_debugfs(pctldev);
+> -	pinctrl_unhog_maps(pctldev);
+> +	if (!IS_ERR(pctldev->p)) {
+> +		pinctrl_disable(pctldev->p);
+> +		pinctrl_put(pctldev->p);
+> +	}
+>  	/* TODO: check that no pinmuxes are still active? */
+>  	mutex_lock(&pinctrldev_list_mutex);
+>  	list_del(&pctldev->node);
+> diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+> index 7551611..2981b73 100644
+> --- a/drivers/pinctrl/core.h
+> +++ b/drivers/pinctrl/core.h
+> @@ -27,7 +27,7 @@ struct pinctrl_gpio_range;
+>   * @owner: module providing the pin controller, used for refcounting
+>   * @driver_data: driver data for drivers registering to the pin controller
+>   *	subsystem
+> - * @pinctrl_hogs: list of pin control maps hogged by this device
+> + * @p: result of pinctrl_get() for this device
+>   * @device_root: debugfs root for this device
+>   */
+>  struct pinctrl_dev {
+> @@ -39,7 +39,7 @@ struct pinctrl_dev {
+>  	struct device *dev;
+>  	struct module *owner;
+>  	void *driver_data;
+> -	struct list_head pinctrl_hogs;
+> +	struct pinctrl *p;
+>  #ifdef CONFIG_DEBUG_FS
+>  	struct dentry *device_root;
+>  #endif
+> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+> index 73fbb27..20e9735 100644
+> --- a/include/linux/pinctrl/machine.h
+> +++ b/include/linux/pinctrl/machine.h
+> @@ -12,6 +12,8 @@
+>  #ifndef __LINUX_PINCTRL_MACHINE_H
+>  #define __LINUX_PINCTRL_MACHINE_H
+>  
+> +#include "pinctrl.h"
+> +
+>  /**
+>   * struct pinctrl_map - boards/machines shall provide this map for devices
+>   * @dev_name: the name of the device using this specific mapping, the name
+> @@ -49,17 +51,18 @@ struct pinctrl_map {
+>   * Convenience macro to map a system function onto a certain pinctrl device,
+>   * to be hogged by the pin control core until the system shuts down.
+>   */
+> -#define PIN_MAP_SYS_HOG(a, b, c) \
+> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, }
+> +#define PIN_MAP_SYS_HOG(a, b) \
+> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+> +	  .function = b, }
+>  
+>  /*
+>   * Convenience macro to map a system function onto a certain pinctrl device
+>   * using a specified group, to be hogged by the pin control core until the
+>   * system shuts down.
+>   */
+> -#define PIN_MAP_SYS_HOG_GROUP(a, b, c, d)		\
+> -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, \
+> -	  .group = d, }
+> +#define PIN_MAP_SYS_HOG_GROUP(a, b, c) \
+> +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+> +	  .function = b, .group = c, }
+>  
+
+In your v1 patch, we discussed about the possible requirement of different state
+support for hog functions(it seemed still no conclusion, right?).
+If we decide to support it, i'd suggest change here macro a bit to align with
+the exist PIN_MAP macro like:
+
+#define PIN_MAP_SYS_HOG_DEFAULT(a, b) \
+	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+	.function = b, }
+
+#define PIN_MAP_SYS_HOG_GROUP_DEFAULT(a, b, c) \
+	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
+	.function = b, .group = c, }
+And reserve the original PIN_MAP_SYS_HOG for users to add the state name as they
+want.
+
+However, since this is still undetermined, i'm also ok if you want to use this
+macro first.
+
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+
+Regards
+Dong Aisheng
 
