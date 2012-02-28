@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab2B1BID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:08:03 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964927Ab2B1BH5 (ORCPT
+	id S964966Ab2B1BIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:08:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964933Ab2B1BH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.211.131 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010216.460424805@linuxfoundation.org>
+Message-Id: <20120228010214.753230196@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:16 -0800
+Date: Mon, 27 Feb 2012 17:03:06 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 73/73] cdrom: use copy_to_user() without the underscores
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 63/73] [SCSI] scsi_pm: Fix bug in the SCSI power management handler
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 822bfa51ce44f2c63c300fdb76dc99c4d5a5ca9f upstream.
+commit fea6d607e154cf96ab22254ccb48addfd43d4cb5 upstream.
 
-"nframes" comes from the user and "nframes * CD_FRAMESIZE_RAW" can wrap
-on 32 bit systems.  That would have been ok if we used the same wrapped
-value for the copy, but we use a shifted value.  We should just use the
-checked version of copy_to_user() because it's not going to make a
-difference to the speed.
+This patch (as1520) fixes a bug in the SCSI layer's power management
+implementation.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+LUN scanning can be carried out asynchronously in do_scan_async(), and
+sd uses an asynchronous thread for the time-consuming parts of disk
+probing in sd_probe_async().  Currently nothing coordinates these
+async threads with system sleep transitions; they can and do attempt
+to continue scanning/probing SCSI devices even after the host adapter
+has been suspended.  As one might expect, the outcome is not ideal.
+
+This is what the "prepare" stage of system suspend was created for.
+After the prepare callback has been called for a host, target, or
+device, drivers are not allowed to register any children underneath
+them.  Currently the SCSI prepare callback is not implemented; this
+patch rectifies that omission.
+
+For SCSI hosts, the prepare routine calls scsi_complete_async_scans()
+to wait until async scanning is finished.  It might be slightly more
+efficient to wait only until the host in question has been scanned,
+but there's currently no way to do that.  Besides, during a sleep
+transition we will ultimately have to wait until all the host scanning
+has finished anyway.
+
+For SCSI devices, the prepare routine calls async_synchronize_full()
+to wait until sd probing is finished.  The routine does nothing for
+SCSI targets, because asynchronous target scanning is done only as
+part of host scanning.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cdrom/cdrom.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/scsi/scsi_pm.c   |   16 ++++++++++++++++
+ drivers/scsi/scsi_priv.h |    1 +
+ 2 files changed, 17 insertions(+)
 
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2114,11 +2114,6 @@ static int cdrom_read_cdda_old(struct cd
- 	if (!nr)
- 		return -ENOMEM;
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -6,6 +6,7 @@
+  */
  
--	if (!access_ok(VERIFY_WRITE, ubuf, nframes * CD_FRAMESIZE_RAW)) {
--		ret = -EFAULT;
--		goto out;
--	}
--
- 	cgc.data_direction = CGC_DATA_READ;
- 	while (nframes > 0) {
- 		if (nr > nframes)
-@@ -2127,7 +2122,7 @@ static int cdrom_read_cdda_old(struct cd
- 		ret = cdrom_read_block(cdi, &cgc, lba, nr, 1, CD_FRAMESIZE_RAW);
- 		if (ret)
- 			break;
--		if (__copy_to_user(ubuf, cgc.buffer, CD_FRAMESIZE_RAW * nr)) {
-+		if (copy_to_user(ubuf, cgc.buffer, CD_FRAMESIZE_RAW * nr)) {
- 			ret = -EFAULT;
- 			break;
- 		}
-@@ -2135,7 +2130,6 @@ static int cdrom_read_cdda_old(struct cd
- 		nframes -= nr;
- 		lba += nr;
- 	}
--out:
- 	kfree(cgc.buffer);
- 	return ret;
+ #include <linux/pm_runtime.h>
++#include <linux/async.h>
+ 
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_device.h>
+@@ -68,6 +69,19 @@ static int scsi_bus_resume_common(struct
+ 	return err;
  }
+ 
++static int scsi_bus_prepare(struct device *dev)
++{
++	if (scsi_is_sdev_device(dev)) {
++		/* sd probing uses async_schedule.  Wait until it finishes. */
++		async_synchronize_full();
++
++	} else if (scsi_is_host_device(dev)) {
++		/* Wait until async scanning is finished */
++		scsi_complete_async_scans();
++	}
++	return 0;
++}
++
+ static int scsi_bus_suspend(struct device *dev)
+ {
+ 	return scsi_bus_suspend_common(dev, PMSG_SUSPEND);
+@@ -86,6 +100,7 @@ static int scsi_bus_poweroff(struct devi
+ #else /* CONFIG_PM_SLEEP */
+ 
+ #define scsi_bus_resume_common		NULL
++#define scsi_bus_prepare		NULL
+ #define scsi_bus_suspend		NULL
+ #define scsi_bus_freeze			NULL
+ #define scsi_bus_poweroff		NULL
+@@ -194,6 +209,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
+ #endif /* CONFIG_PM_RUNTIME */
+ 
+ const struct dev_pm_ops scsi_bus_pm_ops = {
++	.prepare =		scsi_bus_prepare,
+ 	.suspend =		scsi_bus_suspend,
+ 	.resume =		scsi_bus_resume_common,
+ 	.freeze =		scsi_bus_freeze,
+--- a/drivers/scsi/scsi_priv.h
++++ b/drivers/scsi/scsi_priv.h
+@@ -110,6 +110,7 @@ extern void scsi_exit_procfs(void);
+ #endif /* CONFIG_PROC_FS */
+ 
+ /* scsi_scan.c */
++extern int scsi_complete_async_scans(void);
+ extern int scsi_scan_host_selected(struct Scsi_Host *, unsigned int,
+ 				   unsigned int, unsigned int, int);
+ extern void scsi_forget_host(struct Scsi_Host *);
 
 
