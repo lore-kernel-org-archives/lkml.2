@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856Ab2B1BHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:38 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	id S964925Ab2B1Bbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:31:35 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964841Ab2B1BHf (ORCPT
+	with ESMTP id S964861Ab2B1BHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:35 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.138.234 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010214.218713927@linuxfoundation.org>
+Message-Id: <20120228010209.893321075@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:03 -0800
+Date: Mon, 27 Feb 2012 17:02:38 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 60/73] genirq: Unmask oneshot irqs when thread was not woken
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 35/73] tcp: fix tcp_shifted_skb() adjustment of lost_cnt_hint for FACK
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,79 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
 
-commit ac5637611150281f398bb7a47e3fcb69a09e7803 upstream.
+From: Neal Cardwell <ncardwell@google.com>
 
-When the primary handler of an interrupt which is marked IRQ_ONESHOT
-returns IRQ_HANDLED or IRQ_NONE, then the interrupt thread is not
-woken and the unmask logic of the interrupt line is never
-invoked. This keeps the interrupt masked forever.
+[ Upstream commit 0af2a0d0576205dda778d25c6c344fc6508fc81d ]
 
-This was not noticed as most IRQ_ONESHOT users wake the thread
-unconditionally (usually because they cannot access the underlying
-device from hard interrupt context). Though this behaviour was nowhere
-documented and not necessarily intentional. Some drivers can avoid the
-thread wakeup in certain cases and run into the situation where the
-interrupt line s kept masked.
+This commit ensures that lost_cnt_hint is correctly updated in
+tcp_shifted_skb() for FACK TCP senders. The lost_cnt_hint adjustment
+in tcp_sacktag_one() only applies to non-FACK senders, so FACK senders
+need their own adjustment.
 
-Handle it gracefully.
+This applies the spirit of 1e5289e121372a3494402b1b131b41bfe1cf9b7f -
+except now that the sequence range passed into tcp_sacktag_one() is
+correct we need only have a special case adjustment for FACK.
 
-Reported-and-tested-by: Lothar Wassmann <lw@karo-electronics.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/irq/chip.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_input.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -312,6 +312,24 @@ out_unlock:
- }
- EXPORT_SYMBOL_GPL(handle_simple_irq);
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1385,6 +1385,10 @@ static int tcp_shifted_skb(struct sock *
  
-+/*
-+ * Called unconditionally from handle_level_irq() and only for oneshot
-+ * interrupts from handle_fasteoi_irq()
-+ */
-+static void cond_unmask_irq(struct irq_desc *desc)
-+{
-+	/*
-+	 * We need to unmask in the following cases:
-+	 * - Standard level irq (IRQF_ONESHOT is not set)
-+	 * - Oneshot irq which did not wake the thread (caused by a
-+	 *   spurious interrupt or a primary handler handling it
-+	 *   completely).
-+	 */
-+	if (!irqd_irq_disabled(&desc->irq_data) &&
-+	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot)
-+		unmask_irq(desc);
-+}
+ 	BUG_ON(!pcount);
+ 
++	/* Adjust hint for FACK. Non-FACK is handled in tcp_sacktag_one(). */
++	if (tcp_is_fack(tp) && (skb == tp->lost_skb_hint))
++		tp->lost_cnt_hint += pcount;
 +
- /**
-  *	handle_level_irq - Level type irq handler
-  *	@irq:	the interrupt number
-@@ -344,8 +362,8 @@ handle_level_irq(unsigned int irq, struc
+ 	TCP_SKB_CB(prev)->end_seq += shifted;
+ 	TCP_SKB_CB(skb)->seq += shifted;
  
- 	handle_irq_event(desc);
- 
--	if (!irqd_irq_disabled(&desc->irq_data) && !(desc->istate & IRQS_ONESHOT))
--		unmask_irq(desc);
-+	cond_unmask_irq(desc);
-+
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
- }
-@@ -399,6 +417,9 @@ handle_fasteoi_irq(unsigned int irq, str
- 	preflow_handler(desc);
- 	handle_irq_event(desc);
- 
-+	if (desc->istate & IRQS_ONESHOT)
-+		cond_unmask_irq(desc);
-+
- out_eoi:
- 	desc->irq_data.chip->irq_eoi(&desc->irq_data);
- out_unlock:
 
 
