@@ -1,59 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030360Ab2B1T3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:29:07 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:47693 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030279Ab2B1T3F (ORCPT
+	id S1030363Ab2B1TaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:30:24 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:24391 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1030268Ab2B1TaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:29:05 -0500
-X-Auth-Info: UyQaBoEWwoxuzQsRTtL566dxHMrUnhjwCy45ACvgvKk=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.3-rc5
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
-	<4F4B9FFE.5050709@teksavvy.com>
-	<CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
-X-Yow: There's a SALE on STRETCH SOCKS down at the "7-11"!!
-Date: Tue, 28 Feb 2012 20:29:00 +0100
-In-Reply-To: <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 28 Feb 2012 10:30:30 -0800")
-Message-ID: <m2d38ybvur.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
+	Tue, 28 Feb 2012 14:30:23 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vfGad20VM1loyuvkJfg9QvtcYcR0D8h2ZSJayfeNop_0XUK
+ YPQ4t12dfdjDoyJ_TebJMDkVWWFKnwdU_wDz5EdwpISOgHN4olVjCqe9WSC3
+ AVJIB3IExmZqUNYc48.4ZuA3OL0UZvucRkpYAGVAmuK1Pu1b1JfK_h25h3.g
+ lm_Hr5so402vVToclSva36FP7fC7Z8twUFJRb7mRllfbK8DaejLOFOnPQ2C8
+ 2ycQ.eoQkAnKISYXdsr6gKugIqXkiW80jMExyjNTTiO9u5jT74QNW7nTLFu7
+ m88OnXc0l_wl3xW6V8JkUthznX3kJi3ZfCCsCPQ2Cx9OMrcQEOfAq74lDiEp
+ J84tsKdeSoKl0CJEWAkG_9DCxX0aBo8vyXJU6Cc_gyOqAQ7vmrzz5UY0xLx6
+ X
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 28 Feb 2012 13:30:19 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
+In-Reply-To: <alpine.DEB.2.00.1202271636230.6435@router.home>
+Message-ID: <alpine.DEB.2.00.1202281329190.25590@router.home>
+References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home>
+ <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home> <4F47C800.4090903@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1202241131400.3726@router.home> <87sjhzun47.fsf@xmission.com> <alpine.DEB.2.00.1202271238450.32410@router.home> <87d390janv.fsf@xmission.com> <alpine.DEB.2.00.1202271636230.6435@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Here is a cleaned up version of the patch. No longer rely on the
+task_struct pointer to be NULL for release of the refcount.
 
-> I also think that your explanation is wrong. The problem is not the
-> use of _IOR() at all, the problem is that the data structure given
-> *to* the _IOR() macro is complete grabage. For example:
->
->   #define I8K_GET_SPEED           _IOWR('i', 0x85, size_t)
 
-Originally the garbage looked like this:
 
-#define I8K_BIOS_VERSION       _IOR ('i', 0x80, 4)
-#define I8K_MACHINE_ID         _IOR ('i', 0x81, 16)
-#define I8K_POWER_STATUS       _IOR ('i', 0x82, sizeof(int))
-#define I8K_FN_STATUS          _IOR ('i', 0x83, sizeof(int))
-#define I8K_GET_TEMP           _IOR ('i', 0x84, sizeof(int))
-#define I8K_GET_SPEED          _IOWR('i', 0x85, sizeof(int))
-#define I8K_GET_FAN            _IOWR('i', 0x86, sizeof(int))
-#define I8K_SET_FAN            _IOWR('i', 0x87, sizeof(int)*2)
 
-Later they were modified by "[PATCH] use size_t for the broken ioctl
-numbers" and "Fix more ioctl _IOR/_IOW misusage." (see tglx's history
-tree).
+Subject: migration: Fix rcu and task refcounting
 
-Andreas.
+Migration functions perform the rcu_read_unlock too early. As a result the
+task pointed to may change from under us.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+The following patch extend the period of the rcu_read_lock until after the
+permissions checks are done. We also take a refcount so that the task
+reference is stable when calling security check functions and performing
+cpuset node validation (which takes a mutex).
+
+The refcount is dropped before actual page migration occurs so there is no
+change to the refcounts held during page migration.
+
+Also move the determination of the mm of the task struct to immediately
+before the do_migrate*() calls so that it is clear that we switch from
+handling the task during permission checks to the mm for the actual
+migration. Since the determination is only done once and we then no longer
+use the task_struct we can be sure that we operate on a specific address
+space that will not change from under us.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+---
+ mm/mempolicy.c |   32 +++++++++++++++++++-------------
+ mm/migrate.c   |   36 +++++++++++++++++++-----------------
+ 2 files changed, 38 insertions(+), 30 deletions(-)
+
+Index: linux-2.6/mm/mempolicy.c
+===================================================================
+--- linux-2.6.orig/mm/mempolicy.c	2012-02-28 03:56:41.236184783 -0600
++++ linux-2.6/mm/mempolicy.c	2012-02-28 07:22:35.245552282 -0600
+@@ -1322,12 +1322,9 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+ 		err = -ESRCH;
+ 		goto out;
+ 	}
+-	mm = get_task_mm(task);
+-	rcu_read_unlock();
++	get_task_struct(task);
+
+ 	err = -EINVAL;
+-	if (!mm)
+-		goto out;
+
+ 	/*
+ 	 * Check if this process has the right to modify the specified
+@@ -1335,14 +1332,13 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+ 	 * capabilities, superuser privileges or the same
+ 	 * userid as the target process.
+ 	 */
+-	rcu_read_lock();
+ 	tcred = __task_cred(task);
+ 	if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
+ 	    cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
+ 	    !capable(CAP_SYS_NICE)) {
+ 		rcu_read_unlock();
+ 		err = -EPERM;
+-		goto out;
++		goto out_put;
+ 	}
+ 	rcu_read_unlock();
+
+@@ -1350,26 +1346,36 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+ 	/* Is the user allowed to access the target nodes? */
+ 	if (!nodes_subset(*new, task_nodes) && !capable(CAP_SYS_NICE)) {
+ 		err = -EPERM;
+-		goto out;
++		goto out_put;
+ 	}
+
+ 	if (!nodes_subset(*new, node_states[N_HIGH_MEMORY])) {
+ 		err = -EINVAL;
+-		goto out;
++		goto out_put;
+ 	}
+
+ 	err = security_task_movememory(task);
+ 	if (err)
+-		goto out;
++		goto out_put;
+
+-	err = do_migrate_pages(mm, old, new,
+-		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+-out:
++	mm = get_task_mm(task);
++	put_task_struct(task);
+ 	if (mm)
+-		mmput(mm);
++		err = do_migrate_pages(mm, old, new,
++			capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
++	else
++		err = -EINVAL;
++
++	mmput(mm);
++out:
+ 	NODEMASK_SCRATCH_FREE(scratch);
+
+ 	return err;
++
++out_put:
++	put_task_struct(task);
++	goto out;
++
+ }
+
+
+Index: linux-2.6/mm/migrate.c
+===================================================================
+--- linux-2.6.orig/mm/migrate.c	2012-02-28 06:15:38.239956766 -0600
++++ linux-2.6/mm/migrate.c	2012-02-28 07:18:08.237559577 -0600
+@@ -1176,20 +1176,17 @@ set_status:
+  * Migrate an array of page address onto an array of nodes and fill
+  * the corresponding array of status.
+  */
+-static int do_pages_move(struct mm_struct *mm, struct task_struct *task,
++static int do_pages_move(struct mm_struct *mm, nodemask_t task_nodes,
+ 			 unsigned long nr_pages,
+ 			 const void __user * __user *pages,
+ 			 const int __user *nodes,
+ 			 int __user *status, int flags)
+ {
+ 	struct page_to_node *pm;
+-	nodemask_t task_nodes;
+ 	unsigned long chunk_nr_pages;
+ 	unsigned long chunk_start;
+ 	int err;
+
+-	task_nodes = cpuset_mems_allowed(task);
+-
+ 	err = -ENOMEM;
+ 	pm = (struct page_to_node *)__get_free_page(GFP_KERNEL);
+ 	if (!pm)
+@@ -1351,6 +1348,7 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+ 	struct task_struct *task;
+ 	struct mm_struct *mm;
+ 	int err;
++	nodemask_t task_nodes;
+
+ 	/* Check flags */
+ 	if (flags & ~(MPOL_MF_MOVE|MPOL_MF_MOVE_ALL))
+@@ -1366,11 +1364,7 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+ 		rcu_read_unlock();
+ 		return -ESRCH;
+ 	}
+-	mm = get_task_mm(task);
+-	rcu_read_unlock();
+-
+-	if (!mm)
+-		return -EINVAL;
++	get_task_struct(task);
+
+ 	/*
+ 	 * Check if this process has the right to modify the specified
+@@ -1378,7 +1372,6 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+ 	 * capabilities, superuser privileges or the same
+ 	 * userid as the target process.
+ 	 */
+-	rcu_read_lock();
+ 	tcred = __task_cred(task);
+ 	if (cred->euid != tcred->suid && cred->euid != tcred->uid &&
+ 	    cred->uid  != tcred->suid && cred->uid  != tcred->uid &&
+@@ -1393,16 +1386,25 @@ SYSCALL_DEFINE6(move_pages, pid_t, pid,
+  	if (err)
+ 		goto out;
+
+-	if (nodes) {
+-		err = do_pages_move(mm, task, nr_pages, pages, nodes, status,
+-				    flags);
+-	} else {
+-		err = do_pages_stat(mm, nr_pages, pages, status);
+-	}
++	task_nodes = cpuset_mems_allowed(task);
++	mm = get_task_mm(task);
++	put_task_struct(task);
++
++	if (mm) {
++		if (nodes)
++			err = do_pages_move(mm, task_nodes, nr_pages, pages, nodes,
++				status, flags);
++		else
++			err = do_pages_stat(mm, nr_pages, pages, status);
++	} else
++		err = -EINVAL;
+
+-out:
+ 	mmput(mm);
+ 	return err;
++
++out:
++	put_task_struct(task);
++	return err;
+ }
+
+ /*
