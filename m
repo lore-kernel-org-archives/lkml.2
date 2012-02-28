@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab2B1KHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:07:19 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35216 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab2B1KHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:07:17 -0500
-X-IronPort-AV: E=Sophos;i="4.73,495,1325462400"; 
-   d="scan'208";a="10977066"
-Message-ID: <1330423635.31269.40.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Dave Martin <dave.martin@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 28 Feb 2012 10:07:15 +0000
-In-Reply-To: <20120228094616.GA2063@linaro.org>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
-	 <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <20120227175327.GA2023@linaro.org>
-	 <1330372125.10008.47.camel@dagon.hellion.org.uk>
-	 <20120228094616.GA2063@linaro.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1756996Ab2B1KKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:10:03 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:45234
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752954Ab2B1KKA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 05:10:00 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I542M1432N4015Izz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h946hbe9k)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Liu Shengzhou-B36685 <B36685@freescale.com>
+To: Ben Collins <benmcollins13@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Regression] powerpc/usb: fix issue of CPU halt when missing
+ USB PHY clock
+Thread-Topic: [Regression] powerpc/usb: fix issue of CPU halt when missing
+ USB PHY clock
+Thread-Index: AQHM9WpvwudxTzHmB0OzNbpGn/N0m5ZSFGRQ
+Date: Tue, 28 Feb 2012 10:09:56 +0000
+Message-ID: <3F453DDFF675A64A89321A1F3528102170B796@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <12BC8F06-26EE-4A58-8F0B-6D39C0DD7360@gmail.com>
+In-Reply-To: <12BC8F06-26EE-4A58-8F0B-6D39C0DD7360@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.89]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-28 at 09:46 +0000, Dave Martin wrote:
-> On Mon, Feb 27, 2012 at 07:48:45PM +0000, Ian Campbell wrote:
-> > Given that Stefano is proposing to make the ISS a (per-hypervisor)
-> > constant we could consider just defining the Thumb and non-Thumb
-> > constants instead of doing all the construction with the __HVC_IMM stuff
-> > -- that would remove a big bit of the macroization.
+
+> -----Original Message-----
+> From: Ben Collins [mailto:benmcollins13@gmail.com]
+> Sent: Tuesday, February 28, 2012 12:11 AM
+> To: Liu Shengzhou-B36685
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [Regression] powerpc/usb: fix issue of CPU halt when missing
+> USB PHY clock
 > 
-> It's not quite as simple as that -- emitting instructions using data
-> directives is not endianness safe, and even in the cases where .long gives
-> the right result for ARM, it gives the wrong result for 32-bit Thumb
-> instructions if the opcode is given in human-readable order.
+> Hello,
+> 
+> The patch that checks the CTRL_PHY_CLK_VALID bit is failing incorrectly
+> on my system (P4080DS). If I revert it, my system goes back to working
+> correctly, but as is, it fails and wont allow my USB to work properly.
+> 
+> I've tried adding a loop to poll this bit 10,000 times with a udelay(1)
+> on each loop and it still fails, so it doesn't appear to be a timing
+> issue.
+> 
+> Is this check valid for all systems?
+> 
 
-Urk, yes,..
+This check is valid for P3060/P3041/P5020/P1023 platform.
+on some platforms, there is this bit, but not on other some platforms.
+For P4080, just revert this patch, then USB is able to work.
+I'll post a new patch to fix it after getting some confirmations from silicon team.
 
-> I was trying to solve the same problem for the kvm guys with some global
-> macros -- I'm aiming to get a patch posted soon, so I'll make sure
-> you're on CC.
+Thanks,
+Shengzhou
 
-Awesome, thanks!
-
-Ian.
 
