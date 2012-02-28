@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965391Ab2B1O54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:57:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53817 "EHLO mx1.redhat.com"
+	id S965175Ab2B1O6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:58:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43147 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965140Ab2B1O5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:57:53 -0500
-Date: Tue, 28 Feb 2012 15:57:45 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-Message-ID: <20120228145744.GG1694@m.brq.redhat.com>
-References: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1330427423-25499-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330427423-25499-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755834Ab2B1O4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 09:56:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112219214"
+Message-Id: <20120228144746.900395448@intel.com>
+User-Agent: quilt/0.51-1
+Date: Tue, 28 Feb 2012 22:00:23 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+cc: Linux Memory Management List <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/9] memcg: add page_cgroup flags for dirty page tracking
+References: <20120228140022.614718843@intel.com>
+Content-Disposition: inline; filename=memcg-add-page_cgroup-flags-for-dirty-page-tracking.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 11:10:23AM +0000, Mark Brown wrote:
-> Today's -next fails to build for me:
-> 
->   CC      kernel/trace/trace_export.o
-> In file included from kernel/trace/trace_export.c:197: kernel/trace/trace_entries.h:58: error: 'perf_ftrace_event_register' undeclared here (not in a function)
-> make[2]: *** [kernel/trace/trace_export.o] Error 1
-> make[1]: *** [kernel/trace] Error 2
-> make: *** [kernel] Error 2
-> 
-> because as of ced390 (ftrace, perf: Add support to use function
-> tracepoint in perf) perf_trace_event_register() is declared in trace.h
-> only if CONFIG_PERF_EVENTS is enabled but I don't have that set.
-> 
-> Ensure that we always have a definition of perf_trace_event_register()
-> by providing a definition if CONFIG_PERF_EVENTS is disabled.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> This one had the build test run all the way...
-> 
->  kernel/trace/trace.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 54faec7..2aef24e 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -842,6 +842,8 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
->  #else
->  #define perf_ftrace_event_register NULL
->  #endif /* CONFIG_FUNCTION_TRACER */
-> +#else
-> +#define perf_ftrace_event_register NULL
->  #endif /* CONFIG_PERF_EVENTS */
->  
->  #endif /* _LINUX_KERNEL_TRACE_H */
-> -- 
-> 1.7.9.1
-> 
+From: Greg Thelen <gthelen@google.com>
 
-ook, this one fixies that for me as well ;) I got your replies mixed in
-mailbox and thought this one was not actually working..
+Add additional flags to page_cgroup to track dirty pages
+within a mem_cgroup.
 
-I also added this bit to get rid of the switch warnings,
-feel free to use it.
-
-thanks,
-jirka
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index dd478fc..5f3f3be 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -144,12 +144,14 @@ struct event_filter;
- enum trace_reg {
- 	TRACE_REG_REGISTER,
- 	TRACE_REG_UNREGISTER,
-+#ifdef CONFIG_PERF_EVENTS
- 	TRACE_REG_PERF_REGISTER,
- 	TRACE_REG_PERF_UNREGISTER,
- 	TRACE_REG_PERF_OPEN,
- 	TRACE_REG_PERF_CLOSE,
- 	TRACE_REG_PERF_ADD,
- 	TRACE_REG_PERF_DEL,
-+#endif
+ include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+--- linux.orig/include/linux/page_cgroup.h	2012-02-19 10:53:14.000000000 +0800
++++ linux/include/linux/page_cgroup.h	2012-02-19 10:53:16.000000000 +0800
+@@ -10,6 +10,9 @@ enum {
+ 	/* flags for mem_cgroup and file and I/O status */
+ 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+ 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
++	PCG_FILE_DIRTY, /* page is dirty */
++	PCG_FILE_WRITEBACK, /* page is under writeback */
++	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
+ 	__NR_PCG_FLAGS,
  };
  
- struct ftrace_event_call;
+@@ -64,6 +67,10 @@ static inline void ClearPageCgroup##unam
+ static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ 
++#define TESTSETPCGFLAG(uname, lname)			\
++static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
++	{ return test_and_set_bit(PCG_##lname, &pc->flags); }
++
+ /* Cache flag is set only once (at allocation) */
+ TESTPCGFLAG(Cache, CACHE)
+ CLEARPCGFLAG(Cache, CACHE)
+@@ -77,6 +84,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
+ CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+ TESTPCGFLAG(FileMapped, FILE_MAPPED)
+ 
++SETPCGFLAG(FileDirty, FILE_DIRTY)
++CLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTPCGFLAG(FileDirty, FILE_DIRTY)
++TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
++
++SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
++CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
++TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
++
++SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++
+ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
+
+
