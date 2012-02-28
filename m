@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2B1HlU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 02:41:20 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:35213 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119Ab2B1HlS convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 28 Feb 2012 02:41:18 -0500
-Message-Id: <4F4C93520200007800075197@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 28 Feb 2012 07:41:54 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] consolidate WARN_...ONCE() static variables
-References: <4F4BAAFA0200007800074F8F@nat28.tlf.novell.com>
- <20120227160302.ef9f6af4.akpm@linux-foundation.org>
-In-Reply-To: <20120227160302.ef9f6af4.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932308Ab2B1Hmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 02:42:47 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:45907 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756172Ab2B1Hmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 02:42:46 -0500
+From: Zhao Ye <zhaoy@marvell.com>
+To: Zhao Ye <zhaoy@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Haojian Zhuang <hzhuang1@marvell.com>, Chao Xie <cxie4@marvell.com>,
+        Leo Yan <leoy@marvell.com>
+Date: Mon, 27 Feb 2012 23:42:34 -0800
+Subject: RE: [PATCH 13/13] DMA:update defconfig for mmp2
+Thread-Topic: [PATCH 13/13] DMA:update defconfig for mmp2
+Thread-Index: Acz16pqZ6HWqwUfXRIO8SQtP/fgiqwAAa6Ug
+Message-ID: <A63A0DC671D719488CD1A6CD8BDC16CF1A0E95FF51@SC-VEXCH4.marvell.com>
+References: <Y> <1330414065-2949-14-git-send-email-zhaoy@marvell.com>
+In-Reply-To: <1330414065-2949-14-git-send-email-zhaoy@marvell.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1S7grUx025204
 
->>> On 28.02.12 at 01:03, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 27 Feb 2012 15:10:34 +0000
-> "Jan Beulich" <JBeulich@suse.com> wrote:
-> 
->> Due to the alignment of following variables, these typically consume
->> more than just the single byte that 'bool' requires, and as there are
->> a few hundred instances, the cache pollution (not so much the waste of
->> memory) sums up. Put these variables into their own section, outside
->> of any half way frequently used memory range.
->> 
->> v2: Do the same also to the __warned variable of rcu_lockdep_assert().
->> (Don't, however, include the ones used by printk_once() and alike, as
->> they can potentially be hot.)
-> 
-> I have a bad feeling that I still don't understand this patch.  Ho hum.
-> 
-> What are the rules for the new .data.unlikely section?  When should
-> people put variables into this section?  Perhaps we can document this
-> somewhere?
+Sorry! Please ignore these patches. I will send a new version.
 
-If I knew the "where" part of this, I could put together a few sentences.
-I just grep-ed through Documentation/, without finding e.g. any rules
-or guidelines for using {,un}likely()...
+Best Regard
+Zhao Ye
++61942433
+Marvell Tech (SH) Co. Ltd.
 
-Jan
+-----Original Message-----
+From: zhaoy [mailto:zhaoy@marvell.com] 
+Sent: 2012ƒÍ2‘¬28»’ 15:28
+To: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; nicolas.pitre@linaro.org; linux@arm.linux.org.uk; Haojian Zhuang; Chao Xie; Leo Yan
+Cc: Zhao Ye
+Subject: [PATCH 13/13] DMA:update defconfig for mmp2
 
+	1.open DMAC and TDMA config in mmp2 defconfig
+
+Change-Id: Ie253d527e481f376edf4cc5e56fbad7a7da4fefa
+Signed-off-by: zhaoy <zhaoy@marvell.com>
+---
+ arch/arm/configs/mmp2_defconfig |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/mmp2_defconfig b/arch/arm/configs/mmp2_defconfig
+index 138c95a..b975779 100644
+--- a/arch/arm/configs/mmp2_defconfig
++++ b/arch/arm/configs/mmp2_defconfig
+@@ -1919,8 +1919,25 @@ CONFIG_RTC_DRV_MAX8925=y
+ #
+ # on-CPU RTC drivers
+ #
+-CONFIG_RTC_DRV_MMP=y
+-# CONFIG_DMADEVICES is not set
++# CONFIG_RTC_DRV_MMP is not set
++CONFIG_DMADEVICES=y
++# CONFIG_DMADEVICES_DEBUG is not set
++
++#
++# DMA Devices
++#
++# CONFIG_DW_DMAC is not set
++# CONFIG_TIMB_DMA is not set
++CONFIG_PXA_DMAC=y
++CONFIG_MMP_TDMA=y
++CONFIG_DMA_ENGINE=y
++
++#
++# DMA Clients
++#
++# CONFIG_NET_DMA is not set
++# CONFIG_ASYNC_TX_DMA is not set
++# CONFIG_DMATEST is not set
+ # CONFIG_AUXDISPLAY is not set
+ CONFIG_UIO=y
+ # CONFIG_UIO_PDRV is not set
+-- 
+1.7.0.4
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
