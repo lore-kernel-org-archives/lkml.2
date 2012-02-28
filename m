@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965250Ab2B1BMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:16 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965171Ab2B1BMN (ORCPT
+	id S965293Ab2B1BRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:17:15 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965256Ab2B1BMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.70 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:18 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010435.034354516@linuxfoundation.org>
+Message-Id: <20120228010435.202930923@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:33 -0800
+Date: Mon, 27 Feb 2012 17:05:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
-        maximilian attems <max@stro.at>, Michal Marek <mmarek@suse.cz>
-Subject: [ 64/72] builddeb: Dont create files in /tmp with predictable names
+        alan@lxorguk.ukuu.org.uk, Joerg Desch <vvd.joede@googlemail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 66/72] [media] hdpvr: fix race conditon during start of streaming
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Janne Grunau <j@jannau.net>
 
-commit 6c635224602d760c1208ada337562f40d8ae93a5 upstream.
+commit afa159538af61f1a65d48927f4e949fe514fb4fc upstream.
 
-The current use of /tmp for file lists is insecure.  Put them under
-$objtree/debian instead.
+status has to be set to STREAMING before the streaming worker is
+queued. hdpvr_transmit_buffers() will exit immediately otherwise.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: maximilian attems <max@stro.at>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Reported-by: Joerg Desch <vvd.joede@googlemail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/media/video/hdpvr/hdpvr-video.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -238,14 +238,14 @@ EOF
- fi
+--- a/drivers/media/video/hdpvr/hdpvr-video.c
++++ b/drivers/media/video/hdpvr/hdpvr-video.c
+@@ -283,12 +283,13 @@ static int hdpvr_start_streaming(struct
  
- # Build header package
--(cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > /tmp/files$$)
--(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> /tmp/files$$)
--(cd $objtree; find .config Module.symvers include scripts -type f >> /tmp/objfiles$$)
-+(cd $srctree; find . -name Makefile -o -name Kconfig\* -o -name \*.pl > "$objtree/debian/hdrsrcfiles")
-+(cd $srctree; find arch/$SRCARCH/include include scripts -type f >> "$objtree/debian/hdrsrcfiles")
-+(cd $objtree; find .config Module.symvers include scripts -type f >> "$objtree/debian/hdrobjfiles")
- destdir=$kernel_headers_dir/usr/src/linux-headers-$version
- mkdir -p "$destdir"
--(cd $srctree; tar -c -f - -T /tmp/files$$) | (cd $destdir; tar -xf -)
--(cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
--rm -f /tmp/files$$ /tmp/objfiles$$
-+(cd $srctree; tar -c -f - -T "$objtree/debian/hdrsrcfiles") | (cd $destdir; tar -xf -)
-+(cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
-+rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
- arch=$(dpkg --print-architecture)
+ 		hdpvr_config_call(dev, CTRL_START_STREAMING_VALUE, 0x00);
  
- cat <<EOF >> debian/control
++		dev->status = STATUS_STREAMING;
++
+ 		INIT_WORK(&dev->worker, hdpvr_transmit_buffers);
+ 		queue_work(dev->workqueue, &dev->worker);
+ 
+ 		v4l2_dbg(MSG_BUFFER, hdpvr_debug, &dev->v4l2_dev,
+ 			 "streaming started\n");
+-		dev->status = STATUS_STREAMING;
+ 
+ 		return 0;
+ 	}
 
 
