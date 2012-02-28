@@ -1,117 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2B1ByI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:54:08 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50404 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977Ab2B1ByF (ORCPT
+	id S1754094Ab2B1CE4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:04:56 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:25666 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab2B1CEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:54:05 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 28 Feb 2012 10:52:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 00/21] mm: lru_lock splitting
-Message-Id: <20120228105236.448c0bf3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120223133728.12988.5432.stgit@zurg>
-References: <20120223133728.12988.5432.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Feb 2012 21:04:50 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 07/11] x86, PCI: break down get_current_resource()
+Date: Mon, 27 Feb 2012 18:03:47 -0800
+Message-Id: <1330394631-28978-8-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
+References: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020206.4F4C3640.0055,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 17:51:36 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+change it to probe_pci_root_info, aka only do one thing.
 
-> v3 changes:
-> * inactive-ratio reworked again, now it always calculated from from scratch
-> * hierarchical pte reference bits filter in memory-cgroup reclaimer
-> * fixed two bugs in locking, found by Hugh Dickins
-> * locking functions slightly simplified
-> * new patch for isolated pages accounting
-> * new patch with lru interleaving
-> 
-> This patchset is based on next-20120210
-> 
-> git: https://github.com/koct9i/linux/commits/lruvec-v3
-> 
-I'm sorry I can't have enough review time in these days but the whole series
-seems good to me.
+1. remove resource list head from pci_root_info
+2. make get_current_resources() not pass resources
+   move out add_resources calling out of yet.
+3. rename get_current_resourcs name to probe_pci_root_info
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/pci/acpi.c |   34 +++++++++++++---------------------
+ 1 files changed, 13 insertions(+), 21 deletions(-)
 
-BTW, how about trying to merge patch 1/21 -> 13or14/21 first ?
-This series adds many changes to various place under /mm. So, step-by-step
-merging will be better I think.
-(Just says as this because I tend to split a long series of patch to 
- small sets of patches and merge them one by one to reduce my own maintainance cost.)
-
-At final lock splitting, performance number should be in changelog.
-
-Thanks,
--Kame
-
-> ---
-> 
-> Konstantin Khlebnikov (21):
->       memcg: unify inactive_ratio calculation
->       memcg: make mm_match_cgroup() hirarchical
->       memcg: fix page_referencies cgroup filter on global reclaim
->       memcg: use vm_swappiness from target memory cgroup
->       mm: rename lruvec->lists into lruvec->pages_lru
->       mm: lruvec linking functions
->       mm: add lruvec->pages_count
->       mm: unify inactive_list_is_low()
->       mm: add lruvec->reclaim_stat
->       mm: kill struct mem_cgroup_zone
->       mm: move page-to-lruvec translation upper
->       mm: push lruvec into update_page_reclaim_stat()
->       mm: push lruvecs from pagevec_lru_move_fn() to iterator
->       mm: introduce lruvec locking primitives
->       mm: handle lruvec relocks on lumpy reclaim
->       mm: handle lruvec relocks in compaction
->       mm: handle lruvec relock in memory controller
->       mm: add to lruvec isolated pages counters
->       memcg: check lru vectors emptiness in pre-destroy
->       mm: split zone->lru_lock
->       mm: zone lru vectors interleaving
-> 
-> 
->  include/linux/huge_mm.h    |    3 
->  include/linux/memcontrol.h |   75 ------
->  include/linux/mm.h         |   66 +++++
->  include/linux/mm_inline.h  |   19 +-
->  include/linux/mmzone.h     |   39 ++-
->  include/linux/swap.h       |    6 
->  mm/Kconfig                 |   16 +
->  mm/compaction.c            |   31 +--
->  mm/huge_memory.c           |   14 +
->  mm/internal.h              |  204 +++++++++++++++++
->  mm/ksm.c                   |    2 
->  mm/memcontrol.c            |  343 +++++++++++-----------------
->  mm/migrate.c               |    2 
->  mm/page_alloc.c            |   70 +-----
->  mm/rmap.c                  |    2 
->  mm/swap.c                  |  217 ++++++++++--------
->  mm/vmscan.c                |  534 ++++++++++++++++++++++++--------------------
->  mm/vmstat.c                |    6 
->  18 files changed, 932 insertions(+), 717 deletions(-)
-> 
-> -- 
-> Signature
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 304ccf0..763f7bb 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -12,7 +12,6 @@ struct pci_root_info {
+ 	char *name;
+ 	unsigned int res_num;
+ 	struct resource *res;
+-	struct list_head *resources;
+ 	int busnum;
+ };
+ 
+@@ -277,7 +276,8 @@ static void coalesce_windows(struct pci_root_info *info, unsigned long type)
+ 	}
+ }
+ 
+-static void add_resources(struct pci_root_info *info)
++static void add_resources(struct pci_root_info *info,
++			  struct list_head *resources)
+ {
+ 	int i;
+ 	struct resource *res, *root, *conflict;
+@@ -301,7 +301,7 @@ static void add_resources(struct pci_root_info *info)
+ 				 "ignoring host bridge window %pR (conflicts with %s %pR)\n",
+ 				 res, conflict->name, conflict);
+ 		else
+-			pci_add_resource(info->resources, res);
++			pci_add_resource(resources, res);
+ 	}
+ }
+ 
+@@ -313,41 +313,30 @@ static void free_pci_root_info(struct pci_root_info *info)
+ }
+ 
+ static void
+-get_current_resources(struct pci_root_info *info,
+-		      struct acpi_device *device, int busnum,
+-		      int domain, struct list_head *resources)
++probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
++		    int busnum, int domain)
+ {
+ 	size_t size;
+ 
+ 	info->bridge = device;
+ 	info->res_num = 0;
+-	info->resources = resources;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
+ 				info);
+ 	if (!info->res_num)
+ 		return;
+ 
+ 	size = sizeof(*info->res) * info->res_num;
++	info->res_num = 0;
+ 	info->res = kmalloc(size, GFP_KERNEL);
+ 	if (!info->res)
+ 		return;
+ 
+ 	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+ 	if (!info->name)
+-		goto name_alloc_fail;
++		return;
+ 
+-	info->res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+ 				info);
+-
+-	if (pci_use_crs) {
+-		add_resources(info);
+-
+-		return;
+-	}
+-
+-name_alloc_fail:
+-	free_pci_root_info(info);
+ }
+ 
+ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+@@ -412,15 +401,18 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(sd);
+ 	} else {
+-		get_current_resources(&info, device, busnum, domain,
+-					&resources);
++		probe_pci_root_info(&info, device, busnum, domain);
+ 
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+ 		 * defaults or native bridge info if we're ignoring _CRS.
+ 		 */
+-		if (!pci_use_crs)
++		if (pci_use_crs)
++			add_resources(&info, &resources);
++		else {
++			free_pci_root_info(&info);
+ 			x86_pci_root_bus_resources(busnum, &resources);
++		}
+ 		bus = pci_create_root_bus(NULL, busnum, &pci_root_ops, sd,
+ 					  &resources);
+ 		if (bus)
+-- 
+1.7.7
 
