@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab2B1Bhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:37:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	id S932348Ab2B1BGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:06:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932242Ab2B1BGo (ORCPT
+	with ESMTP id S932242Ab2B1BGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.193.136 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:40 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.73.103 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010204.901243169@linuxfoundation.org>
+Message-Id: <20120228010204.717188447@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:08 -0800
+Date: Mon, 27 Feb 2012 17:02:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Dirk Eibach <eibach@gdsys.de>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 05/73] hwmon: (ads1015) Fix file leak in probe function
+        alan@lxorguk.ukuu.org.uk, Chris D Schimp <silverchris@gmail.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Roland Stigge <stigge@antcom.de>
+Subject: [ 04/73] hwmon: (max6639) Fix PPR register initialization to set both channels
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Chris D Schimp <silverchris@gmail.com>
 
-commit 363434b5dc352464ac7601547891e5fc9105f124 upstream.
+commit 2f2da1ac0ba5b6cc6e1957c4da5ff20e67d8442b upstream.
 
-An error while creating sysfs attribute files in the driver's probe function
-results in an error abort, but already created files are not removed. This patch
-fixes the problem.
+Initialize PPR register for both channels, and set correct PPR register bits.
+Also remove unnecessary variable initializations.
 
+Signed-off-by: Chris D Schimp <silverchris@gmail.com>
+[guenter.roeck@ericsson.com: Merged two patches into one]
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Dirk Eibach <eibach@gdsys.de>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads1015.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/hwmon/max6639.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -284,7 +284,7 @@ static int ads1015_probe(struct i2c_clie
- 			continue;
- 		err = device_create_file(&client->dev, &ads1015_in[k].dev_attr);
- 		if (err)
--			goto exit_free;
-+			goto exit_remove;
- 	}
+--- a/drivers/hwmon/max6639.c
++++ b/drivers/hwmon/max6639.c
+@@ -429,9 +429,9 @@ static int max6639_init_client(struct i2
+ 	struct max6639_data *data = i2c_get_clientdata(client);
+ 	struct max6639_platform_data *max6639_info =
+ 		client->dev.platform_data;
+-	int i = 0;
++	int i;
+ 	int rpm_range = 1; /* default: 4000 RPM */
+-	int err = 0;
++	int err;
  
- 	data->hwmon_dev = hwmon_device_register(&client->dev);
-@@ -298,7 +298,6 @@ static int ads1015_probe(struct i2c_clie
- exit_remove:
- 	for (k = 0; k < ADS1015_CHANNELS; ++k)
- 		device_remove_file(&client->dev, &ads1015_in[k].dev_attr);
--exit_free:
- 	kfree(data);
- exit:
- 	return err;
+ 	/* Reset chip to default values, see below for GCONFIG setup */
+ 	err = i2c_smbus_write_byte_data(client, MAX6639_REG_GCONFIG,
+@@ -446,11 +446,6 @@ static int max6639_init_client(struct i2
+ 	else
+ 		data->ppr = 2;
+ 	data->ppr -= 1;
+-	err = i2c_smbus_write_byte_data(client,
+-			MAX6639_REG_FAN_PPR(i),
+-			data->ppr << 5);
+-	if (err)
+-		goto exit;
+ 
+ 	if (max6639_info)
+ 		rpm_range = rpm_range_to_reg(max6639_info->rpm_range);
+@@ -458,6 +453,13 @@ static int max6639_init_client(struct i2
+ 
+ 	for (i = 0; i < 2; i++) {
+ 
++		/* Set Fan pulse per revolution */
++		err = i2c_smbus_write_byte_data(client,
++				MAX6639_REG_FAN_PPR(i),
++				data->ppr << 6);
++		if (err)
++			goto exit;
++
+ 		/* Fans config PWM, RPM */
+ 		err = i2c_smbus_write_byte_data(client,
+ 			MAX6639_REG_FAN_CONFIG1(i),
 
 
