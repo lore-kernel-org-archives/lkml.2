@@ -1,146 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab2B1OPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:15:06 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45933 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755220Ab2B1OPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:15:01 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 2/2] mm: memcg: count pte references from every member of the reclaimed hierarchy
-Date: Tue, 28 Feb 2012 15:14:49 +0100
-Message-Id: <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+	id S1755361Ab2B1OQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:16:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10510 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2B1OQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 09:16:33 -0500
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=zcWVZ8tiDacA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGLkceISAAAA:8 a=wyBM1Eyl92ZqjS6myxYA:9 a=yNO3Nz3EXjvmLSGYXnMA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1330438591.25686.214.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] Trace: initialize variable to clear warning
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Zhengwang Ruan <ruan.zhengwang@gmail.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Date: Tue, 28 Feb 2012 09:16:31 -0500
+In-Reply-To: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
+References: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rmap walker checking page table references has historically
-ignored references from VMAs that were not part of the memcg that was
-being reclaimed during memcg hard limit reclaim.
+On Tue, 2012-02-28 at 17:09 +0800, Zhengwang Ruan wrote:
+> GCC warns that 'page2' is used without being initialized previously before
+> being used, this is to clear it.
+> 
 
-When transitioning global reclaim to memcg hierarchy reclaim, I missed
-that bit and now references from outside a memcg are ignored even
-during global reclaim.
+This is a bug in gcc that's fixed in 4.6 and beyond. I don't want to
+remove this warning because it will hide a real bug if page2 really does
+become uninitialized. If 4.6 gives a warning here, then I'll fix it.
 
-Reverting back to traditional behaviour - count all references during
-global reclaim and only mind references of the memcg being reclaimed
-during limit reclaim would be one option.
+Note, we can't just initialize it here either, because it is initialized
+in the code, and if it gets used later without that initialization then
+it will break. No default will work.
 
-However, the more generic idea is to ignore references exactly then
-when they are outside the hierarchy that is currently under reclaim;
-because only then will their reclamation be of any use to help the
-pressure situation.  It makes no sense to ignore references from a
-sibling memcg and then evict a page that will be immediately refaulted
-by that sibling which contributes to the same usage of the common
-ancestor under reclaim.
+Thanks,
 
-The solution: make the rmap walker ignore references from VMAs that
-are not part of the hierarchy that is being reclaimed.
+-- Steve
 
-Flat limit reclaim will stay the same, hierarchical limit reclaim will
-mind the references only to pages that the hierarchy owns.  Global
-reclaim, since it reclaims from all memcgs, will be fixed to regard
-all references.
+> Signed-off-by: Zhengwang Ruan <ruan.zhengwang@gmail.com>
+> ---
+>  kernel/trace/trace.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index a3f1bc5..47376ba 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -3694,7 +3694,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+>  	int nr_pages = 1;
+>  	ssize_t written;
+>  	void *page1;
+> -	void *page2;
+> +	void *uninitialized_var(page2);
+>  	int offset;
+>  	int size;
+>  	int len;
 
-Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/memcontrol.h |    6 +++++-
- mm/memcontrol.c            |   16 +++++++++++-----
- mm/vmscan.c                |    6 ++++--
- 3 files changed, 20 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 8537c5d..661b54a 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_page(struct page *page);
- extern void mem_cgroup_uncharge_cache_page(struct page *page);
- 
- extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
-+bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
- int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
- 
- extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-@@ -88,10 +89,13 @@ static inline
- int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
- {
- 	struct mem_cgroup *memcg;
-+	int match;
-+
- 	rcu_read_lock();
- 	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-+	match = __mem_cgroup_same_or_subtree(cgroup, memcg);
- 	rcu_read_unlock();
--	return cgroup == memcg;
-+	return match;
- }
- 
- extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b4622fb..21004df 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
-  * Checks whether given mem is same or in the root_mem_cgroup's
-  * hierarchy subtree
-  */
--static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
--		struct mem_cgroup *memcg)
-+bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-+				  struct mem_cgroup *memcg)
- {
--	bool ret;
--
- 	if (root_memcg == memcg)
- 		return true;
- 	if (!root_memcg->use_hierarchy)
- 		return false;
-+	return css_is_ancestor(&memcg->css, &root_memcg->css);
-+}
-+
-+static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-+				       struct mem_cgroup *memcg)
-+{
-+	bool ret;
-+
- 	rcu_read_lock();
--	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
-+	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
- 	rcu_read_unlock();
- 	return ret;
- }
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c631234..120646e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
- 	int referenced_ptes, referenced_page;
- 	unsigned long vm_flags;
- 
--	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-+	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
-+					  &vm_flags);
- 	referenced_page = TestClearPageReferenced(page);
- 
- 	/* Lumpy reclaim - ignore references */
-@@ -1710,7 +1711,8 @@ static void shrink_active_list(unsigned long nr_pages,
- 			continue;
- 		}
- 
--		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
-+		if (page_referenced(page, 0, sc->target_mem_cgroup,
-+				    &vm_flags)) {
- 			nr_rotated += hpage_nr_pages(page);
- 			/*
- 			 * Identify referenced, file-backed active pages and
--- 
-1.7.7.6
 
