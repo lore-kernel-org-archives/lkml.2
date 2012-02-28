@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965302Ab2B1BM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:28 -0500
+	id S965362Ab2B1BQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:16:04 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965287Ab2B1BMX (ORCPT
+	with ESMTP id S965305Ab2B1BM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.129 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.135.66 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010435.467874503@linuxfoundation.org>
+Message-Id: <20120228010435.741044219@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:38 -0800
+Date: Mon, 27 Feb 2012 17:05:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Maxime Bizon <mbizon@freebox.fr>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [ 69/72] epoll: introduce POLLFREE to flush ->signalfd_wqh before kfree()
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 72/72] cdrom: use copy_to_user() without the underscores
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,153 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d80e731ecab420ddcb79ee9d0ac427acbc187b4b upstream.
+commit 822bfa51ce44f2c63c300fdb76dc99c4d5a5ca9f upstream.
 
-This patch is intentionally incomplete to simplify the review.
-It ignores ep_unregister_pollwait() which plays with the same wqh.
-See the next change.
+"nframes" comes from the user and "nframes * CD_FRAMESIZE_RAW" can wrap
+on 32 bit systems.  That would have been ok if we used the same wrapped
+value for the copy, but we use a shifted value.  We should just use the
+checked version of copy_to_user() because it's not going to make a
+difference to the speed.
 
-epoll assumes that the EPOLL_CTL_ADD'ed file controls everything
-f_op->poll() needs. In particular it assumes that the wait queue
-can't go away until eventpoll_release(). This is not true in case
-of signalfd, the task which does EPOLL_CTL_ADD uses its ->sighand
-which is not connected to the file.
-
-This patch adds the special event, POLLFREE, currently only for
-epoll. It expects that init_poll_funcptr()'ed hook should do the
-necessary cleanup. Perhaps it should be defined as EPOLLFREE in
-eventpoll.
-
-__cleanup_sighand() is changed to do wake_up_poll(POLLFREE) if
-->signalfd_wqh is not empty, we add the new signalfd_cleanup()
-helper.
-
-ep_poll_callback(POLLFREE) simply does list_del_init(task_list).
-This make this poll entry inconsistent, but we don't care. If you
-share epoll fd which contains our sigfd with another process you
-should blame yourself. signalfd is "really special". I simply do
-not know how we can define the "right" semantics if it used with
-epoll.
-
-The main problem is, epoll calls signalfd_poll() once to establish
-the connection with the wait queue, after that signalfd_poll(NULL)
-returns the different/inconsistent results depending on who does
-EPOLL_CTL_MOD/signalfd_read/etc. IOW: apart from sigmask, signalfd
-has nothing to do with the file, it works with the current thread.
-
-In short: this patch is the hack which tries to fix the symptoms.
-It also assumes that nobody can take tasklist_lock under epoll
-locks, this seems to be true.
-
-Note:
-
-	- we do not have wake_up_all_poll() but wake_up_poll()
-	  is fine, poll/epoll doesn't use WQ_FLAG_EXCLUSIVE.
-
-	- signalfd_cleanup() uses POLLHUP along with POLLFREE,
-	  we need a couple of simple changes in eventpoll.c to
-	  make sure it can't be "lost".
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c             |    4 ++++
- fs/signalfd.c              |   11 +++++++++++
- include/asm-generic/poll.h |    2 ++
- include/linux/signalfd.h   |    5 ++++-
- kernel/fork.c              |    5 ++++-
- 5 files changed, 25 insertions(+), 2 deletions(-)
+ drivers/cdrom/cdrom.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -827,6 +827,10 @@ static int ep_poll_callback(wait_queue_t
- 	struct epitem *epi = ep_item_from_wait(wait);
- 	struct eventpoll *ep = epi->ep;
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2120,11 +2120,6 @@ static int cdrom_read_cdda_old(struct cd
+ 	if (!nr)
+ 		return -ENOMEM;
  
-+	/* the caller holds eppoll_entry->whead->lock */
-+	if ((unsigned long)key & POLLFREE)
-+		list_del_init(&wait->task_list);
-+
- 	spin_lock_irqsave(&ep->lock, flags);
- 
- 	/*
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -30,6 +30,17 @@
- #include <linux/signalfd.h>
- #include <linux/syscalls.h>
- 
-+void signalfd_cleanup(struct sighand_struct *sighand)
-+{
-+	wait_queue_head_t *wqh = &sighand->signalfd_wqh;
-+
-+	if (likely(!waitqueue_active(wqh)))
-+		return;
-+
-+	/* wait_queue_t->func(POLLFREE) should do remove_wait_queue() */
-+	wake_up_poll(wqh, POLLHUP | POLLFREE);
-+}
-+
- struct signalfd_ctx {
- 	sigset_t sigmask;
- };
---- a/include/asm-generic/poll.h
-+++ b/include/asm-generic/poll.h
-@@ -28,6 +28,8 @@
- #define POLLRDHUP       0x2000
- #endif
- 
-+#define POLLFREE	0x4000	/* currently only for epoll */
-+
- struct pollfd {
- 	int fd;
- 	short events;
---- a/include/linux/signalfd.h
-+++ b/include/linux/signalfd.h
-@@ -61,13 +61,16 @@ static inline void signalfd_notify(struc
- 		wake_up(&tsk->sighand->signalfd_wqh);
- }
- 
-+extern void signalfd_cleanup(struct sighand_struct *sighand);
-+
- #else /* CONFIG_SIGNALFD */
- 
- static inline void signalfd_notify(struct task_struct *tsk, int sig) { }
- 
-+static inline void signalfd_cleanup(struct sighand_struct *sighand) { }
-+
- #endif /* CONFIG_SIGNALFD */
- 
- #endif /* __KERNEL__ */
- 
- #endif /* _LINUX_SIGNALFD_H */
+-	if (!access_ok(VERIFY_WRITE, ubuf, nframes * CD_FRAMESIZE_RAW)) {
+-		ret = -EFAULT;
+-		goto out;
+-	}
 -
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -66,6 +66,7 @@
- #include <linux/user-return-notifier.h>
- #include <linux/oom.h>
- #include <linux/khugepaged.h>
-+#include <linux/signalfd.h>
- 
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-@@ -910,8 +911,10 @@ static int copy_sighand(unsigned long cl
- 
- void __cleanup_sighand(struct sighand_struct *sighand)
- {
--	if (atomic_dec_and_test(&sighand->count))
-+	if (atomic_dec_and_test(&sighand->count)) {
-+		signalfd_cleanup(sighand);
- 		kmem_cache_free(sighand_cachep, sighand);
-+	}
+ 	cgc.data_direction = CGC_DATA_READ;
+ 	while (nframes > 0) {
+ 		if (nr > nframes)
+@@ -2133,7 +2128,7 @@ static int cdrom_read_cdda_old(struct cd
+ 		ret = cdrom_read_block(cdi, &cgc, lba, nr, 1, CD_FRAMESIZE_RAW);
+ 		if (ret)
+ 			break;
+-		if (__copy_to_user(ubuf, cgc.buffer, CD_FRAMESIZE_RAW * nr)) {
++		if (copy_to_user(ubuf, cgc.buffer, CD_FRAMESIZE_RAW * nr)) {
+ 			ret = -EFAULT;
+ 			break;
+ 		}
+@@ -2141,7 +2136,6 @@ static int cdrom_read_cdda_old(struct cd
+ 		nframes -= nr;
+ 		lba += nr;
+ 	}
+-out:
+ 	kfree(cgc.buffer);
+ 	return ret;
  }
- 
- 
 
 
