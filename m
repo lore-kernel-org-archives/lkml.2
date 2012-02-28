@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988Ab2B1Baz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:30:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964879Ab2B1BHq (ORCPT
+	id S965051Ab2B1BbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:31:05 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57870 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756477Ab2B1BbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.101 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:31:02 -0500
 MIME-Version: 1.0
-Message-Id: <20120228010210.383539787@linuxfoundation.org>
-User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:41 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bruno Thomsen <bruno.thomsen@gmail.com>
-Subject: [ 38/73] USB: Added Kamstrup VID/PIDs to cp210x serial driver.
-In-Reply-To: <20120228010246.GA24299@kroah.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F03F633@ORSMSX104.amr.corp.intel.com>
+References: <1330384105-27794-1-git-send-email-paul.gortmaker@windriver.com>
+	<3908561D78D1C84285E8C5FCA982C28F03F633@ORSMSX104.amr.corp.intel.com>
+Date: Mon, 27 Feb 2012 20:31:01 -0500
+X-Google-Sender-Auth: TW5bkAKGwhZSOf2JbXu4oMb828k
+Message-ID: <CAP=VYLoPTWnGANBo0hmGFxu7U7pZWePdX5Atb3A=dBNeSfbfJA@mail.gmail.com>
+Subject: Re: [PATCH] ia64: fix a couple of warnings for EXPORT_SYMBOL
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "jes@trained-monkey.org" <jes@trained-monkey.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Feb 27, 2012 at 7:18 PM, Luck, Tony <tony.luck@intel.com> wrote:
+> [I can carry this patch if required, but it is 100% independent and
+>  can go in via the ia64 maintainers.  Let me know which is best. ]
+>
+> I'll take it into the ia64 tree (already grabbed the machine_kexec.c
+> and tiocx.c patches you posted earlier).
 
-------------------
+Hi Tony,
 
-From: Bruno Thomsen <bruno.thomsen@gmail.com>
+Great -- thanks for the reply, I will adjust my queues accordingly.
 
-commit c6c1e4491dc8d1ed2509fa6aacffa7f34614fc38 upstream.
-
-Signed-off-by: Bruno Thomsen <bruno.thomsen@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Paul.
 ---
- drivers/usb/serial/cp210x.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -136,6 +136,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
- 	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
- 	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
-+	{ USB_DEVICE(0x17A8, 0x0001) }, /* Kamstrup Optical Eye/3-wire */
-+	{ USB_DEVICE(0x17A8, 0x0005) }, /* Kamstrup M-Bus Master MultiPort 250D */
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-
-
+>
+> -Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
