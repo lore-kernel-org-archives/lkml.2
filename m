@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965889Ab2B1R6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:58:12 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46865 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965746Ab2B1R6I (ORCPT
+	id S965944Ab2B1R7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:59:06 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:14176 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965908Ab2B1R7D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:58:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Tue, 28 Feb 2012 09:57:35 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Subject: Re: [PATCH v3] ARM: LPC32xx: USB Support
-Message-ID: <20120228175735.GB14290@kroah.com>
-References: <1330178224-24999-1-git-send-email-stigge@antcom.de>
- <1330178224-24999-2-git-send-email-stigge@antcom.de>
+	Tue, 28 Feb 2012 12:59:03 -0500
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: "dwmw2@infradead.org" <dwmw2@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ddutile@redhat.com" <ddutile@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: [Intel IOMMU PATCH] Re-evaluate RMRR info for devices removed from
+ si domain
+Thread-Topic: [Intel IOMMU PATCH] Re-evaluate RMRR info for devices removed
+ from si domain
+Thread-Index: AQHM9jqNNTub6Zb0D0Ox4UP71IzCepZSluMA
+Date: Tue, 28 Feb 2012 17:58:30 +0000
+Message-ID: <9774516974AF5F4C8A2C3C69CD3412332034C987@G9W0755.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330178224-24999-2-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 25, 2012 at 02:57:04PM +0100, Roland Stigge wrote:
-> This patch adds OHCI support to the LPC32xx ARM platform. Besides the trivial
-> addition of platform "usb-ohci" support, fixes for the USB PLL have been added
-> to arch/arm/mach-lpc32xx/clock.c, ported from NXP's lpclinux.com.
-> 
-> (This is the mach-lpc32xx specific part, the USB subsystem specific changes are
-> in a separate patch for the USB maintainers.)
+This patch is being submitted to handle the case where a pci device is
+placed into the si domain, when booting in iommu passthrough mode, then
+removed. The RMRR information for such devices need to be re-processed
+to avoid DMA Read errors due to the Present Bit being cleared in the
+device's context entry.
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
 
-Do you want/need me to take both of these?  Or just the first one?  Or,
-just ack the first one so the arm maintainers can take this one?  It's
-your choice...
-
-thanks,
-
-greg k-h
+diff -up linux-3.2.4/drivers/iommu/intel-iommu.c.ORIG linux-3.2.4/drivers/iommu/intel-iommu.c
+--- linux-3.2.4/drivers/iommu/intel-iommu.c.ORIG	2012-02-22 16:10:07.105254130 -0600
++++ linux-3.2.4/drivers/iommu/intel-iommu.c	2012-02-28 12:49:38.537694065 -0600
+@@ -2676,7 +2676,8 @@ static int iommu_dummy(struct pci_dev *p
+ static int iommu_no_mapping(struct device *dev)
+ {
+ 	struct pci_dev *pdev;
+-	int found;
++	struct dmar_rmrr_unit *rmrr;
++	int i, ret, found;
+ 
+ 	if (unlikely(dev->bus != &pci_bus_type))
+ 		return 1;
+@@ -2699,7 +2700,24 @@ static int iommu_no_mapping(struct devic
+ 			 */
+ 			domain_remove_one_dev_info(si_domain, pdev);
+ 			printk(KERN_INFO "32bit %s uses non-identity mapping\n",
+-			       pci_name(pdev));
++				pci_name(pdev));
++			printk(KERN_INFO "IOMMU: Re-processing RMRR information for device %s:\n",
++				pci_name(pdev));
++			for_each_rmrr_units(rmrr) {
++				for (i = 0; i < rmrr->devices_cnt; i++) {
++					/*
++					 * Here we are just concerned with finding the
++					 * one device that was removed from the
++					 * si_domain and re-evaluating its RMRR info.
++					 */
++					if (rmrr->devices[i] != pdev)
++						continue;
++					ret = iommu_prepare_rmrr_dev(rmrr, pdev);
++					if (ret)
++						printk(KERN_ERR
++							"IOMMU: mapping reserved region failed for device.\n");
++				}
++			}
+ 			return 0;
+ 		}
+ 	} else {
