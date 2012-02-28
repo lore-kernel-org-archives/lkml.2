@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964838Ab2B1BHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:34 -0500
+	id S964911Ab2B1BHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:53 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447Ab2B1BHU (ORCPT
+	with ESMTP id S964871Ab2B1BHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.227.105 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.224.225 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010213.047580839@linuxfoundation.org>
+Message-Id: <20120228010210.052777213@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:56 -0800
+Date: Mon, 27 Feb 2012 17:02:39 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 53/73] i387: move AMD K7/K8 fpu fxsave/fxrstor workaround from save to restore
+        alan@lxorguk.ukuu.org.uk, Flavio Leitner <fbl@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 36/73] route: fix ICMP redirect validation
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,126 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4903062b5485f0e2c286a23b44c9b59d9b017d53 upstream.
+From: Flavio Leitner <fbl@redhat.com>
 
-The AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception is
-pending.  In order to not leak FIP state from one process to another, we
-need to do a floating point load after the fxsave of the old process,
-and before the fxrstor of the new FPU state.  That resets the state to
-the (uninteresting) kernel load, rather than some potentially sensitive
-user information.
+[ Upstream commit 7cc9150ebe8ec06cafea9f1c10d92ddacf88d8ae ]
 
-We used to do this directly after the FPU state save, but that is
-actually very inconvenient, since it
+The commit f39925dbde7788cfb96419c0f092b086aa325c0f
+(ipv4: Cache learned redirect information in inetpeer.)
+removed some ICMP packet validations which are required by
+RFC 1122, section 3.2.2.2:
+...
+  A Redirect message SHOULD be silently discarded if the new
+  gateway address it specifies is not on the same connected
+  (sub-) net through which the Redirect arrived [INTRO:2,
+  Appendix A], or if the source of the Redirect is not the
+  current first-hop gateway for the specified destination (see
+  Section 3.3.1).
 
- (a) corrupts what is potentially perfectly good FPU state that we might
-     want to lazy avoid restoring later and
-
- (b) on x86-64 it resulted in a very annoying ordering constraint, where
-     "__unlazy_fpu()" in the task switch needs to be delayed until after
-     the DS segment has been reloaded just to get the new DS value.
-
-Coupling it to the fxrstor instead of the fxsave automatically avoids
-both of these issues, and also ensures that we only do it when actually
-necessary (the FP state after a save may never actually get used).  It's
-simply a much more natural place for the leaked state cleanup.
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/include/asm/i387.h  |   19 -------------------
- arch/x86/kernel/process_64.c |    5 ++---
- arch/x86/kernel/traps.c      |   14 ++++++++++++++
- 3 files changed, 16 insertions(+), 22 deletions(-)
+ net/ipv4/route.c |   40 +++++++++++++++++++++++++++++++++-------
+ 1 file changed, 33 insertions(+), 7 deletions(-)
 
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -211,15 +211,6 @@ static inline void fpu_fxsave(struct fpu
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1373,7 +1373,12 @@ static void rt_del(unsigned hash, struct
+ void ip_rt_redirect(__be32 old_gw, __be32 daddr, __be32 new_gw,
+ 		    __be32 saddr, struct net_device *dev)
+ {
++	int s, i;
+ 	struct in_device *in_dev = __in_dev_get_rcu(dev);
++	struct rtable *rt;
++	__be32 skeys[2] = { saddr, 0 };
++	int    ikeys[2] = { dev->ifindex, 0 };
++	struct flowi4 fl4;
+ 	struct inet_peer *peer;
+ 	struct net *net;
  
- #endif	/* CONFIG_X86_64 */
+@@ -1396,13 +1401,34 @@ void ip_rt_redirect(__be32 old_gw, __be3
+ 			goto reject_redirect;
+ 	}
  
--/* We need a safe address that is cheap to find and that is already
--   in L1 during context switch. The best choices are unfortunately
--   different for UP and SMP */
--#ifdef CONFIG_SMP
--#define safe_address (__per_cpu_offset[0])
--#else
--#define safe_address (kstat_cpu(0).cpustat.user)
--#endif
+-	peer = inet_getpeer_v4(daddr, 1);
+-	if (peer) {
+-		peer->redirect_learned.a4 = new_gw;
 -
- /*
-  * These must be called with preempt disabled
-  */
-@@ -243,16 +234,6 @@ static inline void fpu_save_init(struct
- 
- 	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
- 		asm volatile("fnclex");
+-		inet_putpeer(peer);
 -
--	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
--	   is pending.  Clear the x87 state here by setting it to fixed
--	   values. safe_address is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"	  	/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (safe_address));
- }
- 
- static inline void __save_init_fpu(struct task_struct *tsk)
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -378,6 +378,8 @@ __switch_to(struct task_struct *prev_p,
- 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
- 	unsigned fsindex, gsindex;
- 
-+	__unlazy_fpu(prev_p);
+-		atomic_inc(&__rt_peer_genid);
++	memset(&fl4, 0, sizeof(fl4));
++	fl4.daddr = daddr;
++	for (s = 0; s < 2; s++) {
++		for (i = 0; i < 2; i++) {
++			fl4.flowi4_oif = ikeys[i];
++			fl4.saddr = skeys[s];
++			rt = __ip_route_output_key(net, &fl4);
++			if (IS_ERR(rt))
++				continue;
 +
- 	/*
- 	 * Reload esp0, LDT and the page table pointer:
- 	 */
-@@ -406,9 +408,6 @@ __switch_to(struct task_struct *prev_p,
- 
- 	load_TLS(next, cpu);
- 
--	/* Must be after DS reload */
--	__unlazy_fpu(prev_p);
--
- 	/*
- 	 * Leave lazy mode, flushing any hypercalls made here.
- 	 * This must be done before restoring TLS segments so
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -731,6 +731,10 @@ void math_state_restore(void)
- 	struct thread_info *thread = current_thread_info();
- 	struct task_struct *tsk = thread->task;
- 
-+	/* We need a safe address that is cheap to find and that is already
-+	   in L1. We just brought in "thread->task", so use that */
-+#define safe_address (thread->task)
++			if (rt->dst.error || rt->dst.dev != dev ||
++			    rt->rt_gateway != old_gw) {
++				ip_rt_put(rt);
++				continue;
++			}
 +
- 	if (!tsk_used_math(tsk)) {
- 		local_irq_enable();
- 		/*
-@@ -748,6 +752,16 @@ void math_state_restore(void)
- 
- 	__thread_fpu_begin(thread);
- 
-+	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
-+	   is pending.  Clear the x87 state here by setting it to fixed
-+	   values. safe_address is a random variable that should be in L1 */
-+	alternative_input(
-+		ASM_NOP8 ASM_NOP2,
-+		"emms\n\t"	  	/* clear stack tags */
-+		"fildl %P[addr]",	/* set F?P to defined value */
-+		X86_FEATURE_FXSAVE_LEAK,
-+		[addr] "m" (safe_address));
++			if (!rt->peer)
++				rt_bind_peer(rt, rt->rt_dst, 1);
 +
- 	/*
- 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
- 	 */
++			peer = rt->peer;
++			if (peer) {
++				peer->redirect_learned.a4 = new_gw;
++				atomic_inc(&__rt_peer_genid);
++			}
++
++			ip_rt_put(rt);
++			return;
++		}
+ 	}
+ 	return;
+ 
 
 
