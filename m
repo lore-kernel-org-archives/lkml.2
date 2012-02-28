@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965595Ab2B1BTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:19:50 -0500
+	id S965612Ab2B1BTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:19:54 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:50099 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965540Ab2B1BTq (ORCPT
+	with ESMTP id S965598Ab2B1BTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:19:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.221.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.218.167 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010432.763613801@linuxfoundation.org>
+Message-Id: <20120228010433.036227931@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:07 -0800
+Date: Mon, 27 Feb 2012 17:05:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        John Youn <johnyoun@synopsys.com>, Jamey Sharp <jamey@minilop.net>
-Subject: [ 38/72] USB: Remove duplicate USB 3.0 hub feature #defines.
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Andiry Xu <andiry.xu@amd.com>
+Subject: [ 41/72] xhci: Fix encoding for HS bulk/control NAK rate.
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,70 +30,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit d9f5343e35d9138432657202afa8e3ddb2ade360 upstream.
+commit 340a3504fd39dad753ba908fb6f894ee81fc3ae2 upstream.
 
-Somehow we ended up with duplicate hub feature #defines in ch11.h.
-Tatyana Brokhman first created the USB 3.0 hub feature macros in 2.6.38
-with commit 0eadcc09203349b11ca477ec367079b23d32ab91 "usb: USB3.0 ch11
-definitions".  In 2.6.39, I modified a patch from John Youn that added
-similar macros in a different place in the same file, and committed
-dbe79bbe9dcb22cb3651c46f18943477141ca452 "USB 3.0 Hub Changes".
+The xHCI 0.96 spec says that HS bulk and control endpoint NAK rate must
+be encoded as an exponent of two number of microframes.  The endpoint
+descriptor has the NAK rate encoded in number of microframes.  We were
+just copying the value from the endpoint descriptor into the endpoint
+context interval field, which was not correct.  This lead to the VIA
+host rejecting the add of a bulk OUT endpoint from any USB 2.0 mass
+storage device.
 
-Some of the #defines used different names for the same values.  Others
-used exactly the same names with the same values, like these gems:
+The fix is to use the correct encoding.  Refactor the code to convert
+number of frames to an exponential number of microframes, and make sure
+we convert the number of microframes in HS bulk and control endpoints to
+an exponent.
 
- #define USB_PORT_FEAT_BH_PORT_RESET     28
-...
- #define USB_PORT_FEAT_BH_PORT_RESET            28
-
-According to my very geeky husband (who looked it up in the C99 spec),
-it is allowed to have object-like macros with duplicate names as long as
-the replacement list is exactly the same.  However, he recalled that
-some compilers will give warnings when they find duplicate macros.  It's
-probably best to remove the duplicates in the stable tree, so that the
-code compiles for everyone.
-
-The macros are now fixed to move the feature requests that are specific
-to USB 3.0 hubs into a new section (out of the USB 2.0 hub feature
-section), and use the most common macro name.
-
-This patch should be backported to 2.6.39.
+This should be back ported to kernels as old as 2.6.31, that contain the
+commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math
+in xhci_get_endpoint_interval"
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>
-Cc: John Youn <johnyoun@synopsys.com>
-Cc: Jamey Sharp <jamey@minilop.net>
+Tested-by: Felipe Contreras <felipe.contreras@gmail.com>
+Suggested-by: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/usb/ch11.h |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ drivers/usb/host/xhci-mem.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/include/linux/usb/ch11.h
-+++ b/include/linux/usb/ch11.h
-@@ -62,12 +62,6 @@
- #define USB_PORT_FEAT_TEST              21
- #define USB_PORT_FEAT_INDICATOR         22
- #define USB_PORT_FEAT_C_PORT_L1         23
--#define USB_PORT_FEAT_C_PORT_LINK_STATE	25
--#define USB_PORT_FEAT_C_PORT_CONFIG_ERROR 26
--#define USB_PORT_FEAT_PORT_REMOTE_WAKE_MASK 27
--#define USB_PORT_FEAT_BH_PORT_RESET     28
--#define USB_PORT_FEAT_C_BH_PORT_RESET   29
--#define USB_PORT_FEAT_FORCE_LINKPM_ACCEPT 30
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1140,26 +1140,42 @@ static unsigned int xhci_parse_exponent_
+ }
  
  /*
-  * Port feature selectors added by USB 3.0 spec.
-@@ -76,8 +70,8 @@
- #define USB_PORT_FEAT_LINK_STATE		5
- #define USB_PORT_FEAT_U1_TIMEOUT		23
- #define USB_PORT_FEAT_U2_TIMEOUT		24
--#define USB_PORT_FEAT_C_LINK_STATE		25
--#define USB_PORT_FEAT_C_CONFIG_ERR		26
-+#define USB_PORT_FEAT_C_PORT_LINK_STATE		25
-+#define USB_PORT_FEAT_C_PORT_CONFIG_ERROR	26
- #define USB_PORT_FEAT_REMOTE_WAKE_MASK		27
- #define USB_PORT_FEAT_BH_PORT_RESET		28
- #define USB_PORT_FEAT_C_BH_PORT_RESET		29
+- * Convert bInterval expressed in frames (in 1-255 range) to exponent of
++ * Convert bInterval expressed in microframes (in 1-255 range) to exponent of
+  * microframes, rounded down to nearest power of 2.
+  */
+-static unsigned int xhci_parse_frame_interval(struct usb_device *udev,
+-		struct usb_host_endpoint *ep)
++static unsigned int xhci_microframes_to_exponent(struct usb_device *udev,
++		struct usb_host_endpoint *ep, unsigned int desc_interval,
++		unsigned int min_exponent, unsigned int max_exponent)
+ {
+ 	unsigned int interval;
+ 
+-	interval = fls(8 * ep->desc.bInterval) - 1;
+-	interval = clamp_val(interval, 3, 10);
+-	if ((1 << interval) != 8 * ep->desc.bInterval)
++	interval = fls(desc_interval) - 1;
++	interval = clamp_val(interval, min_exponent, max_exponent);
++	if ((1 << interval) != desc_interval)
+ 		dev_warn(&udev->dev,
+ 			 "ep %#x - rounding interval to %d microframes, ep desc says %d microframes\n",
+ 			 ep->desc.bEndpointAddress,
+ 			 1 << interval,
+-			 8 * ep->desc.bInterval);
++			 desc_interval);
+ 
+ 	return interval;
+ }
+ 
++static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
++		struct usb_host_endpoint *ep)
++{
++	return xhci_microframes_to_exponent(udev, ep,
++			ep->desc.bInterval, 0, 15);
++}
++
++
++static unsigned int xhci_parse_frame_interval(struct usb_device *udev,
++		struct usb_host_endpoint *ep)
++{
++	return xhci_microframes_to_exponent(udev, ep,
++			ep->desc.bInterval * 8, 3, 10);
++}
++
+ /* Return the polling or NAK interval.
+  *
+  * The polling interval is expressed in "microframes".  If xHCI's Interval field
+@@ -1178,7 +1194,7 @@ static unsigned int xhci_get_endpoint_in
+ 		/* Max NAK rate */
+ 		if (usb_endpoint_xfer_control(&ep->desc) ||
+ 		    usb_endpoint_xfer_bulk(&ep->desc)) {
+-			interval = ep->desc.bInterval;
++			interval = xhci_parse_microframe_interval(udev, ep);
+ 			break;
+ 		}
+ 		/* Fall through - SS and HS isoc/int have same decoding */
 
 
