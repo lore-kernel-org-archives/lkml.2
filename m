@@ -1,160 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab2B1GQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 01:16:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54281 "EHLO
+	id S1755880Ab2B1GSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 01:18:17 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41321 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab2B1GQS (ORCPT
+	with ESMTP id S1754233Ab2B1GSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 01:16:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.148.90 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F4C712E.5040002@openvz.org>
-Date: Tue, 28 Feb 2012 10:16:14 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Tue, 28 Feb 2012 01:18:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dmitry.antipov@linaro.org designates 10.205.133.208 as permitted sender) smtp.mail=dmitry.antipov@linaro.org
+Message-ID: <4F4C71F4.7000604@linaro.org>
+Date: Tue, 28 Feb 2012 10:19:32 +0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 07/21] mm: add lruvec->pages_count
-References: <20120223133728.12988.5432.stgit@zurg>	<20120223135208.12988.74252.stgit@zurg> <20120228093529.eda35cdc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120228093529.eda35cdc.kamezawa.hiroyu@jp.fujitsu.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, Venki Pallipadi <venki@google.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86
+ and ARM
+References: <1329717859-19378-1-git-send-email-dmitry.antipov@linaro.org> <1330337535.11248.45.camel@twins>
+In-Reply-To: <1330337535.11248.45.camel@twins>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 23 Feb 2012 17:52:08 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> Move lru pages counter from mem_cgroup_per_zone->count[] to lruvec->pages_count[]
->>
->> Account pages in all lruvecs, incuding root,
->> this isn't a huge overhead, but it greatly simplifies all code.
->>
->> Redundant page_lruvec() calls will be optimized in further patches.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> Hmm, I like this but..a question below.
->
->> ---
->>   include/linux/memcontrol.h |   29 --------------
->>   include/linux/mm_inline.h  |   15 +++++--
->>   include/linux/mmzone.h     |    1
->>   mm/memcontrol.c            |   93 +-------------------------------------------
->>   mm/swap.c                  |    7 +--
->>   mm/vmscan.c                |   25 +++++++++---
->>   6 files changed, 34 insertions(+), 136 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 4822d53..b9d555b 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -63,12 +63,6 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->>   					gfp_t gfp_mask);
->>
->>   struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
->> -struct lruvec *mem_cgroup_lru_add_list(struct zone *, struct page *,
->> -				       enum lru_list);
->> -void mem_cgroup_lru_del_list(struct page *, enum lru_list);
->> -void mem_cgroup_lru_del(struct page *);
->> -struct lruvec *mem_cgroup_lru_move_lists(struct zone *, struct page *,
->> -					 enum lru_list, enum lru_list);
->>
->>   /* For coalescing uncharge for reducing memcg' overhead*/
->>   extern void mem_cgroup_uncharge_start(void);
->> @@ -212,29 +206,6 @@ static inline struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
->>   	return&zone->lruvec;
->>   }
->>
->> -static inline struct lruvec *mem_cgroup_lru_add_list(struct zone *zone,
->> -						     struct page *page,
->> -						     enum lru_list lru)
->> -{
->> -	return&zone->lruvec;
->> -}
->> -
->> -static inline void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
->> -{
->> -}
->> -
->> -static inline void mem_cgroup_lru_del(struct page *page)
->> -{
->> -}
->> -
->> -static inline struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
->> -						       struct page *page,
->> -						       enum lru_list from,
->> -						       enum lru_list to)
->> -{
->> -	return&zone->lruvec;
->> -}
->> -
->>   static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->>   {
->>   	return NULL;
->> diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
->> index 8415596..daa3d15 100644
->> --- a/include/linux/mm_inline.h
->> +++ b/include/linux/mm_inline.h
->> @@ -24,19 +24,24 @@ static inline int page_is_file_cache(struct page *page)
->>   static inline void
->>   add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
->>   {
->> -	struct lruvec *lruvec;
->> +	struct lruvec *lruvec = page_lruvec(page);
->> +	int numpages = hpage_nr_pages(page);
->>
->> -	lruvec = mem_cgroup_lru_add_list(zone, page, lru);
->>   	list_add(&page->lru,&lruvec->pages_lru[lru]);
->> -	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
->> +	lruvec->pages_count[lru] += numpages;
->> +	__mod_zone_page_state(zone, NR_LRU_BASE + lru, numpages);
->>   }
->>
->>   static inline void
->>   del_page_from_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
->>   {
->> -	mem_cgroup_lru_del_list(page, lru);
->> +	struct lruvec *lruvec = page_lruvec(page);
->> +	int numpages = hpage_nr_pages(page);
->> +
->>   	list_del(&page->lru);
->> -	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -hpage_nr_pages(page));
->> +	lruvec->pages_count[lru] -= numpages;
->> +	VM_BUG_ON((long)lruvec->pages_count[lru]<  0);
->> +	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -numpages);
->>   }
->>
->>   /**
->> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->> index be8873a..69b0f31 100644
->> --- a/include/linux/mmzone.h
->> +++ b/include/linux/mmzone.h
->> @@ -298,6 +298,7 @@ struct zone_reclaim_stat {
->>
->>   struct lruvec {
->>   	struct list_head	pages_lru[NR_LRU_LISTS];
->> +	unsigned long		pages_count[NR_LRU_LISTS];
->
-> In this time, you don't put the objects under #ifdef...why ?
+On 02/27/2012 02:12 PM, Peter Zijlstra wrote:
 
-It will make the code much uglier and does not speed up it at all.
-
+>> -extern void enable_sched_clock_irqtime(void);
+>> -extern void disable_sched_clock_irqtime(void);
+>> +extern int sched_clock_irqtime;
+>> +static inline void enable_sched_clock_irqtime(void)
+>> +{
+>> +	if (sched_clock_irqtime == -1)
+>> +		sched_clock_irqtime = 1;
+>> +}
+>> +static inline void disable_sched_clock_irqtime(void)
+>> +{
+>> +	sched_clock_irqtime = 0;
+>> +}
+>>   #else
+>>   static inline void enable_sched_clock_irqtime(void) {}
+>>   static inline void disable_sched_clock_irqtime(void) {}
 >
-> How do you handle duplication "the number of pages in LRU" of zone->vm_stat and this ?
+> Please keep them out-of-line, its not a fast path and it avoids having
+> to expose the state variable.
 
-I don't think this is totally bad, vmstat usually has per-cpu drift, these numbers will be exact.
+OK
 
+>> +/*
+>> + * -1 if not initialized, 0 if disabled with "noirqtime" kernel option
+>> + * or after unstable clock was detected, 1 if enabled and active.
+>> + */
 >
-> Thanks,
-> -Kame
+> You forgot to explain what you need the tri-state for.
 >
+>> +__read_mostly int sched_clock_irqtime = -1;
 
+The comment above should be a sufficient explanation, isn't it?
+
+It's a tri-state just because it "merges" two variables: internal state (enabled/disabled)
+and the value passed by "noirqtime" option (turn it on, default/turn it off). It can be
+enabled only if it was not turned off explicitly, i.e. -1 => 1 transition is possible,
+but 0 -> 1 is not. The same rule applies to a situation when an unstable clock is detected.
+
+Dmitry
