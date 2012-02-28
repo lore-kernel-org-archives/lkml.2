@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964794Ab2B1BHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:00 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab2B1BG5 (ORCPT
+	id S964777Ab2B1BG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:06:58 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab2B1BGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.74.197 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.218.5 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010211.143296976@linuxfoundation.org>
+Message-Id: <20120228010204.227095535@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:45 -0800
+Date: Mon, 27 Feb 2012 17:02:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Oliver Neukum <oneukum@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 42/73] USB: Fix handoff when BIOS disables host PCI device.
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 01/73] ASoC: wm8962: Fix sidetone enumeration texts
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,67 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit cab928ee1f221c9cc48d6615070fefe2e444384a upstream.
+commit 31794bc37bf2db84f085da52b72bfba65739b2d2 upstream.
 
-On some systems with an Intel Panther Point xHCI host controller, the
-BIOS disables the xHCI PCI device during boot, and switches the xHCI
-ports over to EHCI.  This allows the BIOS to access USB devices without
-having xHCI support.
+The sidetone enumeration texts have left and right swapped.
 
-The downside is that the xHCI BIOS handoff mechanism will fail because
-memory mapped I/O is not enabled for the disabled PCI device.
-Jesse Barnes says this is expected behavior.  The PCI core will enable
-BARs before quirks run, but it will leave it in an undefined state, and
-it may not have memory mapped I/O enabled.
-
-Make the generic USB quirk handler call pci_enable_device() to re-enable
-MMIO, and call pci_disable_device() once the host-specific BIOS handoff
-is finished.  This will balance the ref counts in the PCI core.  When
-the PCI probe function is called, usb_hcd_pci_probe() will call
-pci_enable_device() again.
-
-This should be back ported to kernels as old as 2.6.31.  That was the
-first kernel with xHCI support, and no one has complained about BIOS
-handoffs failing due to memory mapped I/O being disabled on other hosts
-(EHCI, UHCI, or OHCI).
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ sound/soc/codecs/wm8962.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -871,7 +871,17 @@ static void __devinit quirk_usb_early_ha
- 	 */
- 	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
- 		return;
-+	if (pdev->class != PCI_CLASS_SERIAL_USB_UHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_OHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_EHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_XHCI)
-+		return;
- 
-+	if (pci_enable_device(pdev) < 0) {
-+		dev_warn(&pdev->dev, "Can't enable PCI device, "
-+				"BIOS handoff failed.\n");
-+		return;
-+	}
- 	if (pdev->class == PCI_CLASS_SERIAL_USB_UHCI)
- 		quirk_usb_handoff_uhci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
-@@ -880,5 +890,6 @@ static void __devinit quirk_usb_early_ha
- 		quirk_usb_disable_ehci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_XHCI)
- 		quirk_usb_handoff_xhci(pdev);
-+	pci_disable_device(pdev);
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2373,7 +2373,7 @@ static int out_pga_event(struct snd_soc_
+ 	}
  }
- DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_usb_early_handoff);
+ 
+-static const char *st_text[] = { "None", "Right", "Left" };
++static const char *st_text[] = { "None", "Left", "Right" };
+ 
+ static const struct soc_enum str_enum =
+ 	SOC_ENUM_SINGLE(WM8962_DAC_DSP_MIXING_1, 2, 3, st_text);
 
 
