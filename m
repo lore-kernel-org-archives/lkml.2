@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965533Ab2B1PQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:16:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39427 "EHLO mx2.suse.de"
+	id S965597Ab2B1PVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:21:13 -0500
+Received: from mga03.intel.com ([143.182.124.21]:3577 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965090Ab2B1PQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:16:35 -0500
-Date: Tue, 28 Feb 2012 16:16:33 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [PATCH] x86: memblock: move mem_hole_size() to .init
-Message-ID: <alpine.LNX.2.00.1202281614450.31150@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S965500Ab2B1PVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 10:21:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112233446"
+Date: Tue, 28 Feb 2012 23:15:50 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] memcg: dirty page accounting support routines
+Message-ID: <20120228151550.GA5490@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.124608935@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120228144747.124608935@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_hole_size() is being called only from __init-marked functions, and as 
-such should be moved to .init section as well. Fixes this warning:
+On Tue, Feb 28, 2012 at 10:00:26PM +0800, Fengguang Wu wrote:
+> From: Greg Thelen <gthelen@google.com>
+> 
+> Added memcg dirty page accounting support routines.  These routines are
+> used by later changes to provide memcg aware writeback and dirty page
+> limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
+> allow for easier understanding of memcg writeback operation.
 
-WARNING: vmlinux.o(.text+0x35511): Section mismatch in reference from the function mem_hole_size() to the function .init.text:absent_pages_in_range()
+Greg, sorry that the mem_cgroup_dirty_info() interfaces and
+tracepoints are abridged since they are not used here. Obviously this
+patch series is not enough to keep the number of dirty pages under
+control. It only tries to improve page reclaim behavior given whatever
+dirty number. We'll need further schemes to keep dirty pages under
+sane levels, so that unrelated tasks do not suffer from reclaim waits
+when there are heavy writers in the same memcg.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- arch/x86/mm/numa_emulation.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-index 46db568..2fff651 100644
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -28,7 +28,7 @@ static int __init emu_find_memblk_by_nid(int nid, const struct numa_meminfo *mi)
- 	return -ENOENT;
- }
- 
--static u64 mem_hole_size(u64 start, u64 end)
-+static u64 __init mem_hole_size(u64 start, u64 end)
- {
- 	unsigned long start_pfn = PFN_UP(start);
- 	unsigned long end_pfn = PFN_DOWN(end);
--- 
-1.7.3.1
-
+Thanks,
+Fengguang
