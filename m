@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab2B1CGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:06:44 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20015 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab2B1CEv (ORCPT
+	id S1755637Ab2B1CG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:06:57 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60323 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab2B1CGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:04:51 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/11] PCI: add host bridge release support
-Date: Mon, 27 Feb 2012 18:03:46 -0800
-Message-Id: <1330394631-28978-7-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
-References: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F4C3640.0051,ss=1,re=0.000,fgs=0
+	Mon, 27 Feb 2012 21:06:43 -0500
+Date: Tue, 28 Feb 2012 13:06:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the devicetree tree with the powerpc
+ tree
+Message-Id: <20120228130634.3c511b096bc78f9b99e804fe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need one hook to release host bridge resource that are created for host
-bridge.
+--Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/host-bridge.c |    8 ++++++++
- drivers/pci/probe.c       |    3 ++-
- include/linux/pci.h       |    5 +++++
- 3 files changed, 15 insertions(+), 1 deletions(-)
+Hi Grant,
 
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index 03d8db1..a710a60 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -27,6 +27,14 @@ static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
- 	return to_pci_host_bridge(bus->bridge);
- }
- 
-+void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-+				 void (*release_fn)(struct pci_host_bridge *),
-+				 void *release_data)
-+{
-+	bridge->release_fn = release_fn;
-+	bridge->release_data = release_data;
-+}
-+
- static bool resource_contains(struct resource *res1, struct resource *res2)
- {
- 	return res1->start <= res2->start && res1->end >= res2->end;
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index fb3dd4b..675d7ed 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1136,7 +1136,8 @@ static void pci_release_bus_bridge_dev(struct device *dev)
- {
- 	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
- 
--	/* TODO: need to free window->res */
-+	if (bridge->release_fn)
-+		bridge->release_fn(bridge);
- 
- 	pci_free_resource_list(&bridge->windows);
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 310610e..d93d3ae 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -378,9 +378,14 @@ struct pci_host_bridge {
- 	struct device dev;
- 	struct pci_bus *bus;		/* root bus */
- 	struct list_head windows;	/* pci_host_bridge_windows */
-+	void (*release_fn)(struct pci_host_bridge *);
-+	void *release_data;
- };
- 
- #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
-+void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-+		     void (*release_fn)(struct pci_host_bridge *),
-+		     void *release_data);
- 
- /*
-  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
--- 
-1.7.7
+Today's linux-next merge of the devicetree tree got a conflict in
+arch/powerpc/platforms/iseries/Kconfig between commit 3d066d77cf46
+("powerpc: remove CONFIG_PPC_ISERIES from the architecture Kconfig
+files") from the powerpc tree and commit 0f22dd395fc4 ("of: Only compile
+OF_DYNAMIC on PowerPC pseries and iseries") from the devicetree tree.
 
+The former commit removes the file (as the legacy iSeries platform is
+being removed), so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTDaqAAoJEECxmPOUX5FEGbAP/3JdMyyxVFac+ddRSktCQKLh
+fQJVx68d4RGVEL7+7feXnsVmokACmSa9Q92s/BDjVIAaDatwTG+mhYxGLb7oKN5L
+dX8Gap3ncFAfTNMfwNz+fYBuIMFu7B1BTaC2cSjYVT4uPMNMCVA63ntjr+KC8Nyp
+b6wXS5L/lJvFlCnlbGaMc+ECwg7GkS7szez1lkuTV5cFI3Xc4YuTeMRREyF2qBcB
+CNqjbjTnvusZtqeTbZIFEicMfveYtukMpC0Y13HXKjqJh6z+y1ZVvcMtUEzyQUUj
++r9XoM099P+zQgCj8vp3TEhpj/4b7CFnKb4PH28BeJ7cbl8wAyQtNz/mQS8wZd+P
+FrstW+xDnxs/OIEPeyhjZ9dC87QcMTBH31yibpfekcwhO0dpSNLa02PlKbgmg5nu
+bvXv2lZvpq2Ek1yqYAH/Vd0NP+KhT+UXgg9MULT/ZNtu3ivV0yo0tfN8URCKvfUM
+SeO8lA/TBP+MPcSAMD29qwKKkGsNgEGXT85mKH55i8iSwUAlpcNjsGwrZJM3VJ9X
+t/debZfDrG3cnIxdK61ED4X4qugeWeyISnjKt9W+UtnQNaVDRwAJnU5sFdmdXfVu
+l0f6OjQgJL0DgvIf1Anza8m5mKFOdhC0OLGeLLzgi5Ewzw1yyVoMKRTi8LPcMMkC
+/tFGkGd77s9YK2RYTSmf
+=bAL0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__28_Feb_2012_13_06_34_+1100_zokU8=7auXN9yyRV--
