@@ -1,143 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2B1VOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 16:14:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6399 "EHLO mx1.redhat.com"
+	id S965578Ab2B1VQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 16:16:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30081 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965001Ab2B1VOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 16:14:05 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [RFC][PATCH] memcg: avoid THP split in task migration
-Date: Tue, 28 Feb 2012 16:12:32 -0500
-Message-Id: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S965122Ab2B1VQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 16:16:43 -0500
+Date: Tue, 28 Feb 2012 16:16:27 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120228211627.GH9920@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <20120223213847.GK19691@redhat.com>
+ <20120223223457.GJ22536@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120223223457.GJ22536@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we can't do task migration among memory cgroups without THP split,
-which means processes heavily using THP experience large overhead in task
-migration. This patch introduce the code for moving charge of THP and makes
-THP more valuable.
+On Thu, Feb 23, 2012 at 02:34:57PM -0800, Tejun Heo wrote:
+> On Thu, Feb 23, 2012 at 04:38:47PM -0500, Vivek Goyal wrote:
+> > On Thu, Feb 23, 2012 at 10:41:34AM +0100, Peter Zijlstra wrote:
+> > > On Wed, 2012-02-22 at 11:57 -0500, Vivek Goyal wrote:
+> > > > 
+> > > > Again, it does not mean I am advocating flat hiearchy. I am just wondering
+> > > > in case of fully nested hierarchies (task at same level as groups), how
+> > > > does one explain it to a layman user who understands things in terms of
+> > > > % of resources. 
+> > > 
+> > > If your complete control is % based then I would assume its a % of a %.
+> > > Simple enough.
+> > 
+> > But % of % will vary dynamically and not be static. So if root has got
+> > 100% of resources and we want 25% of that for a group, then hierarchy
+> > might look as follows.
+> 
+> It is complex but semantics is pretty well defined.  It should behave
+> exactly the same as HTB.  Whether the complexity would be justifiable
+> is a different issue.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hillf Danton <dhillf@gmail.com>
----
- mm/memcontrol.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 70 insertions(+), 6 deletions(-)
+I don't know much about HTB but a quick read at internet seems to suggest
+that hierarchy we setup is pretty static and does not change with more
+task coming in/going out. That means share/configured bandwidth of each
+queue in the hierarchy is fixed until and unless that tree is changed. 
 
-diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-index c83aeb5..e97c041 100644
---- linux-next-20120228.orig/mm/memcontrol.c
-+++ linux-next-20120228/mm/memcontrol.c
-@@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
- 	return ret;
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+/*
-+ * We don't consider swapping or file mapped pages because THP does not
-+ * support them for now.
-+ */
-+static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t pmd, union mc_target *target)
-+{
-+	struct page *page = NULL;
-+	struct page_cgroup *pc;
-+	int ret = 0;
-+
-+	if (pmd_present(pmd))
-+		page = pmd_page(pmd);
-+	if (!page)
-+		return 0;
-+	VM_BUG_ON(!PageHead(page));
-+	get_page(page);
-+	pc = lookup_page_cgroup(page);
-+	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-+		ret = MC_TARGET_PAGE;
-+		if (target)
-+			target->page = page;
-+	}
-+	if (!ret || !target)
-+		put_page(page);
-+	return ret;
-+}
-+#else
-+static inline int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t pmd, union mc_target *target)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
- 					unsigned long addr, unsigned long end,
- 					struct mm_walk *walk)
-@@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
--	split_huge_page_pmd(walk->mm, pmd);
-+	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-+		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
-+			mc.precharge += HPAGE_PMD_NR;
-+		spin_unlock(&walk->mm->page_table_lock);
-+		cond_resched();
-+		return 0;
-+	}
- 
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
-@@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 	struct vm_area_struct *vma = walk->private;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	int type;
-+	union mc_target target;
-+	struct page *page;
-+	struct page_cgroup *pc;
-+
-+	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-+		if (!mc.precharge)
-+			return 0;
-+		type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
-+		if (type == MC_TARGET_PAGE) {
-+			page = target.page;
-+			if (!isolate_lru_page(page)) {
-+				pc = lookup_page_cgroup(page);
-+				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-+							     pc, mc.from, mc.to,
-+							     false)) {
-+					mc.precharge -= HPAGE_PMD_NR;
-+					mc.moved_charge += HPAGE_PMD_NR;
-+				}
-+				putback_lru_page(page);
-+			}
-+			put_page(page);
-+		}
-+		spin_unlock(&walk->mm->page_table_lock);
-+		cond_resched();
-+		return 0;
-+	}
- 
--	split_huge_page_pmd(walk->mm, pmd);
- retry:
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
--		union mc_target target;
--		int type;
--		struct page *page;
--		struct page_cgroup *pc;
- 		swp_entry_t ent;
- 
- 		if (!mc.precharge)
--- 
-1.7.7.6
+But in this case, if task and groups are treated at same level, things
+are not static and % share will change dynamically.
 
+Thanks
+Vivek
