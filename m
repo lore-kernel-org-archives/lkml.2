@@ -1,217 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2B1JDT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:03:19 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65086 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756873Ab2B1JDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:03:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dmitry.antipov@linaro.org designates 10.204.131.90 as permitted sender) smtp.mail=dmitry.antipov@linaro.org
+	id S1756940Ab2B1JGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:06:53 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53829 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756875Ab2B1JGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 04:06:49 -0500
+Date: Tue, 28 Feb 2012 10:06:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [PATCH 0/2] [GIT PULL][v3.3] x86: Fix up CFI for the nested NMI
+Message-ID: <20120228090638.GL21106@elte.hu>
+References: <20120225173548.977089274@goodmis.org>
+ <20120227073905.GB3397@elte.hu>
+ <1330349016.25686.185.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: Rusty Russell <rusty.russell@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [RFC PATCH] module: debugging check for runaway kthreads
-Date: Tue, 28 Feb 2012 13:04:23 +0400
-Message-Id: <1330419863-3508-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330349016.25686.185.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debugging option CONFIG_MODULE_KTHREAD_CHECK provides a way to check
-whether all kernel threads created by the module and have used module
-code as a thread worker function are really exited when the module is
-unloaded. The following pseudo-code contains example of an error which
-is likely to be catched with this debugging check:
 
-static struct task_struct *tsk;
-static DECLARE_COMPLETION(done);
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-static void *func(void *unused)
-{
-        while (!kthread_should_stop())
-              real_work();
-        complete(&done);
-}
+> Hi Ingo,
+> 
+> On Mon, 2012-02-27 at 08:39 +0100, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > 
+> > > Ingo,
+> > > 
+> > > Jan posted a patch that fixes the CFI annotations. I recommend getting
+> > > this into 3.3 as this is new code and it would be nice to have CFI
+> > > correct. It also does a little simplification of it as well.
+> > > 
+> > > The second patch is comment changes only (very low impact on messing
+> > > anything up). I realized that the comments had some references to
+> > > previous approaches that I tried, and I fixed them to reflect what
+> > > the final result was. I also added some more comments to describe
+> > > the code a bit better.
+> > > 
+> > > Thanks,
+> > > 
+> > > -- Steve
+> > > 
+> > > Please pull the latest tip/x86/urgent tree, which can be found at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> > > tip/x86/urgent
+> > > 
+> > > Head SHA1: 79fb4ad63e8266ffac1f69bbb45a6f86570493e7
+> > > 
+> > > 
+> > > Jan Beulich (1):
+> > >       x86-64: Fix CFI annotations for NMI nesting code
+> > > 
+> > > Steven Rostedt (1):
+> > >       x86: Fix the NMI nesting comments
+> > > 
+> > > ----
+> > >  arch/x86/kernel/entry_64.S |   64 ++++++++++++++++++++++++--------------------
+> > >  1 files changed, 35 insertions(+), 29 deletions(-)
+> > 
+> > I don't think we want a 30+ lines diffstat to this rather 
+> 
+> Some of that was just movement of code.
 
-static int __init modinit(void)
-{
-        tsk = kthread_run(func, NULL, "func");
-        return IS_ERR(tsk) ? PTR_ERR(tsk) : 0;
-}
+That's why I said 30+ lines, not 60.
 
-static void __exit modexit(void)
-{
-        wait_for_completion(&done);
-}
+> > non-trivial NMI codepath - and it changes real instructions, 
+> > not just the CFI annotations.
+> 
+> The changes to the real code made the CFI code easier to fix. 
+> But if you are nervous about the code change (which actually 
+> simplifies the code), I can ask Jan (Cc'd) to break out the 
+> patch into two changes if possible.
+> 
+> I'm not sure how the CFI can handle the current trampoline, 
+> but perhaps we can just fix the main part of the code and 
+> leave the trampoline part broken? Then we can add the rest of 
+> the CFI changes and the movement of the trampoline back into 
+> the function for the next release.
+> 
+> > 
+> > Also, the 'update comments' commit does not belong into 
+> > x86/urgent either.
+> 
+> Hmm, I didn't know that fixing comments was for a merge window 
+> only. [...]
 
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- include/linux/kthread.h |    5 +++++
- init/Kconfig            |    9 +++++++++
- kernel/kthread.c        |   24 ++++++++++++++++++++++++
- kernel/module.c         |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 83 insertions(+), 0 deletions(-)
+We try to avoid them for later -rc's, and we are now in -rc5 
+territory already.
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index 0714b24..33897c3 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -13,6 +13,11 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- #define kthread_create(threadfn, data, namefmt, arg...) \
- 	kthread_create_on_node(threadfn, data, -1, namefmt, ##arg)
- 
-+#ifdef CONFIG_MODULE_KTHREAD_CHECK
-+unsigned long get_kthread_func(struct task_struct *tsk);
-+#else
-+#define get_kthread_func(tsk, addr, mod) (0)
-+#endif
- 
- /**
-  * kthread_run - create and wake a thread.
-diff --git a/init/Kconfig b/init/Kconfig
-index 3f42cd6..fa7c6e0 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1397,6 +1397,15 @@ config MODULE_FORCE_UNLOAD
- 	  rmmod).  This is mainly for kernel developers and desperate users.
- 	  If unsure, say N.
- 
-+config MODULE_KTHREAD_CHECK
-+	bool "Check for runaway kernel threads at module unload"
-+	depends on MODULE_UNLOAD && EXPERIMENTAL && DEBUG_KERNEL
-+	help
-+	  This option allows you to check whether all kernel threads created
-+	  by the module and have used module code as a thread worker function
-+	  are really exited when the module is unloaded. This is mainly for
-+	  module developers. If insure, say N.
-+
- config MODVERSIONS
- 	bool "Module versioning support"
- 	help
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3d3de63..5c53817 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -38,6 +38,9 @@ struct kthread_create_info
- 
- struct kthread {
- 	int should_stop;
-+#ifdef CONFIG_MODULE_KTHREAD_CHECK
-+	void *fn;
-+#endif
- 	void *data;
- 	struct completion exited;
- };
-@@ -45,6 +48,24 @@ struct kthread {
- #define to_kthread(tsk)	\
- 	container_of((tsk)->vfork_done, struct kthread, exited)
- 
-+#ifdef CONFIG_MODULE_KTHREAD_CHECK
-+
-+unsigned long get_kthread_func(struct task_struct *tsk)
-+{
-+	struct kthread *kt;
-+	unsigned long addr;
-+
-+	get_task_struct(tsk);
-+	BUG_ON(!(tsk->flags & PF_KTHREAD));
-+	kt = to_kthread(tsk);
-+	barrier();
-+	addr = tsk->vfork_done ? (unsigned long)kt->fn : 0UL;
-+	put_task_struct(tsk);
-+	return addr;
-+}
-+
-+#endif /* CONFIG_MODULE_KTHREAD_CHECK */
-+
- /**
-  * kthread_should_stop - should this kthread return now?
-  *
-@@ -106,6 +127,9 @@ static int kthread(void *_create)
- 	int ret;
- 
- 	self.should_stop = 0;
-+#ifdef CONFIG_MODULE_KTHREAD_CHECK
-+	self.fn = threadfn;
-+#endif
- 	self.data = data;
- 	init_completion(&self.exited);
- 	current->vfork_done = &self.exited;
-diff --git a/kernel/module.c b/kernel/module.c
-index 2c93276..fe6637b 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -45,6 +45,7 @@
- #include <linux/string.h>
- #include <linux/mutex.h>
- #include <linux/rculist.h>
-+#include <linux/kthread.h>
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
- #include <asm/mmu_context.h>
-@@ -764,6 +765,49 @@ static void wait_for_zero_refcount(struct module *mod)
- 	mutex_lock(&module_mutex);
- }
- 
-+#ifdef CONFIG_KALLSYMS
-+static const char *get_ksymbol(struct module *mod, unsigned long addr,
-+			       unsigned long *size, unsigned long *offset);
-+#else
-+#define get_ksymbol(mod, addr, size, offset) NULL
-+#endif
-+
-+#ifdef CONFIG_MODULE_KTHREAD_CHECK
-+
-+static void check_kthreads(struct module *mod)
-+{
-+	unsigned long flags;
-+	struct task_struct *g, *p;
-+
-+	read_lock_irqsave(&tasklist_lock, flags);
-+	do_each_thread(g, p) {
-+		const char *name;
-+		unsigned long addr, offset, size;
-+
-+		/* Note kthreadd is special. Other kthreads should
-+		   have their 'struct kthread' on the stack until
-+		   do_exit() calls schedule() for the last time. */
-+		if (p->mm || p == kthreadd_task)
-+			continue;
-+
-+		addr = get_kthread_func(p);
-+		if (__module_text_address(addr) == mod) {
-+			name = get_ksymbol(mod, addr, &size, &offset);
-+			printk(KERN_WARNING "kthread %p[%s:%d] running "
-+			       "0x%lx(%s) is still alive, fix module %s, "
-+			       "crash possible\n", p, p->comm, p->pid, addr,
-+			       (name ? name : "<unknown>"), mod->name);
-+		}
-+	} while_each_thread(g, p);
-+	read_unlock_irqrestore(&tasklist_lock, flags);
-+}
-+
-+#else
-+
-+#define check_kthreads(mod) do { } while (0)
-+
-+#endif /* CONFIG_MODULE_KTHREAD_CHECK */
-+
- SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 		unsigned int, flags)
- {
-@@ -831,6 +875,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 	blocking_notifier_call_chain(&module_notify_list,
- 				     MODULE_STATE_GOING, mod);
- 	async_synchronize_full();
-+	check_kthreads(mod);
- 
- 	/* Store the name of the last unloaded module for diagnostic purposes */
- 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
--- 
-1.7.7.6
+> [...] Some of the comments are currently wrong and I didn't 
+> think we would want those in a main release. While reading the 
+> code again I realized that I could also add more comments to 
+> make it easier to understand. I would think that comments 
+> would be fine for the -rc releases because they have almost no 
+> chance of introducing bugs.
 
+By that argument we could be doing mechanic API renames in later 
+-rc's as well.
+
+In general we don't want "noise" around the really relevant 
+changes to make them *really* obvious regression fixes - even if 
+this noise is obviously correct code.
+
+This is also code that *everyone* uses so if it breaks then 
+everyone suffers (and seeing people suffer, even hypothetically, 
+makes me sad), so the maintenance filter is quite a bit 
+stricter. I wouldn't worry nearly as much about 
+drivers/some/obscure/piece/of/hw.c.
+
+> > So either you do an obviously trivial patch that only adds 
+> > CFI annotations and nothing else, or I can pull these bits 
+> > into tip:x86/debug, for a v3.4 merge.
+> 
+> I'm fine with waiting for v3.4 before these changes get in.
+
+Jan, is that fine with you?
+
+Thanks,
+
+	Ingo
