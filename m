@@ -1,254 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab2B1CpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:45:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49906 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab2B1CpF (ORCPT
+	id S1756751Ab2B1Cp6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:45:58 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39286 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab2B1Cp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:45:05 -0500
-Date: Mon, 27 Feb 2012 18:44:31 -0800
-From: tip-bot for Olof Johansson <olof@lixom.net>
-Message-ID: <tip-e3cb3f5a35997906f9b79bf860029c02a54cfae6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joe@perches.com, olof@lixom.net, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        olof@lixom.net, joe@perches.com, tglx@linutronix.de
-In-Reply-To: <1329081869-20779-3-git-send-email-olof@lixom.net>
-References: <1329081869-20779-3-git-send-email-olof@lixom.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/eficross] x86, efi: Convert printk to pr_*()
-Git-Commit-ID: e3cb3f5a35997906f9b79bf860029c02a54cfae6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 27 Feb 2012 18:44:57 -0800 (PST)
+	Mon, 27 Feb 2012 21:45:56 -0500
+Message-ID: <1330397141.4112.23.camel@ThinkPad-T61>
+Subject: Re: [PATCH 0/2 x86] fix some page faults in nmi if kmemcheck is
+ enabled
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, Vegard Nossum <vegardno@ifi.uio.no>,
+        Don Zickus <dzickus@redhat.com>
+Date: Tue, 28 Feb 2012 10:45:41 +0800
+In-Reply-To: <1330340324.11248.60.camel@twins>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
+	 <1329819437.2293.382.camel@twins> <1329990828.19165.36.camel@ThinkPad-T61>
+	 <1330340324.11248.60.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12022717-3568-0000-0000-00000147AA58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3cb3f5a35997906f9b79bf860029c02a54cfae6
-Gitweb:     http://git.kernel.org/tip/e3cb3f5a35997906f9b79bf860029c02a54cfae6
-Author:     Olof Johansson <olof@lixom.net>
-AuthorDate: Sun, 12 Feb 2012 13:24:26 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 23 Feb 2012 18:54:22 -0800
+On Mon, 2012-02-27 at 11:58 +0100, Peter Zijlstra wrote:
+> On Thu, 2012-02-23 at 17:53 +0800, Li Zhong wrote:
+> 
+> > I will think further about it, and would appreciate it if you could give
+> > some good ideas. 
+> 
+> *sigh*.. or you could do your own damn work..
 
-x86, efi: Convert printk to pr_*()
+I'm still doing the work ...
 
-Alright, I guess I'll go through and convert them, even though
-there's no net gain to speak of.
+> 
+> > > > 2. If CONFIG_KMEMCHECK is enabled, the pages allocated through slab will
+> > > > be marked as non-present, to capture uninitialized memory access. More
+> > > > information in Documentation/kmemcheck.txt .
+> > > 
+> > > So then kmemcheck is buggy, since the nmiaction structure is initialized
+> > > in register_nmi_handler(), so it should most definitely not be marked
+> > > non-present.
+> > > 
+> > 
+> > I'm not sure whether I understand it correctly. Do you mean that
+> > nmiaction is initialized in register_nmi_handler(), which indicates it
+> > will be used in nmi, so it shouldn't be marked non-present?
+> 
+> No, you said that it marks memory non-present to detect uninitialized
+> stuff, but since it is initialized, it shouldn't then be non-present,
+> right?
 
-v4:
-* Switched to pr_fmt and removed some redundant use of "EFI" in
-  messages.
+>From my understanding of kmemcheck, the checking is based on the
+non-present page. So while handling page fault, if the memory hasn't
+been written before read, kmemcheck knows that it is uninitialized. 
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Link: http://lkml.kernel.org/r/1329081869-20779-3-git-send-email-olof@lixom.net
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/platform/efi/efi.c |   58 +++++++++++++++++++++---------------------
- 1 files changed, 29 insertions(+), 29 deletions(-)
+I think it is used to find code errors, so it need mark all non-present,
+to check if there are any access to uninitialized memory. 
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 6d88dca..511fb15 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -26,6 +26,8 @@
-  *	Skip non-WB memory and ignore empty memory ranges.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/efi.h>
-@@ -47,7 +49,6 @@
- #include <asm/x86_init.h>
- 
- #define EFI_DEBUG	1
--#define PFX 		"EFI: "
- 
- int efi_enabled;
- EXPORT_SYMBOL(efi_enabled);
-@@ -254,7 +255,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
- 
- 	status = efi.get_time(&eft, &cap);
- 	if (status != EFI_SUCCESS) {
--		printk(KERN_ERR "Oops: efitime: can't read time!\n");
-+		pr_err("Oops: efitime: can't read time!\n");
- 		return -1;
- 	}
- 
-@@ -268,7 +269,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
- 
- 	status = efi.set_time(&eft);
- 	if (status != EFI_SUCCESS) {
--		printk(KERN_ERR "Oops: efitime: can't write time!\n");
-+		pr_err("Oops: efitime: can't write time!\n");
- 		return -1;
- 	}
- 	return 0;
-@@ -282,7 +283,7 @@ unsigned long efi_get_time(void)
- 
- 	status = efi.get_time(&eft, &cap);
- 	if (status != EFI_SUCCESS)
--		printk(KERN_ERR "Oops: efitime: can't read time!\n");
-+		pr_err("Oops: efitime: can't read time!\n");
- 
- 	return mktime(eft.year, eft.month, eft.day, eft.hour,
- 		      eft.minute, eft.second);
-@@ -367,7 +368,7 @@ static void __init print_efi_memmap(void)
- 	     p < memmap.map_end;
- 	     p += memmap.desc_size, i++) {
- 		md = p;
--		printk(KERN_INFO PFX "mem%02u: type=%u, attr=0x%llx, "
-+		pr_info("mem%02u: type=%u, attr=0x%llx, "
- 			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
- 			i, md->type, md->attribute, md->phys_addr,
- 			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
-@@ -400,7 +401,7 @@ void __init efi_reserve_boot_services(void)
- 			memblock_is_region_reserved(start, size)) {
- 			/* Could not reserve, skip it */
- 			md->num_pages = 0;
--			memblock_dbg(PFX "Could not reserve boot range "
-+			memblock_dbg("Could not reserve boot range "
- 					"[0x%010llx-0x%010llx]\n",
- 						start, start+size-1);
- 		} else
-@@ -434,7 +435,7 @@ static void __init efi_systab_init(void *phys)
- 	efi.systab = early_ioremap((unsigned long)efi_phys.systab,
- 				   sizeof(efi_system_table_t));
- 	if (efi.systab == NULL)
--		printk(KERN_ERR "Couldn't map the EFI system table!\n");
-+		pr_err("Couldn't map the system table!\n");
- 	memcpy(&efi_systab, efi.systab, sizeof(efi_system_table_t));
- 	early_iounmap(efi.systab, sizeof(efi_system_table_t));
- 	efi.systab = &efi_systab;
-@@ -443,9 +444,9 @@ static void __init efi_systab_init(void *phys)
- 	 * Verify the EFI Table
- 	 */
- 	if (efi.systab->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
--		printk(KERN_ERR "EFI system table signature incorrect!\n");
-+		pr_err("System table signature incorrect!\n");
- 	if ((efi.systab->hdr.revision >> 16) == 0)
--		printk(KERN_ERR "Warning: EFI system table version "
-+		pr_err("Warning: System table version "
- 		       "%d.%02d, expected 1.00 or greater!\n",
- 		       efi.systab->hdr.revision >> 16,
- 		       efi.systab->hdr.revision & 0xffff);
-@@ -463,42 +464,42 @@ static void __init efi_config_init(u64 tables, int nr_tables)
- 		efi.systab->tables,
- 		efi.systab->nr_tables * sizeof(efi_config_table_t));
- 	if (config_tables == NULL)
--		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
-+		pr_err("Could not map Configuration table!\n");
- 
--	printk(KERN_INFO);
-+	pr_info("");
- 	for (i = 0; i < efi.systab->nr_tables; i++) {
- 		if (!efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID)) {
- 			efi.mps = config_tables[i].table;
--			printk(" MPS=0x%lx ", config_tables[i].table);
-+			pr_cont(" MPS=0x%lx ", config_tables[i].table);
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					ACPI_20_TABLE_GUID)) {
- 			efi.acpi20 = config_tables[i].table;
--			printk(" ACPI 2.0=0x%lx ", config_tables[i].table);
-+			pr_cont(" ACPI 2.0=0x%lx ", config_tables[i].table);
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					ACPI_TABLE_GUID)) {
- 			efi.acpi = config_tables[i].table;
--			printk(" ACPI=0x%lx ", config_tables[i].table);
-+			pr_cont(" ACPI=0x%lx ", config_tables[i].table);
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					SMBIOS_TABLE_GUID)) {
- 			efi.smbios = config_tables[i].table;
--			printk(" SMBIOS=0x%lx ", config_tables[i].table);
-+			pr_cont(" SMBIOS=0x%lx ", config_tables[i].table);
- #ifdef CONFIG_X86_UV
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					UV_SYSTEM_TABLE_GUID)) {
- 			efi.uv_systab = config_tables[i].table;
--			printk(" UVsystab=0x%lx ", config_tables[i].table);
-+			pr_cont(" UVsystab=0x%lx ", config_tables[i].table);
- #endif
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					HCDP_TABLE_GUID)) {
- 			efi.hcdp = config_tables[i].table;
--			printk(" HCDP=0x%lx ", config_tables[i].table);
-+			pr_cont(" HCDP=0x%lx ", config_tables[i].table);
- 		} else if (!efi_guidcmp(config_tables[i].guid,
- 					UGA_IO_PROTOCOL_GUID)) {
- 			efi.uga = config_tables[i].table;
--			printk(" UGA=0x%lx ", config_tables[i].table);
-+			pr_cont(" UGA=0x%lx ", config_tables[i].table);
- 		}
- 	}
--	printk("\n");
-+	pr_cont("\n");
- 	early_iounmap(config_tables,
- 			  efi.systab->nr_tables * sizeof(efi_config_table_t));
- }
-@@ -531,8 +532,7 @@ static void __init efi_runtime_init(void)
- 		 */
- 		efi.get_time = phys_efi_get_time;
- 	} else
--		printk(KERN_ERR "Could not map the EFI runtime service "
--		       "table!\n");
-+		pr_err("Could not map the runtime service table!\n");
- 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
- }
- 
-@@ -542,7 +542,7 @@ static void __init efi_memmap_init(void)
- 	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
- 				   memmap.nr_map * memmap.desc_size);
- 	if (memmap.map == NULL)
--		printk(KERN_ERR "Could not map the EFI memory map!\n");
-+		pr_err("Could not map the memory map!\n");
- 	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
- 
- 	if (add_efi_memmap)
-@@ -575,12 +575,12 @@ void __init efi_init(void)
- 			vendor[i] = *c16++;
- 		vendor[i] = '\0';
- 	} else
--		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
-+		pr_err("Could not map the firmware vendor!\n");
- 	early_iounmap(tmp, 2);
- 
--	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
--	       efi.systab->hdr.revision >> 16,
--	       efi.systab->hdr.revision & 0xffff, vendor);
-+	pr_info("EFI v%u.%.02u by %s\n",
-+		efi.systab->hdr.revision >> 16,
-+		efi.systab->hdr.revision & 0xffff, vendor);
- 
- 	efi_config_init(efi.systab->tables, efi.systab->nr_tables);
- 
-@@ -696,7 +696,7 @@ void __init efi_enter_virtual_mode(void)
- 		md->virt_addr = (u64) (unsigned long) va;
- 
- 		if (!va) {
--			printk(KERN_ERR PFX "ioremap of 0x%llX failed!\n",
-+			pr_err("ioremap of 0x%llX failed!\n",
- 			       (unsigned long long)md->phys_addr);
- 			continue;
- 		}
-@@ -730,8 +730,8 @@ void __init efi_enter_virtual_mode(void)
- 		(efi_memory_desc_t *)__pa(new_memmap));
- 
- 	if (status != EFI_SUCCESS) {
--		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
--		       "(status=%lx)!\n", status);
-+		pr_alert("Unable to switch EFI into virtual mode "
-+			 "(status=%lx)!\n", status);
- 		panic("EFI call to SetVirtualAddressMap() failed!");
- 	}
- 
+> 
+> > But for kmemcheck, why need it know the information that page fault is
+> > not allowed in nmi? 
+> 
+> Uh, what?
+
+Please ignore it, as I misunderstood your point previously. 
+
+> > > > 3. From the log, there are some memories accessed in nmi, which are in
+> > > > pages marked as non-present by kmemcheck, as they are allocated by
+> > > > something like kmalloc(). 
+> > > 
+> > > So figure out why and fix that instead of writing ugly ass patches that
+> > > seemingly work around the problem without actually thinking about it.
+> > > 
+> > 
+> > I think the reason is that kmalloc ( or kzalloc ... ) uses malloc_sizes
+> > slab caches to allocate memory. The malloc_sizes slab caches is set up
+> > without SLAB_NOTRACK flag, then kmemcheck marks the pages non-present to
+> > do its check in page fault handling code. I think we shouldn't disable
+> > kmemechek for the general malloc_sizes caches. 
+> 
+> Nobody said you should.. there's plenty of solutions that aren't ass
+> backward stupid nor as ugly.
+> 
+> First you need to figure out why the page is marked non-present since
+> the data structure is initialized (I've got a fair idea why), then look
+> if you can tell kmemcheck not to be silly like that.
+> 
+> Alternatively you can change the nmi stuff to use static storage like
+> other notifiers (see notifier_block).
+
+OK, I will try to update the nmi one using this way.
+
+But I think it couldn't be used to the perf stuff. 
+For perf, maybe it's good for kmemcheck to have some flag like
+__GFP_NO_PAGE_FAULT? Currently it seems only has flags like
+__GFP_NOTRACK, which will still mark page non-present. 
+
+> 
+> What you don't ever do is write alternative code paths that are never
+> ever used except for debugging, that is just asking for problems.
+> 
+
+Got it, thanks for the reminder! Previously, I thought the biggest
+problem was wasting memory ...
+
+Thanks,
+Zhong
+
+
