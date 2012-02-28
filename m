@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965223Ab2B1BMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:10 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54256 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965190Ab2B1BMF (ORCPT
+	id S965247Ab2B1BSF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:18:05 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33164 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965212Ab2B1BMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.190.8 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.189.39 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010432.035376046@linuxfoundation.org>
+Message-Id: <20120228010432.231224038@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:04:59 -0800
+Date: Mon, 27 Feb 2012 17:05:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/72] IPoIB: Stop lying about hard_header_len and use skb->cb to stash LL addresses
+Subject: [ 32/72] tcp: allow tcp_sacktag_one() to tag ranges not aligned with skbs
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,205 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Roland Dreier <roland@purestorage.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit 936d7de3d736e0737542641269436f4b5968e9ef ]
+[ Upstream commit cc9a672ee522d4805495b98680f4a3db5d0a0af9 ]
 
-Commit a0417fa3a18a ("net: Make qdisc_skb_cb upper size bound
-explicit.") made it possible for a netdev driver to use skb->cb
-between its header_ops.create method and its .ndo_start_xmit
-method.  Use this in ipoib_hard_header() to stash away the LL address
-(GID + QPN), instead of the "ipoib_pseudoheader" hack.  This allows
-IPoIB to stop lying about its hard_header_len, which will let us fix
-the L2 check for GRO.
+This commit allows callers of tcp_sacktag_one() to pass in sequence
+ranges that do not align with skb boundaries, as tcp_shifted_skb()
+needs to do in an upcoming fix in this patch series.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+In fact, now tcp_sacktag_one() does not need to depend on an input skb
+at all, which makes its semantics and dependencies more clear.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/infiniband/ulp/ipoib/ipoib.h           |    6 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |   55 ++++++++-----------------
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |    9 ----
- 3 files changed, 24 insertions(+), 46 deletions(-)
+ net/ipv4/tcp_input.c |   36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib.h
-+++ b/drivers/infiniband/ulp/ipoib/ipoib.h
-@@ -44,6 +44,7 @@
- #include <linux/mutex.h>
- 
- #include <net/neighbour.h>
-+#include <net/sch_generic.h>
- 
- #include <linux/atomic.h>
- 
-@@ -117,8 +118,9 @@ struct ipoib_header {
- 	u16	reserved;
- };
- 
--struct ipoib_pseudoheader {
--	u8  hwaddr[INFINIBAND_ALEN];
-+struct ipoib_cb {
-+	struct qdisc_skb_cb	qdisc_cb;
-+	u8			hwaddr[INFINIBAND_ALEN];
- };
- 
- /* Used for all multicast joins (broadcast, IPv4 mcast and IPv6 mcast) */
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -658,7 +658,7 @@ static void ipoib_path_lookup(struct sk_
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1310,25 +1310,26 @@ static int tcp_match_skb_to_sack(struct
+ 	return in_sack;
  }
  
- static void unicast_arp_send(struct sk_buff *skb, struct net_device *dev,
--			     struct ipoib_pseudoheader *phdr)
-+			     struct ipoib_cb *cb)
+-static u8 tcp_sacktag_one(const struct sk_buff *skb, struct sock *sk,
+-			  struct tcp_sacktag_state *state,
++/* Mark the given newly-SACKed range as such, adjusting counters and hints. */
++static u8 tcp_sacktag_one(struct sock *sk,
++			  struct tcp_sacktag_state *state, u8 sacked,
++			  u32 start_seq, u32 end_seq,
+ 			  int dup_sack, int pcount)
  {
- 	struct ipoib_dev_priv *priv = netdev_priv(dev);
- 	struct ipoib_path *path;
-@@ -666,17 +666,15 @@ static void unicast_arp_send(struct sk_b
+ 	struct tcp_sock *tp = tcp_sk(sk);
+-	u8 sacked = TCP_SKB_CB(skb)->sacked;
+ 	int fack_count = state->fack_count;
  
- 	spin_lock_irqsave(&priv->lock, flags);
+ 	/* Account D-SACK for retransmitted packet. */
+ 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
+ 		if (tp->undo_marker && tp->undo_retrans &&
+-		    after(TCP_SKB_CB(skb)->end_seq, tp->undo_marker))
++		    after(end_seq, tp->undo_marker))
+ 			tp->undo_retrans--;
+ 		if (sacked & TCPCB_SACKED_ACKED)
+ 			state->reord = min(fack_count, state->reord);
+ 	}
  
--	path = __path_find(dev, phdr->hwaddr + 4);
-+	path = __path_find(dev, cb->hwaddr + 4);
- 	if (!path || !path->valid) {
- 		int new_path = 0;
+ 	/* Nothing to do; acked frame is about to be dropped (was ACKed). */
+-	if (!after(TCP_SKB_CB(skb)->end_seq, tp->snd_una))
++	if (!after(end_seq, tp->snd_una))
+ 		return sacked;
  
- 		if (!path) {
--			path = path_rec_create(dev, phdr->hwaddr + 4);
-+			path = path_rec_create(dev, cb->hwaddr + 4);
- 			new_path = 1;
- 		}
- 		if (path) {
--			/* put pseudoheader back on for next time */
--			skb_push(skb, sizeof *phdr);
- 			__skb_queue_tail(&path->queue, skb);
+ 	if (!(sacked & TCPCB_SACKED_ACKED)) {
+@@ -1347,13 +1348,13 @@ static u8 tcp_sacktag_one(const struct s
+ 				/* New sack for not retransmitted frame,
+ 				 * which was in hole. It is reordering.
+ 				 */
+-				if (before(TCP_SKB_CB(skb)->seq,
++				if (before(start_seq,
+ 					   tcp_highest_sack_seq(tp)))
+ 					state->reord = min(fack_count,
+ 							   state->reord);
  
- 			if (!path->query && path_rec_start(dev, path)) {
-@@ -700,12 +698,10 @@ static void unicast_arp_send(struct sk_b
- 			  be16_to_cpu(path->pathrec.dlid));
- 
- 		spin_unlock_irqrestore(&priv->lock, flags);
--		ipoib_send(dev, skb, path->ah, IPOIB_QPN(phdr->hwaddr));
-+		ipoib_send(dev, skb, path->ah, IPOIB_QPN(cb->hwaddr));
- 		return;
- 	} else if ((path->query || !path_rec_start(dev, path)) &&
- 		   skb_queue_len(&path->queue) < IPOIB_MAX_PATH_REC_QUEUE) {
--		/* put pseudoheader back on for next time */
--		skb_push(skb, sizeof *phdr);
- 		__skb_queue_tail(&path->queue, skb);
- 	} else {
- 		++dev->stats.tx_dropped;
-@@ -774,16 +770,14 @@ static int ipoib_start_xmit(struct sk_bu
- 			dev_kfree_skb_any(skb);
- 		}
- 	} else {
--		struct ipoib_pseudoheader *phdr =
--			(struct ipoib_pseudoheader *) skb->data;
--		skb_pull(skb, sizeof *phdr);
-+		struct ipoib_cb *cb = (struct ipoib_cb *) skb->cb;
- 
--		if (phdr->hwaddr[4] == 0xff) {
-+		if (cb->hwaddr[4] == 0xff) {
- 			/* Add in the P_Key for multicast*/
--			phdr->hwaddr[8] = (priv->pkey >> 8) & 0xff;
--			phdr->hwaddr[9] = priv->pkey & 0xff;
-+			cb->hwaddr[8] = (priv->pkey >> 8) & 0xff;
-+			cb->hwaddr[9] = priv->pkey & 0xff;
- 
--			ipoib_mcast_send(dev, phdr->hwaddr + 4, skb);
-+			ipoib_mcast_send(dev, cb->hwaddr + 4, skb);
- 		} else {
- 			/* unicast GID -- should be ARP or RARP reply */
- 
-@@ -792,14 +786,14 @@ static int ipoib_start_xmit(struct sk_bu
- 				ipoib_warn(priv, "Unicast, no %s: type %04x, QPN %06x %pI6\n",
- 					   skb_dst(skb) ? "neigh" : "dst",
- 					   be16_to_cpup((__be16 *) skb->data),
--					   IPOIB_QPN(phdr->hwaddr),
--					   phdr->hwaddr + 4);
-+					   IPOIB_QPN(cb->hwaddr),
-+					   cb->hwaddr + 4);
- 				dev_kfree_skb_any(skb);
- 				++dev->stats.tx_dropped;
- 				goto unlock;
+ 				/* SACK enhanced F-RTO (RFC4138; Appendix B) */
+-				if (!after(TCP_SKB_CB(skb)->end_seq, tp->frto_highmark))
++				if (!after(end_seq, tp->frto_highmark))
+ 					state->flag |= FLAG_ONLY_ORIG_SACKED;
  			}
  
--			unicast_arp_send(skb, dev, phdr);
-+			unicast_arp_send(skb, dev, cb);
- 		}
- 	}
- unlock:
-@@ -825,8 +819,6 @@ static int ipoib_hard_header(struct sk_b
- 			     const void *daddr, const void *saddr, unsigned len)
- {
- 	struct ipoib_header *header;
--	struct dst_entry *dst;
--	struct neighbour *n;
+@@ -1371,8 +1372,7 @@ static u8 tcp_sacktag_one(const struct s
  
- 	header = (struct ipoib_header *) skb_push(skb, sizeof *header);
+ 		/* Lost marker hint past SACKed? Tweak RFC3517 cnt */
+ 		if (!tcp_is_fack(tp) && (tp->lost_skb_hint != NULL) &&
+-		    before(TCP_SKB_CB(skb)->seq,
+-			   TCP_SKB_CB(tp->lost_skb_hint)->seq))
++		    before(start_seq, TCP_SKB_CB(tp->lost_skb_hint)->seq))
+ 			tp->lost_cnt_hint += pcount;
  
-@@ -834,18 +826,13 @@ static int ipoib_hard_header(struct sk_b
- 	header->reserved = 0;
- 
- 	/*
--	 * If we don't have a neighbour structure, stuff the
--	 * destination address onto the front of the skb so we can
--	 * figure out where to send the packet later.
-+	 * If we don't have a dst_entry structure, stuff the
-+	 * destination address into skb->cb so we can figure out where
-+	 * to send the packet later.
- 	 */
--	dst = skb_dst(skb);
--	n = NULL;
--	if (dst)
--		n = dst_get_neighbour_raw(dst);
--	if ((!dst || !n) && daddr) {
--		struct ipoib_pseudoheader *phdr =
--			(struct ipoib_pseudoheader *) skb_push(skb, sizeof *phdr);
--		memcpy(phdr->hwaddr, daddr, INFINIBAND_ALEN);
-+	if (!skb_dst(skb)) {
-+		struct ipoib_cb *cb = (struct ipoib_cb *) skb->cb;
-+		memcpy(cb->hwaddr, daddr, INFINIBAND_ALEN);
+ 		if (fack_count > tp->fackets_out)
+@@ -1428,7 +1428,11 @@ static int tcp_shifted_skb(struct sock *
  	}
  
- 	return 0;
-@@ -1021,11 +1008,7 @@ static void ipoib_setup(struct net_devic
+ 	/* We discard results */
+-	tcp_sacktag_one(skb, sk, state, dup_sack, pcount);
++	tcp_sacktag_one(sk, state,
++			TCP_SKB_CB(skb)->sacked,
++			TCP_SKB_CB(skb)->seq,
++			TCP_SKB_CB(skb)->end_seq,
++			dup_sack, pcount);
  
- 	dev->flags		|= IFF_BROADCAST | IFF_MULTICAST;
+ 	/* Difference in this won't matter, both ACKed by the same cumul. ACK */
+ 	TCP_SKB_CB(prev)->sacked |= (TCP_SKB_CB(skb)->sacked & TCPCB_EVER_RETRANS);
+@@ -1667,10 +1671,14 @@ static struct sk_buff *tcp_sacktag_walk(
+ 			break;
  
--	/*
--	 * We add in INFINIBAND_ALEN to allow for the destination
--	 * address "pseudoheader" for skbs without neighbour struct.
--	 */
--	dev->hard_header_len	 = IPOIB_ENCAP_LEN + INFINIBAND_ALEN;
-+	dev->hard_header_len	 = IPOIB_ENCAP_LEN;
- 	dev->addr_len		 = INFINIBAND_ALEN;
- 	dev->type		 = ARPHRD_INFINIBAND;
- 	dev->tx_queue_len	 = ipoib_sendq_size * 2;
---- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-@@ -262,21 +262,14 @@ static int ipoib_mcast_join_finish(struc
- 	netif_tx_lock_bh(dev);
- 	while (!skb_queue_empty(&mcast->pkt_queue)) {
- 		struct sk_buff *skb = skb_dequeue(&mcast->pkt_queue);
--		struct dst_entry *dst = skb_dst(skb);
--		struct neighbour *n = NULL;
+ 		if (in_sack) {
+-			TCP_SKB_CB(skb)->sacked = tcp_sacktag_one(skb, sk,
+-								  state,
+-								  dup_sack,
+-								  tcp_skb_pcount(skb));
++			TCP_SKB_CB(skb)->sacked =
++				tcp_sacktag_one(sk,
++						state,
++						TCP_SKB_CB(skb)->sacked,
++						TCP_SKB_CB(skb)->seq,
++						TCP_SKB_CB(skb)->end_seq,
++						dup_sack,
++						tcp_skb_pcount(skb));
  
- 		netif_tx_unlock_bh(dev);
- 
- 		skb->dev = dev;
--		if (dst)
--			n = dst_get_neighbour_raw(dst);
--		if (!dst || !n) {
--			/* put pseudoheader back on for next time */
--			skb_push(skb, sizeof (struct ipoib_pseudoheader));
--		}
- 
- 		if (dev_queue_xmit(skb))
- 			ipoib_warn(priv, "dev_queue_xmit failed to requeue packet\n");
-+
- 		netif_tx_lock_bh(dev);
- 	}
- 	netif_tx_unlock_bh(dev);
+ 			if (!before(TCP_SKB_CB(skb)->seq,
+ 				    tcp_highest_sack_seq(tp)))
 
 
