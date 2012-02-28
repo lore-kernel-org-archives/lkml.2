@@ -1,90 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab2B1VKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 16:10:35 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:49430 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab2B1VKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 16:10:33 -0500
-Date: Tue, 28 Feb 2012 16:10:23 -0500 (EST)
-Message-Id: <20120228.161023.117381282430807415.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: sam@ravnborg.org, tj@kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120227.163044.2168482307021109001.davem@davemloft.net>
-References: <20120227194341.GA1448@merkur.ravnborg.org>
-	<alpine.SOC.1.00.1202272316280.15067@math.ut.ee>
-	<20120227.163044.2168482307021109001.davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 13:10:25 -0800 (PST)
+	id S1756759Ab2B1VOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 16:14:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6399 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965001Ab2B1VOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 16:14:05 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [RFC][PATCH] memcg: avoid THP split in task migration
+Date: Tue, 28 Feb 2012 16:12:32 -0500
+Message-Id: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Mon, 27 Feb 2012 16:30:44 -0500 (EST)
+Currently we can't do task migration among memory cgroups without THP split,
+which means processes heavily using THP experience large overhead in task
+migration. This patch introduce the code for moving charge of THP and makes
+THP more valuable.
 
-> I think the issue is that OF writes past the end of the buffer even
-> though the length it reports is smaller than what it writes.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+---
+ mm/memcontrol.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 70 insertions(+), 6 deletions(-)
 
-Meelis, can you get your tree back into a state where the crash happens
-and then add the following debugging patch and see what happens?
-
-Thanks!
-
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 07cc1d6..367ef33 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -125,12 +125,31 @@ static struct property * __init of_pdt_build_one_prop(phandle node, char *prev,
- 		} else {
- 			int len;
+diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+index c83aeb5..e97c041 100644
+--- linux-next-20120228.orig/mm/memcontrol.c
++++ linux-next-20120228/mm/memcontrol.c
+@@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+ 	return ret;
+ }
  
-+#if 1
-+			int i;
-+			p->value = prom_early_alloc(p->length + 1 + 64);
-+			for (i = p->length + 1; i < p->length + 1 + 64; i++)
-+				((unsigned char *)p->value)[i] = 0xff;
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++/*
++ * We don't consider swapping or file mapped pages because THP does not
++ * support them for now.
++ */
++static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t pmd, union mc_target *target)
++{
++	struct page *page = NULL;
++	struct page_cgroup *pc;
++	int ret = 0;
++
++	if (pmd_present(pmd))
++		page = pmd_page(pmd);
++	if (!page)
++		return 0;
++	VM_BUG_ON(!PageHead(page));
++	get_page(page);
++	pc = lookup_page_cgroup(page);
++	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		ret = MC_TARGET_PAGE;
++		if (target)
++			target->page = page;
++	}
++	if (!ret || !target)
++		put_page(page);
++	return ret;
++}
 +#else
- 			p->value = prom_early_alloc(p->length + 1);
++static inline int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t pmd, union mc_target *target)
++{
++	return 0;
++}
 +#endif
- 			len = of_pdt_prom_ops->getproperty(node, p->name,
- 					p->value, p->length);
--			if (len <= 0)
-+			if (len <= 0) {
-+				pr_info("OF BUG: getproperty(%s, %d) returns %d\n",
-+					p->name, p->length, len);
- 				p->length = 0;
-+			}
- 			((unsigned char *)p->value)[p->length] = '\0';
-+#if 1
-+			for (i = p->length + 1; i < p->length + 1 + 64; i++) {
-+				if (((unsigned char *)p->value)[i] != 0xff) {
-+					pr_info("OF BUG: Write past end of property buffer\n");
-+					pr_info("OF BUG: Property name [%s] length [%d] getprop len [%d]\n",
-+						p->name, p->length, len);
++
+ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+ 					unsigned long addr, unsigned long end,
+ 					struct mm_walk *walk)
+@@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+-	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
++			mc.precharge += HPAGE_PMD_NR;
++		spin_unlock(&walk->mm->page_table_lock);
++		cond_resched();
++		return 0;
++	}
+ 
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE)
+@@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 	struct vm_area_struct *vma = walk->private;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
++	int type;
++	union mc_target target;
++	struct page *page;
++	struct page_cgroup *pc;
++
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		if (!mc.precharge)
++			return 0;
++		type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
++		if (type == MC_TARGET_PAGE) {
++			page = target.page;
++			if (!isolate_lru_page(page)) {
++				pc = lookup_page_cgroup(page);
++				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
++							     pc, mc.from, mc.to,
++							     false)) {
++					mc.precharge -= HPAGE_PMD_NR;
++					mc.moved_charge += HPAGE_PMD_NR;
 +				}
++				putback_lru_page(page);
 +			}
-+#endif
- 		}
- 	}
- 	return p;
-@@ -161,7 +180,11 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
++			put_page(page);
++		}
++		spin_unlock(&walk->mm->page_table_lock);
++		cond_resched();
++		return 0;
++	}
  
- 	len = of_pdt_prom_ops->getproplen(node, name);
- 	if (len > 0) {
-+#if 1
-+		buf = prom_early_alloc(len + 64);
-+#else
- 		buf = prom_early_alloc(len);
-+#endif
- 		len = of_pdt_prom_ops->getproperty(node, name, buf, len);
- 	}
+-	split_huge_page_pmd(walk->mm, pmd);
+ retry:
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		pte_t ptent = *(pte++);
+-		union mc_target target;
+-		int type;
+-		struct page *page;
+-		struct page_cgroup *pc;
+ 		swp_entry_t ent;
  
+ 		if (!mc.precharge)
+-- 
+1.7.7.6
+
