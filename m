@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030352Ab2B1T2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:28:18 -0500
-Received: from 176-53-19-122.turkrdns.com ([176.53.19.122]:2724 "EHLO
-	mail.toplumaileposta.tk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030279Ab2B1T2P convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:28:15 -0500
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Feb 2012 14:28:14 EST
-Message-ID: <4e65cdf2f509986fd5b31ca62c34eb45@aollll.com>
-From: "=?iso-8859-9?B?U91URU7dWiBHT09HTEUg3UxLIFNBWUZB?=" 
-	<kurumsalseo@aollll.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?V2ViIFNpdGVuaXplIEdvb2dsZWRhIN1sayBTYXlmYXlhIEthbP1j/SDH/WthcnRtYSBHYXJhbnRp
-	c2k=?=
-Date: Tue, 28 Feb 2012 21:18:21 +0200
+	id S1030360Ab2B1T3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:29:07 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:47693 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030279Ab2B1T3F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 14:29:05 -0500
+X-Auth-Info: UyQaBoEWwoxuzQsRTtL566dxHMrUnhjwCy45ACvgvKk=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.3-rc5
+References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
+	<4F4B9FFE.5050709@teksavvy.com>
+	<CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
+X-Yow: There's a SALE on STRETCH SOCKS down at the "7-11"!!
+Date: Tue, 28 Feb 2012 20:29:00 +0100
+In-Reply-To: <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
+	(Linus Torvalds's message of "Tue, 28 Feb 2012 10:30:30 -0800")
+Message-ID: <m2d38ybvur.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Öyle bir eleman düþününki Portföyünde onbinlerce yeni müþteri bulunsun ve hergün sitenize yeni müþteriler getirsin.ONA NE KADAR MAAÞ ÖDEMEYE HAZIRSINIZ DÜÞÜNÜN...
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-ÖRNEK :Web siteniz var Mühendislik þirketisiniz ve googleda mühendislik aramasý 
-yapýldýðýnda web siteniz ilk sayfada...SENEDE KAÇ PROJE ALIRSINIZ Mevcut iþinize ek olarak internet size nekadar daha kazandýrýr...? ÝYÝ DÜÞÜNÜN
+> I also think that your explanation is wrong. The problem is not the
+> use of _IOR() at all, the problem is that the data structure given
+> *to* the _IOR() macro is complete grabage. For example:
+>
+>   #define I8K_GET_SPEED           _IOWR('i', 0x85, size_t)
 
-Web Sitenizden Daha Cok Gelir -Musteri - Ziyaretci-Satýþ  Elde Etmek istiyorsaniz
-Web Siteniz Googleda ilk sayfada oldugunda daha cok anlasma yaparim diyorsaniz
-Web siteniz Googleda ilk Sayfada Oldugunda Prestijim Artar Rakiplerime Fark Atarim Diyorsaniz
+Originally the garbage looked like this:
 
-Bize hemen þimdi ulaþýn. Türkiyede, Google  Ýlk Sayfada Kalýcýlýk Garantili Kurumsal Seo Hizmeti Veren Tek Firmayýz Ve 7 Yýldýr Sizin Ýçin Çalýþýyoruz...
+#define I8K_BIOS_VERSION       _IOR ('i', 0x80, 4)
+#define I8K_MACHINE_ID         _IOR ('i', 0x81, 16)
+#define I8K_POWER_STATUS       _IOR ('i', 0x82, sizeof(int))
+#define I8K_FN_STATUS          _IOR ('i', 0x83, sizeof(int))
+#define I8K_GET_TEMP           _IOR ('i', 0x84, sizeof(int))
+#define I8K_GET_SPEED          _IOWR('i', 0x85, sizeof(int))
+#define I8K_GET_FAN            _IOWR('i', 0x86, sizeof(int))
+#define I8K_SET_FAN            _IOWR('i', 0x87, sizeof(int)*2)
 
-Haydi Þimdi Tanýþalým
-http://www.fullvizyon.net
-www.fullvizyon.net
-0216 33 045 33
-0544 429 79 39
+Later they were modified by "[PATCH] use size_t for the broken ioctl
+numbers" and "Fix more ioctl _IOR/_IOW misusage." (see tglx's history
+tree).
 
+Andreas.
 
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
