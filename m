@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2B1CFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 21:05:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:25698 "EHLO
+	id S1755534Ab2B1CGA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 21:06:00 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:25687 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2B1CEx (ORCPT
+	with ESMTP id S1753128Ab2B1CEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 21:04:53 -0500
+	Mon, 27 Feb 2012 21:04:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 11/11] x86, PCI: Merge root info printing for nocrs path
-Date: Mon, 27 Feb 2012 18:03:51 -0800
-Message-Id: <1330394631-28978-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 09/11] x86, PCI: embed name acpi version pci_root_info struct
+Date: Mon, 27 Feb 2012 18:03:49 -0800
+Message-Id: <1330394631-28978-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
 References: <1330394631-28978-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020206.4F4C3643.0048,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A020206.4F4C3642.0042,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now We allocate info, and keep that in during whole life of hostbridge.
+
+So don't allocate info->name seperately, just put name into struct.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/amd_bus.c      |   12 +-----------
- arch/x86/pci/broadcom_bus.c |    9 +--------
- arch/x86/pci/bus_numa.c     |   17 +++++++++++++++++
- arch/x86/pci/bus_numa.h     |    1 +
- 4 files changed, 20 insertions(+), 19 deletions(-)
+ arch/x86/pci/acpi.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index 459a731..0b6abbe 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -291,17 +291,7 @@ static int __init early_fill_mp_bus_info(void)
- 		}
- 	}
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 208f257..7538fad 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -9,7 +9,7 @@
  
--	list_for_each_entry(info, &pci_root_infos, list) {
--		int busnum;
--		struct pci_root_res *root_res;
--
--		busnum = info->bus_min;
--		printk(KERN_DEBUG "bus: [%02x, %02x] on node %x link %x\n",
--		       info->bus_min, info->bus_max, info->node, info->link);
--		list_for_each_entry(root_res, &info->resources, list)
--			printk(KERN_DEBUG "bus: %02x %pR\n",
--				       busnum, &root_res->res);
--	}
-+	print_pci_root_info(info, "bus:", true);
+ struct pci_root_info {
+ 	struct acpi_device *bridge;
+-	char *name;
++	char name[16];
+ 	unsigned int res_num;
+ 	struct resource *res;
+ 	int busnum;
+@@ -307,7 +307,6 @@ static void add_resources(struct pci_root_info *info,
  
- 	return 0;
- }
-diff --git a/arch/x86/pci/broadcom_bus.c b/arch/x86/pci/broadcom_bus.c
-index 521a374..ec5c66f 100644
---- a/arch/x86/pci/broadcom_bus.c
-+++ b/arch/x86/pci/broadcom_bus.c
-@@ -79,14 +79,7 @@ static void __init cnb20le_res(u8 bus, u8 slot, u8 func)
- 		update_res(info, res.start, res.end, res.flags, 0);
- 	}
- 
--	/* print information about this host bridge */
--	res.start = fbus;
--	res.end   = lbus;
--	res.flags = IORESOURCE_BUS;
--	printk(KERN_INFO "CNB20LE PCI Host Bridge (domain 0000 %pR)\n", &res);
--
--	list_for_each_entry(root_res, &info->resources, list)
--		printk(KERN_INFO "host bridge window %pR\n", &root_res->res);
-+	print_pci_root_info(info, "host bridge windows: ", false);
- }
- 
- static int __init broadcom_postcore_init(void)
-diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
-index 306579f..7251011 100644
---- a/arch/x86/pci/bus_numa.c
-+++ b/arch/x86/pci/bus_numa.c
-@@ -77,6 +77,23 @@ struct pci_root_info __init *alloc_pci_root_info(int bus_min, int bus_max,
- 	return info;
- }
- 
-+void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink)
-+{
-+	struct pci_root_res *root_res;
-+	int busnum = info->bus_min;
-+
-+	if (!nodelink)
-+		printk(KERN_DEBUG "%s: [%02x, %02x]\n", name,
-+				info->bus_min, info->bus_max);
-+	else
-+		printk(KERN_DEBUG "%s: [%02x, %02x] on node %x link %x\n", name,
-+			info->bus_min, info->bus_max, info->node, info->link);
-+
-+	list_for_each_entry(root_res, &info->resources, list)
-+		printk(KERN_DEBUG "%s: %02x %pR\n", name, busnum,
-+				 &root_res->res);
-+}
-+
- void __devinit update_res(struct pci_root_info *info, resource_size_t start,
- 			  resource_size_t end, unsigned long flags, int merge)
+ static void free_pci_root_info(struct pci_root_info *info)
  {
-diff --git a/arch/x86/pci/bus_numa.h b/arch/x86/pci/bus_numa.h
-index 226a466..d19ac93 100644
---- a/arch/x86/pci/bus_numa.h
-+++ b/arch/x86/pci/bus_numa.h
-@@ -22,6 +22,7 @@ struct pci_root_info {
- extern struct list_head pci_root_infos;
- struct pci_root_info *alloc_pci_root_info(int bus_min, int bus_max,
- 						int node, int link);
-+void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink);
- extern void update_res(struct pci_root_info *info, resource_size_t start,
- 		      resource_size_t end, unsigned long flags, int merge);
- #endif
+-	kfree(info->name);
+ 	kfree(info->res);
+ 	kfree(info);
+ }
+@@ -357,9 +356,7 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ 	if (!info->res)
+ 		return;
+ 
+-	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+-	if (!info->name)
+-		return;
++	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
+ 
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+ 				info);
 -- 
 1.7.7
 
