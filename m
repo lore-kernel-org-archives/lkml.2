@@ -1,104 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965979Ab2B1ShQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 13:37:16 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:46825 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965107Ab2B1ShO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 13:37:14 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Grant Grundler <grantgrundler@gmail.com>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
-Date: Tue, 28 Feb 2012 13:37:10 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <4F4CF3CF.5090605@bell.net> <CANEJEGv2Zgtd8TGOzSNO8opMLQT8RsGRP=m2rBPUBBOJ9f+fKQ@mail.gmail.com>
-In-Reply-To: <CANEJEGv2Zgtd8TGOzSNO8opMLQT8RsGRP=m2rBPUBBOJ9f+fKQ@mail.gmail.com>
+	id S965999Ab2B1SqD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 13:46:03 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:39489 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757131Ab2B1SqA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 13:46:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of khilman@ti.com designates 10.68.225.231 as permitted sender) smtp.mail=khilman@ti.com
+From: Kevin Hilman <khilman@ti.com>
+To: "DebBarma\, Tarun Kanti" <tarun.kanti@ti.com>
+Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
+Organization: Texas Instruments, Inc.
+References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
+	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
+	<87ty2bu91e.fsf@ti.com>
+	<CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+Date: Tue, 28 Feb 2012 10:45:57 -0800
+In-Reply-To: <CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+	(Tarun Kanti DebBarma's message of "Tue, 28 Feb 2012 15:09:05 +0530")
+Message-ID: <87r4xeyexm.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1979808.xE6xXEOG8i";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202281337.14094.vapier@gentoo.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1979808.xE6xXEOG8i
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+"DebBarma, Tarun Kanti" <tarun.kanti@ti.com> writes:
 
-On Tuesday 28 February 2012 13:22:50 Grant Grundler wrote:
-> On Tue, Feb 28, 2012 at 7:33 AM, John David Anglin wrote:
-> > On 2/28/2012 10:21 AM, Mike Frysinger wrote:
-> >> we've been using hppa2.0 for years.  gnuconfig certainly recognizes it:
-> >> $ grep hppa /usr/share/gnuconfig/config.**sub
-> >>=20
-> >>         | h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] |
-> >>=20
-> >> hppa64 \
-> >>=20
-> >>         | hppa-* | hppa1.[01]-* | hppa2.0-* | hppa2.0[nw]-* | hppa64-*=
- \
-> >>=20
-> >> and i've seen diff projects key off of the hppa2.0* to enable newer
-> >> features by
-> >> default.
-> >=20
-> > Some of the above are specific to HP-UX, but hppa1.1, hppa2.0, hppa and
-> > hppa64 are
-> > valid for Linux based on config.guess.
->=20
-> Mike, et al,
-> I'd suggest NOT using hppa2.0 as a surrogate for 64-bit build. I'd prefer
-> hppa64 if 64-bit is meant.
->=20
-> hppa2.0 can also mean PA2.0 compliant binary compiled using ILP32 model.
-> right?
+> On Tue, Feb 28, 2012 at 5:24 AM, Kevin Hilman <khilman@ti.com> wrote:
+>> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+>>
+>>> Since we already have bank->context.wake_en to keep track
+>>> of gpios which are wakeup enabled, there is no need to have
+>>> this field any more.
+>>>
+>>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>
+>> I'm not crazy about this change...
+>>
+>>> ---
+>>>  drivers/gpio/gpio-omap.c |   11 +++++------
+>>>  1 files changed, 5 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>>> index 64f15d5..b62e861 100644
+>>> --- a/drivers/gpio/gpio-omap.c
+>>> +++ b/drivers/gpio/gpio-omap.c
+>>> @@ -53,7 +53,6 @@ struct gpio_bank {
+>>>       void __iomem *base;
+>>>       u16 irq;
+>>>       u16 virtual_irq_start;
+>>> -     u32 suspend_wakeup;
+>>>       u32 non_wakeup_gpios;
+>>>       u32 enabled_non_wakeup_gpios;
+>>>       struct gpio_regs context;
+>>> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       if (enable)
+>>> -             bank->suspend_wakeup |= gpio_bit;
+>>> +             bank->context.wake_en |= gpio_bit;
+>>>       else
+>>> -             bank->suspend_wakeup &= ~gpio_bit;
+>>> +             bank->context.wake_en &= ~gpio_bit;
+>>
+>> The bank->context values are expected to be copies of the actual
+>> register contents, and here that is clearly not the case.
+> Right, it should have been this:
+>
+>         if (enable)
+> -               bank->suspend_wakeup |= gpio_bit;
+> +               bank->context.wake_en |= gpio_bit;
+>         else
+> -               bank->suspend_wakeup &= ~gpio_bit;
+> +               bank->context.wake_en &= ~gpio_bit;
+> +
+> +       __raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
+>
+>>
+>> With this change, you're using the context register to track changes
+>> that you *might* eventually write to the register.
+> The above change ensures that bank->context.wake_en reflects the
+> latest register value.
 
-i don't think that's what the proposed change does.  James' patch runs $(CC=
-)=20
-to find the active tuple, then replaces the first part with "hppa64" to get=
- a=20
-64bit toolchain automatically.  but that magic only works when the tuple is=
-=20
-"hppa-xxx" and so will fail when the system is using "hppa2.0-xxx".
+OK, but that changes the behavior of the current code.
 
-short story: the proposed change will additionally support turning "hppa2.0-
-linux-gnu" into "hppa64-linux-gnu" rather than the existing "only turns hpp=
-a-
-linux-gnu" into "hppa64-linux-gnu".
-=2Dmike
+The current code *only* writes this register in suspend and resume.
+_set_gpio_wakeup() just records the value that is going to be written in
+suspend.
 
---nextPart1979808.xE6xXEOG8i
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Now, I'm not saying we shouldn't make the changes you propose above.  We
+probably should be updating the wake-enable register whenever
+_set_gpio_wakeup() is run so that GPIO wakeups work across runtime
+suspend/resume as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+However, you should probably make that functional change a separate
+patch *before* you do $SUBJECT patch which just changes the variable
+used to cache the register contents.
 
-iQIcBAABAgAGBQJPTR7ZAAoJEEFjO5/oN/WBuXkP/0q95mFhnAbLaazZUGDiQP6r
-2CtwhKJsC9795qEyYd7onQsiTN0DJprihiI1BV/xdKBCOateoWfrCjgvbt3HupOB
-DaMV8l/bXys6dlgGIe7QrbOod+wDk2RLmkUi5eFa2WM8mwSO/FieX1iHOk4rc017
-UKecJJwZSdfKTkzWgk4ocLAfswtXjloj7zj4dw58Fn+BzwaAXXr33tYHKBVqLS9J
-BF/vJMOduqK4sB3YEc+aJB0ZikNHYyfeK4LTrYcO2xXYAIKxSciV3vIW/QEsmOXv
-RlR/BxhBDbkNUrH4hndMBoDlf5TP7yJFNMsi3IkifVAcgyhNFsuKtZ5sppCb5yHj
-xENWX7pSLeQv3QrmXPe3SMiX0gb30lMtH5aPxcOzfnNaB7526OD+hx0zMdnu0+0J
-iRMAnjNrfsawjpUx607AwMiOzgPEC31xWXrD8XBx44R8yx/r+a4uzPWsw4kSo4ju
-OBqYlggdQSapjxkVMvWy3WmGlMJJmga1ZUIw4kNWQnenZavQElvRz/LMmaL/Eobe
-fzWJ2cQhRL2rkXQ1dt2EEsQLcQpEBkXdBxfWp9hNRtaehQxl6CDSSOyfURWns+yv
-KsbkTg7CKZNyU5hhLOyxwFGzlsakn5f/Qm2e3BpRvT88Nv2x+F1mobQOIALIP7/u
-WnOW3Jl+FpJAk6tSZJ/d
-=Lto8
------END PGP SIGNATURE-----
+Kevin
 
---nextPart1979808.xE6xXEOG8i--
+
+> There are two distinct paths through which bank->context.wake_en is
+> updated now, viz:
+> Path1:-
+> chip.irq_set_type() --> gpio_irq_type() --> _set_gpio_triggering() -->
+> set_gpio_trigger()
+>
+> Path2:-
+> chip.irq_set_wake() --> gpio_wake_enable() --> irq_set_wake()
+>
+>>
+>> IMO, this is more confusing than having a separate field to track this.
+> So, there is no need have a separate field to keep track of this.
+> I hope my understanding is right.
+> --
+> Tarun
+>
+>>
+>> Kevin
+>>
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       bank->context.wake_en = __raw_readl(mask_reg);
+>>> -     __raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
+>>> +     __raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>>       return 0;
+>>> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
+>>>       if (!bank->mod_usage || !bank->loses_context)
+>>>               return 0;
+>>>
+>>> -     if (!bank->regs->wkup_en || !bank->suspend_wakeup)
+>>> +     if (!bank->regs->wkup_en || !bank->context.wake_en)
+>>>               return 0;
+>>>
+>>>       spin_lock_irqsave(&bank->lock, flags);
+>>>       _gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+>>> -     _gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
+>>> +     _gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
+>>>       spin_unlock_irqrestore(&bank->lock, flags);
+>>>
+>>>       return 0;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
