@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab2B1BnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:43:22 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab2B1BGA (ORCPT
+	id S1756386Ab2B1Bo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:44:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49723 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab2B1Bo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.223.199 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-MIME-Version: 1.0
-Message-Id: <20120228010205.892323627@linuxfoundation.org>
-User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@canonical.com>,
-        Sebastien Bacher <seb128@ubuntu.com>,
-        John Johansen <john.johansen@canonical.com>
-Subject: [ 11/73] eCryptfs: Copy up lower inode attrs after setting lower xattr
-In-Reply-To: <20120228010246.GA24299@kroah.com>
+	Mon, 27 Feb 2012 20:44:57 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 28 Feb 2012 10:43:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 19/21] memcg: check lru vectors emptiness in
+ pre-destroy
+Message-Id: <20120228104331.37f9bcfd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120223135319.12988.73209.stgit@zurg>
+References: <20120223133728.12988.5432.stgit@zurg>
+	<20120223135319.12988.73209.stgit@zurg>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 23 Feb 2012 17:53:19 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-------------------
+> We must abort cgroup destroying if it still not empty,
+> resource counter cannot catch isolated uncharged pages.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-From: Tyler Hicks <tyhicks@canonical.com>
+I like this. 
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
 
-commit 545d680938be1e86a6c5250701ce9abaf360c495 upstream.
-
-After passing through a ->setxattr() call, eCryptfs needs to copy the
-inode attributes from the lower inode to the eCryptfs inode, as they
-may have changed in the lower filesystem's ->setxattr() path.
-
-One example is if an extended attribute containing a POSIX Access
-Control List is being set. The new ACL may cause the lower filesystem to
-modify the mode of the lower inode and the eCryptfs inode would need to
-be updated to reflect the new mode.
-
-https://launchpad.net/bugs/926292
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Sebastien Bacher <seb128@ubuntu.com>
-Cc: John Johansen <john.johansen@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ecryptfs/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1119,6 +1119,8 @@ ecryptfs_setxattr(struct dentry *dentry,
- 	}
- 
- 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
-+	if (!rc)
-+		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
- out:
- 	return rc;
- }
-
+> ---
+>  mm/memcontrol.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4de8044..fbeff85 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4859,8 +4859,16 @@ free_out:
+>  static int mem_cgroup_pre_destroy(struct cgroup *cont)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> +	int ret;
+> +
+> +	ret = mem_cgroup_force_empty(memcg, false);
+> +	if (ret)
+> +		return ret;
+>  
+> -	return mem_cgroup_force_empty(memcg, false);
+> +	if (mem_cgroup_nr_lru_pages(memcg, -1))
+> +		return -EBUSY;
+> +
+> +	return 0;
+>  }
+>  
+>  static void mem_cgroup_destroy(struct cgroup *cont)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
