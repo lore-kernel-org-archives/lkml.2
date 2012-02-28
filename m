@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab2B1JtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:49:13 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46828 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab2B1JtH convert rfc822-to-8bit (ORCPT
+	id S1756907Ab2B1Jua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:50:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51504 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756330Ab2B1Ju2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:49:07 -0500
-Message-ID: <1330422535.11248.78.camel@twins>
-Subject: Re: [RFC PATCH] kick ksoftirqd more often to please soft lockup
- detector
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        linux-scsi@vger.kernel.org, Lukasz Dorau <lukasz.dorau@intel.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Andrzej Jakowski <andrzej.jakowski@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 28 Feb 2012 10:48:55 +0100
-In-Reply-To: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
-References: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 28 Feb 2012 04:50:28 -0500
+Date: Tue, 28 Feb 2012 01:49:41 -0800
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-8bd69c2d5f9c0b5237c632d1b21dbfe4fd16ba6b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, hjl.tools@gmail.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu,
+        hjl.tools@gmail.com
+In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] x86/x32: Fix the binutils auto-detect
+Git-Commit-ID: 8bd69c2d5f9c0b5237c632d1b21dbfe4fd16ba6b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 28 Feb 2012 01:50:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 12:38 -0800, Dan Williams wrote:
-> An experimental hack to tease out whether we are continuing to
-> run the softirq handler past the point of needing scheduling.
-> 
-> It allows only one trip through __do_softirq() as long as need_resched()
-> is set which hopefully creates the back pressure needed to get ksoftirqd
-> scheduled.
-> 
-> Targeted to address reports like the following that are produced
-> with i/o tests to a sas domain with a large number of disks (48+), and
-> lots of debugging enabled (slub_deubg, lockdep) that makes the
-> block+scsi softirq path more cpu-expensive than normal.
-> 
-> With this patch applied the softlockup detector seems appeased, but it
-> seems odd to need changes to kernel/softirq.c so maybe I have overlooked
-> something that needs changing at the block/scsi level?
-> 
-> BUG: soft lockup - CPU#3 stuck for 22s! [kworker/3:1:78] 
+Commit-ID:  8bd69c2d5f9c0b5237c632d1b21dbfe4fd16ba6b
+Gitweb:     http://git.kernel.org/tip/8bd69c2d5f9c0b5237c632d1b21dbfe4fd16ba6b
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Tue, 28 Feb 2012 10:35:06 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 28 Feb 2012 10:35:06 +0100
 
-So you're stuck in softirq for 22s+, max_restart is 10, this gives that
-on average you spend 2.2s+ per softirq invocation, this is completely
-absolutely bonkers. Softirq handlers should never consume significant
-amount of cpu-time.
+x86/x32: Fix the binutils auto-detect
 
-Thomas, think its about time we put something like the below in?
+Fix:
 
+ arch/x86/Makefile:96: *** recipe commences before first target.  Stop.
 
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/softirq.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/Makefile |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index ff066a4..6137ee1 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -210,6 +210,7 @@ asmlinkage void __do_softirq(void)
- 	__u32 pending;
- 	int max_restart = MAX_SOFTIRQ_RESTART;
- 	int cpu;
-+	u64 start, callback, now;
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 31bb1eb..968dbe2 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -88,13 +88,13 @@ ifdef CONFIG_X86_X32
+ 			$(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" - && \
+ 			$(OBJCOPY) -O elf32-x86-64 "$$TMP" "$$TMPO" && \
+ 			$(LD) -m elf32_x86_64 "$$TMPO" -o "$$TMP",y,n)
+-	ifeq ($(x32_ld_ok),y)
+-		CONFIG_X86_X32_ABI := y
+-		KBUILD_AFLAGS += -DCONFIG_X86_X32_ABI
+-		KBUILD_CFLAGS += -DCONFIG_X86_X32_ABI
+-	else
+-		$(warning CONFIG_X86_X32 enabled but no binutils support)
+-	endif
++        ifeq ($(x32_ld_ok),y)
++                CONFIG_X86_X32_ABI := y
++                KBUILD_AFLAGS += -DCONFIG_X86_X32_ABI
++                KBUILD_CFLAGS += -DCONFIG_X86_X32_ABI
++        else
++                $(warning CONFIG_X86_X32 enabled but no binutils support)
++        endif
+ endif
+ export CONFIG_X86_X32_ABI
  
- 	pending = local_softirq_pending();
- 	account_system_vtime(current);
-@@ -223,6 +224,8 @@ asmlinkage void __do_softirq(void)
- 	/* Reset the pending bitmask before enabling irqs */
- 	set_softirq_pending(0);
- 
-+	start = callback = cpu_clock(cpu);
-+
- 	local_irq_enable();
- 
- 	h = softirq_vec;
-@@ -246,6 +249,15 @@ asmlinkage void __do_softirq(void)
- 				preempt_count() = prev_count;
- 			}
- 
-+			now = cpu_clock(cpu);
-+			if (now - callback > TICK_NSEC / 4) {
-+				printk(KERN_ERR "softirq took longer than 1/4 tick: "
-+						"%u %s %p\n", vec_nr, 
-+						softirq_to_name[vec_nr],
-+						h->action);
-+			}
-+			callback = now;
-+
- 			rcu_bh_qs(cpu);
- 		}
- 		h++;
-@@ -254,6 +266,10 @@ asmlinkage void __do_softirq(void)
- 
- 	local_irq_disable();
- 
-+	now = cpu_clock(cpu);
-+	if (now - start > TICK_NSEC / 2)
-+		printk(KERN_ERR "softirq loop took longer than 1/2 tick\n");
-+
- 	pending = local_softirq_pending();
- 	if (pending && --max_restart)
- 		goto restart;
-
