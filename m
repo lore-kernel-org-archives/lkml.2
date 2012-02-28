@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964777Ab2B1BG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:06:58 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932406Ab2B1BGy (ORCPT
+	id S965203Ab2B1Bgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:36:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932398Ab2B1BGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.218.5 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.138.137 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010204.227095535@linuxfoundation.org>
+Message-Id: <20120228010205.699832062@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:04 -0800
+Date: Mon, 27 Feb 2012 17:02:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 01/73] ASoC: wm8962: Fix sidetone enumeration texts
+        alan@lxorguk.ukuu.org.uk, Till Kamppeter <till.kamppeter@gmail.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/73] ipheth: Add iPhone 4S
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit 31794bc37bf2db84f085da52b72bfba65739b2d2 upstream.
+commit 72ba009b8a159e995e40d3b4e5d7d265acead983 upstream.
 
-The sidetone enumeration texts have left and right swapped.
+BugLink: http://bugs.launchpad.net/bugs/900802
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Till Kamppeter <till.kamppeter@gmail.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/usb/ipheth.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2373,7 +2373,7 @@ static int out_pga_event(struct snd_soc_
- 	}
- }
+--- a/drivers/net/usb/ipheth.c
++++ b/drivers/net/usb/ipheth.c
+@@ -60,6 +60,7 @@
+ #define USB_PRODUCT_IPHONE_3GS  0x1294
+ #define USB_PRODUCT_IPHONE_4	0x1297
+ #define USB_PRODUCT_IPHONE_4_VZW 0x129c
++#define USB_PRODUCT_IPHONE_4S	0x12a0
  
--static const char *st_text[] = { "None", "Right", "Left" };
-+static const char *st_text[] = { "None", "Left", "Right" };
- 
- static const struct soc_enum str_enum =
- 	SOC_ENUM_SINGLE(WM8962_DAC_DSP_MIXING_1, 2, 3, st_text);
+ #define IPHETH_USBINTF_CLASS    255
+ #define IPHETH_USBINTF_SUBCLASS 253
+@@ -103,6 +104,10 @@ static struct usb_device_id ipheth_table
+ 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4_VZW,
+ 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
+ 		IPHETH_USBINTF_PROTO) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(
++		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4S,
++		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
++		IPHETH_USBINTF_PROTO) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, ipheth_table);
 
 
