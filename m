@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab2B1NmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:42:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53142 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab2B1Nl7 (ORCPT
+	id S932654Ab2B1NmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:42:07 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:35459
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932641Ab2B1NmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:41:59 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
-Date: Tue, 28 Feb 2012 13:41:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: David Laight <David.Laight@aculab.com>, baruch@tkos.co.il,
-        alexander.h.duyck@intel.com, ian.campbell@citrix.com,
-        netdev@vger.kernel.org, eilong@broadcom.com,
-        Kevin Wells <kevin.wells@nxp.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, jeffrey.t.kirsher@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E83@saturn3.aculab.com> <4F4CD781.2090802@antcom.de>
-In-Reply-To: <4F4CD781.2090802@antcom.de>
+	Tue, 28 Feb 2012 08:42:03 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275ch8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <akpm@linux-foundation.org>, <paul.gortmaker@windriver.com>,
+        <linux@arm.linux.org.uk>, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] kernel.h: Include <linux/bug.h> to avoid build breakage with ARRAY_SIZE()
+Date: Tue, 28 Feb 2012 10:41:39 -0300
+Message-ID: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202281341.01690.arnd@arndb.de>
-X-Provags-ID: V02:K0:OgX9EOAvdKOwCoTXsjrPaLv7hYVcLbd9okUpD1moVbO
- ZZiaiMDza2tGs/qoyNwEjyxQPVLWiVr0ZqRqb89aCMzUzu0+gW
- btRN50asdyeQvzu9KvyN/63PpPJE25MJAi29ZHy+I0iUmN3Czw
- K0aQI4eDGR1ojdQoRwkKZ6kO+10ewXuqfphXLAtA+0K9Z/41vg
- bm1bqxrTFdA32em/KJaG8r+VkFRuNNqb3h7D0MxgMd+lSp7sow
- /djEaWdq6N2c0OsX3DpuRlpehw5hraG3nxWupWgqWLbJmGZkMD
- PDO0YQQhx0YWqAUmooq2EagXIOUvP24ptwWT0ZdH6qNDJVpm9Q
- CYTJeT4UGrYS/p2SfrWQ=
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 February 2012, Roland Stigge wrote:
-> Yes, that's why we previously had a cmdline param for it (but removed it
-> upon request from the netdev maintainer).
-> 
-> So if the hardware defaults to 00:00:00:00:00:00, what is the
-> "consistent policy we want to enforce in all drivers"?
-> 
-> A link or hint would be sufficient.
+Building imx_v6_v7_defconfig generated the following build error:
 
-I think the most common strategy for platform drivers these days is
+arch/arm/mach-imx/cpu_op-mx51.c: In function 'mx51_get_cpu_op':
+arch/arm/mach-imx/cpu_op-mx51.c:27: error: implicit declaration of function 'BUILD_BUG_ON_ZERO'
 
-1. use what the hardware provides
-2. call of_get_mac_address(dev->of_node, ...)
-3. use random_ether_addr
+commit 6f863554 (kernel.h: doesn't explicitly use bug.h, so don't include it.)
+has removed asm/debug.h from linux/kernel.h.
 
-in that order. of_get_mac_address just returns NULL when there
-is no device tree or no local-mac-address property, so you can
-put it into the driver right away.
+Quoting Russell King (http://www.spinics.net/lists/arm-kernel/msg161916.html)
 
-	Arnd
+"linux/kernel.h _does_ use bug stuff - in ARRAY_SIZE().
+
+ARRAY_SIZE() uses __must_be_array(), which is defined in linux/compiler-gcc.h,
+which is obtained via linux/compiler.h and linux/linkage.h.
+
+linux/compiler-gcc.h defines __must_be_array() to be:
+#define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
+
+and BUILD_BUG_ON_ZERO used to be in linux/kernel.h but got moved to
+linux/bug.h.
+
+Hence why people are seeing build breakage with ARRAY_SIZE()."
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ include/linux/kernel.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index ed9f92e..9c0a86b 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -21,6 +21,7 @@
+ #include <linux/typecheck.h>
+ #include <linux/printk.h>
+ #include <linux/dynamic_debug.h>
++#include <linux/bug.h>
+ #include <asm/byteorder.h>
+ 
+ #define USHRT_MAX	((u16)(~0U))
+-- 
+1.7.1
+
+
