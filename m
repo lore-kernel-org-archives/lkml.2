@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab2B1JJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:09:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42332 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572Ab2B1JJj (ORCPT
+	id S1755719Ab2B1JOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:14:10 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36730 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab2B1JOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:09:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.14.199.193 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>, fuse-devel@lists.sourceforge.net
-Subject: Re: [RFC PATCH 03/22] fuse: convert fuse to use iov_iter_copy_[to|from]_user
-References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
-	<1330377576-3659-4-git-send-email-dave.kleikamp@oracle.com>
-Date: Tue, 28 Feb 2012 10:09:44 +0100
-In-Reply-To: <1330377576-3659-4-git-send-email-dave.kleikamp@oracle.com> (Dave
-	Kleikamp's message of "Mon, 27 Feb 2012 15:19:17 -0600")
-Message-ID: <871upfb9yf.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 28 Feb 2012 04:14:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.175.36 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4F4C1F76.70403@zytor.com>
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
+	<4F4BF11E.4090000@zytor.com>
+	<CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+	<4F4C1F76.70403@zytor.com>
+Date: Tue, 28 Feb 2012 10:14:07 +0100
+Message-ID: <CAKL7Q7q8oRRQH4bh3JDpB_pGcKTJkOwzhKmOmAtk6sode8kU=g@mail.gmail.com>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+From: "Joshua C." <joshuacov@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Bodo Eggert <7eggert@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Kleikamp <dave.kleikamp@oracle.com> writes:
-
-> A future patch hides the internals of struct iov_iter, so fuse should
-> be using the supported interface.
+2012/2/28 H. Peter Anvin <hpa@zytor.com>:
+> On 02/27/2012 04:08 PM, Joshua C. wrote:
+>>
+>> If so I'm not sure about it. We check the BIOS data area as defined
+>> for IBM PCs (1981), so a fair amount of user should benefit from the
+>> change. Those non-BIOS boots can set the numlock=0 and won't be
+>> affected by this. I think this isa lot easier to implement than doing
+>> it in the BIOS bootstrap code.
+>>
 >
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-
-Thanks,
-Miklos
-
-> Cc: Miklos Szeredi <miklos@szeredi.hu>
-> Cc: fuse-devel@lists.sourceforge.net
-> ---
->  fs/fuse/file.c |   29 ++++++++---------------------
->  1 file changed, 8 insertions(+), 21 deletions(-)
+> Here is a patch to query the BIOS state properly; if you could fill out
+> the rest of the patch then we can merge this in easily enough.
 >
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 4a199fd..877cee0 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1582,30 +1582,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
->  	while (iov_iter_count(&ii)) {
->  		struct page *page = pages[page_idx++];
->  		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
-> -		void *kaddr;
-> +		size_t left;
->  
-> -		kaddr = kmap(page);
-> -
-> -		while (todo) {
-> -			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
-> -			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
-> -			size_t copy = min(todo, iov_len);
-> -			size_t left;
-> -
-> -			if (!to_user)
-> -				left = copy_from_user(kaddr, uaddr, copy);
-> -			else
-> -				left = copy_to_user(uaddr, kaddr, copy);
-> -
-> -			if (unlikely(left))
-> -				return -EFAULT;
-> +		if (!to_user)
-> +			left = iov_iter_copy_from_user(page, &ii, 0, todo);
-> +		else
-> +			left = iov_iter_copy_to_user(page, &ii, 0, todo);
->  
-> -			iov_iter_advance(&ii, copy);
-> -			todo -= copy;
-> -			kaddr += copy;
-> -		}
-> +		if (unlikely(left))
-> +			return -EFAULT;
->  
-> -		kunmap(page);
-> +		iov_iter_advance(&ii, todo);
->  	}
->  
->  	return 0;
+>        -hpa
+
+I think this should be the missing part:
+
+@@ -1432,7 +1439,17 @@ int __init kbd_init(void)
+ {
+ 	int i;
+ 	int error;
+-
++	
++#ifdef CONFIG_KBD_DEFLEDS_PCBIOS
++	int KBD_DEFLEDS = 0;
++	char * bios_kbd_lock_status=boot_params.kbd_status
++	
++	/* Numlock status bit set? */
++	if ((*bios_kbd_lock_status & 0x20) && numlock)
++	KBD_DEFLEDS = 1 << VC_NUMLOCK;
++#endif
++	
+         for (i = 0; i < MAX_NR_CONSOLES; i++) {
+ 		kbd_table[i].ledflagstate = KBD_DEFLEDS;
+ 		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
