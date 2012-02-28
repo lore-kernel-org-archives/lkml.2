@@ -1,95 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2B1D3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 22:29:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35385 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab2B1D3T (ORCPT
+	id S932498Ab2B1DfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 22:35:18 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:47769 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754850Ab2B1DfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 22:29:19 -0500
-Date: Tue, 28 Feb 2012 14:29:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: linux-next: manual merge of the driver-core tree with the pci tree
-Message-Id: <20120228142909.48fa1eea6980eaffa27abfdc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M"
+	Mon, 27 Feb 2012 22:35:16 -0500
+X-SpamScore: -25
+X-BigFish: VS-25(zz9371I146fK179dN1432Nea8N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 28 Feb 2012 11:41:30 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/20] pinctrl: Enhance mapping table to support pin
+ config operations
+Message-ID: <20120228034129.GB1249@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-21-git-send-email-swarren@nvidia.com>
+ <20120227122117.GA15593@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFEF@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFEF@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 27, 2012 at 11:02:01AM -0800, Stephen Warren wrote:
+> Dong Aisheng wrote at Monday, February 27, 2012 5:21 AM:
+> > On Sun, Feb 19, 2012 at 11:46:00PM -0700, Stephen Warren wrote:
+> > > The pinctrl mapping table can now contain entries to:
+> > > * Set the mux function of a pin group
+> > > * Apply a set of pin config options to a pin or a group
+> > >
+> > > This allows pinctrl_select_state() to apply pin configs settings as well
+> > > as mux settings.
+> > >
+> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ...
+> > > +The mapping table may also contain pin configuration entries. It's common for
+> > > +each pin/group to have a number of configuration entries that affect it, so
+> > > +the table entries for configuration reference an array of config parameters
+> > > +and values. An example using the convenience macros is shown below:
+> > > +
+> > > +static unsigned long i2c_grp_configs[] = {
+> > > +	FOO_PIN_DRIVEN,
+> > > +	FOO_PIN_PULLUP,
+> > > +};
+> > > +
+> > > +static unsigned long i2c_pin_configs[] = {
+> > > +	FOO_OPEN_COLLECTOR,
+> > > +	FOO_SLEW_RATE_SLOW,
+> > > +};
+> > > +
+> > > +static struct pinctrl_map __initdata mapping[] = {
+> > > +	PIN_MAP_MUX_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", "i2c0"),
+> > > +	PIN_MAP_MUX_CONFIGS_GROUP("foo-i2c.0", "default", "pinctrl-foo", "i2c0", i2c_grp_configs),
+> > > +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0scl", i2c_pin_configs),
+> > > +	PIN_MAP_MUX_CONFIGS_PIN("foo-i2c.0", "default", "pinctrl-foo", "i2c0sda", i2c_pin_configs),
+> >
+> > I still have not read all over this patch.
+> > But one question i'm considering is that
+> > will this way here also work for "virtual" group?
+> > For example, the virtual group "i2c_grp_configs" may actually contains
+> > the config for each pin in that group?
+> > The core will handle this difference or let each driver to handle it?
+> 
+> Since the core has no knowledge of virtual groups, everything has to be
+> handled inside the pin controller driver: When the core asks the driver
+> to enumerate the groups it supports, those virtual groups must be included
+> in the list. The mapping table may contain entries to configure those
+> virtual groups, which will be passed on to the driver to implement as it
+> sees fit. So, in short, yes, I believe this handles virtual groups just
+> fine.
+> 
+Ok, great.
 
-Hi Greg,
+> > > @@ -1022,7 +1074,7 @@ Since it may be common to request the core to hog a few always-applicable
+> > >  mux settings on the primary pin controller, there is a convenience macro for
+> > >  this:
+> > >
+> > > -PIN_MAP_SYS_HOG("active", "pinctrl-foo", "power_func")
+> >
+> > Hmm?
+> > Why remove this one?
+> 
+> In the patch I posted, I simplified the mapping table macros by replacing
+> all mux entries with a single macro PIN_MAP_MUX_GROUP(). However, I've
+> since modified the patch to include a number of special-case macros, so
+> this macro has been added back (albeit under a slightly different name).
+>
+Sounds good.
 
-Today's linux-next merge of the driver-core tree got a conflict in
-include/linux/pci.h between commit 6754b9e9c335 ("PCI: Rename
-pci_remove_behind_bridge to pci_stop_and_remove_behind_bridge") from the
-pci tree and commit aad4f4000cec ("PCI: Add helper macro for
-pci_register_driver boilerplate") from the driver-core tree.
+> > > +int pinctrl_get_pin_id(struct pinctrl_dev *pctldev,
+> > > +		       const char *pin)
+> > > +{
+> > > +	unsigned int i;
+> > > +
+> > > +	for (i = 0; i < pctldev->desc->npins; i++) {
+> > > +		if (pctldev->desc->pins[i].name == NULL)
+> > > +			continue;
+> > > +		if (!strcmp(pin, pctldev->desc->pins[i].name)) {
+> > > +			dev_dbg(pctldev->dev, "found pin id %u for %s\n",
+> > > +				i, pin);
+> > > +			return i;
+> >
+> > It looks actually this is not a PIN id.
+> > It's just the index of the pin array.
+> > Pin has its own id:
+> > struct pinctrl_pin_desc {
+> > 	unsigned number;
+> > 	const char *name;
+> > };
+> 
+> I guess I should just delete this function and call pin_get_from_name()
+> instead.
+> 
+> However, this does raise one question:
+> 
+> Right now, pin_config_set() calls pin_get_from_name() to find the pin
+> ID of a pin. This returns that "number" field in the struct above. This
+> is then passed to the pin controller driver's pin_config_set() callback.
+> Hence, the pin ID value passed to pin_config_set() can't be used to index
+> into the driver's own pin_desc array if the pin numbers are sparse. Is
+> that intended? I suppose it's OK since any driver-specific information
+> about each pin can't be stored in the pin_desc array anyway, since that
+> array has a standard type without space for driver-specific data, and
+> any driver-specific array would probably be indexed by the values in the
+> .number field, not the pin_desc array index.
+It's indeed.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards
+Dong Aisheng
 
-diff --cc include/linux/pci.h
-index 5584aac,d4afd70..0000000
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@@ -947,7 -946,20 +947,20 @@@ int __must_check __pci_register_driver(
-  	__pci_register_driver(driver, THIS_MODULE, KBUILD_MODNAME)
- =20
-  void pci_unregister_driver(struct pci_driver *dev);
-+=20
-+ /**
-+  * module_pci_driver() - Helper macro for registering a PCI driver
-+  * @__pci_driver: pci_driver struct
-+  *
-+  * Helper macro for PCI drivers which do not do anything special in module
-+  * init/exit. This eliminates a lot of boilerplate. Each module may only
-+  * use this macro once, and calling it replaces module_init() and module_=
-exit()
-+  */
-+ #define module_pci_driver(__pci_driver) \
-+ 	module_driver(__pci_driver, pci_register_driver, \
-+ 		       pci_unregister_driver)
-+=20
- -void pci_remove_behind_bridge(struct pci_dev *dev);
- +void pci_stop_and_remove_behind_bridge(struct pci_dev *dev);
-  struct pci_driver *pci_dev_driver(const struct pci_dev *dev);
-  int pci_add_dynid(struct pci_driver *drv,
-  		  unsigned int vendor, unsigned int device,
-
---Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPTEoFAAoJEECxmPOUX5FE3b8P/2j2QSwUfAgpJGPeROzfhhw7
-snQT6CCz4FQ9oBdNUINH1g6MdCwrMcw5l7kBPqi2XTX3ZnInijePxN68N+CAkF01
-HFXXEB+age1bYl3gfjDpBYygtsw+W97EvbT8B/7V9tIyVt9gZBNYH/a4qiKH4mBE
-rZRoHFmTROfZhZIBOsYNH4lGsCvvUTcVqlUmFoY2zRYzMx3KnlMII1NZI6Pi9pc8
-WBUvuQ6Z7dyO1IVDgxpf+Jy84xPk8yjSnpmicft/P4pnWltgJrVFPAhK5eaFRIwr
-yYyYdWiFBzsyX8AWhAEzAr2021zb1Jp+FO/3aGogtq6vFsqa6WOyHB+qN75cGvmK
-YiFHFOcHsgaoGAaYDJPe/FidcRF2i8etZRzgXOc0VFZ+a8xu8L8g9FdLD8tgkNc9
-oymqqJNSDRDDVu9MBOLnsRCzIIMbzC+behjvNwY+ZVo/7t0+otxJ1+7H8qvKXo88
-NnMafmLo4qdteGTACYaj81aWlWZ7AeGsxKyvHMXkVwp1liA6ZCEROFmInmJIuFm/
-bXCvJt8XkNiDVLmG1mOi5uNoV8FsCiVhC39Tbdq+bY1lwnAmCzK71ooU/ZpFV6Sz
-S6DfwMZia+dl+MkkYOOOWHO8UeF0NN5ke+F6kBzC77+f5cxtNtA15vrOAVXkIHsc
-E3bG0yjAQBc01EgOLpg3
-=3ckH
------END PGP SIGNATURE-----
-
---Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M--
