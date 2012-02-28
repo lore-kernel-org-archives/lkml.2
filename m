@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965373Ab2B1BOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:14:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965343Ab2B1BMi (ORCPT
+	id S965356Ab2B1BPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:15:19 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50311 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965010Ab2B1BPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.7 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-MIME-Version: 1.0
-Message-Id: <20120228010434.582975556@linuxfoundation.org>
-User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 59/72] [SCSI] scsi_scan: Fix Poison overwritten warning caused by using freed shost
-In-Reply-To: <20120228010511.GA8453@kroah.com>
+	Mon, 27 Feb 2012 20:15:18 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 28 Feb 2012 10:13:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 16/21] mm: handle lruvec relocks in compaction
+Message-Id: <20120228101348.fb38e5f2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120223135256.12988.24796.stgit@zurg>
+References: <20120223133728.12988.5432.stgit@zurg>
+	<20120223135256.12988.24796.stgit@zurg>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 23 Feb 2012 17:52:56 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-------------------
+> Prepare for lru_lock splitting in memory compaction code.
+> 
+> * disable irqs in acct_isolated() for __mod_zone_page_state(),
+>   lru_lock isn't required there.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  mm/compaction.c |   30 ++++++++++++++++--------------
+>  1 files changed, 16 insertions(+), 14 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index a976b28..54340e4 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -224,8 +224,10 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+>  	list_for_each_entry(page, &cc->migratepages, lru)
+>  		count[!!page_is_file_cache(page)]++;
+>  
+> +	local_irq_disable();
+>  	__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+>  	__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+> +	local_irq_enable();
 
-From: Huajun Li <huajun.li.lee@gmail.com>
+Why we need to disable Irq here ??
 
-commit 267a6ad4aefaafbde607804c60945bcf97f91c1b upstream.
 
-In do_scan_async(), calling scsi_autopm_put_host(shost) may reference
-freed shost, and cause Posison overwitten warning.
-Yes, this case can happen, for example, an USB is disconnected just
-when do_scan_async() thread starts to run, then scsi_host_put() called
-in scsi_finish_async_scan() will lead to shost be freed(because the
-refcount of shost->shost_gendev decreases to 1 after USB disconnects),
-at this point, if references shost again, system will show following
-warning msg.
 
-To make scsi_autopm_put_host(shost) always reference a valid shost,
-put it just before scsi_host_put() in function
-scsi_finish_async_scan().
+>  }
+>  
+>  /* Similar to reclaim, but different enough that they don't share logic */
+> @@ -262,7 +264,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  	unsigned long nr_scanned = 0, nr_isolated = 0;
+>  	struct list_head *migratelist = &cc->migratepages;
+>  	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+> -	struct lruvec *lruvec;
+> +	struct lruvec *lruvec = NULL;
+>  
+>  	/* Do not scan outside zone boundaries */
+>  	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+> @@ -294,25 +296,24 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  
+>  	/* Time to isolate some pages for migration */
+>  	cond_resched();
+> -	spin_lock_irq(&zone->lru_lock);
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+>  		struct page *page;
+> -		bool locked = true;
+>  
+>  		/* give a chance to irqs before checking need_resched() */
+>  		if (!((low_pfn+1) % SWAP_CLUSTER_MAX)) {
+> -			spin_unlock_irq(&zone->lru_lock);
+> -			locked = false;
+> +			if (lruvec)
+> +				unlock_lruvec_irq(lruvec);
+> +			lruvec = NULL;
+>  		}
+> -		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
+> -			if (locked)
+> -				spin_unlock_irq(&zone->lru_lock);
+> +		if (need_resched() ||
+> +		    (lruvec && spin_is_contended(&zone->lru_lock))) {
+> +			if (lruvec)
+> +				unlock_lruvec_irq(lruvec);
+> +			lruvec = NULL;
+>  			cond_resched();
+> -			spin_lock_irq(&zone->lru_lock);
+>  			if (fatal_signal_pending(current))
+>  				break;
+> -		} else if (!locked)
+> -			spin_lock_irq(&zone->lru_lock);
+> +		}
+>  
+>  		/*
+>  		 * migrate_pfn does not necessarily start aligned to a
+> @@ -359,7 +360,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  			continue;
+>  		}
+>  
+> -		if (!PageLRU(page))
+> +		if (!__lock_page_lruvec_irq(&lruvec, page))
+>  			continue;
 
-[  299.281565] =============================================================================
-[  299.281634] BUG kmalloc-4096 (Tainted: G          I ): Poison overwritten
-[  299.281682] -----------------------------------------------------------------------------
-[  299.281684]
-[  299.281752] INFO: 0xffff880056c305d0-0xffff880056c305d0. First byte
-0x6a instead of 0x6b
-[  299.281816] INFO: Allocated in scsi_host_alloc+0x4a/0x490 age=1688
-cpu=1 pid=2004
-[  299.281870] 	__slab_alloc+0x617/0x6c1
-[  299.281901] 	__kmalloc+0x28c/0x2e0
-[  299.281931] 	scsi_host_alloc+0x4a/0x490
-[  299.281966] 	usb_stor_probe1+0x5b/0xc40 [usb_storage]
-[  299.282010] 	storage_probe+0xa4/0xe0 [usb_storage]
-[  299.282062] 	usb_probe_interface+0x172/0x330 [usbcore]
-[  299.282105] 	driver_probe_device+0x257/0x3b0
-[  299.282138] 	__driver_attach+0x103/0x110
-[  299.282171] 	bus_for_each_dev+0x8e/0xe0
-[  299.282201] 	driver_attach+0x26/0x30
-[  299.282230] 	bus_add_driver+0x1c4/0x430
-[  299.282260] 	driver_register+0xb6/0x230
-[  299.282298] 	usb_register_driver+0xe5/0x270 [usbcore]
-[  299.282337] 	0xffffffffa04ab03d
-[  299.282364] 	do_one_initcall+0x47/0x230
-[  299.282396] 	sys_init_module+0xa0f/0x1fe0
-[  299.282429] INFO: Freed in scsi_host_dev_release+0x18a/0x1d0 age=85
-cpu=0 pid=2008
-[  299.282482] 	__slab_free+0x3c/0x2a1
-[  299.282510] 	kfree+0x296/0x310
-[  299.282536] 	scsi_host_dev_release+0x18a/0x1d0
-[  299.282574] 	device_release+0x74/0x100
-[  299.282606] 	kobject_release+0xc7/0x2a0
-[  299.282637] 	kobject_put+0x54/0xa0
-[  299.282668] 	put_device+0x27/0x40
-[  299.282694] 	scsi_host_put+0x1d/0x30
-[  299.282723] 	do_scan_async+0x1fc/0x2b0
-[  299.282753] 	kthread+0xdf/0xf0
-[  299.282782] 	kernel_thread_helper+0x4/0x10
-[  299.282817] INFO: Slab 0xffffea00015b0c00 objects=7 used=7 fp=0x
-      (null) flags=0x100000000004080
-[  299.282882] INFO: Object 0xffff880056c30000 @offset=0 fp=0x          (null)
-[  299.282884]
-...
+Could you add more comments onto __lock_page_lruvec_irq() ?
 
-Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/scsi_scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -1815,6 +1815,7 @@ static void scsi_finish_async_scan(struc
- 	}
- 	spin_unlock(&async_scan_lock);
- 
-+	scsi_autopm_put_host(shost);
- 	scsi_host_put(shost);
- 	kfree(data);
- }
-@@ -1841,7 +1842,6 @@ static int do_scan_async(void *_data)
- 
- 	do_scsi_scan_host(shost);
- 	scsi_finish_async_scan(data);
--	scsi_autopm_put_host(shost);
- 	return 0;
- }
- 
-@@ -1869,7 +1869,7 @@ void scsi_scan_host(struct Scsi_Host *sh
- 	p = kthread_run(do_scan_async, data, "scsi_scan_%d", shost->host_no);
- 	if (IS_ERR(p))
- 		do_scan_async(data);
--	/* scsi_autopm_put_host(shost) is called in do_scan_async() */
-+	/* scsi_autopm_put_host(shost) is called in scsi_finish_async_scan() */
- }
- EXPORT_SYMBOL(scsi_scan_host);
- 
-
+Thanks,
+-Kame
 
