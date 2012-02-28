@@ -1,84 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965739Ab2B1QKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:10:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37607 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab2B1QKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:10:46 -0500
-Date: Tue, 28 Feb 2012 17:02:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Subject: Re: [PATCH v11 08/12] signal, x86: add SIGSYS info and make it
-	synchronous.
-Message-ID: <20120228160257.GB3664@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-8-git-send-email-wad@chromium.org> <20120227172208.GC10608@redhat.com> <CABqD9hbBj_c1qxD7N0ed3LMy_DXn-163LuNc1E7mSZbGO7oqyw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABqD9hbBj_c1qxD7N0ed3LMy_DXn-163LuNc1E7mSZbGO7oqyw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S965778Ab2B1QLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:11:48 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34339 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965691Ab2B1QLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 11:11:44 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Cc: EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+Date: Tue, 28 Feb 2012 17:11:25 +0100
+Message-Id: <1330445487-15020-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.8.rc0
+In-Reply-To: <1330445487-15020-1-git-send-email-bp@amd64.org>
+References: <1330445487-15020-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27, Will Drewry wrote:
->
-> On Mon, Feb 27, 2012 at 11:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 02/24, Will Drewry wrote:
-> >>
-> >> To ensure that SIGSYS delivery occurs on return from the triggering
-> >> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.
-> >
-> > Hmm. Can't understand... please help.
-> >
-> >>  #define SYNCHRONOUS_MASK \
-> >>       (sigmask(SIGSEGV) | sigmask(SIGBUS) | sigmask(SIGILL) | \
-> >> -      sigmask(SIGTRAP) | sigmask(SIGFPE))
-> >> +      sigmask(SIGTRAP) | sigmask(SIGFPE) | sigmask(SIGSYS))
-> >
-> > Why?
-> >
-> > SYNCHRONOUS_MASK just tells dequeue_signal() "pick them first".
-> > This is needed to make sure that the handler for, say SIGSEGV,
-> > can use ucontext->ip as a faulting addr.
->
-> I think that Roland covered this.  (Since the syscall_rollback was
-> called it's nice to let our handler get first go.)
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-OK, except I do not really understand the "our handler get first go".
+The idea here is to pass an additional decoded MCE message through
+the tracepoint and into the ring buffer for userspace to consume. The
+designated consumers are RAS daemons and other tools collecting RAS
+information.
 
-Suppose SIGSYS "races" with the pending SIGHUP. With this change
-the caller for SIGHUP will be called first. But yes, setup_frame()
-will be called for SIGSYS first. Hopefully this is what you want.
+Drop unneeded fields while at it, thus saving some room in the ring
+buffer.
 
-> > But seccomp adds info->si_call_addr, this looks unneeded.
->
-> True enough.  I can drop it.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+ include/trace/events/mce.h       |   22 +++++++---------------
+ 2 files changed, 8 insertions(+), 16 deletions(-)
 
-Hmm. I meant, the change in SYNCHRONOUS_MASK looks unneeded. Please
-keep ->si_call_addr, it is much more convenient than ucontext_t in
-userspace.
-
-> It'd only be useful if the SIGSYS wasn't
-> being forced and the signal was being handled without ucontext_t
-> access.
-
-No, force_ doesn't make any difference in this sense...
-
-In short, the patch looks fine to me, but if you resend it may be
-you can update the changelog.
-
-Oleg.
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 5a11ae2e9e91..072e020ecaf3 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -144,7 +144,7 @@ void mce_log(struct mce *mce)
+ 	int ret = 0;
+ 
+ 	/* Emit the trace record: */
+-	trace_mce_record(mce);
++	trace_mce_record("", mce);
+ 
+ 	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
+ 	if (ret == NOTIFY_STOP)
+diff --git a/include/trace/events/mce.h b/include/trace/events/mce.h
+index 4cbbcef6baa8..5fada9a40708 100644
+--- a/include/trace/events/mce.h
++++ b/include/trace/events/mce.h
+@@ -10,11 +10,12 @@
+ 
+ TRACE_EVENT(mce_record,
+ 
+-	TP_PROTO(struct mce *m),
++	TP_PROTO(const char *msg, struct mce *m),
+ 
+-	TP_ARGS(m),
++	TP_ARGS(msg, m),
+ 
+ 	TP_STRUCT__entry(
++		__string(	msg,		msg		)
+ 		__field(	u64,		mcgcap		)
+ 		__field(	u64,		mcgstatus	)
+ 		__field(	u64,		status		)
+@@ -24,15 +25,12 @@ TRACE_EVENT(mce_record,
+ 		__field(	u64,		tsc		)
+ 		__field(	u64,		walltime	)
+ 		__field(	u32,		cpu		)
+-		__field(	u32,		cpuid		)
+-		__field(	u32,		apicid		)
+-		__field(	u32,		socketid	)
+ 		__field(	u8,		cs		)
+ 		__field(	u8,		bank		)
+-		__field(	u8,		cpuvendor	)
+ 	),
+ 
+ 	TP_fast_assign(
++		__assign_str(msg,	msg);
+ 		__entry->mcgcap		= m->mcgcap;
+ 		__entry->mcgstatus	= m->mcgstatus;
+ 		__entry->status		= m->status;
+@@ -42,25 +40,19 @@ TRACE_EVENT(mce_record,
+ 		__entry->tsc		= m->tsc;
+ 		__entry->walltime	= m->time;
+ 		__entry->cpu		= m->extcpu;
+-		__entry->cpuid		= m->cpuid;
+-		__entry->apicid		= m->apicid;
+-		__entry->socketid	= m->socketid;
+ 		__entry->cs		= m->cs;
+ 		__entry->bank		= m->bank;
+-		__entry->cpuvendor	= m->cpuvendor;
+ 	),
+ 
+-	TP_printk("CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: %x",
++	TP_printk("%s" HW_ERR "CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, TIME: %llu)",
++		__get_str(msg),
+ 		__entry->cpu,
+ 		__entry->mcgcap, __entry->mcgstatus,
+ 		__entry->bank, __entry->status,
+ 		__entry->addr, __entry->misc,
+ 		__entry->cs, __entry->ip,
+ 		__entry->tsc,
+-		__entry->cpuvendor, __entry->cpuid,
+-		__entry->walltime,
+-		__entry->socketid,
+-		__entry->apicid)
++		__entry->walltime)
+ );
+ 
+ #endif /* _TRACE_MCE_H */
+-- 
+1.7.8.rc0
 
