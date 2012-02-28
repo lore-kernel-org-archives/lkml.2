@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2B1Pag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:30:36 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41197 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755542Ab2B1Paf (ORCPT
+	id S1756155Ab2B1Pdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:33:51 -0500
+Received: from mail16.primus.ca ([216.254.141.183]:39381 "EHLO
+	mail-09.primus.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752470Ab2B1Pdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:30:35 -0500
-Date: Tue, 28 Feb 2012 10:30:33 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Meng Zhang <meng.zhang@mediatek.com>
-cc: Josua Dietze <digidietze@draisberghof.de>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Phil Dibowitz <phil@ipom.com>, USB list <linux-usb@vger.kernel.org>,
-        USB Storage list <usb-storage@lists.one-eyed-alien.net>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
-In-Reply-To: <4F4C998D.4000805@mediatek.com>
-Message-ID: <Pine.LNX.4.44L0.1202281028350.1456-100000@iolanthe.rowland.org>
+	Tue, 28 Feb 2012 10:33:49 -0500
+Message-ID: <4F4CF3CF.5090605@bell.net>
+Date: Tue, 28 Feb 2012 10:33:35 -0500
+From: John David Anglin <dave.anglin@bell.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mike Frysinger <vapier@gentoo.org>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
+ for 64 bit.
+References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <201202280106.23643.vapier@gentoo.org> <1330438245.2822.114.camel@dabdike.int.hansenpartnership.com> <201202281021.05897.vapier@gentoo.org>
+In-Reply-To: <201202281021.05897.vapier@gentoo.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated: danglin-lux@magma.ca - 216-58-40-249.cpe.distributel.net ([192.168.0.181]) [216.58.40.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012, Meng Zhang wrote:
+On 2/28/2012 10:21 AM, Mike Frysinger wrote:
+> we've been using hppa2.0 for years.  gnuconfig certainly recognizes it:
+> $ grep hppa /usr/share/gnuconfig/config.sub
+>          | h8300 | h8500 | hppa | hppa1.[01] | hppa2.0 | hppa2.0[nw] | hppa64 \
+>          | hppa-* | hppa1.[01]-* | hppa2.0-* | hppa2.0[nw]-* | hppa64-* \
+>
+> and i've seen diff projects key off of the hppa2.0* to enable newer features by
+> default.
+Some of the above are specific to HP-UX, but hppa1.1, hppa2.0, hppa and 
+hppa64 are
+valid for Linux based on config.guess.
 
-> from: Meng Zhang <meng.zhang@mediatek.com>
-> 
-> 1. Add entrys for mediatek MT6276M in unusual_devs.h
-> 
-> 2. Add init function for mediatek MT6276M to switch to COM port mode
-> 
-> 3. usb-devices outputs after running with this patch:
-> T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
-> D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-> P:  Vendor=0e8d ProdID=00a1 Rev=02.00
-> S:  Manufacturer=MediaTek Inc
-> S:  Product=Product
-> C:  #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
-> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
-> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-> 
-> 4. patch based on branch:
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> 
-> 
-> Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+Dave
 
-Nowadays, aren't such things handled in userspace by the usb_modeswitch 
-program rather than in the kernel driver?
-
-Alan Stern
+-- 
+John David Anglin    dave.anglin@bell.net
 
