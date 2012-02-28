@@ -1,96 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab2B1GGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 01:06:21 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:38549 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab2B1GGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 01:06:20 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: James Bottomley <jbottomley@parallels.com>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
-Date: Tue, 28 Feb 2012 01:06:20 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "dave.anglin@bell.net" <dave.anglin@bell.net>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <201202272004.55187.vapier@gentoo.org> <1330399020.2822.106.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1330399020.2822.106.camel@dabdike.int.hansenpartnership.com>
+	id S1755754Ab2B1GJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 01:09:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64949 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab2B1GJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 01:09:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.154.202 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F4C6FAD.6040803@openvz.org>
+Date: Tue, 28 Feb 2012 10:09:49 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2671552.CgOXUbQQLd";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 06/21] mm: lruvec linking functions
+References: <20120223133728.12988.5432.stgit@zurg>	<20120223135204.12988.75350.stgit@zurg> <20120228092724.22e135e7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120228092724.22e135e7.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202280106.23643.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2671552.CgOXUbQQLd
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+KAMEZAWA Hiroyuki wrote:
+> On Thu, 23 Feb 2012 17:52:04 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> This patch adds links from page to its lruvec and from lruvec to its zone and node.
+>> If CONFIG_CGROUP_MEM_RES_CTLR=n they just page_zone() and container_of().
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> small comments in below.
+>
+>> ---
+>>   include/linux/mm.h     |   37 +++++++++++++++++++++++++++++++++++++
+>>   include/linux/mmzone.h |   12 ++++++++----
+>>   mm/internal.h          |    1 +
+>>   mm/memcontrol.c        |   27 ++++++++++++++++++++++++---
+>>   mm/page_alloc.c        |   17 ++++++++++++++---
+>>   5 files changed, 84 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index ee3ebc1..c6dc4ab 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -728,6 +728,43 @@ static inline void set_page_links(struct page *page, enum zone_type zone,
+>>   #endif
+>>   }
+>>
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> +
+>> +/* Multiple lruvecs in zone */
+>> +
+>> +extern struct lruvec *page_lruvec(struct page *page);
+>> +
+>> +static inline struct zone *lruvec_zone(struct lruvec *lruvec)
+>> +{
+>> +	return lruvec->zone;
+>> +}
+>> +
+>> +static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
+>> +{
+>> +	return lruvec->node;
+>> +}
+>> +
+>> +#else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>> +
+>> +/* Single lruvec in zone */
+>> +
+>> +static inline struct lruvec *page_lruvec(struct page *page)
+>> +{
+>> +	return&page_zone(page)->lruvec;
+>> +}
+>> +
+>> +static inline struct zone *lruvec_zone(struct lruvec *lruvec)
+>> +{
+>> +	return container_of(lruvec, struct zone, lruvec);
+>> +}
+>> +
+>> +static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
+>> +{
+>> +	return lruvec_zone(lruvec)->zone_pgdat;
+>> +}
+>> +
+>> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR */
+>> +
+>>   /*
+>>    * Some inline functions in vmstat.h depend on page_zone()
+>>    */
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index ddd0fd2..be8873a 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -159,10 +159,6 @@ static inline int is_unevictable_lru(enum lru_list lru)
+>>   	return (lru == LRU_UNEVICTABLE);
+>>   }
+>>
+>> -struct lruvec {
+>> -	struct list_head pages_lru[NR_LRU_LISTS];
+>> -};
+>> -
+>>   /* Mask used at gathering information at once (see memcontrol.c) */
+>>   #define LRU_ALL_FILE (BIT(LRU_INACTIVE_FILE) | BIT(LRU_ACTIVE_FILE))
+>>   #define LRU_ALL_ANON (BIT(LRU_INACTIVE_ANON) | BIT(LRU_ACTIVE_ANON))
+>> @@ -300,6 +296,14 @@ struct zone_reclaim_stat {
+>>   	unsigned long		recent_scanned[2];
+>>   };
+>>
+>> +struct lruvec {
+>> +	struct list_head	pages_lru[NR_LRU_LISTS];
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> +	struct zone		*zone;
+>> +	struct pglist_data	*node;
+>> +#endif
+>
+> I don't think this #ifdef is very good ....this adds other #ifdefs in other headers.
+> How bad if we remove this #ifdef and use ->zone, ->pgdat in lruvec_zone, lruvec_page
+> always ?
 
-On Monday 27 February 2012 22:17:01 James Bottomley wrote:
-> On Mon, 2012-02-27 at 20:04 -0500, Mike Frysinger wrote:
-> > On Monday 27 February 2012 17:03:10 James Bottomley wrote:
-> > > --- a/arch/parisc/Makefile
-> > > +++ b/arch/parisc/Makefile
-> > >=20
-> > > -CROSS_COMPILE	:=3D hppa64-linux-gnu-
-> > > +
-> > > +# if no default set, try to find the corresponding 64 bit compiler
-> > > +ifeq ($(CROSS_COMPILE),)
-> > > +CROSS_COMPILE	:=3D $(shell $(CC) -dumpmachine | sed
-> > > s/hppa-\\\(.*\\\)/hppa64-\\1-/) +endif
-> >=20
-> > fails when using "hppa2.0-xxx".  perhaps:
-> > CROSS_COMPILE ?=3D $(shell $(CC) -dumpmachine | sed
-> > 's/^hppa[^-]*-/hppa64-/')
-> >=20
-> > don't even need the ifeq check then
->=20
-> How is that different from Carlos' suggestion?
+This adds one dereference in lruvec_zone() if memcg is disabled in config.
+We can remove ifdef from declaration and initialization, but keep optimized variant of lruvec_zone()
 
-sorry, but i'm not seeing any e-mails from Carlos in this thread.  what is =
-his=20
-suggestion ?
+>
+> There may be concerns to fit lruvec at el into cache-line...but this set will add
+> a (big) hash here later..
+>
+> I'm sorry if you're asked to add this #ifdef in v1 or v2.
+>
+> Thanks,
+> -Kame
+>
 
-> The reason it doesn't work is the same ... CROSS_COMPILE is defined to be
-> empty.
-
-my suggestion was purely an incremental improvement on the patch you posted=
-=2E =20
-it improves two things:
-	- detection when the default tuple is hppa2.0-xxx rather than hppa-xxx
-	- one line for set-variable-only-when-its-unset rather than three lines
-=2Dmike
-
---nextPart2671552.CgOXUbQQLd
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTG7fAAoJEEFjO5/oN/WB0yEP/jWUkZIrGVdlh9svcO3Bnd5w
-g1uiq5f0ku6DVeAX/yF5zxUXFdvKUECvbVeOFOxxE8TDwJA/6d22vpDEhzA1FW53
-8YiHbTUOwRQO999dzPThk6JxI+4tMkBEMHYQDAbUXNki4mY1S+vKtLWJBZ7t0VFB
-Lc+oG9hf46maFZM1nPK8Pj2b5rOlx8KE0qJPNx+9xaUZuERfVy+wyCvdq2d3KnmO
-83SmZGcr+GJL7iKJTlX+0t+JSJYA3Sbiap9/toQc5WDXYk7lyCy37aCQypzwEtKA
-tD4KCRHAOGgW+xAvk+lrjSGc5T80BNvsv3t1IdjvP7Ak6iwyQ86RCUCb/q+QxZZQ
-xjd2RshmoUiSj5xR4yH0yjugT32fO0zFjT414qcYJStFx8uphcBp5GpJyq7mj6FH
-DIA3BuUotgHWJRKsh2BTkJHVC+DDnCtq6oudd2xXCn74S/dSd3DZo69MKOTUbyqh
-1O+w+9UZXkeQWTn8I+Z1tWTioIR7MNfce+kwwwEf0HILVFBsFinQxi5Gy16h/A9J
-VJvdi496Aat+26e2763+6UBFQewzTeFlaSoVx2Pyk38fkJcOL82HN/TCu+q3FDN6
-Xz+oPQKE22ksVxFGyJLbr0kt14dr9m8pt/KB7tlEXVFD2cYx/oJ2MTRtOb5OISoq
-zr+JZCrNOQ8VXc1+GTjV
-=lvLb
------END PGP SIGNATURE-----
-
---nextPart2671552.CgOXUbQQLd--
