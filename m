@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965862Ab2B1RxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:53:04 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:58295 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965392Ab2B1RxC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:53:02 -0500
-Subject: Re: [PATCH 1/2] sched: entity load-tracking re-work - Fix for ARM
-Mime-Version: 1.0 (Apple Message framework v1084)
+	id S965889Ab2B1R6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:58:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46865 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965746Ab2B1R6I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:58:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.129.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Tue, 28 Feb 2012 09:57:35 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Subject: Re: [PATCH v3] ARM: LPC32xx: USB Support
+Message-ID: <20120228175735.GB14290@kroah.com>
+References: <1330178224-24999-1-git-send-email-stigge@antcom.de>
+ <1330178224-24999-2-git-send-email-stigge@antcom.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20120228174559.GC1129@e103034-lin.cambridge.arm.com>
-Date: Tue, 28 Feb 2012 19:52:56 +0200
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3E8017B2-836A-466A-92F1-E625F49E554D@antoniou-consulting.com>
-References: <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com> <1330511859-22032-2-git-send-email-panto@antoniou-consulting.com> <20120228174559.GC1129@e103034-lin.cambridge.arm.com>
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <1330178224-24999-2-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 28, 2012, at 7:45 PM, Morten Rasmussen wrote:
-
-> On Wed, Feb 29, 2012 at 10:37:38AM +0000, Pantelis Antoniou wrote:
->> @@ -1110,9 +1110,9 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
->> 	struct cfs_rq *cfs_rq = group_cfs_rq(se);
->> 	struct task_group *tg = cfs_rq->tg;
->> 	int runnable_avg;
->> +	u64 contrib;
->> 
->> -	se->avg.load_avg_contrib = (cfs_rq->tg_load_contrib * tg->shares);
->> -	se->avg.load_avg_contrib /= atomic64_read(&tg->load_avg) + 1;
+On Sat, Feb 25, 2012 at 02:57:04PM +0100, Roland Stigge wrote:
+> This patch adds OHCI support to the LPC32xx ARM platform. Besides the trivial
+> addition of platform "usb-ohci" support, fixes for the USB PLL have been added
+> to arch/arm/mach-lpc32xx/clock.c, ported from NXP's lpclinux.com.
 > 
-> It seems that contrib is never assigned?
-> Fix:
-> +	contrib = (cfs_rq->tg_load_contrib * tg->shares);
-> 
->> +	se->avg.load_avg_contrib = div_u64(contrib, atomic64_read(&tg->load_avg) + 1);
-> 
-> Regards,
-> Morten
-> 
+> (This is the mach-lpc32xx specific part, the USB subsystem specific changes are
+> in a separate patch for the USB maintainers.)
 
-Hmm, yeah,
+Do you want/need me to take both of these?  Or just the first one?  Or,
+just ack the first one so the arm maintainers can take this one?  It's
+your choice...
 
-2 line patch and brown paper bag time.
+thanks,
 
-Thanks
-
--- Pantelis
+greg k-h
