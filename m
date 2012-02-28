@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab2B1RLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:11:41 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:45652 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab2B1RLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:11:40 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 28 Feb 2012 18:11:32 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [SCSI] sr: fix multi-drive performance, remove BKL
- replacement
-Message-ID: <20120228181132.13f1088c@stein>
-In-Reply-To: <1330448257.2822.138.camel@dabdike.int.hansenpartnership.com>
-References: <20120228153244.70413d34@stein>
-	<20120228170930.132f7c1e@stein>
-	<1330445795.2822.134.camel@dabdike.int.hansenpartnership.com>
-	<201202281642.16496.arnd@arndb.de>
-	<1330448257.2822.138.camel@dabdike.int.hansenpartnership.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932405Ab2B1RLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:11:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932349Ab2B1RLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:11:47 -0500
+Date: Tue, 28 Feb 2012 18:04:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jamie Lokier <jamie@shareable.org>, Mike Frysinger <vapier@gentoo.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: + procfs-mark-thread-stack-correctly-in-proc-pid-maps.patch
+	added to -mm tree
+Message-ID: <20120228170436.GA9698@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 28 James Bottomley wrote:
-> On Tue, 2012-02-28 at 16:42 +0000, Arnd Bergmann wrote:
-> > I took another look and I believe the cdi->use_count in
-> > cdrom_open/cdrom_release still requires some protection that is
-> > currently provided by sr_mutex.
-> 
-> So I think this is fine ... it's protected by the bdev->bd_mutex.
-> 
-> >  Some parts of cdrom_ioctl also
-> > access this variable and things like cdi->options or cdi->keeplocked.
-> 
-> This would be problematic because we no longer lock the ioctl.
-> 
-> > I could imagine that you can get rid of the mutex if you turn those
-> > into atomics and bitops, but there may be other parts of cdrom_device_info
-> > that need locking. A safer option to solve the performance problems
-> > could be to replace sr_mutex with a per-device mutex inside of
-> > cdrom_device_info.
-> 
-> I'd say the latter.
+> +int vm_is_stack(struct task_struct *task,
+> +			      struct vm_area_struct *vma, int in_group)
+> +{
+> +	if (vm_is_stack_for_task(task, vma))
+> +		return 1;
+> +
+> +	if (in_group) {
+> +		struct task_struct *t = task;
+> +		while_each_thread(task, t) {
+> +			if (vm_is_stack_for_task(t, vma))
+> +				return 1;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
 
-Thanks Arnd and James, I will pursue this when I get the time.
--- 
-Stefan Richter
--=====-===-- --=- ===--
-http://arcgraph.de/sr/
+This is obviously wrong, while_each_thread() is not safe without
+tasklist or siglock or rcu.
+
+Oleg.
+
