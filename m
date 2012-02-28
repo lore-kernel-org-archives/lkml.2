@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab2B1Fuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 00:50:55 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21084 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2B1Fux (ORCPT
+	id S932083Ab2B1Fv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 00:51:28 -0500
+Received: from mga05.intel.com ([192.55.52.89]:11469 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755772Ab2B1Fv1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 00:50:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6633"; a="167031887"
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Jarod Wilson <jarod@redhat.com>, Anssi Hannula <anssi.hannula@iki.fi>,
-        "Juan J. Garcia de Soria" <skandalfo@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tsoni@codeaurora.org, davidb@codeaurora.org, bryanh@codeaurora.org,
-        Ravi Kumar V <kumarrav@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 0/1] Add support for GPIO IR receiver driver 
-Date: Tue, 28 Feb 2012 11:20:38 +0530
-Message-Id: <1330408238-21880-1-git-send-email-kumarrav@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	Tue, 28 Feb 2012 00:51:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.60.26.133 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1202272003380.1574@eggly.anvils>
+References: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
+	<alpine.LRH.2.02.1202241913400.30742@tundra.namei.org>
+	<alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
+	<20120227144602.07f5ec33.akpm@linux-foundation.org>
+	<CAGGTEhPQ6OLgqZbbAwE=3Xj8qE2iNhLOk5LdkGU13WxbY=qb2w@mail.gmail.com>
+	<alpine.LSU.2.00.1202272003380.1574@eggly.anvils>
+Date: Tue, 28 Feb 2012 07:51:26 +0200
+Message-ID: <CADjiTvCViw4tZ9HvH-s8a2_8uW82BwfXz3PLQmEEVAVC0PbDwg@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Ware, Ryan R" <ryan.r.ware@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is for GPIO based IR receivers, it can listen only to IR receiver
-modules which gives demodulated signal as output, this driver only passes the
-interrupt events to rc framework where pulse and space widths are calculated
-and input to decoders avaliable.
+On Tue, Feb 28, 2012 at 6:10 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Tue, 28 Feb 2012, Ware, Ryan R wrote:
+>> On Tue, Feb 28, 2012 at 7:46 AM, Andrew Morton <akpm@linux-foundation.org>wrote:
+>> > On Fri, 24 Feb 2012 19:19:22 -0800 (PST)
+>> > Hugh Dickins <hughd@google.com> wrote:
+>> >...
+>> > > +             if (!new_xattr->name) {
+>> > > +                     kfree(new_xattr);
+>> > > +                     return -ENOMEM;
+>> > > +             }
+>> > > +
+>> > > +             memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
+>> > > +                    XATTR_SECURITY_PREFIX_LEN);
+>> > > +             memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
+>> > > +                    xattr->name, len);
+>> > > +
+>> > > +             spin_lock(&info->lock);
+>> > > +             list_add(&new_xattr->list, &info->xattr_list);
+>> > > +             spin_unlock(&info->lock);
+>> > > +     }
+>> > > +
+>> > > +     return 0;
+>> > > +}
+>> >
+>> > So if there's a kmalloc failure partway through the array, we leave a
+>> > partially xattrified inode in place.
+>> >
+>> > Are we sure this is OK?
+>> >
+>>
+>> I'm guessing Jarkko can clean that up a bit.  It wouldn't be a good idea to
+>> leave inaccurate data structures laying around during failure cases.
+>
+> Andrew raises a good concern, but Jarkko got it just right and no
+> change is needed: any xattrs already allocated are properly linked
+> on info->xattr_list, then when security_inode_init_security() fails
+> (with an error other than EOPNOTSUPP) the failing inode is iput(),
+> which ends up in shmem_evict_inode(), which kfree()s those xattrs
+> (and their names) on info->xattr_list.
 
-Ravi Kumar V (1):
-  rc: Add support for GPIO based IR Receiver driver.
+Yeah, that's how I understood it too. These the are places where
+security_inode_init_security() is called:
 
- drivers/media/rc/Kconfig        |    9 ++
- drivers/media/rc/Makefile       |    1 +
- drivers/media/rc/gpio-ir-recv.c |  205 +++++++++++++++++++++++++++++++++++++++
- include/media/gpio-ir-recv.h    |   22 ++++
- 4 files changed, 237 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/rc/gpio-ir-recv.c
- create mode 100644 include/media/gpio-ir-recv.h
+- http://lxr.free-electrons.com/source/mm/shmem.c#L1459
+- http://lxr.free-electrons.com/source/mm/shmem.c#L1590
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+> Hugh
 
+/Jarkko
