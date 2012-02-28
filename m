@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965175Ab2B1Uwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 15:52:37 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:49234 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2B1Uwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 15:52:35 -0500
-Date: Tue, 28 Feb 2012 15:49:14 -0500 (EST)
-Message-Id: <20120228.154914.662485432055205683.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: danny.kukawka@bisect.de, dkukawka@suse.de, jeffrey.t.kirsher@intel.com,
-        jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] cirrus/mac89x0: print MAC via printk format
- specifier
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAMuHMdW0Oh7h8tv85ScgHB50vMaZSU7S3cPJRsChnRe2sNL_kA@mail.gmail.com>
-References: <1330091162-8141-4-git-send-email-danny.kukawka@bisect.de>
-	<CAMuHMdXAwgtwbCV_=qJnrs=YPZksoEBkjnQB=JbR7fc+UyKdzw@mail.gmail.com>
-	<CAMuHMdW0Oh7h8tv85ScgHB50vMaZSU7S3cPJRsChnRe2sNL_kA@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 12:49:17 -0800 (PST)
+	id S1756319Ab2B1Uxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 15:53:53 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46881 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755033Ab2B1Uxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 15:53:51 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com, lenb@kernel.org
+Subject: Re: [PATCH RFC] acpi: Fix unprotected smp_processor_id() in acpi_processor_cst_has_changed()
+Date: Tue, 28 Feb 2012 21:57:53 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Yong Zhang <yong.zhang0@gmail.com>, deepthi@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+References: <20120223205805.GA31838@linux.vnet.ibm.com> <20120228071943.GE1112@zhy> <20120228133013.GE2465@linux.vnet.ibm.com>
+In-Reply-To: <20120228133013.GE2465@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202282157.53804.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1SKqhxG029811
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Tue, 28 Feb 2012 21:45:30 +0100
+On Tuesday, February 28, 2012, Paul E. McKenney wrote:
+> On Tue, Feb 28, 2012 at 03:19:43PM +0800, Yong Zhang wrote:
+> > On Thu, Feb 23, 2012 at 12:58:05PM -0800, Paul E. McKenney wrote:
+> > > The acpi_processor_cst_has_changed() function is invoked from a
+> > > CPU_ONLINE or CPU_DEAD function, which might well execute on CPU 0
+> > > even though the CPU being hotplugged is some other CPU.  In addition,
+> > > acpi_processor_cst_has_changed() invokes smp_processor_id() without
+> > > protection, resulting in splats when onlining CPUs.
+> > > 
+> > > This commit therefore changes the smp_processor_id() to pr->id, as is
+> > > used elsewhere in the code, for example, in acpi_processor_add().
+> > > 
+> > > This works for me, but I don't claim to understand ACPI.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > 
+> > Got the same warning.
+> > And the patch works on my side.
+> > 
+> > Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+> 
+> Thank you, I have added your Tested-by (and Srivatsa's Reviewed-by,
+> for that matter).
+> 
+> Any takers for this, or should I just push it up the -tip tree?
 
-> drivers/net/ethernet/cirrus/mac89x0.c: In function ¡set_mac_address¢:
-> drivers/net/ethernet/cirrus/mac89x0.c:597: warning: dereferencing
-> ¡void *¢ pointer
-> drivers/net/ethernet/cirrus/mac89x0.c:597: error: request for member
-> ¡sa_data¢ in something not a structure or union
-> drivers/net/ethernet/cirrus/mac89x0.c:600: warning: dereferencing
-> ¡void *¢ pointer
-> drivers/net/ethernet/cirrus/mac89x0.c:600: error: request for member
-> ¡sa_data¢ in something not a structure or union
-> drivers/net/ethernet/cirrus/mac89x0.c:595: warning: unused variable ¡saddr¢
+I think this patch is for Len, either through ACPI, or through the idle tree.
+Len?
 
-Thanks, I've fixed this as follows and pushed to net-next:
+Anyway:
 
---------------------
-mac89x0: Fix build error.
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Need to use the new 'saddr' variable not the void 'addr' in
-set_mac_address().
+Thanks,
+Rafael
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/ethernet/cirrus/mac89x0.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/cirrus/mac89x0.c b/drivers/net/ethernet/cirrus/mac89x0.c
-index 419825c..932fdcc 100644
---- a/drivers/net/ethernet/cirrus/mac89x0.c
-+++ b/drivers/net/ethernet/cirrus/mac89x0.c
-@@ -591,13 +591,13 @@ static void set_multicast_list(struct net_device *dev)
- 
- static int set_mac_address(struct net_device *dev, void *addr)
- {
--	int i;
- 	struct sockaddr *saddr = addr;
-+	int i;
- 
--	if (!is_valid_ether_addr(addr->sa_data))
-+	if (!is_valid_ether_addr(saddr->sa_data))
- 		return -EADDRNOTAVAIL;
- 
--	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-+	memcpy(dev->dev_addr, saddr->sa_data, ETH_ALEN);
- 	printk("%s: Setting MAC address to %pM\n", dev->name, dev->dev_addr);
- 
- 	/* set the Ethernet address */
--- 
-1.7.7.6
+> > > diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> > > index 0e8e2de..9e57b06 100644
+> > > --- a/drivers/acpi/processor_idle.c
+> > > +++ b/drivers/acpi/processor_idle.c
+> > > @@ -1159,8 +1159,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+> > >  	 * to make the code that updates C-States be called once.
+> > >  	 */
+> > >  
+> > > -	if (smp_processor_id() == 0 &&
+> > > -			cpuidle_get_driver() == &acpi_idle_driver) {
+> > > +	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+> > >  
+> > >  		cpuidle_pause_and_lock();
+> > >  		/* Protect against cpu-hotplug */
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
