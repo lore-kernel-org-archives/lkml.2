@@ -1,205 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812Ab2B1BC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:02:28 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58223 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab2B1BC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:02:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 28 Feb 2012 10:01:00 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v3 15/21] mm: handle lruvec relocks on lumpy reclaim
-Message-Id: <20120228100100.d59291d6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120223135252.12988.50017.stgit@zurg>
-References: <20120223133728.12988.5432.stgit@zurg>
-	<20120223135252.12988.50017.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756314Ab2B1BEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:04:54 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:48336 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755408Ab2B1BEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 20:04:53 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: James Bottomley <jbottomley@parallels.com>
+Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE for 64 bit.
+Date: Mon, 27 Feb 2012 20:04:52 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
+        "dave.anglin@bell.net" <dave.anglin@bell.net>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com> <1330378864.2822.92.camel@dabdike.int.hansenpartnership.com> <1330380189.2822.95.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1330380189.2822.95.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1709520.v6gKf0jSzM";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202272004.55187.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Feb 2012 17:52:52 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+--nextPart1709520.v6gKf0jSzM
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Prepare for lock splitting in lumly reclaim logic.
-> Now move_active_pages_to_lru() and putback_inactive_pages()
-> can put pages into different lruvecs.
-> 
-> * relock book before SetPageLRU()
-
-lruvec ?
-
-> * update reclaim_stat pointer after relocks
-> * return currently locked lruvec
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  mm/vmscan.c |   45 +++++++++++++++++++++++++++++++++------------
->  1 files changed, 33 insertions(+), 12 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a3941d1..6eeeb4b 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1114,6 +1114,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  		unsigned long *nr_scanned, struct scan_control *sc,
->  		isolate_mode_t mode, int active, int file)
->  {
-> +	struct lruvec *cursor_lruvec = lruvec;
->  	struct list_head *src;
->  	unsigned long nr_taken = 0;
->  	unsigned long nr_lumpy_taken = 0;
-> @@ -1197,14 +1198,17 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  			    !PageSwapCache(cursor_page))
->  				break;
->  
-> +			/* Switch cursor_lruvec lock for lumpy isolate */
-> +			if (!__lock_page_lruvec_irq(&cursor_lruvec,
-> +						    cursor_page))
-> +				continue;
+On Monday 27 February 2012 17:03:10 James Bottomley wrote:
+> --- a/arch/parisc/Makefile
+> +++ b/arch/parisc/Makefile
+>=20
+> -CROSS_COMPILE	:=3D hppa64-linux-gnu-
 > +
->  			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
->  				unsigned int isolated_pages;
-> -				struct lruvec *cursor_lruvec;
->  				int cursor_lru = page_lru(cursor_page);
->  
->  				list_move(&cursor_page->lru, dst);
->  				isolated_pages = hpage_nr_pages(cursor_page);
-> -				cursor_lruvec = page_lruvec(cursor_page);
->  				cursor_lruvec->pages_count[cursor_lru] -=
->  								isolated_pages;
->  				VM_BUG_ON((long)cursor_lruvec->
-> @@ -1235,6 +1239,9 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  			}
->  		}
->  
-> +		/* Restore original lruvec lock */
-> +		cursor_lruvec = __relock_page_lruvec(cursor_lruvec, page);
-> +
->  		/* If we break out of the loop above, lumpy reclaim failed */
->  		if (pfn < end_pfn)
->  			nr_lumpy_failed++;
-> @@ -1325,7 +1332,10 @@ static int too_many_isolated(struct zone *zone, int file,
->  	return isolated > inactive;
->  }
->  
-> -static noinline_for_stack void
-> +/*
-> + * Returns currently locked lruvec
-> + */
-> +static noinline_for_stack struct lruvec *
->  putback_inactive_pages(struct lruvec *lruvec,
->  		       struct list_head *page_list)
->  {
-> @@ -1347,10 +1357,13 @@ putback_inactive_pages(struct lruvec *lruvec,
->  			lock_lruvec_irq(lruvec);
->  			continue;
->  		}
-> +
-> +		lruvec = __relock_page_lruvec(lruvec, page);
-> +		reclaim_stat = &lruvec->reclaim_stat;
-> +
->  		SetPageLRU(page);
->  		lru = page_lru(page);
->  
-> -		lruvec = page_lruvec(page);
->  		add_page_to_lru_list(lruvec, page, lru);
->  		if (is_active_lru(lru)) {
->  			int file = is_file_lru(lru);
-> @@ -1375,6 +1388,8 @@ putback_inactive_pages(struct lruvec *lruvec,
->  	 * To save our caller's stack, now use input list for pages to free.
->  	 */
->  	list_splice(&pages_to_free, page_list);
-> +
-> +	return lruvec;
->  }
->  
->  static noinline_for_stack void
-> @@ -1544,7 +1559,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
->  	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
->  
-> -	putback_inactive_pages(lruvec, &page_list);
-> +	lruvec = putback_inactive_pages(lruvec, &page_list);
->  
->  	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
->  	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-> @@ -1603,12 +1618,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->   *
->   * The downside is that we have to touch page->_count against each page.
->   * But we had to alter page->flags anyway.
-> + *
-> + * Returns currently locked lruvec
->   */
->  
-> -static void move_active_pages_to_lru(struct lruvec *lruvec,
-> -				     struct list_head *list,
-> -				     struct list_head *pages_to_free,
-> -				     enum lru_list lru)
-> +static struct lruvec *
-> +move_active_pages_to_lru(struct lruvec *lruvec,
-> +			 struct list_head *list,
-> +			 struct list_head *pages_to_free,
-> +			 enum lru_list lru)
->  {
->  	unsigned long pgmoved = 0;
->  	struct page *page;
-> @@ -1630,10 +1648,11 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
->  
->  		page = lru_to_page(list);
->  
-> +		lruvec = __relock_page_lruvec(lruvec, page);
-> +
->  		VM_BUG_ON(PageLRU(page));
->  		SetPageLRU(page);
->  
-> -		lruvec = page_lruvec(page);
->  		list_move(&page->lru, &lruvec->pages_lru[lru]);
->  		numpages = hpage_nr_pages(page);
->  		lruvec->pages_count[lru] += numpages;
-> @@ -1655,6 +1674,8 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
->  	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, pgmoved);
->  	if (!is_active_lru(lru))
->  		__count_vm_events(PGDEACTIVATE, pgmoved);
-> +
-> +	return lruvec;
->  }
->  
->  static void shrink_active_list(unsigned long nr_to_scan,
-> @@ -1744,9 +1765,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
->  	 */
->  	reclaim_stat->recent_rotated[file] += nr_rotated;
->  
-> -	move_active_pages_to_lru(lruvec, &l_active, &l_hold,
-> +	lruvec = move_active_pages_to_lru(lruvec, &l_active, &l_hold,
->  						LRU_ACTIVE + file * LRU_FILE);
-> -	move_active_pages_to_lru(lruvec, &l_inactive, &l_hold,
-> +	lruvec = move_active_pages_to_lru(lruvec, &l_inactive, &l_hold,
->  						LRU_BASE   + file * LRU_FILE);
->  	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
->  	unlock_lruvec_irq(lruvec);
-> 
+> +# if no default set, try to find the corresponding 64 bit compiler
+> +ifeq ($(CROSS_COMPILE),)
+> +CROSS_COMPILE	:=3D $(shell $(CC) -dumpmachine | sed s/hppa-\\\(.*\\\)/hp=
+pa64-\\1-/)
+> +endif
 
-Hmm...could you add comments to each function as
-"The caller should _lock_ lruvec before calling this functions.
- This function returns a lruvec with _locked_. It may be different from passed one.
- And The callser should unlock lruvec"
+fails when using "hppa2.0-xxx".  perhaps:
+CROSS_COMPILE ?=3D $(shell $(CC) -dumpmachine | sed 's/^hppa[^-]*-/hppa64-/=
+')
 
+don't even need the ifeq check then
+=2Dmike
 
-Thanks,
--Kame
+--nextPart1709520.v6gKf0jSzM
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
+iQIcBAABAgAGBQJPTCg2AAoJEEFjO5/oN/WBrVgP/2rbzbuqJmMRAPm7iSzsN6aa
+SMx2jFS44FSt0wq7oh++RwyBTsqxpIqJDvc4Ap9bWCTW5YLlWSXW+B6NkTkTSRiK
+xfGnnP06qT+OlgmaOQbQg+Xunz0S3bY700Nlzm5mJpOxvklf4H+9iUWtGthwz35g
+q10WmGEOKJNwYoVh1YWohj/8eCK9SUUokLlnTnselKdPcxVBY6zGXR/qwXpaIMnx
+cfYbo81GBcq8yiAqZ5ZrjXxg/Nc/jnM/pibTSp9ZKLSHVEUqQlYLH9DPlC6Ko7XV
+/PBrFIVslkW7xbpAuBZO0YJLbmniNYSkNtxlieHJX+PtevdsOx/PWOKfM67csOt4
+Oahj9WT8JzWofcbUmbwYLvhtawXxm5th8fIMzlYR9HysGk5Q8EjqJVceLYmkRR/T
+jzHXEFvkRcHfR9EdOxhajQeTVLNZv5yhfEpt9jDWCt+J0rdd8hNgLdX3kgFg+c71
+CxQPWGMrmiJAsQ9c3kutl+o5rUyFUNeTDoN6iGWdkUofHKyz9SONh7wluMd1Gmk1
+/xx5wH8rl3HBFTSo4fH/TC3sHhm8kFk3vQ+fauASJyFVkij3zHG+5oVT12FtSa2s
+fEzf1e5ivnR2yrdbmMGbdmkSb+F+eDjcoI2vFCFSVNfTaTnBKVXJcGVUUnzJ0zT4
+dIZLSc4mCJnVtFd33Ndy
+=+Bpe
+-----END PGP SIGNATURE-----
 
-
+--nextPart1709520.v6gKf0jSzM--
