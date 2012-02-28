@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2B1Bhd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:37:33 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab2B1BGr (ORCPT
+	id S932426Ab2B1Bhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:37:55 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab2B1BGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.213.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.193.136 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010205.216956897@linuxfoundation.org>
+Message-Id: <20120228010204.901243169@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:10 -0800
+Date: Mon, 27 Feb 2012 17:02:08 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 07/73] drm/radeon/kms: fix MSI re-arm on rv370+
+        alan@lxorguk.ukuu.org.uk, Guenter Roeck <guenter.roeck@ericsson.com>,
+        Dirk Eibach <eibach@gdsys.de>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 05/73] hwmon: (ads1015) Fix file leak in probe function
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,50 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-commit b7f5b7dec3d539a84734f2bcb7e53fbb1532a40b upstream.
+commit 363434b5dc352464ac7601547891e5fc9105f124 upstream.
 
-MSI_REARM_EN register is a write only trigger register.
-There is no need RMW when re-arming.
+An error while creating sysfs attribute files in the driver's probe function
+results in an error abort, but already created files are not removed. This patch
+fixes the problem.
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=41668
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Dirk Eibach <eibach@gdsys.de>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r100.c  |    4 +---
- drivers/gpu/drm/radeon/rs600.c |    4 +---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/hwmon/ads1015.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -681,9 +681,7 @@ int r100_irq_process(struct radeon_devic
- 			WREG32(RADEON_AIC_CNTL, msi_rearm | RS400_MSI_REARM);
- 			break;
- 		default:
--			msi_rearm = RREG32(RADEON_MSI_REARM_EN) & ~RV370_MSI_REARM_EN;
--			WREG32(RADEON_MSI_REARM_EN, msi_rearm);
--			WREG32(RADEON_MSI_REARM_EN, msi_rearm | RV370_MSI_REARM_EN);
-+			WREG32(RADEON_MSI_REARM_EN, RV370_MSI_REARM_EN);
- 			break;
- 		}
+--- a/drivers/hwmon/ads1015.c
++++ b/drivers/hwmon/ads1015.c
+@@ -284,7 +284,7 @@ static int ads1015_probe(struct i2c_clie
+ 			continue;
+ 		err = device_create_file(&client->dev, &ads1015_in[k].dev_attr);
+ 		if (err)
+-			goto exit_free;
++			goto exit_remove;
  	}
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -698,9 +698,7 @@ int rs600_irq_process(struct radeon_devi
- 			WREG32(RADEON_BUS_CNTL, msi_rearm | RS600_MSI_REARM);
- 			break;
- 		default:
--			msi_rearm = RREG32(RADEON_MSI_REARM_EN) & ~RV370_MSI_REARM_EN;
--			WREG32(RADEON_MSI_REARM_EN, msi_rearm);
--			WREG32(RADEON_MSI_REARM_EN, msi_rearm | RV370_MSI_REARM_EN);
-+			WREG32(RADEON_MSI_REARM_EN, RV370_MSI_REARM_EN);
- 			break;
- 		}
- 	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&client->dev);
+@@ -298,7 +298,6 @@ static int ads1015_probe(struct i2c_clie
+ exit_remove:
+ 	for (k = 0; k < ADS1015_CHANNELS; ++k)
+ 		device_remove_file(&client->dev, &ads1015_in[k].dev_attr);
+-exit_free:
+ 	kfree(data);
+ exit:
+ 	return err;
 
 
