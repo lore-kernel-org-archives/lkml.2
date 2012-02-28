@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2B1P2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:28:10 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34139 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab2B1P2I (ORCPT
+	id S932291Ab2B1Pag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:30:36 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:41197 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755542Ab2B1Paf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:28:08 -0500
-Date: Tue, 28 Feb 2012 16:27:51 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, sp@numascale.com, bp@amd64.org,
-        tglx@linutronix.de, daniel@numascale-asia.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/platform] x86/platform: Remove incorrect error message
- in x86_default_fixup_cpu_id()
-Message-ID: <20120228152751.GA14647@aftab>
-References: <20120224153127.GD28921@alberich.amd.com>
- <tip-d7dedbe3694bbf97b4e3409e1fa52d97a3b9f028@git.kernel.org>
+	Tue, 28 Feb 2012 10:30:35 -0500
+Date: Tue, 28 Feb 2012 10:30:33 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Meng Zhang <meng.zhang@mediatek.com>
+cc: Josua Dietze <digidietze@draisberghof.de>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Phil Dibowitz <phil@ipom.com>, USB list <linux-usb@vger.kernel.org>,
+        USB Storage list <usb-storage@lists.one-eyed-alien.net>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+In-Reply-To: <4F4C998D.4000805@mediatek.com>
+Message-ID: <Pine.LNX.4.44L0.1202281028350.1456-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-d7dedbe3694bbf97b4e3409e1fa52d97a3b9f028@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 04:07:33AM -0800, tip-bot for Andreas Herrmann wrote:
-> Commit-ID:  d7dedbe3694bbf97b4e3409e1fa52d97a3b9f028
-> Gitweb:     http://git.kernel.org/tip/d7dedbe3694bbf97b4e3409e1fa52d97a3b9f028
-> Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
-> AuthorDate: Fri, 24 Feb 2012 16:31:27 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 27 Feb 2012 10:35:47 +0100
-> 
-> x86/platform: Remove incorrect error message in x86_default_fixup_cpu_id()
-> 
-> It's only called from amd.c:srat_detect_node(). The introduced
-> condition for calling the fixup code is true for all AMD
-> multi-node processors, e.g. Magny-Cours and Interlagos. There we
-> have 2 NUMA nodes on one socket. Thus there are cores having
-> different numa-node-id but with equal phys_proc_id.
-> 
-> There is no point to print error messages in such a situation.
-> 
-> The confusing/misleading error message was introduced with
-> commit 64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add
-> x86_init platform override to fix up NUMA core numbering).
-> 
-> Change the default fixup function (remove the error message),
-> move the Numascale-specific condition for calling the fixup into
-> the fixup-function itself and slightly adapt the comment.
-> 
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-> Reviewed-by: Daniel J Blueman <daniel@numascale-asia.com>
-> Cc: Borislav Petkov <bp@amd64.org>
-> Cc: Borislav Petkov <borislav.petkov@amd.com>
-> Cc: Steffen Persvold <sp@numascale.com>
-> Link: http://lkml.kernel.org/r/20120224153127.GD28921@alberich.amd.com
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+On Tue, 28 Feb 2012, Meng Zhang wrote:
 
-Maybe this one should be queued for x86/urgent instead and should go to
-Linus soonish since it cures an issue which came in during the 3.3 merge
-window with 64be4c1c2428e148de6081af235e2418e6a66dda?
+> from: Meng Zhang <meng.zhang@mediatek.com>
+> 
+> 1. Add entrys for mediatek MT6276M in unusual_devs.h
+> 
+> 2. Add init function for mediatek MT6276M to switch to COM port mode
+> 
+> 3. usb-devices outputs after running with this patch:
+> T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
+> D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+> P:  Vendor=0e8d ProdID=00a1 Rev=02.00
+> S:  Manufacturer=MediaTek Inc
+> S:  Product=Product
+> C:  #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+> 
+> 4. patch based on branch:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> 
+> 
+> Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
 
-Thanks.
+Nowadays, aren't such things handled in userspace by the usb_modeswitch 
+program rather than in the kernel driver?
 
--- 
-Regards/Gruss,
-Boris.
+Alan Stern
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
