@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab2B1Bkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:40:53 -0500
+	id S932272Ab2B1BlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:41:13 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2B1BGW (ORCPT
+	with ESMTP id S932230Ab2B1BGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.204.39 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.232.230 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010207.679941665@linuxfoundation.org>
+Message-Id: <20120228010207.489302931@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:25 -0800
+Date: Mon, 27 Feb 2012 17:02:24 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <jdelvare@suse.de>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/73] ipv6-multicast: Fix memory leak in input path.
+Subject: [ 21/73] 3c59x: shorten timer period for slave devices
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,33 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ben Greear <greearb@candelatech.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 2015de5fe2a47086a3260802275932bfd810884e ]
+[ Upstream commit 3013dc0cceb9baaf25d5624034eeaa259bf99004 ]
 
-Have to free the skb before returning if we fail
-the fib lookup.
+Jean Delvare reported bonding on top of 3c59x adapters was not detecting
+network cable removal fast enough.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
+3c59x indeed uses a 60 seconds timer to check link status if carrier is
+on, and 5 seconds if carrier is off.
+
+This patch reduces timer period to 5 seconds if device is a bonding
+slave.
+
+Reported-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6mr.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -2051,8 +2051,10 @@ int ip6_mr_input(struct sk_buff *skb)
- 	int err;
+--- a/drivers/net/3c59x.c
++++ b/drivers/net/3c59x.c
+@@ -1842,7 +1842,7 @@ vortex_timer(unsigned long data)
+ 		ok = 1;
+ 	}
  
- 	err = ip6mr_fib_lookup(net, &fl6, &mrt);
--	if (err < 0)
-+	if (err < 0) {
-+		kfree_skb(skb);
- 		return err;
-+	}
+-	if (!netif_carrier_ok(dev))
++	if (dev->flags & IFF_SLAVE || !netif_carrier_ok(dev))
+ 		next_tick = 5*HZ;
  
- 	read_lock(&mrt_lock);
- 	cache = ip6mr_cache_find(mrt,
+ 	if (vp->medialock)
 
 
