@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965657Ab2B1PyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 10:54:24 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56109 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965622Ab2B1PyX (ORCPT
+	id S965676Ab2B1Pyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 10:54:45 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:46939 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S965662Ab2B1Pyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 10:54:23 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] USB: Support for LPC32xx SoC
-Date: Tue, 28 Feb 2012 15:53:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, Roland Stigge <stigge@antcom.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        kevin.wells@nxp.com, linux-kernel@vger.kernel.org
-References: <Pine.LNX.4.44L0.1202280951440.1456-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1202280951440.1456-100000@iolanthe.rowland.org>
+	Tue, 28 Feb 2012 10:54:43 -0500
+Message-ID: <4F4CF8C6.4030305@xenotime.net>
+Date: Tue, 28 Feb 2012 07:54:46 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org
+Subject: Re: linux-next: Tree for Feb 23 (media/radio)
+References: <20120223143722.d8814b493df968c229da5f20@canb.auug.org.au> <4F46AC34.8090704@xenotime.net>
+In-Reply-To: <4F46AC34.8090704@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202281553.41332.arnd@arndb.de>
-X-Provags-ID: V02:K0:nODakAVyTUi9KIXbrqPR/Tat1hCEJY2cYguowv+8Djr
- smScr1Shyt739G3TolOAREO3EOyAJuLWsyDrX4K2Mcjv6OA3Si
- TjsD02HugDFt6PwSaIrGj6OxnGyZIUhPwuySWDbSsXDa+Cetnl
- iW5q+Zq7+fyZpQ8mtb3G64O834MZqZcw+iBhVoknDd9EN+s1Fm
- L9hCSAgAed9yYKYHuaZiGR/NQiHqNl+xr9wL+AQHwz8F/B6Sz3
- 6ggAUUYUws8qI4/6KNG2Bfm4V7quPbP5u6ZJLvZIsKbv7S3/zQ
- U/uoZml7oTruR73Geb2GlCczK9VTjtVJgYgty/EKaYqF8r1FyS
- LVH41T4V6EiFy8oiICEw=
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 February 2012, Alan Stern wrote:
-> It's heading in the intended direction, although the details might not 
-> all be quite right -- I didn't check them very closely.
+On 02/23/2012 01:14 PM, Randy Dunlap wrote:
+
+> On 02/22/2012 07:37 PM, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20120222:
 > 
-> One big thing about it is wrong: Many or most of the functions you
-> exported don't really need to be.  Instead, ohci-hcd.c should define
-> ohci_driver (a bus-agnostic hc_driver structure) and export that.  
-> Then the bus-glue files can copy the structure for their own use during
-> initialization (rather than duplicating the definition all over the
-> place) and override individual methods as needed.
+
+
+ping.
+
+These build errors still happen in linux-next 20120228.
+
+
 > 
-> It's a more "object-oriented" approach.  :-)
+> on i386:
+> 
+> Looks like several source files need to #include <linux/slab.h>:
+> 
+> 
+> drivers/media/radio/radio-isa.c:246:3: error: implicit declaration of function 'kfree'
+> drivers/media/radio/radio-aztech.c:72:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-aztech.c:72:22: warning: initialization makes pointer from integer without a cast
+> drivers/media/radio/radio-typhoon.c:76:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-typhoon.c:76:23: warning: initialization makes pointer from integer without a cast
+> drivers/media/radio/radio-terratec.c:57:2: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-terratec.c:57:2: warning: return makes pointer from integer without a cast
+> drivers/media/radio/radio-aimslab.c:67:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-aimslab.c:67:22: warning: initialization makes pointer from integer without a cast
+> drivers/media/radio/radio-zoltrix.c:80:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-zoltrix.c:80:24: warning: initialization makes pointer from integer without a cast
+> drivers/media/radio/radio-gemtek.c:183:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-gemtek.c:183:22: warning: initialization makes pointer from integer without a cast
+> drivers/media/radio/radio-trust.c:57:9: error: implicit declaration of function 'kzalloc'
+> drivers/media/radio/radio-trust.c:57:21: warning: initialization makes pointer from integer without a cast
+> 
 
-Yes, that makes sense. I did not try to actually understand how the
-driver works internally, just tried the mechanical conversion in a way
-that did not require changing any code besides the sb800_prefetch
-function that had to be moved.
 
-There are still a few symbols that are used by most or all hw specific
-drivers and that will have to remain exported:
 
-ohci_init, ohci_run, ohci_stop, ohci_finish_controller_resume, and
-ohci_hcd_init
-
-And then there are a few symbols that are only used by one or two
-drivers, possibly correctly or not:
-
-ohci_dump (spear)
-ohci_usb_reset (at91, pci)
-ohci_shutdown (ps3)
-ohci_restart (pci)
-ohci_hub_control (da8xx)
-
-These ones do not need to get exported following your suggestion:
-
-ohci_urb_enqueue, ohci_urb_dequeue, ohci_endpoint_disable,
-ohci_get_frame, ohci_irq, ohci_bus_suspend, ohci_bus_resume,
-ohci_hub_status_data, and ohci_start_port_reset
-
-I would do implementation the other way round and let the bus specific
-driver provide a sparsely populated version of struct hc_driver
-that is completed by a function in the common ohci parts. That would
-keep the logicto combine the two in one place rather than duplicating
-it everywhere, but it's a bit more overhead in the case where you
-build only a single bus glue.
-
-Certainly either way is possible, whichever you prefer.
-
-	Arnd
+-- 
+~Randy
