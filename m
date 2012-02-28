@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2B1Bjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:39:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	id S964801Ab2B1BkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:40:06 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab2B1BG0 (ORCPT
+	with ESMTP id S932248Ab2B1BGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:06:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.211.167 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.232.42 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010208.185613450@linuxfoundation.org>
+Message-Id: <20120228010207.846264802@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:28 -0800
+Date: Mon, 27 Feb 2012 17:02:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Li Wei <lw@cn.fujitsu.com>,
+        alan@lxorguk.ukuu.org.uk, Ben Greear <greearb@candelatech.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/73] ipv4: Save nexthop address of LSRR/SSRR option to IPCB.
+Subject: [ 23/73] ipv6-multicast: Fix memory leak in IPv6 multicast.
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,81 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Li Wei <lw@cn.fujitsu.com>
+From: Ben Greear <greearb@candelatech.com>
 
-[ Upstream commit ac8a48106be49c422575ddc7531b776f8eb49610 ]
+[ Upstream commit 67928c4041606f02725f3c95c4c0404e4532df1b ]
 
-We can not update iph->daddr in ip_options_rcv_srr(), It is too early.
-When some exception ocurred later (eg. in ip_forward() when goto
-sr_failed) we need the ip header be identical to the original one as
-ICMP need it.
+If reg_vif_xmit cannot find a routing entry, be sure to
+free the skb before returning the error.
 
-Add a field 'nexthop' in struct ip_options to save nexthop of LSRR
-or SSRR option.
-
-Signed-off-by: Li Wei <lw@cn.fujitsu.com>
+Signed-off-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/inet_sock.h |    2 ++
- net/ipv4/ip_forward.c   |    2 +-
- net/ipv4/ip_options.c   |    5 +++--
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ net/ipv6/ip6mr.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/net/inet_sock.h
-+++ b/include/net/inet_sock.h
-@@ -31,6 +31,7 @@
- /** struct ip_options - IP Options
-  *
-  * @faddr - Saved first hop address
-+ * @nexthop - Saved nexthop address in LSRR and SSRR
-  * @is_data - Options in __data, rather than skb
-  * @is_strictroute - Strict source route
-  * @srr_is_hit - Packet destination addr was our one
-@@ -41,6 +42,7 @@
-  */
- struct ip_options {
- 	__be32		faddr;
-+	__be32		nexthop;
- 	unsigned char	optlen;
- 	unsigned char	srr;
- 	unsigned char	rr;
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -84,7 +84,7 @@ int ip_forward(struct sk_buff *skb)
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -696,8 +696,10 @@ static netdev_tx_t reg_vif_xmit(struct s
+ 	int err;
  
- 	rt = skb_rtable(skb);
+ 	err = ip6mr_fib_lookup(net, &fl6, &mrt);
+-	if (err < 0)
++	if (err < 0) {
++		kfree_skb(skb);
+ 		return err;
++	}
  
--	if (opt->is_strictroute && ip_hdr(skb)->daddr != rt->rt_gateway)
-+	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
- 		goto sr_failed;
- 
- 	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
---- a/net/ipv4/ip_options.c
-+++ b/net/ipv4/ip_options.c
-@@ -568,12 +568,13 @@ void ip_forward_options(struct sk_buff *
- 		     ) {
- 			if (srrptr + 3 > srrspace)
- 				break;
--			if (memcmp(&ip_hdr(skb)->daddr, &optptr[srrptr-1], 4) == 0)
-+			if (memcmp(&opt->nexthop, &optptr[srrptr-1], 4) == 0)
- 				break;
- 		}
- 		if (srrptr + 3 <= srrspace) {
- 			opt->is_changed = 1;
- 			ip_rt_get_source(&optptr[srrptr-1], skb, rt);
-+			ip_hdr(skb)->daddr = opt->nexthop;
- 			optptr[2] = srrptr+4;
- 		} else if (net_ratelimit())
- 			printk(KERN_CRIT "ip_forward(): Argh! Destination lost!\n");
-@@ -640,7 +641,7 @@ int ip_options_rcv_srr(struct sk_buff *s
- 	}
- 	if (srrptr <= srrspace) {
- 		opt->srr_is_hit = 1;
--		iph->daddr = nexthop;
-+		opt->nexthop = nexthop;
- 		opt->is_changed = 1;
- 	}
- 	return 0;
+ 	read_lock(&mrt_lock);
+ 	dev->stats.tx_bytes += skb->len;
 
 
