@@ -1,74 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965920Ab2B1RVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:21:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52683 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965899Ab2B1RVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:21:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ohad@wizery.com designates 10.216.82.141 as permitted sender) smtp.mail=ohad@wizery.com
+	id S965939Ab2B1RWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:22:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61941 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965889Ab2B1RVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:21:45 -0500
+Message-ID: <4F4D0D18.4060409@redhat.com>
+Date: Tue, 28 Feb 2012 19:21:28 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>, Mark Grosen <mgrosen@ti.com>,
-        Suman Anna <s-anna@ti.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>, Rob Clark <rob@ti.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>
-Subject: [PATCH 4/5] rpmsg: validate incoming message length before propagating
-Date: Tue, 28 Feb 2012 19:21:11 +0200
-Message-Id: <1330449672-18191-6-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1330449672-18191-1-git-send-email-ohad@wizery.com>
-References: <1330449672-18191-1-git-send-email-ohad@wizery.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@gmail.com>,
+        Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] i387: split up <asm/i387.h> into exported and internal
+ interfaces
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com> <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com> <4F440945.1020904@zytor.com> <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211339590.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211340330.5354@i5.linux-foundation.org> <4F4CB89C.4060500@redhat.com> <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com>
+In-Reply-To: <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an inbound message arrives, validate its reported length before
-propagating it, otherwise buggy (or malicious) remote processors might
-trick us into accessing memory which we really shouldn't.
+On 02/28/2012 06:05 PM, Linus Torvalds wrote:
+> On Tue, Feb 28, 2012 at 3:21 AM, Avi Kivity <avi@redhat.com> wrote:
+> >
+> > Can you elaborate on what you don't like in the kvm code (apart from "it
+> > does virtualiztion")?
+>
+> It doesn't fit any of the patterns of the x87 save/restore code, and I
+> don't know what it does.
 
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Grosen <mgrosen@ti.com>
-Cc: Suman Anna <s-anna@ti.com>
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: Rob Clark <rob@ti.com>
-Cc: Ludovic BARRE <ludovic.barre@stericsson.com>
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>
-Cc: Omar Ramirez Luna <omar.luna@linaro.org>
----
- drivers/rpmsg/virtio_rpmsg_bus.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+It tries to do two things: first, keep the guest fpu loaded while
+running kernel code, and second, allow the instruction emulator to
+access the guest fpu.
 
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index 4db9cf8..1e8b8b6 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -778,6 +778,16 @@ static void rpmsg_recv_done(struct virtqueue *rvq)
- 	print_hex_dump(KERN_DEBUG, "rpmsg_virtio RX: ", DUMP_PREFIX_NONE, 16, 1,
- 					msg, sizeof(*msg) + msg->len, true);
- 
-+	/*
-+	 * We currently use fixed-sized buffers, so trivially sanitize
-+	 * the reported payload length.
-+	 */
-+	if (len > RPMSG_BUF_SIZE ||
-+		msg->len > (len - sizeof(struct rpmsg_hdr))) {
-+		dev_warn(dev, "inbound msg too big: (%d, %d)\n", len, msg->len);
-+		return;
-+	}
-+
- 	/* use the dst addr to fetch the callback of the appropriate user */
- 	mutex_lock(&vrp->endpoints_lock);
- 	ept = idr_find(&vrp->endpoints, msg->dst);
+> It does clts on its own, in random places without actually restoring
+> the FPU state. Why is that ok? I don't know. 
+
+The way we use vmx, it does an implicit stts() after an exit from a
+guest (it's not required, but it's expensive to play with the value of
+the host cr0, so we set it to a safe value and clear it when needed). 
+So sometimes we need these random clts()s.
+
+> And I don't think it is,
+> but I didn't change any of it. Why doesn't that thing corrupt the lazy
+> state save of some other process, for example?
+>
+> Doing a "clts()" without restoring the FPU state immediately
+> afterwards is fundamentally *wrong*. It's crazy. Insane. You can now
+> use the FPU, but with whatever random state that is in it that caused
+> TS to be set to begin with.
+
+There are two cases.  In one of them, we do restore the guest fpu
+immediately afterwards.  In the other, we're just clearing a CR0.TS that
+was set spuriously.
+
+> And if you don't have any FPU state to restore, because you want to
+> use your own kernel state, you should use the
+> "kernel_fpu_begin()/end()" things that we have had forever.
+
+We do have state - the guest state.
+
+> Here's an example of the kind of UTTER AND ABSOLUTE SHIT that kvm FPU
+> state restore is:
+>
+>   static void emulator_get_fpu(struct x86_emulate_ctxt *ctxt)
+>   {
+>         preempt_disable();
+>         kvm_load_guest_fpu(emul_to_vcpu(ctxt));
+>         /*
+>          * CR0.TS may reference the host fpu state, not the guest fpu state,
+>          * so it may be clear at this point.
+>          */
+>         clts();
+>   }
+>
+> that whole "comment" says nothing at all. And clearing CR0.TS *after*
+> loading the FPU state is a f*cking joke, since you need it clear to
+> load the FPU state to begin with. So as far as I can tell,
+> kvm_load_guest_fpu() will have cleared the FPU state already, but *it*
+> did it by:
+>
+>         unlazy_fpu(current);
+>         fpu_restore_checking(&vcpu->arch.guest_fpu);
+>
+> where "unlazy_fpu()" will have *set* TS if it wasn't set before, so
+> fpu_restore_checking() will now TAKE A FAULT, and in that fault
+> handler it will clear TS so that it can reload the state we just saved
+> (yes, really), only to then return to fpu_restore_checking() and
+> reload yet *another* state.
+>
+> The code is crap. It's insane. It may work, but if it does, it does so
+> by pure chance and happenstance. The code is CLEARLY INSANE.
+
+What you described is the slow path.  The fast path is
+
+  void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+  {
+      if (vcpu->guest_fpu_loaded)
+          return;
+
+If we're emulating an fpu instruction, it's very likely that we have the
+guest fpu loaded into the cpu.  If we do take that path, we have the
+right fpu state loaded, but CR0.TS is set by the recent exit, so we need
+to clear it (the comment is in fact correct, except that it misspelled
+"set").
+
+> I wasn't going to touch it. It had been written by a
+> random-code-generator that had strung the various FPU accessor
+> functions up in random order until it compiled.
+
+The tried and tested way, yes.
+
 -- 
-1.7.5.4
+error compiling committee.c: too many arguments to function
 
