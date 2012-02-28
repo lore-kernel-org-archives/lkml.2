@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966053Ab2B1WQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:16:38 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:25098 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab2B1WQg (ORCPT
+	id S966101Ab2B1WRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:17:01 -0500
+Received: from mga07.intel.com ([143.182.124.22]:35649 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965969Ab2B1WQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:16:36 -0500
-Date: Tue, 28 Feb 2012 23:16:29 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3.3-rc5] memblock: Fix size aligning of
-	memblock_alloc_base_nid()
-Message-ID: <20120228221629.GA3246@merkur.ravnborg.org>
-References: <20120228205621.GC3252@dhcp-172-17-108-109.mtv.corp.google.com>
+	Tue, 28 Feb 2012 17:16:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dan.j.williams@intel.com designates 10.182.51.73 as permitted sender) smtp.mail=dan.j.williams@intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228205621.GC3252@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.02.1202282240340.2794@ionos>
+References: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
+	<1330422535.11248.78.camel@twins>
+	<alpine.LFD.2.02.1202282240340.2794@ionos>
+Date: Tue, 28 Feb 2012 14:16:56 -0800
+Message-ID: <CABE8wwsmWqDddMqgQ6HvMPkbK+Vu7G7GOY-VO_Tru2JV2NUUcw@mail.gmail.com>
+Subject: Re: [RFC PATCH] kick ksoftirqd more often to please soft lockup detector
+From: Dan Williams <dan.j.williams@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Andrzej Jakowski <andrzej.jakowski@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 05:56:21AM +0900, Tejun Heo wrote:
-> memblock allocator aligns @size to @align to reduce the amount of
-> fragmentation.  7bd0b0f0da "memblock: Reimplement memblock allocation
-> using reverse free area iterator" broke it by incorrectly relocating
-> @size aligning to memblock_find_in_range_node().  As the aligned size
-> is not propagated back to memblock_alloc_base_nid(), the actually
-> reserved size isn't aligned.
-> 
-> While this increases memory use for memblock reserved array, this
-> shouldn't cause any critical failure; however, it seems that the size
-> aligning was hiding a use-beyond-allocation bug in sparc64 and losing
-> the aligning causes boot failure.
-> 
-> The underlying problem is currently being debugged but this is a
-> proper fix in itself, it's already pretty late in -rc cycle for boot
-> failures and reverting the change for debugging isn't difficult.
-> Restore the size aligning moving it to memblock_alloc_base_nid().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Meelis Roos <mroos@linux.ee>
+On Tue, Feb 28, 2012 at 1:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 28 Feb 2012, Peter Zijlstra wrote:
+>
+>> On Mon, 2012-02-27 at 12:38 -0800, Dan Williams wrote:
+>> > An experimental hack to tease out whether we are continuing to
+>> > run the softirq handler past the point of needing scheduling.
+>> >
+>> > It allows only one trip through __do_softirq() as long as need_resched()
+>> > is set which hopefully creates the back pressure needed to get ksoftirqd
+>> > scheduled.
+>> >
+>> > Targeted to address reports like the following that are produced
+>> > with i/o tests to a sas domain with a large number of disks (48+), and
+>> > lots of debugging enabled (slub_deubg, lockdep) that makes the
+>> > block+scsi softirq path more cpu-expensive than normal.
+>> >
+>> > With this patch applied the softlockup detector seems appeased, but it
+>> > seems odd to need changes to kernel/softirq.c so maybe I have overlooked
+>> > something that needs changing at the block/scsi level?
+>> >
+>> > BUG: soft lockup - CPU#3 stuck for 22s! [kworker/3:1:78]
+>>
+>> So you're stuck in softirq for 22s+, max_restart is 10, this gives that
+>> on average you spend 2.2s+ per softirq invocation, this is completely
+>> absolutely bonkers. Softirq handlers should never consume significant
+>> amount of cpu-time.
+>>
+>> Thomas, think its about time we put something like the below in?
+>
+> Absolutely. Anything which consumes more than a few microseconds in
+> the softirq handler needs to be sorted out, no matter what.
 
-> Reported-by: Sam Ravnborg <sam@ravnborg.org>
-Actually not :-(
-I only fooled around with some clueless suggestions - I do
-not have any sparc64 boxes. And my sparc32 box that is alive atm,
-does not exhibit this problem.
+Looks like everyone is guilty:
 
-	Sam
+[  422.765336] softirq took longer than 1/4 tick: 3 NET_RX ffffffff813f0aa0
+...
+[  423.971878] softirq took longer than 1/4 tick: 4 BLOCK ffffffff812519c8
+[  423.985093] softirq took longer than 1/4 tick: 6 TASKLET ffffffff8103422e
+[  423.993157] softirq took longer than 1/4 tick: 7 SCHED ffffffff8105e2e1
+[  424.001018] softirq took longer than 1/4 tick: 9 RCU ffffffff810a0fed
+[  424.008691] softirq loop took longer than 1/2 tick need_resched:
+yes max_restart: 10
+
+As expected whenever that 1/2 tick message gets emitted the softirq
+handler is almost running in a need_resched() context.
+
+$ grep need_resched.*no log | wc -l
+295
+$ grep need_resched.*yes log | wc -l
+3201
+
+One of these warning messages gets printed out at a rate of 1 every
+40ms. (468 second log w/ 11,725 of these messages).
+
+So is it a good idea to get more aggressive about scheduling ksoftrrqd?
+
+--
+Dan
