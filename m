@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab2B1TjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:39:15 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:56128 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757287Ab2B1TjN (ORCPT
+	id S1757318Ab2B1Tjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:39:32 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45228 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757287Ab2B1Tja convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:39:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of balbi@ti.com designates 10.112.84.68 as permitted sender) smtp.mail=balbi@ti.com
-Date: Tue, 28 Feb 2012 21:39:07 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Joe Perches <joe@perches.com>
-Cc: Felipe Balbi <balbi@ti.com>, Jiri Kosina <trivial@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial next 9/9] gadget: Use vsprintf extention %pf with
- builtin_return_address
-Message-ID: <20120228193906.GA891@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1330454853.git.joe@perches.com>
- <1bc7879deffd667985a3bcfce70e19418c704143.1330454853.git.joe@perches.com>
+	Tue, 28 Feb 2012 14:39:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.133.93 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
-Content-Disposition: inline
-In-Reply-To: <1bc7879deffd667985a3bcfce70e19418c704143.1330454853.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m2d38ybvur.fsf@igel.home>
+References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
+ <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
+ <m2d38ybvur.fsf@igel.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Feb 2012 11:39:09 -0800
+X-Google-Sender-Auth: iD6S7dPo5x4UIPM7IZ3r_iN3_hI
+Message-ID: <CA+55aFzqOAgrCYWmY1JkXqfGFLjYO0ohe_FZF-WHVgp_CPf0Mg@mail.gmail.com>
+Subject: Re: Linux 3.3-rc5
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 28, 2012 at 11:29 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+>
+> Originally the garbage looked like this:
+>
+> #define I8K_BIOS_VERSION       _IOR ('i', 0x80, 4)
+> #define I8K_MACHINE_ID         _IOR ('i', 0x81, 16)
+> #define I8K_POWER_STATUS       _IOR ('i', 0x82, sizeof(int))
+> #define I8K_FN_STATUS          _IOR ('i', 0x83, sizeof(int))
+> #define I8K_GET_TEMP           _IOR ('i', 0x84, sizeof(int))
+> #define I8K_GET_SPEED          _IOWR('i', 0x85, sizeof(int))
+> #define I8K_GET_FAN            _IOWR('i', 0x86, sizeof(int))
+> #define I8K_SET_FAN            _IOWR('i', 0x87, sizeof(int)*2)
+>
+> Later they were modified by "[PATCH] use size_t for the broken ioctl
+> numbers" and "Fix more ioctl _IOR/_IOW misusage." (see tglx's history
+> tree).
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ahh, yes. That wasn't the only driver that did the "sizeof" by hand,
+and as a result got "size_t" when the (nested) *real* sizeof then
+happened.
 
-On Tue, Feb 28, 2012 at 10:49:38AM -0800, Joe Perches wrote:
-> Emit the function name not the address when possible.
->=20
-> builtin_return_address() gives an address.  When building
-> a kernel with CONFIG_KALLSYMS, emit the actual function
-> name not the address.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
+That explains the history behind the garbage.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+ioctl numbering have always been pretty painful. Oh, how I wish they
+had been ASCII strings rather than random binary blobs. But that's the
+way things are (and we certainly screwed up a few /proc files too, so
+it's not like using text fixes all potential for screwing up)
 
-> ---
->  drivers/usb/gadget/u_serial.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-> index 6597a68..a553bee 100644
-> --- a/drivers/usb/gadget/u_serial.c
-> +++ b/drivers/usb/gadget/u_serial.c
-> @@ -920,7 +920,7 @@ static int gs_put_char(struct tty_struct *tty, unsign=
-ed char ch)
->  	unsigned long	flags;
->  	int		status;
-> =20
-> -	pr_vdebug("gs_put_char: (%d,%p) char=3D0x%x, called from %p\n",
-> +	pr_vdebug("gs_put_char: (%d,%p) char=3D0x%x, called from %pf\n",
->  		port->port_num, tty, ch, __builtin_return_address(0));
-> =20
->  	spin_lock_irqsave(&port->port_lock, flags);
-> --=20
-> 1.7.8.111.gad25c.dirty
->=20
-
---=20
-balbi
-
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPTS1aAAoJEIaOsuA1yqREewcP/1dkFwSJCrgL+snifZ+OzVeG
-+WGuIPpJzexBvuLj7+C6y7+YM8xepf7WI+90/zOXQJn9LNkRN68uMz2N7KG57Lhf
-mGZTYnId3kdk5WIuDD5iewn7G/hAtU1KgS6z6orqJvR/My7aLNqewjmkzbpnITbg
-J9XdSGK7wWFAcyq1bLGnHfFmlOeRwqC11FFNHt4Vj+9N4JZMRwtNCmGfJoiBuVrA
-vZb8+x8tBi4lpD+nr3gooGMpTezepPenjWemNxDP894D+zcfJDtkfld5Te2xy//0
-xPjDffVFPSutSkrYzM710Uma0UxD92Jh9csWKKUzPEIGzruEUYbJDbdowBMvcMtJ
-uG/oLgAy3CJdJKT3cdE+sw5spEy15DQ4PJpHpcgRPfGqfXTUYRPi3p1VdKdpQTjy
-6WXOTI33va3srHNzZvkr4yJrSjGLLqC+kEWyVN9OFKUDuzkbnHedX+Y/EIBsqrei
-c57j6sPFapwiR9glD1UVFJ/JI35JnAGmUaXml9P5eEElA9G1LXNl17+qOoOC2bnc
-8XvspFR4XlZRSQL6uRVw+yoOy5KmL+PGER1owZ5CGnM1N7pc+N3+a79N5/W0p9La
-zWdgqFjIFFx0Pv5pvuA8WG8tr7zIDKheQgs2VByO1BFdivZUhJ5We3TJM6IjBkPT
-A/q2fYKNqw+PR+IdGxQV
-=GT+b
------END PGP SIGNATURE-----
-
---ReaqsoxgOBHFXBhH--
+                 Linus
