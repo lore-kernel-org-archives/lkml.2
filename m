@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab2B1BHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:10 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964781Ab2B1BHF (ORCPT
+	id S932465Ab2B1BHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:20 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932447Ab2B1BHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.225.33 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010211.822753432@linuxfoundation.org>
+Message-Id: <20120228010212.678882137@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:49 -0800
+Date: Mon, 27 Feb 2012 17:02:54 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: [ 46/73] i387: math_state_restore() isnt called from asm
+Subject: [ 51/73] i387: dont ever touch TS_USEDFPU directly, use helper functions
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +28,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit be98c2cdb15ba26148cd2bd58a857d4f7759ed38 upstream.
+commit 6d59d7a9f5b723a7ac1925c136e93ec83c0c3043 upstream.
 
-It was marked asmlinkage for some really old and stale legacy reasons.
-Fix that and the equally stale comment.
+This creates three helper functions that do the TS_USEDFPU accesses, and
+makes everybody that used to do it by hand use those helpers instead.
 
-Noticed when debugging the irq_fpu_usable() bugs.
+In addition, there's a couple of helper functions for the "change both
+CR0.TS and TS_USEDFPU at the same time" case, and the places that do
+that together have been changed to use those.  That means that we have
+fewer random places that open-code this situation.
+
+The intent is partly to clarify the code without actually changing any
+semantics yet (since we clearly still have some hard to reproduce bug in
+this area), but also to make it much easier to use another approach
+entirely to caching the CR0.TS bit for software accesses.
+
+Right now we use a bit in the thread-info 'status' variable (this patch
+does not change that), but we might want to make it a full field of its
+own or even make it a per-cpu variable.
 
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h |    2 +-
- arch/x86/kernel/traps.c     |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/i387.h |   75 ++++++++++++++++++++++++++++++++------------
+ arch/x86/kernel/traps.c     |    2 -
+ arch/x86/kernel/xsave.c     |    2 -
+ arch/x86/kvm/vmx.c          |    2 -
+ 4 files changed, 58 insertions(+), 23 deletions(-)
 
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -29,7 +29,7 @@ extern unsigned int sig_xstate_size;
- extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
- extern int init_fpu(struct task_struct *child);
--extern asmlinkage void math_state_restore(void);
-+extern void math_state_restore(void);
- extern void __math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
+@@ -280,6 +280,47 @@ static inline int restore_fpu_checking(s
+ }
+ 
+ /*
++ * Software FPU state helpers. Careful: these need to
++ * be preemption protection *and* they need to be
++ * properly paired with the CR0.TS changes!
++ */
++static inline int __thread_has_fpu(struct thread_info *ti)
++{
++	return ti->status & TS_USEDFPU;
++}
++
++/* Must be paired with an 'stts' after! */
++static inline void __thread_clear_has_fpu(struct thread_info *ti)
++{
++	ti->status &= ~TS_USEDFPU;
++}
++
++/* Must be paired with a 'clts' before! */
++static inline void __thread_set_has_fpu(struct thread_info *ti)
++{
++	ti->status |= TS_USEDFPU;
++}
++
++/*
++ * Encapsulate the CR0.TS handling together with the
++ * software flag.
++ *
++ * These generally need preemption protection to work,
++ * do try to avoid using these on their own.
++ */
++static inline void __thread_fpu_end(struct thread_info *ti)
++{
++	__thread_clear_has_fpu(ti);
++	stts();
++}
++
++static inline void __thread_fpu_begin(struct thread_info *ti)
++{
++	clts();
++	__thread_set_has_fpu(ti);
++}
++
++/*
+  * Signal frame handlers...
+  */
+ extern int save_i387_xstate(void __user *buf);
+@@ -287,23 +328,21 @@ extern int restore_i387_xstate(void __us
+ 
+ static inline void __unlazy_fpu(struct task_struct *tsk)
+ {
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
++	if (__thread_has_fpu(task_thread_info(tsk))) {
+ 		__save_init_fpu(tsk);
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
++		__thread_fpu_end(task_thread_info(tsk));
+ 	} else
+ 		tsk->fpu_counter = 0;
+ }
+ 
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
++	if (__thread_has_fpu(task_thread_info(tsk))) {
+ 		/* Ignore delayed exceptions from user space */
+ 		asm volatile("1: fwait\n"
+ 			     "2:\n"
+ 			     _ASM_EXTABLE(1b, 2b));
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
++		__thread_fpu_end(task_thread_info(tsk));
+ 	}
+ }
+ 
+@@ -311,14 +350,14 @@ static inline void __clear_fpu(struct ta
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+  * We can do a kernel_fpu_begin/end() pair *ONLY* if that
+- * pair does nothing at all: TS_USEDFPU must be clear (so
++ * pair does nothing at all: the thread must not have fpu (so
+  * that we don't try to save the FPU state), and TS must
+  * be set (so that the clts/stts pair does nothing that is
+  * visible in the interrupted kernel thread).
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+-	return !(current_thread_info()->status & TS_USEDFPU) &&
++	return !__thread_has_fpu(current_thread_info()) &&
+ 		(read_cr0() & X86_CR0_TS);
+ }
+ 
+@@ -356,9 +395,9 @@ static inline void kernel_fpu_begin(void
+ 
+ 	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
+-	if (me->status & TS_USEDFPU) {
++	if (__thread_has_fpu(me)) {
+ 		__save_init_fpu(me->task);
+-		me->status &= ~TS_USEDFPU;
++		__thread_clear_has_fpu(me);
+ 		/* We do 'stts()' in kernel_fpu_end() */
+ 	} else
+ 		clts();
+@@ -422,24 +461,21 @@ static inline void irq_ts_restore(int TS
+  */
+ static inline int user_has_fpu(void)
+ {
+-	return current_thread_info()->status & TS_USEDFPU;
++	return __thread_has_fpu(current_thread_info());
+ }
+ 
+ static inline void user_fpu_end(void)
+ {
+ 	preempt_disable();
+-	current_thread_info()->status &= ~TS_USEDFPU;
+-	stts();
++	__thread_fpu_end(current_thread_info());
+ 	preempt_enable();
+ }
+ 
+ static inline void user_fpu_begin(void)
+ {
+ 	preempt_disable();
+-	if (!user_has_fpu()) {
+-		clts();
+-		current_thread_info()->status |= TS_USEDFPU;
+-	}
++	if (!user_has_fpu())
++		__thread_fpu_begin(current_thread_info());
+ 	preempt_enable();
+ }
+ 
+@@ -448,11 +484,10 @@ static inline void user_fpu_begin(void)
+  */
+ static inline void save_init_fpu(struct task_struct *tsk)
+ {
+-	WARN_ON_ONCE(!(task_thread_info(tsk)->status & TS_USEDFPU));
++	WARN_ON_ONCE(!__thread_has_fpu(task_thread_info(tsk)));
+ 	preempt_disable();
+ 	__save_init_fpu(tsk);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-	stts();
++	__thread_fpu_end(task_thread_info(tsk));
+ 	preempt_enable();
+ }
  
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -745,10 +745,10 @@ void __math_state_restore(void)
-  * Careful.. There are problems with IBM-designed IRQ13 behaviour.
-  * Don't touch unless you *really* know how it works.
-  *
-- * Must be called with kernel preemption disabled (in this case,
-- * local interrupts are disabled at the call-site in entry.S).
-+ * Must be called with kernel preemption disabled (eg with local
-+ * local interrupts as in the case of do_device_not_available).
-  */
--asmlinkage void math_state_restore(void)
-+void math_state_restore(void)
- {
- 	struct thread_info *thread = current_thread_info();
- 	struct task_struct *tsk = thread->task;
+@@ -734,7 +734,7 @@ void __math_state_restore(void)
+ 		return;
+ 	}
+ 
+-	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
++	__thread_set_has_fpu(thread);	/* clts in caller! */
+ 	tsk->fpu_counter++;
+ }
+ 
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -47,7 +47,7 @@ void __sanitize_i387_state(struct task_s
+ 	if (!fx)
+ 		return;
+ 
+-	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
++	BUG_ON(__thread_has_fpu(task_thread_info(tsk)));
+ 
+ 	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
+ 
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -948,7 +948,7 @@ static void __vmx_load_host_state(struct
+ #ifdef CONFIG_X86_64
+ 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
+ #endif
+-	if (current_thread_info()->status & TS_USEDFPU)
++	if (__thread_has_fpu(current_thread_info()))
+ 		clts();
+ 	load_gdt(&__get_cpu_var(host_gdt));
+ }
 
 
