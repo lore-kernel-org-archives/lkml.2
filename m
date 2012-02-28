@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab2B1AHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:07:15 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50944 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755068Ab2B1AHN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:07:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.182.202.69 as permitted sender) smtp.mail=glikely@secretlab.ca
+	id S1755920Ab2B1AIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:08:38 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61064 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab2B1AIh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 19:08:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.76.133 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
 MIME-Version: 1.0
-In-Reply-To: <20120228104047.85b5515f3b27c631580f5503@canb.auug.org.au>
-References: <20120227182029.545a7db32550ce94c9faffb4@canb.auug.org.au>
- <4F4BC3C5.8040802@xenotime.net> <20120228104047.85b5515f3b27c631580f5503@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 27 Feb 2012 17:06:53 -0700
-X-Google-Sender-Auth: VdKv3JkhHMFc1eerwp18FbkM_iw
-Message-ID: <CACxGe6sFTSu8eznKDecjTj+2fyBXN4_+EM2SaQRSZMmFyonD4w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 27 (gpio-sodaville.c)
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>
+In-Reply-To: <4F4BF11E.4090000@zytor.com>
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
+	<4F4BF11E.4090000@zytor.com>
+Date: Tue, 28 Feb 2012 01:08:36 +0100
+Message-ID: <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+From: "Joshua C." <joshuacov@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Bodo Eggert <7eggert@gmx.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 4:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Mon, 27 Feb 2012 09:56:21 -0800 Randy Dunlap <rdunlap@xenotime.net> wrote:
+2012/2/27 H. Peter Anvin <hpa@zytor.com>:
+> On 02/27/2012 11:23 AM, Joshua C. wrote:
+>> I rebased this on the latest kernel-3.3-rc5 so that it can be properly applied.
+>> ------------------
 >>
->> on i386:
+>> From 36e15b8d9d491817a3bada5ef9375aabe9439d9b Mon Sep 17 00:00:00 2012
+>> From: Joshua Cov <joshuacov@googlemail.com>
+>> Date: Mon, 27 Feb 2012 20:49:18 +0100
+>> Subject: [PATCH] Use BIOS Keyboard variable to set Numlock
 >>
->> drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' specified in initializer
->> drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompatible pointer type
->> drivers/gpio/gpio-sodaville.c: In function 'sdv_register_irqsupport':
->> drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no member named 'irq_base'
->> drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of function 'irq_domain_add'
->> drivers/gpio/gpio-sodaville.c: In function 'sdv_gpio_remove':
->> drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of function 'irq_domain_del'
+>> The PC BIOS does provide a NUMLOCK flag containing the desired state
+>> of this LED. Bit 0x417 has the current keyboard modifier state. This
+>> patch sets the current state according to the data in the bios and
+>> introduces a module parameter "numlock" which can be used to
+>> explicitely disable the NumLock (1 = enable, 0 = disable).
+>>
+>> See first discussion back in 2007 at:
+>> http://lkml.indiana.edu/hypermail/linux/kernel/0707.1/1834.html
+>>
+>> Signed-Off-By: Joshua Cov <joshuacov@googlemail.com>
+>> Cc: H. Peter Anvin <hpa@zytor.com>
+>> Cc: Bodo Eggert <7eggert@gmx.de>
+>>
 >
-> These are a conflicts between the gio tree and the irqdomain tree.
-> Grant, can you supply me with a merge fix patch?  Or will you merge the
-> irqdomain stuff into the gpio tree (making sure that the irqdomain tree
-> never rebases again) ...
+> A better idea might be to query the status in the BIOS bootstrap code --
+> then non-BIOS boots can do the equivalent.  It also has the side benefit
+> of making people running Grub2 perhaps realize that they are f****ng
+> themselves over by using the "linux" command and not "linux16", because
+> of course policy in Grub2 is that if there is a sane way to do it, make
+> sure it is NOT the default.
+>
+>        -hpa
+>
 
-The irqdomain branch has already been made stable for that exact
-reason with other trees.  I'll get it fixed up and send out an update.
- I've got 4 hours on a plane tomorrow, so I'll probably crank it out
-then.
+Do you mind querying the state in Grub? This will mean that we'll have
+to remove the code that sets this bit from the kernel and leave it the
+in the state reported by the grub?
 
-g.
+If so I'm not sure about it. We check the BIOS data area as defined
+for IBM PCs (1981), so a fair amount of user should benefit from the
+change. Those non-BIOS boots can set the numlock=0 and won't be
+affected by this. I think this isa lot easier to implement than doing
+it in the BIOS bootstrap code.
