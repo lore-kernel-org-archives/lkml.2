@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965293Ab2B1BRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:17:15 -0500
+	id S965279Ab2B1BRm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:17:42 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965256Ab2B1BMS (ORCPT
+	with ESMTP id S965232Ab2B1BML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.197.5 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010435.202930923@linuxfoundation.org>
+Message-Id: <20120228010431.451239234@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:35 -0800
+Date: Mon, 27 Feb 2012 17:04:52 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Desch <vvd.joede@googlemail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 66/72] [media] hdpvr: fix race conditon during start of streaming
+        alan@lxorguk.ukuu.org.uk,
+        Vijay Subramanian <subramanian.vijay@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 23/72] net_sched: Bug in netem reordering
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Janne Grunau <j@jannau.net>
 
-commit afa159538af61f1a65d48927f4e949fe514fb4fc upstream.
+From: Hagen Paul Pfeifer <hagen@jauu.net>
 
-status has to be set to STREAMING before the streaming worker is
-queued. hdpvr_transmit_buffers() will exit immediately otherwise.
+[ Upstream commit eb10192447370f19a215a8c2749332afa1199d46 ]
 
-Reported-by: Joerg Desch <vvd.joede@googlemail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Not now, but it looks you are correct. q->qdisc is NULL until another
+additional qdisc is attached (beside tfifo). See 50612537e9ab2969312.
+The following patch should work.
+
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+
+netem: catch NULL pointer by updating the real qdisc statistic
+
+Reported-by: Vijay Subramanian <subramanian.vijay@gmail.com>
+Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/media/video/hdpvr/hdpvr-video.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sched/sch_netem.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/video/hdpvr/hdpvr-video.c
-+++ b/drivers/media/video/hdpvr/hdpvr-video.c
-@@ -283,12 +283,13 @@ static int hdpvr_start_streaming(struct
+--- a/net/sched/sch_netem.c
++++ b/net/sched/sch_netem.c
+@@ -383,8 +383,8 @@ static int netem_enqueue(struct sk_buff
+ 		q->counter = 0;
  
- 		hdpvr_config_call(dev, CTRL_START_STREAMING_VALUE, 0x00);
- 
-+		dev->status = STATUS_STREAMING;
-+
- 		INIT_WORK(&dev->worker, hdpvr_transmit_buffers);
- 		queue_work(dev->workqueue, &dev->worker);
- 
- 		v4l2_dbg(MSG_BUFFER, hdpvr_debug, &dev->v4l2_dev,
- 			 "streaming started\n");
--		dev->status = STATUS_STREAMING;
- 
- 		return 0;
+ 		__skb_queue_head(&q->qdisc->q, skb);
+-		q->qdisc->qstats.backlog += qdisc_pkt_len(skb);
+-		q->qdisc->qstats.requeues++;
++		sch->qstats.backlog += qdisc_pkt_len(skb);
++		sch->qstats.requeues++;
+ 		ret = NET_XMIT_SUCCESS;
  	}
+ 
 
 
