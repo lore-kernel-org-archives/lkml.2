@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab2B1VAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 16:00:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37273 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab2B1VAv convert rfc822-to-8bit (ORCPT
+	id S965687Ab2B1VHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 16:07:50 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49386 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965394Ab2B1VHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 16:00:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120228.154914.662485432055205683.davem@davemloft.net>
-References: <1330091162-8141-4-git-send-email-danny.kukawka@bisect.de>
-	<CAMuHMdXAwgtwbCV_=qJnrs=YPZksoEBkjnQB=JbR7fc+UyKdzw@mail.gmail.com>
-	<CAMuHMdW0Oh7h8tv85ScgHB50vMaZSU7S3cPJRsChnRe2sNL_kA@mail.gmail.com>
-	<20120228.154914.662485432055205683.davem@davemloft.net>
-Date: Tue, 28 Feb 2012 22:00:50 +0100
-X-Google-Sender-Auth: urtqzdZipCbeYr_tqXntRBo68Rc
-Message-ID: <CAMuHMdUudso1YpukfxvGdb2fAYZBJewTgQEh-aU_KB0-U2o6WQ@mail.gmail.com>
-Subject: Re: [PATCH 03/11] cirrus/mac89x0: print MAC via printk format specifier
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Miller <davem@davemloft.net>
-Cc: danny.kukawka@bisect.de, dkukawka@suse.de, jeffrey.t.kirsher@intel.com,
-        jpirko@redhat.com, netdev@vger.kernel.org,
+	Tue, 28 Feb 2012 16:07:46 -0500
+Date: Tue, 28 Feb 2012 16:07:32 -0500 (EST)
+Message-Id: <20120228.160732.236576548660822884.davem@davemloft.net>
+To: joe@perches.com
+Cc: JBottomley@parallels.com, trivial@kernel.org, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH trivial next 7/9] scsi: Use vsprintf extention %pf with
+ builtin_return_address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <aa5a8942edf8a59745a514a099e78eaaae03fe26.1330454853.git.joe@perches.com>
+References: <cover.1330454853.git.joe@perches.com>
+	<aa5a8942edf8a59745a514a099e78eaaae03fe26.1330454853.git.joe@perches.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 13:07:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+From: Joe Perches <joe@perches.com>
+Date: Tue, 28 Feb 2012 10:49:36 -0800
 
-2012/2/28 David Miller <davem@davemloft.net>:
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> Date: Tue, 28 Feb 2012 21:45:30 +0100
->
->> drivers/net/ethernet/cirrus/mac89x0.c: In function ‘set_mac_address’:
->> drivers/net/ethernet/cirrus/mac89x0.c:597: warning: dereferencing
->> ‘void *’ pointer
->> drivers/net/ethernet/cirrus/mac89x0.c:597: error: request for member
->> ‘sa_data’ in something not a structure or union
->> drivers/net/ethernet/cirrus/mac89x0.c:600: warning: dereferencing
->> ‘void *’ pointer
->> drivers/net/ethernet/cirrus/mac89x0.c:600: error: request for member
->> ‘sa_data’ in something not a structure or union
->> drivers/net/ethernet/cirrus/mac89x0.c:595: warning: unused variable ‘saddr’
->
-> Thanks, I've fixed this as follows and pushed to net-next:
->
-> --------------------
-> mac89x0: Fix build error.
->
-> Need to use the new 'saddr' variable not the void 'addr' in
-> set_mac_address().
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Emit the function name not the address when possible.
+> 
+> builtin_return_address() gives an address.  When building
+> a kernel with CONFIG_KALLSYMS, emit the actual function
+> name not the address.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Thanks, that fixed the build.
-
-What about the is_valid_ether_addr() check?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Acked-by: David S. Miller <davem@davemloft.net>
