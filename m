@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab2B1DoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 22:44:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50141 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299Ab2B1Dn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 22:43:59 -0500
-Message-ID: <4F4C4D5C.70908@zytor.com>
-Date: Mon, 27 Feb 2012 19:43:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S932510Ab2B1Dqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 22:46:36 -0500
+Received: from mga10.intel.com ([192.55.52.92]:36198 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753423Ab2B1Dqf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 22:46:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ryan.r.ware@intel.com designates 10.152.147.202 as permitted sender) smtp.mail=ryan.r.ware@intel.com
 MIME-Version: 1.0
-To: Kevin Winchester <kjwinchester@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/5] x86: Cleanup and simplify cpu-specific data
-References: <1330041476-719-1-git-send-email-kjwinchester@gmail.com> <20120227115905.GB9943@elte.hu> <CAELBVzDQx-geNELEvHYheSL0hKbaXfUAvjperNcPELThT9bqWg@mail.gmail.com>
-In-Reply-To: <CAELBVzDQx-geNELEvHYheSL0hKbaXfUAvjperNcPELThT9bqWg@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120227144602.07f5ec33.akpm@linux-foundation.org>
+References: <1329990365-23779-1-git-send-email-jarkko.sakkinen@intel.com>
+	<alpine.LRH.2.02.1202241913400.30742@tundra.namei.org>
+	<alpine.LSU.2.00.1202241904070.22389@eggly.anvils>
+	<20120227144602.07f5ec33.akpm@linux-foundation.org>
+Date: Tue, 28 Feb 2012 12:46:13 +0900
+Message-ID: <CAGGTEhP=jbA664fbbZaVEN5Bxq9_3iiV84ME8QSTUohv2JLkqw@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
+From: "Ware, Ryan R" <ryan.r.ware@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        James Morris <jmorris@namei.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2012 04:52 PM, Kevin Winchester wrote:
-> On 27 February 2012 07:59, Ingo Molnar<mingo@elte.hu>  wrote:
->>
->> * Kevin Winchester<kjwinchester@gmail.com>  wrote:
->>
->>> Various per-cpu fields are define in arch/x86/kernel/smpboot.c
->>> that are basically equivalent to the cpu-specific data in
->>> struct cpuinfo_x86. By moving these fields into the structure,
->>> a number of codepaths can be simplified since they no longer
->>> need to care about those fields not existing on !SMP builds.
->>
->> Works mostly fine, except with the attached 32-bit UP !APIC
->> config I get various build failures (resolved via the patch
->> below) and a link failure (not resolved):
->>
+On Tue, Feb 28, 2012 at 7:46 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
 >
-> I get the following failure before I get to link time:
+> On Fri, 24 Feb 2012 19:19:22 -0800 (PST)
+> Hugh Dickins <hughd@google.com> wrote:
 >
-> In file included from
-> /home/kevin/linux/linux-2.6/arch/x86/include/asm/uaccess.h:573:0,
->                   from
-> /home/kevin/linux/linux-2.6/arch/x86/include/asm/sections.h:5,
->                   from
-> /home/kevin/linux/linux-2.6/arch/x86/include/asm/hw_irq.h:26,
->                   from include/linux/irq.h:357,
->                   from
-> /home/kevin/linux/linux-2.6/arch/x86/include/asm/hardirq.h:5,
->                   from include/linux/hardirq.h:7,
->                   from include/linux/interrupt.h:12,
->                   from net/core/pktgen.c:135:
-> In function ‘copy_from_user’,
->      inlined from ‘pktgen_if_write’ at net/core/pktgen.c:877:20:
-> /home/kevin/linux/linux-2.6/arch/x86/include/asm/uaccess_32.h:211:26:
-> error: call to ‘copy_from_user_overflow’ declared with attribute
-> error: copy_from_user() buffer size is not provably correct
-> make[2]: *** [net/core/pktgen.o] Error 1
+> > +/*
+> > + * Callback for security_inode_init_security() for acquiring xattrs.
+> > + */
+> > +static int shmem_initxattrs(struct inode *inode,
+> > +                         const struct xattr *xattr_array,
+> > +                         void *fs_info)
+> > +{
+> > +     struct shmem_inode_info *info = SHMEM_I(inode);
+> > +     const struct xattr *xattr;
+> > +     struct shmem_xattr *new_xattr;
+> > +     size_t len;
+> > +
+> > +     for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> > +             new_xattr = shmem_xattr_alloc(xattr->value,
+> > xattr->value_len);
+> > +             if (!new_xattr)
+> > +                     return -ENOMEM;
+> > +
+> > +             len = strlen(xattr->name) + 1;
+> > +             new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
+> > +                                       GFP_KERNEL);
+> > +             if (!new_xattr->name) {
+> > +                     kfree(new_xattr);
+> > +                     return -ENOMEM;
+> > +             }
+> > +
+> > +             memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
+> > +                    XATTR_SECURITY_PREFIX_LEN);
+> > +             memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
+> > +                    xattr->name, len);
+> > +
+> > +             spin_lock(&info->lock);
+> > +             list_add(&new_xattr->list, &info->xattr_list);
+> > +             spin_unlock(&info->lock);
+> > +     }
+> > +
+> > +     return 0;
+> > +}
 >
-> On:
+> So if there's a kmalloc failure partway through the array, we leave a
+> partially xattrified inode in place.
 >
-> gcc (GCC) 4.6.2 20120120 (prerelease)
->
-> Is that my fault, or something else?
->
-> Kevin
->
+> Are we sure this is OK?
 
-That comes from compiling with warnings as errors.  Not that someone 
-shouldn't look at that kind of problem.
+I'm guessing Jarkko can clean that up a bit.  It wouldn't be a good
+idea to leave inaccurate data structures laying around during failure
+cases.
 
-	-hpa
-
+Ryan
