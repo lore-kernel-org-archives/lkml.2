@@ -1,54 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2B1OTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:19:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45631 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab2B1OTu convert rfc822-to-8bit (ORCPT
+	id S1755568Ab2B1OUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:20:05 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:35613 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab2B1OUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:19:50 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.50.181.135 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
+	Tue, 28 Feb 2012 09:20:01 -0500
+Date: Tue, 28 Feb 2012 19:47:43 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120228141743.GA32472@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+ <20120227091212.GA7092@elte.hu>
+ <20120228132601.GC32211@linux.vnet.ibm.com>
+ <20120228135251.GA8279@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <1330435782.11248.89.camel@twins>
-References: <1330442692.3719.7.camel@lappy> <1330435782.11248.89.camel@twins>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 28 Feb 2012 16:19:30 +0200
-Message-ID: <CA+1xoqfMad+s4-E-Nn29m3=bVASEkH38ZNvWg2vY99ZizdAT3Q@mail.gmail.com>
-Subject: Re: lockdep: Warning & NULL ptr deref
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Dave Jones <davej@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120228135251.GA8279@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022814-5518-0000-0000-000002914422
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 3:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-02-28 at 10:24 -0500, Sasha Levin wrote:
->>
->> I'll send some patches to prevent the NULL deref itself which happens
->> since a chunk of the code in lockdep.c assumed hlock_class() can't
->> return NULL.
->>
-> There's tons of code actually assuming that..
->
->> This won't fix the actual problem though, I'm not sure exactly how a
->> held lock wouldn't have a class initialized to it.
->
-> static inline struct lock_class *hlock_class(struct held_lock *hlock)
-> {
->        if (!hlock->class_idx) {
->                /*
->                 * Someone passed in garbage, we give up.
->                 */
->                DEBUG_LOCKS_WARN_ON(1);
->                return NULL;
->        }
->        return lock_classes + hlock->class_idx - 1;
-> }
->
-> Typically that translates to severe memory corruption.
+* Ingo Molnar <mingo@elte.hu> [2012-02-28 14:52:51]:
 
-I can also reproduce it easily by triggering sysrq once or twice after
-trinity has stopped.
+> 
+> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> 
+> > > > Where possible, we check and skip singlestepping the 
+> > > > breakpointed instructions. For now we skip single byte as 
+> > > > well as few multibyte nop instructions. However this can 
+> > > > be extended to other instructions too.
+> > > 
+> > > Is this an optimization - allowing a NOP to be inserted for 
+> > > easy probe insertion?
+> > 
+> > Yes, Its an optimization by which we avoid singlestep 
+> > exception.
+> 
+> That would be nice to comment in the code - nowhere in the 
+> 'skip' logic is this fact mentioned, and it's really useful 
+> information to pretty much anyone reading the code.
+> 
+> It's also a nice optimization, there's no need to obfuscate its 
+> existence.
+
+
+okay, Will add. 
+
+> 
+> > > > +	case DIE_INT3:
+> > > > +		/* Run your handler here */
+> > > > +		if (uprobe_bkpt_notifier(regs))
+> > > > +			ret = NOTIFY_STOP;
+> > > 
+> > > This comment looks somewhat out of place.
+> > > 
+> > > Also, I have not noticed this in the first patch, but 'bkpt' is 
+> > > not a standard way to refer to breakpoints: we either use 
+> > > 'breakpoint' or 'bp'.
+> > 
+> > This is again one of those things that I changed from bp to 
+> > bkpt based on LKML feedback. I am okay to go back to bp.
+> 
+> :-/ I can understand it somewhat, 'bp' also means other things.
+> 
+> 'hwbp' is a common name - you could use 'swbp' which would pair 
+> with that nicely?
+> 
+
+Okay.
+However most of these functions call are called from within uprobes.c
+and have a uprobe prefix. So there is enough context for people to link
+bp to breakpoint.
+
+> 
+> Correct - and that still isolates the arch code from the core 
+> uprobes code.
+> 
+> We could also introduce 'struct generic_arch_uprobe_task' and 
+> embedd that inside arch_uprobe via a short field name, to make 
+> it easy to access: ->gen.field or so.
+> 
+> You can also leave it as-is for now, I'll reconsider how things 
+> look like with the patch following these bits and then make a 
+> new suggestion if I see a better way.
+> 
+
+Will leave this as-is for now and wait for your suggestions.
+
+> 
+> > > > +/*
+> > > > + * There could be threads that have hit the breakpoint and are entering the
+> > > > + * notifier code and trying to acquire the uprobes_treelock. The thread
+> > > > + * calling delete_uprobe() that is removing the uprobe from the rb_tree can
+> > > > + * race with these threads and might acquire the uprobes_treelock compared
+> > > > + * to some of the breakpoint hit threads. In such a case, the breakpoint hit
+> > > > + * threads will not find the uprobe. Hence wait till the current breakpoint
+> > > > + * hit threads acquire the uprobes_treelock before the uprobe is removed
+> > > > + * from the rbtree.
+> > > 
+> > > Hm, the last sentence does not parse for me. (even if it's 
+> > > correct English it might make sense to rephrase it to be clearer 
+> > > what is meant.)
+> > > 
+> > 
+> > Would this be okay with you.
+> > 
+> > The current unregistering thread waits till all other threads 
+> > that have hit a breakpoint to acquire the uprobes_treelock 
+> > before the uprobe is removed from the rbtree.
+> 
+> s/is removed/are removed
+> 
+> ?
+> 
+
+At a time, we are unregistering just one probe,(atleast for now.)
+Wondering if "before uprobes are remove from rbtree." sounds as if more
+than one uprobe is being removed at one instance.
+
+> If yes then indeed this reads better.
+> 
+> > [...]
+> >
+> > If the thread was not in the middle of a uprobe hit then we go 
+> > through the regular signal handling.
+> > 
+> > Since there is no way this thread can hit a uprobe once a 
+> > thread has entered get_signal_to_deliver(kernel code), I dont 
+> > see a reason to move it under relock:
+> 
+> Ok, fair enough.
+> 
+Okay,
+
+-- 
+Thanks and Regards
+Srikar
+
