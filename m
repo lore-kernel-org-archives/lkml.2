@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2B1ACp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:02:45 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43177 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754011Ab2B1ACn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:02:43 -0500
-Date: Tue, 28 Feb 2012 00:02:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        hughd@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hugetlbfs: Add new rw_semaphore to fix truncate/read race
-Message-ID: <20120228000228.GE23916@ZenIV.linux.org.uk>
-References: <1330280398-27956-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120227151135.7d4076c6.akpm@linux-foundation.org>
+	id S932123Ab2B1AC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:02:59 -0500
+Received: from tundra.namei.org ([65.99.196.166]:57994 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755182Ab2B1AC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 19:02:58 -0500
+Date: Tue, 28 Feb 2012 11:02:51 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH] security: fix ima kconfig warning
+In-Reply-To: <4F47E4C5.7060706@xenotime.net>
+Message-ID: <alpine.LRH.2.02.1202281102260.23213@tundra.namei.org>
+References: <4F47E4C5.7060706@xenotime.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120227151135.7d4076c6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 03:11:35PM -0800, Andrew Morton wrote:
+On Fri, 24 Feb 2012, Randy Dunlap wrote:
 
-> This patch comes somewhat out of the blue and I'm unsure what's going on.
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> You say there's some (potential?) deadlock with mmap, but it is
-> undescribed.  Have people observed this deadlock?  Has it caused
-> lockdep warnings?  Please update the changelog to fully describe the
-> bug.
+> Fix IMA kconfig warning on non-X86 architectures:
 
-There's one simple rule: never, ever take ->i_mutex under ->mmap_sem.
-E.g.  in any ->mmap() (obvious - mmap(2) calls that under ->mmap_sem) or
-any ->release() of mappable file (munmap(2) does fput() under ->mmap_sem
-and that will call ->release() if no other references are still around).
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
 
-Hugetlbfs is slightly unusual since it takes ->i_mutex in read() - usually
-that's done in write(), while read() doesn't bother with that.  In either
-case you do copying to/from userland buffer while holding ->i_mutex, which
-nests ->mmap_sem within it.
 
-> Also, the new truncate_sem is undoumented.  This leaves readers to work
-> out for themselves what it might be for.  Please let's add code
-> comments which completely describe the race, and how this lock prevents
-> it.
-> 
-> We should also document our locking rules.
-
-Hell, yes.  I've spent the last couple of weeks crawling through VM-related
-code and locking in there is _scary_.  "Convoluted" doesn't even begin to
-cover it, especially when it gets to "what locks are required when accessing
-this field" ;-/  Got quite a catch out of that trawl by now...
-
->  When should code take this
-> lock?  What are its ranking rules with respect to i_mutex, i_mmap_mutex
-> and possibly others?
+- James
+-- 
+James Morris
+<jmorris@namei.org>
