@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030328Ab2B1T2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:28:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55031 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030242Ab2B1T16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:27:58 -0500
-Date: Tue, 28 Feb 2012 11:25:26 -0800
-From: tip-bot for Matt Fleming <matt.fleming@intel.com>
-Message-ID: <tip-d40f833630a1299fd377408dc8d8fac370d621b0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, matt.fleming@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, matt.fleming@intel.com
-In-Reply-To: <1330436245-24875-5-git-send-email-matt@console-pimps.org>
-References: <1330436245-24875-5-git-send-email-matt@console-pimps.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, boot: Restrict CFLAGS for hostprogs
-Git-Commit-ID: d40f833630a1299fd377408dc8d8fac370d621b0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1030352Ab2B1T2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:28:18 -0500
+Received: from 176-53-19-122.turkrdns.com ([176.53.19.122]:2724 "EHLO
+	mail.toplumaileposta.tk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030279Ab2B1T2P convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 14:28:15 -0500
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Feb 2012 14:28:14 EST
+Message-ID: <4e65cdf2f509986fd5b31ca62c34eb45@aollll.com>
+From: "=?iso-8859-9?B?U91URU7dWiBHT09HTEUg3UxLIFNBWUZB?=" 
+	<kurumsalseo@aollll.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?V2ViIFNpdGVuaXplIEdvb2dsZWRhIN1sayBTYXlmYXlhIEthbP1j/SDH/WthcnRtYSBHYXJhbnRp
+	c2k=?=
+Date: Tue, 28 Feb 2012 21:18:21 +0200
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 28 Feb 2012 11:25:54 -0800 (PST)
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d40f833630a1299fd377408dc8d8fac370d621b0
-Gitweb:     http://git.kernel.org/tip/d40f833630a1299fd377408dc8d8fac370d621b0
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Tue, 28 Feb 2012 13:37:23 +0000
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 28 Feb 2012 10:22:59 -0800
+Öyle bir eleman düþününki Portföyünde onbinlerce yeni müþteri bulunsun ve hergün sitenize yeni müþteriler getirsin.ONA NE KADAR MAAÞ ÖDEMEYE HAZIRSINIZ DÜÞÜNÜN...
 
-x86, boot: Restrict CFLAGS for hostprogs
+ÖRNEK :Web siteniz var Mühendislik þirketisiniz ve googleda mühendislik aramasý 
+yapýldýðýnda web siteniz ilk sayfada...SENEDE KAÇ PROJE ALIRSINIZ Mevcut iþinize ek olarak internet size nekadar daha kazandýrýr...? ÝYÝ DÜÞÜNÜN
 
-Currently tools/build has access to all the kernel headers in
-$(srctree). This is unnecessary and could potentially allow
-tools/build to erroneously include kernel headers when it should only
-be including userspace-exported headers.
+Web Sitenizden Daha Cok Gelir -Musteri - Ziyaretci-Satýþ  Elde Etmek istiyorsaniz
+Web Siteniz Googleda ilk sayfada oldugunda daha cok anlasma yaparim diyorsaniz
+Web siteniz Googleda ilk Sayfada Oldugunda Prestijim Artar Rakiplerime Fark Atarim Diyorsaniz
 
-Unfortunately, mkcpustr still needs access to some of the asm kernel
-headers, so explicitly special case that hostprog.
+Bize hemen þimdi ulaþýn. Türkiyede, Google  Ýlk Sayfada Kalýcýlýk Garantili Kurumsal Seo Hizmeti Veren Tek Firmayýz Ve 7 Yýldýr Sizin Ýçin Çalýþýyoruz...
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1330436245-24875-5-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/boot/Makefile |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Haydi Þimdi Tanýþalým
+http://www.fullvizyon.net
+www.fullvizyon.net
+0216 33 045 33
+0544 429 79 39
 
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 95365a8..3e02148 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -37,8 +37,9 @@ setup-y		+= video-bios.o
- targets		+= $(setup-y)
- hostprogs-y	:= mkcpustr tools/build
- 
--HOST_EXTRACFLAGS += $(LINUXINCLUDE)
--
-+HOSTCFLAGS_mkcpustr.o := -I$(srctree)/arch/$(SRCARCH)/include
-+HOST_EXTRACFLAGS += -I$(objtree)/include -I$(srctree)/tools/include \
-+                   -include $(srctree)/include/linux/kconfig.h
- $(obj)/cpu.o: $(obj)/cpustr.h
- 
- quiet_cmd_cpustr = CPUSTR  $@
+
