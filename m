@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2B1DDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 22:03:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33240 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab2B1DDc (ORCPT
+	id S1756804Ab2B1DMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 22:12:39 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:29072 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752895Ab2B1DMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 22:03:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of john.r.moser@gmail.com designates 10.52.23.97 as permitted sender) smtp.mail=john.r.moser@gmail.com; dkim=pass header.i=john.r.moser@gmail.com
-Message-ID: <4F4C4400.6070302@gmail.com>
-Date: Mon, 27 Feb 2012 22:03:28 -0500
-From: John Moser <john.r.moser@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120224 Thunderbird/11.0
+	Mon, 27 Feb 2012 22:12:38 -0500
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I179dN1432N98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 28 Feb 2012 11:18:52 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/20] pinctrl: API changes to support multiple states
+ per device
+Message-ID: <20120228031851.GA1249@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-20-git-send-email-swarren@nvidia.com>
+ <20120227090721.GB26061@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFCD@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: What do you do when swap is faster than disk?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFCD@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got into a weird situation today.
+On Mon, Feb 27, 2012 at 10:37:16AM -0800, Stephen Warren wrote:
+> Dong Aisheng wrote at Monday, February 27, 2012 2:07 AM:
+> > On Sun, Feb 19, 2012 at 11:45:59PM -0700, Stephen Warren wrote:
+..........
+> 
+> > > +static struct pinctrl *pinctrl_get_locked(struct device *dev)
+> > > +{
+> > > +	struct pinctrl *p;
+> > >
+> > > -error:
+> > > -	list_for_each_entry(setting, &p->settings, node)
+> > > -		pinmux_free_setting(setting);
+> > > +	if (WARN_ON(!dev))
+> > > +		return ERR_PTR(-EINVAL);
+> > >
+> > > -	kfree(p);
+> > > +	p = find_pinctrl(dev);
+> > > +	if (p == NULL)
+> > > +		p = create_pinctrl(dev);
+> > > +	if (IS_ERR(p))
+> > > +		return p;
+> > > +
+> > > +	p->usecount++;
+> >
+> > I still can not understand what's the purpose of p->usecount?
+> > For allowing multi times calling of pinctrl_get for on the same device?
+> 
+> pinctrl_get() could be called multiple times for the same device. Rather
+> than create a whole new struct pinctrl each time it's called, we just
+> reference count the object so that each call returns the same one, and
+> it won't be destroyed until all users have called pinctrl_put().
+> 
 
-I limited my system RAM and used zram to make a swap device, then put up 
-memory pressure.  What happened was I got 50MB of disk cache going on 
-and an -extremely- slow system with lots and lots and LOTS of hard disk 
-activity.
+> Hopefully it is true that multiple different pieces of code won't be
+> screwing with the same device's pinctrl settings, but it's simple enough
+> to do this so we may as well. This somewhat of a the moral equivalent of
+> the old code's p->usecount manipulations in pinctrl_enable()/disable(),
+> although admittedly a little different.
+> 
+Hmm, yes, a slight difference after looking the old code.
+Oringally the pinmux->usecount was introduced to allow nested call of pinmux_enable
+(but not pinmux_get since it will return an error due to pin conflicts).
+In the new way, you allow nested call of pinctrl_get.
 
-I found that around 130MB the system was fine, and around 200MB it was 
-extremely fast.  I also found that it's extremely difficult to make the 
-OS keep 200MB of disk cache around on 2GB of RAM when you have 600MB 
-swapped out.
+I still can't find in which case the device will have such requirement
+since per my understanding pinctrl is a little different from clock
+(clock can be used by different devices but we do not allow pins to be
+used by difference devices at the same time).
 
-That raises some questions about if the tunables for this are adequate.  
-I can't very well set vm.swappiness to 150, and even at 100 it's not 
-really helpful.  I mean when you have more than a quarter of your RAM in 
-swap, the tunable seems to have almost no impact.
+However it's actually another issue which is not related to this patch since
+we're just trying to keep align with the old code.
+So it's ok to me for you to keep it here first.
 
-It's also come to my mind that the kernel could, possibly, attempt some 
-speed testing against the devices and determine how fast they are.  This 
-could be as simple as worrying about it under pressure, splitting up 
-swap among all swap devices and working out throughput and latency.  
-Then prioritize them such that, under pressure, very old data in a very 
-fast swap device gets swapped out to a slower swap device.
+> > > +static inline struct pinctrl * __must_check pinctrl_get_select(
+> > > +					struct device *dev, const char *name)
+> > > +{
+> > > +	struct pinctrl *p;
+> > > +	struct pinctrl_state *s;
+> > > +	int ret;
+> > > +
+> > > +	p = pinctrl_get(dev);
+> > > +	if (IS_ERR(p))
+> > > +		return p;
+> > > +
+> > > +	s = pinctrl_lookup_state(p, name);
+> > > +	if (IS_ERR(s)) {
+> > > +		pinctrl_put(p);
+> > > +		return ERR_PTR(PTR_ERR(s));
+> > > +	}
+> > > +
+> > > +	ret = pinctrl_select_state(p, s);
+> > > +	if (ret < 0) {
+> > > +		pinctrl_put(p);
+> > > +		return ERR_PTR(ret);
+> >
+> > s/ERR_PTR(ret)/ret ?
+> 
+> The function returns a pointer, whereas ret is an int. ERR_PTR() is used
+> to wrap the int error code into a pointer value so that the function can
+> return either a valid pointer, or an error-code. See include/linux/err.h.
+> 
+Hmm, below is what i see in your patch:
++int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ {
++       int ret;
++
+        mutex_lock(&pinctrl_mutex);
+-       pinctrl_disable_locked(p);
++       ret = pinctrl_select_state_locked(p, state);
+        mutex_unlock(&pinctrl_mutex);
++
++       return ret;
+ }
+It seems pinctrl_select_state does not return a pointer.
 
-Disk cache could be ranked against the whole thing too to decide just 
-how important disk cache is being--and how much time is being spent 
-mucking about with re-loading flushed cache versus swapping.  You could 
-keep some information about what was in RAM before aside, and push it 
-out as it gets old--a particular area of cache 40MB wide was flushed, 
-there's a 16 byte structure somewhere in RAM that makes note of that.  
-After more time has been spent flushing swap than it takes to read in 
-that 40MB, drop it.  If it's read back in, make note that too much disk 
-cache flushing is happening and not enough swapping is going on.
 
-This is more complex than it sounds, though, because you also have to 
-consider reading things into cache.  Eventually you have to invalidate 
-disk cache to make room for more cache, after all.  That or swap out 
-even more.  So yes I understand this is hard.
+> I've fixed locally up the other issues you pointed out. Thanks.
+> 
+Great.
+Thanks.
 
-Just thought I'd mention that the problem seems to be more complex than 
-it's credited for at the moment.  (In my test case, simply locking 200MB 
-for disk cache would have been fine... much better than what actually 
-happened!)
+Regards
+Dong Aisheng
+
