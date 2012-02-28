@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965173Ab2B1BL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:11:56 -0500
+	id S965448Ab2B1BZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:25:53 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965158Ab2B1BLw (ORCPT
+	with ESMTP id S965169Ab2B1BL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:11:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.220.168 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:11:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.213.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010433.981169612@linuxfoundation.org>
+Message-Id: <20120228010434.053363796@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:21 -0800
+Date: Mon, 27 Feb 2012 17:05:22 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Dirk Eibach <eibach@gdsys.de>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 52/72] hwmon: (ads1015) Fix file leak in probe function
+        alan@lxorguk.ukuu.org.uk, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: [ 53/72] ARM: omap: fix oops in drivers/video/omap2/dss/dpi.c
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 363434b5dc352464ac7601547891e5fc9105f124 upstream.
+commit 40410715715178ec196314dd0c19150c06901f80 upstream.
 
-An error while creating sysfs attribute files in the driver's probe function
-results in an error abort, but already created files are not removed. This patch
-fixes the problem.
+When a PMIC is not found, this driver is unable to obtain its
+'vdds_dsi_reg' regulator.  Even through its initialization function
+fails, other code still calls its enable function, which fails to
+check whether it has this regulator before asking for it to be enabled.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Dirk Eibach <eibach@gdsys.de>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+This fixes the oops, however a better fix would be to sort out the
+upper layers to prevent them calling into a module which failed to
+initialize.
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000038
+pgd = c0004000
+[00000038] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT
+Modules linked in:
+CPU: 0    Not tainted  (3.3.0-rc2+ #228)
+PC is at regulator_enable+0x10/0x70
+LR is at omapdss_dpi_display_enable+0x54/0x15c
+pc : [<c01b9a08>]    lr : [<c01af994>]    psr: 60000013
+sp : c181fd90  ip : c181fdb0  fp : c181fdac
+r10: c042eff0  r9 : 00000060  r8 : c044a164
+r7 : c042c0e4  r6 : c042bd60  r5 : 00000000  r4 : c042bd60
+r3 : c084de48  r2 : c181e000  r1 : c042bd60  r0 : 00000000
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 80004019  DAC: 00000015
+Process swapper (pid: 1, stack limit = 0xc181e2e8)
+Stack: (0xc181fd90 to 0xc1820000)
+fd80:                                     c001754c c042bd60 00000000 c042bd60
+fda0: c181fdcc c181fdb0 c01af994 c01b9a04 c0016104 c042bd60 c042bd60 c044a338
+fdc0: c181fdec c181fdd0 c01b5ed0 c01af94c c042bd60 c042bd60 c1aa8000 c1aa8a0c
+fde0: c181fe04 c181fdf0 c01b5f54 c01b5ea8 c02fc18c c042bd60 c181fe3c c181fe08
+fe00: c01b2a18 c01b5f48 c01aed14 c02fc160 c01df8ec 00000002 c042bd60 00000003
+fe20: c042bd60 c1aa8000 c1aa8a0c c042eff8 c181fe84 c181fe40 c01b3874 c01b29fc
+fe40: c042eff8 00000000 c042f000 c0449db8 c044ed78 00000000 c181fe74 c042eff8
+fe60: c042eff8 c0449db8 c0449db8 c044ed78 00000000 00000000 c181fe94 c181fe88
+fe80: c01e452c c01b35e8 c181feb4 c181fe98 c01e2fdc c01e4518 c042eff8 c0449db8
+fea0: c0449db8 c181fef0 c181fecc c181feb8 c01e3104 c01e2f48 c042eff8 c042f02c
+fec0: c181feec c181fed0 c01e3190 c01e30c0 c01e311c 00000000 c01e311c c0449db8
+fee0: c181ff14 c181fef0 c01e1998 c01e3128 c18330a8 c1892290 c04165e8 c0449db8
+ff00: c0449db8 c1ab60c0 c181ff24 c181ff18 c01e2e28 c01e194c c181ff54 c181ff28
+ff20: c01e2218 c01e2e14 c039afed c181ff38 c04165e8 c041660c c0449db8 00000013
+ff40: 00000000 c03ffdb8 c181ff7c c181ff58 c01e384c c01e217c c181ff7c c04165e8
+ff60: c041660c c003a37c 00000013 00000000 c181ff8c c181ff80 c01e488c c01e3790
+ff80: c181ff9c c181ff90 c03ffdcc c01e484c c181ffdc c181ffa0 c0008798 c03ffdc4
+ffa0: c181ffc4 c181ffb0 c0056440 c0187810 c003a37c c04165e8 c041660c c003a37c
+ffc0: 00000013 00000000 00000000 00000000 c181fff4 c181ffe0 c03ea284 c0008708
+ffe0: 00000000 c03ea208 00000000 c181fff8 c003a37c c03ea214 1073cec0 01f7ee08
+Backtrace:
+[<c01b99f8>] (regulator_enable+0x0/0x70) from [<c01af994>] (omapdss_dpi_display_enable+0x54/0x15c)
+ r6:c042bd60 r5:00000000 r4:c042bd60
+[<c01af940>] (omapdss_dpi_display_enable+0x0/0x15c) from [<c01b5ed0>] (generic_dpi_panel_power_on+0x34/0x78)
+ r6:c044a338 r5:c042bd60 r4:c042bd60
+[<c01b5e9c>] (generic_dpi_panel_power_on+0x0/0x78) from [<c01b5f54>] (generic_dpi_panel_enable+0x18/0x28)
+ r7:c1aa8a0c r6:c1aa8000 r5:c042bd60 r4:c042bd60
+[<c01b5f3c>] (generic_dpi_panel_enable+0x0/0x28) from [<c01b2a18>] (omapfb_init_display+0x28/0x150)
+ r4:c042bd60
+[<c01b29f0>] (omapfb_init_display+0x0/0x150) from [<c01b3874>] (omapfb_probe+0x298/0x318)
+ r8:c042eff8 r7:c1aa8a0c r6:c1aa8000 r5:c042bd60 r4:00000003
+[<c01b35dc>] (omapfb_probe+0x0/0x318) from [<c01e452c>] (platform_drv_probe+0x20/0x24)
+[<c01e450c>] (platform_drv_probe+0x0/0x24) from [<c01e2fdc>] (really_probe+0xa0/0x178)
+[<c01e2f3c>] (really_probe+0x0/0x178) from [<c01e3104>] (driver_probe_device+0x50/0x68)
+ r7:c181fef0 r6:c0449db8 r5:c0449db8 r4:c042eff8
+[<c01e30b4>] (driver_probe_device+0x0/0x68) from [<c01e3190>] (__driver_attach+0x74/0x98)
+ r5:c042f02c r4:c042eff8
+[<c01e311c>] (__driver_attach+0x0/0x98) from [<c01e1998>] (bus_for_each_dev+0x58/0x98)
+ r6:c0449db8 r5:c01e311c r4:00000000
+[<c01e1940>] (bus_for_each_dev+0x0/0x98) from [<c01e2e28>] (driver_attach+0x20/0x28)
+ r7:c1ab60c0 r6:c0449db8 r5:c0449db8 r4:c04165e8
+[<c01e2e08>] (driver_attach+0x0/0x28) from [<c01e2218>] (bus_add_driver+0xa8/0x22c)
+[<c01e2170>] (bus_add_driver+0x0/0x22c) from [<c01e384c>] (driver_register+0xc8/0x154)
+[<c01e3784>] (driver_register+0x0/0x154) from [<c01e488c>] (platform_driver_register+0x4c/0x60)
+ r8:00000000 r7:00000013 r6:c003a37c r5:c041660c r4:c04165e8
+[<c01e4840>] (platform_driver_register+0x0/0x60) from [<c03ffdcc>] (omapfb_init+0x14/0x34)
+[<c03ffdb8>] (omapfb_init+0x0/0x34) from [<c0008798>] (do_one_initcall+0x9c/0x164)
+[<c00086fc>] (do_one_initcall+0x0/0x164) from [<c03ea284>] (kernel_init+0x7c/0x120)
+[<c03ea208>] (kernel_init+0x0/0x120) from [<c003a37c>] (do_exit+0x0/0x2d8)
+ r5:c03ea208 r4:00000000
+Code: e1a0c00d e92dd870 e24cb004 e24dd004 (e5906038)
+---[ end trace 9e2474c2e193b223 ]---
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Igor Grinberg <grinberg@compulab.co.il>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ads1015.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/video/omap2/dss/dpi.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -271,7 +271,7 @@ static int ads1015_probe(struct i2c_clie
- 			continue;
- 		err = device_create_file(&client->dev, &ads1015_in[k].dev_attr);
- 		if (err)
--			goto exit_free;
-+			goto exit_remove;
- 	}
+--- a/drivers/video/omap2/dss/dpi.c
++++ b/drivers/video/omap2/dss/dpi.c
+@@ -180,6 +180,11 @@ int omapdss_dpi_display_enable(struct om
+ {
+ 	int r;
  
- 	data->hwmon_dev = hwmon_device_register(&client->dev);
-@@ -285,7 +285,6 @@ static int ads1015_probe(struct i2c_clie
- exit_remove:
- 	for (k = 0; k < ADS1015_CHANNELS; ++k)
- 		device_remove_file(&client->dev, &ads1015_in[k].dev_attr);
--exit_free:
- 	kfree(data);
- exit:
- 	return err;
++	if (cpu_is_omap34xx() && !dpi.vdds_dsi_reg) {
++		DSSERR("no VDSS_DSI regulator\n");
++		return -ENODEV;
++	}
++
+ 	if (dssdev->manager == NULL) {
+ 		DSSERR("failed to enable display: no manager\n");
+ 		return -ENODEV;
 
 
