@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030200Ab2B1TGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:06:15 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:48239 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965674Ab2B1TGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:06:13 -0500
-Date: Tue, 28 Feb 2012 14:05:58 -0500 (EST)
-Message-Id: <20120228.140558.1132853996225815681.davem@davemloft.net>
-To: rodrigo.moya@collabora.co.uk
-Cc: javier.martinez@collabora.co.uk, javier@collabora.co.uk,
-        eric.dumazet@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330426059.2139.21.camel@megeve>
-References: <4F4B8C66.5060206@collabora.co.uk>
-	<20120227.140535.1623396420455657443.davem@davemloft.net>
-	<1330426059.2139.21.camel@megeve>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1030232Ab2B1TG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:06:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965674Ab2B1TGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 14:06:23 -0500
+Message-ID: <4F4D25A2.70307@redhat.com>
+Date: Tue, 28 Feb 2012 21:06:10 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@gmail.com>,
+        Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] i387: split up <asm/i387.h> into exported and internal
+ interfaces
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com> <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com> <4F440945.1020904@zytor.com> <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211339590.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211340330.5354@i5.linux-foundation.org> <4F4CB89C.4060500@redhat.com> <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com> <4F4D0D18.4060409@redhat.com> <CA+55aFyA=b-27XbhGdDQfSRMk=xet2jOD9H8hkjEq1md29bJJA@mail.gmail.com> <4F4D1857.4010706@redhat.com> <CA+55aFxgf_HHZKhN9FwOBgKoJHbkFzdCrPhMwWbWKXhb9NpkPg@mail.gmail.com>
+In-Reply-To: <CA+55aFxgf_HHZKhN9FwOBgKoJHbkFzdCrPhMwWbWKXhb9NpkPg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 11:06:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
-Date: Tue, 28 Feb 2012 11:47:39 +0100
+On 02/28/2012 08:34 PM, Linus Torvalds wrote:
+> On Tue, Feb 28, 2012 at 10:09 AM, Avi Kivity <avi@redhat.com> wrote:
+> >
+> > This is done by preempt notifiers.  Whenever a task switch happens we
+> > push the guest fpu state into memory (if loaded) and let the normal
+> > stuff happen.  So the if we had a task switch during instruction
+> > emulation, for example, then we'd get the "glacial and stupid path" to fire.
+>
+> Oh christ.
+>
+> This is exactly what the scheduler has ALWAYS ALREADY DONE FOR YOU.
 
-> Because of all of this, UDP/IP multicast wasn't even considered as an
-> option. We might be wrong in some/all of those, so could you please
-> comment on them to check if that's so?
+No, the scheduler saves the state into task_struct.  I need it saved
+into the vcpu structure.  We have two fpu states, the user state, and
+the guest state.  APIs that take a task_struct as a parameter, or
+reference current implicitly, aren't going to work.
 
-You guys seem to want something that isn't AF_UNIX, ordering guarentees
-and whatnot, it really has no place in these protocols.
+> That's what the i387 save-and-restore code is all about. What's the
+> advantage of just re-implementing it in non-obvious ways?
+>
+> Stop doing it. You get *zero* advantages from just doing what the
+> scheduler natively does for you, and the scheduler does it *better*.
 
-You've designed a userlevel subsystem with requirements that no existing
-socket layer can give, and you just figured you'd work that out later.
+The scheduler does something different.
 
-I think you rather should have reconsidered these premises and designed
-something that could handle reality which is AF_UNIX can't do multicast
-and nobody guarentees those strange ordering requirements you seem to
-have.
+What I'd ideally want is
+
+  struct fpu {
+      int cpu;  /* -1 = not loaded */
+      union thread_xstate *state;
+  };
+
+Perhaps with a struct fpu_ops *ops if needed.  We could then let various
+users' fpus float around freely and only save/load them at the last moment.
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
