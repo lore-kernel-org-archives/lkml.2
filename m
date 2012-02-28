@@ -1,107 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2B1IDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:03:22 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:37805 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755350Ab2B1IDU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:03:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomi.valkeinen@ti.com designates 10.112.82.134 as permitted sender) smtp.mail=tomi.valkeinen@ti.com
-Subject: Re: OMAP4 HDMI PHY bug work-around for stable
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: stable@kernel.org, stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-In-Reply-To: <1328787865.1909.64.camel@deskari>
-References: <1328787865.1909.64.camel@deskari>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-t9KbM1gr8f/ep2e1fxOW"
-Date: Tue, 28 Feb 2012 10:03:13 +0200
-Message-ID: <1330416193.2123.4.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
+	id S1756604Ab2B1IGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:06:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56378 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755026Ab2B1IGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:06:42 -0500
+Message-ID: <4F4C8B4D.5050704@cn.fujitsu.com>
+Date: Tue, 28 Feb 2012 16:07:41 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C6596.8020903@cn.fujitsu.com>
+In-Reply-To: <4F4C6596.8020903@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-28 16:04:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-28 16:04:53,
+	Serialize complete at 2012-02-28 16:04:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+At 02/28/2012 01:26 PM, Wen Congyang Wrote:
+> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
+>> On 2012-02-27 04:01, Wen Congyang wrote:
+>>> We can know the guest is paniced when the guest runs on xen.
+>>> But we do not have such feature on kvm. This patch implemnts
+>>> this feature, and the implementation is the same as xen:
+>>> register panic notifier, and call hypercall when the guest
+>>> is paniced.
+>>>
+>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>> ---
+>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
+>>>  arch/x86/kvm/svm.c       |    8 ++++++--
+>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
+>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
+>>>  include/linux/kvm.h      |    1 +
+>>>  include/linux/kvm_para.h |    1 +
+>>>  6 files changed, 37 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+>>> index f0c6fd6..b928d1d 100644
+>>> --- a/arch/x86/kernel/kvm.c
+>>> +++ b/arch/x86/kernel/kvm.c
+>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>>>  	.notifier_call = kvm_pv_reboot_notify,
+>>>  };
+>>>  
+>>> +static int
+>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+>>> +{
+>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
+>>> +	return NOTIFY_DONE;
+>>> +}
+>>> +
+>>> +static struct notifier_block kvm_pv_panic_nb = {
+>>> +	.notifier_call = kvm_pv_panic_notify,
+>>> +};
+>>> +
+>>
+>> You should split up host and guest-side changes.
+> 
+> OK
+> 
+>>
+>>>  static u64 kvm_steal_clock(int cpu)
+>>>  {
+>>>  	u64 steal;
+>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
+>>>  
+>>>  	paravirt_ops_setup();
+>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
+>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
+>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
+>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>>> index 0b7690e..38b4705 100644
+>>> --- a/arch/x86/kvm/svm.c
+>>> +++ b/arch/x86/kvm/svm.c
+>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
+>>>  
+>>>  static int vmmcall_interception(struct vcpu_svm *svm)
+>>>  {
+>>> +	int ret;
+>>> +
+>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+>>>  	skip_emulated_instruction(&svm->vcpu);
+>>> -	kvm_emulate_hypercall(&svm->vcpu);
+>>> -	return 1;
+>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
+>>> +
+>>> +	/* Ignore the error? */
+>>> +	return ret == 0 ? 0 : 1;
+>>
+>> Why can't kvm_emulate_hypercall return the right value?
+> 
+> Because before this patch, kvm always ignores the error.
+> 
+> After rereading the code, kvm_emulate_hypercall() will return -KVM_EPERM
 
---=-t9KbM1gr8f/ep2e1fxOW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sorry for my miss. kvm_emulate_hypercall() does not return -KVM_EPERM.
 
-Hi,
-
-I haven't seen these merged nor any comment for these. Perhaps
-stable@kernel.org was wrong address, so adding stable@vger.kernel.org
-too.
-
-I have added one additional fix into for-3.2-stable branch, which fixes
-a problem with panel detection that the GPIO changes brought.
-
- Tomi
-
-On Thu, 2012-02-09 at 13:44 +0200, Tomi Valkeinen wrote:
-> Hi,
->=20
-> There is a hardware bug on OMAP4, which may cause the HDMI output to
-> break irreversibly. A work-around for the bug has been merged into
-> mainline, but is missing from stable.
->=20
-> I've backported the necessary patches on top of 3.0, 3.1 and 3.2 stable
-> trees, and pushed the following branches to:
->=20
-> git://gitorious.org/linux-omap-dss2/linux.git
->=20
-> fixes/for-3.0-stable
-> fixes/for-3.1-stable
-> fixes/for-3.2-stable
->=20
-> 3.0 and 3.1 branches additionally contain a patch "OMAP: DSS2: HDMI: use
-> default dividers", which fixes a problem with the HDMI clock divider.
-> Without that the HDMI output won't start at all on those versions.
->=20
-> The branches contain the following backported patches:
->=20
->       OMAP: DSS2: HDMI: use default dividers
->       OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
->       OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
->       OMAPDSS: remove wrong HDMI HPD muxing
->       OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
->       OMAP: 4430SDP/Panda: add HDMI HPD gpio
->       OMAPDSS: HDMI: PHY burnout fix
->=20
-> Of those, the actual fix is in the last one, but as the GPIOs for HDMI
-> were a mess, they needed some cleanup patches before the fix could be
-> made.
->=20
-> I'm not familiar with the process with stable kernels, so are the
-> branches above fine to get them merged? Or should I send the patches
-> with git-send-email?
->=20
->  Tomi
->=20
-
-
---=-t9KbM1gr8f/ep2e1fxOW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTIo8AAoJEPo9qoy8lh71HrAP/1OV51NZOyWKYXoyU8bZLzpd
-YpbDRo/ZA+9rfQGC2agGZL7izttdg92WrowvPbYTZWIjJqu3vi9V9xtOtPLF9EMU
-11cy0y4NXAVo+ZKFecyt47YxnKRCebv4RR2YgGTTsuLTdbKP3/a7wdxUbVGV5w7w
-tQO8NzLIiMUlcrtFe17CVdODMMJnL3v2aZMo9yG2A435FpfchGlLg99Xmx1sCmAO
-LAWHpuoLUHqnUKfvGjVdeVVseDmGQikNnXVkZOElRPNSlHz+VzXUiWSnZNXL4Lty
-L2i/Tpe2a/H+4mCkQHCwrbXYq9GmwBXxk2JEc6hZX7R+54+adzvZtW3OqS639KTB
-DVfn8/QQy6FfUgNqPNmNeTkniDVHVdSXMyL9OwabvktBAiT8TuVEkAVWvEPty8hY
-9niN1k+2UFehTB2ClV3AceaW9QTvmdVeZwHLwwEt8tyPIYXKZ6mauYjfmFgzWENf
-36Fih14uzplhwlSwh7a5dDbwDfvT2QUl9VjUrrjLbfDkEoF1/BkDCx5AYboRF4Ug
-DMX+d4J17tj7jcXKA7QqWU5kyo28yDcv9SZZnnW9omY3AT/9n28nrOsU+vOY2tRm
-7imrqZmuWOa5lxQP7PIYBmRlYHAkwiYWaRSaryS/uYjEt7UP6hWeWPA22Y6Qt9Jd
-+jVOVzUPb6mfdGWNhFYe
-=jh8A
------END PGP SIGNATURE-----
-
---=-t9KbM1gr8f/ep2e1fxOW--
+> when vcpu's CPL is not 0. I think we should deal with this exception
+> in kvm_emulate_hypercall(), and return 1. But I donot know
+> how to do it. kvm_queue_exception(vcpu, UD_VECTOR)?
+> 
+>>
+>>>  }
+>>>  
+>>>  static unsigned long nested_svm_get_tdp_cr3(struct kvm_vcpu *vcpu)
+>>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>>> index 66147ca..1b57ebb 100644
+>>> --- a/arch/x86/kvm/vmx.c
+>>> +++ b/arch/x86/kvm/vmx.c
+>>> @@ -4582,9 +4582,13 @@ static int handle_halt(struct kvm_vcpu *vcpu)
+>>>  
+>>>  static int handle_vmcall(struct kvm_vcpu *vcpu)
+>>>  {
+>>> +	int ret;
+>>> +
+>>>  	skip_emulated_instruction(vcpu);
+>>> -	kvm_emulate_hypercall(vcpu);
+>>> -	return 1;
+>>> +	ret = kvm_emulate_hypercall(vcpu);
+>>> +
+>>> +	/* Ignore the error? */
+>>> +	return ret == 0 ? 0 : 1;
+>>>  }
+>>>  
+>>>  static int handle_invd(struct kvm_vcpu *vcpu)
+>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>> index c9d99e5..3fc2853 100644
+>>> --- a/arch/x86/kvm/x86.c
+>>> +++ b/arch/x86/kvm/x86.c
+>>> @@ -4923,7 +4923,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>>>  	u64 param, ingpa, outgpa, ret;
+>>>  	uint16_t code, rep_idx, rep_cnt, res = HV_STATUS_SUCCESS, rep_done = 0;
+>>>  	bool fast, longmode;
+>>> -	int cs_db, cs_l;
+>>> +	int cs_db, cs_l, r = 1;
+>>>  
+>>>  	/*
+>>>  	 * hypercall generates UD from non zero cpl and real mode
+>>> @@ -4964,6 +4964,10 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>>>  	case HV_X64_HV_NOTIFY_LONG_SPIN_WAIT:
+>>>  		kvm_vcpu_on_spin(vcpu);
+>>>  		break;
+>>> +	case KVM_HC_GUEST_PANIC:
+>>> +		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
+>>> +		r = 0;
+>>> +		break;
+>>
+>> That's the wrong place. This is a KVM hypercall, not a HyperV one.
+> 
+> OK, I will remove it.
+> 
+> Thanks
+> Wen Congyang
+> 
+>>
+>>>  	default:
+>>>  		res = HV_STATUS_INVALID_HYPERCALL_CODE;
+>>>  		break;
+>>> @@ -4977,7 +4981,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>>>  		kvm_register_write(vcpu, VCPU_REGS_RAX, ret & 0xffffffff);
+>>>  	}
+>>>  
+>>> -	return 1;
+>>> +	return r;
+>>>  }
+>>>  
+>>>  int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+>>> @@ -5013,6 +5017,11 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+>>>  	case KVM_HC_VAPIC_POLL_IRQ:
+>>>  		ret = 0;
+>>>  		break;
+>>> +	case KVM_HC_GUEST_PANIC:
+>>> +		ret = 0;
+>>> +		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
+>>> +		r = 0;
+>>> +		break;
+>>>  	default:
+>>>  		ret = -KVM_ENOSYS;
+>>>  		break;
+>>> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+>>> index acbe429..8f0e31b 100644
+>>> --- a/include/linux/kvm.h
+>>> +++ b/include/linux/kvm.h
+>>> @@ -163,6 +163,7 @@ struct kvm_pit_config {
+>>>  #define KVM_EXIT_OSI              18
+>>>  #define KVM_EXIT_PAPR_HCALL	  19
+>>>  #define KVM_EXIT_S390_UCONTROL	  20
+>>> +#define KVM_EXIT_GUEST_PANIC	  21
+>>>  
+>>>  /* For KVM_EXIT_INTERNAL_ERROR */
+>>>  #define KVM_INTERNAL_ERROR_EMULATION 1
+>>> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+>>> index ff476dd..cf94023 100644
+>>> --- a/include/linux/kvm_para.h
+>>> +++ b/include/linux/kvm_para.h
+>>> @@ -19,6 +19,7 @@
+>>>  #define KVM_HC_MMU_OP			2
+>>>  #define KVM_HC_FEATURES			3
+>>>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+>>> +#define KVM_HC_GUEST_PANIC		5
+>>>  
+>>>  /*
+>>>   * hypercalls use architecture specific
+>>
+>> Jan
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
