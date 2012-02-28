@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab2B1ItJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:49:09 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44681 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756870Ab2B1ItH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 03:49:07 -0500
-Date: Tue, 28 Feb 2012 09:48:28 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        systemtap@sourceware.org, anderson@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: Re: [PATCH v3 -tip] [BUGFIX] x86/kprobes: Fix to recover
- instructions on optimized path
-Message-ID: <20120228084828.GK21106@elte.hu>
-References: <20120223083703.GA26781@elte.hu>
- <20120224095412.8462.55698.stgit@localhost.localdomain>
- <20120227093421.GA10078@elte.hu>
- <4F4C4182.1040706@hitachi.com>
+	id S964827Ab2B1IwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:52:18 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:35346 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753897Ab2B1IwQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:52:16 -0500
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Zhao Ye <zhaoy@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Chao Xie <cxie4@marvell.com>, Leo Yan <leoy@marvell.com>
+CC: Zhao Ye <zhaoy@marvell.com>
+Date: Tue, 28 Feb 2012 00:41:57 -0800
+Subject: RE: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
+Thread-Topic: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
+Thread-Index: Acz16njwSxFlQo6TTEugsc4EYe9k3wAClssN
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C060A87D776@SC-VEXCH1.marvell.com>
+References: <Y>,<1330414065-2949-1-git-send-email-zhaoy@marvell.com>
+In-Reply-To: <1330414065-2949-1-git-send-email-zhaoy@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F4C4182.1040706@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Zhao,
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Which code base are you using? Now it's kernel v3.3-rc5.
 
-> (2012/02/27 18:34), Ingo Molnar wrote:
-> > 
-> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> > 
-> >> +
-> >> +#ifdef CONFIG_OPTPROBES
-> >> +static unsigned long __recover_optprobed_insn(struct kprobe *kp,
-> >> +					      kprobe_opcode_t *buf,
-> >> +					      unsigned long addr)
-> >> +{
-> >> +	long offs = addr - (unsigned long)kp->addr - 1;
-> >> +	struct optimized_kprobe *op = container_of(kp, struct optimized_kprobe, kp);
-> >> +
-> >> +	/*
-> >> +	 * If the kprobe can be optimized, original bytes which can be
-> >> +	 * overwritten by jump destination address. In this case, original
-> >> +	 * bytes must be recovered from op->optinsn.copied_insn buffer.
-> >> +	 */
-> >> +	memcpy(buf, (void *)addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
-> >> +	if (addr == (unsigned long)kp->addr) {
-> >> +		buf[0] = kp->opcode;
-> >> +		memcpy(buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
-> >> +	} else
-> >> +		memcpy(buf, op->optinsn.copied_insn + offs, RELATIVE_ADDR_SIZE - offs);
-> >> +
-> >> +	return (unsigned long)buf;
-> >> +}
-> >> +#endif
-> > 
-> > Why not stick this into a new kprobes-opt.c file?
-> 
-> Would you mean that I should split all optprobe stuffs into 
-> new file?
+Thanks
+Haojian
+________________________________________
+From: zhaoy [zhaoy@marvell.com]
+Sent: Tuesday, February 28, 2012 3:27 PM
+To: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; nicolas.pitre@linaro.org; linux@arm.linux.org.uk; Haojian Zhuang; Chao Xie; Leo Yan
+Cc: Zhao Ye
+Subject: [PATCH 00/13] Enable DMA engine for mmp2 and mmp3
 
-Yeah, that would be sensible I think - and it might help avoid 
-similar complications in the future.
+These patch is for marvell mmp2 and mmp3 platform to enable
+dmaengine, use dmaengine to manage the audio dma, video dma
+and peripheral device dma together.
 
-Could (and probably should) be done in a separate patch - to 
-keep the bits that you already fixed and tested intact.
+zhaoy (13):
+  DMA:define second level irq definition
+  dmaengine:open dmac and tdma support
+  dmaengine: mmp: add two-channel dma driver
+  dmaengine:mmp add peripheral dma driver
+  mmp2:register dma devices for mmp2 platform
+  mmp3:register dma devices for mmp3 platform
+  DMA:mmp:remove redundant dma drivers
+  DMAC:tty serial pxa use generic dma engine APIs
+  DMA:remove unnecessary dma configurations
+  dmaengine:audio:mmp audio use generic dma engine APIs
+  DMA:update defconfig for mmp3
+  mdma:dmaengine:update mdma for tdma
+  DMA:update defconfig for mmp2
 
-> > This should be a separate, kprobes_recover_opt() method and 
-> > be inside kprobes-opt.c as well.
-> 
-> OK, I'll do that. But I think it should be separated work. 
-> Just for the bugfix, I think this should go into this style, 
-> because this should be pushed into stable tree too.
+ arch/arm/configs/mmp2_defconfig           |   23 +-
+ arch/arm/configs/mmp3_defconfig           |   21 +-
+ arch/arm/mach-mmp/Makefile                |    4 +-
+ arch/arm/mach-mmp/include/mach/irqs.h     |   18 +-
+ arch/arm/mach-mmp/include/mach/mmp_dma.h  |   89 ++-
+ arch/arm/mach-mmp/include/mach/regs-icu.h |   12 +-
+ arch/arm/mach-mmp/irq-mmp2.c              |    4 +
+ arch/arm/mach-mmp/irq-mmp3.c              |    3 +
+ arch/arm/mach-mmp/mmp2.c                  |  122 ++-
+ arch/arm/mach-mmp/mmp3.c                  |   78 ++-
+ arch/arm/plat-pxa/include/plat/dma.h      |   33 +-
+ drivers/char/mmp2_mdma.c                  |  273 ++----
+ drivers/dma/Kconfig                       |   19 +
+ drivers/dma/Makefile                      |    2 +
+ drivers/dma/mmp_tdma.c                    |  858 +++++++++++++++
+ drivers/dma/pxa_dmac.c                    | 1077 ++++++++++++++++++
+ drivers/tty/serial/Kconfig                |   12 +-
+ drivers/tty/serial/Makefile               |    1 +
+ drivers/tty/serial/mmp_pxa.c              | 1698 +++++++++++++++++++++++++++++
+ sound/soc/pxa/mmp-pcm.c                   |  232 ++--
+ sound/soc/pxa/mmp-pcm.h                   |    4 +-
+ sound/soc/pxa/mmp2-squ.c                  |  192 ++--
+ sound/soc/pxa/mmp2-squ.h                  |    8 +-
+ sound/soc/pxa/mmp2-sspa.c                 |   28 +-
+ 24 files changed, 4361 insertions(+), 450 deletions(-)
+ create mode 100644 drivers/dma/mmp_tdma.c
+ create mode 100644 drivers/dma/pxa_dmac.c
+ create mode 100644 drivers/tty/serial/mmp_pxa.c
 
-I don't think we can push such a large and complex looking patch 
-into v3.3 (let alone into -stable) - it's v3.4 material, and 
-that's why I asked for the cleaner split-out as well. This 
-optprobes code is really non-obvious at the moment and a 
-split-out might improve that and might make future fixes easier 
-to merge.
-
-Thanks,
-
-	Ingo
