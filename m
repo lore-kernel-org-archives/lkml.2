@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155Ab2B1BLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:11:51 -0500
+	id S965205Ab2B1BMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:12:05 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:50501 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965074Ab2B1BLt (ORCPT
+	with ESMTP id S965190Ab2B1BL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:11:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.194.200 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:11:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.194.65 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010433.903015153@linuxfoundation.org>
+Message-Id: <20120228010431.775021041@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:20 -0800
+Date: Mon, 27 Feb 2012 17:04:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris D Schimp <silverchris@gmail.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Roland Stigge <stigge@antcom.de>
-Subject: [ 51/72] hwmon: (max6639) Fix PPR register initialization to set both channels
+        alan@lxorguk.ukuu.org.uk, Shawn Lu <shawn.lu@ericsson.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 27/72] tcp_v4_send_reset: binding oif to iif in no sock case
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,62 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris D Schimp <silverchris@gmail.com>
 
-commit 2f2da1ac0ba5b6cc6e1957c4da5ff20e67d8442b upstream.
+From: Shawn Lu <shawn.lu@ericsson.com>
 
-Initialize PPR register for both channels, and set correct PPR register bits.
-Also remove unnecessary variable initializations.
+[ Upstream commit e2446eaab5585555a38ea0df4e01ff313dbb4ac9 ]
 
-Signed-off-by: Chris D Schimp <silverchris@gmail.com>
-[guenter.roeck@ericsson.com: Merged two patches into one]
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Roland Stigge <stigge@antcom.de>
+Binding RST packet outgoing interface to incoming interface
+for tcp v4 when there is no socket associate with it.
+when sk is not NULL, using sk->sk_bound_dev_if instead.
+(suggested by Eric Dumazet).
+
+This has few benefits:
+1. tcp_v6_send_reset already did that.
+2. This helps tcp connect with SO_BINDTODEVICE set. When
+connection is lost, we still able to sending out RST using
+same interface.
+3. we are sending reply, it is most likely to be succeed
+if iif is used
+
+Signed-off-by: Shawn Lu <shawn.lu@ericsson.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hwmon/max6639.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ net/ipv4/tcp_ipv4.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/hwmon/max6639.c
-+++ b/drivers/hwmon/max6639.c
-@@ -429,9 +429,9 @@ static int max6639_init_client(struct i2
- 	struct max6639_data *data = i2c_get_clientdata(client);
- 	struct max6639_platform_data *max6639_info =
- 		client->dev.platform_data;
--	int i = 0;
-+	int i;
- 	int rpm_range = 1; /* default: 4000 RPM */
--	int err = 0;
-+	int err;
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -650,6 +650,11 @@ static void tcp_v4_send_reset(struct soc
+ 				      arg.iov[0].iov_len, IPPROTO_TCP, 0);
+ 	arg.csumoffset = offsetof(struct tcphdr, check) / 2;
+ 	arg.flags = (sk && inet_sk(sk)->transparent) ? IP_REPLY_ARG_NOSRCCHECK : 0;
++	/* When socket is gone, all binding information is lost.
++	 * routing might fail in this case. using iif for oif to
++	 * make sure we can deliver it
++	 */
++	arg.bound_dev_if = sk ? sk->sk_bound_dev_if : inet_iif(skb);
  
- 	/* Reset chip to default values, see below for GCONFIG setup */
- 	err = i2c_smbus_write_byte_data(client, MAX6639_REG_GCONFIG,
-@@ -446,11 +446,6 @@ static int max6639_init_client(struct i2
- 	else
- 		data->ppr = 2;
- 	data->ppr -= 1;
--	err = i2c_smbus_write_byte_data(client,
--			MAX6639_REG_FAN_PPR(i),
--			data->ppr << 5);
--	if (err)
--		goto exit;
- 
- 	if (max6639_info)
- 		rpm_range = rpm_range_to_reg(max6639_info->rpm_range);
-@@ -458,6 +453,13 @@ static int max6639_init_client(struct i2
- 
- 	for (i = 0; i < 2; i++) {
- 
-+		/* Set Fan pulse per revolution */
-+		err = i2c_smbus_write_byte_data(client,
-+				MAX6639_REG_FAN_PPR(i),
-+				data->ppr << 6);
-+		if (err)
-+			goto exit;
-+
- 		/* Fans config PWM, RPM */
- 		err = i2c_smbus_write_byte_data(client,
- 			MAX6639_REG_FAN_CONFIG1(i),
+ 	net = dev_net(skb_dst(skb)->dev);
+ 	arg.tos = ip_hdr(skb)->tos;
 
 
