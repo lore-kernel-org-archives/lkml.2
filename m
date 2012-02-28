@@ -1,113 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965725Ab2B1QG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:06:59 -0500
-Received: from mail.windriver.com ([147.11.1.11]:59309 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964917Ab2B1QG5 (ORCPT
+	id S965733Ab2B1QId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:08:33 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37336 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964917Ab2B1QIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:06:57 -0500
-Message-ID: <4F4CFB94.2080302@windriver.com>
-Date: Tue, 28 Feb 2012 10:06:44 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 28 Feb 2012 11:08:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.180.101.72 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
 MIME-Version: 1.0
-To: Andrei Warkentin <awarkentin@vmware.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrei Warkentin <andreiw@vmware.com>,
-        <kgdb-bugreport@lists.sourceforge.net>, Matt Mackall <mpm@selenic.com>,
-        Andrei Warkentin <andrey.warkentin@gmail.com>
-Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
-References: <628860779.1621452.1330385635262.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <628860779.1621452.1330385635262.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+From: Javier Martin <javier.martin@vista-silicon.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, s.hauer@pengutronix.de, vinod.koul@intel.com,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] dmaengine: i.MX DMA series.
+Date: Tue, 28 Feb 2012 17:08:16 +0100
+Message-Id: <1330445298-3522-1-git-send-email-javier.martin@vista-silicon.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2012 05:33 PM, Andrei Warkentin wrote:
->> From: "Jason Wessel" <jason.wessel@windriver.com>
->> To: "Andrei Warkentin" <andrey.warkentin@gmail.com>
->> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
->> kgdb-bugreport@lists.sourceforge.net, "Matt Mackall" <mpm@selenic.com>
->> Sent: Monday, February 27, 2012 6:17:12 PM
->> Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
->>
->>
->> I am just now starting to look how this patch set compares to kgdboe.
->>  For the kgdboe the patch is a bit different.  The kgdboe opted to
->> just pass the skb so as to cut down on the number of arguments to
->> the function call.
->>
->> From the kgdboe patch:
->>
->> -       void (*rx_hook)(struct netpoll *, int, char *, int);
->> +       void (*rx_hook)(struct netpoll *, int, char *, int, struct
->> sk_buff *);
->>
->>
-> 
-> Interesting, I thought about passing the skb, but decided I didn't
-> want to copy and paste the skb parsing code, especially given
-> that it's always UDP anyway. I still have reservations about
-> passing the physical address, but I don't think anyone tried
-> to use netpoll or a non-ethernet device anyway.
+As it seems Vinod's and Sascha's possition regarding
+to the file arch/arm/mach-imx/dma-v1.c is so strong
+this is a resent of the series dropping patches 2 and 3.
 
-
-With some input from the netdev folks we should decide what makes the most sense and stick with that implementation.  The previous kgdboe change to just pass the skb was signed off long ago as something ok.
-
->> +	while (atomic_read(&in_count) == 0)
->> +		netpoll_poll(&np);
->>
->>
->> If it is the case that you really can safely call the
->> netpoll_poll_dev() without the locks then the horrible sync irq
->> state etc... could go away in kgdboe, and then it would be worth
->> considering digging up all the ethernet polling errata fixes that
->> live of out the mainline and perhaps submit some for review.
->>
-
-
-The code has changed since the last time that kgdboe actually worked.
-The v3.1 commit 234b921dbcf killed off the netpoll_poll() function
-as well as the exports needed to allow kgdboe to work as a kernel
-module.  The patch you created here also needs to once again export
-the netpoll_poll_dev() so that we can call it from a kernel module
-because kgdboe or the ethernet kdb patch you submitted should be able
-to be used a loadable module as well as a builtin.
-
-> 
-> I didn't look deeply at kgdboe (probably should have...). Anyway, netpoll_poll
-> doesn't seem to exist. netpoll_poll_dev is called from netpoll_send_skb_on_dev
-> and the only contract I see is running with the interrupts disabled - something
-> that is satisfied by running in the context of KDB.
-
-
-All that netpoll_poll() did was to call netpoll_poll_dev().  I have
-not yet looked at the differences between kgdboe and the netkdb code
-you proposed but I would have suspected it also falls victim to the
-ethernet preemption problem which prevented kgdboe from ever being
-considered for a mainline merge.  Certainly there are ways to fix this
-problem but most involved changes to scheduling, core net code, or
-substantial driver specific changes.
-
-I almost have kgdboe working against the 3.3 kernel so we can have
-both a code and functional comparison.  I would like to do some house
-cleaning and merging of all the other out of tree patches for things
-like kgdb over usb as well as kdb usb keyboard, so we can see if any
-of it makes sense to submit to the mainline.
-
-
-> 
-> This is slight OT, but...are WiFi drivers sufficiently similar that netpoll "just works?"
-
-Yes and no.  Yes, you could use the NET_POLL api to transmit packets
-if the driver implemented polling hooks, but no in the sense that most
-of the time you need a user space driver to manage the keys which are
-time sensitive for things like WPA (usually the job of wpa
-supplicant).  This is going to prevent you from having WiFi work at
-all while the kernel is in the critical exception state.
-
-Jason.
+[PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+[PATCH v2 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
