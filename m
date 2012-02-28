@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965755Ab2B1QJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 11:09:40 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44923 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965718Ab2B1QJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 11:09:39 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 28 Feb 2012 17:09:30 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] [SCSI] sr: fix multi-drive performance, remove BKL
- replacement
-Message-ID: <20120228170930.132f7c1e@stein>
-In-Reply-To: <1330441201.2822.126.camel@dabdike.int.hansenpartnership.com>
-References: <20120228153244.70413d34@stein>
-	<1330441201.2822.126.camel@dabdike.int.hansenpartnership.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965739Ab2B1QKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 11:10:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753524Ab2B1QKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 11:10:46 -0500
+Date: Tue, 28 Feb 2012 17:02:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Subject: Re: [PATCH v11 08/12] signal, x86: add SIGSYS info and make it
+	synchronous.
+Message-ID: <20120228160257.GB3664@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-8-git-send-email-wad@chromium.org> <20120227172208.GC10608@redhat.com> <CABqD9hbBj_c1qxD7N0ed3LMy_DXn-163LuNc1E7mSZbGO7oqyw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABqD9hbBj_c1qxD7N0ed3LMy_DXn-163LuNc1E7mSZbGO7oqyw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 28 James Bottomley wrote:
-> On Tue, 2012-02-28 at 15:32 +0100, Stefan Richter wrote:
-> > Commit 2a48fc0ab242 "block: autoconvert trivial BKL users to private
-> > mutex" and other commits at the time mechanically swapped BKL for
-> > per-driver global mutexes.  If the sr driver is any indication, these
-> > replacements have still not been checked by anybody for their
-> > necessessity, removed where possible, or the sections they serialize
-> > reduced to a necessary minimum.
-> > 
-> > The sr_mutex in particular very noticably degraded performance of
-> > CD-DA ripping with multiple drives in parallel.  When several
-> > instances of "grip" are used with two or more drives, their GUIs
-> > became laggier, as did the KDE file manager GUI, and drive utilization
-> > was reduced.  (During ripping, drive lights flicker instead of staying
-> > on most of the time.)  IOW time to rip a stack of CDs was increased.
-> > I didn't measure this but it is highly noticeable.
-> > 
-> > On the other hand, I don't see what state sr_mutex would protect.
-> > So I removed it entirely and that works fine for me.
-> > 
-> I'm afraid you can't do that:  The problem is that we have an entangled
-> set of reference counts that need to be taken and released atomically.
-> If we don't surround them with a mutex you get undefined results from
-> racing last release with new acquire.  You can see this usage in sd.c.
+On 02/27, Will Drewry wrote:
+>
+> On Mon, Feb 27, 2012 at 11:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/24, Will Drewry wrote:
+> >>
+> >> To ensure that SIGSYS delivery occurs on return from the triggering
+> >> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.
+> >
+> > Hmm. Can't understand... please help.
+> >
+> >>  #define SYNCHRONOUS_MASK \
+> >>       (sigmask(SIGSEGV) | sigmask(SIGBUS) | sigmask(SIGILL) | \
+> >> -      sigmask(SIGTRAP) | sigmask(SIGFPE))
+> >> +      sigmask(SIGTRAP) | sigmask(SIGFPE) | sigmask(SIGSYS))
+> >
+> > Why?
+> >
+> > SYNCHRONOUS_MASK just tells dequeue_signal() "pick them first".
+> > This is needed to make sure that the handler for, say SIGSEGV,
+> > can use ucontext->ip as a faulting addr.
+>
+> I think that Roland covered this.  (Since the syscall_rollback was
+> called it's nice to let our handler get first go.)
 
-While I do remove sr_mutex aroud scsi_cd_get/put() calls, these ones
-internally use another lock: sr_ref_mutex.  Always did, still do, since
-neither Arnd's mechanical BKL pushdown and BKL-to-mutex conversions
-patches nor my patch changed that.  This sr_ref_mutex also protects sr's
-reference counting outside of the three block_device_operations methods
-which I changed.
+OK, except I do not really understand the "our handler get first go".
 
-I suppose I could have mentioned right away in the changelog that the
-sr driver's own reference counting serialization remains in place, via that
-other mutex.
+Suppose SIGSYS "races" with the pending SIGHUP. With this change
+the caller for SIGHUP will be called first. But yes, setup_frame()
+will be called for SIGSYS first. Hopefully this is what you want.
 
-> The sr.c use case looks like bd_mutex would mediate ... but that's
-> because it doesn't use driver shutdown and has no power management
-> functions ... I think I have vague memories that someone is working on
-> pm for cdroms?
-> 
-> I don't think the mutex needs to be on the ioctls, though, which is
-> what's causing your performance problems, right?
+> > But seccomp adds info->si_call_addr, this looks unneeded.
+>
+> True enough.  I can drop it.
 
-I guess sr_block_open/release are less of an issue; after all they are
-still partly serialized across all sr devices (the sections which are
-under the mentioned sr_ref_mutex protection).
--- 
-Stefan Richter
--=====-===-- --=- ===--
-http://arcgraph.de/sr/
+Hmm. I meant, the change in SYNCHRONOUS_MASK looks unneeded. Please
+keep ->si_call_addr, it is much more convenient than ucontext_t in
+userspace.
+
+> It'd only be useful if the SIGSYS wasn't
+> being forced and the signal was being handled without ucontext_t
+> access.
+
+No, force_ doesn't make any difference in this sense...
+
+In short, the patch looks fine to me, but if you resend it may be
+you can update the changelog.
+
+Oleg.
+
