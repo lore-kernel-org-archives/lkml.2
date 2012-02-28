@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965785Ab2B1V2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 16:28:15 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48921 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab2B1V2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 16:28:13 -0500
-Date: Tue, 28 Feb 2012 13:27:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lenb@kernel.org, Yong Zhang <yong.zhang0@gmail.com>,
-        deepthi@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH RFC] acpi: Fix unprotected smp_processor_id() in
- acpi_processor_cst_has_changed()
-Message-ID: <20120228212744.GL2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120223205805.GA31838@linux.vnet.ibm.com>
- <20120228071943.GE1112@zhy>
- <20120228133013.GE2465@linux.vnet.ibm.com>
- <201202282157.53804.rjw@sisk.pl>
+	id S1756828Ab2B1Vfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 16:35:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab2B1Vfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 16:35:44 -0500
+Date: Tue, 28 Feb 2012 16:35:26 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120228213526.GI9920@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <20120223213847.GK19691@redhat.com>
+ <20120223223457.GJ22536@google.com>
+ <20120228211627.GH9920@redhat.com>
+ <1330464100.11248.94.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201202282157.53804.rjw@sisk.pl>
+In-Reply-To: <1330464100.11248.94.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022821-7408-0000-0000-0000030D5690
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 09:57:53PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, February 28, 2012, Paul E. McKenney wrote:
-> > On Tue, Feb 28, 2012 at 03:19:43PM +0800, Yong Zhang wrote:
-> > > On Thu, Feb 23, 2012 at 12:58:05PM -0800, Paul E. McKenney wrote:
-> > > > The acpi_processor_cst_has_changed() function is invoked from a
-> > > > CPU_ONLINE or CPU_DEAD function, which might well execute on CPU 0
-> > > > even though the CPU being hotplugged is some other CPU.  In addition,
-> > > > acpi_processor_cst_has_changed() invokes smp_processor_id() without
-> > > > protection, resulting in splats when onlining CPUs.
-> > > > 
-> > > > This commit therefore changes the smp_processor_id() to pr->id, as is
-> > > > used elsewhere in the code, for example, in acpi_processor_add().
-> > > > 
-> > > > This works for me, but I don't claim to understand ACPI.
-> > > > 
-> > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > > 
-> > > Got the same warning.
-> > > And the patch works on my side.
-> > > 
-> > > Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+On Tue, Feb 28, 2012 at 10:21:40PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-28 at 16:16 -0500, Vivek Goyal wrote:
 > > 
-> > Thank you, I have added your Tested-by (and Srivatsa's Reviewed-by,
-> > for that matter).
-> > 
-> > Any takers for this, or should I just push it up the -tip tree?
+> > But in this case, if task and groups are treated at same level, things
+> > are not static and % share will change dynamically. 
 > 
-> I think this patch is for Len, either through ACPI, or through the idle tree.
-> Len?
+> which is exactly how the scheduler stuff behaves for the proportional
+> bits.. so there's no reason not to do it too.
 
-Whichever way it is supposed to go, it reminds me of the need for it every
-time I forget to merge it in before testing.  ;-)
+Yes this is how scheduler does to handle hierarchy. Treat task and group
+at same level. Tejun was giving example of HTB and I was saying that there
+class/queues or whatever, seem to be static and are not created
+dynamically as tasks come in/go. So its not same.
 
-> Anyway:
-> 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+So coming back to scheduler, handling tasks and groups at same level only
+provides us with notion of priority for group. It does not provide any
+notion of % (neither minimum, nor maximum). To calculate the % one needs
+to know the proportioanal share/weight of all entities at same level and
+currently number of entities vary hence % share can't be determined.
 
-Thank you, applied!  The patch appears below with the recent review,
-testing, and ack.
+Whether it is a good thing or bad thing, I don't know. I think previous
+design was allocating a group for every user. I guess, in that case we
+will have fixed % share of each user (until and unless users are created/
+removed).
 
-							Thanx, Paul
+So I don't know what's the right behavior. With this discussion, I am just
+trying to make it explicit what to expect out of cgroup controllers. For
+cpu controller, it is priority at the group level no fixed minimum/maximum
+% shares. And that's a limitation of treating task and group at same level.
 
-------------------------------------------------------------------------
-
-acpi: Fix unprotected smp_processor_id() in acpi_processor_cst_has_changed()
-
-The acpi_processor_cst_has_changed() function is invoked from a
-CPU_ONLINE or CPU_DEAD function, which might well execute on CPU 0
-even though the CPU being hotplugged is some other CPU.  In addition,
-acpi_processor_cst_has_changed() invokes smp_processor_id() without
-protection, resulting in splats when onlining CPUs.
-
-This commit therefore changes the smp_processor_id() to pr->id, as is
-used elsewhere in the code, for example, in acpi_processor_add().
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index 0e8e2de..9e57b06 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1159,8 +1159,7 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 	 * to make the code that updates C-States be called once.
- 	 */
- 
--	if (smp_processor_id() == 0 &&
--			cpuidle_get_driver() == &acpi_idle_driver) {
-+	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
- 
- 		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
-
+Thanks
+Vivek
