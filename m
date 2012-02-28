@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2B1RfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:35:17 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57839 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752609Ab2B1RfP (ORCPT
+	id S1756761Ab2B1Rgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:36:48 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53687 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab2B1Rgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:35:15 -0500
-Subject: Re: [PATCH] x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32
- oops
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Keith Packard <keithp@keithp.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <4F4C3CF3.9030804@zytor.com>
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
-	 <4F4C3CF3.9030804@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Feb 2012 17:35:03 +0000
-Message-ID: <1330450503.4924.59.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Tue, 28 Feb 2012 12:36:47 -0500
+Message-ID: <4F4D10A9.5010707@gmail.com>
+Date: Tue, 28 Feb 2012 10:36:41 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH] perf/x86: Fix HO/GO counting with SVM disabled
+References: <20120227182325.GA12302@8bytes.org> <1330444544-15665-1-git-send-email-joerg.roedel@amd.com> <4F4D0DD6.9030302@redhat.com>
+In-Reply-To: <4F4D0DD6.9030302@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-27 at 18:33 -0800, H. Peter Anvin wrote:
-> On 02/20/2012 05:30 AM, Matt Fleming wrote:
-> > 
-> > Despite first impressions, it's not possible to use ioremap_cache() to
-> > map all cached memory regions on CONFIG_X86_64 because of the way that
-> > the memory map might be configured as detailed in the following bug
-> > report,
-> > 
-> > 	https://bugzilla.redhat.com/show_bug.cgi?id=748516
-> > 
-> > Therefore, we need to ensure that any regions requiring a runtime
-> > mapping are covered by the direct kernel mapping table. Previously,
-> > this was taken care of by efi_ioremap() but if we handle this case
-> > earlier, in setup_arch(), we can delete the CONFIG_X86_32 and
-> > CONFIG_X86_64 efi_ioremap() implementations entirely.
-> > 
-> 
-> I went through the bug report but it's not entirely clear to me what the
-> fundamental root cause of the problem is, as opposed to what are
-> symptoms.  We need to straighten this out, and we need to do so fairly soon.
+On 2/28/12 10:24 AM, Avi Kivity wrote:
+> On 02/28/2012 05:55 PM, Joerg Roedel wrote:
+>>
+>>   __init int amd_pmu_init(void)
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index 5fa553b..773fee2 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -29,6 +29,7 @@
+>>   #include<linux/ftrace_event.h>
+>>   #include<linux/slab.h>
+>>
+>> +#include<asm/perf_event.h>
+>>   #include<asm/tlbflush.h>
+>>   #include<asm/desc.h>
+>>   #include<asm/kvm_para.h>
+>> @@ -575,6 +576,8 @@ static void svm_hardware_disable(void *garbage)
+>>   		wrmsrl(MSR_AMD64_TSC_RATIO, TSC_RATIO_DEFAULT);
+>>
+>>   	cpu_svm_disable();
+>> +
+>> +	x86_pmu_disable_virt();
+>>   }
+>>
+>>   static int svm_hardware_enable(void *garbage)
+>> @@ -622,6 +625,8 @@ static int svm_hardware_enable(void *garbage)
+>>
+>>   	svm_init_erratum_383();
+>>
+>> +	x86_pmu_enable_virt();
+>> +
+>>   	return 0;
+>>   }
+>>
+>
+> These should go into x86.c.  If the functions later gain meaning on
+> Intel, we want them to be called (and nothing in the name suggests
+> they're AMD specific).
+>
 
-Right. Honestly, I'm not sure what the root cause is. What is clear is
-that we can't arbitrarily map EFI_RUNTIME_SERVICES* regions with
-ioremap(), but not why we can't do that. I suspect the only way to
-deduce the root cause is to figure out how to make it work.
+I was to suggest the reverse: since this patch addesses an AMD bug, why 
+not push those functions into perf_event_amd.c and make them dependent 
+on CONFIG_CPU_SUP_AMD as well.
 
-It might be possible to map the EFI runtime regions with ioremap() as
-long as we maintain the same distance between regions as in the initial
-physical memory map. But I don't have a Macbook Air to test that idea
-out on and trying to solicit testers for previous patches hasn't gone
-very well.
-
-> It would seem logical that we include in the kernel memory mapping the
-> regions we need, and *ONLY* the regions necessary; in particular we
-> shouldn't include *any* memory holes except for the < 1 MiB legacy
-> region (which is okay because of fixed MTRRs, but even that should be
-> eventually nuked.  That will require driver work hough.)
-
-Seems fair enough. Note that this patch doesn't change that behaviour,
-the holes were mapped prior to this.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+David
