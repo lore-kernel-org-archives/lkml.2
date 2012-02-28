@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2B1Tjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:39:32 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45228 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287Ab2B1Tja convert rfc822-to-8bit (ORCPT
+	id S1757327Ab2B1Tkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:40:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64579 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab2B1Tku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:39:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.133.93 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Tue, 28 Feb 2012 14:40:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.143.151 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH resend] mm: drain percpu lru add/rotate page-vectors on cpu
+ hot-unplug
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 28 Feb 2012 23:40:45 +0400
+Message-ID: <20120228193620.32063.83425.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <m2d38ybvur.fsf@igel.home>
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
- <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
- <m2d38ybvur.fsf@igel.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 28 Feb 2012 11:39:09 -0800
-X-Google-Sender-Auth: iD6S7dPo5x4UIPM7IZ3r_iN3_hI
-Message-ID: <CA+55aFzqOAgrCYWmY1JkXqfGFLjYO0ohe_FZF-WHVgp_CPf0Mg@mail.gmail.com>
-Subject: Re: Linux 3.3-rc5
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 11:29 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
->
-> Originally the garbage looked like this:
->
-> #define I8K_BIOS_VERSION       _IOR ('i', 0x80, 4)
-> #define I8K_MACHINE_ID         _IOR ('i', 0x81, 16)
-> #define I8K_POWER_STATUS       _IOR ('i', 0x82, sizeof(int))
-> #define I8K_FN_STATUS          _IOR ('i', 0x83, sizeof(int))
-> #define I8K_GET_TEMP           _IOR ('i', 0x84, sizeof(int))
-> #define I8K_GET_SPEED          _IOWR('i', 0x85, sizeof(int))
-> #define I8K_GET_FAN            _IOWR('i', 0x86, sizeof(int))
-> #define I8K_SET_FAN            _IOWR('i', 0x87, sizeof(int)*2)
->
-> Later they were modified by "[PATCH] use size_t for the broken ioctl
-> numbers" and "Fix more ioctl _IOR/_IOW misusage." (see tglx's history
-> tree).
+This cpu hotplug hook was accidentally removed in commit v2.6.30-rc4-18-g00a62ce
+("mm: fix Committed_AS underflow on large NR_CPUS environment")
 
-Ahh, yes. That wasn't the only driver that did the "sizeof" by hand,
-and as a result got "size_t" when the (nested) *real* sizeof then
-happened.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/swap.h |    1 +
+ mm/page_alloc.c      |    1 +
+ mm/swap.c            |    4 ++--
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
-That explains the history behind the garbage.
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index f7df3ea..ba2c8d7 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -229,6 +229,7 @@ extern void lru_add_page_tail(struct zone* zone,
+ extern void activate_page(struct page *);
+ extern void mark_page_accessed(struct page *);
+ extern void lru_add_drain(void);
++extern void lru_add_drain_cpu(int cpu);
+ extern int lru_add_drain_all(void);
+ extern void rotate_reclaimable_page(struct page *page);
+ extern void deactivate_page(struct page *page);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 864d1b7..2b7f07b 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4874,6 +4874,7 @@ static int page_alloc_cpu_notify(struct notifier_block *self,
+ 	int cpu = (unsigned long)hcpu;
+ 
+ 	if (action == CPU_DEAD || action == CPU_DEAD_FROZEN) {
++		lru_add_drain_cpu(cpu);
+ 		drain_pages(cpu);
+ 
+ 		/*
+diff --git a/mm/swap.c b/mm/swap.c
+index fff1ff7..38b2686 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -496,7 +496,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+  * Either "cpu" is the current CPU, and preemption has already been
+  * disabled; or "cpu" is being hot-unplugged, and is already dead.
+  */
+-static void drain_cpu_pagevecs(int cpu)
++void lru_add_drain_cpu(int cpu)
+ {
+ 	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
+ 	struct pagevec *pvec;
+@@ -553,7 +553,7 @@ void deactivate_page(struct page *page)
+ 
+ void lru_add_drain(void)
+ {
+-	drain_cpu_pagevecs(get_cpu());
++	lru_add_drain_cpu(get_cpu());
+ 	put_cpu();
+ }
+ 
 
-ioctl numbering have always been pretty painful. Oh, how I wish they
-had been ASCII strings rather than random binary blobs. But that's the
-way things are (and we certainly screwed up a few /proc files too, so
-it's not like using text fixes all potential for screwing up)
-
-                 Linus
