@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964907Ab2B1Bb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:31:56 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964842Ab2B1BHh (ORCPT
+	id S964822Ab2B1BHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:33 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab2B1BHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.223.199 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.230.170 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010214.412074510@linuxfoundation.org>
+Message-Id: <20120228010213.357750296@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:04 -0800
+Date: Mon, 27 Feb 2012 17:02:58 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 61/73] genirq: Handle pending irqs in irq_startup()
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 55/73] i387: re-introduce FPU state preloading at context switch time
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,109 +26,344 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit b4bc724e82e80478cba5fe9825b62e71ddf78757 upstream.
+commit 34ddc81a230b15c0e345b6b253049db731499f7e upstream.
 
-An interrupt might be pending when irq_startup() is called, but the
-startup code does not invoke the resend logic. In some cases this
-prevents the device from issuing another interrupt which renders the
-device non functional.
+After all the FPU state cleanups and finally finding the problem that
+caused all our FPU save/restore problems, this re-introduces the
+preloading of FPU state that was removed in commit b3b0870ef3ff ("i387:
+do not preload FPU state at task switch time").
 
-Call the resend function in irq_startup() to keep things going.
+However, instead of simply reverting the removal, this reimplements
+preloading with several fixes, most notably
 
-Reported-and-tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+ - properly abstracted as a true FPU state switch, rather than as
+   open-coded save and restore with various hacks.
+
+   In particular, implementing it as a proper FPU state switch allows us
+   to optimize the CR0.TS flag accesses: there is no reason to set the
+   TS bit only to then almost immediately clear it again.  CR0 accesses
+   are quite slow and expensive, don't flip the bit back and forth for
+   no good reason.
+
+ - Make sure that the same model works for both x86-32 and x86-64, so
+   that there are no gratuitous differences between the two due to the
+   way they save and restore segment state differently due to
+   architectural differences that really don't matter to the FPU state.
+
+ - Avoid exposing the "preload" state to the context switch routines,
+   and in particular allow the concept of lazy state restore: if nothing
+   else has used the FPU in the meantime, and the process is still on
+   the same CPU, we can avoid restoring state from memory entirely, just
+   re-expose the state that is still in the FPU unit.
+
+   That optimized lazy restore isn't actually implemented here, but the
+   infrastructure is set up for it.  Of course, older CPU's that use
+   'fnsave' to save the state cannot take advantage of this, since the
+   state saving also trashes the state.
+
+In other words, there is now an actual _design_ to the FPU state saving,
+rather than just random historical baggage.  Hopefully it's easier to
+follow as a result.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/autoprobe.c |    4 ++--
- kernel/irq/chip.c      |   17 ++++++++++-------
- kernel/irq/internals.h |    2 +-
- kernel/irq/manage.c    |    2 +-
- 4 files changed, 14 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/i387.h  |  110 ++++++++++++++++++++++++++++++++++++-------
+ arch/x86/kernel/process_32.c |    5 +
+ arch/x86/kernel/process_64.c |    5 +
+ arch/x86/kernel/traps.c      |   55 ++++++++++++---------
+ 4 files changed, 133 insertions(+), 42 deletions(-)
 
---- a/kernel/irq/autoprobe.c
-+++ b/kernel/irq/autoprobe.c
-@@ -53,7 +53,7 @@ unsigned long probe_irq_on(void)
- 			if (desc->irq_data.chip->irq_set_type)
- 				desc->irq_data.chip->irq_set_type(&desc->irq_data,
- 							 IRQ_TYPE_PROBE);
--			irq_startup(desc);
-+			irq_startup(desc, false);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -70,7 +70,7 @@ unsigned long probe_irq_on(void)
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && irq_settings_can_probe(desc)) {
- 			desc->istate |= IRQS_AUTODETECT | IRQS_WAITING;
--			if (irq_startup(desc))
-+			if (irq_startup(desc, false))
- 				desc->istate |= IRQS_PENDING;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -157,19 +157,22 @@ static void irq_state_set_masked(struct
- 	irqd_set(&desc->irq_data, IRQD_IRQ_MASKED);
- }
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -29,6 +29,7 @@ extern unsigned int sig_xstate_size;
+ extern void fpu_init(void);
+ extern void mxcsr_feature_mask_init(void);
+ extern int init_fpu(struct task_struct *child);
++extern void __math_state_restore(struct task_struct *);
+ extern void math_state_restore(void);
+ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
  
--int irq_startup(struct irq_desc *desc)
-+int irq_startup(struct irq_desc *desc, bool resend)
+@@ -212,9 +213,10 @@ static inline void fpu_fxsave(struct fpu
+ #endif	/* CONFIG_X86_64 */
+ 
+ /*
+- * These must be called with preempt disabled
++ * These must be called with preempt disabled. Returns
++ * 'true' if the FPU state is still intact.
+  */
+-static inline void fpu_save_init(struct fpu *fpu)
++static inline int fpu_save_init(struct fpu *fpu)
  {
-+	int ret = 0;
-+
- 	irq_state_clr_disabled(desc);
- 	desc->depth = 0;
- 
- 	if (desc->irq_data.chip->irq_startup) {
--		int ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
-+		ret = desc->irq_data.chip->irq_startup(&desc->irq_data);
- 		irq_state_clr_masked(desc);
--		return ret;
-+	} else {
-+		irq_enable(desc);
+ 	if (use_xsave()) {
+ 		fpu_xsave(fpu);
+@@ -223,22 +225,33 @@ static inline void fpu_save_init(struct
+ 		 * xsave header may indicate the init state of the FP.
+ 		 */
+ 		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
+-			return;
++			return 1;
+ 	} else if (use_fxsr()) {
+ 		fpu_fxsave(fpu);
+ 	} else {
+ 		asm volatile("fnsave %[fx]; fwait"
+ 			     : [fx] "=m" (fpu->state->fsave));
+-		return;
++		return 0;
  	}
--
--	irq_enable(desc);
--	return 0;
-+	if (resend)
-+		check_irq_resend(desc, desc->irq_data.irq);
-+	return ret;
+ 
+-	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
++	/*
++	 * If exceptions are pending, we need to clear them so
++	 * that we don't randomly get exceptions later.
++	 *
++	 * FIXME! Is this perhaps only true for the old-style
++	 * irq13 case? Maybe we could leave the x87 state
++	 * intact otherwise?
++	 */
++	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES)) {
+ 		asm volatile("fnclex");
++		return 0;
++	}
++	return 1;
  }
  
- void irq_shutdown(struct irq_desc *desc)
-@@ -596,7 +599,7 @@ __irq_set_handler(unsigned int irq, irq_
- 		irq_settings_set_noprobe(desc);
- 		irq_settings_set_norequest(desc);
- 		irq_settings_set_nothread(desc);
--		irq_startup(desc);
-+		irq_startup(desc, true);
+-static inline void __save_init_fpu(struct task_struct *tsk)
++static inline int __save_init_fpu(struct task_struct *tsk)
+ {
+-	fpu_save_init(&tsk->thread.fpu);
++	return fpu_save_init(&tsk->thread.fpu);
+ }
+ 
+ static inline int fpu_fxrstor_checking(struct fpu *fpu)
+@@ -301,20 +314,79 @@ static inline void __thread_fpu_begin(st
+ }
+ 
+ /*
+- * Signal frame handlers...
++ * FPU state switching for scheduling.
++ *
++ * This is a two-stage process:
++ *
++ *  - switch_fpu_prepare() saves the old state and
++ *    sets the new state of the CR0.TS bit. This is
++ *    done within the context of the old process.
++ *
++ *  - switch_fpu_finish() restores the new state as
++ *    necessary.
+  */
+-extern int save_i387_xstate(void __user *buf);
+-extern int restore_i387_xstate(void __user *buf);
++typedef struct { int preload; } fpu_switch_t;
++
++/*
++ * FIXME! We could do a totally lazy restore, but we need to
++ * add a per-cpu "this was the task that last touched the FPU
++ * on this CPU" variable, and the task needs to have a "I last
++ * touched the FPU on this CPU" and check them.
++ *
++ * We don't do that yet, so "fpu_lazy_restore()" always returns
++ * false, but some day..
++ */
++#define fpu_lazy_restore(tsk) (0)
++#define fpu_lazy_state_intact(tsk) do { } while (0)
+ 
+-static inline void __unlazy_fpu(struct task_struct *tsk)
++static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct task_struct *new)
+ {
+-	if (__thread_has_fpu(tsk)) {
+-		__save_init_fpu(tsk);
+-		__thread_fpu_end(tsk);
+-	} else
+-		tsk->fpu_counter = 0;
++	fpu_switch_t fpu;
++
++	fpu.preload = tsk_used_math(new) && new->fpu_counter > 5;
++	if (__thread_has_fpu(old)) {
++		if (__save_init_fpu(old))
++			fpu_lazy_state_intact(old);
++		__thread_clear_has_fpu(old);
++		old->fpu_counter++;
++
++		/* Don't change CR0.TS if we just switch! */
++		if (fpu.preload) {
++			__thread_set_has_fpu(new);
++			prefetch(new->thread.fpu.state);
++		} else
++			stts();
++	} else {
++		old->fpu_counter = 0;
++		if (fpu.preload) {
++			if (fpu_lazy_restore(new))
++				fpu.preload = 0;
++			else
++				prefetch(new->thread.fpu.state);
++			__thread_fpu_begin(new);
++		}
++	}
++	return fpu;
++}
++
++/*
++ * By the time this gets called, we've already cleared CR0.TS and
++ * given the process the FPU if we are going to preload the FPU
++ * state - all we need to do is to conditionally restore the register
++ * state itself.
++ */
++static inline void switch_fpu_finish(struct task_struct *new, fpu_switch_t fpu)
++{
++	if (fpu.preload)
++		__math_state_restore(new);
+ }
+ 
++/*
++ * Signal frame handlers...
++ */
++extern int save_i387_xstate(void __user *buf);
++extern int restore_i387_xstate(void __user *buf);
++
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+ 	if (__thread_has_fpu(tsk)) {
+@@ -474,7 +546,11 @@ static inline void save_init_fpu(struct
+ static inline void unlazy_fpu(struct task_struct *tsk)
+ {
+ 	preempt_disable();
+-	__unlazy_fpu(tsk);
++	if (__thread_has_fpu(tsk)) {
++		__save_init_fpu(tsk);
++		__thread_fpu_end(tsk);
++	} else
++		tsk->fpu_counter = 0;
+ 	preempt_enable();
+ }
+ 
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -293,10 +293,11 @@ __switch_to(struct task_struct *prev_p,
+ 				 *next = &next_p->thread;
+ 	int cpu = smp_processor_id();
+ 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
++	fpu_switch_t fpu;
+ 
+ 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
+ 
+-	__unlazy_fpu(prev_p);
++	fpu = switch_fpu_prepare(prev_p, next_p);
+ 
+ 	/*
+ 	 * Reload esp0.
+@@ -351,6 +352,8 @@ __switch_to(struct task_struct *prev_p,
+ 	if (prev->gs | next->gs)
+ 		lazy_load_gs(next->gs);
+ 
++	switch_fpu_finish(next_p, fpu);
++
+ 	percpu_write(current_task, next_p);
+ 
+ 	return prev_p;
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -377,8 +377,9 @@ __switch_to(struct task_struct *prev_p,
+ 	int cpu = smp_processor_id();
+ 	struct tss_struct *tss = &per_cpu(init_tss, cpu);
+ 	unsigned fsindex, gsindex;
++	fpu_switch_t fpu;
+ 
+-	__unlazy_fpu(prev_p);
++	fpu = switch_fpu_prepare(prev_p, next_p);
+ 
+ 	/*
+ 	 * Reload esp0, LDT and the page table pointer:
+@@ -448,6 +449,8 @@ __switch_to(struct task_struct *prev_p,
+ 		wrmsrl(MSR_KERNEL_GS_BASE, next->gs);
+ 	prev->gsindex = gsindex;
+ 
++	switch_fpu_finish(next_p, fpu);
++
+ 	/*
+ 	 * Switch the PDA and FPU contexts.
+ 	 */
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -717,6 +717,37 @@ asmlinkage void __attribute__((weak)) sm
+ }
+ 
+ /*
++ * This gets called with the process already owning the
++ * FPU state, and with CR0.TS cleared. It just needs to
++ * restore the FPU register state.
++ */
++void __math_state_restore(struct task_struct *tsk)
++{
++	/* We need a safe address that is cheap to find and that is already
++	   in L1. We've just brought in "tsk->thread.has_fpu", so use that */
++#define safe_address (tsk->thread.has_fpu)
++
++	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
++	   is pending.  Clear the x87 state here by setting it to fixed
++	   values. safe_address is a random variable that should be in L1 */
++	alternative_input(
++		ASM_NOP8 ASM_NOP2,
++		"emms\n\t"	  	/* clear stack tags */
++		"fildl %P[addr]",	/* set F?P to defined value */
++		X86_FEATURE_FXSAVE_LEAK,
++		[addr] "m" (safe_address));
++
++	/*
++	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
++	 */
++	if (unlikely(restore_fpu_checking(tsk))) {
++		__thread_fpu_end(tsk);
++		force_sig(SIGSEGV, tsk);
++		return;
++	}
++}
++
++/*
+  * 'math_state_restore()' saves the current math information in the
+  * old math state array, and gets the new ones from the current task
+  *
+@@ -730,10 +761,6 @@ void math_state_restore(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+-	/* We need a safe address that is cheap to find and that is already
+-	   in L1. We're just bringing in "tsk->thread.has_fpu", so use that */
+-#define safe_address (tsk->thread.has_fpu)
+-
+ 	if (!tsk_used_math(tsk)) {
+ 		local_irq_enable();
+ 		/*
+@@ -750,25 +777,7 @@ void math_state_restore(void)
  	}
- out:
- 	irq_put_desc_busunlock(desc, flags);
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -67,7 +67,7 @@ extern int __irq_set_trigger(struct irq_
- extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
- extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
  
--extern int irq_startup(struct irq_desc *desc);
-+extern int irq_startup(struct irq_desc *desc, bool resend);
- extern void irq_shutdown(struct irq_desc *desc);
- extern void irq_enable(struct irq_desc *desc);
- extern void irq_disable(struct irq_desc *desc);
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1018,7 +1018,7 @@ __setup_irq(unsigned int irq, struct irq
- 			desc->istate |= IRQS_ONESHOT;
+ 	__thread_fpu_begin(tsk);
+-
+-	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+-	   is pending.  Clear the x87 state here by setting it to fixed
+-	   values. safe_address is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (safe_address));
+-
+-	/*
+-	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+-	 */
+-	if (unlikely(restore_fpu_checking(tsk))) {
+-		__thread_fpu_end(tsk);
+-		force_sig(SIGSEGV, tsk);
+-		return;
+-	}
++	__math_state_restore(tsk);
  
- 		if (irq_settings_can_autoenable(desc))
--			irq_startup(desc);
-+			irq_startup(desc, true);
- 		else
- 			/* Undo nested disables: */
- 			desc->depth = 1;
+ 	tsk->fpu_counter++;
+ }
 
 
