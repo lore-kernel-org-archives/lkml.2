@@ -1,220 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2B1WJo (ORCPT <rfc822;w@1wt.eu>);
+	id S1757413Ab2B1WJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:09:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36209 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757393Ab2B1WJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Feb 2012 17:09:44 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26483 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab2B1WJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:09:41 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
+Date: Tue, 28 Feb 2012 17:09:32 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 19/24] PCI: Allocate bus range instead of use max blindly
-Date: Tue, 28 Feb 2012 14:07:38 -0800
-Message-Id: <1330466863-28469-20-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090204.4F4D505D.0214,ss=1,re=0.000,fgs=0
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120228220932.GK9920@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <20120223213847.GK19691@redhat.com>
+ <20120223223457.GJ22536@google.com>
+ <20120228211627.GH9920@redhat.com>
+ <1330464100.11248.94.camel@twins>
+ <20120228213526.GI9920@redhat.com>
+ <1330466039.11248.103.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330466039.11248.103.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-every bus have extra busn_res, and linked them toghter to iobusn_resource.
+On Tue, Feb 28, 2012 at 10:53:59PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-28 at 16:35 -0500, Vivek Goyal wrote:
+> > Yes this is how scheduler does to handle hierarchy. Treat task and group
+> > at same level. 
+> 
+> ...
+> 
+> > Whether it is a good thing or bad thing, I don't know. 
+> 
+> That's IMO what the cgroupfs interface provides for, if you do anything
+> different there's this shadow group that contains the tasks for which
+> you then have to provide extra parameter control.
+> 
+> Furthermore, by treating tasks and groups at the same level you can
+> create the extra group, but you can't do the reverse. So its the more
+> versatile solution as well.
 
-when need to find usable bus number range, try probe from iobusn_resource tree.
+Agreed that it is more versatile. And one can move all the tasks to a
+new group to achieve what a shadow group will do.
 
-To avoid falling to small hole in the middle, we try from 8 spare bus.
-if can not find 8 or more in the middle, will try to append 8 on top later.
-then if can not append, will try to find 7 from the middle, then will try to append 7 on top.
-then if can not append, will try to find 6 from the middle...
+The only thing is what is a good default. If we are thinking of dividing
+resources in terms of % and writing a user space tool, then in default
+model we just don't know what's the %. May be it is dynamically varying
+% and should be shown accordingly.
 
-for cardbus will only find 4 spare.
+Or if idea of minimum % proportional bandwidth is more natural, then 
+we shall have to change userspace and things like systemd to not run
+any task in /. Then a user space tool can go through cgroup hierarchy
+and calculate minimum % share of a group and display it.
 
-if extend from top, at last will shrink back to really needed range...
+> 
+> > I think previous
+> > design was allocating a group for every user. I guess, in that case we
+> > will have fixed % share of each user (until and unless users are created/
+> > removed). 
+> 
+> Not even, it depended on if the user had anything runnable or not. It
+> was very much like the current cgroup stuff if you create a cgroup for
+> each user and stick the tasks in.
+> 
+> The cpu-cgroup stuff is purely runnable based, so every wakeup/sleep
+> changes the entire weight distribution, yay! :-)
 
--v4: fix checking with pci rescan. Found by Bjorn.
+:-). That's fine. If a group is not using its bandwidth because there is
+no runnable task, then other groups get more cpu. I thought that's the 
+proportional definition.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |  100 ++++++++++++++++++++++++++++++---------------------
- 1 files changed, 59 insertions(+), 41 deletions(-)
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 5c031f0..f22a209 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -839,10 +839,11 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- {
- 	struct pci_bus *child;
- 	int is_cardbus = (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS);
--	u32 buses, i, j = 0;
-+	u32 buses;
- 	u16 bctl;
- 	u8 primary, secondary, subordinate;
- 	int broken = 0;
-+	struct resource *parent_res = NULL;
- 
- 	pci_read_config_dword(dev, PCI_PRIMARY_BUS, &buses);
- 	primary = buses & 0xFF;
-@@ -859,10 +860,16 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
--	    (primary != bus->number || secondary <= bus->number)) {
--		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
-+	    (primary != bus->number || secondary <= bus->number))
- 		broken = 1;
--	}
-+
-+	/* more strict checking */
-+	if (!pass && !broken && !dev->subordinate)
-+		broken = pci_bridge_check_busn_broken(bus, dev,
-+						   secondary, subordinate);
-+
-+	if (broken)
-+		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
- 
- 	/* Disable MasterAbortMode during probing to avoid reporting
- 	   of bus errors (in some architectures) */ 
-@@ -895,6 +902,8 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 			child->primary = primary;
- 			child->subordinate = subordinate;
- 			child->bridge_ctl = bctl;
-+
-+			pci_bus_insert_busn_res(child, secondary, subordinate);
- 		}
- 
- 		cmax = pci_scan_child_bus(child);
-@@ -907,6 +916,11 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 		 * We need to assign a number to this bus which we always
- 		 * do in the second pass.
- 		 */
-+		long shrink_size;
-+		struct resource busn_res;
-+		int ret = -ENOMEM;
-+		int old_max = max;
-+
- 		if (!pass) {
- 			if (pcibios_assign_all_busses() || broken)
- 				/* Temporarily disable forwarding of the
-@@ -923,20 +937,43 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 		/* Clear errors */
- 		pci_write_config_word(dev, PCI_STATUS, 0xffff);
- 
--		/* Prevent assigning a bus number that already exists.
--		 * This can happen when a bridge is hot-plugged, so in
--		 * this case we only re-scan this bus. */
--		child = pci_find_bus(pci_domain_nr(bus), max+1);
--		if (!child) {
--			child = pci_add_new_bus(bus, dev, ++max);
--			if (!child)
--				goto out;
-+		if (dev->subordinate) {
-+			/* We get here only for cardbus */
-+			child = dev->subordinate;
-+			if  (!is_cardbus)
-+				dev_warn(&dev->dev,
-+				 "rescan scaned bridge as broken one again ?");
-+
-+			goto out;
- 		}
-+		/*
-+		 * For CardBus bridges, we leave 4 bus numbers
-+		 * as cards with a PCI-to-PCI bridge can be
-+		 * inserted later.
-+		 * other just allocate 8 bus to avoid we fall into
-+		 *  small hole in the middle.
-+		 */
-+		ret = pci_bridge_probe_busn_res(bus, dev, &busn_res,
-+				is_cardbus ? (CARDBUS_RESERVE_BUSNR + 1) : 8,
-+				&parent_res);
-+
-+		if (ret != 0)
-+			goto out;
-+
-+		child = pci_add_new_bus(bus, dev, busn_res.start);
-+		if (!child)
-+			goto out;
-+
-+		child->subordinate = busn_res.end;
-+		pci_bus_insert_busn_res(child, busn_res.start, busn_res.end);
-+
- 		buses = (buses & 0xff000000)
- 		      | ((unsigned int)(child->primary)     <<  0)
- 		      | ((unsigned int)(child->secondary)   <<  8)
- 		      | ((unsigned int)(child->subordinate) << 16);
- 
-+		max = child->subordinate;
-+
- 		/*
- 		 * yenta.c forces a secondary latency timer of 176.
- 		 * Copy that behaviour here.
-@@ -967,43 +1004,24 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 			 * the real value of max.
- 			 */
- 			pci_fixup_parent_subordinate_busnr(child, max);
-+
- 		} else {
--			/*
--			 * For CardBus bridges, we leave 4 bus numbers
--			 * as cards with a PCI-to-PCI bridge can be
--			 * inserted later.
--			 */
--			for (i=0; i<CARDBUS_RESERVE_BUSNR; i++) {
--				struct pci_bus *parent = bus;
--				if (pci_find_bus(pci_domain_nr(bus),
--							max+i+1))
--					break;
--				while (parent->parent) {
--					if ((!pcibios_assign_all_busses()) &&
--					    (parent->subordinate > max) &&
--					    (parent->subordinate <= max+i)) {
--						j = 1;
--					}
--					parent = parent->parent;
--				}
--				if (j) {
--					/*
--					 * Often, there are two cardbus bridges
--					 * -- try to leave one valid bus number
--					 * for each one.
--					 */
--					i /= 2;
--					break;
--				}
--			}
--			max += i;
- 			pci_fixup_parent_subordinate_busnr(child, max);
- 		}
- 		/*
- 		 * Set the subordinate bus number to its real value.
- 		 */
-+		shrink_size = child->subordinate - max;
- 		child->subordinate = max;
- 		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
-+		pci_bus_update_busn_res_end(child, max);
-+
-+		/* shrink some back, if we extend top before */
-+		if (!is_cardbus && (shrink_size > 0) && parent_res)
-+			pci_bus_shrink_top(bus, shrink_size, parent_res);
-+
-+		if (old_max > max)
-+			max = old_max;
- 	}
- 
- 	sprintf(child->name,
--- 
-1.7.7
-
+Thanks
+Vivek
