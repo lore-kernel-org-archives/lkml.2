@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965559Ab2B1BTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:19:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64391 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965548Ab2B1BTg (ORCPT
+	id S965595Ab2B1BTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:19:50 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50099 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965540Ab2B1BTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:19:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.104 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:19:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.221.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010432.406804561@linuxfoundation.org>
+Message-Id: <20120228010432.763613801@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:03 -0800
+Date: Mon, 27 Feb 2012 17:05:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/72] tcp: fix tcp_shifted_skb() adjustment of lost_cnt_hint for FACK
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        John Youn <johnyoun@synopsys.com>, Jamey Sharp <jamey@minilop.net>
+Subject: [ 38/72] USB: Remove duplicate USB 3.0 hub feature #defines.
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-From: Neal Cardwell <ncardwell@google.com>
+commit d9f5343e35d9138432657202afa8e3ddb2ade360 upstream.
 
-[ Upstream commit 0af2a0d0576205dda778d25c6c344fc6508fc81d ]
+Somehow we ended up with duplicate hub feature #defines in ch11.h.
+Tatyana Brokhman first created the USB 3.0 hub feature macros in 2.6.38
+with commit 0eadcc09203349b11ca477ec367079b23d32ab91 "usb: USB3.0 ch11
+definitions".  In 2.6.39, I modified a patch from John Youn that added
+similar macros in a different place in the same file, and committed
+dbe79bbe9dcb22cb3651c46f18943477141ca452 "USB 3.0 Hub Changes".
 
-This commit ensures that lost_cnt_hint is correctly updated in
-tcp_shifted_skb() for FACK TCP senders. The lost_cnt_hint adjustment
-in tcp_sacktag_one() only applies to non-FACK senders, so FACK senders
-need their own adjustment.
+Some of the #defines used different names for the same values.  Others
+used exactly the same names with the same values, like these gems:
 
-This applies the spirit of 1e5289e121372a3494402b1b131b41bfe1cf9b7f -
-except now that the sequence range passed into tcp_sacktag_one() is
-correct we need only have a special case adjustment for FACK.
+ #define USB_PORT_FEAT_BH_PORT_RESET     28
+...
+ #define USB_PORT_FEAT_BH_PORT_RESET            28
 
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+According to my very geeky husband (who looked it up in the C99 spec),
+it is allowed to have object-like macros with duplicate names as long as
+the replacement list is exactly the same.  However, he recalled that
+some compilers will give warnings when they find duplicate macros.  It's
+probably best to remove the duplicates in the stable tree, so that the
+code compiles for everyone.
+
+The macros are now fixed to move the feature requests that are specific
+to USB 3.0 hubs into a new section (out of the USB 2.0 hub feature
+section), and use the most common macro name.
+
+This patch should be backported to 2.6.39.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: John Youn <johnyoun@synopsys.com>
+Cc: Jamey Sharp <jamey@minilop.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1406,6 +1406,10 @@ static int tcp_shifted_skb(struct sock *
+---
+ include/linux/usb/ch11.h |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+--- a/include/linux/usb/ch11.h
++++ b/include/linux/usb/ch11.h
+@@ -62,12 +62,6 @@
+ #define USB_PORT_FEAT_TEST              21
+ #define USB_PORT_FEAT_INDICATOR         22
+ #define USB_PORT_FEAT_C_PORT_L1         23
+-#define USB_PORT_FEAT_C_PORT_LINK_STATE	25
+-#define USB_PORT_FEAT_C_PORT_CONFIG_ERROR 26
+-#define USB_PORT_FEAT_PORT_REMOTE_WAKE_MASK 27
+-#define USB_PORT_FEAT_BH_PORT_RESET     28
+-#define USB_PORT_FEAT_C_BH_PORT_RESET   29
+-#define USB_PORT_FEAT_FORCE_LINKPM_ACCEPT 30
  
- 	BUG_ON(!pcount);
- 
-+	/* Adjust hint for FACK. Non-FACK is handled in tcp_sacktag_one(). */
-+	if (tcp_is_fack(tp) && (skb == tp->lost_skb_hint))
-+		tp->lost_cnt_hint += pcount;
-+
- 	TCP_SKB_CB(prev)->end_seq += shifted;
- 	TCP_SKB_CB(skb)->seq += shifted;
- 
+ /*
+  * Port feature selectors added by USB 3.0 spec.
+@@ -76,8 +70,8 @@
+ #define USB_PORT_FEAT_LINK_STATE		5
+ #define USB_PORT_FEAT_U1_TIMEOUT		23
+ #define USB_PORT_FEAT_U2_TIMEOUT		24
+-#define USB_PORT_FEAT_C_LINK_STATE		25
+-#define USB_PORT_FEAT_C_CONFIG_ERR		26
++#define USB_PORT_FEAT_C_PORT_LINK_STATE		25
++#define USB_PORT_FEAT_C_PORT_CONFIG_ERROR	26
+ #define USB_PORT_FEAT_REMOTE_WAKE_MASK		27
+ #define USB_PORT_FEAT_BH_PORT_RESET		28
+ #define USB_PORT_FEAT_C_BH_PORT_RESET		29
 
 
