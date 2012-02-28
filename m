@@ -1,187 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab2B1O4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 09:56:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7490 "EHLO mga14.intel.com"
+	id S965113Ab2B1O40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 09:56:26 -0500
+Received: from mga14.intel.com ([143.182.124.37]:43154 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200Ab2B1O4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 09:56:21 -0500
+	id S1756011Ab2B1O4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 09:56:24 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112219207"
-Message-Id: <20120228144747.124608935@intel.com>
+   d="scan'208";a="112219252"
+Message-Id: <20120228144746.971869014@intel.com>
 User-Agent: quilt/0.51-1
-Date: Tue, 28 Feb 2012 22:00:26 +0800
+Date: Tue, 28 Feb 2012 22:00:24 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
         Ying Han <yinghan@google.com>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
 cc: Linux Memory Management List <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/9] memcg: dirty page accounting support routines
+Subject: [PATCH 2/9] memcg: add dirty page accounting infrastructure
 References: <20120228140022.614718843@intel.com>
-Content-Disposition: inline; filename=memcg-dirty-page-accounting-support-routines.patch
+Content-Disposition: inline; filename=memcg-add-dirty-page-accounting-infrastructure.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Greg Thelen <gthelen@google.com>
 
-Added memcg dirty page accounting support routines.  These routines are
-used by later changes to provide memcg aware writeback and dirty page
-limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
-allow for easier understanding of memcg writeback operation.
+Add memcg routines to count dirty, writeback, and unstable_NFS pages.
+These routines are not yet used by the kernel to count such pages.  A
+later change adds kernel calls to these new routines.
+
+As inode pages are marked dirty, if the dirtied page's cgroup differs
+from the inode's cgroup, then mark the inode shared across several
+cgroup.
 
 Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
 Changelog since v8:
-- Use 'memcg' rather than 'mem' for local variables and parameters.
-  This is consistent with other memory controller code.
+- In v8 this patch was applied after 'memcg: add mem_cgroup_mark_inode_dirty()'.
+  In this version (v9), this patch comes first.  The result is that this patch
+  does not contain code to mark inode with I_MEMCG_SHARED.  That logic is
+  deferred until the later 'memcg: add mem_cgroup_mark_inode_dirty()' patch.
 
- include/linux/memcontrol.h |    5 +
- mm/memcontrol.c            |  112 +++++++++++++++++++++++++++++++++++
- 2 files changed, 117 insertions(+)
+Fengguang: "unstable_nfs" seems a more consistent name?
 
---- linux.orig/include/linux/memcontrol.h	2012-02-25 20:48:34.337580646 +0800
-+++ linux/include/linux/memcontrol.h	2012-02-25 20:48:34.361580646 +0800
-@@ -36,8 +36,13 @@ enum mem_cgroup_page_stat_item {
- 	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
- 	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
- 	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
-+	MEMCG_NR_DIRTYABLE_PAGES, /* # of pages that could be dirty */
+ include/linux/memcontrol.h |    8 ++-
+ mm/memcontrol.c            |   87 +++++++++++++++++++++++++++++++----
+ 2 files changed, 86 insertions(+), 9 deletions(-)
+
+--- linux.orig/include/linux/memcontrol.h	2012-02-19 11:29:59.000000000 +0800
++++ linux/include/linux/memcontrol.h	2012-02-19 11:30:05.000000000 +0800
+@@ -27,9 +27,15 @@ struct page_cgroup;
+ struct page;
+ struct mm_struct;
+ 
+-/* Stats that can be updated by kernel. */
++/*
++ * Per mem_cgroup page counts tracked by kernel.  As pages enter and leave these
++ * states, the kernel notifies memcg using mem_cgroup_{inc,dec}_page_stat().
++ */
+ enum mem_cgroup_page_stat_item {
+ 	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
++	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
++	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
++	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
  };
  
-+unsigned long mem_cgroup_page_stat(struct mem_cgroup *memcg,
-+				   enum mem_cgroup_page_stat_item item);
-+unsigned long mem_cgroup_dirty_pages(struct mem_cgroup *memcg);
-+
  struct mem_cgroup_reclaim_cookie {
- 	struct zone *zone;
- 	int priority;
---- linux.orig/mm/memcontrol.c	2012-02-25 20:48:34.337580646 +0800
-+++ linux/mm/memcontrol.c	2012-02-25 21:09:54.073554384 +0800
-@@ -1255,6 +1255,118 @@ int mem_cgroup_swappiness(struct mem_cgr
- 	return memcg->swappiness;
- }
- 
-+static inline bool mem_cgroup_can_swap(struct mem_cgroup *memcg)
-+{
-+	if (nr_swap_pages == 0)
-+		return false;
-+	if (!do_swap_account)
-+		return true;
-+	if (memcg->memsw_is_minimum)
-+		return false;
-+	if (res_counter_margin(&memcg->memsw) == 0)
-+		return false;
-+	return true;
-+}
+--- linux.orig/mm/memcontrol.c	2012-02-19 11:29:59.000000000 +0800
++++ linux/mm/memcontrol.c	2012-02-19 11:30:25.000000000 +0800
+@@ -86,8 +86,11 @@ enum mem_cgroup_stat_index {
+ 	 */
+ 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+ 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+-	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+ 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
++	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
++	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
++	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
++	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
+ 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+ 	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
+ 	MEM_CGROUP_STAT_NSTATS,
+@@ -1885,6 +1888,44 @@ void mem_cgroup_update_page_stat(struct 
+ 			ClearPageCgroupFileMapped(pc);
+ 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+ 		break;
 +
-+static s64 mem_cgroup_local_page_stat(struct mem_cgroup *memcg,
-+				      enum mem_cgroup_page_stat_item item)
-+{
-+	s64 ret;
-+
-+	switch (item) {
 +	case MEMCG_NR_FILE_DIRTY:
-+		ret = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
++		/* Use Test{Set,Clear} to only un/charge the memcg once. */
++		if (val > 0) {
++			if (TestSetPageCgroupFileDirty(pc))
++				val = 0;
++		} else {
++			if (!TestClearPageCgroupFileDirty(pc))
++				val = 0;
++		}
++		idx = MEM_CGROUP_STAT_FILE_DIRTY;
 +		break;
++
 +	case MEMCG_NR_FILE_WRITEBACK:
-+		ret = mem_cgroup_read_stat(memcg,
-+					   MEM_CGROUP_STAT_FILE_WRITEBACK);
++		/*
++		 * This counter is adjusted while holding the mapping's
++		 * tree_lock.  Therefore there is no race between settings and
++		 * clearing of this flag.
++		 */
++		if (val > 0)
++			SetPageCgroupFileWriteback(pc);
++		else
++			ClearPageCgroupFileWriteback(pc);
++		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
 +		break;
++
 +	case MEMCG_NR_FILE_UNSTABLE_NFS:
-+		ret = mem_cgroup_read_stat(memcg,
-+					   MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
++		/* Use Test{Set,Clear} to only un/charge the memcg once. */
++		if (val > 0) {
++			if (TestSetPageCgroupFileUnstableNFS(pc))
++				val = 0;
++		} else {
++			if (!TestClearPageCgroupFileUnstableNFS(pc))
++				val = 0;
++		}
++		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
 +		break;
-+	case MEMCG_NR_DIRTYABLE_PAGES:
-+		ret = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_ACTIVE_FILE)) +
-+			mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_FILE));
-+		if (mem_cgroup_can_swap(memcg))
-+			ret += mem_cgroup_nr_lru_pages(memcg, BIT(LRU_ACTIVE_ANON)) +
-+				mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
-+		break;
-+	default:
-+		BUG();
-+		break;
-+	}
-+	return ret;
-+}
 +
-+/*
-+ * Return the number of additional pages that the @memcg cgroup could allocate.
-+ * If use_hierarchy is set, then this involves checking parent mem cgroups to
-+ * find the cgroup with the smallest free space.
-+ */
-+static unsigned long
-+mem_cgroup_hierarchical_free_pages(struct mem_cgroup *memcg)
+ 	default:
+ 		BUG();
+ 	}
+@@ -2481,6 +2522,17 @@ void mem_cgroup_split_huge_fixup(struct 
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ 
++static inline
++void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
++				       struct mem_cgroup *to,
++				       enum mem_cgroup_stat_index idx)
 +{
-+	u64 free;
-+	unsigned long min_free;
-+
-+	min_free = global_page_state(NR_FREE_PAGES);
-+
-+	while (memcg) {
-+		free = mem_cgroup_margin(memcg);
-+		min_free = min_t(u64, min_free, free);
-+		memcg = parent_mem_cgroup(memcg);
-+	}
-+
-+	return min_free;
++	preempt_disable();
++	__this_cpu_dec(from->stat->count[idx]);
++	__this_cpu_inc(to->stat->count[idx]);
++	preempt_enable();
 +}
 +
-+/*
-+ * mem_cgroup_page_stat() - get memory cgroup file cache statistics
-+ * @memcg:     memory cgroup to query
-+ * @item:      memory statistic item exported to the kernel
-+ *
-+ * Return the accounted statistic value.
-+ */
-+unsigned long mem_cgroup_page_stat(struct mem_cgroup *memcg,
-+				   enum mem_cgroup_page_stat_item item)
-+{
-+	struct mem_cgroup *iter;
-+	s64 value;
+ /**
+  * mem_cgroup_move_account - move account of the page
+  * @page: the page
+@@ -2529,13 +2581,18 @@ static int mem_cgroup_move_account(struc
+ 
+ 	move_lock_page_cgroup(pc, &flags);
+ 
+-	if (PageCgroupFileMapped(pc)) {
+-		/* Update mapped_file data for mem_cgroup */
+-		preempt_disable();
+-		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		preempt_enable();
+-	}
++	if (PageCgroupFileMapped(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_MAPPED);
++	if (PageCgroupFileDirty(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++						  MEM_CGROUP_STAT_FILE_DIRTY);
++	if (PageCgroupFileWriteback(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_WRITEBACK);
++	if (PageCgroupFileUnstableNFS(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
+ 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
+ 	if (uncharge)
+ 		/* This is not "cancel", but cancel_charge does all we need. */
+@@ -3994,6 +4051,9 @@ enum {
+ 	MCS_SWAP,
+ 	MCS_PGFAULT,
+ 	MCS_PGMAJFAULT,
++	MCS_FILE_DIRTY,
++	MCS_WRITEBACK,
++	MCS_UNSTABLE_NFS,
+ 	MCS_INACTIVE_ANON,
+ 	MCS_ACTIVE_ANON,
+ 	MCS_INACTIVE_FILE,
+@@ -4018,6 +4078,9 @@ struct {
+ 	{"swap", "total_swap"},
+ 	{"pgfault", "total_pgfault"},
+ 	{"pgmajfault", "total_pgmajfault"},
++	{"dirty", "total_dirty"},
++	{"writeback", "total_writeback"},
++	{"nfs_unstable", "total_nfs_unstable"},
+ 	{"inactive_anon", "total_inactive_anon"},
+ 	{"active_anon", "total_active_anon"},
+ 	{"inactive_file", "total_inactive_file"},
+@@ -4051,6 +4114,14 @@ mem_cgroup_get_local_stat(struct mem_cgr
+ 	val = mem_cgroup_read_events(memcg, MEM_CGROUP_EVENTS_PGMAJFAULT);
+ 	s->stat[MCS_PGMAJFAULT] += val;
+ 
++	/* dirty stat */
++	val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
++	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
++	val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_WRITEBACK);
++	s->stat[MCS_WRITEBACK] += val * PAGE_SIZE;
++	val = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
++	s->stat[MCS_UNSTABLE_NFS] += val * PAGE_SIZE;
 +
-+	/*
-+	 * If we're looking for dirtyable pages we need to evaluate free pages
-+	 * depending on the limit and usage of the parents first of all.
-+	 */
-+	if (item == MEMCG_NR_DIRTYABLE_PAGES)
-+		value = mem_cgroup_hierarchical_free_pages(memcg);
-+	else
-+		value = 0;
-+
-+	/*
-+	 * Recursively evaluate page statistics against all cgroup under
-+	 * hierarchy tree
-+	 */
-+	for_each_mem_cgroup_tree(iter, memcg)
-+		value += mem_cgroup_local_page_stat(iter, item);
-+
-+	/*
-+	 * Summing of unlocked per-cpu counters is racy and may yield a slightly
-+	 * negative value.  Zero is the only sensible value in such cases.
-+	 */
-+	if (unlikely(value < 0))
-+		value = 0;
-+
-+	return value;
-+}
-+
-+unsigned long mem_cgroup_dirty_pages(struct mem_cgroup *memcg)
-+{
-+	return mem_cgroup_page_stat(memcg, MEMCG_NR_FILE_DIRTY) +
-+		mem_cgroup_page_stat(memcg, MEMCG_NR_FILE_WRITEBACK) +
-+		mem_cgroup_page_stat(memcg, MEMCG_NR_FILE_UNSTABLE_NFS);
-+}
-+
- static void mem_cgroup_start_move(struct mem_cgroup *memcg)
- {
- 	int cpu;
+ 	/* per zone stat */
+ 	val = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
+ 	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
 
 
