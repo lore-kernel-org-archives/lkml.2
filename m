@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab2B1JqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:46:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33952 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab2B1JqN (ORCPT
+	id S964863Ab2B1Jqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:46:32 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35035 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab2B1Jq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:46:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of chanho0207@gmail.com designates 10.50.188.167 as permitted sender) smtp.mail=chanho0207@gmail.com; dkim=pass header.i=chanho0207@gmail.com
+	Tue, 28 Feb 2012 04:46:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.157.145 as permitted sender) smtp.mail=dave.martin@linaro.org
+Date: Tue, 28 Feb 2012 09:46:16 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+Message-ID: <20120228094616.GA2063@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+ <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20120227175327.GA2023@linaro.org>
+ <1330372125.10008.47.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120228092140.GD18045@n2100.arm.linux.org.uk>
-References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
-	<20120227104858.GR22562@n2100.arm.linux.org.uk>
-	<20120227110204.GA30199@n2100.arm.linux.org.uk>
-	<CAOAMb1BjC2bF=rpJAhRUrB_U2mp8HGWxfcp+=TZ1etWzjUEwig@mail.gmail.com>
-	<20120228083545.GA18045@n2100.arm.linux.org.uk>
-	<CAOAMb1CJ=G45G3JsxwP23GSdEOnDmY5xVoQmWLXaKJJv2cLOLg@mail.gmail.com>
-	<20120228092140.GD18045@n2100.arm.linux.org.uk>
-Date: Tue, 28 Feb 2012 18:46:12 +0900
-Message-ID: <CAOAMb1Cqfrk-b-yd1CMt2Hac7_j3i6WL8D8yQJDWjg_S18dAsw@mail.gmail.com>
-Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
-From: Chanho Min <chanho0207@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330372125.10008.47.camel@dagon.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Because the flags are manipulated to give the illusion of a one byte
-> FIFO, as stated in the TRM.
-Yes. It is the problem that rx interrupt is pended with this status as
-I mentioned.
+On Mon, Feb 27, 2012 at 07:48:45PM +0000, Ian Campbell wrote:
+> On Mon, 2012-02-27 at 17:53 +0000, Dave Martin wrote:
+> > On Thu, Feb 23, 2012 at 05:48:22PM +0000, Stefano Stabellini wrote:
+> > > We need a register to pass the hypercall number because we might not
+> > > know it at compile time and HVC only takes an immediate argument.
+> > > 
+> > > Among the available registers r12 seems to be the best choice because it
+> > > is defined as "intra-procedure call scratch register".
+> > 
+> > This would be massively simplified if you didn't try to inline the HVC.
+> > Does it really need to be inline?
+> >
+> > > +#define __HYPERCALL ".word 0xe1400070 + " __HVC_IMM(XEN_HYPERCALL_TAG)
+> > 
+> > Please, do not do this.  It won't work in Thumb, where the encodings are
+> > different.
+> > 
+> > It is reasonable to expect anyone building Xen to have reasonably new
+> > tools, you you can justifiably use
+> > 
+> > AFLAGS_thisfile.o := -Wa,-march=armv7-a+virt
+> > 
+> > in the Makefile and just use the hvc instruction directly.
+> 
+> Our aim is for guest kernel binaries not to be specific to Xen -- i.e.
+> they should be able to run on baremetal and other hypervisors as well.
+> The differences should only be in the device-tree passed to the kernel.
+> 
+> > Of course, this is only practical if the HVC invocation is not inlined.
+> 
+> I suppose we could make the stub functions out of line, we just copied
+> what Xen does on x86.
+> 
+> The only thing which springs to mind is that 5 argument hypercalls will
+> end up pushing the fifth argument to the stack only to pop it back into
+> r4 for the hypercall and IIRC it also needs to preserve r4 (callee saved
+> reg) which is going to involve some small amount of code to move stuff
+> around too.
+> 
+> So by inlining the functions we avoid some thunking because the compiler
+> would know exactly what was happening at the hypercall site.
 
-> And we don't set the mask register to 1 until later.
-In the last part of startup, set to 1. Interrupt can be occurred just after it.
+True ...
 
-uap->im = UART011_RTIM;
-if (!pl011_dma_rx_running(uap))
- uap->im |= UART011_RXIM;
- writew(uap->im, uap->port.membase + UART011_IMSC);
+> 
+> We don't currently have any 6 argument hypercalls but the same would
+> extend there.
+> 
+> > If we can't avoid macro-ising HVC, we should do it globally, not locally
+> > to the Xen code.  That way we at least keep all the horror in one place.
+> 
+> That sounds like a good idea to me.
+> 
+> Given that Stefano is proposing to make the ISS a (per-hypervisor)
+> constant we could consider just defining the Thumb and non-Thumb
+> constants instead of doing all the construction with the __HVC_IMM stuff
+> -- that would remove a big bit of the macroization.
 
-> But we want to do the transmit interrupt provocation with the FIFO disabled.
-I know. It's test only.
+It's not quite as simple as that -- emitting instructions using data
+directives is not endianness safe, and even in the cases where .long gives
+the right result for ARM, it gives the wrong result for 32-bit Thumb
+instructions if the opcode is given in human-readable order.
+
+I was trying to solve the same problem for the kvm guys with some global
+macros -- I'm aiming to get a patch posted soon, so I'll make sure
+you're on CC.
+
+Cheers
+---Dave
