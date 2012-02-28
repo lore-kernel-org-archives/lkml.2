@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965355Ab2B1BOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:14:32 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965356Ab2B1BMk (ORCPT
+	id S965352Ab2B1BMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:12:39 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965338Ab2B1BMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.69 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.680053711@linuxfoundation.org>
+Message-Id: <20120228010434.412979550@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:29 -0800
+Date: Mon, 27 Feb 2012 17:05:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 60/72] [SCSI] scsi_pm: Fix bug in the SCSI power management handler
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit fea6d607e154cf96ab22254ccb48addfd43d4cb5 upstream.
+commit ac5637611150281f398bb7a47e3fcb69a09e7803 upstream.
 
-This patch (as1520) fixes a bug in the SCSI layer's power management
-implementation.
+When the primary handler of an interrupt which is marked IRQ_ONESHOT
+returns IRQ_HANDLED or IRQ_NONE, then the interrupt thread is not
+woken and the unmask logic of the interrupt line is never
+invoked. This keeps the interrupt masked forever.
 
-LUN scanning can be carried out asynchronously in do_scan_async(), and
-sd uses an asynchronous thread for the time-consuming parts of disk
-probing in sd_probe_async().  Currently nothing coordinates these
-async threads with system sleep transitions; they can and do attempt
-to continue scanning/probing SCSI devices even after the host adapter
-has been suspended.  As one might expect, the outcome is not ideal.
+This was not noticed as most IRQ_ONESHOT users wake the thread
+unconditionally (usually because they cannot access the underlying
+device from hard interrupt context). Though this behaviour was nowhere
+documented and not necessarily intentional. Some drivers can avoid the
+thread wakeup in certain cases and run into the situation where the
+interrupt line s kept masked.
 
-This is what the "prepare" stage of system suspend was created for.
-After the prepare callback has been called for a host, target, or
-device, drivers are not allowed to register any children underneath
-them.  Currently the SCSI prepare callback is not implemented; this
-patch rectifies that omission.
+Handle it gracefully.
 
-For SCSI hosts, the prepare routine calls scsi_complete_async_scans()
-to wait until async scanning is finished.  It might be slightly more
-efficient to wait only until the host in question has been scanned,
-but there's currently no way to do that.  Besides, during a sleep
-transition we will ultimately have to wait until all the host scanning
-has finished anyway.
-
-For SCSI devices, the prepare routine calls async_synchronize_full()
-to wait until sd probing is finished.  The routine does nothing for
-SCSI targets, because asynchronous target scanning is done only as
-part of host scanning.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-and-tested-by: Lothar Wassmann <lw@karo-electronics.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_pm.c   |   16 ++++++++++++++++
- drivers/scsi/scsi_priv.h |    1 +
- 2 files changed, 17 insertions(+)
+ kernel/irq/chip.c |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -7,6 +7,7 @@
- 
- #include <linux/pm_runtime.h>
- #include <linux/export.h>
-+#include <linux/async.h>
- 
- #include <scsi/scsi.h>
- #include <scsi/scsi_device.h>
-@@ -69,6 +70,19 @@ static int scsi_bus_resume_common(struct
- 	return err;
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -330,6 +330,24 @@ out_unlock:
  }
+ EXPORT_SYMBOL_GPL(handle_simple_irq);
  
-+static int scsi_bus_prepare(struct device *dev)
++/*
++ * Called unconditionally from handle_level_irq() and only for oneshot
++ * interrupts from handle_fasteoi_irq()
++ */
++static void cond_unmask_irq(struct irq_desc *desc)
 +{
-+	if (scsi_is_sdev_device(dev)) {
-+		/* sd probing uses async_schedule.  Wait until it finishes. */
-+		async_synchronize_full();
-+
-+	} else if (scsi_is_host_device(dev)) {
-+		/* Wait until async scanning is finished */
-+		scsi_complete_async_scans();
-+	}
-+	return 0;
++	/*
++	 * We need to unmask in the following cases:
++	 * - Standard level irq (IRQF_ONESHOT is not set)
++	 * - Oneshot irq which did not wake the thread (caused by a
++	 *   spurious interrupt or a primary handler handling it
++	 *   completely).
++	 */
++	if (!irqd_irq_disabled(&desc->irq_data) &&
++	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot)
++		unmask_irq(desc);
 +}
 +
- static int scsi_bus_suspend(struct device *dev)
- {
- 	return scsi_bus_suspend_common(dev, PMSG_SUSPEND);
-@@ -87,6 +101,7 @@ static int scsi_bus_poweroff(struct devi
- #else /* CONFIG_PM_SLEEP */
+ /**
+  *	handle_level_irq - Level type irq handler
+  *	@irq:	the interrupt number
+@@ -362,8 +380,8 @@ handle_level_irq(unsigned int irq, struc
  
- #define scsi_bus_resume_common		NULL
-+#define scsi_bus_prepare		NULL
- #define scsi_bus_suspend		NULL
- #define scsi_bus_freeze			NULL
- #define scsi_bus_poweroff		NULL
-@@ -195,6 +210,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
- #endif /* CONFIG_PM_RUNTIME */
+ 	handle_irq_event(desc);
  
- const struct dev_pm_ops scsi_bus_pm_ops = {
-+	.prepare =		scsi_bus_prepare,
- 	.suspend =		scsi_bus_suspend,
- 	.resume =		scsi_bus_resume_common,
- 	.freeze =		scsi_bus_freeze,
---- a/drivers/scsi/scsi_priv.h
-+++ b/drivers/scsi/scsi_priv.h
-@@ -110,6 +110,7 @@ extern void scsi_exit_procfs(void);
- #endif /* CONFIG_PROC_FS */
+-	if (!irqd_irq_disabled(&desc->irq_data) && !(desc->istate & IRQS_ONESHOT))
+-		unmask_irq(desc);
++	cond_unmask_irq(desc);
++
+ out_unlock:
+ 	raw_spin_unlock(&desc->lock);
+ }
+@@ -417,6 +435,9 @@ handle_fasteoi_irq(unsigned int irq, str
+ 	preflow_handler(desc);
+ 	handle_irq_event(desc);
  
- /* scsi_scan.c */
-+extern int scsi_complete_async_scans(void);
- extern int scsi_scan_host_selected(struct Scsi_Host *, unsigned int,
- 				   unsigned int, unsigned int, int);
- extern void scsi_forget_host(struct Scsi_Host *);
++	if (desc->istate & IRQS_ONESHOT)
++		cond_unmask_irq(desc);
++
+ out_eoi:
+ 	desc->irq_data.chip->irq_eoi(&desc->irq_data);
+ out_unlock:
 
 
