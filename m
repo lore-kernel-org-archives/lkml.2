@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965352Ab2B1BMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:12:39 -0500
+	id S965373Ab2B1BOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:14:53 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965338Ab2B1BMe (ORCPT
+	with ESMTP id S965343Ab2B1BMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.69 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.7 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010434.412979550@linuxfoundation.org>
+Message-Id: <20120228010434.582975556@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:26 -0800
+Date: Mon, 27 Feb 2012 17:05:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 59/72] [SCSI] scsi_scan: Fix Poison overwritten warning caused by using freed shost
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,79 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Huajun Li <huajun.li.lee@gmail.com>
 
-commit ac5637611150281f398bb7a47e3fcb69a09e7803 upstream.
+commit 267a6ad4aefaafbde607804c60945bcf97f91c1b upstream.
 
-When the primary handler of an interrupt which is marked IRQ_ONESHOT
-returns IRQ_HANDLED or IRQ_NONE, then the interrupt thread is not
-woken and the unmask logic of the interrupt line is never
-invoked. This keeps the interrupt masked forever.
+In do_scan_async(), calling scsi_autopm_put_host(shost) may reference
+freed shost, and cause Posison overwitten warning.
+Yes, this case can happen, for example, an USB is disconnected just
+when do_scan_async() thread starts to run, then scsi_host_put() called
+in scsi_finish_async_scan() will lead to shost be freed(because the
+refcount of shost->shost_gendev decreases to 1 after USB disconnects),
+at this point, if references shost again, system will show following
+warning msg.
 
-This was not noticed as most IRQ_ONESHOT users wake the thread
-unconditionally (usually because they cannot access the underlying
-device from hard interrupt context). Though this behaviour was nowhere
-documented and not necessarily intentional. Some drivers can avoid the
-thread wakeup in certain cases and run into the situation where the
-interrupt line s kept masked.
+To make scsi_autopm_put_host(shost) always reference a valid shost,
+put it just before scsi_host_put() in function
+scsi_finish_async_scan().
 
-Handle it gracefully.
+[  299.281565] =============================================================================
+[  299.281634] BUG kmalloc-4096 (Tainted: G          I ): Poison overwritten
+[  299.281682] -----------------------------------------------------------------------------
+[  299.281684]
+[  299.281752] INFO: 0xffff880056c305d0-0xffff880056c305d0. First byte
+0x6a instead of 0x6b
+[  299.281816] INFO: Allocated in scsi_host_alloc+0x4a/0x490 age=1688
+cpu=1 pid=2004
+[  299.281870] 	__slab_alloc+0x617/0x6c1
+[  299.281901] 	__kmalloc+0x28c/0x2e0
+[  299.281931] 	scsi_host_alloc+0x4a/0x490
+[  299.281966] 	usb_stor_probe1+0x5b/0xc40 [usb_storage]
+[  299.282010] 	storage_probe+0xa4/0xe0 [usb_storage]
+[  299.282062] 	usb_probe_interface+0x172/0x330 [usbcore]
+[  299.282105] 	driver_probe_device+0x257/0x3b0
+[  299.282138] 	__driver_attach+0x103/0x110
+[  299.282171] 	bus_for_each_dev+0x8e/0xe0
+[  299.282201] 	driver_attach+0x26/0x30
+[  299.282230] 	bus_add_driver+0x1c4/0x430
+[  299.282260] 	driver_register+0xb6/0x230
+[  299.282298] 	usb_register_driver+0xe5/0x270 [usbcore]
+[  299.282337] 	0xffffffffa04ab03d
+[  299.282364] 	do_one_initcall+0x47/0x230
+[  299.282396] 	sys_init_module+0xa0f/0x1fe0
+[  299.282429] INFO: Freed in scsi_host_dev_release+0x18a/0x1d0 age=85
+cpu=0 pid=2008
+[  299.282482] 	__slab_free+0x3c/0x2a1
+[  299.282510] 	kfree+0x296/0x310
+[  299.282536] 	scsi_host_dev_release+0x18a/0x1d0
+[  299.282574] 	device_release+0x74/0x100
+[  299.282606] 	kobject_release+0xc7/0x2a0
+[  299.282637] 	kobject_put+0x54/0xa0
+[  299.282668] 	put_device+0x27/0x40
+[  299.282694] 	scsi_host_put+0x1d/0x30
+[  299.282723] 	do_scan_async+0x1fc/0x2b0
+[  299.282753] 	kthread+0xdf/0xf0
+[  299.282782] 	kernel_thread_helper+0x4/0x10
+[  299.282817] INFO: Slab 0xffffea00015b0c00 objects=7 used=7 fp=0x
+      (null) flags=0x100000000004080
+[  299.282882] INFO: Object 0xffff880056c30000 @offset=0 fp=0x          (null)
+[  299.282884]
+...
 
-Reported-and-tested-by: Lothar Wassmann <lw@karo-electronics.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/chip.c |   25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_scan.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -330,6 +330,24 @@ out_unlock:
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -1815,6 +1815,7 @@ static void scsi_finish_async_scan(struc
+ 	}
+ 	spin_unlock(&async_scan_lock);
+ 
++	scsi_autopm_put_host(shost);
+ 	scsi_host_put(shost);
+ 	kfree(data);
  }
- EXPORT_SYMBOL_GPL(handle_simple_irq);
+@@ -1841,7 +1842,6 @@ static int do_scan_async(void *_data)
  
-+/*
-+ * Called unconditionally from handle_level_irq() and only for oneshot
-+ * interrupts from handle_fasteoi_irq()
-+ */
-+static void cond_unmask_irq(struct irq_desc *desc)
-+{
-+	/*
-+	 * We need to unmask in the following cases:
-+	 * - Standard level irq (IRQF_ONESHOT is not set)
-+	 * - Oneshot irq which did not wake the thread (caused by a
-+	 *   spurious interrupt or a primary handler handling it
-+	 *   completely).
-+	 */
-+	if (!irqd_irq_disabled(&desc->irq_data) &&
-+	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot)
-+		unmask_irq(desc);
-+}
-+
- /**
-  *	handle_level_irq - Level type irq handler
-  *	@irq:	the interrupt number
-@@ -362,8 +380,8 @@ handle_level_irq(unsigned int irq, struc
- 
- 	handle_irq_event(desc);
- 
--	if (!irqd_irq_disabled(&desc->irq_data) && !(desc->istate & IRQS_ONESHOT))
--		unmask_irq(desc);
-+	cond_unmask_irq(desc);
-+
- out_unlock:
- 	raw_spin_unlock(&desc->lock);
+ 	do_scsi_scan_host(shost);
+ 	scsi_finish_async_scan(data);
+-	scsi_autopm_put_host(shost);
+ 	return 0;
  }
-@@ -417,6 +435,9 @@ handle_fasteoi_irq(unsigned int irq, str
- 	preflow_handler(desc);
- 	handle_irq_event(desc);
  
-+	if (desc->istate & IRQS_ONESHOT)
-+		cond_unmask_irq(desc);
-+
- out_eoi:
- 	desc->irq_data.chip->irq_eoi(&desc->irq_data);
- out_unlock:
+@@ -1869,7 +1869,7 @@ void scsi_scan_host(struct Scsi_Host *sh
+ 	p = kthread_run(do_scan_async, data, "scsi_scan_%d", shost->host_no);
+ 	if (IS_ERR(p))
+ 		do_scan_async(data);
+-	/* scsi_autopm_put_host(shost) is called in do_scan_async() */
++	/* scsi_autopm_put_host(shost) is called in scsi_finish_async_scan() */
+ }
+ EXPORT_SYMBOL(scsi_scan_host);
+ 
 
 
