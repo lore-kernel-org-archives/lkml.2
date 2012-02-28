@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab2B1DRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 22:17:10 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:53021 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab2B1DRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 22:17:07 -0500
-From: James Bottomley <jbottomley@parallels.com>
-To: Mike Frysinger <vapier@gentoo.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "kyle@mcmartin.ca" <kyle@mcmartin.ca>, "deller@gmx.de" <deller@gmx.de>,
-        "dave.anglin@bell.net" <dave.anglin@bell.net>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
- for 64 bit.
-Thread-Topic: [PATCH v2] parisc: dont unconditionally override CROSS_COMPILE
- for 64 bit.
-Thread-Index: AQHM9ZLLA74ijEZElUmnORY0ttBzN5ZRy/kAgAAGK4CAADLGAIAAJOsA
-Date: Tue, 28 Feb 2012 03:17:01 +0000
-Message-ID: <1330399020.2822.106.camel@dabdike.int.hansenpartnership.com>
-References: <1330298813-17262-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1330378864.2822.92.camel@dabdike.int.hansenpartnership.com>
-	 <1330380189.2822.95.camel@dabdike.int.hansenpartnership.com>
-	 <201202272004.55187.vapier@gentoo.org>
-In-Reply-To: <201202272004.55187.vapier@gentoo.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.243.235.53]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <407E606600900B499DDE6838030C21F5@sw.swsoft.com>
-MIME-Version: 1.0
+	id S932491Ab2B1D3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 22:29:37 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35385 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468Ab2B1D3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 22:29:19 -0500
+Date: Tue, 28 Feb 2012 14:29:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: linux-next: manual merge of the driver-core tree with the pci tree
+Message-Id: <20120228142909.48fa1eea6980eaffa27abfdc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1S3Hhs4024060
 
-On Mon, 2012-02-27 at 20:04 -0500, Mike Frysinger wrote:
-> On Monday 27 February 2012 17:03:10 James Bottomley wrote:
-> > --- a/arch/parisc/Makefile
-> > +++ b/arch/parisc/Makefile
-> > 
-> > -CROSS_COMPILE	:= hppa64-linux-gnu-
-> > +
-> > +# if no default set, try to find the corresponding 64 bit compiler
-> > +ifeq ($(CROSS_COMPILE),)
-> > +CROSS_COMPILE	:= $(shell $(CC) -dumpmachine | sed s/hppa-\\\(.*\\\)/hppa64-\\1-/)
-> > +endif
-> 
-> fails when using "hppa2.0-xxx".  perhaps:
-> CROSS_COMPILE ?= $(shell $(CC) -dumpmachine | sed 's/^hppa[^-]*-/hppa64-/')
-> 
-> don't even need the ifeq check then
+--Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How is that different from Carlos' suggestion?  The reason it doesn't
-work is the same ... CROSS_COMPILE is defined to be empty.
+Hi Greg,
 
-James
+Today's linux-next merge of the driver-core tree got a conflict in
+include/linux/pci.h between commit 6754b9e9c335 ("PCI: Rename
+pci_remove_behind_bridge to pci_stop_and_remove_behind_bridge") from the
+pci tree and commit aad4f4000cec ("PCI: Add helper macro for
+pci_register_driver boilerplate") from the driver-core tree.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/pci.h
+index 5584aac,d4afd70..0000000
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@@ -947,7 -946,20 +947,20 @@@ int __must_check __pci_register_driver(
+  	__pci_register_driver(driver, THIS_MODULE, KBUILD_MODNAME)
+ =20
+  void pci_unregister_driver(struct pci_driver *dev);
++=20
++ /**
++  * module_pci_driver() - Helper macro for registering a PCI driver
++  * @__pci_driver: pci_driver struct
++  *
++  * Helper macro for PCI drivers which do not do anything special in module
++  * init/exit. This eliminates a lot of boilerplate. Each module may only
++  * use this macro once, and calling it replaces module_init() and module_=
+exit()
++  */
++ #define module_pci_driver(__pci_driver) \
++ 	module_driver(__pci_driver, pci_register_driver, \
++ 		       pci_unregister_driver)
++=20
+ -void pci_remove_behind_bridge(struct pci_dev *dev);
+ +void pci_stop_and_remove_behind_bridge(struct pci_dev *dev);
+  struct pci_driver *pci_dev_driver(const struct pci_dev *dev);
+  int pci_add_dynid(struct pci_driver *drv,
+  		  unsigned int vendor, unsigned int device,
+
+--Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTEoFAAoJEECxmPOUX5FE3b8P/2j2QSwUfAgpJGPeROzfhhw7
+snQT6CCz4FQ9oBdNUINH1g6MdCwrMcw5l7kBPqi2XTX3ZnInijePxN68N+CAkF01
+HFXXEB+age1bYl3gfjDpBYygtsw+W97EvbT8B/7V9tIyVt9gZBNYH/a4qiKH4mBE
+rZRoHFmTROfZhZIBOsYNH4lGsCvvUTcVqlUmFoY2zRYzMx3KnlMII1NZI6Pi9pc8
+WBUvuQ6Z7dyO1IVDgxpf+Jy84xPk8yjSnpmicft/P4pnWltgJrVFPAhK5eaFRIwr
+yYyYdWiFBzsyX8AWhAEzAr2021zb1Jp+FO/3aGogtq6vFsqa6WOyHB+qN75cGvmK
+YiFHFOcHsgaoGAaYDJPe/FidcRF2i8etZRzgXOc0VFZ+a8xu8L8g9FdLD8tgkNc9
+oymqqJNSDRDDVu9MBOLnsRCzIIMbzC+behjvNwY+ZVo/7t0+otxJ1+7H8qvKXo88
+NnMafmLo4qdteGTACYaj81aWlWZ7AeGsxKyvHMXkVwp1liA6ZCEROFmInmJIuFm/
+bXCvJt8XkNiDVLmG1mOi5uNoV8FsCiVhC39Tbdq+bY1lwnAmCzK71ooU/ZpFV6Sz
+S6DfwMZia+dl+MkkYOOOWHO8UeF0NN5ke+F6kBzC77+f5cxtNtA15vrOAVXkIHsc
+E3bG0yjAQBc01EgOLpg3
+=3ckH
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__28_Feb_2012_14_29_09_+1100_BPmzFf==W/MQNg4M--
