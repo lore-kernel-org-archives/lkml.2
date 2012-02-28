@@ -1,157 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965999Ab2B1SqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 13:46:03 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:39489 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757131Ab2B1SqA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 13:46:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of khilman@ti.com designates 10.68.225.231 as permitted sender) smtp.mail=khilman@ti.com
-From: Kevin Hilman <khilman@ti.com>
-To: "DebBarma\, Tarun Kanti" <tarun.kanti@ti.com>
-Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, tony@atomide.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
-Organization: Texas Instruments, Inc.
-References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
-	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
-	<87ty2bu91e.fsf@ti.com>
-	<CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
-Date: Tue, 28 Feb 2012 10:45:57 -0800
-In-Reply-To: <CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
-	(Tarun Kanti DebBarma's message of "Tue, 28 Feb 2012 15:09:05 +0530")
-Message-ID: <87r4xeyexm.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S966008Ab2B1StW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 13:49:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965988Ab2B1StV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 13:49:21 -0500
+Date: Tue, 28 Feb 2012 13:49:01 -0500
+From: Jason Baron <jbaron@redhat.com>
+Message-Id: <201202281849.q1SIn1p2023270@int-mx10.intmail.prod.int.phx2.redhat.com>
+To: mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, rostedt@goodmis.org, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] jump label: Change static_key_enabled() function -> 'static inline'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"DebBarma, Tarun Kanti" <tarun.kanti@ti.com> writes:
+In the jump label enabled case, calling static_key_enabled() results in
+a function call. The function returns the results of a compare, so it
+really doesn't need the overhead of a full function call. Let's make
+it 'static inline' for both the jump label enabled and disabled cases.
 
-> On Tue, Feb 28, 2012 at 5:24 AM, Kevin Hilman <khilman@ti.com> wrote:
->> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
->>
->>> Since we already have bank->context.wake_en to keep track
->>> of gpios which are wakeup enabled, there is no need to have
->>> this field any more.
->>>
->>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
->>
->> I'm not crazy about this change...
->>
->>> ---
->>>  drivers/gpio/gpio-omap.c |   11 +++++------
->>>  1 files changed, 5 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
->>> index 64f15d5..b62e861 100644
->>> --- a/drivers/gpio/gpio-omap.c
->>> +++ b/drivers/gpio/gpio-omap.c
->>> @@ -53,7 +53,6 @@ struct gpio_bank {
->>>       void __iomem *base;
->>>       u16 irq;
->>>       u16 virtual_irq_start;
->>> -     u32 suspend_wakeup;
->>>       u32 non_wakeup_gpios;
->>>       u32 enabled_non_wakeup_gpios;
->>>       struct gpio_regs context;
->>> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
->>>
->>>       spin_lock_irqsave(&bank->lock, flags);
->>>       if (enable)
->>> -             bank->suspend_wakeup |= gpio_bit;
->>> +             bank->context.wake_en |= gpio_bit;
->>>       else
->>> -             bank->suspend_wakeup &= ~gpio_bit;
->>> +             bank->context.wake_en &= ~gpio_bit;
->>
->> The bank->context values are expected to be copies of the actual
->> register contents, and here that is clearly not the case.
-> Right, it should have been this:
->
->         if (enable)
-> -               bank->suspend_wakeup |= gpio_bit;
-> +               bank->context.wake_en |= gpio_bit;
->         else
-> -               bank->suspend_wakeup &= ~gpio_bit;
-> +               bank->context.wake_en &= ~gpio_bit;
-> +
-> +       __raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
->
->>
->> With this change, you're using the context register to track changes
->> that you *might* eventually write to the register.
-> The above change ensures that bank->context.wake_en reflects the
-> latest register value.
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ include/linux/jump_label.h |   11 +++++------
+ kernel/jump_label.c        |    6 ------
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
-OK, but that changes the behavior of the current code.
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 2172da2..c513a40 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -127,7 +127,6 @@ extern int jump_label_text_reserved(void *start, void *end);
+ extern void static_key_slow_inc(struct static_key *key);
+ extern void static_key_slow_dec(struct static_key *key);
+ extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
+-extern bool static_key_enabled(struct static_key *key);
+ extern void jump_label_apply_nops(struct module *mod);
+ extern void
+ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+@@ -198,11 +197,6 @@ static inline int jump_label_text_reserved(void *start, void *end)
+ static inline void jump_label_lock(void) {}
+ static inline void jump_label_unlock(void) {}
+ 
+-static inline bool static_key_enabled(struct static_key *key)
+-{
+-	return (atomic_read(&key->enabled) > 0);
+-}
+-
+ static inline int jump_label_apply_nops(struct module *mod)
+ {
+ 	return 0;
+@@ -224,4 +218,9 @@ jump_label_rate_limit(struct static_key_deferred *key,
+ #define STATIC_KEY_INIT STATIC_KEY_INIT_FALSE
+ #define jump_label_enabled static_key_enabled
+ 
++static inline bool static_key_enabled(struct static_key *key)
++{
++	return (atomic_read(&key->enabled) > 0);
++}
++
+ #endif	/* _LINUX_JUMP_LABEL_H */
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index bf9dcad..4304919 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -29,12 +29,6 @@ void jump_label_unlock(void)
+ 	mutex_unlock(&jump_label_mutex);
+ }
+ 
+-bool static_key_enabled(struct static_key *key)
+-{
+-	return (atomic_read(&key->enabled) > 0);
+-}
+-EXPORT_SYMBOL_GPL(static_key_enabled);
+-
+ static int jump_label_cmp(const void *a, const void *b)
+ {
+ 	const struct jump_entry *jea = a;
+-- 
+1.7.7.6
 
-The current code *only* writes this register in suspend and resume.
-_set_gpio_wakeup() just records the value that is going to be written in
-suspend.
-
-Now, I'm not saying we shouldn't make the changes you propose above.  We
-probably should be updating the wake-enable register whenever
-_set_gpio_wakeup() is run so that GPIO wakeups work across runtime
-suspend/resume as well.
-
-However, you should probably make that functional change a separate
-patch *before* you do $SUBJECT patch which just changes the variable
-used to cache the register contents.
-
-Kevin
-
-
-> There are two distinct paths through which bank->context.wake_en is
-> updated now, viz:
-> Path1:-
-> chip.irq_set_type() --> gpio_irq_type() --> _set_gpio_triggering() -->
-> set_gpio_trigger()
->
-> Path2:-
-> chip.irq_set_wake() --> gpio_wake_enable() --> irq_set_wake()
->
->>
->> IMO, this is more confusing than having a separate field to track this.
-> So, there is no need have a separate field to keep track of this.
-> I hope my understanding is right.
-> --
-> Tarun
->
->>
->> Kevin
->>
->>>       spin_unlock_irqrestore(&bank->lock, flags);
->>>
->>> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
->>>
->>>       spin_lock_irqsave(&bank->lock, flags);
->>>       bank->context.wake_en = __raw_readl(mask_reg);
->>> -     __raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
->>> +     __raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
->>>       spin_unlock_irqrestore(&bank->lock, flags);
->>>
->>>       return 0;
->>> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
->>>       if (!bank->mod_usage || !bank->loses_context)
->>>               return 0;
->>>
->>> -     if (!bank->regs->wkup_en || !bank->suspend_wakeup)
->>> +     if (!bank->regs->wkup_en || !bank->context.wake_en)
->>>               return 0;
->>>
->>>       spin_lock_irqsave(&bank->lock, flags);
->>>       _gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
->>> -     _gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
->>> +     _gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
->>>       spin_unlock_irqrestore(&bank->lock, flags);
->>>
->>>       return 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
