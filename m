@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2B1Blg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:41:36 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab2B1BGO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932185Ab2B1BGO (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Feb 2012 20:06:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.241.170 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756422Ab2B1BGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Feb 2012 20:06:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.239.165 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010207.185235117@linuxfoundation.org>
+Message-Id: <20120228010206.714589800@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:22 -0800
+Date: Mon, 27 Feb 2012 17:02:19 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>,
-        Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Sean Hefty <sean.hefty@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/73] gro: more generic L2 header check
+        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nico@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rabin Vincent <rabin@rab.in>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 16/73] ARM: 7325/1: fix v7 boot with lockdep enabled
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,59 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Rabin Vincent <rabin@rab.in>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 8e43a905dd574f54c5715d978318290ceafbe275 upstream.
 
-[ Upstream commit 5ca3b72c5da47d95b83857b768def6172fbc080a ]
+Bootup with lockdep enabled has been broken on v7 since b46c0f74657d
+("ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR").
 
-Shlomo Pongratz reported GRO L2 header check was suited for Ethernet
-only, and failed on IB/ipoib traffic.
+This is because v7_setup (which is called very early during boot) calls
+v7_flush_dcache_all, and the save_and_disable_irqs added by that patch
+ends up attempting to call into lockdep C code (trace_hardirqs_off())
+when we are in no position to execute it (no stack, MMU off).
 
-He provided a patch faking a zeroed header to let GRO aggregates frames.
+Fix this by using a notrace variant of save_and_disable_irqs.  The code
+already uses the notrace variant of restore_irqs.
 
-Roland Dreier, Herbert Xu, and others suggested we change GRO L2 header
-check to be more generic, ie not assuming L2 header is 14 bytes, but
-taking into account hard_header_len.
-
-__napi_gro_receive() has special handling for the common case (Ethernet)
-to avoid a memcmp() call and use an inline optimized function instead.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Shlomo Pongratz <shlomop@mellanox.com>
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Tested-by: Sean Hefty <sean.hefty@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3434,14 +3434,20 @@ static inline gro_result_t
- __napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
- {
- 	struct sk_buff *p;
-+	unsigned int maclen = skb->dev->hard_header_len;
+---
+ arch/arm/include/asm/assembler.h |    5 +++++
+ arch/arm/mm/cache-v7.S           |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -137,6 +137,11 @@
+ 	disable_irq
+ 	.endm
  
- 	for (p = napi->gro_list; p; p = p->next) {
- 		unsigned long diffs;
- 
- 		diffs = (unsigned long)p->dev ^ (unsigned long)skb->dev;
- 		diffs |= p->vlan_tci ^ skb->vlan_tci;
--		diffs |= compare_ether_header(skb_mac_header(p),
--					      skb_gro_mac_header(skb));
-+		if (maclen == ETH_HLEN)
-+			diffs |= compare_ether_header(skb_mac_header(p),
-+						      skb_gro_mac_header(skb));
-+		else if (!diffs)
-+			diffs = memcmp(skb_mac_header(p),
-+				       skb_gro_mac_header(skb),
-+				       maclen);
- 		NAPI_GRO_CB(p)->same_flow = !diffs;
- 		NAPI_GRO_CB(p)->flush = 0;
- 	}
++	.macro	save_and_disable_irqs_notrace, oldcpsr
++	mrs	\oldcpsr, cpsr
++	disable_irq_notrace
++	.endm
++
+ /*
+  * Restore interrupt state previously stored in a register.  We don't
+  * guarantee that this will preserve the flags.
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -55,7 +55,7 @@ loop1:
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
+ #ifdef CONFIG_PREEMPT
+-	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
+ #endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
 
 
