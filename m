@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964930Ab2B1Nhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:37:35 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56902 "EHLO
+	id S965305Ab2B1Nhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:37:52 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56893 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756545Ab2B1Nhe (ORCPT
+	by vger.kernel.org with ESMTP id S1757224Ab2B1Nhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:37:34 -0500
+	Tue, 28 Feb 2012 08:37:32 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: [RFC][PATCH 5/6] x86, efi: Fix endian issues and unaligned accesses
-Date: Tue, 28 Feb 2012 13:37:24 +0000
-Message-Id: <1330436245-24875-6-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
+Subject: [RFC][PATCH 3/6] x86, mkpiggy: Don't open code put_unaligned_le32()
+Date: Tue, 28 Feb 2012 13:37:22 +0000
+Message-Id: <1330436245-24875-4-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
 References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
@@ -25,120 +23,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-We may need to convert the endianness of the data we read from/write
-to 'buf', so let's use {get,put}_unaligned_le32() to do that. Failure
-to do so can result in accessing invalid memory, leading to a
-segfault.  Stephen Rothwell noticed this bug while cross-building an
-x86_64 allmodconfig kernel on PowerPC.
-
-We need to read from and write to 'buf' a byte at a time otherwise
-it's possible we'll perform an unaligned access, which can lead to bus
-errors when cross-building an x86 kernel on risc architectures.
+Use the new headers in tools/include instead of rolling our own
+put_unaligned_le32() implementation.
 
 Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/boot/tools/build.c |   31 +++++++++++++++----------------
- 1 files changed, 15 insertions(+), 16 deletions(-)
+ arch/x86/boot/compressed/Makefile  |    1 +
+ arch/x86/boot/compressed/mkpiggy.c |   11 ++---------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index 4e9bd6b..f2ac95e 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -34,6 +34,7 @@
- #include <fcntl.h>
- #include <sys/mman.h>
- #include <asm/boot.h>
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index b123b9a..fd55a2f 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -22,6 +22,7 @@ LDFLAGS := -m elf_$(UTS_MACHINE)
+ LDFLAGS_vmlinux := -T
+ 
+ hostprogs-y	:= mkpiggy
++HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ 
+ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
+diff --git a/arch/x86/boot/compressed/mkpiggy.c b/arch/x86/boot/compressed/mkpiggy.c
+index 46a8238..958a641 100644
+--- a/arch/x86/boot/compressed/mkpiggy.c
++++ b/arch/x86/boot/compressed/mkpiggy.c
+@@ -29,14 +29,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <inttypes.h>
+-
+-static uint32_t getle32(const void *p)
+-{
+-	const uint8_t *cp = p;
+-
+-	return (uint32_t)cp[0] + ((uint32_t)cp[1] << 8) +
+-		((uint32_t)cp[2] << 16) + ((uint32_t)cp[3] << 24);
+-}
 +#include <tools/le_byteshift.h>
  
- typedef unsigned char  u8;
- typedef unsigned short u16;
-@@ -41,6 +42,7 @@ typedef unsigned long  u32;
+ int main(int argc, char *argv[])
+ {
+@@ -69,7 +62,7 @@ int main(int argc, char *argv[])
+ 	}
  
- #define DEFAULT_MAJOR_ROOT 0
- #define DEFAULT_MINOR_ROOT 0
-+#define DEFAULT_ROOT_DEV (DEFAULT_MAJOR_ROOT << 8 | DEFAULT_MINOR_ROOT)
+ 	ilen = ftell(f);
+-	olen = getle32(&olen);
++	olen = get_unaligned_le32(&olen);
+ 	fclose(f);
  
- /* Minimal number of setup sectors */
- #define SETUP_SECT_MIN 5
-@@ -159,7 +161,7 @@ int main(int argc, char ** argv)
- 		die("read-error on `setup'");
- 	if (c < 1024)
- 		die("The setup must be at least 1024 bytes");
--	if (buf[510] != 0x55 || buf[511] != 0xaa)
-+	if (get_unaligned_le16(&buf[510]) != 0xAA55)
- 		die("Boot block hasn't got boot flag (0xAA55)");
- 	fclose(file);
- 
-@@ -171,8 +173,7 @@ int main(int argc, char ** argv)
- 	memset(buf+c, 0, i-c);
- 
- 	/* Set the default root device */
--	buf[508] = DEFAULT_MINOR_ROOT;
--	buf[509] = DEFAULT_MAJOR_ROOT;
-+	put_unaligned_le16(DEFAULT_ROOT_DEV, &buf[508]);
- 
- 	fprintf(stderr, "Setup is %d bytes (padded to %d bytes).\n", c, i);
- 
-@@ -192,44 +193,42 @@ int main(int argc, char ** argv)
- 
- 	/* Patch the setup code with the appropriate size parameters */
- 	buf[0x1f1] = setup_sectors-1;
--	buf[0x1f4] = sys_size;
--	buf[0x1f5] = sys_size >> 8;
--	buf[0x1f6] = sys_size >> 16;
--	buf[0x1f7] = sys_size >> 24;
-+	put_unaligned_le32(sys_size, &buf[0x1f4]);
- 
- #ifdef CONFIG_EFI_STUB
- 	file_sz = sz + i + ((sys_size * 16) - sz);
- 
--	pe_header = *(unsigned int *)&buf[0x3c];
-+	pe_header = get_unaligned_le32(&buf[0x3c]);
- 
- 	/* Size of code */
--	*(unsigned int *)&buf[pe_header + 0x1c] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0x1c]);
- 
- 	/* Size of image */
--	*(unsigned int *)&buf[pe_header + 0x50] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
- 
- #ifdef CONFIG_X86_32
- 	/* Address of entry point */
--	*(unsigned int *)&buf[pe_header + 0x28] = i;
-+	put_unaligned_le32(i, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
--	*(unsigned int *)&buf[pe_header + 0xb0] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xb0]);
- 
- 	/* .text size of initialised data */
--	*(unsigned int *)&buf[pe_header + 0xb8] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xb8]);
- #else
  	/*
- 	 * Address of entry point. startup_32 is at the beginning and
- 	 * the 64-bit entry point (startup_64) is always 512 bytes
- 	 * after.
- 	 */
--	*(unsigned int *)&buf[pe_header + 0x28] = i + 512;
-+	put_unaligned_le32(i + 512, &buf[pe_header + 0x28]);
- 
- 	/* .text size */
--	*(unsigned int *)&buf[pe_header + 0xc0] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xc0]);
- 
- 	/* .text size of initialised data */
--	*(unsigned int *)&buf[pe_header + 0xc8] = file_sz;
-+	put_unaligned_le32(file_sz, &buf[pe_header + 0xc8]);
-+
- #endif /* CONFIG_X86_32 */
- #endif /* CONFIG_EFI_STUB */
- 
 -- 
 1.7.4.4
 
