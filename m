@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965229Ab2B1Bep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:34:45 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420Ab2B1BHJ (ORCPT
+	id S964811Ab2B1BHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:07:05 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964781Ab2B1BG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.130.134 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:06:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.226.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010212.141235790@linuxfoundation.org>
+Message-Id: <20120228010211.345213882@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:51 -0800
+Date: Mon, 27 Feb 2012 17:02:46 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 48/73] i387: fix sense of sanity check
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 43/73] xhci: Fix oops caused by more USB2 ports than USB3 ports.
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit c38e23456278e967f094b08247ffc3711b1029b2 upstream.
+commit 3278a55a1aebe2bbd47fbb5196209e5326a88b56 upstream.
 
-The check for save_init_fpu() (introduced in commit 5b1cbac37798: "i387:
-make irq_fpu_usable() tests more robust") was the wrong way around, but
-I hadn't noticed, because my "tests" were bogus: the FPU exceptions are
-disabled by default, so even doing a divide by zero never actually
-triggers this code at all unless you do extra work to enable them.
+The code to set the device removable bits in the USB 2.0 roothub
+descriptor was accidentally looking at the USB 3.0 port registers
+instead of the USB 2.0 registers.  This can cause an oops if there are
+more USB 2.0 registers than USB 3.0 registers.
 
-So if anybody did enable them, they'd get one spurious warning.
+This should be backported to kernels as old as 2.6.39, that contain the
+commit 4bbb0ace9a3de8392527e3c87926309d541d3b00 "xhci: Return a USB 3.0
+hub descriptor for USB3 roothub."
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/i387.h |    2 +-
+ drivers/usb/host/xhci-hub.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -404,7 +404,7 @@ static inline void irq_ts_restore(int TS
-  */
- static inline void save_init_fpu(struct task_struct *tsk)
- {
--	WARN_ON_ONCE(task_thread_info(tsk)->status & TS_USEDFPU);
-+	WARN_ON_ONCE(!(task_thread_info(tsk)->status & TS_USEDFPU));
- 	preempt_disable();
- 	__save_init_fpu(tsk);
- 	stts();
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -75,7 +75,7 @@ static void xhci_usb2_hub_descriptor(str
+ 	 */
+ 	memset(port_removable, 0, sizeof(port_removable));
+ 	for (i = 0; i < ports; i++) {
+-		portsc = xhci_readl(xhci, xhci->usb3_ports[i]);
++		portsc = xhci_readl(xhci, xhci->usb2_ports[i]);
+ 		/* If a device is removable, PORTSC reports a 0, same as in the
+ 		 * hub descriptor DeviceRemovable bits.
+ 		 */
 
 
