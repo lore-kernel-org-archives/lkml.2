@@ -1,128 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab2B1KUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 05:20:14 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:32071 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab2B1KUM (ORCPT
+	id S964930Ab2B1KUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 05:20:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51391 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964872Ab2B1KUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 05:20:12 -0500
-Message-ID: <4F4CAA43.3020805@siemens.com>
-Date: Tue, 28 Feb 2012 11:19:47 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
+	Tue, 28 Feb 2012 05:20:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.133.204 as permitted sender) smtp.mail=dave.martin@linaro.org
+Date: Tue, 28 Feb 2012 10:20:40 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C8EEB.8040709@cn.fujitsu.com> <4F4C9F8C.1060901@siemens.com> <4F4CA17F.4020504@cn.fujitsu.com>
-In-Reply-To: <4F4CA17F.4020504@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+Message-ID: <20120228102040.GB2063@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+ <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+ <20120227180355.GB2023@linaro.org>
+ <1330371219.10008.34.camel@dagon.hellion.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330371219.10008.34.camel@dagon.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-28 10:42, Wen Congyang wrote:
-> At 02/28/2012 05:34 PM, Jan Kiszka Wrote:
->> On 2012-02-28 09:23, Wen Congyang wrote:
->>> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
->>>> On 2012-02-27 04:01, Wen Congyang wrote:
->>>>> We can know the guest is paniced when the guest runs on xen.
->>>>> But we do not have such feature on kvm. This patch implemnts
->>>>> this feature, and the implementation is the same as xen:
->>>>> register panic notifier, and call hypercall when the guest
->>>>> is paniced.
->>>>>
->>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>> ---
->>>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
->>>>>  arch/x86/kvm/svm.c       |    8 ++++++--
->>>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
->>>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
->>>>>  include/linux/kvm.h      |    1 +
->>>>>  include/linux/kvm_para.h |    1 +
->>>>>  6 files changed, 37 insertions(+), 6 deletions(-)
->>>>>
->>>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->>>>> index f0c6fd6..b928d1d 100644
->>>>> --- a/arch/x86/kernel/kvm.c
->>>>> +++ b/arch/x86/kernel/kvm.c
->>>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
->>>>>  	.notifier_call = kvm_pv_reboot_notify,
->>>>>  };
->>>>>  
->>>>> +static int
->>>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
->>>>> +{
->>>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
->>>>> +	return NOTIFY_DONE;
->>>>> +}
->>>>> +
->>>>> +static struct notifier_block kvm_pv_panic_nb = {
->>>>> +	.notifier_call = kvm_pv_panic_notify,
->>>>> +};
->>>>> +
->>>>
->>>> You should split up host and guest-side changes.
->>>>
->>>>>  static u64 kvm_steal_clock(int cpu)
->>>>>  {
->>>>>  	u64 steal;
->>>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
->>>>>  
->>>>>  	paravirt_ops_setup();
->>>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
->>>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
->>>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
->>>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
->>>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
->>>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->>>>> index 0b7690e..38b4705 100644
->>>>> --- a/arch/x86/kvm/svm.c
->>>>> +++ b/arch/x86/kvm/svm.c
->>>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
->>>>>  
->>>>>  static int vmmcall_interception(struct vcpu_svm *svm)
->>>>>  {
->>>>> +	int ret;
->>>>> +
->>>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
->>>>>  	skip_emulated_instruction(&svm->vcpu);
->>>>> -	kvm_emulate_hypercall(&svm->vcpu);
->>>>> -	return 1;
->>>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
->>>>> +
->>>>> +	/* Ignore the error? */
->>>>> +	return ret == 0 ? 0 : 1;
->>>>
->>>> Why can't kvm_emulate_hypercall return the right value?
->>>
->>> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
->>> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
->>> If vcpu's CPL > 0, does kvm need to exit and tell it to
->>> qemu?
->>
->> No, there is currently no exit to userspace due to hypercalls, neither
->> of HV nor KVM kind.
->>
->> The point is that the return code of kvm_emulate_hypercall is unused so
->> far, so you can easily redefine it to encode continue vs. exit to
->> userspace. Once someone has different needs, this could still be
->> refactored again.
+On Mon, Feb 27, 2012 at 07:33:39PM +0000, Ian Campbell wrote:
+> On Mon, 2012-02-27 at 18:03 +0000, Dave Martin wrote:
+> > On Mon, Feb 27, 2012 at 04:27:23PM +0000, Ian Campbell wrote:
+> > > On Thu, 2012-02-23 at 17:48 +0000, Stefano Stabellini wrote:
+> > > > We need a register to pass the hypercall number because we might not
+> > > > know it at compile time and HVC only takes an immediate argument.
+> > > > 
+> > > > Among the available registers r12 seems to be the best choice because it
+> > > > is defined as "intra-procedure call scratch register".
+> > > 
+> > > R12 is not accessible from the 16 bit "T1" Thumb encoding of mov
+> > > immediate (which can only target r0..r7).
+> > 
+> > This is untrue.  The important instructions, like MOV Rd, Rn can access
+> > all the regs.  But anyway, there is no such thing as a Thumb-1 kernel,
+> > so we won't really care.
 > 
-> So, it is OK to change the return value of kvm_hv_hypercall() if vcpu's
-> CPL > 0?
+> I did say "mov immediate", which is the one which matters when loading a
+> constant hypercall number (the common case). AFAIK the "mov Rd, #imm" T1
+> encoding cannot access all registers.
+> 
+> The "mov rd,rn" form only helps for syscall(2) like functions, which are
+> unusual, at least for Xen, although as Stefano says, they do exist.
 
-Yes, change it to encode what vendor modules need to return to their
-callers.
+Apologies -- looks like I misread you here.  I agree, but it's probably
+a minor issue nonetheless.
 
-Jan
+> 
+> > > Since we support only ARMv7+ there are "T2" and "T3" encodings available
+> > > which do allow direct mov of an immediate into R12, but are 32 bit Thumb
+> > > instructions.
+> > > 
+> > > Should we use r7 instead to maximise instruction density for Thumb code?
+> > 
+> > The difference seems trivial when put into context, even if you code a
+> > special Thumb version of the code to maximise density (the Thumb-2 code
+> > which gets built from assembler in the kernel is very suboptimal in
+> > size, but there simply isn't a high proportion of asm code in the kernel
+> > anyway.)  I wouldn't consider the ARM/Thumb differences as an important
+> > factor when deciding on a register.
+> 
+> OK, that's useful information. thanks.
+> 
+> > One argument for _not_ using r12 for this purpose is that it is then
+> > harder to put a generic "HVC" function (analogous to the "syscall"
+> > syscall) out-of-line, since r12 could get destroyed by the call.
+> 
+> For an out of line syscall(2) wouldn't the syscall number either be in a
+> standard C calling convention argument register or on the stack when the
+> function was called, since it is just a normal argument at that point?
+> As you point out it cannot be passed in r12 (and could never be, due to
+> the clobbering).
+> 
+> The syscall function itself would have to move the arguments and syscall
+> nr etc around before issuing the syscall.
+> 
+> I think the same is true of a similar hypercall(2)
+> 
+> > If you don't think you will ever care about putting HVC out of line
+> > though, it may not matter.
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+If you have both inline and out-of-line hypercalls, it's hard to ensure
+that you never have to shuffle the registers in either case.
+
+Shuffling can be reduced but only at the expense of strange argument
+ordering in some cases when calling from C -- the complexity is probably
+not worth it.  Linux doesn't bother for its own syscalls.
+
+Note that even in assembler, a branch from one section to a label in
+another section may cause r12 to get destroyed, so you will need to be
+careful about how you code the hypervisor trap handler.  However, this
+is not different from coding exception handlers in general, so I don't
+know that it constitutes a conclusive argument on its own.
+
+My instinctive preference would therefore be for r7 (which also seems to
+be good enough for Linux syscalls) -- but it really depends how many
+arguments you expect to need to support.
+
+Cheers
+---Dave
