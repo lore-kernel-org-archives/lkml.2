@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030464Ab2B1WJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 17:09:08 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26132 "EHLO
+	id S1757372Ab2B1WJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 17:09:32 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26341 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030241Ab2B1WJE (ORCPT
+	with ESMTP id S1030241Ab2B1WJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 17:09:04 -0500
+	Tue, 28 Feb 2012 17:09:24 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,67 +18,36 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH 15/24] PCI, parisc: Register busn_res for root buses
-Date: Tue, 28 Feb 2012 14:07:34 -0800
-Message-Id: <1330466863-28469-16-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 05/24] PCI: release busn when removing bus
+Date: Tue, 28 Feb 2012 14:07:24 -0800
+Message-Id: <1330466863-28469-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
 References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090201.4F4D5059.00AD,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090209.4F4D508A.0013,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Helge Deller <deller@gmx.de>
-Cc: linux-parisc@vger.kernel.org
 ---
- drivers/parisc/dino.c    |    5 +++++
- drivers/parisc/lba_pci.c |    3 +++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/pci/remove.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
-index 0610e91..def94af 100644
---- a/drivers/parisc/dino.c
-+++ b/drivers/parisc/dino.c
-@@ -984,6 +984,10 @@ static int __init dino_probe(struct parisc_device *dev)
- 	if (dino_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index fd77e2b..04a4861 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -68,6 +68,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
  
-+	dino_dev->hba.bus_num.start = dino_current_bus;
-+	dino_dev->hba.bus_num.end = 255;
-+	dino_dev->hba.bus_num.flags |= IORESOURCE_BUS;
-+	pci_add_resource(&resources, &dino_dev->hba.bus_num);
- 	/*
- 	** It's not used to avoid chicken/egg problems
- 	** with configuration accessor functions.
-@@ -999,6 +1003,7 @@ static int __init dino_probe(struct parisc_device *dev)
- 		return 0;
- 	}
- 
-+	pci_bus_update_busn_res_end(bus, bus->subordinate);
- 	bus->subordinate = pci_scan_child_bus(bus);
- 
- 	/* This code *depends* on scanning being single threaded
-diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
-index e885764..df1e9f9 100644
---- a/drivers/parisc/lba_pci.c
-+++ b/drivers/parisc/lba_pci.c
-@@ -1503,6 +1503,9 @@ lba_driver_probe(struct parisc_device *dev)
- 	if (lba_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &lba_dev->hba.gmmio_space);
- 
-+	lba_dev->hba.bus_num.flags |= IORESOURCE_BUS;
-+	pci_add_resource(&resources, &lba_dev->hba.bus_num);
-+
- 	dev->dev.platform_data = lba_dev;
- 	lba_bus = lba_dev->hba.hba_bus =
- 		pci_create_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
+ 	down_write(&pci_bus_sem);
+ 	list_del(&pci_bus->node);
++	pci_bus_release_busn_res(pci_bus);
+ 	up_write(&pci_bus_sem);
+ 	if (!pci_bus->is_added)
+ 		return;
 -- 
 1.7.7
 
