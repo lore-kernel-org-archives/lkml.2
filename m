@@ -1,108 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964863Ab2B1Jqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 04:46:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35035 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab2B1Jq0 (ORCPT
+	id S1756725Ab2B1JtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 04:49:13 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46828 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab2B1JtH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 04:46:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.157.145 as permitted sender) smtp.mail=dave.martin@linaro.org
-Date: Tue, 28 Feb 2012 09:46:16 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-Message-ID: <20120228094616.GA2063@linaro.org>
-References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
- <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20120227175327.GA2023@linaro.org>
- <1330372125.10008.47.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330372125.10008.47.camel@dagon.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Feb 2012 04:49:07 -0500
+Message-ID: <1330422535.11248.78.camel@twins>
+Subject: Re: [RFC PATCH] kick ksoftirqd more often to please soft lockup
+ detector
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        linux-scsi@vger.kernel.org, Lukasz Dorau <lukasz.dorau@intel.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Andrzej Jakowski <andrzej.jakowski@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 28 Feb 2012 10:48:55 +0100
+In-Reply-To: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
+References: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 07:48:45PM +0000, Ian Campbell wrote:
-> On Mon, 2012-02-27 at 17:53 +0000, Dave Martin wrote:
-> > On Thu, Feb 23, 2012 at 05:48:22PM +0000, Stefano Stabellini wrote:
-> > > We need a register to pass the hypercall number because we might not
-> > > know it at compile time and HVC only takes an immediate argument.
-> > > 
-> > > Among the available registers r12 seems to be the best choice because it
-> > > is defined as "intra-procedure call scratch register".
-> > 
-> > This would be massively simplified if you didn't try to inline the HVC.
-> > Does it really need to be inline?
-> >
-> > > +#define __HYPERCALL ".word 0xe1400070 + " __HVC_IMM(XEN_HYPERCALL_TAG)
-> > 
-> > Please, do not do this.  It won't work in Thumb, where the encodings are
-> > different.
-> > 
-> > It is reasonable to expect anyone building Xen to have reasonably new
-> > tools, you you can justifiably use
-> > 
-> > AFLAGS_thisfile.o := -Wa,-march=armv7-a+virt
-> > 
-> > in the Makefile and just use the hvc instruction directly.
+On Mon, 2012-02-27 at 12:38 -0800, Dan Williams wrote:
+> An experimental hack to tease out whether we are continuing to
+> run the softirq handler past the point of needing scheduling.
 > 
-> Our aim is for guest kernel binaries not to be specific to Xen -- i.e.
-> they should be able to run on baremetal and other hypervisors as well.
-> The differences should only be in the device-tree passed to the kernel.
+> It allows only one trip through __do_softirq() as long as need_resched()
+> is set which hopefully creates the back pressure needed to get ksoftirqd
+> scheduled.
 > 
-> > Of course, this is only practical if the HVC invocation is not inlined.
+> Targeted to address reports like the following that are produced
+> with i/o tests to a sas domain with a large number of disks (48+), and
+> lots of debugging enabled (slub_deubg, lockdep) that makes the
+> block+scsi softirq path more cpu-expensive than normal.
 > 
-> I suppose we could make the stub functions out of line, we just copied
-> what Xen does on x86.
+> With this patch applied the softlockup detector seems appeased, but it
+> seems odd to need changes to kernel/softirq.c so maybe I have overlooked
+> something that needs changing at the block/scsi level?
 > 
-> The only thing which springs to mind is that 5 argument hypercalls will
-> end up pushing the fifth argument to the stack only to pop it back into
-> r4 for the hypercall and IIRC it also needs to preserve r4 (callee saved
-> reg) which is going to involve some small amount of code to move stuff
-> around too.
-> 
-> So by inlining the functions we avoid some thunking because the compiler
-> would know exactly what was happening at the hypercall site.
+> BUG: soft lockup - CPU#3 stuck for 22s! [kworker/3:1:78] 
 
-True ...
+So you're stuck in softirq for 22s+, max_restart is 10, this gives that
+on average you spend 2.2s+ per softirq invocation, this is completely
+absolutely bonkers. Softirq handlers should never consume significant
+amount of cpu-time.
 
-> 
-> We don't currently have any 6 argument hypercalls but the same would
-> extend there.
-> 
-> > If we can't avoid macro-ising HVC, we should do it globally, not locally
-> > to the Xen code.  That way we at least keep all the horror in one place.
-> 
-> That sounds like a good idea to me.
-> 
-> Given that Stefano is proposing to make the ISS a (per-hypervisor)
-> constant we could consider just defining the Thumb and non-Thumb
-> constants instead of doing all the construction with the __HVC_IMM stuff
-> -- that would remove a big bit of the macroization.
+Thomas, think its about time we put something like the below in?
 
-It's not quite as simple as that -- emitting instructions using data
-directives is not endianness safe, and even in the cases where .long gives
-the right result for ARM, it gives the wrong result for 32-bit Thumb
-instructions if the opcode is given in human-readable order.
 
-I was trying to solve the same problem for the kvm guys with some global
-macros -- I'm aiming to get a patch posted soon, so I'll make sure
-you're on CC.
+---
+ kernel/softirq.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-Cheers
----Dave
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index ff066a4..6137ee1 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -210,6 +210,7 @@ asmlinkage void __do_softirq(void)
+ 	__u32 pending;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	int cpu;
++	u64 start, callback, now;
+ 
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+@@ -223,6 +224,8 @@ asmlinkage void __do_softirq(void)
+ 	/* Reset the pending bitmask before enabling irqs */
+ 	set_softirq_pending(0);
+ 
++	start = callback = cpu_clock(cpu);
++
+ 	local_irq_enable();
+ 
+ 	h = softirq_vec;
+@@ -246,6 +249,15 @@ asmlinkage void __do_softirq(void)
+ 				preempt_count() = prev_count;
+ 			}
+ 
++			now = cpu_clock(cpu);
++			if (now - callback > TICK_NSEC / 4) {
++				printk(KERN_ERR "softirq took longer than 1/4 tick: "
++						"%u %s %p\n", vec_nr, 
++						softirq_to_name[vec_nr],
++						h->action);
++			}
++			callback = now;
++
+ 			rcu_bh_qs(cpu);
+ 		}
+ 		h++;
+@@ -254,6 +266,10 @@ asmlinkage void __do_softirq(void)
+ 
+ 	local_irq_disable();
+ 
++	now = cpu_clock(cpu);
++	if (now - start > TICK_NSEC / 2)
++		printk(KERN_ERR "softirq loop took longer than 1/2 tick\n");
++
+ 	pending = local_softirq_pending();
+ 	if (pending && --max_restart)
+ 		goto restart;
+
