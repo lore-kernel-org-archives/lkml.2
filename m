@@ -1,147 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2B1A5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 19:57:08 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46989 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2B1A5G (ORCPT
+	id S1755422Ab2B1A6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 19:58:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45113 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab2B1A6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 19:57:06 -0500
-Date: Mon, 27 Feb 2012 16:19:19 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while
- event queue is not empty
-Message-ID: <20120228001919.GG7666@count0.beaverton.ibm.com>
-References: <201202070200.55505.rjw@sisk.pl>
- <201202220031.46219.rjw@sisk.pl>
- <201202220034.58836.rjw@sisk.pl>
- <20120224051649.GB7666@count0.beaverton.ibm.com>
- <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgeaRHJ=FuOP2E4vj6OcX41nHmmB2bjr8Gq8NUXBCdXA2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022800-6148-0000-0000-000003CCF66F
+	Mon, 27 Feb 2012 19:58:14 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 28 Feb 2012 09:56:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 14/21] mm: introduce lruvec locking primitives
+Message-Id: <20120228095642.39eaab28.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120223135247.12988.49745.stgit@zurg>
+References: <20120223133728.12988.5432.stgit@zurg>
+	<20120223135247.12988.49745.stgit@zurg>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 08:25:30PM -0800, Arve Hjønnevåg wrote:
-> On Thu, Feb 23, 2012 at 9:16 PM, Matt Helsley <matthltc@us.ibm.com> wrote:
-> > On Wed, Feb 22, 2012 at 12:34:58AM +0100, Rafael J. Wysocki wrote:
-> >> From: Arve Hjønnevåg <arve@android.com>
-> >>
-> >> Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
-> >> an evdev client event queue, such that it will be active whenever the
-> >> queue is not empty.  Then, all events in the queue will be regarded
-> >> as wakeup events in progress and pm_get_wakeup_count() will block (or
-> >> return false if woken up by a signal) until they are removed from the
-> >> queue.  In consequence, if the checking of wakeup events is enabled
-> >> (e.g. throught the /sys/power/wakeup_count interface), the system
-> >> won't be able to go into a sleep state until the queue is empty.
-> >>
-> >> This allows user space processes to handle situations in which they
-> >> want to do a select() on an evdev descriptor, so they go to sleep
-> >> until there are some events to read from the device's queue, and then
-> >> they don't want the system to go into a sleep state until all the
-> >> events are read (presumably for further processing).  Of course, if
-> >> they don't want the system to go into a sleep state _after_ all the
-> >> events have been read from the queue, they have to use a separate
-> >> mechanism that will prevent the system from doing that and it has
-> >> to be activated before reading the first event (that also may be the
-> >> last one).
-> >
-> > I haven't seen this idea mentioned before but I must admit I haven't
-> > been following this thread too closely so apologies (and don't bother
-> > rehashing) if it has:
-> >
-> > Could you just add this to epoll so that any fd userspace chooses would be
-> > capable of doing this without introducing potentially ecclectic ioctl
-> > interfaces?
-> >
+On Thu, 23 Feb 2012 17:52:47 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+
+> This is initial preparation for lru_lock splitting.
 > 
-> This is an interesting idea, but I'm not sure how well it would work.
+> This locking primites designed to hide splitted nature of lru_lock
+> and to avoid overhead for non-splitted lru_lock in non-memcg case.
 > 
-> I looked at the epoll code and it looks like it is possible to
-> activate the wakeup-source from the wait queue function it uses. The
-> epoll callback will happen without holding evdev client buffer_lock,
-> so the wakeup-source and buffer state will not always be in sync (this
-> may be OK, but require more thought). This callback is also called if
-> no data was added to the queue we are polling on because another
-> client has grabbed the input device (is this a bug or intended?).
+> * Lock via lruvec reference
 > 
-> There is no call into the epoll code when input queue is emptied, so
-> we can't deactivate the wakeup-source until epoll_wait is called
-> again. This also should be workable, but result in different stats.
+> lock_lruvec(lruvec, flags)
+> lock_lruvec_irq(lruvec)
 > 
-> It does not look like the normal poll and select interfaces can be
-> extended the same way (since they remove themselves from the
-> wait-queue before returning to user-space), so user-space has to be
-
-Yup, that is exactly why epoll is so well suited to this.
-
-> changed to use epoll even if select or poll would be a better fit.
-
-Either way, modification of application code is necessary, right?
-
-> I don't know how many other drivers this would work for. The input
-> driver will wake up user-space from the same thread or interrupt
-> handler that queued the event, but other drivers may defer this to
-> another thread which makes an epoll wakeup-source insufficient.
-
-I don't understand how this would be insufficient. So long as the
-interrupt causes the wakeup source to prevent the machine from suspending
-before finishing interrupt handling does it matter whether the event
-handling itself is deferred?
-
-In case there's some confusion: I'm not saying that this idea will solve
-all of the problems, especially:
-
-> >> Of course, if
-> >> they don't want the system to go into a sleep state _after_ all the
-> >> events have been read from the queue, they have to use a separate
-> >> mechanism that will prevent the system from doing that and it has
-> >> to be activated before reading the first event (that also may be
-> >> the
-> >> last one).
-
-(endquote)
-
+> * Lock via page reference
 > 
-> ...
-> >> +     snprintf(name, sizeof(name), "%s-%d",
-> >> +              dev_name(&evdev->dev), task_tgid_vnr(current));
-> >
-> > This does not look like it will work well with tasks in different pid
-> > namespaces. What should happen, I think, is the wakeup_source should hold a
-> > reference to either the struct pid of current or current itself. Then
-> > when someone reads the file you should get the pid vnr in the reader's
-> > pid namespace. That way instead of a bogus pid vnr 0 would show up if
-> > "current" here is not in the reader's pid namepsace.
-> >
+> lock_page_lruvec(page, flags)
+> lock_page_lruvec_irq(page)
+> relock_page_lruvec(lruvec, page, flags)
+> relock_page_lruvec_irq(lruvec, page)
+> __relock_page_lruvec(lruvec, page) ( lruvec != NULL, page in same zone )
 > 
-> The pid here is only used for debugging purposes, and used less than
-> the dev_name. I don't think tracking pid namespaces is worth the
-> trouble here, so if this is a real problem we can just drop the pid
-> from the name for now.
+> They always returns pointer to some locked lruvec, page anyway can be
+> not in lru, PageLRU() sign is stable while we hold returned lruvec lock.
+> Caller must guarantee page to lruvec reference validity.
+> 
+> * Lock via page, without stable page reference
+> 
+> __lock_page_lruvec_irq(&lruvec, page)
+> 
+> It returns true of lruvec succesfully locked and PageLRU is set.
+> Initial lruvec can be NULL. Consequent calls must be in the same zone.
+> 
+> * Unlock
+> 
+> unlock_lruvec(lruvec, flags)
+> unlock_lruvec_irq(lruvec)
+> 
+> * Wait
+> 
+> wait_lruvec_unlock(lruvec)
+> Wait for lruvec unlock, caller must have stable reference to lruvec.
+> 
+> __wait_lruvec_unlock(lruvec)
+> Wait for lruvec unlock before locking other lrulock for same page,
+> nothing if there only one possible lruvec per page.
+> Used at page-to-lruvec reference switching to stabilize PageLRU sign.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-I think dropping the pid would be the best choice. If it's absolutely
-necessary in the output then it should be made to work with pid namespaces
-because the interface will be maintained forever.
+O.K. I like this.
 
-Cheers,
-	-Matt
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Hmm....Could you add a comment in memcg part ? (see below)
+
+
+
+> ---
+>  mm/huge_memory.c |    8 +-
+>  mm/internal.h    |  176 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/memcontrol.c  |   14 ++--
+>  mm/swap.c        |   58 ++++++------------
+>  mm/vmscan.c      |   77 ++++++++++--------------
+>  5 files changed, 237 insertions(+), 96 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 09e7069..74996b8 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1228,13 +1228,11 @@ static int __split_huge_page_splitting(struct page *page,
+>  static void __split_huge_page_refcount(struct page *page)
+>  {
+>  	int i;
+> -	struct zone *zone = page_zone(page);
+>  	struct lruvec *lruvec;
+>  	int tail_count = 0;
+>  
+>  	/* prevent PageLRU to go away from under us, and freeze lru stats */
+> -	spin_lock_irq(&zone->lru_lock);
+> -	lruvec = page_lruvec(page);
+> +	lruvec = lock_page_lruvec_irq(page);
+>  	compound_lock(page);
+>  	/* complete memcg works before add pages to LRU */
+>  	mem_cgroup_split_huge_fixup(page);
+> @@ -1316,11 +1314,11 @@ static void __split_huge_page_refcount(struct page *page)
+>  	BUG_ON(atomic_read(&page->_count) <= 0);
+>  
+>  	__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
+> -	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
+> +	__mod_zone_page_state(lruvec_zone(lruvec), NR_ANON_PAGES, HPAGE_PMD_NR);
+>  
+>  	ClearPageCompound(page);
+>  	compound_unlock(page);
+> -	spin_unlock_irq(&zone->lru_lock);
+> +	unlock_lruvec_irq(lruvec);
+>  
+>  	for (i = 1; i < HPAGE_PMD_NR; i++) {
+>  		struct page *page_tail = page + i;
+> diff --git a/mm/internal.h b/mm/internal.h
+> index ef49dbf..9454752 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -13,6 +13,182 @@
+>  
+>  #include <linux/mm.h>
+>  
+> +static inline void lock_lruvec(struct lruvec *lruvec, unsigned long *flags)
+> +{
+> +	spin_lock_irqsave(&lruvec_zone(lruvec)->lru_lock, *flags);
+> +}
+> +
+> +static inline void lock_lruvec_irq(struct lruvec *lruvec)
+> +{
+> +	spin_lock_irq(&lruvec_zone(lruvec)->lru_lock);
+> +}
+> +
+> +static inline void unlock_lruvec(struct lruvec *lruvec, unsigned long *flags)
+> +{
+> +	spin_unlock_irqrestore(&lruvec_zone(lruvec)->lru_lock, *flags);
+> +}
+> +
+> +static inline void unlock_lruvec_irq(struct lruvec *lruvec)
+> +{
+> +	spin_unlock_irq(&lruvec_zone(lruvec)->lru_lock);
+> +}
+> +
+> +static inline void wait_lruvec_unlock(struct lruvec *lruvec)
+> +{
+> +	spin_unlock_wait(&lruvec_zone(lruvec)->lru_lock);
+> +}
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+> +
+> +/* Dynamic page to lruvec mapping */
+> +
+> +/* Lock other lruvec for other page in the same zone */
+> +static inline struct lruvec *__relock_page_lruvec(struct lruvec *locked_lruvec,
+> +						  struct page *page)
+> +{
+> +	/* Currenyly only one lru_lock per-zone */
+> +	return page_lruvec(page);
+> +}
+> +
+> +static inline struct lruvec *relock_page_lruvec_irq(struct lruvec *lruvec,
+> +						    struct page *page)
+> +{
+> +	struct zone *zone = page_zone(page);
+> +
+> +	if (!lruvec) {
+> +		spin_lock_irq(&zone->lru_lock);
+> +	} else if (zone != lruvec_zone(lruvec)) {
+> +		unlock_lruvec_irq(lruvec);
+> +		spin_lock_irq(&zone->lru_lock);
+> +	}
+> +	return page_lruvec(page);
+> +}
+
+Could you add comments/caution to the caller 
+
+ - !PageLRU(page) case ?
+ - Can the caller assume page_lruvec(page) == lruvec ? If no, which lru_vec is locked ?
+
+etc...
+
+
+> +
+> +static inline struct lruvec *relock_page_lruvec(struct lruvec *lruvec,
+> +						struct page *page,
+> +						unsigned long *flags)
+> +{
+> +	struct zone *zone = page_zone(page);
+> +
+> +	if (!lruvec) {
+> +		spin_lock_irqsave(&zone->lru_lock, *flags);
+> +	} else if (zone != lruvec_zone(lruvec)) {
+> +		unlock_lruvec(lruvec, flags);
+> +		spin_lock_irqsave(&zone->lru_lock, *flags);
+> +	}
+> +	return page_lruvec(page);
+> +}
+
+
+Same here.
+
+Thanks,
+-Kame
 
