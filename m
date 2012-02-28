@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964966Ab2B1BIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:08:06 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37330 "EHLO
+	id S964994Ab2B1BIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:08:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46792 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964933Ab2B1BH6 (ORCPT
+	with ESMTP id S964933Ab2B1BIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.212.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:08:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.42 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010214.753230196@linuxfoundation.org>
+Message-Id: <20120228010215.616509657@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:03:06 -0800
+Date: Mon, 27 Feb 2012 17:03:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 63/73] [SCSI] scsi_pm: Fix bug in the SCSI power management handler
+        alan@lxorguk.ukuu.org.uk, Joerg Desch <vvd.joede@googlemail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 68/73] [media] hdpvr: fix race conditon during start of streaming
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Janne Grunau <j@jannau.net>
 
-commit fea6d607e154cf96ab22254ccb48addfd43d4cb5 upstream.
+commit afa159538af61f1a65d48927f4e949fe514fb4fc upstream.
 
-This patch (as1520) fixes a bug in the SCSI layer's power management
-implementation.
+status has to be set to STREAMING before the streaming worker is
+queued. hdpvr_transmit_buffers() will exit immediately otherwise.
 
-LUN scanning can be carried out asynchronously in do_scan_async(), and
-sd uses an asynchronous thread for the time-consuming parts of disk
-probing in sd_probe_async().  Currently nothing coordinates these
-async threads with system sleep transitions; they can and do attempt
-to continue scanning/probing SCSI devices even after the host adapter
-has been suspended.  As one might expect, the outcome is not ideal.
-
-This is what the "prepare" stage of system suspend was created for.
-After the prepare callback has been called for a host, target, or
-device, drivers are not allowed to register any children underneath
-them.  Currently the SCSI prepare callback is not implemented; this
-patch rectifies that omission.
-
-For SCSI hosts, the prepare routine calls scsi_complete_async_scans()
-to wait until async scanning is finished.  It might be slightly more
-efficient to wait only until the host in question has been scanned,
-but there's currently no way to do that.  Besides, during a sleep
-transition we will ultimately have to wait until all the host scanning
-has finished anyway.
-
-For SCSI devices, the prepare routine calls async_synchronize_full()
-to wait until sd probing is finished.  The routine does nothing for
-SCSI targets, because asynchronous target scanning is done only as
-part of host scanning.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Joerg Desch <vvd.joede@googlemail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_pm.c   |   16 ++++++++++++++++
- drivers/scsi/scsi_priv.h |    1 +
- 2 files changed, 17 insertions(+)
+ drivers/media/video/hdpvr/hdpvr-video.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -6,6 +6,7 @@
-  */
+--- a/drivers/media/video/hdpvr/hdpvr-video.c
++++ b/drivers/media/video/hdpvr/hdpvr-video.c
+@@ -284,12 +284,13 @@ static int hdpvr_start_streaming(struct
  
- #include <linux/pm_runtime.h>
-+#include <linux/async.h>
+ 		hdpvr_config_call(dev, CTRL_START_STREAMING_VALUE, 0x00);
  
- #include <scsi/scsi.h>
- #include <scsi/scsi_device.h>
-@@ -68,6 +69,19 @@ static int scsi_bus_resume_common(struct
- 	return err;
- }
- 
-+static int scsi_bus_prepare(struct device *dev)
-+{
-+	if (scsi_is_sdev_device(dev)) {
-+		/* sd probing uses async_schedule.  Wait until it finishes. */
-+		async_synchronize_full();
++		dev->status = STATUS_STREAMING;
 +
-+	} else if (scsi_is_host_device(dev)) {
-+		/* Wait until async scanning is finished */
-+		scsi_complete_async_scans();
-+	}
-+	return 0;
-+}
-+
- static int scsi_bus_suspend(struct device *dev)
- {
- 	return scsi_bus_suspend_common(dev, PMSG_SUSPEND);
-@@ -86,6 +100,7 @@ static int scsi_bus_poweroff(struct devi
- #else /* CONFIG_PM_SLEEP */
+ 		INIT_WORK(&dev->worker, hdpvr_transmit_buffers);
+ 		queue_work(dev->workqueue, &dev->worker);
  
- #define scsi_bus_resume_common		NULL
-+#define scsi_bus_prepare		NULL
- #define scsi_bus_suspend		NULL
- #define scsi_bus_freeze			NULL
- #define scsi_bus_poweroff		NULL
-@@ -194,6 +209,7 @@ void scsi_autopm_put_host(struct Scsi_Ho
- #endif /* CONFIG_PM_RUNTIME */
+ 		v4l2_dbg(MSG_BUFFER, hdpvr_debug, &dev->v4l2_dev,
+ 			 "streaming started\n");
+-		dev->status = STATUS_STREAMING;
  
- const struct dev_pm_ops scsi_bus_pm_ops = {
-+	.prepare =		scsi_bus_prepare,
- 	.suspend =		scsi_bus_suspend,
- 	.resume =		scsi_bus_resume_common,
- 	.freeze =		scsi_bus_freeze,
---- a/drivers/scsi/scsi_priv.h
-+++ b/drivers/scsi/scsi_priv.h
-@@ -110,6 +110,7 @@ extern void scsi_exit_procfs(void);
- #endif /* CONFIG_PROC_FS */
- 
- /* scsi_scan.c */
-+extern int scsi_complete_async_scans(void);
- extern int scsi_scan_host_selected(struct Scsi_Host *, unsigned int,
- 				   unsigned int, unsigned int, int);
- extern void scsi_forget_host(struct Scsi_Host *);
+ 		return 0;
+ 	}
 
 
