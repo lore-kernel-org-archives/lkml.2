@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965324Ab2B1BQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:16:31 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57828 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965289Ab2B1BM0 (ORCPT
+	id S965284Ab2B1BMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:12:23 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965269Ab2B1BMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.8 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010435.562463016@linuxfoundation.org>
+Message-Id: <20120228010435.279253960@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:39 -0800
+Date: Mon, 27 Feb 2012 17:05:36 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Maxime Bizon <mbizon@freebox.fr>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [ 70/72] epoll: ep_unregister_pollwait() can use the freed pwq->whead
+        alan@lxorguk.ukuu.org.uk, Corinna Vinschen <vinschen@redhat.com>,
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 67/72] [media] imon: dont wedge hardware after early callbacks
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,111 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jarod Wilson <jarod@redhat.com>
 
-commit 971316f0503a5c50633d07b83b6db2f15a3a5b00 upstream.
+commit 8791d63af0cf113725ae4cb8cba9492814c59a93 upstream.
 
-signalfd_cleanup() ensures that ->signalfd_wqh is not used, but
-this is not enough. eppoll_entry->whead still points to the memory
-we are going to free, ep_unregister_pollwait()->remove_wait_queue()
-is obviously unsafe.
+This patch is just a minor update to one titled "imon: Input from ffdc
+device type ignored" from Corinna Vinschen. An earlier patch to prevent
+an oops when we got early callbacks also has the nasty side-effect of
+wedging imon hardware, as we don't acknowledge the urb. Rework the check
+slightly here to bypass processing the packet, as the driver isn't yet
+fully initialized, but still acknowlege the urb and submit a new rx_urb.
+Do this for both interfaces -- irrelevant for ffdc hardware, but
+relevant for newer hardware, though newer hardware doesn't spew the
+constant stream of data as soon as the hardware is initialized like the
+older ffdc devices, so they'd be less likely to trigger this anyway...
 
-Change ep_poll_callback(POLLFREE) to set eppoll_entry->whead = NULL,
-change ep_unregister_pollwait() to check pwq->whead != NULL under
-rcu_read_lock() before remove_wait_queue(). We add the new helper,
-ep_remove_wait_queue(), for this.
+Tested with both an ffdc device and an 0042 device.
 
-This works because sighand_cachep is SLAB_DESTROY_BY_RCU and because
-->signalfd_wqh is initialized in sighand_ctor(), not in copy_sighand.
-ep_unregister_pollwait()->remove_wait_queue() can play with already
-freed and potentially reused ->sighand, but this is fine. This memory
-must have the valid ->signalfd_wqh until rcu_read_unlock().
-
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Corinna Vinschen <vinschen@redhat.com>
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/eventpoll.c |   30 +++++++++++++++++++++++++++---
- fs/signalfd.c  |    6 +++++-
- 2 files changed, 32 insertions(+), 4 deletions(-)
+ drivers/media/rc/imon.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -299,6 +299,11 @@ static inline int ep_is_linked(struct li
- 	return !list_empty(p);
- }
+--- a/drivers/media/rc/imon.c
++++ b/drivers/media/rc/imon.c
+@@ -47,7 +47,7 @@
+ #define MOD_AUTHOR	"Jarod Wilson <jarod@wilsonet.com>"
+ #define MOD_DESC	"Driver for SoundGraph iMON MultiMedia IR/Display"
+ #define MOD_NAME	"imon"
+-#define MOD_VERSION	"0.9.3"
++#define MOD_VERSION	"0.9.4"
  
-+static inline struct eppoll_entry *ep_pwq_from_wait(wait_queue_t *p)
-+{
-+	return container_of(p, struct eppoll_entry, wait);
-+}
-+
- /* Get the "struct epitem" from a wait queue pointer */
- static inline struct epitem *ep_item_from_wait(wait_queue_t *p)
- {
-@@ -446,6 +451,18 @@ static void ep_poll_safewake(wait_queue_
- 	put_cpu();
- }
- 
-+static void ep_remove_wait_queue(struct eppoll_entry *pwq)
-+{
-+	wait_queue_head_t *whead;
-+
-+	rcu_read_lock();
-+	/* If it is cleared by POLLFREE, it should be rcu-safe */
-+	whead = rcu_dereference(pwq->whead);
-+	if (whead)
-+		remove_wait_queue(whead, &pwq->wait);
-+	rcu_read_unlock();
-+}
-+
- /*
-  * This function unregisters poll callbacks from the associated file
-  * descriptor.  Must be called with "mtx" held (or "epmutex" if called from
-@@ -460,7 +477,7 @@ static void ep_unregister_pollwait(struc
- 		pwq = list_first_entry(lsthead, struct eppoll_entry, llink);
- 
- 		list_del(&pwq->llink);
--		remove_wait_queue(pwq->whead, &pwq->wait);
-+		ep_remove_wait_queue(pwq);
- 		kmem_cache_free(pwq_cache, pwq);
- 	}
- }
-@@ -827,9 +844,16 @@ static int ep_poll_callback(wait_queue_t
- 	struct epitem *epi = ep_item_from_wait(wait);
- 	struct eventpoll *ep = epi->ep;
- 
--	/* the caller holds eppoll_entry->whead->lock */
--	if ((unsigned long)key & POLLFREE)
-+	if ((unsigned long)key & POLLFREE) {
-+		ep_pwq_from_wait(wait)->whead = NULL;
-+		/*
-+		 * whead = NULL above can race with ep_remove_wait_queue()
-+		 * which can do another remove_wait_queue() after us, so we
-+		 * can't use __remove_wait_queue(). whead->lock is held by
-+		 * the caller.
-+		 */
- 		list_del_init(&wait->task_list);
-+	}
- 
- 	spin_lock_irqsave(&ep->lock, flags);
- 
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -33,7 +33,11 @@
- void signalfd_cleanup(struct sighand_struct *sighand)
- {
- 	wait_queue_head_t *wqh = &sighand->signalfd_wqh;
--
-+	/*
-+	 * The lockless check can race with remove_wait_queue() in progress,
-+	 * but in this case its caller should run under rcu_read_lock() and
-+	 * sighand_cachep is SLAB_DESTROY_BY_RCU, we can safely return.
-+	 */
- 	if (likely(!waitqueue_active(wqh)))
+ #define DISPLAY_MINOR_BASE	144
+ #define DEVICE_NAME	"lcd%d"
+@@ -1658,9 +1658,17 @@ static void usb_rx_callback_intf0(struct
  		return;
  
+ 	ictx = (struct imon_context *)urb->context;
+-	if (!ictx || !ictx->dev_present_intf0)
++	if (!ictx)
+ 		return;
+ 
++	/*
++	 * if we get a callback before we're done configuring the hardware, we
++	 * can't yet process the data, as there's nowhere to send it, but we
++	 * still need to submit a new rx URB to avoid wedging the hardware
++	 */
++	if (!ictx->dev_present_intf0)
++		goto out;
++
+ 	switch (urb->status) {
+ 	case -ENOENT:		/* usbcore unlink successful! */
+ 		return;
+@@ -1678,6 +1686,7 @@ static void usb_rx_callback_intf0(struct
+ 		break;
+ 	}
+ 
++out:
+ 	usb_submit_urb(ictx->rx_urb_intf0, GFP_ATOMIC);
+ }
+ 
+@@ -1690,9 +1699,17 @@ static void usb_rx_callback_intf1(struct
+ 		return;
+ 
+ 	ictx = (struct imon_context *)urb->context;
+-	if (!ictx || !ictx->dev_present_intf1)
++	if (!ictx)
+ 		return;
+ 
++	/*
++	 * if we get a callback before we're done configuring the hardware, we
++	 * can't yet process the data, as there's nowhere to send it, but we
++	 * still need to submit a new rx URB to avoid wedging the hardware
++	 */
++	if (!ictx->dev_present_intf1)
++		goto out;
++
+ 	switch (urb->status) {
+ 	case -ENOENT:		/* usbcore unlink successful! */
+ 		return;
+@@ -1710,6 +1727,7 @@ static void usb_rx_callback_intf1(struct
+ 		break;
+ 	}
+ 
++out:
+ 	usb_submit_urb(ictx->rx_urb_intf1, GFP_ATOMIC);
+ }
+ 
+@@ -2242,7 +2260,7 @@ find_endpoint_failed:
+ 	mutex_unlock(&ictx->lock);
+ 	usb_free_urb(rx_urb);
+ rx_urb_alloc_failed:
+-	dev_err(ictx->dev, "unable to initialize intf0, err %d\n", ret);
++	dev_err(ictx->dev, "unable to initialize intf1, err %d\n", ret);
+ 
+ 	return NULL;
+ }
 
 
