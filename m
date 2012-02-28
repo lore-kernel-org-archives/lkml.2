@@ -1,220 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab2B1FZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 00:25:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55939 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098Ab2B1FZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 00:25:46 -0500
-Message-ID: <4F4C6596.8020903@cn.fujitsu.com>
-Date: Tue, 28 Feb 2012 13:26:46 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm list <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com>
-In-Reply-To: <4F4B9C57.3010407@siemens.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-28 13:23:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-28 13:23:57,
-	Serialize complete at 2012-02-28 13:23:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753622Ab2B1F1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 00:27:16 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40102 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab2B1F1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 00:27:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of andrey.warkentin@gmail.com designates 10.52.93.77 as permitted sender) smtp.mail=andrey.warkentin@gmail.com; dkim=pass header.i=andrey.warkentin@gmail.com
+From: Andrei Warkentin <andrey.warkentin@gmail.com>
+To: kgdb-bugreport@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org,
+        Andrei Warkentin <andrey.warkentin@gmail.com>,
+        Andrei Warkentin <andreiw@vmware.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH] KDB: Fix usability issues relating to the 'enter' key.
+Date: Mon, 27 Feb 2012 23:26:58 -0500
+Message-Id: <1330403218-21045-1-git-send-email-andrey.warkentin@gmail.com>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <4F4C1194.4080201@windriver.com>
+References: <4F4C1194.4080201@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
-> On 2012-02-27 04:01, Wen Congyang wrote:
->> We can know the guest is paniced when the guest runs on xen.
->> But we do not have such feature on kvm. This patch implemnts
->> this feature, and the implementation is the same as xen:
->> register panic notifier, and call hypercall when the guest
->> is paniced.
->>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
->>  arch/x86/kvm/svm.c       |    8 ++++++--
->>  arch/x86/kvm/vmx.c       |    8 ++++++--
->>  arch/x86/kvm/x86.c       |   13 +++++++++++--
->>  include/linux/kvm.h      |    1 +
->>  include/linux/kvm_para.h |    1 +
->>  6 files changed, 37 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->> index f0c6fd6..b928d1d 100644
->> --- a/arch/x86/kernel/kvm.c
->> +++ b/arch/x86/kernel/kvm.c
->> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
->>  	.notifier_call = kvm_pv_reboot_notify,
->>  };
->>  
->> +static int
->> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
->> +{
->> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
->> +	return NOTIFY_DONE;
->> +}
->> +
->> +static struct notifier_block kvm_pv_panic_nb = {
->> +	.notifier_call = kvm_pv_panic_notify,
->> +};
->> +
-> 
-> You should split up host and guest-side changes.
+This fixes the following problems:
+1) Typematic-repeat of 'enter' gives warning message
+   and leaks make/break if KDB exits. Repeats
+   look something like 0x1c 0x1c .... 0x9c
+2) Use of 'keypad enter' gives warning message and
+   leaks the ENTER break/make code out if KDB exits.
+   KP ENTER repeats look someting like 0xe0 0x1c
+   0xe0 0x1c ... 0xe0 0x9c.
+3) Lag on the order of seconds between "break" and "make" when
+   expecting the enter "break" code. Seen under virtualized
+   environments such as VMware ESX.
 
-OK
+The existing special enter handler tries to glob the
+enter break code, but this fails if the other (KP) enter
+was used, or if there was a key repeat. It also fails
+if you mashed some keys along with enter, and you ended
+up with a non-enter make or non-enter break code coming
+after the enter make code. So first, we modify the handler
+to handle these cases. But performing these actions on
+every enter is annoying since now you can't hold ENTER down
+to scroll <more>d messages in KDB. Since this special
+behaviour is only necessary to handle the exiting KDB
+('g' + ENTER) without leaking scancodes to the OS, we
+perform the cleanup in kgdboc_post_exp_handler path.
 
-> 
->>  static u64 kvm_steal_clock(int cpu)
->>  {
->>  	u64 steal;
->> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
->>  
->>  	paravirt_ops_setup();
->>  	register_reboot_notifier(&kvm_pv_reboot_nb);
->> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
->>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
->>  		spin_lock_init(&async_pf_sleepers[i].lock);
->>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
->> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->> index 0b7690e..38b4705 100644
->> --- a/arch/x86/kvm/svm.c
->> +++ b/arch/x86/kvm/svm.c
->> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
->>  
->>  static int vmmcall_interception(struct vcpu_svm *svm)
->>  {
->> +	int ret;
->> +
->>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
->>  	skip_emulated_instruction(&svm->vcpu);
->> -	kvm_emulate_hypercall(&svm->vcpu);
->> -	return 1;
->> +	ret = kvm_emulate_hypercall(&svm->vcpu);
->> +
->> +	/* Ignore the error? */
->> +	return ret == 0 ? 0 : 1;
-> 
-> Why can't kvm_emulate_hypercall return the right value?
+Fixed previous regression where if kbd was not used
+to 'g' + ENTER, the cleanup code would hang.
 
-Because before this patch, kvm always ignores the error.
+Tested on QEMU. Set a bp on atkbd.c to verify no scan
+code was leaked.
 
-After rereading the code, kvm_emulate_hypercall() will return -KVM_EPERM
-when vcpu's CPL is not 0. I think we should deal with this exception
-in kvm_emulate_hypercall(), and return 1. But I donot know
-how to do it. kvm_queue_exception(vcpu, UD_VECTOR)?
+Cc: Andrei Warkentin <andreiw@vmware.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
+---
+ drivers/tty/serial/kgdboc.c     |   15 ++++++
+ include/linux/kdb.h             |    1 +
+ kernel/debug/kdb/kdb_keyboard.c |  104 ++++++++++++++++++++++++++++++---------
+ 3 files changed, 98 insertions(+), 22 deletions(-)
 
-> 
->>  }
->>  
->>  static unsigned long nested_svm_get_tdp_cr3(struct kvm_vcpu *vcpu)
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index 66147ca..1b57ebb 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -4582,9 +4582,13 @@ static int handle_halt(struct kvm_vcpu *vcpu)
->>  
->>  static int handle_vmcall(struct kvm_vcpu *vcpu)
->>  {
->> +	int ret;
->> +
->>  	skip_emulated_instruction(vcpu);
->> -	kvm_emulate_hypercall(vcpu);
->> -	return 1;
->> +	ret = kvm_emulate_hypercall(vcpu);
->> +
->> +	/* Ignore the error? */
->> +	return ret == 0 ? 0 : 1;
->>  }
->>  
->>  static int handle_invd(struct kvm_vcpu *vcpu)
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index c9d99e5..3fc2853 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4923,7 +4923,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->>  	u64 param, ingpa, outgpa, ret;
->>  	uint16_t code, rep_idx, rep_cnt, res = HV_STATUS_SUCCESS, rep_done = 0;
->>  	bool fast, longmode;
->> -	int cs_db, cs_l;
->> +	int cs_db, cs_l, r = 1;
->>  
->>  	/*
->>  	 * hypercall generates UD from non zero cpl and real mode
->> @@ -4964,6 +4964,10 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->>  	case HV_X64_HV_NOTIFY_LONG_SPIN_WAIT:
->>  		kvm_vcpu_on_spin(vcpu);
->>  		break;
->> +	case KVM_HC_GUEST_PANIC:
->> +		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
->> +		r = 0;
->> +		break;
-> 
-> That's the wrong place. This is a KVM hypercall, not a HyperV one.
-
-OK, I will remove it.
-
-Thanks
-Wen Congyang
-
-> 
->>  	default:
->>  		res = HV_STATUS_INVALID_HYPERCALL_CODE;
->>  		break;
->> @@ -4977,7 +4981,7 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->>  		kvm_register_write(vcpu, VCPU_REGS_RAX, ret & 0xffffffff);
->>  	}
->>  
->> -	return 1;
->> +	return r;
->>  }
->>  
->>  int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
->> @@ -5013,6 +5017,11 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
->>  	case KVM_HC_VAPIC_POLL_IRQ:
->>  		ret = 0;
->>  		break;
->> +	case KVM_HC_GUEST_PANIC:
->> +		ret = 0;
->> +		vcpu->run->exit_reason = KVM_EXIT_GUEST_PANIC;
->> +		r = 0;
->> +		break;
->>  	default:
->>  		ret = -KVM_ENOSYS;
->>  		break;
->> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
->> index acbe429..8f0e31b 100644
->> --- a/include/linux/kvm.h
->> +++ b/include/linux/kvm.h
->> @@ -163,6 +163,7 @@ struct kvm_pit_config {
->>  #define KVM_EXIT_OSI              18
->>  #define KVM_EXIT_PAPR_HCALL	  19
->>  #define KVM_EXIT_S390_UCONTROL	  20
->> +#define KVM_EXIT_GUEST_PANIC	  21
->>  
->>  /* For KVM_EXIT_INTERNAL_ERROR */
->>  #define KVM_INTERNAL_ERROR_EMULATION 1
->> diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
->> index ff476dd..cf94023 100644
->> --- a/include/linux/kvm_para.h
->> +++ b/include/linux/kvm_para.h
->> @@ -19,6 +19,7 @@
->>  #define KVM_HC_MMU_OP			2
->>  #define KVM_HC_FEATURES			3
->>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
->> +#define KVM_HC_GUEST_PANIC		5
->>  
->>  /*
->>   * hypercalls use architecture specific
-> 
-> Jan
-> 
+diff --git a/drivers/tty/serial/kgdboc.c b/drivers/tty/serial/kgdboc.c
+index 2b42a01..c74b47b 100644
+--- a/drivers/tty/serial/kgdboc.c
++++ b/drivers/tty/serial/kgdboc.c
+@@ -284,6 +284,8 @@ static void kgdboc_pre_exp_handler(void)
+ 
+ static void kgdboc_post_exp_handler(void)
+ {
++	int i;
++
+ 	/* decrement the module count when the debugger detaches */
+ 	if (!kgdb_connected)
+ 		module_put(THIS_MODULE);
+@@ -291,6 +293,19 @@ static void kgdboc_post_exp_handler(void)
+ 		dbg_restore_graphics = 0;
+ 		con_debug_leave();
+ 	}
++
++	/*
++	 * For i8042 keyboard, we still have the ENTER
++	 * break code in the buffer after KDB processed
++	 * the 'g' command and exited. Clean it up.
++	 */
++	for (i = 0; i < kdb_poll_idx; i++) {
++		if (kdb_poll_funcs[i] == kdb_get_kbd_char) {
++			kdb_kbd_cleanup_state();
++			break;
++		}
++	}
++
+ 	kgdboc_restore_input();
+ }
+ 
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index 0647258..9bf65cc 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -124,6 +124,7 @@ extern void kdb_init(int level);
+ typedef int (*get_char_func)(void);
+ extern get_char_func kdb_poll_funcs[];
+ extern int kdb_get_kbd_char(void);
++extern void kdb_kbd_cleanup_state(void);
+ 
+ static inline
+ int kdb_process_cpu(const struct task_struct *p)
+diff --git a/kernel/debug/kdb/kdb_keyboard.c b/kernel/debug/kdb/kdb_keyboard.c
+index 4bca634..34a8722 100644
+--- a/kernel/debug/kdb/kdb_keyboard.c
++++ b/kernel/debug/kdb/kdb_keyboard.c
+@@ -25,6 +25,7 @@
+ #define KBD_STAT_MOUSE_OBF	0x20	/* Mouse output buffer full */
+ 
+ static int kbd_exists;
++static int kbd_last_ret;
+ 
+ /*
+  * Check if the keyboard controller has a keypress for us.
+@@ -90,8 +91,11 @@ int kdb_get_kbd_char(void)
+ 		return -1;
+ 	}
+ 
+-	if ((scancode & 0x80) != 0)
++	if ((scancode & 0x80) != 0) {
++		if (scancode == 0x9c)
++			kbd_last_ret = 0;
+ 		return -1;
++	}
+ 
+ 	scancode &= 0x7f;
+ 
+@@ -178,35 +182,91 @@ int kdb_get_kbd_char(void)
+ 		return -1;	/* ignore unprintables */
+ 	}
+ 
+-	if ((scancode & 0x7f) == 0x1c) {
+-		/*
+-		 * enter key.  All done.  Absorb the release scancode.
+-		 */
++	if (scancode == 0x1c) {
++		kbd_last_ret = 1;
++		return 13;
++	}
++
++	return keychar & 0xff;
++}
++EXPORT_SYMBOL_GPL(kdb_get_kbd_char);
++
++/*
++ * Best effort cleanup of ENTER break codes
++ * on leaving KDB. Called on exiting KDB,
++ * when we know we processed an ENTER or
++ * KP ENTER scan code.
++ */
++void kdb_kbd_cleanup_state(void)
++{
++	int scancode, scanstatus;
++
++	/*
++	 * Nothing to clean up, since either
++	 * ENTER was never pressed, or has already
++	 * gotten cleaned up.
++	 */
++	if (!kbd_last_ret)
++		return;
++
++	/*
++	 * Enter key. Need to absorb the break
++	 * code here, lest it gets leaked out
++	 * if we exit KDB as the result of
++	 * processing 'g'.
++	 *
++	 * This has several interesting implications:
++	 * + Need to handle KP ENTER, which has break
++	 *   code 0xe0 0x9c.
++	 * + Need to handle repeat ENTER and repeat
++	 *   KP ENTER. Repeats only get a break code
++	 *   at the end of the repeated sequence. This
++	 *   means we can't propagate the repeated key
++	 *   press, and must swallow it away.
++	 * + Need to handle possible PS/2 mouse input.
++	 * + Need to handle mashed keys.
++	 */
++
++	while (1) {
+ 		while ((inb(KBD_STATUS_REG) & KBD_STAT_OBF) == 0)
+-			;
++			cpu_relax();
+ 
+ 		/*
+-		 * Fetch the scancode
++		 * Fetch the scancode.
+ 		 */
+ 		scancode = inb(KBD_DATA_REG);
+ 		scanstatus = inb(KBD_STATUS_REG);
+ 
+-		while (scanstatus & KBD_STAT_MOUSE_OBF) {
+-			scancode = inb(KBD_DATA_REG);
+-			scanstatus = inb(KBD_STATUS_REG);
+-		}
++		/*
++		 * Skip mouse input.
++		 */
++		if (scanstatus & KBD_STAT_MOUSE_OBF)
++			continue;
+ 
+-		if (scancode != 0x9c) {
+-			/*
+-			 * Wasn't an enter-release,  why not?
+-			 */
+-			kdb_printf("kdb: expected enter got 0x%x status 0x%x\n",
+-			       scancode, scanstatus);
+-		}
++		/*
++		 * If we see 0xe0, this is either
++		 * a break code for KP ENTER, or a repeat
++		 * make for KP ENTER. Either way, since
++		 * the second byte is equivalent to an ENTER,
++		 * skip the 0xe0 and try again.
++		 *
++		 * If we see 0x1c, this must be a repeat
++		 * ENTER or KP ENTER (and we swallowed 0xe0
++		 * before). Try again.
++		 *
++		 * We can also see make and break codes
++		 * for other keys mashed before or after
++		 * pressing ENTER. Thus, if we see anything
++		 * other than 0x9c, we have to try again.
++		 *
++		 * Note, if you held some key as ENTER
++		 * was depressed, that break code would
++		 * get leaked out.
++		 */
++		if (scancode != 0x9c)
++			continue;
+ 
+-		return 13;
++		return;
+ 	}
+-
+-	return keychar & 0xff;
+ }
+-EXPORT_SYMBOL_GPL(kdb_get_kbd_char);
++EXPORT_SYMBOL_GPL(kdb_kbd_cleanup_state);
+-- 
+1.7.9.2
 
