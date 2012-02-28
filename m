@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030232Ab2B1TG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 14:06:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965674Ab2B1TGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 14:06:23 -0500
-Message-ID: <4F4D25A2.70307@redhat.com>
-Date: Tue, 28 Feb 2012 21:06:10 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@gmail.com>,
-        Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] i387: split up <asm/i387.h> into exported and internal
- interfaces
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com> <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com> <4F440945.1020904@zytor.com> <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211339590.5354@i5.linux-foundation.org> <alpine.LFD.2.02.1202211340330.5354@i5.linux-foundation.org> <4F4CB89C.4060500@redhat.com> <CA+55aFwKJspohPdmbzXZzN4xtNU1Sz0RMA9AfTLnoRWgpPGzHg@mail.gmail.com> <4F4D0D18.4060409@redhat.com> <CA+55aFyA=b-27XbhGdDQfSRMk=xet2jOD9H8hkjEq1md29bJJA@mail.gmail.com> <4F4D1857.4010706@redhat.com> <CA+55aFxgf_HHZKhN9FwOBgKoJHbkFzdCrPhMwWbWKXhb9NpkPg@mail.gmail.com>
-In-Reply-To: <CA+55aFxgf_HHZKhN9FwOBgKoJHbkFzdCrPhMwWbWKXhb9NpkPg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030215Ab2B1TJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 14:09:18 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:32957 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966016Ab2B1TJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 14:09:17 -0500
+Subject: Re: [PATCH] x86, tsc: Skip refined tsc calibration on systems with
+	reliable TSC.
+From: Alok Kataria <akataria@vmware.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, dirk.brandewie@gmail.com,
+        alan@linux.intel.com, stable@kernel.org, Dan Hecht <dhecht@vmware.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1329877195.10380.33.camel@ank32.eng.vmware.com>
+References: <1329876964.10380.28.camel@ank32.eng.vmware.com>
+	 <1329877195.10380.33.camel@ank32.eng.vmware.com>
+Content-Type: text/plain
+Date: Tue, 28 Feb 2012 11:09:16 -0800
+Message-Id: <1330456156.4500.1.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 08:34 PM, Linus Torvalds wrote:
-> On Tue, Feb 28, 2012 at 10:09 AM, Avi Kivity <avi@redhat.com> wrote:
-> >
-> > This is done by preempt notifiers.  Whenever a task switch happens we
-> > push the guest fpu state into memory (if loaded) and let the normal
-> > stuff happen.  So the if we had a task switch during instruction
-> > emulation, for example, then we'd get the "glacial and stupid path" to fire.
->
-> Oh christ.
->
-> This is exactly what the scheduler has ALWAYS ALREADY DONE FOR YOU.
+Ping...any comments on this one.
 
-No, the scheduler saves the state into task_struct.  I need it saved
-into the vcpu structure.  We have two fpu states, the user state, and
-the guest state.  APIs that take a task_struct as a parameter, or
-reference current implicitly, aren't going to work.
+Thanks,
+Alok
 
-> That's what the i387 save-and-restore code is all about. What's the
-> advantage of just re-implementing it in non-obvious ways?
->
-> Stop doing it. You get *zero* advantages from just doing what the
-> scheduler natively does for you, and the scheduler does it *better*.
-
-The scheduler does something different.
-
-What I'd ideally want is
-
-  struct fpu {
-      int cpu;  /* -1 = not loaded */
-      union thread_xstate *state;
-  };
-
-Perhaps with a struct fpu_ops *ops if needed.  We could then let various
-users' fpus float around freely and only save/load them at the last moment.
-
-
--- 
-error compiling committee.c: too many arguments to function
+On Tue, 2012-02-21 at 18:19 -0800, Alok Kataria wrote:
+> [Oops forgot to copy LKML, now it is, sorry for the duplicates]
+> 
+> While running the latest Linux as guest under VMware in highly
+> over-committed situations, we have seen cases when the refined TSC
+> algorithm fails to get a valid tsc_start value in
+> tsc_refine_calibration_work from multiple attempts. As a result the
+> kernel keeps on scheduling the tsc_irqwork task for later. Subsequently
+> after several attempts when it gets a valid start value it goes through
+> the refined calibration and either bails out or uses the new results.
+> Given that the kernel originally read the TSC frequency from the
+> platform, which is the best it can get, I don't think there is much
+> value in refining it. 
+> 
+> So IMO, for systems which get the TSC frequency from the platform we
+> should skip the refined tsc algorithm.
+>         
+> We can use the TSC_RELIABLE cpu cap flag to detect this, right now it is
+> set only on VMware and for Moorestown Penwell both of which have there
+> own TSC calibration methods.
+>         
+> Thanks,
+> Alok
+> 
+> --
+> 
+> From: Alok N Kataria <akataria@vmware.com>
+> 
+> For systems which get the TSC frequency directly from the platform
+> and don't go through the native TSC calibration algorithm, we should
+> trust those values and not try to refine those.
+> 
+> This patch is applicable for kernel from v2.6.38 to current mainline.
+> 
+> Signed-off-by: Alok N Kataria <akataria@vmware.com>
+> Cc: John Stultz <johnstul@us.ibm.com>
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: stable@kernel.org
+> 
+> 
+> Index: linux-2.6/arch/x86/kernel/tsc.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/tsc.c	2012-02-21 17:31:01.000000000 -0800
+> +++ linux-2.6/arch/x86/kernel/tsc.c	2012-02-21 17:39:05.000000000 -0800
+> @@ -874,6 +874,13 @@ static void tsc_refine_calibration_work(
+>  		goto out;
+>  
+>  	/*
+> +	 * Trust the results of the earlier calibration on systems
+> +	 * exporting a reliable TSC.
+> +	 */
+> +	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+> +		goto out;
+> +
+> +	/*
+>  	 * Since the work is started early in boot, we may be
+>  	 * delayed the first time we expire. So set the workqueue
+>  	 * again once we know timers are working.
+> 
 
