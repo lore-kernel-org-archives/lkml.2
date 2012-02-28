@@ -1,196 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965101Ab2B1Niv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 08:38:51 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56883 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757193Ab2B1Nha (ORCPT
+	id S932613Ab2B1NmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 08:42:00 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53142 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab2B1Nl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 08:37:30 -0500
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: [RFC][PATCH 1/6] tools/include: Add byteshift headers for endian access
-Date: Tue, 28 Feb 2012 13:37:20 +0000
-Message-Id: <1330436245-24875-2-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
-References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
+	Tue, 28 Feb 2012 08:41:59 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH v2] ARM: LPC32xx: Ethernet driver
+Date: Tue, 28 Feb 2012 13:41:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: David Laight <David.Laight@aculab.com>, baruch@tkos.co.il,
+        alexander.h.duyck@intel.com, ian.campbell@citrix.com,
+        netdev@vger.kernel.org, eilong@broadcom.com,
+        Kevin Wells <kevin.wells@nxp.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, jeffrey.t.kirsher@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E83@saturn3.aculab.com> <4F4CD781.2090802@antcom.de>
+In-Reply-To: <4F4CD781.2090802@antcom.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202281341.01690.arnd@arndb.de>
+X-Provags-ID: V02:K0:OgX9EOAvdKOwCoTXsjrPaLv7hYVcLbd9okUpD1moVbO
+ ZZiaiMDza2tGs/qoyNwEjyxQPVLWiVr0ZqRqb89aCMzUzu0+gW
+ btRN50asdyeQvzu9KvyN/63PpPJE25MJAi29ZHy+I0iUmN3Czw
+ K0aQI4eDGR1ojdQoRwkKZ6kO+10ewXuqfphXLAtA+0K9Z/41vg
+ bm1bqxrTFdA32em/KJaG8r+VkFRuNNqb3h7D0MxgMd+lSp7sow
+ /djEaWdq6N2c0OsX3DpuRlpehw5hraG3nxWupWgqWLbJmGZkMD
+ PDO0YQQhx0YWqAUmooq2EagXIOUvP24ptwWT0ZdH6qNDJVpm9Q
+ CYTJeT4UGrYS/p2SfrWQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Tuesday 28 February 2012, Roland Stigge wrote:
+> Yes, that's why we previously had a cmdline param for it (but removed it
+> upon request from the netdev maintainer).
+> 
+> So if the hardware defaults to 00:00:00:00:00:00, what is the
+> "consistent policy we want to enforce in all drivers"?
+> 
+> A link or hint would be sufficient.
 
-There are various hostprogs in the kernel that are rolling their own
-implementations of {get,put}_unaligned_le*(). Copy the byteshift
-headers from include/linux/unaligned so that they can all use a single
-implementation.
+I think the most common strategy for platform drivers these days is
 
-This requires changing some of the data types to the userspace
-exported ones (u32 -> __u32, etc).
+1. use what the hardware provides
+2. call of_get_mac_address(dev->of_node, ...)
+3. use random_ether_addr
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- tools/include/tools/be_byteshift.h |   70 ++++++++++++++++++++++++++++++++++++
- tools/include/tools/le_byteshift.h |   70 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 140 insertions(+), 0 deletions(-)
- create mode 100644 tools/include/tools/be_byteshift.h
- create mode 100644 tools/include/tools/le_byteshift.h
+in that order. of_get_mac_address just returns NULL when there
+is no device tree or no local-mac-address property, so you can
+put it into the driver right away.
 
-diff --git a/tools/include/tools/be_byteshift.h b/tools/include/tools/be_byteshift.h
-new file mode 100644
-index 0000000..f4912e2
---- /dev/null
-+++ b/tools/include/tools/be_byteshift.h
-@@ -0,0 +1,70 @@
-+#ifndef _TOOLS_BE_BYTESHIFT_H
-+#define _TOOLS_BE_BYTESHIFT_H
-+
-+#include <linux/types.h>
-+
-+static inline __u16 __get_unaligned_be16(const __u8 *p)
-+{
-+	return p[0] << 8 | p[1];
-+}
-+
-+static inline __u32 __get_unaligned_be32(const __u8 *p)
-+{
-+	return p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3];
-+}
-+
-+static inline __u64 __get_unaligned_be64(const __u8 *p)
-+{
-+	return (__u64)__get_unaligned_be32(p) << 32 |
-+	       __get_unaligned_be32(p + 4);
-+}
-+
-+static inline void __put_unaligned_be16(__u16 val, __u8 *p)
-+{
-+	*p++ = val >> 8;
-+	*p++ = val;
-+}
-+
-+static inline void __put_unaligned_be32(__u32 val, __u8 *p)
-+{
-+	__put_unaligned_be16(val >> 16, p);
-+	__put_unaligned_be16(val, p + 2);
-+}
-+
-+static inline void __put_unaligned_be64(__u64 val, __u8 *p)
-+{
-+	__put_unaligned_be32(val >> 32, p);
-+	__put_unaligned_be32(val, p + 4);
-+}
-+
-+static inline __u16 get_unaligned_be16(const void *p)
-+{
-+	return __get_unaligned_be16((const __u8 *)p);
-+}
-+
-+static inline __u32 get_unaligned_be32(const void *p)
-+{
-+	return __get_unaligned_be32((const __u8 *)p);
-+}
-+
-+static inline __u64 get_unaligned_be64(const void *p)
-+{
-+	return __get_unaligned_be64((const __u8 *)p);
-+}
-+
-+static inline void put_unaligned_be16(__u16 val, void *p)
-+{
-+	__put_unaligned_be16(val, p);
-+}
-+
-+static inline void put_unaligned_be32(__u32 val, void *p)
-+{
-+	__put_unaligned_be32(val, p);
-+}
-+
-+static inline void put_unaligned_be64(__u64 val, void *p)
-+{
-+	__put_unaligned_be64(val, p);
-+}
-+
-+#endif /* _TOOLS_BE_BYTESHIFT_H */
-diff --git a/tools/include/tools/le_byteshift.h b/tools/include/tools/le_byteshift.h
-new file mode 100644
-index 0000000..c99d45a
---- /dev/null
-+++ b/tools/include/tools/le_byteshift.h
-@@ -0,0 +1,70 @@
-+#ifndef _TOOLS_LE_BYTESHIFT_H
-+#define _TOOLS_LE_BYTESHIFT_H
-+
-+#include <linux/types.h>
-+
-+static inline __u16 __get_unaligned_le16(const __u8 *p)
-+{
-+	return p[0] | p[1] << 8;
-+}
-+
-+static inline __u32 __get_unaligned_le32(const __u8 *p)
-+{
-+	return p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
-+}
-+
-+static inline __u64 __get_unaligned_le64(const __u8 *p)
-+{
-+	return (__u64)__get_unaligned_le32(p + 4) << 32 |
-+	       __get_unaligned_le32(p);
-+}
-+
-+static inline void __put_unaligned_le16(__u16 val, __u8 *p)
-+{
-+	*p++ = val;
-+	*p++ = val >> 8;
-+}
-+
-+static inline void __put_unaligned_le32(__u32 val, __u8 *p)
-+{
-+	__put_unaligned_le16(val >> 16, p + 2);
-+	__put_unaligned_le16(val, p);
-+}
-+
-+static inline void __put_unaligned_le64(__u64 val, __u8 *p)
-+{
-+	__put_unaligned_le32(val >> 32, p + 4);
-+	__put_unaligned_le32(val, p);
-+}
-+
-+static inline __u16 get_unaligned_le16(const void *p)
-+{
-+	return __get_unaligned_le16((const __u8 *)p);
-+}
-+
-+static inline __u32 get_unaligned_le32(const void *p)
-+{
-+	return __get_unaligned_le32((const __u8 *)p);
-+}
-+
-+static inline __u64 get_unaligned_le64(const void *p)
-+{
-+	return __get_unaligned_le64((const __u8 *)p);
-+}
-+
-+static inline void put_unaligned_le16(__u16 val, void *p)
-+{
-+	__put_unaligned_le16(val, p);
-+}
-+
-+static inline void put_unaligned_le32(__u32 val, void *p)
-+{
-+	__put_unaligned_le32(val, p);
-+}
-+
-+static inline void put_unaligned_le64(__u64 val, void *p)
-+{
-+	__put_unaligned_le64(val, p);
-+}
-+
-+#endif /* _TOOLS_LE_BYTESHIFT_H */
--- 
-1.7.4.4
-
+	Arnd
