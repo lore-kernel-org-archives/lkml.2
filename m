@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab2B1RBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 12:01:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab2B1RBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 12:01:20 -0500
-Date: Tue, 28 Feb 2012 09:01:03 -0800
-From: Chris Wright <chrisw@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Chris Wright <chrisw@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Kevin Wolf <kwolf@redhat.com>, Stefan Hajnoczi <stefanha@gmail.com>
-Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
-Message-ID: <20120228170103.GI14856@x200.localdomain>
-References: <20120217221406.GJ29414@google.com>
- <20120217223420.GJ26620@redhat.com>
- <20120217224103.GN29414@google.com>
- <20120217225125.GK26620@redhat.com>
- <20120217225735.GP29414@google.com>
- <20120220142233.GA10342@redhat.com>
- <20120220165922.GA7836@mtj.dyndns.org>
- <20120220191404.GB13423@redhat.com>
- <20120227231222.GF14856@x200.localdomain>
- <20120228141036.GE9920@redhat.com>
+	id S1756593Ab2B1RCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 12:02:53 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53474 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab2B1RCw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 12:02:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.224.229 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Tue, 28 Feb 2012 09:02:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@gmail.com, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PULL-REQUEST] EXTCON Patches (Re: [PATCH v6 0/5] Introduce
+ External Connector Class (extcon))
+Message-ID: <20120228170246.GA11415@kroah.com>
+References: <CAJ0PZbRsh_Cnqy8Vtf1FWLajBr=R5iQ=Jog+w+qPE-uKrh5XQA@mail.gmail.com>
+ <20120228164413.GA11021@kroah.com>
+ <20120228165727.GO3683@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120228141036.GE9920@redhat.com>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+In-Reply-To: <20120228165727.GO3683@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal (vgoyal@redhat.com) wrote:
-> On Mon, Feb 27, 2012 at 03:12:22PM -0800, Chris Wright wrote:
+On Tue, Feb 28, 2012 at 04:57:28PM +0000, Mark Brown wrote:
+> On Tue, Feb 28, 2012 at 08:44:13AM -0800, Greg KH wrote:
 > 
-> [..]
-> > > > > > blkcg doesn't allow that anyway (it tries but is racy) and I actually
-> > > > > > was thinking about sending a RFC patch to kill CLONE_IO.
-> > > > > 
-> > > > > I thought CLONE_IO is useful and it allows threads to share IO context.
-> > > > > qemu wanted to use it for its IO threads so that one virtual machine
-> > > > > does not get higher share of disk by just craeting more threads. In fact
-> > > > > if multiple threads are doing related IO, we would like them to use
-> > > > > same io context.
-> > > > 
-> > > > I don't think that's true.  Think of any multithreaded server program
-> > > > where each thread is working pretty much independently from others.
-> > > 
-> > > If threads are working pretty much independently, then one does not have
-> > > to specify CLONE_IO.
-> > > 
-> > > In case of qemu IO threads, I have debugged issues where an big IO range
-> > > is being splitted among its IO threads. Just do a sequential IO inside
-> > > guest, and I was seeing that few sector IO comes from one process, next
-> > > few sector come from other process and it goes on. A sequential range
-> > > of IO is some split among a bunch of threads and that does not work
-> > > well with CFQ if every IO is coming from its own IO context and IO
-> > > context is not shared. After a bunch of IO from one io context, CFQ
-> > > continues to idle on that io context thinking more IO will come soon.
-> > > Next IO does come but from a different thread and differnet context.
-> > > 
-> > > CFQ now has employed some techniques to detect that case and try
-> > > to do preemption and try to reduce idling in such cases. But sometimes
-> > > these techniques work well and other times don't.  So to me, CLONE_IO
-> > > can help in this case where application can specifically share
-> > > IO context and CFQ does not have to do all the tricks.
-> > > 
-> > > That's a different thing that applications might not be making use
-> > > of CLONE_IO.
-> > > 
-> > > > Virtualization *can* be a valid use case but are they actually using
-> > > > it?  Aren't they better served by cgroup?
-> > > 
-> > > cgroup can be very heavy weight when hundred's of virtual machines
-> > > are running. Why? because of idling. CFQ still has lots of tricks
-> > > to do preemption and cut down on idling across io contexts, but
-> > > across cgroup boundaries, isolation is much more stronger and very
-> > > little preemption (if any) is allowed. I suspect in current
-> > > implementation, if we create lots of blkio cgroup, it will be 
-> > > bad for overall throughput of virtual machines (purely because of
-> > > idling).
-> > > 
-> > > So I am not too excited about blkio cgroup solution because it might not
-> > > scale well. (Until and unless we find a better algorithm to cut down
-> > > on idling).
-> > > 
-> > > I am ccing Chris Wright <chrisw@redhat.com>. He might have thoughts
-> > > on usage of CLONE_IO and qemu.
-> > 
-> > Vivek, you summed it up pretty well.  Also, for qemu, raw CLONE_IO is not
-> > an option because threads are created via pthread (we had done some local
-> > hacks to verify that CLONE_IO helped w/ the idling problem, and it did).
+> > Wait, please, before this code can be accepted, I would like to get
+> > verification that you have also made the needed changes to the Android
+> > userspace side of this interface, and that the code works there, and it
+> > is on its way to be included in the main Android repo.
 > 
-> Chris,
+> > Is this true?  If not, what is the plans for this to happen?  Without
+> > that happening, I don't think this code can be accepted, do you?
 > 
-> Just to make sure I understand it right I am thinking loud.
-> 
-> That means CLONE_IO is useful and ideally qemu would like to make use of it
-> but beacuse pthread interface does not support it, it is not used as of
-> today.
+> There's a few more kernel changes needed there before full acceptance
+> would be possible - for example, should have an integration into the
+> audio stack as one of the uses of the switch API on Android is for
+> headset detection.
 
-It depends on the block I/O model in qemu.  It can use either a pthread
-pool or native aio.  All of the CFQ + idling problems we encountered were
-w/ a pthread pool (and IIRC, those would have predated preadv/pwritev,
-so the actual i/o vector from the guest was pulled apart and submitted as
-a bunch of discrete pread/pwrite requests), however in many cases simply
-using aio may be the better sol'n.  Stefan, Kevin, have any thoughts re:
-qemu block I/O and making use of CLONE_IO in a modern qemu?
-
-thanks,
--chris
+Is this integration planned?
