@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965648Ab2B1VHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 16:07:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:49380 "EHLO
+	id S1756792Ab2B1VKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 16:10:35 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49430 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964902Ab2B1VHc (ORCPT
+	with ESMTP id S1752470Ab2B1VKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 16:07:32 -0500
-Date: Tue, 28 Feb 2012 16:07:20 -0500 (EST)
-Message-Id: <20120228.160720.990486775074267929.davem@davemloft.net>
-To: mcarlson@broadcom.com
-Cc: James.Bottomley@HansenPartnership.com, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
-        maciej.rutecki@gmail.com, florian@mickler.org, mchan@broadcom.com,
-        bhutchings@solarflare.com, netdev@vger.kernel.org
-Subject: Re: [Bug #42707] Hang deconfiguring network interface (in
- shutdown) on 3.3-rc1
+	Tue, 28 Feb 2012 16:10:33 -0500
+Date: Tue, 28 Feb 2012 16:10:23 -0500 (EST)
+Message-Id: <20120228.161023.117381282430807415.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: sam@ravnborg.org, tj@kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120228012408.GA29622@mcarlson.broadcom.com>
-References: <qCQH7HfZS8E.A.x6F.98rRPB@chimera>
-	<1330386274.2822.105.camel@dabdike.int.hansenpartnership.com>
-	<20120228012408.GA29622@mcarlson.broadcom.com>
+In-Reply-To: <20120227.163044.2168482307021109001.davem@davemloft.net>
+References: <20120227194341.GA1448@merkur.ravnborg.org>
+	<alpine.SOC.1.00.1202272316280.15067@math.ut.ee>
+	<20120227.163044.2168482307021109001.davem@davemloft.net>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 13:07:23 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 13:10:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Matt Carlson" <mcarlson@broadcom.com>
-Date: Mon, 27 Feb 2012 17:24:08 -0800
+From: David Miller <davem@davemloft.net>
+Date: Mon, 27 Feb 2012 16:30:44 -0500 (EST)
 
-> On Mon, Feb 27, 2012 at 05:44:34PM -0600, James Bottomley wrote:
->> On Thu, 2012-02-23 at 23:55 +0100, Rafael J. Wysocki wrote:
->> > This message has been generated automatically as a part of a summary report
->> > of recent regressions.
->> > 
->> > The following bug entry is on the current list of known regressions
->> > from 3.2.  Please verify if it still should be listed and let the tracking team
->> > know (either way).
->> > 
->> > 
->> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42707
->> > Subject		: Hang deconfiguring network interface (in shutdown) on 3.3-rc1
->> > Submitter	: James Bottomley <James.Bottomley@hansenpartnership.com>
->> > Date		: 2012-01-28 19:56 (27 days old)
->> > Message-ID	: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
->> > References	: http://marc.info/?l=linux-kernel&m=132778076214873&w=2
->> 
->> Still present in 3.3-rc4; I've bisected it back to this commit:
->> 
->> commit 92feeabf3f673767c6ee4cfc7fc224098446c1c1
->> Author: Matt Carlson <mcarlson@broadcom.com>
->> Date:   Thu Dec 8 14:40:14 2011 +0000
->> 
->>     tg3: Save stats across chip resets
->> 
->> and sure enough, just reverting this single commit on 3.3-rc4 fixes the
->> problem.
->> 
->> James
-> 
-> I don't see anything incorrect about the patch.  I'm guessing the patch
-> just changes the timing somehow.
-> 
-> tg3_reset_chip() does not take any driver-internal spinlocks.  That
-> happens at tg3_close().  I'm guessing the spinlock in the trace is coming
-> from synchronize_irq().
+> I think the issue is that OF writes past the end of the buffer even
+> though the length it reports is smaller than what it writes.
 
-If you can't figure it out, we need to revert, so send me a revert patch
-as soon as possible.
+Meelis, can you get your tree back into a state where the crash happens
+and then add the following debugging patch and see what happens?
+
+Thanks!
+
+diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+index 07cc1d6..367ef33 100644
+--- a/drivers/of/pdt.c
++++ b/drivers/of/pdt.c
+@@ -125,12 +125,31 @@ static struct property * __init of_pdt_build_one_prop(phandle node, char *prev,
+ 		} else {
+ 			int len;
+ 
++#if 1
++			int i;
++			p->value = prom_early_alloc(p->length + 1 + 64);
++			for (i = p->length + 1; i < p->length + 1 + 64; i++)
++				((unsigned char *)p->value)[i] = 0xff;
++#else
+ 			p->value = prom_early_alloc(p->length + 1);
++#endif
+ 			len = of_pdt_prom_ops->getproperty(node, p->name,
+ 					p->value, p->length);
+-			if (len <= 0)
++			if (len <= 0) {
++				pr_info("OF BUG: getproperty(%s, %d) returns %d\n",
++					p->name, p->length, len);
+ 				p->length = 0;
++			}
+ 			((unsigned char *)p->value)[p->length] = '\0';
++#if 1
++			for (i = p->length + 1; i < p->length + 1 + 64; i++) {
++				if (((unsigned char *)p->value)[i] != 0xff) {
++					pr_info("OF BUG: Write past end of property buffer\n");
++					pr_info("OF BUG: Property name [%s] length [%d] getprop len [%d]\n",
++						p->name, p->length, len);
++				}
++			}
++#endif
+ 		}
+ 	}
+ 	return p;
+@@ -161,7 +180,11 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
+ 
+ 	len = of_pdt_prom_ops->getproplen(node, name);
+ 	if (len > 0) {
++#if 1
++		buf = prom_early_alloc(len + 64);
++#else
+ 		buf = prom_early_alloc(len);
++#endif
+ 		len = of_pdt_prom_ops->getproperty(node, name, buf, len);
+ 	}
+ 
