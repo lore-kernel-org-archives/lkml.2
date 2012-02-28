@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab2B1Mce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 07:32:34 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:52562 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1754865Ab2B1Mcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 07:32:32 -0500
-X-AntiVirus: Checked by Dr.Web [version: 6.0.3.08040, engine: 6.0.300.01310, virus records: 2682837, updated: 28.02.2012]
-Message-ID: <4F4CC8EE.7070704@ru.mvista.com>
-Date: Tue, 28 Feb 2012 16:30:38 +0400
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1757229Ab2B1MwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 07:52:15 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:32787 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754314Ab2B1MwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 07:52:14 -0500
+Date: Tue, 28 Feb 2012 13:51:50 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: fix lg_lock/br_lock.
+Message-ID: <20120228125150.GA4314@elte.hu>
+References: <87ehtf3lqh.fsf@rustcorp.com.au>
+ <20120227155338.7b5110cd.akpm@linux-foundation.org>
+ <20120228084359.GJ21106@elte.hu>
+ <20120228112514.GD11324@alboin.amr.corp.intel.com>
 MIME-Version: 1.0
-To: zhaoy <zhaoy@marvell.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        nicolas.pitre@linaro.org, linux@arm.linux.org.uk, hzhuang1@marvell.com,
-        cxie4@marvell.com, leoy@marvell.com
-Subject: Re: [PATCH 07/13] DMA:mmp:remove redundant dma drivers
-References: <Y> <1330414065-2949-8-git-send-email-zhaoy@marvell.com>
-In-Reply-To: <1330414065-2949-8-git-send-email-zhaoy@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120228112514.GD11324@alboin.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 28-02-2012 11:27, zhaoy wrote:
+* Andi Kleen <ak@linux.intel.com> wrote:
 
-> 	1.remove old dma drivers
+> As far as I can tell from skimming that lengthy rant it's only 
+> about some white space.
 
-> Change-Id: I96ffed95012a4f3e855c2f6c184646a798a0ee7d
+Read it again.
 
-    This line shouldn't be in the upstream patch.
+Thanks,
 
-> Signed-off-by: zhaoy <zhaoy@marvell.com>
-
-    Real name required here.
-
-WBR, Sergei
+	Ingo
