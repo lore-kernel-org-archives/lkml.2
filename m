@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965247Ab2B1BSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:18:05 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33164 "EHLO
+	id S965270Ab2B1BSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:18:37 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58461 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965212Ab2B1BMJ (ORCPT
+	with ESMTP id S965192Ab2B1BMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:12:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.189.39 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:12:01 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.225.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010432.231224038@linuxfoundation.org>
+Message-Id: <20120228010431.857755344@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:05:01 -0800
+Date: Mon, 27 Feb 2012 17:04:57 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
+        alan@lxorguk.ukuu.org.uk, Li Wei <lw@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 32/72] tcp: allow tcp_sacktag_one() to tag ranges not aligned with skbs
+Subject: [ 28/72] ipv4: Fix wrong order of ip_rt_get_source() and update iph->daddr.
 In-Reply-To: <20120228010511.GA8453@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,115 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Li Wei <lw@cn.fujitsu.com>
 
-[ Upstream commit cc9a672ee522d4805495b98680f4a3db5d0a0af9 ]
+[ Upstream commit 5dc7883f2a7c25f8df40d7479687153558cd531b ]
 
-This commit allows callers of tcp_sacktag_one() to pass in sequence
-ranges that do not align with skb boundaries, as tcp_shifted_skb()
-needs to do in an upcoming fix in this patch series.
+This patch fix a bug which introduced by commit ac8a4810 (ipv4: Save
+nexthop address of LSRR/SSRR option to IPCB.).In that patch, we saved
+the nexthop of SRR in ip_option->nexthop and update iph->daddr until
+we get to ip_forward_options(), but we need to update it before
+ip_rt_get_source(), otherwise we may get a wrong src.
 
-In fact, now tcp_sacktag_one() does not need to depend on an input skb
-at all, which makes its semantics and dependencies more clear.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Li Wei <lw@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+ net/ipv4/ip_options.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1310,25 +1310,26 @@ static int tcp_match_skb_to_sack(struct
- 	return in_sack;
- }
- 
--static u8 tcp_sacktag_one(const struct sk_buff *skb, struct sock *sk,
--			  struct tcp_sacktag_state *state,
-+/* Mark the given newly-SACKed range as such, adjusting counters and hints. */
-+static u8 tcp_sacktag_one(struct sock *sk,
-+			  struct tcp_sacktag_state *state, u8 sacked,
-+			  u32 start_seq, u32 end_seq,
- 			  int dup_sack, int pcount)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
--	u8 sacked = TCP_SKB_CB(skb)->sacked;
- 	int fack_count = state->fack_count;
- 
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
- 		if (tp->undo_marker && tp->undo_retrans &&
--		    after(TCP_SKB_CB(skb)->end_seq, tp->undo_marker))
-+		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
- 			state->reord = min(fack_count, state->reord);
- 	}
- 
- 	/* Nothing to do; acked frame is about to be dropped (was ACKed). */
--	if (!after(TCP_SKB_CB(skb)->end_seq, tp->snd_una))
-+	if (!after(end_seq, tp->snd_una))
- 		return sacked;
- 
- 	if (!(sacked & TCPCB_SACKED_ACKED)) {
-@@ -1347,13 +1348,13 @@ static u8 tcp_sacktag_one(const struct s
- 				/* New sack for not retransmitted frame,
- 				 * which was in hole. It is reordering.
- 				 */
--				if (before(TCP_SKB_CB(skb)->seq,
-+				if (before(start_seq,
- 					   tcp_highest_sack_seq(tp)))
- 					state->reord = min(fack_count,
- 							   state->reord);
- 
- 				/* SACK enhanced F-RTO (RFC4138; Appendix B) */
--				if (!after(TCP_SKB_CB(skb)->end_seq, tp->frto_highmark))
-+				if (!after(end_seq, tp->frto_highmark))
- 					state->flag |= FLAG_ONLY_ORIG_SACKED;
- 			}
- 
-@@ -1371,8 +1372,7 @@ static u8 tcp_sacktag_one(const struct s
- 
- 		/* Lost marker hint past SACKed? Tweak RFC3517 cnt */
- 		if (!tcp_is_fack(tp) && (tp->lost_skb_hint != NULL) &&
--		    before(TCP_SKB_CB(skb)->seq,
--			   TCP_SKB_CB(tp->lost_skb_hint)->seq))
-+		    before(start_seq, TCP_SKB_CB(tp->lost_skb_hint)->seq))
- 			tp->lost_cnt_hint += pcount;
- 
- 		if (fack_count > tp->fackets_out)
-@@ -1428,7 +1428,11 @@ static int tcp_shifted_skb(struct sock *
- 	}
- 
- 	/* We discard results */
--	tcp_sacktag_one(skb, sk, state, dup_sack, pcount);
-+	tcp_sacktag_one(sk, state,
-+			TCP_SKB_CB(skb)->sacked,
-+			TCP_SKB_CB(skb)->seq,
-+			TCP_SKB_CB(skb)->end_seq,
-+			dup_sack, pcount);
- 
- 	/* Difference in this won't matter, both ACKed by the same cumul. ACK */
- 	TCP_SKB_CB(prev)->sacked |= (TCP_SKB_CB(skb)->sacked & TCPCB_EVER_RETRANS);
-@@ -1667,10 +1671,14 @@ static struct sk_buff *tcp_sacktag_walk(
- 			break;
- 
- 		if (in_sack) {
--			TCP_SKB_CB(skb)->sacked = tcp_sacktag_one(skb, sk,
--								  state,
--								  dup_sack,
--								  tcp_skb_pcount(skb));
-+			TCP_SKB_CB(skb)->sacked =
-+				tcp_sacktag_one(sk,
-+						state,
-+						TCP_SKB_CB(skb)->sacked,
-+						TCP_SKB_CB(skb)->seq,
-+						TCP_SKB_CB(skb)->end_seq,
-+						dup_sack,
-+						tcp_skb_pcount(skb));
- 
- 			if (!before(TCP_SKB_CB(skb)->seq,
- 				    tcp_highest_sack_seq(tp)))
+--- a/net/ipv4/ip_options.c
++++ b/net/ipv4/ip_options.c
+@@ -573,8 +573,8 @@ void ip_forward_options(struct sk_buff *
+ 		}
+ 		if (srrptr + 3 <= srrspace) {
+ 			opt->is_changed = 1;
+-			ip_rt_get_source(&optptr[srrptr-1], skb, rt);
+ 			ip_hdr(skb)->daddr = opt->nexthop;
++			ip_rt_get_source(&optptr[srrptr-1], skb, rt);
+ 			optptr[2] = srrptr+4;
+ 		} else if (net_ratelimit())
+ 			printk(KERN_CRIT "ip_forward(): Argh! Destination lost!\n");
 
 
