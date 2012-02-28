@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab2B1IQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 03:16:06 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:31949 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab2B1IQE convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 28 Feb 2012 03:16:04 -0500
-Message-Id: <4F4C9B7802000078000751BC@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 28 Feb 2012 08:16:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] consolidate WARN_...ONCE() static variables
-References: <4F4BAAFA0200007800074F8F@nat28.tlf.novell.com>
- <20120227160302.ef9f6af4.akpm@linux-foundation.org>
- <4F4C93520200007800075197@nat28.tlf.novell.com>
- <20120227234451.3a00a76a.akpm@linux-foundation.org>
- <4F4C983002000078000751AE@nat28.tlf.novell.com>
- <20120228001210.26b59479.akpm@linux-foundation.org>
-In-Reply-To: <20120228001210.26b59479.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756694Ab2B1IRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 03:17:15 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55555 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755600Ab2B1IRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 03:17:13 -0500
+Date: Tue, 28 Feb 2012 09:16:59 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 5/7] time: Shadow cycle_last in timekeeper structure
+Message-ID: <20120228081659.GF21106@elte.hu>
+References: <1330388974-27793-1-git-send-email-john.stultz@linaro.org>
+ <1330388974-27793-6-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1330388974-27793-6-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.02.12 at 09:12, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 28 Feb 2012 08:02:40 +0000 "Jan Beulich" <JBeulich@suse.com> wrote:
-> 
->> >>> On 28.02.12 at 08:44, Andrew Morton <akpm@linux-foundation.org> wrote:
->> > On Tue, 28 Feb 2012 07:41:54 +0000 "Jan Beulich" <JBeulich@suse.com> wrote:
->> > 
->> >> >>> On 28.02.12 at 01:03, Andrew Morton <akpm@linux-foundation.org> wrote:
->> >> > On Mon, 27 Feb 2012 15:10:34 +0000
->> >> > "Jan Beulich" <JBeulich@suse.com> wrote:
->> >> > 
->> >> >> Due to the alignment of following variables, these typically consume
->> >> >> more than just the single byte that 'bool' requires, and as there are
->> >> >> a few hundred instances, the cache pollution (not so much the waste of
->> >> >> memory) sums up. Put these variables into their own section, outside
->> >> >> of any half way frequently used memory range.
->> >> >> 
->> >> >> v2: Do the same also to the __warned variable of rcu_lockdep_assert().
->> >> >> (Don't, however, include the ones used by printk_once() and alike, as
->> >> >> they can potentially be hot.)
->> >> > 
->> >> > I have a bad feeling that I still don't understand this patch.  Ho hum.
->> >> > 
->> >> > What are the rules for the new .data.unlikely section?  When should
->> >> > people put variables into this section?  Perhaps we can document this
->> >> > somewhere?
->> >> 
->> >> If I knew the "where" part of this, I could put together a few sentences.
->> >> I just grep-ed through Documentation/, without finding e.g. any rules
->> >> or guidelines for using {,un}likely()...
->> >>
->> > 
->> > At the definition site in vmlinux.lds?
->> 
->> Sorry, Andrew, but this makes no sense to me.
-> 
-> I really don't care - anywhere you like.  Just the darn changelog, if
-> nowhere else.
-> 
-> I still don't have an answer to my question :( Some statement
-> describing what the new section is *for*.  Seems a pretty important
-> thing?
 
-Oh, sorry - to carry static data the accesses to which are unlikely
-(i.e., as in the case given, fully contained in code sections inside
-conditionals which themselves use unlikely() on their primary/only
-clause - in other words, something that the compiler really could
-do on its own).
+* John Stultz <john.stultz@linaro.org> wrote:
 
-Jan
+> @@ -184,7 +186,7 @@ static inline s64 timekeeping_get_ns(void)
+>  	cycle_now = clock->read(clock);
+>  
+>  	/* calculate the delta since the last update_wall_time: */
+> -	cycle_delta = (cycle_now - clock->cycle_last) & clock->mask;
+> +	cycle_delta = (cycle_now - timekeeper.cycle_last) & clock->mask;
 
+Just a general code design observation: the way how the global 
+'timekeeper' structure is accessed is rather ugly.
+
+The standard method is to pass it in to timekeeping_get_ns() 
+(and other methods) as a parameter, with the highest level 
+taking the address via &timekeeping.
+
+That will also make the code shorter and more obvious: the 
+familar tk->cycle_last pattern instead of the current mixed uses 
+of timekeeping.cycle_last and tk->cycle_last.
+
+There's many similar patterns throughout this code, they need to 
+be fixed as well.
+
+Thanks,
+
+	Ingo
