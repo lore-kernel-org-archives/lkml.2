@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab2B1BHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Feb 2012 20:07:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49705 "EHLO
+	id S964988Ab2B1Baz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Feb 2012 20:30:55 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48212 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964859Ab2B1BHj (ORCPT
+	with ESMTP id S964879Ab2B1BHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Feb 2012 20:07:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.228.69 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Mon, 27 Feb 2012 20:07:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.201.101 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120228010209.700185759@linuxfoundation.org>
+Message-Id: <20120228010210.383539787@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Mon, 27 Feb 2012 17:02:37 -0800
+Date: Mon, 27 Feb 2012 17:02:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/73] tcp: fix range tcp_shifted_skb() passes to tcp_sacktag_one()
+        alan@lxorguk.ukuu.org.uk, Bruno Thomsen <bruno.thomsen@gmail.com>
+Subject: [ 38/73] USB: Added Kamstrup VID/PIDs to cp210x serial driver.
 In-Reply-To: <20120228010246.GA24299@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Bruno Thomsen <bruno.thomsen@gmail.com>
 
-From: Neal Cardwell <ncardwell@google.com>
+commit c6c1e4491dc8d1ed2509fa6aacffa7f34614fc38 upstream.
 
-[ Upstream commit daef52bab1fd26e24e8e9578f8fb33ba1d0cb412 ]
-
-Fix the newly-SACKed range to be the range of newly-shifted bytes.
-
-Previously - since 832d11c5cd076abc0aa1eaf7be96c81d1a59ce41 -
-tcp_shifted_skb() incorrectly called tcp_sacktag_one() with the start
-and end sequence numbers of the skb it passes in set to the range just
-beyond the range that is newly-SACKed.
-
-This commit also removes a special-case adjustment to lost_cnt_hint in
-tcp_shifted_skb() since the pre-existing adjustment of lost_cnt_hint
-in tcp_sacktag_one() now properly handles this things now that the
-correct start sequence number is passed in.
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bruno Thomsen <bruno.thomsen@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1370,6 +1370,9 @@ static u8 tcp_sacktag_one(struct sock *s
- 	return sacked;
- }
- 
-+/* Shift newly-SACKed bytes from this skb to the immediately previous
-+ * already-SACKed sk_buff. Mark the newly-SACKed bytes as such.
-+ */
- static int tcp_shifted_skb(struct sock *sk, struct sk_buff *skb,
- 			   struct tcp_sacktag_state *state,
- 			   unsigned int pcount, int shifted, int mss,
-@@ -1377,12 +1380,11 @@ static int tcp_shifted_skb(struct sock *
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct sk_buff *prev = tcp_write_queue_prev(sk, skb);
-+	u32 start_seq = TCP_SKB_CB(skb)->seq;	/* start of newly-SACKed */
-+	u32 end_seq = start_seq + shifted;	/* end of newly-SACKed */
- 
- 	BUG_ON(!pcount);
- 
--	if (skb == tp->lost_skb_hint)
--		tp->lost_cnt_hint += pcount;
--
- 	TCP_SKB_CB(prev)->end_seq += shifted;
- 	TCP_SKB_CB(skb)->seq += shifted;
- 
-@@ -1406,12 +1408,11 @@ static int tcp_shifted_skb(struct sock *
- 		skb_shinfo(skb)->gso_type = 0;
- 	}
- 
--	/* We discard results */
--	tcp_sacktag_one(sk, state,
--			TCP_SKB_CB(skb)->sacked,
--			TCP_SKB_CB(skb)->seq,
--			TCP_SKB_CB(skb)->end_seq,
--			dup_sack, pcount);
-+	/* Adjust counters and hints for the newly sacked sequence range but
-+	 * discard the return value since prev is already marked.
-+	 */
-+	tcp_sacktag_one(sk, state, TCP_SKB_CB(skb)->sacked,
-+			start_seq, end_seq, dup_sack, pcount);
- 
- 	/* Difference in this won't matter, both ACKed by the same cumul. ACK */
- 	TCP_SKB_CB(prev)->sacked |= (TCP_SKB_CB(skb)->sacked & TCPCB_EVER_RETRANS);
+---
+ drivers/usb/serial/cp210x.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -136,6 +136,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
++	{ USB_DEVICE(0x17A8, 0x0001) }, /* Kamstrup Optical Eye/3-wire */
++	{ USB_DEVICE(0x17A8, 0x0005) }, /* Kamstrup M-Bus Master MultiPort 250D */
+ 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
 
 
