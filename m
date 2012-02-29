@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab2B2NYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:24:21 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:17589 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755505Ab2B2NYT (ORCPT
+	id S932649Ab2B2NbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:31:08 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40481 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757987Ab2B2NbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:24:19 -0500
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2dI9371I1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M05P8A-02-2SX-02
-X-M-MSG: 
-Date: Wed, 29 Feb 2012 14:24:10 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: David Ahern <dsahern@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <joro@8bytes.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH] perf/x86: Fix HO/GO counting with SVM disabled
-Message-ID: <20120229132410.GB10684@amd.com>
-References: <20120227182325.GA12302@8bytes.org>
- <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
- <4F4D0DD6.9030302@redhat.com>
- <4F4D10A9.5010707@gmail.com>
- <4F4D111A.8020001@redhat.com>
+	Wed, 29 Feb 2012 08:31:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F4D111A.8020001@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Date: Wed, 29 Feb 2012 14:31:03 +0100
+Message-ID: <CADDYkjRnRKPMW53F=oELhwkSt5EQB9v0JkC=inNvZQPKu94Xtw@mail.gmail.com>
+Subject: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: linux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Cc: chris.mason@oracle.com, Al Viro <viro@zeniv.linux.org.uk>,
+        "Ted Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 07:38:34PM +0200, Avi Kivity wrote:
-> On 02/28/2012 07:36 PM, David Ahern wrote:
+Hi All,
 
-> > I was to suggest the reverse: since this patch addesses an AMD bug,
-> > why not push those functions into perf_event_amd.c and make them
-> > dependent on CONFIG_CPU_SUP_AMD as well.
-> 
-> It depends on which direction you expect the code to grow.  These hooks
-> seem reasonable, so I think they should be generic.
+Long story short: We've found that operations on a directory structure
+holding many dirs takes ages on ext4.
 
-Okay, I am fine with both directions. But since this patch is a fix in
-the first place I make it more AMD specific for now. If we need this as
-a generic feature it can easily be changed back.
+The Question: Why there's that huge difference in ext4 and btrfs? See
+below test results for real values.
 
+Background: I had to backup a Jenkins directory holding workspace for
+few projects which were co from svn (implies lot of extra .svn dirs).
+The copy takes lot of time (at least more than I've expected) and
+process was mostly in D (disk sleep). I've dig more and done some
+extra test to see if this is not a regression on block/fs site. To
+isolate the issue I've also performed same tests on btrfs.
 
-	Joerg
+Test environment configuration:
+1) HW: HP ProLiant BL460 G6, 48 GB of memory, 2x 6 core Intel X5670 HT
+enabled, Smart Array P410i, RAID 1 on top of 2x 10K RPM SAS HDDs.
+2) Kernels: All tests were done on following kernels:
+ - 2.6.39.4-3 -- the build ID (3) is used here for internal tacking of
+config changes mostly. In -3 we've introduced ,,fix readahead pipeline
+break caused by block plug'' patch. Otherwise it's pure 2.6.39.4.
+ - 3.2.7 -- latest kernel at the time of testing (3.2.8 has been
+release recently).
+3) A subject of tests, directory holding:
+ - 54GB of data (measured on ext4)
+ - 1978149 files
+ - 844008 directories
+4) Mount options:
+ - ext4 -- errors=remount-ro,noatime,data=writeback
+ - btrfs -- noatime,nodatacow and for later investigation on
+copression effect: noatime,nodatacow,compress=lzo
 
--- 
-AMD Operating System Research Center
+In all tests I've been measuring time of execution. Following tests
+were performed:
+- find . -type d
+- find . -type f
+- cp -a
+- rm -rf
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Ext4 results:
+| Type     | 2.6.39.4-3   | 3.2.7
+| Dir cnt  | 17m 40sec  | 11m 20sec
+| File cnt |  17m 36sec | 11m 22sec
+| Copy    | 1h 28m        | 1h 27m
+| Remove| 3m 43sec
