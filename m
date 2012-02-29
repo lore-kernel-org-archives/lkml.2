@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab2B2JaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:30:09 -0500
-Received: from mail.southpole.se ([193.12.106.18]:55055 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab2B2JaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:30:01 -0500
-Message-ID: <1330507800.2964.52.camel@crucifix>
-Subject: [GIT PULL] Build fixes for OpenRISC arch
-From: Jonas Bonn <jonas@southpole.se>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 10:30:00 +0100
-Organization: South Pole AB
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 07799-02490
+	id S932377Ab2B2Jcs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:32:48 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33117 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757107Ab2B2Jcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 04:32:45 -0500
+Date: Wed, 29 Feb 2012 10:32:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: fix lg_lock/br_lock.
+Message-ID: <20120229093224.GB11505@elte.hu>
+References: <87ehtf3lqh.fsf@rustcorp.com.au>
+ <20120227155338.7b5110cd.akpm@linux-foundation.org>
+ <20120228084359.GJ21106@elte.hu>
+ <20120228132719.f375071a.akpm@linux-foundation.org>
+ <20120229082944.GA10425@elte.hu>
+ <1330505894.11248.108.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330505894.11248.108.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Linus,
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-I know my GPG key isn't in your web of trust, but I figured I'd do a
-signed pull request anyway.  The server to pull from is the usual one so
-things are about the same as if I'd just asked you to pull a branch.
+> On Wed, 2012-02-29 at 09:29 +0100, Ingo Molnar wrote:
+>
+> > As part of any cleanup they should first be converted from 
+> > arch_spinlock_t to regular spinlock_t - I bet if that is 
+> > done then that not only simplifies the wrappers massively, 
+> > it also turns the above soft lockup report into a nice, 
+> > actionable lockdep splat.
+> 
+> It might help if you'd actually read the code.. that will 
+> simply not work.
 
-There's just two small fixes here to enable building the OpenRISC
-architecture after changes elsewhere in the kernel didn't get propagated
-all the way through into this arch.  Both pretty trivial.
+It cannot find all bugs - such as the CPU hotplug race that is 
+still present in the code.
 
-/Jonas
+Still there's no excuse to go outside regular spinlock debug 
+primitives via arch_spinlock_t.
 
-The following changes since commit
-d65b4e98d7ea3038b767b70fe8be959b2913f16d:
+If lockdep blows up in br_write_lock() due to holding up to 4096 
+individual locks then we should add the exceptions to this 
+particular write lock when the CPU count is too high - but:
 
-  Linux 3.3-rc3 (2012-02-08 19:21:53 -0800)
+ - do not disable the checking on saner configs
 
-are available in the git repository at:
+ - not disable all the *OTHER* lock debugging checks such as:
 
-  git://openrisc.net/jonas/linux for-3.3
+     - spin-lockup detection [this works even without ->held_locks]
 
-for you to fetch changes up to 3f6ffc8c2087791920721f086f9a92fde7bed9e2:
+     - allocate/free failure detection:
 
-  openrisc: Fix up audit_syscall_[entry|exit]() usage (2012-02-17
-09:53:12 +0100)
+         The percpu code could be extended to run the equivalent 
+         of debug_check_no_locks_freed() over the percpu area 
+         that is going away, to make sure no held locks are 
+         freed.
 
-----------------------------------------------------------------
-Build fixes for 3.3
+etc.
 
-----------------------------------------------------------------
-Jonas Bonn (2):
-      openrisc: include export.h for EXPORT_SYMBOL
-      openrisc: Fix up audit_syscall_[entry|exit]() usage
+Thanks,
 
- arch/openrisc/include/asm/ptrace.h |    8 +++++++-
- arch/openrisc/kernel/init_task.c   |    1 +
- arch/openrisc/kernel/irq.c         |    1 +
- arch/openrisc/kernel/ptrace.c      |   12 ++++--------
- 4 files changed, 13 insertions(+), 9 deletions(-)
-
-
+	Ingo
