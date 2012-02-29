@@ -1,126 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030483Ab2B2IDD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:03:03 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32669 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964932Ab2B2IDA convert rfc822-to-8bit (ORCPT
+	id S1756580Ab2B2IFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:05:25 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50363 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2B2IFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:03:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112641445"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <jbeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and xen
-	platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] RFC: Prepare PAD for native and xen
-	platform
-Thread-Index: AQHM9Kz1m4MGy1d3TzK01xgwJYdnxZZSeQoggAD7/5A=
-Date: Wed, 29 Feb 2012 08:01:54 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350BAC09@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350AD088@SHSMSX101.ccr.corp.intel.com>
-	<4F46530B020000780007F751@nat28.tlf.novell.com>
-	<DE8DF0795D48FD4CA783C40EC82923350AD9BB@SHSMSX101.ccr.corp.intel.com>
-	<DE8DF0795D48FD4CA783C40EC82923350B2013@SHSMSX101.ccr.corp.intel.com>
-	<20120226173458.GB18098@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350B9496@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 29 Feb 2012 03:05:24 -0500
+Date: Wed, 29 Feb 2012 19:04:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [RFC][PATCH 5/6] x86, efi: Fix endian issues and unaligned
+ accesses
+Message-Id: <20120229190456.f62620c4113466490a4851b5@canb.auug.org.au>
+In-Reply-To: <20120229112852.44bb80f99795999e61608267@canb.auug.org.au>
+References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
+	<1330436245-24875-6-git-send-email-matt@console-pimps.org>
+	<20120229105210.312c6a8f8115659d41337518@canb.auug.org.au>
+	<20120229111322.9eb4b23ff1672e8853ad3b3b@canb.auug.org.au>
+	<20120229112852.44bb80f99795999e61608267@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liu, Jinsong wrote:
-> Konrad Rzeszutek Wilk wrote:
->> On Sun, Feb 26, 2012 at 08:25:41AM +0000, Liu, Jinsong wrote:
->>> Liu, Jinsong wrote:
->>>> Jan Beulich wrote:
->>>>>>>> "Liu, Jinsong" <jinsong.liu@intel.com> 02/23/12 2:29 PM >>>
->>>>>> --- a/drivers/acpi/Kconfig
->>>>>> +++ b/drivers/acpi/Kconfig
->>>>>> @@ -213,10 +213,11 @@ config ACPI_HOTPLUG_CPU
->>>>>>    default y
->>>>>  >
->>>>>> config ACPI_PROCESSOR_AGGREGATOR
->>>>>> -    tristate "Processor Aggregator"
->>>>>> +    bool "Processor Aggregator"
->>>>> 
->>>>> There must be ways to address whatever strange problem you see
->>>>> without making this piece of code non-modular.
->>>>> 
->>>> 
->>>> Yes, another approach is x86_init approach, defining acpi_pad_ops
->>>> at x86_init.c and overwritten when xen_start_kernel. This patch is
->>>> just a RFC patch, to evaluate which approch is more reasonable :-)
->>>> 
->>> 
->>> Have a more think about it, x86_init approach still need to disable
->>> acpi_pad module. Seems we have to set acpi_pad as bool, as long as
->>> it need to hook to native acpi_pad fucs/variables.
->> 
->> What about the other approach I suggested where there are some
->> function overrides in osl.c? Something similar to
->> https://lkml.org/lkml/2012/1/17/401, specifically
->> https://lkml.org/lkml/2012/1/17/403 - that way you are not turning
->> the modules into being built in, but intead have the function table
->> already in the kernel (as some form of EXPORT_SYMBOL_GPL or a
->> registration function). 
->> 
-> 
-> Thanks for the example (it's good itself :-), but per my
-> understanding they are different cases. 
-> 
-> In the osl example case, tboot_late_init call
-> acpi_os_set_prepare_sleep to register func, so it works no matter
-> tboot.c built as y/n/m (through currently it's bool).  
-> 
-> However, in our case, we just cannot do so. We need
-> 1. predefine a hook to native acpi pad funcs, take effect when static
-> compile stage; 
-> 2. when xen init, redirect the hook to xen acpi pad funcs, take
-> effect at running time; (The point is, we cannot do init twice for
-> native and xen acpi pad, so we have to statically predefine a hook to
-> native acpi_pad)  
-> 
-> For the reason above, I think we have to remove acpi_pad module, as
-> long as we need to hook to native acpi_pad funcs. Thoughts? 
-> 
+--Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Compare approaches:
+On Wed, 29 Feb 2012 11:28:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi again,
+>=20
+> On Wed, 29 Feb 2012 11:13:22 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+> >
+> > OK, I tried just that patch on top of Linus' tree and obviously that
+> > didn't work :-) so I pulled the x86/build branch from the tip tree into
+> > my tree (which contained just Linus' tree of today
+> > (v3.3-rc5-97-g891003a)). and the build failed like this:
+> >=20
+> > arch/x86/boot/tools/build.c:36:22: error: asm/boot.h: No such file or d=
+irectory
+> >=20
+> > The build is an ARCH=3Dx86_64 defconfig with CONFIG_EFI_STUB=3Dy.
+>=20
+> I added V=3D1 and the command line for the build of build.c is
+>=20
+> gcc -Wp,-MD,arch/x86/boot/tools/.build.d -Iarch/x86/boot -Wall -Wmissing-=
+prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer   -I/scratch/sfr/x8=
+6_seg.obj/include   -I/scratch/sfr/x86_seg/tools/include -include /scratch/=
+sfr/x86_seg/include/linux/kconfig.h -o arch/x86/boot/tools/build /scratch/s=
+fr/x86_seg/arch/x86/boot/tools/build.c =20
+>=20
+> I am using a separate object tree as well (source tree
+> is /scratch/sfr/x86_seg, object is /scratch/sfr/x86_seg.obj).
 
-1. xen overwritten approach (patches V2, x86_init, osl approach)
-    Pros:
-        a little simpler code
-    Cons:
-        1). specific to xen, cannot extend to other virt platform;
-        2). need to change natvie acpi_pad as modular;
+I have refetched x86/build after these two patches:
+	x86, tools: Remove unneeded header files from tools/build.c
+	x86, build: Fix portability issues when cross-building
 
-2. paravirt interface approach (original patches V1)
-    Pros:
-        1). standard hypervisor-agnostic interface (USENIX conference 2006), can easily hook to Xen/lguest/... on demand;
-        2). arch independent;
-        3). no need to change native acpi_pad as non-modular;
-    Cons:
-        a little complicated code, and code patching is some overkilled for this case (but no harm);
+And the kernel build now completes.
 
-(BTW, in the future we need add more and more pv ops, like pv_pm_ops, pv_cpu_hotplug_ops, pv_mem_hotplug_ops, etc. So how about add a pv_misc_ops template to handle them all? seems it's a common issue).
+Thank you all for all the work.
 
-Your opinion?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
-Jinsong
+--Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTdwoAAoJEECxmPOUX5FEk6QP/3VAYXnng0s0VaBZwKT5yVGI
+zEZymkq5KjRAd6uM812fi5lIaShD8cWzyXsymo/LHqy3LEZaLPpIwchJynu0gUNb
+YcSBADW4P8awT+kJUExyKT2Py/e1YvoLJR+RV91GSMtLvno/MdRGrHDCjWarz77a
+7mSigzERrfC1pfi6ldXrHP4vga1CYzDYA8BPAjuBe18pIGBEp3L7CgHdo9OadNWE
+rTsAsohSRj482Y4RscPhjNFT5xeIpEAPi6uWsl0OmBTIN4+dhNLbY7Smwy8GyDnA
+hogt/ZWonbCNWvvYfyDR+VYJd+FXHGDqnDb8ipHVJ0chosaG8uRclUCbZLCa6lUl
+GKzrZUhbhxj+IdFmKAyn/oTA99+HosQEYoikx+udrYOLsPEyqCbRlfYRk/4rbkn2
+ub4TPlctUBFR0wqZmt4t3amBzvLEK2Qx1lzQxyRullukxPGsJ/hzHuP13+H6H7wg
+hwgxft+i8h6GUiwvUXJkRTnTzYuG3UjnH69sA134/gGNydGKdw7rnAy1qWy8KZr4
+nwtyScZrSUQB4RtNk3KscMGvW0IRjKku63MxAbu33OEgJqP/hkLLktSFTTuQdmPb
+mO8FP4STRJzamkOzvk98dW05bCi85CtwJtLWRe2Z1OlHGNVlggCOt2sa571PqLTH
+v6YMew8QWJhHgPhTa7n9
+=4Uur
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+--
