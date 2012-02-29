@@ -1,198 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2B2FZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 00:25:40 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:36395 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2B2FZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 00:25:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.220.168 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 28 Feb 2012 21:25:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 3.3] memcg: fix deadlock by inverting lrucare nesting
-Message-ID: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S965434Ab2B2FZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 00:25:53 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45573 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752380Ab2B2FZr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 00:25:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAH9JG2UDXdDwfsynPEZ8rN9_Wbw4axYDWnMHEU5GoHPFJvZ_Rg@mail.gmail.com>
+References: <001a01ccf5e3$74a0d360$5de27a20$%cho@samsung.com>
+	<CAH9JG2UDXdDwfsynPEZ8rN9_Wbw4axYDWnMHEU5GoHPFJvZ_Rg@mail.gmail.com>
+Date: Wed, 29 Feb 2012 14:25:45 +0900
+X-Google-Sender-Auth: 418OjqC3LNMMW9vZ-C_c3ETmzZ8
+Message-ID: <CAHQjnOOy__H8C0YAJq5TOD0Tv-18LRwaTosqp+pc9L8-Dq9TYw@mail.gmail.com>
+Subject: Re: [PATCH v9 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have forgotten the rules of lock nesting: the irq-safe ones must be
-taken inside the non-irq-safe ones, otherwise we are open to deadlock:
+On Tue, Feb 28, 2012 at 4:53 PM, Kyungmin Park
+<kyungmin.park@samsung.com> wrote:
+>> +void exynos_sysmmu_set_prefbuf(struct device *owner,
+>> +                             unsigned long base0, unsigned long size0,
+>> +                             unsigned long base1, unsigned long size1)
+>> +{
+>> +     struct sysmmu_drvdata *data = dev_get_drvdata(owner->archdata.iommu);
+>> +     unsigned long flags;
+>> +     int i;
+>> +
+>> +     BUG_ON((base0 + (size0 - 1)) <= base0);
+>> +     BUG_ON((base1 + (size1 - 1)) <= base1);
+> Do you want to check size? BUG_ON(size <= 1);?
 
-CPU0                          CPU1
-----                          ----
-lock(&(&pc->lock)->rlock);
-                              local_irq_disable();
-                              lock(&(&zone->lru_lock)->rlock);
-                              lock(&(&pc->lock)->rlock);
-<Interrupt>
-lock(&(&zone->lru_lock)->rlock);
+My mistake. :)
+Thank you.
 
-To check a different locking issue, I happened to add a spin_lock to
-memcg's bit_spin_lock in lock_page_cgroup(), and lockdep very quickly
-complained about __mem_cgroup_commit_charge_lrucare() (on CPU1 above).
+>> +
+>> +     read_lock_irqsave(&data->lock, flags);
+>> +     if (!is_sysmmu_active(data))
+>> +             goto finish;
+>> +
+>> +     for (i = 0; i < data->nsfrs; i++) {
+>> +             if ((readl(data->sfrbases[i] + S5P_MMU_VERSION) >> 28) == 3) {
+>> +                     sysmmu_block(data->sfrbases[i]);
+>> +
+>> +                     if (size1 == 0) {
+> Is it possible? if size1 is '0', it can't pass the BUG_ON condition.
+Although the above BUG_ON condition is incorrect, it can pass if size1
+and base1 are 0
+because the type of them is unsigned.
 
-So delete __mem_cgroup_commit_charge_lrucare(), passing a bool lrucare
-to __mem_cgroup_commit_charge() instead, taking zone->lru_lock under
-lock_page_cgroup() in the lrucare case.
+>> +
+>> +     for (i = 0; i < data->nsfrs; i++) {
+>> +             __sysmmu_set_ptbase(data->sfrbases[i], pgtable);
+>> +
+>> +             if ((readl(data->sfrbases[i] + S5P_MMU_VERSION) >> 28) == 3) {
+>> +                     /* System MMU version is 3.x */
+>> +                     __raw_writel((1 << 12) | (2 << 28),
+> Can you use the DEFINE instead of hard-code?
 
-The original was using spin_lock_irqsave, but we'd be in more trouble
-if it were ever called at interrupt time: unconditional _irq is enough.
-And ClearPageLRU before del from lru, SetPageLRU before add to lru: no
-strong reason, but that is the ordering used consistently elsewhere.
+Do you think it is required even though it is used nowhere else here?
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-Not needed for -stable: this issue came into 3.3-rc1.
+>> +static int exynos_iommu_attach_device(struct iommu_domain *domain,
+>> +                                struct device *dev)
+>> +{
+>> +     int ret;
+>> +     struct exynos_iommu_domain *priv = domain->priv;
+>> +     struct iommu_client *client = NULL;
+>> +     struct list_head *pos;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&priv->lock, flags);
+>> +
+>> +     list_for_each(pos, &priv->clients) {
+> Simply list_for_each_entry.
 
- mm/memcontrol.c |   72 +++++++++++++++++++++++-----------------------
- 1 file changed, 37 insertions(+), 35 deletions(-)
+Variable 'client' must not be used as a loop cursor
+because its value must not be changed unless a condition meets.
 
---- 3.3-rc5/mm/memcontrol.c	2012-02-25 13:02:05.165830574 -0800
-+++ linux/mm/memcontrol.c	2012-02-27 23:24:54.676160755 -0800
-@@ -2408,8 +2408,12 @@ static void __mem_cgroup_commit_charge(s
- 				       struct page *page,
- 				       unsigned int nr_pages,
- 				       struct page_cgroup *pc,
--				       enum charge_type ctype)
-+				       enum charge_type ctype,
-+				       bool lrucare)
- {
-+	struct zone *uninitialized_var(zone);
-+	bool was_on_lru = false;
-+
- 	lock_page_cgroup(pc);
- 	if (unlikely(PageCgroupUsed(pc))) {
- 		unlock_page_cgroup(pc);
-@@ -2420,6 +2424,21 @@ static void __mem_cgroup_commit_charge(s
- 	 * we don't need page_cgroup_lock about tail pages, becase they are not
- 	 * accessed by any other context at this point.
- 	 */
-+
-+	/*
-+	 * In some cases, SwapCache and FUSE(splice_buf->radixtree), the page
-+	 * may already be on some other mem_cgroup's LRU.  Take care of it.
-+	 */
-+	if (lrucare) {
-+		zone = page_zone(page);
-+		spin_lock_irq(&zone->lru_lock);
-+		if (PageLRU(page)) {
-+			ClearPageLRU(page);
-+			del_page_from_lru_list(zone, page, page_lru(page));
-+			was_on_lru = true;
-+		}
-+	}
-+
- 	pc->mem_cgroup = memcg;
- 	/*
- 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
-@@ -2443,9 +2462,18 @@ static void __mem_cgroup_commit_charge(s
- 		break;
- 	}
- 
-+	if (lrucare) {
-+		if (was_on_lru) {
-+			VM_BUG_ON(PageLRU(page));
-+			SetPageLRU(page);
-+			add_page_to_lru_list(zone, page, page_lru(page));
-+		}
-+		spin_unlock_irq(&zone->lru_lock);
-+	}
-+
- 	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), nr_pages);
- 	unlock_page_cgroup(pc);
--	WARN_ON_ONCE(PageLRU(page));
-+
- 	/*
- 	 * "charge_statistics" updated event counter. Then, check it.
- 	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
-@@ -2643,7 +2671,7 @@ static int mem_cgroup_charge_common(stru
- 	ret = __mem_cgroup_try_charge(mm, gfp_mask, nr_pages, &memcg, oom);
- 	if (ret == -ENOMEM)
- 		return ret;
--	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype);
-+	__mem_cgroup_commit_charge(memcg, page, nr_pages, pc, ctype, false);
- 	return 0;
- }
- 
-@@ -2663,35 +2691,6 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- 					enum charge_type ctype);
- 
--static void
--__mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
--					enum charge_type ctype)
--{
--	struct page_cgroup *pc = lookup_page_cgroup(page);
--	struct zone *zone = page_zone(page);
--	unsigned long flags;
--	bool removed = false;
--
--	/*
--	 * In some case, SwapCache, FUSE(splice_buf->radixtree), the page
--	 * is already on LRU. It means the page may on some other page_cgroup's
--	 * LRU. Take care of it.
--	 */
--	spin_lock_irqsave(&zone->lru_lock, flags);
--	if (PageLRU(page)) {
--		del_page_from_lru_list(zone, page, page_lru(page));
--		ClearPageLRU(page);
--		removed = true;
--	}
--	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
--	if (removed) {
--		add_page_to_lru_list(zone, page, page_lru(page));
--		SetPageLRU(page);
--	}
--	spin_unlock_irqrestore(&zone->lru_lock, flags);
--	return;
--}
--
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
-@@ -2769,13 +2768,16 @@ static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
- 					enum charge_type ctype)
- {
-+	struct page_cgroup *pc;
-+
- 	if (mem_cgroup_disabled())
- 		return;
- 	if (!memcg)
- 		return;
- 	cgroup_exclude_rmdir(&memcg->css);
- 
--	__mem_cgroup_commit_charge_lrucare(page, memcg, ctype);
-+	pc = lookup_page_cgroup(page);
-+	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype, true);
- 	/*
- 	 * Now swap is on-memory. This means this page may be
- 	 * counted both as mem and swap....double count.
-@@ -3248,7 +3250,7 @@ int mem_cgroup_prepare_migration(struct
- 		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
- 	else
- 		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
--	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype);
-+	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype, false);
- 	return ret;
- }
- 
-@@ -3332,7 +3334,7 @@ void mem_cgroup_replace_page_cache(struc
- 	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
- 	 * LRU while we overwrite pc->mem_cgroup.
- 	 */
--	__mem_cgroup_commit_charge_lrucare(newpage, memcg, type);
-+	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type, true);
- }
- 
- #ifdef CONFIG_DEBUG_VM
+>> +             struct iommu_client *cur;
+>> +
+>> +             cur = list_entry(pos, struct iommu_client, node);
+>> +             if (cur->dev == dev) {
+>> +                     client = cur;
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>> +     if (client != NULL) {
+>> +             dev_dbg(dev, "%s: IOMMU with pgtable 0x%lx already attached\n",
+>> +                                     __func__, __pa(priv->pgtable));
+>> +             client->refcnt++;
+>> +     }
+>> +
+>> +     spin_unlock_irqrestore(&priv->lock, flags);
+>> +
+>> +     if (client != NULL)
+>> +             return 0;
+>> +
+>> +     client = kmalloc(sizeof(*client), GFP_KERNEL);
+> Maybe attach called frequently. how about to use kmem_cache-*?
+Thank you for advice.
+
+>> +     if (!client)
+>> +             return -ENOMEM;
+>> +
+>> +     INIT_LIST_HEAD(&client->node);
+>> +     client->dev = dev;
+>> +     client->refcnt = 1;
+> Dose it possible attach more than one? OMAP has multiple attach codes.
+Yes. This function returns earlier than this if client->refcnt is larger than 1.
+Please check "if (client != NULL) return 0;" statement in this function.
+
+>> +     ret = __exynos_sysmmu_enable(dev, __pa(priv->pgtable), domain);
+>> +     if (ret) {
+>> +             kfree(client);
+>> +             return ret;
+>> +     }
+>> +
+>> +     spin_lock_irqsave(&priv->lock, flags);
+>> +     list_add_tail(&client->node, &priv->clients);
+>> +     spin_unlock_irqrestore(&priv->lock, flags);
+>> +
+>> +     dev_dbg(dev, "%s: Attached new IOMMU with pgtable 0x%lx\n", __func__,
+>> +                                             __pa(priv->pgtable));
+>> +     return 0;
+>> +}
+>> +
+>> +static void exynos_iommu_detach_device(struct iommu_domain *domain,
+>> +                                 struct device *dev)
+>> +{
+>> +     struct exynos_iommu_domain *priv = domain->priv;
+>> +     struct iommu_client *client = NULL;
+>> +     struct list_head *pos;
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&priv->lock, flags);
+>> +
+>> +     list_for_each(pos, &priv->clients) {
+>> +             struct iommu_client *cur;
+>> +
+>> +             cur = list_entry(pos, struct iommu_client, node);
+>> +             if (cur->dev == dev) {
+>> +                     cur->refcnt--;
+>> +                     client = cur;
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>> +     spin_unlock_irqrestore(&priv->lock, flags);
+>> +
+>> +     if (WARN_ON(client == NULL))
+>> +             return;
+>> +
+>> +     if (client->refcnt > 0) {
+> It never triggered. as you use true/false scheme. I remember you said
+> previous patch. use the refcount but actual meaning is true/false.
+
+I think you are talking about the conversations about v6 patchset.
+client->refcnt is really a reference counter.
+
+>> +             dev_dbg(dev, "%s: Detaching IOMMU with pgtable 0x%lx delayed\n",
+>> +                                     __func__, __pa(priv->pgtable));
+>> +             return;
+>> +     }
+>> +
+>> +     BUG_ON(client->refcnt != 0);
+> Do you think "minus value"?
+
+Yes. but I think it never be happened logically.
+It is just "assert(client->refcnt == 0)".
+May it is better to remove the BUG_ON.
+
+
+Thank you for kind review.
+
+Cho KyongHo.
