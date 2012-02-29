@@ -1,90 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966003Ab2B2A3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:29:04 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48674 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965700Ab2B2A3B (ORCPT
+	id S966137Ab2B2Aa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:30:29 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48179 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965834Ab2B2Aa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:29:01 -0500
-Date: Wed, 29 Feb 2012 11:28:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [RFC][PATCH 5/6] x86, efi: Fix endian issues and unaligned
- accesses
-Message-Id: <20120229112852.44bb80f99795999e61608267@canb.auug.org.au>
-In-Reply-To: <20120229111322.9eb4b23ff1672e8853ad3b3b@canb.auug.org.au>
-References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
-	<1330436245-24875-6-git-send-email-matt@console-pimps.org>
-	<20120229105210.312c6a8f8115659d41337518@canb.auug.org.au>
-	<20120229111322.9eb4b23ff1672e8853ad3b3b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 28 Feb 2012 19:30:28 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 29 Feb 2012 09:28:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] memcg: avoid THP split in task migration
+Message-Id: <20120229092859.a0411859.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Feb_2012_11_28_52_+1100_8m47qflftD7wlmH8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Feb_2012_11_28_52_+1100_8m47qflftD7wlmH8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 28 Feb 2012 16:12:32 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-Hi again,
+> Currently we can't do task migration among memory cgroups without THP split,
+> which means processes heavily using THP experience large overhead in task
+> migration. This patch introduce the code for moving charge of THP and makes
+> THP more valuable.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Hillf Danton <dhillf@gmail.com>
 
-On Wed, 29 Feb 2012 11:13:22 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> OK, I tried just that patch on top of Linus' tree and obviously that
-> didn't work :-) so I pulled the x86/build branch from the tip tree into
-> my tree (which contained just Linus' tree of today
-> (v3.3-rc5-97-g891003a)). and the build failed like this:
->=20
-> arch/x86/boot/tools/build.c:36:22: error: asm/boot.h: No such file or dir=
-ectory
->=20
-> The build is an ARCH=3Dx86_64 defconfig with CONFIG_EFI_STUB=3Dy.
 
-I added V=3D1 and the command line for the build of build.c is
+Thank you! 
 
-gcc -Wp,-MD,arch/x86/boot/tools/.build.d -Iarch/x86/boot -Wall -Wmissing-pr=
-ototypes -Wstrict-prototypes -O2 -fomit-frame-pointer   -I/scratch/sfr/x86_=
-seg.obj/include   -I/scratch/sfr/x86_seg/tools/include -include /scratch/sf=
-r/x86_seg/include/linux/kconfig.h -o arch/x86/boot/tools/build /scratch/sfr=
-/x86_seg/arch/x86/boot/tools/build.c =20
+A comment below.
 
-I am using a separate object tree as well (source tree
-is /scratch/sfr/x86_seg, object is /scratch/sfr/x86_seg.obj).
+> ---
+>  mm/memcontrol.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 files changed, 70 insertions(+), 6 deletions(-)
+> 
+> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+> index c83aeb5..e97c041 100644
+> --- linux-next-20120228.orig/mm/memcontrol.c
+> +++ linux-next-20120228/mm/memcontrol.c
+> @@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +/*
+> + * We don't consider swapping or file mapped pages because THP does not
+> + * support them for now.
+> + */
+> +static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
+> +		unsigned long addr, pmd_t pmd, union mc_target *target)
+> +{
+> +	struct page *page = NULL;
+> +	struct page_cgroup *pc;
+> +	int ret = 0;
+> +
+> +	if (pmd_present(pmd))
+> +		page = pmd_page(pmd);
+> +	if (!page)
+> +		return 0;
+> +	VM_BUG_ON(!PageHead(page));
+> +	get_page(page);
+> +	pc = lookup_page_cgroup(page);
+> +	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
+> +		ret = MC_TARGET_PAGE;
+> +		if (target)
+> +			target->page = page;
+> +	}
+> +	if (!ret || !target)
+> +		put_page(page);
+> +	return ret;
+> +}
+> +#else
+> +static inline int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
+> +		unsigned long addr, pmd_t pmd, union mc_target *target)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>  					unsigned long addr, unsigned long end,
+>  					struct mm_walk *walk)
+> @@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> -	split_huge_page_pmd(walk->mm, pmd);
+> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> +		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
+> +			mc.precharge += HPAGE_PMD_NR;
+> +		spin_unlock(&walk->mm->page_table_lock);
+> +		cond_resched();
+> +		return 0;
+> +	}
+>  
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE)
+> @@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+>  	struct vm_area_struct *vma = walk->private;
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+> +	int type;
+> +	union mc_target target;
+> +	struct page *page;
+> +	struct page_cgroup *pc;
+> +
+> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> +		if (!mc.precharge)
+> +			return 0;
+> +		type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
+> +		if (type == MC_TARGET_PAGE) {
+> +			page = target.page;
+> +			if (!isolate_lru_page(page)) {
+> +				pc = lookup_page_cgroup(page);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Here is a diffuclut point. Please see mem_cgroup_split_huge_fixup(). It splits
+updates memcg's status of splitted pages under lru_lock and compound_lock
+but not under mm->page_table_lock.
 
---Signature=_Wed__29_Feb_2012_11_28_52_+1100_8m47qflftD7wlmH8
-Content-Type: application/pgp-signature
+Looking into split_huge_page()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	split_huge_page()  # take anon_vma lock
+		__split_huge_page()
+			__split_huge_page_refcount() # take lru_lock, compound_lock.
+				mem_cgroup_split_huge_fixup()
+			__split_huge_page_map() # take page table lock.
 
-iQIcBAEBCAAGBQJPTXFEAAoJEECxmPOUX5FE6AsP/3Dxjlu7M9CKncDYbsdExM8+
-U2LZHPzkqxWsvOm/T1S7Ahq7P0m0H0bC+J0H7JY1OBi0LdeH/nKZnHoNjeljhoXS
-g9fgUpz/7t4ilxw6OJQU5T39RG7Q4X6685DTNPNErAVtH1OULZIAmxsj1is7K2XH
-0bcOBKwtdL44U2ZHrFkGEyZuQ+9avBIPimAnU5kdhQiWRmztnMo1NcF9tcBnD5nM
-toTBuZ46N2PmQ2b4IezhNkf+JgUuocdiHazwPo5eKY38kk208MEpC4wKzr8q8r4o
-6YSIEk04tC7MhQK4KTeNjekQq1TftLOkfEtxiWCveUuTRgDjie608wzMyQ7yk3xc
-bcIxwYhTo+vBekoXamTFLfwOC9Vlpyc6efbYAvHVMfJsL90pv8TZqMu8E3YwNX4z
-Ga9TP7/q8Oogd6ppT8el6mQeSfTefTxdd/u1YG1VZVRgH+g3hyA4y5vHULWj9s2Y
-f4eTkCQ6ufbcEFPQyYdYdDXXOizlWQorghcVZDl2Nv5CoPJnm74H5fEl6BBykuZS
-C1+I+91O7mRXzKJEmxRFDLIWyTSDfMFq2t5R9y1Xj7ryXxHS3zVmrCEprvxlXm8A
-XBrtJLdTK/bVR/ERblOjbnWq+Dmx5RvnNgGcEEClOEnxuSMyCOtgEUYzvozOlhAS
-Nfi8IgldEo090FwMG9FM
-=pRks
------END PGP SIGNATURE-----
+I'm not fully sure but IIUC, pmd_trans_huge_lock() just guarantees a huge page "map"
+never goes out. To avoid page splitting itself, compound_lock() is required, I think.
 
---Signature=_Wed__29_Feb_2012_11_28_52_+1100_8m47qflftD7wlmH8--
+So, the lock here should be
+
+	page = target.page;
+	isolate_lru_page(page);
+	flags = compound_lock_irqsave(page);
+
+
+> +				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
+> +							     pc, mc.from, mc.to,
+> +							     false)) {
+> +					mc.precharge -= HPAGE_PMD_NR;
+> +					mc.moved_charge += HPAGE_PMD_NR;
+> +				}
+
+Here is PageTransHuge() is checked in mem_cgroup_move_account() and if !PageTransHuge(),
+the function returns -EBUSY.
+I'm not sure but....it's not worth to retry (but add a comment as FIXME later!)
+
+	compound_unlock_irqrestore(page);
+
+I may miss something, please check carefully, again.
+
+
+Thanks,
+-Kame
+> +				putback_lru_page(page);
+> +			}
+> +			put_page(page);
+> +		}
+> +		spin_unlock(&walk->mm->page_table_lock);
+> +		cond_resched();
+> +		return 0;
+> +	}
+>  
+> -	split_huge_page_pmd(walk->mm, pmd);
+>  retry:
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; addr += PAGE_SIZE) {
+>  		pte_t ptent = *(pte++);
+> -		union mc_target target;
+> -		int type;
+> -		struct page *page;
+> -		struct page_cgroup *pc;
+>  		swp_entry_t ent;
+>  
+>  		if (!mc.precharge)
+> -- 
+> 1.7.7.6
+> 
+> 
+
