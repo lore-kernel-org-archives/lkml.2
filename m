@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965917Ab2B2XL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:11:56 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:29195 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965631Ab2B2XLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:11:54 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 39/39] x86, PCI: kill busn in acpi pci_root_info
-Date: Wed, 29 Feb 2012 15:07:38 -0800
-Message-Id: <1330556858-11768-40-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F4EB039.00A0,ss=1,re=0.000,fgs=0
+	id S965931Ab2B2XMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:12:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34059 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965631Ab2B2XMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 18:12:12 -0500
+Message-ID: <4F4EB0B9.2080906@zytor.com>
+Date: Wed, 29 Feb 2012 15:11:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: "Joshua C." <joshuacov@googlemail.com>
+CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
+In-Reply-To: <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn thought that we should just use that in acpi_root.
+Looks good, *except* that this will break the compile for all non-x86
+architectures.  It might be worthwhile to factor out the
+architecture-dependent bits for cleanliness.
 
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/pci/acpi.c |   19 ++++++-------------
- 1 files changed, 6 insertions(+), 13 deletions(-)
+	-hpa
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index ff5243e..5178917 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -12,7 +12,6 @@ struct pci_root_info {
- 	char name[16];
- 	unsigned int res_num;
- 	struct resource *res;
--	struct resource busn;
- 	struct pci_sysdata sd;
- };
- 
-@@ -283,9 +282,6 @@ static void add_resources(struct pci_root_info *info,
- 	int i;
- 	struct resource *res, *root, *conflict;
- 
--	if (info->busn.flags & IORESOURCE_BUS)
--		pci_add_resource(resources, &info->busn);
--
- 	coalesce_windows(info, IORESOURCE_MEM);
- 	coalesce_windows(info, IORESOURCE_IO);
- 
-@@ -346,16 +342,12 @@ static void release_pci_root_info(struct pci_host_bridge *bridge)
- 
- static void
- probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
--		    int busnum, int busmax, int domain)
-+		    int busnum, int domain)
- {
- 	size_t size;
- 
- 	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
- 	info->bridge = device;
--	info->busn.name = info->name;
--	info->busn.start = busnum;
--	info->busn.end = busmax;
--	info->busn.flags = IORESOURCE_BUS;
- 
- 	info->res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
-@@ -379,7 +371,6 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 	struct pci_root_info *info = NULL;
- 	int domain = root->segment;
- 	int busnum = root->secondary.start;
--	int busmax = root->secondary.end;
- 	LIST_HEAD(resources);
- 	struct pci_bus *bus;
- 	struct pci_sysdata *sd;
-@@ -432,15 +423,17 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(info);
- 	} else {
--		probe_pci_root_info(info, device, busnum, busmax, domain);
-+		probe_pci_root_info(info, device, busnum, domain);
- 
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
- 		 * defaults or native bridge info if we're ignoring _CRS.
- 		 */
--		if (pci_use_crs)
-+		if (pci_use_crs) {
-+                       /* insert busn res at first */
-+			pci_add_resource(&resources,  &root->secondary);
- 			add_resources(info, &resources);
--		else {
-+		} else {
- 			free_pci_root_info_res(info);
- 			x86_pci_root_bus_resources(busnum, &resources);
- 		}
+On 02/29/2012 02:56 PM, Joshua C. wrote:
+> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+> index a605549..40a33bf 100644
+> --- a/drivers/tty/vt/keyboard.c
+> +++ b/drivers/tty/vt/keyboard.c
+> @@ -24,6 +24,8 @@
+> 
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> 
+> +#include <asm/io.h>
+> +#include <asm/setup.h>
+>  #include <linux/consolemap.h>
+>  #include <linux/module.h>
+>  #include <linux/sched.h>
+> @@ -52,19 +54,6 @@ extern void ctrl_alt_del(void);
+> 
+>  #define KBD_DEFMODE ((1 << VC_REPEAT) | (1 << VC_META))
+> 
+> -/*
+> - * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
+> - * This seems a good reason to start with NumLock off. On HIL keyboards
+> - * of PARISC machines however there is no NumLock key and everyone
+> expects the keypad
+> - * to be used for numbers.
+> - */
+> -
+> -#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
+> defined(CONFIG_KEYBOARD_HIL_OLD))
+> -#define KBD_DEFLEDS (1 << VC_NUMLOCK)
+> -#else
+> -#define KBD_DEFLEDS 0
+> -#endif
+> -
+>  #define KBD_DEFLOCK 0
+> 
+>  void compute_shiftstate(void);
+> @@ -1428,12 +1417,32 @@ static struct input_handler kbd_handler = {
+>  	.id_table	= kbd_ids,
+>  };
+> 
+> +/* Let the user decide if we should use the value from the BIOS. */
+> +static int numlock = 1;
+> +MODULE_PARM_DESC(numlock, "Should we use the NumLock state returned
+> by the BIOS? \
+> +				(1 = use BIOS Setting, 0 = don't use it)");
+> +module_param_named(numlock, numlock, int, 0400);
+> +
+>  int __init kbd_init(void)
+>  {
+>  	int i;
+>  	int error;
+> 
+> -        for (i = 0; i < MAX_NR_CONSOLES; i++) {
+> +	/*
+> +	* Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
+> +	* This seems a good reason to start with NumLock off. On HIL keyboards
+> +	* of PARISC machines however there is no NumLock key and everyone
+> expects the keypad
+> +	* to be used for numbers. That's why we start with NumLock off and
+> ask the bios
+> +	* for the correct state.
+> +	*/
+> +
+> +	int KBD_DEFLEDS = 0 << VC_NUMLOCK;
+> +
+> +	/* Numlock status bit set? */
+> +	if ((boot_params.kbd_status & 0x20) && numlock)
+> +		KBD_DEFLEDS = 1 << VC_NUMLOCK;
+> +
+> +	for (i = 0; i < MAX_NR_CONSOLES; i++) {
+>  		kbd_table[i].ledflagstate = KBD_DEFLEDS;
+>  		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
+>  		kbd_table[i].ledmode = LED_SHOW_FLAGS;
+
+
 -- 
-1.7.7
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
