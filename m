@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab2B2SEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:04:05 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10632 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756745Ab2B2SED convert rfc822-to-8bit (ORCPT
+	id S1758258Ab2B2SGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:06:37 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:11563
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757642Ab2B2SGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:04:03 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 29 Feb 2012 10:03:59 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Wed, 29 Feb 2012 10:03:57 -0800
-Subject: RE: [PATCH v2] pinctrl: make the pinmux-pins more helpful
-Thread-Topic: [PATCH v2] pinctrl: make the pinmux-pins more helpful
-Thread-Index: Acz3C94yHuXqy1MpSq+gr6T+qoO9lAAAIWow
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF20C2@HQMAIL01.nvidia.com>
-References: <1330538332-16088-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1330538332-16088-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Feb 2012 13:06:35 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F4E6915.1010209@am.sony.com>
+Date: Wed, 29 Feb 2012 10:06:13 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
+To: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Questions about ptrace on a dying process
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, February 29, 2012 10:59 AM:
-> The debugfs file pinmux-pins used to tell which function was
-> enabled but now states simply which device owns the pin. Being
-> owned by the pinctrl driver itself means just that it's hogged
-> so be a bit more helpful by printing that.
-> 
-> ChangeLog v1->v2:
-> - Preserve the self-referential owner field, just clarify that
->   when the pin controller states itself as owner this means
->   that it's hogged.
-> 
-> Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+ptrace maintainers (and interested parties)...
 
-Exactly what I want, thanks.
+I'm working on a crash handler for Linux, which uses ptrace to retrieve information
+about a process during it's coredump.  Specifically, from within a core handler
+program (started within do_coredump() as a user_mode_helper), I would like to make
+ptrace calls against the dying process.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+My problem is that the process state is not entering into TASK_TRACED, when
+I do an PTRACE_ATTACH against it.  I have worked around the problem with the
+hack below, and am now trying to find a more correct solution to my problem:
 
--- 
-nvpublic
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -122,6 +122,8 @@ int ptrace_check_attach(struct task_struct *child, int kill)
+                WARN_ON_ONCE(task_is_stopped(child));
+                if (task_is_traced(child) || kill)
+                        ret = 0;
++               // FIXTHIS - force tracing support for crash handler
++               ret = 0;
+                spin_unlock_irq(&child->sighand->siglock);
+        }
+        read_unlock(&tasklist_lock);
+
+
+I'm trying to decipher the code, but I'm not sure if I understand it correctly.
+
+Here's the problem I have found:
+
+The code in ptrace_check_attach() tests whether the process state has __TASK_TRACED.
+(the above 'task_is_trace(child)' conditional).  This appears to be the gateway
+for allowing ptrace operations on the process.
+
+A process usually sets it's state to TASK_TRACED (which includes __TASK_TRACED)
+via the function ptrace_stop(), which is usually called (I believe), when a task
+processes a STOP signal.  In the case of a dying process, however, it appears
+this is never called, since the process never actually returns through the
+signal-handling code on it's way back to user-space, since user-space never
+runs again.  At least, I tried to send a signal from my crash_handler program
+to the dying process, and the dying process never processes the signal.
+
+In ptrace_attach(), a stop signal *is* submitted to the process, but via
+a call to send_sig_info(SIGSTOP...), not by calling ptrace_stop().
+This ends up adding the STOP signal to the pending bit array, but not
+converting the process to TASK_TRACED at that time.
+
+The code in these codes paths looks quite tricky, and I am loathe to make any
+changes to the generic state machine for my case.
+
+However, what would you think of having special case code in ptrace_attach()
+or ptrace_check_attach() code, for the in-coredump case?
+
+Have you heard of other uses of ptrace on dying processes?  Have other people
+gotten thts working successfully?  That is, is there something
+simple I'm missing, in terms of manipulating the process state to allow for
+ptrace operation in this situation?
+
+Thanks for any help or ideas you can provide.
+ -- Tim
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
