@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030677Ab2B2DLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 22:11:36 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40793 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965286Ab2B2DLe convert rfc822-to-8bit (ORCPT
+	id S1030719Ab2B2DMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 22:12:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50565 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030684Ab2B2DMO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 22:11:34 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6634"; a="167354759"
-X-IronPort-AV: E=Sophos;i="4.73,499,1325491200"; 
-   d="scan'208";a="119490756"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: David Miller <davem@davemloft.net>
-CC: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Giori, Kathy" <kgiori@qca.qualcomm.com>,
-        "chris.snook@gmail.com" <chris.snook@gmail.com>,
-        "Olivari, Mathieu" <mathieu@qca.qualcomm.com>,
-        "Huntsman, Bryan" <bryanh@quicinc.com>
-Subject: RE: [PATCH] net: add QCA alx Ethernet driver
-Thread-Topic: [PATCH] net: add QCA alx Ethernet driver
-Thread-Index: AQHM9oR7kTu/A5Gy+kqKXc430uKtxJZTowaAgAAFPID//3p5IIAAih6A//+DQTA=
-Date: Wed, 29 Feb 2012 03:11:14 +0000
-Message-ID: <157393863283F442885425D2C454285619415561@nasanexd02a.na.qualcomm.com>
-References: <20120228.205347.1718771650331094141.davem@davemloft.net>
-	<CAB=NE6VXyQ-k1Sm3Xf_ABE35+PHSoNqX=AJpLBjNu0sdAdnY4g@mail.gmail.com>
-	<157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com>
- <20120228.212857.797446903975232476.davem@davemloft.net>
-In-Reply-To: <20120228.212857.797446903975232476.davem@davemloft.net>
-Accept-Language: zh-CN, en-US
+	Tue, 28 Feb 2012 22:12:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="112889338"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: [PATCH V2] Quirk for IVB graphics FLR errata
+Thread-Topic: [PATCH V2] Quirk for IVB graphics FLR errata
+Thread-Index: Acz2j13cnHuVdz08QJ6II1JKSiWO3A==
+Date: Wed, 29 Feb 2012 03:11:24 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.45.230.6]
+x-originating-ip: [10.239.127.40]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -43,49 +34,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David
+For IvyBridge Mobile platform, a system hang may occur if a FLR(Function Level
+ Reset) is asserted to internal graphics.
 
-    We understand your concern.  To support the new chipset,  do you think it's reasonable to upstream  it as a new driver, not a replacement ?
+This quirk patch is workaround for the IVB FLR errata issue.
+We are disabling the FLR reset handshake between the PCH and CPU display, 
+then manually powering down the panel power sequencing and resetting the PCH display.
 
-Thanks
-Xiong
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
+---
+ drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 49 insertions(+), 0 deletions(-)
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Wednesday, February 29, 2012 10:29
-> To: Huang, Xiong
-> Cc: Rodriguez, Luis; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> qca-linux-team; nic-devel; Giori, Kathy; chris.snook@gmail.com; Olivari,
-> Mathieu; Huntsman, Bryan
-> Subject: Re: [PATCH] net: add QCA alx Ethernet driver
-> 
-> From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-> Date: Wed, 29 Feb 2012 02:19:05 +0000
-> 
-> >      The code related to hardware of atl1c is quite diff with that in
-> > our hand, every time we take much time to find which part should be
-> > revised for one bug/issue found on other platform/OSes. the new driver
-> > make it easy to fix and support new chipset as well.
-> 
-> Broadcom gave the same excuses.  Save yourself some typing.
-> 
-> I already know what you are going to say and claim are the issues.
-> 
-> I've heard it all before, and none of them justify replacing the existing driver
-> wholesale.  We simply don't operate this way.
-> 
-> Because you guys didn't upstream your driver properly back when the atl1c
-> hardware first came out and Linux needed a driver, someone else did.
-> 
-> And we're not removing their driver just because now you guys just want to
-> come in and take over simply because you're not willing to collaborate properly
-> and contribute to the existing code like everyone else on the planet does.
-> 
-> There is no arguing against this, there is no justification, and it simply will not
-> happen.  I'm sorry you put some must effort into this but you should have been
-> smart and listened to Luis last year when he tried to guide you in the right
-> direction.
-> 
-> Listening to Luis would have saved you a lot of wasted engineering.
-> 
-> Maybe you will be smart and listen to him next time.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index 6476547..5223b80 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -29,6 +29,11 @@
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+ #include "pci.h"
+ 
++#include "../gpu/drm/i915/i915_reg.h"
++#include <asm/tsc.h>
++/* 10 seconds */
++#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
++
+ /*
+  * This quirk function disables memory decoding and releases memory resources
+  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
+@@ -3069,11 +3074,55 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
+ 	return 0;
+ }
+ 
++#define MSG_CTL	0x45010
++
++static int reset_ivb_igd(struct pci_dev *dev, int probe) {
++	u8 *mmio_base;
++	u32 val;
++
++	if (probe)
++		return 0;
++
++	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
++				 pci_resource_len(dev, 0));
++	if (!mmio_base)
++		return -ENOMEM;
++
++	/* Work Around */
++	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
++	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
++	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
++	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
++	do {
++		cycles_t start_time = get_cycles();
++		while (1) {
++			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
++			if (((val & 0x80000000) == 0)
++				&& ((val & 0x30000000) == 0))
++				break;
++			if (IGD_OPERATION_TIMEOUT < (get_cycles() - start_time))
++				break;
++			cpu_relax();
++		}
++	} while (0);
++	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
++
++	iounmap(pci_resource_start(dev, 0));
++	return 0;
++}
++
+ #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
++#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
++#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+ 
+ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+ 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
+ 		 reset_intel_82599_sfp_virtfn },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
++		reset_ivb_igd },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
++		reset_ivb_igd },
+ 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
+ 		reset_intel_generic_dev },
+ 	{ 0 }
+--
+1.6.0.rc1
+
+
