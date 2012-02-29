@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab2B2K7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:59:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37540 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab2B2K7m (ORCPT
+	id S1757752Ab2B2LDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 06:03:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48151 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab2B2LDS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:59:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.208.69 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330513326.3545.93.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH resend] checkpatch.pl: be silent when -q and --ignore is
- given
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 13:02:06 +0200
-In-Reply-To: <1330364758-12065-1-git-send-email-dedekind1@gmail.com>
-References: <1330364758-12065-1-git-send-email-dedekind1@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-lFfsmNbQiZalCMEzCnjG"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Wed, 29 Feb 2012 06:03:18 -0500
+Message-ID: <1330513384.11248.129.camel@twins>
+Subject: Re: RFC [PATCH] SMP: Don't schedule tasks on inactive cpu(s)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jonas Aaberg <jonas.aberg@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 29 Feb 2012 12:03:04 +0100
+In-Reply-To: <1330512150-20727-1-git-send-email-jonas.aberg@stericsson.com>
+References: <1330512150-20727-1-git-send-email-jonas.aberg@stericsson.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-02-29 at 11:42 +0100, Jonas Aaberg wrote:
+> This patch removes the ability to schedule tasks on cpus that are online,
+> but not active.  The reason for this patch is that during cpu hotplug
+> on ARM (atleast) there is a short window where cpuX (X > 0) is online, but
+> busy-waiting on cpu0 to put it active, meanwhile cpu0 can be interrupted
+> and try to schedule something on the cpu that is busy checking its active bit.
 
---=-lFfsmNbQiZalCMEzCnjG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+https://lkml.org/lkml/2011/12/15/255
 
-On Mon, 2012-02-27 at 19:45 +0200, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <dedekind1@gmail.com>
->=20
-> This patch fixes checkpatch.pl when both -q and --ignore are given and
-> prevents it from printing a
+that one?
 
-Andrew, am I right that checkpatch.pl patches go in via your tree?
-Should I check linux-next to find out whether you have merged it or not?
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-lFfsmNbQiZalCMEzCnjG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTgWuAAoJECmIfjd9wqK0Kp4P/2S7JFMSI9/GfyNelDOTC4Xt
-X8R26IOr2jdRZH85Bwm5zt7xAeExwLCl70RWQchkfirgDAWijtMvyuheRDyLdjVR
-6MuXcW5bD6oGsNsKFUlYRLmbkS5fJZC0UGJsU1CsYBaHAsHMgCEGewtl2KAIPnRH
-OIAA7SL8apFoNcIPHQ3MjRQ0SmAYNMZbHCT/YyGrknDuV0oV07c/uUFDPyUQTKtU
-smZhoy9OkaM8j365g01OwDi5RbxjmTue8l6aDl7nBhNcuZKZNboyZWPS7YEhks3s
-pNJbGvRSweJy2EEmz3lD6yn5dR2vn6AbhyeJv1NbGkKMlGTYcuSSTsIu2pUQ8ZMy
-wPec9IapGKEXWH6F4QkCcK5R+tbs1G/71y8qmA7c+7bTQyuqfDVWx7Ly46T3mW03
-sSgeKO6DWGwoK4gFybAa5A4oKko3j5W21IbAQjB+Q9pBrS0HgcmiegDOqj1SFbpo
-wX20ei/6KGApcbJWNpXBM2u4lTw3dtArGMzlNy6z4t6WFEtH3cfPx3smOA8+HNRY
-25SfqErGhDrltUxw9ePQXH3/PROmOWsD3+vkTbE9C+6tKo0oCtJcb8V8zK0tDP3f
-owU29rfS5b67Da3oKAIm2L5ZSacVGcYDC4b17a7L3RoxLMRfhV3tFfl+xmG+8/wR
-jg2Q9C1KqfYu0RE007n4
-=e3oL
------END PGP SIGNATURE-----
-
---=-lFfsmNbQiZalCMEzCnjG--
-
+I _think_ its correct, but it would be so good if someone else could
+verify.
