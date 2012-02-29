@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab2B2MHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:07:25 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61933 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab2B2MHX (ORCPT
+	id S1757731Ab2B2MK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:10:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60795 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab2B2MK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:07:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.184.199 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330517388.3545.109.camel@sauron.fi.intel.com>
-Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+	Wed, 29 Feb 2012 07:10:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.191.163 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
+Message-ID: <1330517573.3545.110.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 0/4] jffs2: logging message neatening
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <rw@linutronix.de>
-Cc: tglx@linutronix.de, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
-Date: Wed, 29 Feb 2012 14:09:48 +0200
-In-Reply-To: <4F4E0E9D.7090002@linutronix.de>
-References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
-	 <1330515322.3545.99.camel@sauron.fi.intel.com>
-	 <4F4E0E9D.7090002@linutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 29 Feb 2012 14:12:53 +0200
+In-Reply-To: <1330517290.3545.107.camel@sauron.fi.intel.com>
+References: <cover.1329349881.git.joe@perches.com>
+	 <1330517290.3545.107.camel@sauron.fi.intel.com>
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-PEOd92CWVvTO/6AKsGSP"
+	boundary="=-NrbDzQOsnndpXfpvplAB"
 X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,31 +28,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-PEOd92CWVvTO/6AKsGSP
+--=-NrbDzQOsnndpXfpvplAB
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-02-29 at 12:40 +0100, Richard Weinberger wrote:
-> > Notice, your patch-set has huge amount of checkpatch.pl complaints -
-> > please fix them. This will also be consistent with the overall UBI
-> > coding style where I honored checkpatch.pl limitations like identation
-> > style and 80 chars per line.
-> >=20
->=20
-> All checkpatch.pl complaints will be fixed.
-> But first we have to discuss and address real problems.
+On Wed, 2012-02-29 at 14:08 +0200, Artem Bityutskiy wrote:
+> Also, there are several checkpatch.pl complaints, please, take a look:
 
-Note, I just have a maintainers script which takes the patch-set as
-input, then checks bisectability, finds new warnings, checks with
-sparse/smatch/coccinelle/checkpatch.pl etc. I just gave your patches to
-my script and checkpatch.pl complaints were the only things identified
-by the scripts.
+Ok, I copy-pasted them, but actually took a look now and the
+checkpatch.pl ones are non-issues.
 
 --=20
 Best Regards,
 Artem Bityutskiy
 
---=-PEOd92CWVvTO/6AKsGSP
+--=-NrbDzQOsnndpXfpvplAB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -61,20 +50,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPThWMAAoJECmIfjd9wqK0fxoQALczd4wdgwFK+19jBd16JnkA
-aj9lbWLplPMcNT/eSOxV7V0JbTHeTwIpxUM9vPVUMYJwgiG2M2xxI7jBPeFquka+
-7VWgAAo6nfA+Lqx+PIqdYWiyueRBPhq0mHJE7YgD9FX8p0WWQECsd8PBDAJAYLhl
-X51jhnU+t+cKnEqfkX6II7zkbUmsHlpy/avPkIR8dnvGAh1spozrWU2i1JK1umE+
-u833GtKmhg7+H6h4VHYgtjatbbR1CdCTgs11i+Y/FIrCumWmhB7NlGNDDaoRZ3Qy
-ONPTvljBrZW2IgmVS6LE+10Xj5QGoeZkplPFwgEj+iP8BdnbaJgpKnnNGQwhzYb+
-3pTyP9esQzFgmqu8V+Q69X4bXVmsOTMTBQMOkVkSxz9dUpz1gvGlx5jeJK+MQUtu
-ycHe35ySEJTch2e2zSrzJbHVo+ZllzXCSb23kjCa9f0LzeOuWvXCL7b2aphXp7Ey
-9vjpV6PIq8cCSny9DZVFWq6vTus6kPmwdPfbelaUmmu/iCu7caRrDPOxovaRurib
-rpsBLHZcoigJy2Z6XpLa4K/HhWGOfqPyDbaHm93S/Zfob2l1wn2sSnh+53uW8S0s
-+TwcowYGnAtWVwfUBvl7aMNjfHwHGdrGY6D5/yDBtbmM0C8ZOTYiur706zMwJHd+
-GZUovrwPk0FfPoLp47dW
-=1KLZ
+iQIcBAABAgAGBQJPThZFAAoJECmIfjd9wqK0VDMQAJpbtyEiSmRGKzWMpQi+nJkU
+pANwLZvQ9+hFOeiOap1/3GNDhTHBJjSygh4ZT0xES5N5GReqglbbmvNE2JkRCV1m
+GQTCzsFHgw3JZF48+rRhKkgyWUx+8/n5zmYNPxB8Op1JrdUozwGj2+y1Q2UedluT
+4KiVT2PjxIy8mfZQaCaEl3C7rDPlT2XNsJYn7PiJ2Sjmfuz0xZhycgm+SfOFR+uV
+Hj/wKFohEXC+UdAqXX3ecWE49awG/KlRIWBNmsuK0qos3HKKdnL9emVDcksnSQBF
+5W1uF2t3c1bwe69XIJJYKizSnJbBc2o0JjhgWgd9iRJeCBzmCBgwd1HW5EmWdH+f
+Q1oyPh54gU1Ozgrp8fHv/Ohcv8hHxq/4pG0ZXCCH6iUQu85TlUwbr+yjAd4e4+oV
+Kh+Sjzsu9afylihUN5+JIsjwOabd03mBEMjOf20vnoCSXjO84JmRZ1zQI7/QT8j+
+7WwIFmNzKVa7BftjuaQFvC5K1VCHRM3uJcgBh9MO3tC4aHLfO2F1wwYHTp9bYc10
+xm09iJ8YEZPWYVjsbi7a4nnODi87gKpOYSecAFBUrKDgEI6jyt0IPmIZslkjp7zb
+Ovb08uWXMkQ1pqft1oB2mdNUNHJKwqvfU4r9O6hVJb5dg4hCHKI9jnCMEMvbCmhQ
+j5IHgXR5QhuTgpSwhkpZ
+=2q3O
 -----END PGP SIGNATURE-----
 
---=-PEOd92CWVvTO/6AKsGSP--
+--=-NrbDzQOsnndpXfpvplAB--
 
