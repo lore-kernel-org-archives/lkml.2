@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030591Ab2B2AlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:41:16 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51277 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965948Ab2B2AlP (ORCPT
+	id S1030601Ab2B2AoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:44:13 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36486 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965840Ab2B2AoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:41:15 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 09:39:46 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member
- of the reclaimed hierarchy
-Message-Id: <20120229093946.611a20d3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
-	<1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 28 Feb 2012 19:44:11 -0500
+Date: Wed, 29 Feb 2012 04:44:03 +0400
+From: Igor Murzov <intergalactic.anonymous@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Igor Murzov <e-mail@date.by>, "Sergey V." <sftp.mtuci@gmail.com>
+Subject: Re: [PATCH 1/2] ACPI video: Harden video bus adding.
+Message-ID: <20120229044403.56e07c88@garik>
+In-Reply-To: <20120229001258.GA10606@core.coreip.homeip.net>
+References: <20120229035142.31016e6f@garik>
+	<20120229001258.GA10606@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.4; i486-slackware-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,138 +26,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 15:14:49 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Tue, 28 Feb 2012 16:12:59 -0800
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
 
-> The rmap walker checking page table references has historically
-> ignored references from VMAs that were not part of the memcg that was
-> being reclaimed during memcg hard limit reclaim.
+> Hi Igor,
 > 
-> When transitioning global reclaim to memcg hierarchy reclaim, I missed
-> that bit and now references from outside a memcg are ignored even
-> during global reclaim.
+> On Wed, Feb 29, 2012 at 03:51:42AM +0400, Igor Murzov wrote:
+> > From 127b9fc18ee646d92039c45d7fa3680a107928a2 Mon Sep 17 00:00:00 2001
+> > From: Igor Murzov <e-mail@date.by>
+> > Date: Mon, 27 Feb 2012 21:50:17 +0400
+> > Subject: [PATCH 1/2] ACPI video: Harden video bus adding.
+> > 
+> > It is always better to check return values.
+> > 
+> > Signed-off-by: Igor Murzov <e-mail@date.by>
+> > ---
+> >  drivers/acpi/video.c |   28 +++++++++++++++++++---------
+> >  1 files changed, 19 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> > index eaef02a..1bc6370 100644
+> > --- a/drivers/acpi/video.c
+> > +++ b/drivers/acpi/video.c
+> > @@ -548,24 +548,25 @@ acpi_video_device_EDID(struct acpi_video_device *device,
+> >   *		1. 	The system BIOS should NOT automatically control the brightness 
+> >   *			level of the LCD when the power changes from AC to DC.
+> >   * Return Value:
+> > - * 		-1	wrong arg.
+> > + * 		-EINVAL	wrong arg.
+> >   */
+> >  
+> >  static int
+> >  acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
+> >  {
+> > -	u64 status = 0;
+> > +	int status = 0;
+> >  	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
+> >  	struct acpi_object_list args = { 1, &arg0 };
+> >  
+> >  
+> >  	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
+> > -		status = -1;
+> > +		status = -EINVAL;
+> >  		goto Failed;
+> >  	}
+> >  	arg0.integer.value = (lcd_flag << 2) | bios_flag;
+> >  	video->dos_setting = arg0.integer.value;
+> > -	acpi_evaluate_object(video->device->handle, "_DOS", &args, NULL);
+> > +	status = acpi_evaluate_object(video->device->handle, "_DOS",
+> > +	                              &args, NULL);
 > 
-> Reverting back to traditional behaviour - count all references during
-> global reclaim and only mind references of the memcg being reclaimed
-> during limit reclaim would be one option.
-> 
-> However, the more generic idea is to ignore references exactly then
-> when they are outside the hierarchy that is currently under reclaim;
-> because only then will their reclamation be of any use to help the
-> pressure situation.  It makes no sense to ignore references from a
-> sibling memcg and then evict a page that will be immediately refaulted
-> by that sibling which contributes to the same usage of the common
-> ancestor under reclaim.
-> 
-> The solution: make the rmap walker ignore references from VMAs that
-> are not part of the hierarchy that is being reclaimed.
-> 
-> Flat limit reclaim will stay the same, hierarchical limit reclaim will
-> mind the references only to pages that the hierarchy owns.  Global
-> reclaim, since it reclaims from all memcgs, will be fixed to regard
-> all references.
-> 
-> Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/memcontrol.h |    6 +++++-
->  mm/memcontrol.c            |   16 +++++++++++-----
->  mm/vmscan.c                |    6 ++++--
->  3 files changed, 20 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8537c5d..661b54a 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_page(struct page *page);
->  extern void mem_cgroup_uncharge_cache_page(struct page *page);
->  
->  extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
->  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
->  
->  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-> @@ -88,10 +89,13 @@ static inline
->  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->  {
->  	struct mem_cgroup *memcg;
-> +	int match;
-> +
->  	rcu_read_lock();
->  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	match = __mem_cgroup_same_or_subtree(cgroup, memcg);
->  	rcu_read_unlock();
-> -	return cgroup == memcg;
-> +	return match;
->  }
->  
->  extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b4622fb..21004df 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
->   * Checks whether given mem is same or in the root_mem_cgroup's
->   * hierarchy subtree
->   */
-> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> -		struct mem_cgroup *memcg)
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				  struct mem_cgroup *memcg)
->  {
-> -	bool ret;
-> -
->  	if (root_memcg == memcg)
->  		return true;
->  	if (!root_memcg->use_hierarchy)
->  		return false;
-> +	return css_is_ancestor(&memcg->css, &root_memcg->css);
-> +}
-> +
-> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				       struct mem_cgroup *memcg)
-> +{
-> +	bool ret;
-> +
->  	rcu_read_lock();
-> -	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
-> +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
->  	rcu_read_unlock();
->  	return ret;
->  }
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c631234..120646e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
->  	int referenced_ptes, referenced_page;
->  	unsigned long vm_flags;
->  
-> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
-> +					  &vm_flags);
+> Here (as well as in the rest of your patch) you are mixing up errors
+> from the standard Unix -E* namespace and ACPI AE_* namespace. You need
+> to settle on one and be consistent (and also make sure that upper layers
+> get wha they expect, namely -E* namespace).
+
+Thanks for the reply. Will fix this and resend.
 
 
-I'm sorry if I don't understand the codes... !sc->target_mem_cgroup case is handled ?
-
-Thanks,
--Kame
-
->  	referenced_page = TestClearPageReferenced(page);
->  
->  	/* Lumpy reclaim - ignore references */
-> @@ -1710,7 +1711,8 @@ static void shrink_active_list(unsigned long nr_pages,
->  			continue;
->  		}
->  
-> -		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
-> +		if (page_referenced(page, 0, sc->target_mem_cgroup,
-> +				    &vm_flags)) {
->  			nr_rotated += hpage_nr_pages(page);
->  			/*
->  			 * Identify referenced, file-backed active pages and
-> -- 
-> 1.7.7.6
-> 
-> 
-
+-- Igor
