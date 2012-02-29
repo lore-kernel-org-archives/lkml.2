@@ -1,123 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2B2MBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:01:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:43694 "EHLO mga11.intel.com"
+	id S1755722Ab2B2MF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:05:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab2B2MBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:01:31 -0500
-Content-Type: multipart/mixed; boundary="===============0046569571=="
+	id S1752263Ab2B2MF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:05:27 -0500
+Message-ID: <4F4E145E.4040901@redhat.com>
+Date: Wed, 29 Feb 2012 09:04:46 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="130921205"
-From: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-To: Huang Shijie <b32955@freescale.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "LW@KARO-electronics.de" <LW@KARO-electronics.de>
-Subject: Re: [PATCH v6 0/2] patch set about the MXS-DMA
-Thread-Topic: [PATCH v6 0/2] patch set about the MXS-DMA
-Thread-Index: AQHM7HJtTKOcAdp5s0SJ9Za/ontjD5ZTRnyAgABXUB+AAD1xAA==
-Date: Wed, 29 Feb 2012 12:00:24 +0000
-Message-ID: <1330516974.3545.104.camel@sauron.fi.intel.com>
-References: <1329373053-19494-1-git-send-email-b32955@freescale.com>
-		 <4F4D9725.3090100@freescale.com>
-	 <1330502098.3545.78.camel@sauron.fi.intel.com>
-	 <4F4DE0E5.8070808@freescale.com>
-In-Reply-To: <4F4DE0E5.8070808@freescale.com>
-Reply-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.160]
-MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab>
+In-Reply-To: <20120229101047.GA21224@aftab>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============0046569571==
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-dxy0Ud0PxkI2+rsV+EdK"
+Em 29-02-2012 07:10, Borislav Petkov escreveu:
+> On Wed, Feb 29, 2012 at 10:14:33AM +0900, Hidetoshi Seto wrote:
+>> (2012/02/29 1:11), Borislav Petkov wrote:
+>>> From: Borislav Petkov <borislav.petkov@amd.com>
+>>>
+>>> The idea here is to pass an additional decoded MCE message through
+>>> the tracepoint and into the ring buffer for userspace to consume. The
+>>> designated consumers are RAS daemons and other tools collecting RAS
+>>> information.
+>>
+>> I could not catch the point... Why you need this msg field?
+>>
+>> I think that all of information about the error is already packed in
+>> the record and that we can make a string from the bits in the record
+>> soon afterward.  From my point of view it seems that what you are
+>> doing here is just consuming the ring buffer by repeating same
+>> contents in another format with dynamic length which might be short
+>> but otherwise could be too long.
 
---=-dxy0Ud0PxkI2+rsV+EdK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Not all information is packed in the record. The record packs only what it
+is inside the MCE registers. However, for certain errors, it is needed to
+parse other hardware registers to decode the error (for example, on Sandy
+Bridge, the MCE registers don't contain the affected dimms).
 
-On Wed, 2012-02-29 at 16:25 +0800, Huang Shijie wrote:
-> Hi Artem:
-> > On Wed, 2012-02-29 at 11:10 +0800, Huang Shijie wrote:
-> >> Hi:
-> >>
-> >> ping.
-> > Is this patch-set independent or requires something like gpma patches?
-> >
-> This patch set is independent, and it does not depend upon any other=20
-> patches.
+> Right, to answer your immediate question: we've already decoded the MCE
+> so we carry that decoded info to userspace.
+> 
+> To address your indirect question: why aren't we using the MCE fields
+> to decode the MCE in userspace? Well, this has been a long discussion
+> already and one of the strong arguments for decoding hardware errors in
+> the kernel is that the kernel simply knows its hardware better. Imagine
+> a big server farm with heterogeneous hw configurations - if you get an
+> MCE there you have to also have collected the hardware platform details
+> so that you are able to decode it. If the kernel can do that for ya, you
+> don't have to do anything!
+> 
+> Or the case where you get an uncorrectable error and the machine panics
+> - it is much more convenient to see the decoded error on the screen
+> before the machine dies instead of some MCA register dumps which you
+> have to jot down and go and decode them by hand.
+> 
+>> And one more unacceptable point is that filling this msg field is
+>> expected to be done in machine check context where have many
+>> limitations in kernel's subsystems such as use of memory allocators.
+> 
+> Doh, I should've seen that, thanks to you and Tony for pointing that
+> out.
+> 
+>> Suggestion; How about having a kind of translator function for
+>> userland, e.g. an exported function named mce_record_to_msg()?
+>> Tool obtains raw data from the record in the tracepoint's ring buffer,
+>> and if it likes, optionally it can pass the record to the translator
+>> function to get some accomplished string.
+> 
+> Either that or I could simply allocate a large enough buffer from the
+> get-go, as Tony suggests. I'll experiment with my MCE generation script
+> and see how large a buffer can become.
 
-Pushed both to l2-mtd.git tree, thanks. I am worried that it touches
-other subsystems like dma, sound, and mmc and there are no acks for
-those. Would be nice to get them somehow.
+Just allocate one page. 4096 should be enough even for the most hungry needs.
 
---=20
-Best Regards,
-Artem Bityutskiy
+>>> Drop unneeded fields while at it, thus saving some room in the ring
+>>> buffer.
+>>
+>> Really unneeded and should be killed?
+> 
+> Right, so this is me suggesting to remove those because I don't see
+> why we'd need them, I'm expecting other people to come and say either
+> "Boris, no no, this is needed in... " or "Yeah, go ahead and remove
+> them, no one uses those." So feel free to argue either way.
 
---=-dxy0Ud0PxkI2+rsV+EdK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+IMHO, before removing those fields, it would be better to first implement
+what is there at the mcelog userspace parser for the Intel machines into
+kernelspace (or to look into its source code), and check what registers
+aren't used by either AMD 64 MCE decoder or by the Intel MCE decoder.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Tony,
 
-iQIcBAABAgAGBQJPThPuAAoJECmIfjd9wqK0YPEQAIdtSC183iSAHeQZIz2m5DXo
-VmXvG3iRD39a2vn+IfxVq/Q+PD7F56ybyjnB/E7c8WFQjuY8MHSXW7YjAYfStAsT
-U8GjmhMVdmyekv5+rUCSsxXkdKjqqpenywaEvxi7yUH7dFvOLJr1J0ELb4WBcwPp
-rfYNpTfpkAKFmvvyG9YPxgmvMSvSXz/Q3vkAd73/0HsUB9FQQPVMXWfxwocstCrN
-G4owMtElCgEFKdMKIqqGyD0vk8JRH46ZV290MSESg1JgNtVLSBCOQ0voQpK3xHf5
-EZYEsdgGXboHEyrLrykNGhuIqDr84eTnRmo6XoJ+WXJAHa+MomFSDUmyMKTXMMr3
-wAwaHKpR41nNBjeCyxg4cyjU2/9n5eBDSJi2RP7EMSIlhdDPTWMih6faolpyqnd6
-nawlJA00dU5jjOU1/czvQxzzYYTIrBCxPA/WUpBkBRRoogR7I3rLb0eU5j15cwVZ
-HMoYJmVPiMs4XhoumbfgGUXy05qFPtk9E4Pxuw2r9oMjzVR1nEQHZExij2itt6wW
-ydiF1YEFaqVHG4EdEGjx8h6BQ7Kp+9JQbLUKxYFqeFX3MaXlH7LtZQ8RM1JBDa8K
-+izh4qIdFz5f16XFEkvrHiJwob/m9RzdB+Uygv9oB5mMidJwPKC9j50lzIlusTjs
-EStXeQuYRxHvB4KT8Px/
-=dHvR
------END PGP SIGNATURE-----
+Is there anyone at Intel working on porting it to kernelspace?
 
---=-dxy0Ud0PxkI2+rsV+EdK--
---===============0046569571==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki =
-
-Business Identity Code: 0357606 - 4 =
-
-Domiciled in Helsinki =
-
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
---===============0046569571==--
+Regards,
+Mauro
