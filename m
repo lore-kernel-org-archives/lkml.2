@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab2B2I74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:59:56 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:43314 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752486Ab2B2I7z (ORCPT
+	id S1756458Ab2B2JHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:07:33 -0500
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:35606 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755850Ab2B2JH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:59:55 -0500
-Message-ID: <4F4DE997.4050900@st.com>
-Date: Wed, 29 Feb 2012 10:02:15 +0100
-From: Vincenzo Frascino <vincenzo.frascino@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Viresh KUMAR <viresh.kumar@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] thermal: spear13xx: checking for NULL instead of IS_ERR()
-References: <20120229063151.GA18031@elgon.mountain>
-In-Reply-To: <20120229063151.GA18031@elgon.mountain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 04:07:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomi.valkeinen@ti.com designates 10.152.112.132 as permitted sender) smtp.mail=tomi.valkeinen@ti.com
+Subject: Re: OMAP4 HDMI PHY bug work-around for stable
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+In-Reply-To: <20120228164702.GB11021@kroah.com>
+References: <1328787865.1909.64.camel@deskari>
+	 <1330416193.2123.4.camel@deskari>  <20120228164702.GB11021@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-eN4tXsJRt3mWXYkJ+VUv"
+Date: Wed, 29 Feb 2012 11:07:24 +0200
+Message-ID: <1330506444.1934.20.camel@deskari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Dan.
 
-Il 29/02/2012 07:31, Dan Carpenter ha scritto:
-> thermal_zone_device_register() never returns NULL, on error it returns
-> and ERR_PTR().
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
-> index 880bf28..7352cf8 100644
-> --- a/drivers/thermal/spear_thermal.c
-> +++ b/drivers/thermal/spear_thermal.c
-> @@ -149,9 +149,9 @@ static int spear_thermal_probe(struct platform_device *pdev)
->  
->  	spear_thermal = thermal_zone_device_register("spear_thermal", 0,
->  				stdev, &ops, 0, 0, 0, 0);
-> -	if (!spear_thermal) {
-> +	if (IS_ERR(spear_thermal)) {
->  		dev_err(&pdev->dev, "thermal zone device is NULL\n");
-> -		ret = -EINVAL;
-> +		ret = PTR_ERR(spear_thermal);
->  		goto disable_clk;
->  	}
->  
+--=-eN4tXsJRt3mWXYkJ+VUv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Vincenzo Frascino <vincenzo.frascino@st.com>
+On Tue, 2012-02-28 at 08:47 -0800, Greg KH wrote:
 
+> Sorry, but I don't accept pull requests.  I need patches in email form,
+> as described in the file, Documentation/stable_kernel_rules.txt.  Please
+> feel free to send them from your git tree that way.
+
+Ah, I somehow missed that txt when googling about the stable kernel.
+Thanks for pointing it out.
+
+> That seems like a lot of backporting for a single fix, but I'll be glad
+> to review them when you send them.
+
+This is something that is not quite clear to me:
+
+Should I strive for keeping the patches for stable as close as possible
+to the ones in mainline, and thus possibly being forced to take other
+extra patches with the actual fix as I did here
+
+or
+
+should I just rather cook up a new patch which just fixes the problem
+without caring about any cleanups etc. that are in the mainline, and
+thus possibly creating a rather different patch compared to mainline's
+version?
+
+ Tomi
+
+
+--=-eN4tXsJRt3mWXYkJ+VUv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPTerMAAoJEPo9qoy8lh71zbsP/ROgUHXxdyBhGUSNn+ZvCISq
+b7uDDLv+ud/QQPO/jyhcpEb8ud4+uIYjEUDY3oa34RpWxgwvIpZei/yX3A7BC1++
+P7Md/Auzheq95tTsqVGVxPXGX8zs1wb+8CKUNzjANkqgPNxeKWb81QzabdyY4VYo
+9tt1SCK2paVVgJgTpp20tggeKEo9P1R0ndzgxuHVjExGvm0NfFwYeb29MS8pWUMD
+UIOI0N4Ej9BDG6H3bR9/jHdP0ohGGpk6oosWIlPP/f3UlNEX/f8/hi3OqwlCvS6z
+B2qlFtvH6tnNbPhw4A2xWZUigdGvWGj4OrPr1TUTyCONf4txywKioehtt7/hUTvU
++L6kNJVxi3gNQF0FPPma7lOW8V1Z5vEly8s6wpBO31Q9uFigg/UnfJxGdWyqvtUZ
+C9Er5VlAt5J4Dt4KMMzrrPP4MPGbrhBB4veVXnC7NVQhOGf1IQYxr9ssicraKWSv
++CW5dG+S7vZquaukgXiErcwTxKdMmPcK9TSXsDFHsyw05GnKEYEReAATjmIHTUzP
+bSvd5A/wpZ6BL5TsA85iauUT3RpkYdJnhh/+pO1SqgRB8HQM91diZy01L0C6i6vU
+ZIR2aPnaTqWXEsKQb1FbhcVxYVFMUJhKcEFg2Wl/72Ih9T8rSQR9w/1jG4qyXgbY
+gTstfasu8UeJbWfLinrg
+=K/r6
+-----END PGP SIGNATURE-----
+
+--=-eN4tXsJRt3mWXYkJ+VUv--
 
