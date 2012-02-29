@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965868Ab2B2SJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:09:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53948 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965299Ab2B2SJl (ORCPT
+	id S965882Ab2B2SLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:11:06 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44072 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965366Ab2B2SLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:09:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.203.98 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Wed, 29 Feb 2012 13:11:04 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6634"; a="165301970"
+Message-ID: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
+Date: Wed, 29 Feb 2012 10:10:59 -0800 (PST)
+Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5   
+        device
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, "'Maya Erez'" <merez@codeaurora.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209F@HQMAIL01.nvidia.com>
-References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
-	<CACRpkdbtH7edRVc=BmCncabMzQ=OB8eQAYju3Aoh-zSnFGQ6sA@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BDDF209F@HQMAIL01.nvidia.com>
-Date: Wed, 29 Feb 2012 19:09:40 +0100
-Message-ID: <CACRpkdYH7fim_-O3Ny0qewb=f3sdCof=Heq-Z+X019Lj__MEKQ@mail.gmail.com>
-Subject: Re: [PATCH V2 0/6] pinctrl: API rework, pinconfig in mapping table, ...
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 6:42 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Wednesday, February 29, 2012 9:46 AM:
->> On Tue, Feb 28, 2012 at 9:27 PM, Stephen Warren <swarren@nvidia.com> wrote:
->>
->> > This is the current set of patches I have outstanding for pinctrl.
->>
->> Thanks, now the problem is that I think this is based on top of
->> the other two patches, which happen to break U300 so I cannot
->> test it :-(
+> This patch supports packed command of eMMC4.5 device.
+> Several reads(or writes) can be grouped in packed command
+> and all data of the individual commands can be sent in a
+> single transfer on the bus.
 >
-> I think this series will unbreak U300, i.e. if you apply everything
-> it'll all work fine?
+> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> ---
+>  drivers/mmc/card/block.c   |  496
+> +++++++++++++++++++++++++++++++++++++++++--
+>  drivers/mmc/card/queue.c   |   48 ++++-
+>  drivers/mmc/card/queue.h   |   13 ++
+>  drivers/mmc/core/mmc_ops.c |    1 +
+>  include/linux/mmc/core.h   |    4 +
+>  5 files changed, 535 insertions(+), 27 deletions(-)
+>
+Hi,
 
-Hm I wanted to try this but it seems patch 4/6 isn't on the list?
+We ran performance tests on the packed commands patch. We found out that
+enabling the read packing didn't improve the performance in any of the
+scenarios we ran (see the detailed results below).
+Therefore, we suggest to move the read packing code to a different patch
+and approve only the write packing code for now. The read packing adds
+complexity to the code and we don't see a point in adding it while the
+intention is to disable it.
 
-Strange ... oh well I guess I'll test the next respin instead.
+Test results:
+
+Long read operation:
+----------------------
+no-packing: 39.5 MB/s
+packed commands patch (both READ and WRITE packing are enabled): 39.5 MB/s
+packed commands patch + enabling only READ packing: 39.5 MB/s
+
+Several parallel read operations (sum of all the read throughputs):
+---------------------------
+no-packing: 42.6 MB/s
+packed commands patch(both READ and WRITE packing are enabled): 38 MB/s
+packed commands patch + enabling only READ packing: 38.2 MB/s
+
+Parallel long read and long write operations (read throughput):
+-----------------------------------------------------------------
+no-packing: 23.8 MB/s
+packed commands patch (both READ and WRITE packing are enabled): 12.6 MB/s
+packed commands patch + enabling only READ packing: 12.5 MB/s
+
+Parallel short read and long write operations (read throughput):
+-----------------------------------------------------------------
+no-packing: 22.9 MB/s
+packed commands patch (both READ and WRITE packing are enabled): 8.4 MB/s
+packed commands patch + enabling only READ packing: 8.6 MB/s
+
+Several Parallel short read and short write operations (sum of all the
+read throughputs):
+--------------------------------------------------------------------------
+no-packing: 41.6 MB/s
+packed commands patch (both READ and WRITE packing are enabled): 35 MB/s
+packed commands patch + enabling only READ packing: 36 MB/s
 
 Thanks,
-Linus Walleij
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
+
