@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab2B2McY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:32:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757314Ab2B2McX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:32:23 -0500
-Message-ID: <4F4E1999.3060303@redhat.com>
-Date: Wed, 29 Feb 2012 14:27:05 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757959Ab2B2MeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:34:14 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55430 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab2B2MeM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:34:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.10.91 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Wed, 29 Feb 2012 16:34:08 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-man@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
+Message-ID: <20120229123408.GC11326@moon>
+References: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
+ <1330518197-12825-3-git-send-email-gorcunov@openvz.org>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
-References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp> <20120223203541.f51c11c9.yoshikawa.takuya@oss.ntt.co.jp> <4F4CBEAA.5030708@redhat.com> <20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp> <4F4DEEFA.6000506@redhat.com> <20120229191623.d1edb0aa.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120229191623.d1edb0aa.yoshikawa.takuya@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330518197-12825-3-git-send-email-gorcunov@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 12:16 PM, Takuya Yoshikawa wrote:
-> > > We may see partial display updates if we do not hold the mmu_lock during
-> > > xchg loop: it is possible that pages near the end of the framebuffer alone
-> > > gets updated sometimes - I noticed this problem when I fixed the TLB flush
-> > > issue.
-> > 
-> > I don't understand why this happens.
->
-> Because only mmu_lock protects the bitmap for VGA.
->
-> xchg i = 1
-> xchg i = 2
-> ...
-> xchg i = N
->
-> We cannot get a complete snapshot without mmu_lock; if the guest faults on
-> the Nth page during xchg'ing i = 1, 2, ... then the i = N alone will
-> become newer.
+On Wed, Feb 29, 2012 at 04:23:17PM +0400, Cyrill Gorcunov wrote:
+> 
+>        The  easiest way to explain is to consider an example.  Lets say v1 and v2
+>        are the addresses of appropriate resources, then the return value is one
+>        of the following
+> 
+>        0 - v1 is equal to v2 , in other words we have a shared resource here
+> 
+>        1 - v1 is greater than v2
+> 
+>        2 - v1 is less than v2
 
-Ah, so there is no data corruption (missed dirty bits), just the display
-is updated inconsistently?
+1 and 2 should be swapped here, I'll update (this nit grow from text tossing,
+so don't pay attention on it).
 
-I don't think we can get a consistent snapshot anyway, since the guest
-can update the framebuffer while userspace is processing it.
-
->
-> But others will be updated by the next call, so the problem is restricted:
-> maybe not noticeable.
->
-> > > Not a big problem but still maybe-noticeable change, so I think we should
-> > > do it separately with some comments if needed.
-> > 
-> > Well if it's noticable on the framebuffer it's also noticable with live
-> > migration.  We could do it later, but we need to really understand it first.
->
-> About live migration, we do not mind whether the bitmap is a complete snapshot.
-> In addition, we cannot do anything because the emulator can access the bitmap
-> without mmu_lock.
->
-> What we are doing is calling GET_DIRTY_LOG slot by slot: so already the
-> result is not a snapshot at all.
->
-> In the end, at the last stage, we will stop the guest and get a complete snapshot.
-
-Understood.  I don't think we can get a consistent vga snapshot without
-stopping the guest, and even then, it depends on how the guest updates
-the framebuffer.
-
->
-> > > In addition, we do not want to scan the dirty bitmap twice.  Using the
-> > > bits value soon after it is read into a register seems to be the fastest.
-> > 
-> > Probably.
-> > 
-> > > BTW, I also want to decide the design of the new API at this chance.
-> > 
-> > Let's wait with that.  We're adding APIs too quickly.  Let's squeeze
-> > everything we can out of the current APIs.
->
-> I agree with you of course.
->
-> At the same time, we cannot say anything without actually implementing
-> sample userspace programs.
->
-> So I want to see how much improvement the proposed API can achieve.
->
-> I thought this might be a good GSoC project but ...
-
-It may be too involved for GSoC, the issues are difficult.
-
--- 
-error compiling committee.c: too many arguments to function
-
+	Cyrill
