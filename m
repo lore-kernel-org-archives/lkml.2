@@ -1,145 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab2B2NjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:39:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33977 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932631Ab2B2NjL (ORCPT
+	id S932707Ab2B2Nnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:43:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49181 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932630Ab2B2Nns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:39:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.154.169 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Wed, 29 Feb 2012 21:38:55 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, spock@gentoo.org, x86@kernel.org,
-        hpa@zytor.com
-Subject: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
- NX-protected page
-Message-ID: <20120229133855.GA3554@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	lkml <linux-kernel@vger.kernel.org>, spock@gentoo.org,
-	x86@kernel.org, hpa@zytor.com
+	Wed, 29 Feb 2012 08:43:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jwboyer@gmail.com designates 10.180.92.227 as permitted sender) smtp.mail=jwboyer@gmail.com; dkim=pass header.i=jwboyer@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329466058-15969-1-git-send-email-dhdang@apm.com>
+References: <1329466058-15969-1-git-send-email-dhdang@apm.com>
+Date: Wed, 29 Feb 2012 08:43:46 -0500
+Message-ID: <CA+5PVA5hciQSvfkodX-oP_kUZueiTp=0+t8X_0iHQ+ehU0ecOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] powerpc/44x: Add more changes for APM821XX EMAC driver
+From: Josh Boyer <jwboyer@gmail.com>
+To: Duc Dang <dhdang@apm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 17, 2012 at 3:07 AM, Duc Dang <dhdang@apm.com> wrote:
+> This patch includes:
+>
+>  Configure EMAC PHY clock source (clock from PHY or internal clock).
+>
+>  Do not advertise PHY half duplex capability as APM821XX EMAC does not
+> support half duplex mode.
+>
+>  Add changes to support configuring jumbo frame for APM821XX EMAC.
+>
+> Signed-off-by: Duc Dang <dhdang@apm.com>
 
-Ok! I think I have learned to make thing simple:)
-This patch try to fix the oops below that catched in my machine
+This should have been sent to netdev.  CC'ing them now.
 
-[   81.560602] uvesafb: NVIDIA Corporation, GT216 Board - 0696a290, Chip Rev   , OEM: NVIDIA, VBE v3.0
-[   81.609384] uvesafb: protected mode interface info at c000:d350
-[   81.609388] uvesafb: pmi: set display start = c00cd3b3, set palette = c00cd40e
-[   81.609390] uvesafb: pmi: ports = 3b4 3b5 3ba 3c0 3c1 3c4 3c5 3c6 3c7 3c8 3c9 3cc 3ce 3cf 3d0 3d1 3d2 3d3 3d4 3d5 3da
-[   81.614558] uvesafb: VBIOS/hardware doesn't support DDC transfers
-[   81.614562] uvesafb: no monitor limits have been set, default refresh rate will be used
-[   81.614994] uvesafb: scrolling: ypan using protected mode interface, yres_virtual=4915
-[   81.744147] kernel tried to execute NX-protected page - exploit attempt? (uid: 0)
-[   81.744153] BUG: unable to handle kernel paging request at c00cd3b3
-[   81.744159] IP: [<c00cd3b3>] 0xc00cd3b2
-[   81.744167] *pdpt = 00000000016d6001 *pde = 0000000001c7b067 *pte = 80000000000cd163
-[   81.744171] Oops: 0011 [#1] SMP
-[   81.744174] Modules linked in: uvesafb(+) cfbcopyarea cfbimgblt cfbfillrect
-[   81.744178]
-[   81.744181] Pid: 3497, comm: modprobe Not tainted 3.3.0-rc4NX+ #71 Acer            Aspire 4741                    /Aspire 4741
-[   81.744185] EIP: 0060:[<c00cd3b3>] EFLAGS: 00010246 CPU: 0
-[   81.744187] EIP is at 0xc00cd3b3
-[   81.744189] EAX: 00004f07 EBX: 00000000 ECX: 00000000 EDX: 00000000
-[   81.744191] ESI: f763f000 EDI: f763f6e8 EBP: f57f3a0c ESP: f57f3a00
-[   81.744192]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   81.744195] Process modprobe (pid: 3497, ti=f57f2000 task=f748c600 task.ti=f57f2000)
-[   81.744196] Stack:
-[   81.744197]  f82512c5 f759341c 00000000 f57f3a30 c124a9bc 00000001 00000001 000001e0
-[   81.744202]  f8251280 f763f000 f7593400 00000000 f57f3a40 c12598dd f5c0c000 00000000
-[   81.744206]  f57f3b10 c1255efe c125a21a 00000006 f763f09c 00000000 c1c6cb60 f7593400
-[   81.744210] Call Trace:
-[   81.744215]  [<f82512c5>] ? uvesafb_pan_display+0x45/0x60 [uvesafb]
-[   81.744222]  [<c124a9bc>] fb_pan_display+0x10c/0x160
-[   81.744226]  [<f8251280>] ? uvesafb_vbe_find_mode+0x180/0x180 [uvesafb]
-[   81.744230]  [<c12598dd>] bit_update_start+0x1d/0x50
-[   81.744232]  [<c1255efe>] fbcon_switch+0x39e/0x550
-[   81.744235]  [<c125a21a>] ? bit_cursor+0x4ea/0x560
-[   81.744240]  [<c129b6cb>] redraw_screen+0x12b/0x220
-[   81.744245]  [<c128843b>] ? tty_do_resize+0x3b/0xc0
-[   81.744247]  [<c129ef42>] vc_do_resize+0x3d2/0x3e0
-[   81.744250]  [<c129efb4>] vc_resize+0x14/0x20
-[   81.744253]  [<c12586bd>] fbcon_init+0x29d/0x500
-[   81.744255]  [<c12984c4>] ? set_inverse_trans_unicode+0xe4/0x110
-[   81.744258]  [<c129b378>] visual_init+0xb8/0x150
-[   81.744261]  [<c129c16c>] bind_con_driver+0x16c/0x360
-[   81.744264]  [<c129b47e>] ? register_con_driver+0x6e/0x190
-[   81.744267]  [<c129c3a1>] take_over_console+0x41/0x50
-[   81.744269]  [<c1257b7a>] fbcon_takeover+0x6a/0xd0
-[   81.744272]  [<c12594b8>] fbcon_event_notify+0x758/0x790
-[   81.744277]  [<c10929e2>] notifier_call_chain+0x42/0xb0
-[   81.744280]  [<c1092d30>] __blocking_notifier_call_chain+0x60/0x90
-[   81.744283]  [<c1092d7a>] blocking_notifier_call_chain+0x1a/0x20
-[   81.744285]  [<c124a5a1>] fb_notifier_call_chain+0x11/0x20
-[   81.744288]  [<c124b759>] register_framebuffer+0x1d9/0x2b0
-[   81.744293]  [<c1061c73>] ? ioremap_wc+0x33/0x40
-[   81.744298]  [<f82537c6>] uvesafb_probe+0xaba/0xc40 [uvesafb]
-[   81.744302]  [<c12bb81f>] platform_drv_probe+0xf/0x20
-[   81.744306]  [<c12ba558>] driver_probe_device+0x68/0x170
-[   81.744309]  [<c12ba731>] __device_attach+0x41/0x50
-[   81.744313]  [<c12b9088>] bus_for_each_drv+0x48/0x70
-[   81.744316]  [<c12ba7f3>] device_attach+0x83/0xa0
-[   81.744319]  [<c12ba6f0>] ? __driver_attach+0x90/0x90
-[   81.744321]  [<c12b991f>] bus_probe_device+0x6f/0x90
-[   81.744324]  [<c12b8a45>] device_add+0x5e5/0x680
-[   81.744329]  [<c122a1a3>] ? kvasprintf+0x43/0x60
-[   81.744332]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744335]  [<c121e6e4>] ? kobject_set_name_vargs+0x64/0x70
-[   81.744339]  [<c12bbe9f>] platform_device_add+0xff/0x1b0
-[   81.744343]  [<f8252906>] uvesafb_init+0x50/0x9b [uvesafb]
-[   81.744346]  [<c100111f>] do_one_initcall+0x2f/0x170
-[   81.744350]  [<f82528b6>] ? uvesafb_is_valid_mode+0x66/0x66 [uvesafb]
-[   81.744355]  [<c10c6994>] sys_init_module+0xf4/0x1410
-[   81.744359]  [<c1157fc0>] ? vfsmount_lock_local_unlock_cpu+0x30/0x30
-[   81.744363]  [<c144cb10>] sysenter_do_call+0x12/0x36
-[   81.744365] Code: f5 00 00 00 32 f6 66 8b da 66 d1 e3 66 ba d4 03 8a e3 b0 1c 66 ef b0 1e 66 ef 8a e7 b0 1d 66 ef b0 1f 66 ef e8 fa 00 00 00 61 c3 <60> e8 c8 00 00 00 66 8b f3 66 8b da 66 ba d4 03 b0 0c 8a e5 66
-[   81.744388] EIP: [<c00cd3b3>] 0xc00cd3b3 SS:ESP 0068:f57f3a00
-[   81.744391] CR2: 00000000c00cd3b3
-[   81.744393] ---[ end trace 18b2c87c925b54d6 ]---
+Ben and David, I can take this change through the 4xx tree if it looks OK to
+both of you.  The pre-requisite DTS patch will go through my tree, so it might
+make sense to keep them together.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/uvesafb.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+josh
 
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index e7f69ef..76cb29e 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -23,6 +23,7 @@
- #include <video/uvesafb.h>
- #ifdef CONFIG_X86
- #include <video/vga.h>
-+#include <linux/pci.h>
- #endif
- #ifdef CONFIG_MTRR
- #include <asm/mtrr.h>
-@@ -815,8 +816,15 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
- 	par->pmi_setpal = pmi_setpal;
- 	par->ypan = ypan;
- 
--	if (par->pmi_setpal || par->ypan)
--		uvesafb_vbe_getpmi(task, par);
-+	if (par->pmi_setpal || par->ypan) {
-+		if (pcibios_enabled) {
-+			uvesafb_vbe_getpmi(task, par);
-+		} else {
-+			par->pmi_setpal = par->ypan = 0;
-+			printk(KERN_WARNING "uvesafb: PCI BIOS area is NX."
-+				"Can't use PMI, use redraw instead\n");
-+		}
-+	}
- #else
- 	/* The protected mode interface is not available on non-x86. */
- 	par->pmi_setpal = par->ypan = 0;
--- 
-1.7.9.2.315.g25a78
+> ---
+>  drivers/net/ethernet/ibm/emac/core.c |   26 +++++++++++++++++++++++++-
+>  drivers/net/ethernet/ibm/emac/core.h |   13 +++++++++++--
+>  drivers/net/ethernet/ibm/emac/emac.h |    5 ++++-
+>  3 files changed, 40 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/ibm/emac/core.c b/drivers/net/ethernet/ibm/emac/core.c
+> index ed79b2d..de620f1 100644
+> --- a/drivers/net/ethernet/ibm/emac/core.c
+> +++ b/drivers/net/ethernet/ibm/emac/core.c
+> @@ -434,6 +434,11 @@ static inline u32 emac_iff2rmr(struct net_device *ndev)
+>  	else if (!netdev_mc_empty(ndev))
+>  		r |= EMAC_RMR_MAE;
+>
+> +	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE)) {
+> +		r &= ~EMAC4_RMR_MJS_MASK;
+> +		r |= EMAC4_RMR_MJS(ndev->mtu);
+> +	}
+> +
+>  	return r;
+>  }
+>
+> @@ -965,6 +970,7 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
+>  	int rx_sync_size = emac_rx_sync_size(new_mtu);
+>  	int rx_skb_size = emac_rx_skb_size(new_mtu);
+>  	int i, ret = 0;
+> +	int mr1_jumbo_bit_change = 0;
+>
+>  	mutex_lock(&dev->link_lock);
+>  	emac_netif_stop(dev);
+> @@ -1013,7 +1019,14 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
+>  	}
+>   skip:
+>  	/* Check if we need to change "Jumbo" bit in MR1 */
+> -	if ((new_mtu > ETH_DATA_LEN) ^ (dev->ndev->mtu > ETH_DATA_LEN)) {
+> +	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE))
+> +		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ||
+> +				(dev->ndev->mtu > ETH_DATA_LEN);
+> +	else
+> +		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ^
+> +				(dev->ndev->mtu > ETH_DATA_LEN);
+> +
+> +	if (mr1_jumbo_bit_change) {
+>  		/* This is to prevent starting RX channel in emac_rx_enable() */
+>  		set_bit(MAL_COMMAC_RX_STOPPED, &dev->commac.flags);
+>
+> @@ -2471,6 +2484,7 @@ static int __devinit emac_init_phy(struct emac_instance *dev)
+>
+>  	/* Disable any PHY features not supported by the platform */
+>  	dev->phy.def->features &= ~dev->phy_feat_exc;
+> +	dev->phy.features &= ~dev->phy_feat_exc;
+>
+>  	/* Setup initial link parameters */
+>  	if (dev->phy.features & SUPPORTED_Autoneg) {
+> @@ -2568,6 +2582,10 @@ static int __devinit emac_init_config(struct emac_instance *dev)
+>  		if (of_device_is_compatible(np, "ibm,emac-405ex") ||
+>  		    of_device_is_compatible(np, "ibm,emac-405exr"))
+>  			dev->features |= EMAC_FTR_440EP_PHY_CLK_FIX;
+> +		if (of_device_is_compatible(np, "ibm,emac-apm821xx"))
+> +			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE
+> +					| EMAC_FTR_APM821XX_NO_HALF_DUPLEX
+> +					| EMAC_FTR_460EX_PHY_CLK_FIX);
+>  	} else if (of_device_is_compatible(np, "ibm,emac4")) {
+>  		dev->features |= EMAC_FTR_EMAC4;
+>  		if (of_device_is_compatible(np, "ibm,emac-440gx"))
+> @@ -2818,6 +2836,12 @@ static int __devinit emac_probe(struct platform_device *ofdev)
+>  	dev->stop_timeout = STOP_TIMEOUT_100;
+>  	INIT_DELAYED_WORK(&dev->link_work, emac_link_timer);
+>
+> +	/* Some SoCs like APM821xx does not support Half Duplex mode. */
+> +	if (emac_has_feature(dev, EMAC_FTR_APM821XX_NO_HALF_DUPLEX))
+> +		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half
+> +					| SUPPORTED_100baseT_Half
+> +					| SUPPORTED_10baseT_Half);
+> +
+>  	/* Find PHY if any */
+>  	err = emac_init_phy(dev);
+>  	if (err != 0)
+> diff --git a/drivers/net/ethernet/ibm/emac/core.h b/drivers/net/ethernet/ibm/emac/core.h
+> index fa3ec57..9dea85a 100644
+> --- a/drivers/net/ethernet/ibm/emac/core.h
+> +++ b/drivers/net/ethernet/ibm/emac/core.h
+> @@ -325,7 +325,14 @@ struct emac_instance {
+>   * Set if we need phy clock workaround for 460ex or 460gt
+>   */
+>  #define EMAC_FTR_460EX_PHY_CLK_FIX	0x00000400
+> -
+> +/*
+> + * APM821xx requires Jumbo frame size set explicitly
+> + */
+> +#define EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE	0x00000800
+> +/*
+> + * APM821xx does not support Half Duplex mode
+> + */
+> +#define EMAC_FTR_APM821XX_NO_HALF_DUPLEX	0x00001000
+>
+>  /* Right now, we don't quite handle the always/possible masks on the
+>   * most optimal way as we don't have a way to say something like
+> @@ -353,7 +360,9 @@ enum {
+>  	    EMAC_FTR_NO_FLOW_CONTROL_40x |
+>  #endif
+>  	EMAC_FTR_460EX_PHY_CLK_FIX |
+> -	EMAC_FTR_440EP_PHY_CLK_FIX,
+> +	EMAC_FTR_440EP_PHY_CLK_FIX |
+> +	EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
+> +	EMAC_FTR_APM821XX_NO_HALF_DUPLEX,
+>  };
+>
+>  static inline int emac_has_feature(struct emac_instance *dev,
+> diff --git a/drivers/net/ethernet/ibm/emac/emac.h b/drivers/net/ethernet/ibm/emac/emac.h
+> index 1568278..36bcd69 100644
+> --- a/drivers/net/ethernet/ibm/emac/emac.h
+> +++ b/drivers/net/ethernet/ibm/emac/emac.h
+> @@ -212,7 +212,10 @@ struct emac_regs {
+>  #define EMAC4_RMR_RFAF_64_1024		0x00000006
+>  #define EMAC4_RMR_RFAF_128_2048		0x00000007
+>  #define EMAC4_RMR_BASE			EMAC4_RMR_RFAF_128_2048
+> -
+> +#if defined(CONFIG_APM821xx)
+> +#define EMAC4_RMR_MJS_MASK              0x0001fff8
+> +#define EMAC4_RMR_MJS(s)                (((s) << 3) & EMAC4_RMR_MJS_MASK)
+> +#endif
+>  /* EMACx_ISR & EMACx_ISER */
+>  #define EMAC4_ISR_TXPE			0x20000000
+>  #define EMAC4_ISR_RXPE			0x10000000
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
