@@ -1,232 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030332Ab2B2MmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:42:06 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44275 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965330Ab2B2MmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:42:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.9.214 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Wed, 29 Feb 2012 16:41:56 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-man@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
-Message-ID: <20120229124156.GD4796@moon>
-References: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
- <1330518197-12825-3-git-send-email-gorcunov@openvz.org>
- <20120229123408.GC11326@moon>
+	id S932579Ab2B2MpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:45:17 -0500
+Received: from nbd.name ([46.4.11.11]:36894 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754024Ab2B2MpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:45:15 -0500
+Message-ID: <4F4E1DD7.4050509@openwrt.org>
+Date: Wed, 29 Feb 2012 13:45:11 +0100
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120229123408.GC11326@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: YIN Wei <yinwei168@gmail.com>
+CC: johannes <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mattias.nissler@gmx.de,
+        stefano.brivio@polimi.it
+Subject: Re: [PATCH] mac80211: improve PID rate control mechanism by avoiding
+ rate oscillation problem
+References: <CAFxU49m76xaLGv9CFhKcZBhE-8QgT1KSuhnZRcVwzP2ogrGpbQ@mail.gmail.com>
+In-Reply-To: <CAFxU49m76xaLGv9CFhKcZBhE-8QgT1KSuhnZRcVwzP2ogrGpbQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 04:34:08PM +0400, Cyrill Gorcunov wrote:
-> 1 and 2 should be swapped here, I'll update (this nit grow from text tossing,
-> so don't pay attention on it).
+On 2012-02-29 1:14 PM, YIN Wei wrote:
+> From: Wei YIN (Wei.Yin@nicta.com.au)
 > 
+> Improve PID rate control mechanism by solving the rate oscillation
+> problem. Current PID mechanism is based on a PID  controller which
+> tries to minimise the difference between the frame loss ratio (FLR)
+> and the target FLR. Therefore it is straight forward that it increases
+> to a higher rate when the FLR is less than the target without
+> considering whether the higher rate can be supported. If the higher
+> rate cannot be supported, significant FLR will occur, which causes the
+> mechanism to decrease the rate sharply. The proposed approach only
+> updates the rate when the proposed rate by the PID controller can
+> achieve better throughput than the old rate. This patch applies to
+> kernel 3.3.0.
+> Signed-off-by: Wei YIN (Wei.Yin@nicta.com.au)
+> ---
+> diff -uprN wireless-testing_orig/net/mac80211/Kconfig
+> wireless-testing/net/mac80211/Kconfig
+> --- wireless-testing_orig/net/mac80211/Kconfig	2012-02-17
+> 13:59:53.495254495 +1000
+> +++ wireless-testing/net/mac80211/Kconfig	2012-02-21 11:35:40.495706869 +1000
+> @@ -21,6 +21,7 @@ config MAC80211_HAS_RC
+>  config MAC80211_RC_PID
+>  	bool "PID controller based rate control algorithm" if EXPERT
+>  	select MAC80211_HAS_RC
+> +	default y
+>  	---help---
+>  	  This option enables a TX rate control algorithm for
+>  	  mac80211 that uses a PID controller to select the TX
+Several issues with this patch: line wrapping, weird encoding in the
+comments: —
+Also, please drop this change that alters the default value of
+MAC80211_RC_PID.
 
-Updated version below.
-
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Wed, 29 Feb 2012 16:40:13 +0400
-Subject: [PATCH 2/2] Add kcmp.2 manpage
-
-NAME
-       kcmp - compare if two processes do share a particular kernel resource
-
-
-SYNOPSIS
-       #define  GNU SOURCE         /* See feature test macros(7) */
-       #include <unistd.h>
-       #include <linux/kcmp.h>
-       #include <sys/syscall.h>   /* For SYS xxx definitions */
-
-       int syscall(  NR kcmp, pid1, pid2, type, idx1, idx2);
-
-
-DESCRIPTION
-       kcmp() allows to find out if two processes identified by pid1
-       and pid2 do share kernel resources such as virtual memory, file
-
-       The comparison type is one of the following
-
-       KCMP FILE to compare two file descriptors specified by idx1 and idx2
-
-       KCMP VM to compare whether processes do share virtual memory
-
-       KCMP FILES to compare whether processes do share share the file descriptor table
-
-       KCMP FS to compare whether processes do share the file system information
-
-       KCMP SIGHAND to compare whether processes do share a signal handlers table
-
-       KCMP IO to compare whether processes do share I/O context
-
-       KCMP SYSVSEM to compare whether processes do share a single list of System V
-       semaphore undo values
-
-
-RETURN VALUE
-       kcmp was designed to return values suitable for sorting.  This is particularly
-       handy when one have to compare a large number
-
-       The return value is merely a result of simple arithmetic comparison of kernel
-       pointers (when kernel compares resources, it us
-
-       The  easiest way to explain is to consider an example.  Lets say v1 and v2
-       are the addresses of appropriate resources, then the return value is one
-       of the following
-
-       0 - v1 is equal to v2 , in other words we have a shared resource here
-
-       1 - v1 is less than v2
-
-       2 - v1 is greater than v2
-
-       3 - v1 is not equal to v2 , but ordering information is unavailble.
-
-       On error, -1 is returned, and errno is set appropriately.
-
-
-CONFORMING TO
-       kcmp() is Linux specific and should not be used in programs intended to
-       be portable.
-
-SEE ALSO
-       clone(2)
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
----
- man2/kcmp.2 |  105 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 105 insertions(+), 0 deletions(-)
- create mode 100644 man2/kcmp.2
-
-diff --git a/man2/kcmp.2 b/man2/kcmp.2
-new file mode 100644
-index 0000000..de68109
---- /dev/null
-+++ b/man2/kcmp.2
-@@ -0,0 +1,105 @@
-+.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
-+
-+.SH NAME
-+kcmp \- compare if two processes do share a particular kernel resource
-+
-+.SH SYNOPSIS
-+.nf
-+.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
-+.B #include <unistd.h>
-+.B #include <linux/kcmp.h>
-+.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
-+
-+.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
-+.fi
-+
-+.SH DESCRIPTION
-+
-+.BR kcmp ()
-+allows to find out if two processes identified by
-+.I pid1
-+and
-+.I pid2
-+do share kernel resources such as virtual memory, file descriptors,
-+file system etc.
-+
-+The comparison
-+.I type
-+is one of the following
-+
-+.BR KCMP_FILE
-+to compare two file descriptors specified by
-+.I idx1
-+and
-+.I idx2
-+
-+.BR KCMP_VM
-+to compare whether processes do share virtual memory
-+
-+.BR KCMP_FILES
-+to compare whether processes do share share the file descriptor table
-+
-+.BR KCMP_FS
-+to compare whether processes do share the file system information
-+
-+.BR KCMP_SIGHAND
-+to compare whether processes do share a signal handlers table
-+
-+.BR KCMP_IO
-+to compare whether processes do share I/O context
-+
-+.BR KCMP_SYSVSEM
-+to compare whether processes do share a single list of
-+System V semaphore undo values
-+
-+.SH "RETURN VALUE"
-+.B kcmp
-+was designed to return values suitable for sorting.
-+This is particularly handy when one have to compare
-+a large number of file descriptors.
-+
-+The return value is merely a result of simple arithmetic comparison
-+of kernel pointers (when kernel compares resources, it uses their
-+memory addresses).
-+
-+The easiest way to explain is to consider an example.
-+Lets say
-+.I v1
-+and
-+.I v2
-+are the addresses of appropriate resources, then the return value
-+is one of the following
-+
-+.B 0
-+\-
-+.I v1
-+is equal to
-+.I v2
-+, in other words we have a shared resource here
-+
-+.B 1
-+\-
-+.I v1
-+is less than
-+.I v2
-+
-+.B 2
-+\-
-+.I v1
-+is greater than
-+.I v2
-+
-+.B 3
-+\-
-+.I v1
-+is not equal to
-+.I v2
-+, but ordering information is unavailble.
-+
-+On error, \-1 is returned, and errno is set appropriately.
-+
-+.SH "CONFORMING TO"
-+.BR kcmp ()
-+is Linux specific and should not be used in programs intended to be portable.
-+.SH "SEE ALSO"
-+.BR clone (2)
--- 
-1.7.7.6
-
+- Felix
