@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2B2Iec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:34:32 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1755139Ab2B2Igq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:36:46 -0500
+Received: from mx.melware.de ([176.9.26.174]:36148 "EHLO mx.melware.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab2B2Ieb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:34:31 -0500
-Message-ID: <4F4DE30B.4060506@nod.at>
-Date: Wed, 29 Feb 2012 09:34:19 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754146Ab2B2Igp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 03:36:45 -0500
+X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 03:36:45 EST
+Message-ID: <4F4DE175.30002@melware.de>
+Date: Wed, 29 Feb 2012 09:27:33 +0100
+From: Armin Schindler <armin@melware.de>
+Organization: Cytronics & Melware
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Jonas Bonn <jonas@southpole.se>
-CC: arnd@arndb.de, linux@openrisc.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] OpenRISC: Fix audit_syscall_exit() usage
-References: <1330476393-14264-1-git-send-email-richard@nod.at> <1330501592.2964.1.camel@crucifix>
-In-Reply-To: <1330501592.2964.1.camel@crucifix>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig55B7EB4049EF4EEBAB37C36C"
+To: Joe Perches <joe@perches.com>
+CC: Tilman Schmidt <tilman@imap.cc>, Armin Schindler <mac@melware.de>,
+        Karsten Keil <isdn@linux-pingi.de>, Jiri Slaby <jslaby@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, Hansjoerg Lipp <hjlipp@web.de>,
+        gigaset307x-common@lists.sourceforge.net,
+        Jiri Slaby <jirislaby@gmail.com>, David Miller <davem@davemloft.net>
+Subject: Re: "whitespace coding style cleanup" broke coding style
+References: <4F4B45F6.4090706@suse.cz> <1330361549.9942.7.camel@joe2Laptop>  <4F4D15E1.3090306@imap.cc> <1330466751.21481.18.camel@joe2Laptop>  <4F4D5E84.8090404@imap.cc> <1330471687.31737.19.camel@joe2Laptop>
+In-Reply-To: <1330471687.31737.19.camel@joe2Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig55B7EB4049EF4EEBAB37C36C
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 02/29/2012 12:28 AM, Joe Perches wrote:
+> On Wed, 2012-02-29 at 00:08 +0100, Tilman Schmidt wrote:
+>> Am 28.02.2012 23:05, schrieb Joe Perches:
+>>> On Tue, 2012-02-28 at 18:58 +0100, Tilman Schmidt wrote:
+>>>> Please remember to CC the maintainers of the affected code this time.
+>>> Karsten Keil is the nominal maintainer for
+>>> all of drivers/isdn.
+>> Look again.
+>
+> What I wrote is correct.
+>
+> I am aware there are 2 other ISDN sections
+> and maintainers listed in MAINTAINERS.
+>
+> One of those, Armin Schindler, (cc'd) hasn't
+> signed a single commit in git history.
 
-Am 29.02.2012 08:46, schrieb Jonas Bonn:
->=20
-> Thanks, Richard.  There is, however, already a patch in linux-next that=
+True, my last work here was a long time ago.
+I used to maintain the eicon driver, but this driver
+is not just old, it is simply outdated for years and
+I doubt someone will ever use it in newer kernels.
+It just creates work here.
 
-> provides this fix.
+Some time ago I asked (I don't remember who) why
+don't we remove that old driver from the kernel.
+It wasn't done because there is no follow up for the
+kernel. The new drivers out there are maintained,
+but will never be part of the kernel (coding style, etc.).
+I guess the idea was not to remove a driver from the kernel
+when there is no alternative (in kernel).
+Maybe I should bring this up again and ask for a removal of the
+current eicon driver in kernel...
 
-No problem.
-Why is the fix not in Linus' tree?
-We are already at 3.3-rc5...
-
-Thanks,
-//richard
+regards,
+Armin
 
 
---------------enig55B7EB4049EF4EEBAB37C36C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPTeMTAAoJEN9758yqZn9evgAH/2RCxf48dUFEPuTpjtw+wb4j
-dCR4vepsUIdcGwA3a98Uaj26IB7pgBLg85HgleD3Fp0aQrB5KC43Fq0mb7NquKv/
-d2xaGPzYPxgwbYV2GLNEZFQy+LPouR5itS/mgffQTslC6LHDXpSdm7H49FKj7bnn
-XDpv0EbE0ZiACEvDozsNSFjR8fjQqVLh0IuPKcrZ2ySUIgEdYsffRsF13/7U3xqa
-LaX+H35QyleGhagv8FS3LY0nJxOBI8o6SwZRqmKbC2TGOyN6arSHBa7qZp49Xpz0
-qJQ6jgM7IY30r4lMZ3J32MNRUWeG/Z3fI82gLjeXnbmWeZhPJLbcvznCEPi87gY=
-=u4X/
------END PGP SIGNATURE-----
-
---------------enig55B7EB4049EF4EEBAB37C36C--
