@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030881Ab2B2NzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:55:05 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:58009 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030583Ab2B2NzD (ORCPT
+	id S1030939Ab2B2NzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:55:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54500 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030583Ab2B2NzN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:55:03 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Wed, 29 Feb 2012 14:54:32 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH] [media] s5p-g2d: Make it possible to instantiate driver from DT
-To: k.debski@samsung.com
-Cc: m.szyprowski@samsung.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <1330523672-16453-1-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 1.7.8.3
+	Wed, 29 Feb 2012 08:55:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.131.145 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+Date: Wed, 29 Feb 2012 14:55:11 +0100
+Message-ID: <CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: linux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        chris.mason@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver requires standard properties only (address and irq)
-which are automatically marshalled into plain old resources by OF core.
+Hi Chris,
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/media/video/s5p-g2d/g2d.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+the last one was borked :) Please check this one.
 
-diff --git a/drivers/media/video/s5p-g2d/g2d.c b/drivers/media/video/s5p-g2d/g2d.c
-index febaa67..e7c0020 100644
---- a/drivers/media/video/s5p-g2d/g2d.c
-+++ b/drivers/media/video/s5p-g2d/g2d.c
-@@ -20,6 +20,7 @@
- #include <linux/interrupt.h>
- 
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- #include <media/v4l2-mem2mem.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-ioctl.h>
-@@ -795,12 +796,20 @@ static int g2d_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id g2d_dt_match[] = {
-+	{ .compatible = "samsung,exynos4210-g2d" },
-+	{},
-+};
-+#endif
-+
- static struct platform_driver g2d_pdrv = {
- 	.probe		= g2d_probe,
- 	.remove		= g2d_remove,
- 	.driver		= {
- 		.name = G2D_NAME,
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(g2d_dt_match),
- 	},
- };
- 
--- 
-1.7.8.3
+-jacek
 
+2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
+> Hi All,
+>
+> /*Sorry for sending incomplete email, hit wrong button :) I guess I
+> can't use Gmail */
+>
+> Long story short: We've found that operations on a directory structure
+> holding many dirs takes ages on ext4.
+>
+> The Question: Why there's that huge difference in ext4 and btrfs? See
+> below test results for real values.
+>
+> Background: I had to backup a Jenkins directory holding workspace for
+> few projects which were co from svn (implies lot of extra .svn dirs).
+> The copy takes lot of time (at least more than I've expected) and
+> process was mostly in D (disk sleep). I've dig more and done some
+> extra test to see if this is not a regression on block/fs site. To
+> isolate the issue I've also performed same tests on btrfs.
+>
+> Test environment configuration:
+> 1) HW: HP ProLiant BL460 G6, 48 GB of memory, 2x 6 core Intel X5670 HT
+> enabled, Smart Array P410i, RAID 1 on top of 2x 10K RPM SAS HDDs.
+> 2) Kernels: All tests were done on following kernels:
+>  - 2.6.39.4-3 -- the build ID (3) is used here for internal tacking of
+> config changes mostly. In -3 we've introduced ,,fix readahead pipeline
+> break caused by block plug'' patch. Otherwise it's pure 2.6.39.4.
+>  - 3.2.7 -- latest kernel at the time of testing (3.2.8 has been
+> release recently).
+> 3) A subject of tests, directory holding:
+>  - 54GB of data (measured on ext4)
+>  - 1978149 files
+>  - 844008 directories
+> 4) Mount options:
+>  - ext4 -- errors=remount-ro,noatime,
+> data=writeback
+>  - btrfs -- noatime,nodatacow and for later investigation on
+> copression effect: noatime,nodatacow,compress=lzo
+>
+> In all tests I've been measuring time of execution. Following tests
+> were performed:
+> - find . -type d
+> - find . -type f
+> - cp -a
+> - rm -rf
+>
+> Ext4 results:
+> | Type     | 2.6.39.4-3   | 3.2.7
+> | Dir cnt  | 17m 40sec  | 11m 20sec
+> | File cnt |  17m 36sec | 11m 22sec
+> | Copy    | 1h 28m        | 1h 27m
+> | Remove| 3m 43sec    | 3m 38sec
+>
+> Btrfs results (without lzo comression):
+> | Type     | 2.6.39.4-3   | 3.2.7
+> | Dir cnt  | 2m 22sec  | 2m 21sec
+> | File cnt |  2m 26sec | 2m 23sec
+> | Copy    | 36m 22sec | 39m 35sec
+> | Remove| 7m 51sec   | 10m 43sec
+>
+> From above one can see that copy takes close to 1h less on btrfs. I've
+> done strace counting times of calls, results are as follows (from
+> 3.2.7):
+> 1) Ext4 (only to elements):
+> % time     seconds  usecs/call     calls    errors syscall
+> ------ ----------- ----------- --------- --------- ----------------
+>  57.01   13.257850           1  15082163           read
+>  23.40    5.440353           3   1687702           getdents
+>  6.15    1.430559           0   3672418           lstat
+>  3.80    0.883767           0  13106961           write
+>  2.32    0.539959           0   4794099           open
+>  1.69    0.393589           0    843695           mkdir
+>  1.28    0.296700           0   5637802           setxattr
+>  0.80    0.186539           0   7325195           stat
+>
+> 2) Btrfs:
+> % time     seconds  usecs/call     calls    errors syscall
+> ------ ----------- ----------- --------- --------- ----------------
+> 53.38    9.486210           1  15179751           read
+> 11.38    2.021662           1   1688328           getdents
+>  10.64    1.890234           0   4800317           open
+>  6.83    1.213723           0  13201590           write
+>  4.85    0.862731           0   5644314           setxattr
+>  3.50    0.621194           1    844008           mkdir
+>  2.75    0.489059           0   3675992         1 lstat
+>  1.71    0.303544           0   5644314           llistxattr
+>  1.50    0.265943           0   1978149           utimes
+>  1.02    0.180585           0   5644314    844008 getxattr
+>
+> On btrfs getdents takes much less time which prove the bottleneck in
+> copy time on ext4 is this syscall. In 2.6.39.4 it shows even less time
+> for getdents:
+> % time     seconds  usecs/call     calls    errors syscall
+> ------ ----------- ----------- --------- --------- ----------------
+>  50.77   10.978816           1  15033132           read
+>  14.46    3.125996           1   4733589           open
+>  7.15    1.546311           0   5566988           setxattr
+>  5.89    1.273845           0   3626505           lstat
+>  5.81    1.255858           1   1667050           getdents
+>  5.66    1.224403           0  13083022           write
+>  3.40    0.735114           1    833371           mkdir
+>  1.96    0.424881           0   5566988           llistxattr
+>
+>
+> Why so huge difference in the getdents timings?
+>
+> -Jacek
