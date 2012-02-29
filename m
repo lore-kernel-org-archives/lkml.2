@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab2B2B5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:57:51 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60876 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753692Ab2B2B5t convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:57:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.112.103.8 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120228164413.GA11021@kroah.com>
-References: <CAJ0PZbRsh_Cnqy8Vtf1FWLajBr=R5iQ=Jog+w+qPE-uKrh5XQA@mail.gmail.com>
-	<20120228164413.GA11021@kroah.com>
-Date: Wed, 29 Feb 2012 10:57:48 +0900
-Message-ID: <CAJ0PZbQ9iTO+CqNLyAYiRFq8BqZXoyLfBFGvw78k53C+4yLY=w@mail.gmail.com>
-Subject: Re: [PULL-REQUEST] EXTCON Patches (Re: [PATCH v6 0/5] Introduce
- External Connector Class (extcon))
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757544Ab2B2B6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:58:24 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:51733 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab2B2B6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 20:58:23 -0500
+Date: Tue, 28 Feb 2012 20:58:13 -0500 (EST)
+Message-Id: <20120228.205813.1504449700643199024.davem@davemloft.net>
+To: rodrigue@qca.qualcomm.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mcgrof@frijolero.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
+        kgiori@qca.qualcomm.com, chris.snook@gmail.com,
+        mathieu@qca.qualcomm.com, bryanh@quicinc.com,
+        steventl@qca.qualcomm.com, hao-ran.liu@canonical.com,
+        cjren@qca.qualcomm.com, joe@perches.com
+Subject: Re: [PATCH] net: add new QCA alx ethernet driver which supercedes
+ atl1c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330480210-30470-2-git-send-email-rodrigue@qca.qualcomm.com>
+References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
+	<1330480210-30470-2-git-send-email-rodrigue@qca.qualcomm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 17:58:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 1:44 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Feb 28, 2012 at 05:58:02PM +0900, MyungJoo Ham wrote:
->> Hello Arnd,
->>
->>
->> Presuming that the requests and comments upto v5 patchsets were
->> addressed in the last patchset (v6), here goes a pull request of
->> Extcon.
->
-> Wait, please, before this code can be accepted, I would like to get
-> verification that you have also made the needed changes to the Android
-> userspace side of this interface, and that the code works there, and it
-> is on its way to be included in the main Android repo.
->
-> Is this true?  If not, what is the plans for this to happen?  Without
-> that happening, I don't think this code can be accepted, do you?
->
-> thanks,
->
-> greg k-h
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Date: Tue, 28 Feb 2012 17:50:10 -0800
 
-When an extcon device driver is not using the extended features
-(multistate & mutually-exclusiveness) and CONFIG_ANDROID is on, the
-userspace interface is same as the Android kernel's switch class (name
-and state ABI, which were read-only in Android kernel).
+> QCA is commiting on fixing all bugs upstream on this driver.
 
-If an extcon device drivers uses the extended features (multistate &
-mutually-exclusiveness) by adding "cable names", the state ABI will
-provided information in different format. Besides, Android kernel's
-switch device driver cannot provide the extended feature anyway.
+By implication QCA is not willing to fix bugs in and properly
+maintain the existing in-tree atl1c driver.
 
+We're not going to wholesale replace an entire driver in this
+way, and you should know better Luis.
 
-Thanks.
+Please research the history of the Broadcom TG3 driver, Jeff Garzik
+and myself wrote a driver for Linux ignoring Broadcom's out of tree
+driver completely.
 
+Several times Broadcom tried to just plunk their out-of-tree driver,
+however properly cleaned up, into the tree.  We considerd that
+unacceptable and pushed back until they started instead making gradual
+improvements and fixes to the driver Jeff and myself wrote and had in
+the tree already.  And they did.
 
-Cheers!
-MyungJoo.
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+We expect Qualcomm to follow this precedent, and I will push back
+strongly on any attempt to just replace the existing driver.
