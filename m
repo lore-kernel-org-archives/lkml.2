@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2B2UKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:10:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635Ab2B2UKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:10:38 -0500
-Date: Wed, 29 Feb 2012 15:16:26 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Josef Bacik <josef@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] mm: SLAB Out-of-memory diagnostics
-Message-ID: <20120229181625.GA7426@t510.redhat.com>
-References: <20120229032715.GA23758@t510.redhat.com>
- <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
+	id S1755100Ab2B2UNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:13:12 -0500
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:62648 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754957Ab2B2UNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 15:13:10 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 15:13:10 EST
+X-AuditID: 12074424-b7fae6d000000906-a0-4f4e85a9d542
+Message-ID: <4F4E859E.9030902@mit.edu>
+Date: Wed, 29 Feb 2012 12:07:58 -0800
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch 0/4] time/timekeeping: Simplify vsyscall locking
+References: <20120228194200.180923135@linutronix.de>
+In-Reply-To: <20120228194200.180923135@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsUixCmqrbuy1c/fYNIFPotpG8UtzvzWtbi8
+	aw6bxZZLzawWx3sPMFls3jSV2eLNhXssDuwet9r+MHtsXqHlsXjPSyaPO9f2sHm8O3eO3ePz
+	JjmPEy1fWAPYo7hsUlJzMstSi/TtErgyFhycyV6wjKXi3swvjA2MG5m7GDk5JARMJN7vusoI
+	YYtJXLi3ng3EFhLYxyhxYZlhFyMXkL2BUaKx8S4LhPOCSWLB5UNAVRwcvAJqEms3aoA0sAio
+	Smz8fgZsKJuAikTH0gdMILaoQITEnrV/weK8AoISJ2c+YQGx+QTkJCZufQYWFxHQkNh46RYz
+	yHxmgYeMEgdbDoBdJCzgInHi5V0WiItMJD6feAxmcwqYSsyceAnsUmYBHYl3fQ+YIWx5ie1v
+	5zBPYBSahWTfLCRls5CULWBkXsUom5JbpZubmJlTnJqsW5ycmJeXWqRrrpebWaKXmlK6iREU
+	NewuKjsYmw8pHWIU4GBU4uFlLPTzF2JNLCuuzD3EKMnBpCTKu7UFKMSXlJ9SmZFYnBFfVJqT
+	WnyIUYKDWUmE960UUI43JbGyKrUoHyYlzcGiJM6rofXOT0ggPbEkNTs1tSC1CCYrw8GhJMFb
+	DDJUsCg1PbUiLTOnBCHNxMEJMpwHaPg6kBre4oLE3OLMdIj8KUZFKXHebSAJAZBERmkeXC8s
+	qb1iFAd6RZh3NkgVDzAhwnW/AhrMBDQ4gNMbZHBJIkJKqoFxss7EP7kzzl9mP5S7/JsR2/8d
+	k+tr3jC6BF+eOyVio+FHdwOlM7M1YjjE/h44525kG3Fnsj53TZ+8/Dr3xVcDkuPSUjZv3vLo
+	3F22urBd8xNbk04FZ15wZerZ9PXAwd+qpY0mrXv4ojr+pDikTeHz3Z8s7yD0v3ufyE9Pqb3r
+	jrpyeYvXL7mpxFKckWioxVxUnAgAUDlfF0UDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 09:37:23AM +0200, Pekka Enberg wrote:
-> On Wed, 29 Feb 2012, Rafael Aquini wrote:
-> > Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
-> > allocator to help on debugging OOM conditions. This patch also adds a new
-> > sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
-> > allocation flag and forces the kernel to report every slab allocation failure.
-> > 
-> > An example print out looks like this:
-> > 
-> >   <snip page allocator out-of-memory message>
-> >   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-> >      cache: bio-0, object size: 192, order: 0
-> >      node0: slabs: 3/3, objs: 60/60, free: 0
-> > 
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> > ---
-> >  Documentation/sysctl/vm.txt |   23 ++++++++++++++++++
-> >  include/linux/slab.h        |    2 +
-> >  kernel/sysctl.c             |    9 +++++++
-> >  mm/slab.c                   |   55 ++++++++++++++++++++++++++++++++++++++++++-
-> >  4 files changed, 88 insertions(+), 1 deletions(-)
+On 02/28/2012 11:46 AM, Thomas Gleixner wrote:
+> vsyscall updates have a separate seqlock which nests into
+> xtime_lock. There is no point to grab another lock for nothing. All it
+> needs is to update the seqcount which is user space visible.
 > 
-> No SLUB support for this?
-> 
+> The following series cleans that up.
 
-SLUB already has its version of slab_out_of_memory. I did not propose the sysctl
-knob for slub, however. (If we find the knob useful, I can propose its extention
-to slub, later). 
+FWIW, patches 2 and 3 are
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 
-> > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> > index 96f0ee8..75bdf91 100644
-> > --- a/Documentation/sysctl/vm.txt
-> > +++ b/Documentation/sysctl/vm.txt
-> > @@ -498,6 +498,29 @@ this is causing problems for your system/application.
-> >  
-> >  ==============================================================
-> >  
-> > +oom_dump_slabs_forced
-> > +
-> > +Overrides the effects of __GFP_NOWARN page allocation flag, thus forcing
-> > +the system to print warnings about every allocation failure for the
-> > +slab allocator, and helping on debugging certain OOM conditions.
-> > +The print out is pretty similar, and complements data that is reported by
-> > +the page allocator out-of-memory warning:
-> > +
-> > +<snip page allocator out-of-memory message>
-> > +  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-> > +     cache: bio-0, object size: 192, order: 0
-> > +     node0: slabs: 3/3, objs: 60/60, free: 0
-> > +
-> > +If this is set to zero, the default behavior is observed and warnings will only
-> > +be printed out for allocation requests that didn't set the __GFP_NOWARN flag.
-> > +
-> > +When set to non-zero, this information is shown whenever the allocator finds
-> > +itself failing to grant a request, regardless the __GFP_NOWARN flag status.
-> > +
-> > +The default value is 0 (disabled).
-> > +
-> > +==============================================================
-> > +
-> 
-> Why do you want to add a sysctl for this? That'd be an ABI that we need to 
-> keep around forever.
-> 
-> Is there any reason we shouldn't just enable this unconditionally?
+Can you let me know when these hit a git tree somewhere?  I have two
+more vdso clock speedups I want to send for 3.4, and I'll rebase them on
+top of these.
 
-I was afraid of this code becoming a source of garrulous and scaring warnings
-by just ignoring __GFP_NOWARN flag, however, I was also concerned with the
-'hiding' effect the flag imposes for certain requests, specially when one is
-interested in checking  all those requests out. Therefore, I thought a sysctl
-knob would be the best option to control the __GFP_NOWARN overriding behavior of
-slab_out_of_memory printouts without messing with the allocation flags
-themselves, as well as not imposing the need for reboots to start checking all
-slab allocation failures out.
-
- Rafael
+Thanks,
+Andy
