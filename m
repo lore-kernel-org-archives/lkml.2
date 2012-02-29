@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab2B2JPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:15:50 -0500
+	id S1757203Ab2B2JQA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:16:00 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:34834 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab2B2JPo (ORCPT
+	with ESMTP id S1757082Ab2B2JP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:15:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.153.206 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH 1/7] mm/memcg: scanning_global_lru means mem_cgroup_disabled
+	Wed, 29 Feb 2012 04:15:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.149.147 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH 4/7] mm: push lru index into shrink_[in]active_list()
 To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 13:15:39 +0400
-Message-ID: <20120229091539.29236.57783.stgit@zurg>
+Date: Wed, 29 Feb 2012 13:15:52 +0400
+Message-ID: <20120229091551.29236.27110.stgit@zurg>
 In-Reply-To: <20120229090748.29236.35489.stgit@zurg>
 References: <20120229090748.29236.35489.stgit@zurg>
 User-Agent: StGit/0.15
@@ -26,76 +26,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+Let's toss lru index through call stack to isolate_lru_pages(),
+this is better than its reconstructing from individual bits.
 
-Although one has to admire the skill with which it has been concealed,
-scanning_global_lru(mz) is actually just an interesting way to test
-mem_cgroup_disabled().  Too many developer hours have been wasted on
-confusing it with global_reclaim(): just use mem_cgroup_disabled().
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/vmscan.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
+ mm/vmscan.c |   42 +++++++++++++++++-------------------------
+ 1 files changed, 17 insertions(+), 25 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 003b3f5..082fbc2 100644
+index 1b70338..483b98e 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -164,26 +164,16 @@ static bool global_reclaim(struct scan_control *sc)
- {
- 	return !sc->target_mem_cgroup;
- }
--
--static bool scanning_global_lru(struct mem_cgroup_zone *mz)
--{
--	return !mz->mem_cgroup;
--}
- #else
- static bool global_reclaim(struct scan_control *sc)
- {
- 	return true;
- }
--
--static bool scanning_global_lru(struct mem_cgroup_zone *mz)
--{
--	return true;
--}
- #endif
- 
- static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_get_reclaim_stat(mz->mem_cgroup, mz->zone);
- 
- 	return &mz->zone->reclaim_stat;
-@@ -192,7 +182,7 @@ static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
- 				       enum lru_list lru)
- {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
- 						    zone_to_nid(mz->zone),
- 						    zone_idx(mz->zone),
-@@ -1806,7 +1796,7 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
- 	if (!total_swap_pages)
- 		return 0;
- 
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
- 						       mz->zone);
- 
-@@ -1845,7 +1835,7 @@ static int inactive_file_is_low_global(struct zone *zone)
+@@ -1119,15 +1119,14 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+  * @nr_scanned:	The number of pages that were scanned.
+  * @sc:		The scan_control struct for this reclaim session
+  * @mode:	One of the LRU isolation modes
+- * @active:	True [1] if isolating active pages
+- * @file:	True [1] if isolating file [!anon] pages
++ * @lru		LRU list id for isolating
+  *
+  * returns how many pages were moved onto *@dst.
   */
- static int inactive_file_is_low(struct mem_cgroup_zone *mz)
+ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		struct mem_cgroup_zone *mz, struct list_head *dst,
+ 		unsigned long *nr_scanned, struct scan_control *sc,
+-		isolate_mode_t mode, int active, int file)
++		isolate_mode_t mode, enum lru_list lru)
  {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
- 						       mz->zone);
+ 	struct lruvec *lruvec;
+ 	struct list_head *src;
+@@ -1136,13 +1135,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 	unsigned long nr_lumpy_dirty = 0;
+ 	unsigned long nr_lumpy_failed = 0;
+ 	unsigned long scan;
+-	int lru = LRU_BASE;
  
+ 	lruvec = mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup);
+-	if (active)
+-		lru += LRU_ACTIVE;
+-	if (file)
+-		lru += LRU_FILE;
+ 	src = &lruvec->lists[lru];
+ 
+ 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+@@ -1258,7 +1252,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			nr_to_scan, scan,
+ 			nr_taken,
+ 			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
+-			mode, file);
++			mode, is_file_lru(lru));
+ 	return nr_taken;
+ }
+ 
+@@ -1479,7 +1473,7 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
+  */
+ static noinline_for_stack unsigned long
+ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+-		     struct scan_control *sc, int priority, int file)
++		     struct scan_control *sc, int priority, enum lru_list lru)
+ {
+ 	LIST_HEAD(page_list);
+ 	unsigned long nr_scanned;
+@@ -1489,6 +1483,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 	unsigned long nr_file;
+ 	unsigned long nr_dirty = 0;
+ 	unsigned long nr_writeback = 0;
++	int file = is_file_lru(lru);
+ 	isolate_mode_t isolate_mode = ISOLATE_INACTIVE;
+ 	struct zone *zone = mz->zone;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+@@ -1519,7 +1514,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+ 	nr_taken = isolate_lru_pages(nr_to_scan, mz, &page_list, &nr_scanned,
+-				     sc, isolate_mode, 0, file);
++				     sc, isolate_mode, lru);
+ 	if (global_reclaim(sc)) {
+ 		zone->pages_scanned += nr_scanned;
+ 		if (current_is_kswapd())
+@@ -1657,7 +1652,7 @@ static void move_active_pages_to_lru(struct zone *zone,
+ static void shrink_active_list(unsigned long nr_to_scan,
+ 			       struct mem_cgroup_zone *mz,
+ 			       struct scan_control *sc,
+-			       int priority, int file)
++			       int priority, enum lru_list lru)
+ {
+ 	unsigned long nr_taken;
+ 	unsigned long nr_scanned;
+@@ -1668,6 +1663,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	struct page *page;
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+ 	unsigned long nr_rotated = 0;
++	int file = is_file_lru(lru);
+ 	isolate_mode_t isolate_mode = ISOLATE_ACTIVE;
+ 	struct zone *zone = mz->zone;
+ 
+@@ -1685,17 +1681,14 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+ 	nr_taken = isolate_lru_pages(nr_to_scan, mz, &l_hold, &nr_scanned, sc,
+-				     isolate_mode, 1, file);
++				     isolate_mode, lru);
+ 	if (global_reclaim(sc))
+ 		zone->pages_scanned += nr_scanned;
+ 
+ 	reclaim_stat->recent_scanned[file] += nr_taken;
+ 
+ 	__count_zone_vm_events(PGREFILL, zone, nr_scanned);
+-	if (file)
+-		__mod_zone_page_state(zone, NR_ACTIVE_FILE, -nr_taken);
+-	else
+-		__mod_zone_page_state(zone, NR_ACTIVE_ANON, -nr_taken);
++	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -nr_taken);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+@@ -1751,10 +1744,8 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 	 */
+ 	reclaim_stat->recent_rotated[file] += nr_rotated;
+ 
+-	move_active_pages_to_lru(zone, &l_active, &l_hold,
+-						LRU_ACTIVE + file * LRU_FILE);
+-	move_active_pages_to_lru(zone, &l_inactive, &l_hold,
+-						LRU_BASE   + file * LRU_FILE);
++	move_active_pages_to_lru(zone, &l_active, &l_hold, lru);
++	move_active_pages_to_lru(zone, &l_inactive, &l_hold, lru - LRU_ACTIVE);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+@@ -1854,11 +1845,11 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ 
+ 	if (is_active_lru(lru)) {
+ 		if (inactive_list_is_low(mz, file))
+-			shrink_active_list(nr_to_scan, mz, sc, priority, file);
++			shrink_active_list(nr_to_scan, mz, sc, priority, lru);
+ 		return 0;
+ 	}
+ 
+-	return shrink_inactive_list(nr_to_scan, mz, sc, priority, file);
++	return shrink_inactive_list(nr_to_scan, mz, sc, priority, lru);
+ }
+ 
+ static int vmscan_swappiness(struct mem_cgroup_zone *mz,
+@@ -2109,7 +2100,8 @@ restart:
+ 	 * rebalance the anon lru active/inactive ratio.
+ 	 */
+ 	if (inactive_anon_is_low(mz))
+-		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
++		shrink_active_list(SWAP_CLUSTER_MAX, mz,
++				   sc, priority, LRU_ACTIVE_ANON);
+ 
+ 	/* reclaim/compaction might need reclaim to continue */
+ 	if (should_continue_reclaim(mz, nr_reclaimed,
+@@ -2551,7 +2543,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc,
+ 
+ 		if (inactive_anon_is_low(&mz))
+ 			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
+-					   sc, priority, 0);
++					   sc, priority, LRU_ACTIVE_ANON);
+ 
+ 		memcg = mem_cgroup_iter(NULL, memcg, NULL);
+ 	} while (memcg);
 
