@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab2B2BRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:17:23 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33517 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab2B2BRV (ORCPT
+	id S965138Ab2B2BRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:17:31 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63175 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab2B2BR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:17:21 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 10:15:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Greg Thelen <gthelen@google.com>,
-        Jan Kara <jack@suse.cz>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/9] memcg: dirty page accounting support routines
-Message-Id: <20120229101549.1d4ef3f3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120228144507.acd70d1e.akpm@linux-foundation.org>
-References: <20120228140022.614718843@intel.com>
-	<20120228144747.124608935@intel.com>
-	<20120228144507.acd70d1e.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 20:17:28 -0500
+Date: Tue, 28 Feb 2012 17:17:21 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Igor Murzov <intergalactic.anonymous@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Igor Murzov <e-mail@date.by>, "Sergey V." <sftp.mtuci@gmail.com>
+Subject: Re: [RFC][PATCH 2/2] ACPI video: Don't start video device until its
+ associated input device has been reigstered
+Message-ID: <20120229011721.GB11492@core.coreip.homeip.net>
+References: <20120229035142.31016e6f@garik>
+ <20120229035518.306c57a8@garik>
+ <20120229003915.GA11111@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229003915.GA11111@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 14:45:07 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Tue, 28 Feb 2012 22:00:26 +0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
+On Tue, Feb 28, 2012 at 04:39:15PM -0800, Dmitry Torokhov wrote:
+> On Wed, Feb 29, 2012 at 03:55:18AM +0400, Igor Murzov wrote:
+> > From 202f25d44b1cf871697c88a6a3a8d854674db4d8 Mon Sep 17 00:00:00 2001
+> > From: Igor Murzov <e-mail@date.by>
+> > Date: Mon, 27 Feb 2012 21:57:59 +0400
+> > Subject: [PATCH 2/2] ACPI video: Don't start video device until its
+> >  associated input device has been reigstered
 > 
-> > From: Greg Thelen <gthelen@google.com>
 > > 
-> > Added memcg dirty page accounting support routines.  These routines are
-> > used by later changes to provide memcg aware writeback and dirty page
-> > limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
-> > allow for easier understanding of memcg writeback operation.
+> > ---
+> >  drivers/acpi/video.c |   10 ++++++----
+> >  1 files changed, 6 insertions(+), 4 deletions(-)
 > > 
-> > ...
-> >
-> > +/*
-> > + * Return the number of additional pages that the @memcg cgroup could allocate.
-> > + * If use_hierarchy is set, then this involves checking parent mem cgroups to
-> > + * find the cgroup with the smallest free space.
-> > + */
+> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> > index 1bc6370..b9e114c 100644
+> > --- a/drivers/acpi/video.c
+> > +++ b/drivers/acpi/video.c
+> > @@ -1659,9 +1659,6 @@ static int acpi_video_bus_add(struct acpi_device *device)
+> >  	error = acpi_video_bus_get_devices(video, device);
+> >  	if (error)
+> >  		goto err_free_video;
+> > -	error = acpi_video_bus_start_devices(video);
+> > -	if (error)
+> > -		goto err_put_video;
+> >  
+> >  	video->input = input = input_allocate_device();
+> >  	if (!input) {
+> > @@ -1703,13 +1700,18 @@ static int acpi_video_bus_add(struct acpi_device *device)
+> >  	if (error)
+> >  		goto err_free_input_dev;
+> >  
+> > +	error = acpi_video_bus_start_devices(video);
+> > +	if (error)
+> > +		goto err_unregister_pm_notifier;
+> > +
 > 
-> Comment needs revisting - use_hierarchy does not exist.
+> Registered input device should be unregistered with
+> input_unregister_device(), not input_free_device(). Your change breaks
+> this.
 > 
-> > +static unsigned long
-> > +mem_cgroup_hierarchical_free_pages(struct mem_cgroup *memcg)
-> > +{
-> > +	u64 free;
-> > +	unsigned long min_free;
-> > +
-> > +	min_free = global_page_state(NR_FREE_PAGES);
-> > +
-> > +	while (memcg) {
-> > +		free = mem_cgroup_margin(memcg);
-> > +		min_free = min_t(u64, min_free, free);
-> > +		memcg = parent_mem_cgroup(memcg);
-> > +	}
-> > +
-> > +	return min_free;
-> > +}
-> > +
-> > +/*
-> > + * mem_cgroup_page_stat() - get memory cgroup file cache statistics
-> > + * @memcg:     memory cgroup to query
-> > + * @item:      memory statistic item exported to the kernel
-> > + *
-> > + * Return the accounted statistic value.
-> > + */
-> > +unsigned long mem_cgroup_page_stat(struct mem_cgroup *memcg,
-> > +				   enum mem_cgroup_page_stat_item item)
-> > +{
-> > +	struct mem_cgroup *iter;
-> > +	s64 value;
-> > +
-> > +	/*
-> > +	 * If we're looking for dirtyable pages we need to evaluate free pages
-> > +	 * depending on the limit and usage of the parents first of all.
-> > +	 */
-> > +	if (item == MEMCG_NR_DIRTYABLE_PAGES)
-> > +		value = mem_cgroup_hierarchical_free_pages(memcg);
-> > +	else
-> > +		value = 0;
-> > +
-> > +	/*
-> > +	 * Recursively evaluate page statistics against all cgroup under
-> > +	 * hierarchy tree
-> > +	 */
-> > +	for_each_mem_cgroup_tree(iter, memcg)
-> > +		value += mem_cgroup_local_page_stat(iter, item);
-> 
-> What's the locking rule for for_each_mem_cgroup_tree()?  It's unobvious
-> from the code and isn't documented?
-> 
+> Also, notify() will not be called until acpi_video_bus_add() completes
+> so current code should be perfectly fine.
 
-Because for_each_mem_cgroup_tree() uses rcu_read_lock() and referernce counting
-internally, it's not required to take any lock in callers.
-One rule is the caller shoud call mem_cgroup_iter_break() if he want to break
-the loop.
+Hm, I take the last paragraph back - in addition to bus notifier we do
+install device notifier explicitly so it might fire up early. The
+easiest fox would be to move acpi_video_bus_start_devices after
+input_allocate_device() but before input_refister_device() -
+unregistered input devoces can handle input_event() calls just fine.
 
-Thanks,
--Kame
-
-
-
-
-
-
+-- 
+Dmitry
