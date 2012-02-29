@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2B2RmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:42:07 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7411 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2B2RmE convert rfc822-to-8bit (ORCPT
+	id S1756095Ab2B2RnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:43:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14906 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab2B2RnT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:42:04 -0500
+	Wed, 29 Feb 2012 12:43:19 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 29 Feb 2012 09:41:46 -0800
+	by hqnvupgp06.nvidia.com on Wed, 29 Feb 2012 09:43:01 -0800
 From: Stephen Warren <swarren@nvidia.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 CC: Linus Walleij <linus.walleij@stericsson.com>,
@@ -19,81 +19,46 @@ CC: Linus Walleij <linus.walleij@stericsson.com>,
         "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
         "tony@atomide.com" <tony@atomide.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 09:41:44 -0800
-Subject: RE: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT, define
- hogs as that state
-Thread-Topic: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT,
- define hogs as that state
-Thread-Index: Acz3AOCp5y5xKkqgSxOjNxZWh1Gf3wAB+cag
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209D@HQMAIL01.nvidia.com>
-References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
- <CACRpkdaaYF8UqweNm6sQ3dke9J76J2oY62BPBSisPo9myf7W4g@mail.gmail.com>
-In-Reply-To: <CACRpkdaaYF8UqweNm6sQ3dke9J76J2oY62BPBSisPo9myf7W4g@mail.gmail.com>
+Date: Wed, 29 Feb 2012 09:42:59 -0800
+Subject: RE: [PATCH V2 0/6] pinctrl: API rework, pinconfig in mapping table,
+ ...
+Thread-Topic: [PATCH V2 0/6] pinctrl: API rework, pinconfig in mapping
+ table, ...
+Thread-Index: Acz3AaPYx0qIx8YvRnS6NUpBt+fboQAB8fag
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209F@HQMAIL01.nvidia.com>
+References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
+ <CACRpkdbtH7edRVc=BmCncabMzQ=OB8eQAYju3Aoh-zSnFGQ6sA@mail.gmail.com>
+In-Reply-To: <CACRpkdbtH7edRVc=BmCncabMzQ=OB8eQAYju3Aoh-zSnFGQ6sA@mail.gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, February 29, 2012 9:41 AM:
-> Aha now I see the problem here...
+Linus Walleij wrote at Wednesday, February 29, 2012 9:46 AM:
+> On Tue, Feb 28, 2012 at 9:27 PM, Stephen Warren <swarren@nvidia.com> wrote:
 > 
-> On Tue, Feb 28, 2012 at 12:55 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> > This is the current set of patches I have outstanding for pinctrl.
 > 
-> > This provides a single centralized name for the default state.
-> (...)
-> > -/* Hog a single map entry and add to the hoglist */
-> > -static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
-> (...)
-> > -static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
-> (...)
-> > -       pinctrl_hog_maps(pctldev);
-> > +       pctldev->p = pinctrl_get(pctldev->dev, PINCTRL_STATE_DEFAULT);
-> > +       if (!IS_ERR(pctldev->p))
-> > +               pinctrl_enable(pctldev->p);
-> 
-> So what happens here is that my hogs will try to activate three different
-> functions in the same struct pinctrl *p.
-> 
-> This fails the sanity check in pinmux.c:
-> 
-> 	/*
-> 	 * If the function selector is already set, it needs to be identical,
-> 	 * we support several groups with one function but not several
-> 	 * functions with one or several groups in the same pinmux.
-> 	 */
-> 	if (p->func_selector != UINT_MAX &&
-> 	    p->func_selector != func_selector) {
-> 		dev_err(pctldev->dev,
-> 			"dual function defines in the map for device %s\n",
-> 		       devname);
-> 		return -EINVAL;
-> 	}
-> 	p->func_selector = func_selector;
+> Thanks, now the problem is that I think this is based on top of
+> the other two patches, which happen to break U300 so I cannot
+> test it :-(
 
-Oh right, I'd forgotten about that check at this stage in the patch
-series.
+I think this series will unbreak U300, i.e. if you apply everything
+it'll all work fine? Of course, git bisect isn't maintained, so I still
+need to rework the series as I mentioned in my previous email.
 
-Later in the series, this restriction is removed; each setting in a state
-is completely independent, and could easily program a different function
-onto each group, or the same function. At this stage in the series, a
-struct pinctrl can't represent everything that a set of mapping table
-entries can, but later struct pinctrl is fully capable.
+> It'd be great if you could resolve the hogging issue in the other
+> patch set and put them as patch 1 & 2 of this patch set
+> so I have the whole picture and can proceed from there.
 
-I guess the solution here is to just make this patch introduce the
-PINCTRL_STATE_DEFAULT define, but defer most usage of it until later
-in the series when this restriction is removed.
-
-Note that if you apply all my patches together, you should find that
-U300 is unbroken, so you can at least test everything. Actually
-committing that probably isn't a good idea since it'll break git bisect
-for a little while though.
+OK.
 
 -- 
 nvpublic
