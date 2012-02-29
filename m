@@ -1,155 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965794Ab2B2XO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:14:57 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:36866 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab2B2XOk (ORCPT
+	id S965429Ab2B2XJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:09:24 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25870 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab2B2XIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:14:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel@ffwll.ch designates 10.180.87.100 as permitted sender) smtp.mail=daniel@ffwll.ch; dkim=pass header.i=daniel@ffwll.ch
-Date: Thu, 1 Mar 2012 00:14:53 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
- PAGE_SIZE
-Message-ID: <20120229231453.GA6662@phenom.ffwll.local>
-Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-References: <20120224124003.93780408.akpm@linux-foundation.org>
- <1330524211-2698-1-git-send-email-daniel.vetter@ffwll.ch>
- <20120229150146.2cc64fac.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120229150146.2cc64fac.akpm@linux-foundation.org>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Feb 2012 18:08:37 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 24/39] PCI: checking busn_res in pci_scan_root_bus
+Date: Wed, 29 Feb 2012 15:07:23 -0800
+Message-Id: <1330556858-11768-25-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
+References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090208.4F4EAFE8.0059,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 03:01:46PM -0800, Andrew Morton wrote:
-> On Wed, 29 Feb 2012 15:03:31 +0100
-> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> 
-> > drm/i915 wants to read/write more than one page in its fastpath
-> > and hence needs to prefault more than PAGE_SIZE bytes.
-> > 
-> > I've checked the callsites and they all already clamp size when
-> > calling fault_in_pages_* to the same as for the subsequent
-> > __copy_to|from_user and hence don't rely on the implicit clamping
-> > to PAGE_SIZE.
-> > 
-> > Also kill a copy&pasted spurious space in both functions while at it.
-> > 
-> > v2: As suggested by Andrew Morton, add a multipage parameter to both
-> > functions to avoid the additional branch for the pagemap.c hotpath.
-> > My gcc 4.6 here seems to dtrt and indeed reap these branches where not
-> > needed.
-> > 
-> 
-> I don't think this produced a very good result :(
+some calling may not have end decided yet, and may not pass busn_res in
+resources list.
 
-And I halfway expected this mail here ;-)
+try to do insert big one and shrink.
 
-> > ...
-> >
-> > -static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-> > +static inline int fault_in_pages_writeable(char __user *uaddr, int size,
-> > +					   bool multipage)
-> >  {
-> >  	int ret;
-> > +	char __user *end = uaddr + size - 1;
-> >  
-> >  	if (unlikely(size == 0))
-> >  		return 0;
-> > @@ -416,36 +419,46 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-> >  	 * Writing zeroes into userspace here is OK, because we know that if
-> >  	 * the zero gets there, we'll be overwriting it.
-> >  	 */
-> > -	ret = __put_user(0, uaddr);
-> > -	if (ret == 0) {
-> > -		char __user *end = uaddr + size - 1;
-> > +	do {
-> > +		ret = __put_user(0, uaddr);
-> > +		if (ret != 0)
-> > +			return ret;
-> > +		uaddr += PAGE_SIZE;
-> > +	} while (multipage && uaddr <= end);
-> >  
-> > +	if (ret == 0) {
-> >  		/*
-> >  		 * If the page was already mapped, this will get a cache miss
-> >  		 * for sure, so try to avoid doing it.
-> >  		 */
-> > -		if (((unsigned long)uaddr & PAGE_MASK) !=
-> > +		if (((unsigned long)uaddr & PAGE_MASK) ==
-> >  				((unsigned long)end & PAGE_MASK))
-> > -		 	ret = __put_user(0, end);
-> > +			ret = __put_user(0, end);
-> >  	}
-> >  	return ret;
-> >  }
-> 
-> One effect of this change for the filemap.c callsite is that `uaddr'
-> now gets incremented by PAGE_SIZE.  That happens to not break anything
-> because we then mask `uaddr' with PAGE_MASK, and if gcc were really
-> smart, it could remove that addition.  But it's a bit ugly.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-Yep, gcc is not clever enough to reap the addl on uaddr (and change the
-check for 'do we need to fault the 2nd page to' from jne to je again).
-I've checked that before submitting - maybe should have mentioned this.
-
-> Ideally the patch would have no effect upon filemap.o size, but with an
-> allmodconfig config I'm seeing
-> 
->    text    data     bss     dec     hex filename
->   22876     118    7344   30338    7682 mm/filemap.o	(before)
->   22925     118    7392   30435    76e3 mm/filemap.o	(after)
-> 
-> so we are adding read()/write() overhead, and bss mysteriously got larger.
-> 
-> Can we improve on this?  Even if it's some dumb
-> 
-> static inline int fault_in_pages_writeable(char __user *uaddr, int size,
-> 					   bool multipage)
-> {
-> 	if (multipage) {
-> 		do-this
-> 	} else {
-> 		do-that
-> 	}
-> }
-> 
-> the code duplication between do-this and do-that is regrettable, but at
-> least it's all in the same place in the same file, so we won't
-> accidentally introduce skew later on.
-> 
-> Alternatively, add a separate fault_in_multi_pages_writeable() to
-> pagemap.h.  I have a bad feeling this is what your original patch did!
-> 
-> (But we *should* be able to make this work!  Why did this version of
-> the patch go so wrong?)
-
-Well, I couldn't reconcile the non-multipage with the multipage versions
-of these functions - at least not without changing them slightly (like
-this patch here does). Which is why I've asked you whether I should just
-add a new multipage version of these. I personally deem your proposal of
-using and if (multipage) with no shared code too ugly. But you've shot at
-it a bit, so I've figured that this version here is what you want.
-
-I'll redo this patch by adding _multipage versions of these 2 functions
-for i915.
-
-Yours, Daniel
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index e32f1b7..1149109 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1742,12 +1742,34 @@ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+ 	struct pci_bus *b;
++	struct pci_host_bridge_window *window, *n;
++	struct resource *res;
++	bool found;
++
++	list_for_each_entry_safe(window, n, resources, list) {
++		res = window->res;
++		if (res->flags & IORESOURCE_BUS) {
++			found = true;
++			break;
++		}
++	}
+ 
+ 	b = pci_create_root_bus(parent, bus, ops, sysdata, resources);
+ 	if (!b)
+ 		return NULL;
+ 
++	if (!found) {
++		dev_info(&b->dev,
++		 "No busn resource found for root bus, will use [%02x, ff]\n",
++			bus);
++		pci_bus_insert_busn_res(b, bus, 255);
++	}
++
+ 	b->subordinate = pci_scan_child_bus(b);
++
++	if (!found)
++		pci_bus_update_busn_res_end(b, b->subordinate);
++
+ 	pci_bus_add_devices(b);
+ 	return b;
+ }
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+1.7.7
+
