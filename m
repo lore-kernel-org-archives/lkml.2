@@ -1,135 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030408Ab2B2ScA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:32:00 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35171 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030187Ab2B2Sb6 (ORCPT
+	id S1030436Ab2B2Snq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:43:46 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61898 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966115Ab2B2Sno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:31:58 -0500
-Date: Wed, 29 Feb 2012 10:31:52 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Hao, Xudong" <xudong.hao@intel.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Subject: Re: [PATCH V2] Quirk for IVB graphics FLR errata
-Message-ID: <20120229103152.59dcedd6@jbarnes-x220>
-In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
-References: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 174.253.241.144 authed with jbarnes@virtuousgeek.org}
+	Wed, 29 Feb 2012 13:43:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.60.26.8 as permitted sender) smtp.mail=glikely@secretlab.ca
+MIME-Version: 1.0
+In-Reply-To: <20120229175327.GA20565@ubuntu-macmini>
+References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
+ <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
+ <CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com> <20120229175327.GA20565@ubuntu-macmini>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 29 Feb 2012 12:43:23 -0600
+X-Google-Sender-Auth: VLR6n462xwOzoJImKH7lwnVkfY8
+Message-ID: <CACxGe6uc+LZjuMLS5DZELzAsHsnhObL6mdPzdMnNVbfriTfNwg@mail.gmail.com>
+Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
+To: Grant Likely <grant.likely@secretlab.ca>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012 03:11:24 +0000
-"Hao, Xudong" <xudong.hao@intel.com> wrote:
+On Wed, Feb 29, 2012 at 11:53 AM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
+>> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
+>> <seth.forshee@canonical.com> wrote:
+>> > Apple laptops with hybrid graphics have a device named gmux that
+>> > controls the muxing of the LVDS panel between the GPUs as well as screen
+>> > brightness. This driver adds support for the gmux device. Only backlight
+>> > control is supported initially.
+>> >
+>> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>>
+>> Works for me.
+>>
+>> Tested-by: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> Now I just need to figure out how to get the desktop backlight widget
+>> to use gmux_backlight instead of acpi_video0...
+>
+> The easy way is to pass acpi_backlight=vendor to the kernel, then you
+> won't have acpi_vidoe0.
 
-> For IvyBridge Mobile platform, a system hang may occur if a
-> FLR(Function Level Reset) is asserted to internal graphics.
-> 
-> This quirk patch is workaround for the IVB FLR errata issue.
-> We are disabling the FLR reset handshake between the PCH and CPU
-> display, then manually powering down the panel power sequencing and
-> resetting the PCH display.
-> 
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
-> ---
->  drivers/pci/quirks.c |   49
-> +++++++++++++++++++++++++++++++++++++++++++++++++ 1 files changed, 49
-> insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
-> 6476547..5223b80 100644 --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -29,6 +29,11 @@
->  #include <asm/dma.h>	/* isa_dma_bridge_buggy */
->  #include "pci.h"
->  
-> +#include "../gpu/drm/i915/i915_reg.h"
+That did it, thanks.  I'm assume something is in the works to set it
+up automatically?
 
-Ugg... this is ugly.  Should probably go near the definition of the
-quirk at any rate.
+g.
 
-> +#include <asm/tsc.h>
-> +/* 10 seconds */
-> +#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
-> +
-
-Same here, the asm/tsc.h can go at the top, but the timeout definition
-should go near the reset function.
-
-May as well make it a static const cycles_t as well.
-
-> +#define MSG_CTL	0x45010
-> +
-> +static int reset_ivb_igd(struct pci_dev *dev, int probe) {
-> +	u8 *mmio_base;
-> +	u32 val;
-> +
-> +	if (probe)
-> +		return 0;
-> +
-> +	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
-> +				 pci_resource_len(dev, 0));
-> +	if (!mmio_base)
-> +		return -ENOMEM;
-> +
-> +	/* Work Around */
-> +	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
-> +	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
-> +	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
-> +	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
-
-These clobber existing values.  Since we're doing a reset, clobbering
-PCH_PP_CONTROL should be ok, but clobbering SOUTH_CHICKEN2 is only ok
-if the next driver that loads sets the right bits (if i915 was
-previously using the device, it would have set a couple of bits).
-
-But again since it's it a reset that's probably ok, but you should put
-a comment indicating as much.
-
-> +	do {
-> +		cycles_t start_time = get_cycles();
-> +		while (1) {
-> +			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
-> +			if (((val & 0x80000000) == 0)
-> +				&& ((val & 0x30000000) == 0))
-> +				break;
-> +			if (IGD_OPERATION_TIMEOUT < (get_cycles() -
-> start_time))
-> +				break;
-> +			cpu_relax();
-> +		}
-> +	} while (0);
-> +	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
-> +
-> +	iounmap(pci_resource_start(dev, 0));
-> +	return 0;
-> +}
-> +
->  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
-> +#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
-> +#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
->  
->  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
->  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
->  		 reset_intel_82599_sfp_virtfn },
-> +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
-> +		reset_ivb_igd },
-> +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
-> +		reset_ivb_igd },
->  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
->  		reset_intel_generic_dev },
->  	{ 0 }
-
-Looks ok otherwise, thanks.
-
-Jesse
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
