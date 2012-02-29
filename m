@@ -1,69 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966242Ab2B2C37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:29:59 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55208 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966056Ab2B2C35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:29:57 -0500
-Date: Wed, 29 Feb 2012 13:29:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rabin Vincent <rabin@rab.in>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the rr tree with the arm tree
-Message-Id: <20120229132946.3683c8a06314a7bd541aaa0c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Feb_2012_13_29_46_+1100_1iSN4cdoLszLT873"
+	id S966246Ab2B2Cgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:36:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40348 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965501Ab2B2Cgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 21:36:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112536687"
+Date: Wed, 29 Feb 2012 10:31:27 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-ID: <20120229023127.GB11583@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Feb_2012_13_29_46_+1100_1iSN4cdoLszLT873
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 28, 2012 at 04:04:03PM -0800, Andrew Morton wrote:
+> On Tue, 28 Feb 2012 22:00:27 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > This relays file pageout IOs to the flusher threads.
+> > 
+> > It's much more important now that page reclaim generally does not
+> > writeout filesystem-backed pages.
+> 
+> It doesn't?  We still do writeback in direct reclaim.  This claim
+> should be fleshed out rather a lot, please.
 
-Hi Rusty,
+That claim is actually from Mel in his review comments :)
 
-Today's linux-next merge of the rr tree got a conflict in
-arch/arm/kernel/kprobes.c between commit 214f3e7464bc ("ARM: 7332/1:
-extract out code patch function from kprobes") from the arm tree and
-commit 8dcf0d7856cf ("remove references to cpu_*_map in arch/") from the
-rr tree.
+Current upstream kernel avoids writeback in direct reclaim totally
+with commit ee72886d8ed5d ("mm: vmscan: do not writeback filesystem
+pages in direct reclaim").
 
-The former moved part of the code modified by the latter into another
-file and, in doing so, applied the appropriate fixup.  So I just used the
-arm version of arch_arm_kprobe() - the patch to arch_disarm_kprobe() is
-still required.
+Now with this patch, as long as the pageout works are queued
+successfully, the pageout() calls from kswapd() will also be
+eliminated.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> > The ultimate target is to gracefully handle the LRU lists pressured by
+> > dirty/writeback pages. In particular, problems (1-2) are addressed here.
+> > 
+> > 1) I/O efficiency
+> > 
+> > The flusher will piggy back the nearby ~10ms worth of dirty pages for I/O.
+> > 
+> > This takes advantage of the time/spacial locality in most workloads: the
+> > nearby pages of one file are typically populated into the LRU at the same
+> > time, hence will likely be close to each other in the LRU list. Writing
+> > them in one shot helps clean more pages effectively for page reclaim.
+> 
+> Yes, this is often true.  But when adjacent pages from the same file
+> are clustered together on the LRU, direct reclaim's LRU-based walk will
+> also provide good I/O patterns.
 
---Signature=_Wed__29_Feb_2012_13_29_46_+1100_1iSN4cdoLszLT873
-Content-Type: application/pgp-signature
+I'm afraid the I/O elevator is not so smart (and technically possible)
+at merging the pageout() bios. The file pages are typically
+interleaved between DMA32 and NORMAL zones or even among NUMA nodes.
+Page reclaim also walks the nodes/zones interleavely, but in some
+different manner.  So pageout() might at best generate I/O for [1,
+30], [150, 168], [90, 99], ...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+IOW, the holes and disorderness are effectively killing large I/O. Not
+to mention it hurts interactive performance to block in get_request_wait()
+if we ever submit I/O inside page reclaim.
 
-iQIcBAEBCAAGBQJPTY2aAAoJEECxmPOUX5FErCQP/3Kqpuyq4lkClE+t9cxZkuBq
-kZJkFO7d9vO7kBo243UA5mNA+z9HtSw7NYqFZHnfjr+rYMyM130zGFluajsA0c9i
-71o/3tzSgI2r8pSIXyeQzE0AwkKF5PHHJveZ1DoSSHJwrkV2CuOXrbv1rj2MLWs3
-JJtemYKINmSvgSLp+uOtCD/KE7Zq8hUqiXfDyx2B9x/HU17Sp/9G3gWaocO9qeXH
-QeRokhk4tzLSxLR1YYjgcMnYrn49/DS4mpPJMuev52Dgo01VBCYIrQNUWr2lOU1F
-mPEdoqEvCYa0PDDSxuB+Frq6PQ2I7b1LbQUIOuLBCuDZ1T2F+PpUcYu2LXwJxf3o
-hwqKCDQXDmTSytNOfoJ751TpVVMKql282O23Z6YWliIO7t00bAy9MI/NogkAkwuO
-e1AQDOxauRpobfwQtn47TcQQSZmpAyN2XkMWWDHFqOHf0OuQ8FNZ66ns9hCZUGji
-R1koHfyFWsyd8fvMGv/Knu/DVWdeRzOdn0s73hZ7NMjtZ0mIuv1XCGfjqRJ5BQum
-JQMxbjRWM0Xlcw0W4EVKJgkozAoPuRAU0JlcdrRNbJ4dgYiPnsTA7tKlhZLMPtZ7
-pGVE+ud9AC3v0X3xtJqpPdL9ZZUT8kcqNQCi0cbNs0moIZ0vCwZLHzjffAHAkdSj
-5qJ/3G7EmwWPJFoyev/x
-=8bob
------END PGP SIGNATURE-----
+> > For the common dd style sequential writes that have excellent locality,
+> > up to ~80ms data will be wrote around by the pageout work, which helps
+> > make I/O performance very close to that of the background writeback.
+> > 
+> > 2) writeback work coordinations
+> > 
+> > To avoid memory allocations at page reclaim, a mempool for struct
+> > wb_writeback_work is created.
+> > 
+> > wakeup_flusher_threads() is removed because it can easily delay the
+> > more oriented pageout works and even exhaust the mempool reservations.
+> > It's also found to not I/O efficient by frequently submitting writeback
+> > works with small ->nr_pages.
+> 
+> The last sentence here needs help.
 
---Signature=_Wed__29_Feb_2012_13_29_46_+1100_1iSN4cdoLszLT873--
+wakeup_flusher_threads() is called with total_scanned. Which could be
+(LRU_size / 4096). Given 1GB LRU_size, the write chunk would be 256KB.
+This is much smaller than the old 4MB and the now preferred write
+chunk size (write_bandwidth/2).
+
+                writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
+==>             if (total_scanned > writeback_threshold) {
+                        wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
+                                                WB_REASON_TRY_TO_FREE_PAGES);
+                        sc->may_writepage = 1;
+                }
+
+Actually I see much more wakeup_flusher_threads() calls than expected.
+The above test condition may be too permissive.
+
+For direct reclaim, sc->nr_to_reclaim=32 and total_scanned starts with
+(LRU_size / 4096), which *always* exceeds writeback_threshold in boxes
+with more than 1GB memory. So the flusher end up constantly be fed with
+small writeout requests.
+
+The test is not really reflecting "dirty pages pressure". And it's
+easy to trigger direct reclaim by starting some concurrent page
+allocators or by using memcg. Which has nothing to do with dirty
+pressure.
+
+> > Background/periodic works will quit automatically, so as to clean the
+> > pages under reclaim ASAP.
+> 
+> I don't know what this means.  How does a work "quit automatically" and
+> why does that initiate I/O?
+
+Typically the flusher will be working on the background/periodic works
+when there are heavy dirtier tasks. And wb_writeback() has this
+
+                /*
+                 * Background writeout and kupdate-style writeback may
+                 * run forever. Stop them if there is other work to do
+                 * so that e.g. sync can proceed. They'll be restarted
+                 * after the other works are all done.
+                 */
+                if ((work->for_background || work->for_kupdate) &&
+                    !list_empty(&wb->bdi->work_list))
+                        break;
+
+to quit the background/periodic work when pageout or other works are
+queued. So the pageout works can typically be pick up and executed
+quickly by the flusher: the background/periodic works are the dominant
+ones and there are rarely other type of works in the way.
+
+> > However for now the sync work can still block
+> > us for long time.
+> 
+> Please define the term "sync work".
+
+That's the works submitted by
+
+        __sync_filesystem()
+          ==> writeback_inodes_sb() for the WB_SYNC_NONE pass
+          ==> sync_inodes_sb()      for the WB_SYNC_ALL pass
+
+with reason WB_REASON_SYNC.
+
+Thanks,
+Fengguang
+
+// break time..
+
+> > Jan Kara: limit the search scope; remove works and unpin inodes on umount.
+> > 
+> > TODO: the pageout works may be starved by the sync work and maybe others.
+> > Need a proper way to guarantee fairness.
