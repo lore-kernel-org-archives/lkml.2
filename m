@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031247Ab2B2RQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:16:48 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39991 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031234Ab2B2RQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:16:44 -0500
-Date: Wed, 29 Feb 2012 18:16:26 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Message-ID: <20120229171626.GJ21224@aftab>
-References: <1330445487-15020-1-git-send-email-bp@amd64.org>
- <1330445487-15020-2-git-send-email-bp@amd64.org>
- <4F4E1F91.9080705@redhat.com>
- <20120229134556.GG21224@aftab>
- <4F4E3059.7040004@redhat.com>
- <20120229144054.GH21224@aftab>
- <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com>
+	id S1031259Ab2B2RR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:17:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031127Ab2B2RRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 12:17:25 -0500
+Date: Wed, 29 Feb 2012 18:09:33 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Denys Vlasenko <dvlasenk@redhat.com>
+Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
+Message-ID: <20120229170933.GA6149@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-10-git-send-email-wad@chromium.org> <20120227175407.GD10608@redhat.com> <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com> <20120228164335.GC3664@redhat.com> <CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com> <CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com> <20120229161437.GA3078@redhat.com> <CABqD9hZLi416irXMMPmysYohrOn1gQjhjDyKTggU80Kd7ywvcA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABqD9hZLi416irXMMPmysYohrOn1gQjhjDyKTggU80Kd7ywvcA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 04:58:09PM +0000, Luck, Tony wrote:
-> > - severity: No real need for it. If the error is severe enough, the
-> > kernel handles automatically, i.e. memory poisoning and recovery. In all
-> > the other cases it is not severe enough.
-> 
-> We'll never see fatal errors via the perf/tracepoint (no way the RAS daemon
-> will run to pull them). But we will see both corrected error chatter and
-> recovered uncorrectable errors. I would be able to tell these apart.
-> Corrected errors in small doses are normal and don't require any
-> action beyond logging so you can see whether there are enough to cross
-> a threshold and cause alarm. Recovered uncorrectable errors are going
-> to be much rarer, and I think deserve closer scrutiny - even when there
-> is just one of them.
-> If you drop the severity field, is there some other way to make this
-> distinction?
+On 02/29, Will Drewry wrote:
+> On Wed, Feb 29, 2012 at 10:14 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/28, Will Drewry wrote:
+> >>
+> >> On Tue, Feb 28, 2012 at 11:04 AM, Will Drewry <wad@chromium.org> wrote:
+> >> > On Tue, Feb 28, 2012 at 10:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> >>
+> >> >> Great. In this case this patch becomes really trivial. Just 2 defines
+> >> >> in ptrace.h and the unconditional ptrace_event() under SECCOMP_RET_TRACE.
+> >>
+> >> hrm the only snag is that I can't then rely on TIF_SYSCALL_TRACE to
+> >> ensure seccomp is in the slow-path.  Right now, on x86, seccomp is
+> >> slow-path, but it doesn't have to be to have the syscall and args.
+> >> However, for ptrace to behavior properly, I believed it did need to be
+> >> in the slow path.  If SECCOMP_RET_TRACE doesn't rely on
+> >> PTRACE_SYSCALL, then it introduces a need for seccomp to always be in
+> >> the slow path or to flag (somehow) when it needs slow path.
+> >
+> > My understanding of this magic is very limited, and I'm afraid
+> > I misunderstood... So please correct me.
+> >
+> > But what is the problem? system_call checks _TIF_WORK_SYSCALL_ENTRY
+> > which includes _TIF_SECCOMP | _TIF_SYSCALL_TRACE, and jumps to
+> > tracesys which does SAVE_REST.
+> >
+> > Anyway. secure_computing() is called by syscall_trace_enter() which
+> > also calls tracehook_report_syscall_entry(). If SECCOMP_RET_TRACE
+> > can't do ptrace_event() then why tracehook_report_syscall_entry() is
+> > fine?
+>
+> Early on in this patch series, I was urged away from regviews (for
+> many reasons), one of them was so that seccomp could, at some point,
+> be fast-path'd like audit is for x86.  (It may be on arm already, I'd
+> need to check.)  So I was hoping that I could avoid adding a slow-path
+> dependency to the seccomp code.
 
-Err, MCi_STATUS bits like bit 55 (Action Required) and 56 (Signaled #MC)
-in your case...?
+Thanks, now I see what you meant.
 
-> > - silkscreen_label: <sarcasm> yeah, I'm getting a, say, a Data
-> > Cache error during an L1 linefill from L2, what the f*ck does the
-> > silkscreen label mean for such an error?! Well, nobody knows wtf it
-> > means!</sarcasm>
-> 
-> Cache error should point to a cpu socket - I'd like to have a silk
-> screen label for that (are they numbered "0, 1, 2 ..." on the motherboard
-> or "1, 2, 3 ..."?)  No idea where we'd get that information from. dmidecode
-> shows "Socket Designation: CPU 1" (and "2") for my current Sandy Bridge
-> system. I'd have to pull the system apart to see if those are helpful
-> in identifying which physical cpu is which.
+> By adding a requirement for the
+> slow-path in the form of ptrace_event(), the difficulty for making
+> seccomp fast-path friendly is increased.
 
-First of all, silkscreen label denotes DIMM slots in this context
-AFAICT. Concerning CPU sockets, I'm not aware of a method to read out
-the silkscreen labels at the CPU sockets, are you? Or am I missing
-something?
+Yes. I do not know if this is really bad. I mean, I do not know how
+much do we want the fast-path'd seccomp.
 
-IOW, we want to assume that cores 0, 1, 2 ... k-1 are on node 0; k, k+1
-... 2k-1 belong to node 1, etc., where k is the number of cores on a
-socket and thus we have a regular core enumeration on the box.
+> (It could be possible to add
+> a return code, e.g., return NEEDS_SLOW_PATH, which tells the fast path
+> code to restart the handling at syscall_trace_enter, so maybe I am
+> making a big deal out of nothing.)
 
--- 
-Regards/Gruss,
-Boris.
+Probably. Or SECCOMP_RET_TRACE can set TIF_NOTIFY_RESUME.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+(Btw there is another alternative although imho PTRACE_EVENT_SECCOMP
+ looks better. SECCOMP_RET_TRACE can simply set TIF_SYSCALL_TRACE and
+ return, syscall_trace_enter() will report the syscall. If we make it
+ fast-path'ed, then TIF_NOTIFY_RESUME should trigger the slow path)
+
+> I was hoping to avoid having TIF_SECCOMP imply the slow-path, but if
+> that is the only sane way to integrate, then I can leave making it
+> fast-path friendly as a future exercise.
+>
+> If I'm over-optimizing,
+
+may be ;) but it is very possible I underestimate the problem.
+
+I'd like to know what Roland thinks.
+
+Oleg.
+
