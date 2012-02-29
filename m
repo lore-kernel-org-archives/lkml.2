@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab2B2UNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:13:12 -0500
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:62648 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754957Ab2B2UNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:13:10 -0500
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 15:13:10 EST
-X-AuditID: 12074424-b7fae6d000000906-a0-4f4e85a9d542
-Message-ID: <4F4E859E.9030902@mit.edu>
-Date: Wed, 29 Feb 2012 12:07:58 -0800
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1755218Ab2B2UNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:13:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755065Ab2B2UNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 15:13:43 -0500
+Date: Wed, 29 Feb 2012 21:06:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] epoll: introduce POLLFREE to flush
+	->signalfd_wqh before kfree()
+Message-ID: <20120229200636.GA15729@redhat.com>
+References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com> <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com> <20120224190651.GA22287@redhat.com> <20120224190711.GB22287@redhat.com> <4F4E830E.3040307@mit.edu>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Anvin <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [patch 0/4] time/timekeeping: Simplify vsyscall locking
-References: <20120228194200.180923135@linutronix.de>
-In-Reply-To: <20120228194200.180923135@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsUixCmqrbuy1c/fYNIFPotpG8UtzvzWtbi8
-	aw6bxZZLzawWx3sPMFls3jSV2eLNhXssDuwet9r+MHtsXqHlsXjPSyaPO9f2sHm8O3eO3ePz
-	JjmPEy1fWAPYo7hsUlJzMstSi/TtErgyFhycyV6wjKXi3swvjA2MG5m7GDk5JARMJN7vusoI
-	YYtJXLi3ng3EFhLYxyhxYZlhFyMXkL2BUaKx8S4LhPOCSWLB5UNAVRwcvAJqEms3aoA0sAio
-	Smz8fgZsKJuAikTH0gdMILaoQITEnrV/weK8AoISJ2c+YQGx+QTkJCZufQYWFxHQkNh46RYz
-	yHxmgYeMEgdbDoBdJCzgInHi5V0WiItMJD6feAxmcwqYSsyceAnsUmYBHYl3fQ+YIWx5ie1v
-	5zBPYBSahWTfLCRls5CULWBkXsUom5JbpZubmJlTnJqsW5ycmJeXWqRrrpebWaKXmlK6iREU
-	NewuKjsYmw8pHWIU4GBU4uFlLPTzF2JNLCuuzD3EKMnBpCTKu7UFKMSXlJ9SmZFYnBFfVJqT
-	WnyIUYKDWUmE960UUI43JbGyKrUoHyYlzcGiJM6rofXOT0ggPbEkNTs1tSC1CCYrw8GhJMFb
-	DDJUsCg1PbUiLTOnBCHNxMEJMpwHaPg6kBre4oLE3OLMdIj8KUZFKXHebSAJAZBERmkeXC8s
-	qb1iFAd6RZh3NkgVDzAhwnW/AhrMBDQ4gNMbZHBJIkJKqoFxss7EP7kzzl9mP5S7/JsR2/8d
-	k+tr3jC6BF+eOyVio+FHdwOlM7M1YjjE/h44525kG3Fnsj53TZ+8/Dr3xVcDkuPSUjZv3vLo
-	3F22urBd8xNbk04FZ15wZerZ9PXAwd+qpY0mrXv4ojr+pDikTeHz3Z8s7yD0v3ufyE9Pqb3r
-	jrpyeYvXL7mpxFKckWioxVxUnAgAUDlfF0UDAAA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4E830E.3040307@mit.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 11:46 AM, Thomas Gleixner wrote:
-> vsyscall updates have a separate seqlock which nests into
-> xtime_lock. There is no point to grab another lock for nothing. All it
-> needs is to update the seqcount which is user space visible.
-> 
-> The following series cleans that up.
+On 02/29, Andy Lutomirski wrote:
+>
+> On 02/24/2012 11:07 AM, Oleg Nesterov wrote:
+> > This patch adds the special event, POLLFREE, currently only for
+> > epoll. It expects that init_poll_funcptr()'ed hook should do the
+> > necessary cleanup. Perhaps it should be defined as EPOLLFREE in
+> > eventpoll.
+>
+> I have a bunch of userspace code that uses signalfd via epoll.  Does
+> this affect the ABI?
 
-FWIW, patches 2 and 3 are
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+I hope not ;)
 
-Can you let me know when these hit a git tree somewhere?  I have two
-more vdso clock speedups I want to send for 3.4, and I'll rebase them on
-top of these.
+> Will epoll_wait ever set POLLFREE?
 
-Thanks,
-Andy
+No.
+
+> Does
+> EPOLL_CTL_MOD accept POLLFREE?
+
+Yes, it doesn't check the bits. EPOLL_CTL_MOD accepts any bit.
+
+> IOW, from a userspace point of view, wtf does this do?
+
+I hope this is transparent to the user-space. If the application
+does EPOLL_CTL_MOD(POLLFREE) by mistake then ep_poll_callback(POLLFREE)
+can trigger the unnecessary wakeup and move the file to ep->rdllist
+but this is harmless. The subsequent ->poll() can't return POLLFREE.
+
+Oleg.
+
