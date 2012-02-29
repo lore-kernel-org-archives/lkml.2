@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab2B2KrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:47:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15620 "EHLO mx1.redhat.com"
+	id S1757663Ab2B2KtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:49:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17082 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022Ab2B2KrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:47:06 -0500
-Message-ID: <4F4E021F.80206@redhat.com>
-Date: Wed, 29 Feb 2012 12:46:55 +0200
+	id S1753564Ab2B2KtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:49:07 -0500
+Message-ID: <4F4E0299.9080800@redhat.com>
+Date: Wed, 29 Feb 2012 12:48:57 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
+To: Gleb Natapov <gleb@redhat.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
         linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
 Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095842.GF5050@redhat.com> <4F4DF86C.5010407@redhat.com> <4F4DFE7C.3030501@cn.fujitsu.com>
-In-Reply-To: <4F4DFE7C.3030501@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com> <4F4DF913.5030809@redhat.com> <20120229104449.GG24600@redhat.com>
+In-Reply-To: <20120229104449.GG24600@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 12:31 PM, Wen Congyang wrote:
-> At 02/29/2012 06:05 PM, Avi Kivity Wrote:
-> > On 02/29/2012 11:58 AM, Daniel P. Berrange wrote:
-> >>>
-> >>> How about using a virtio-serial channel for this?  You can transfer any
-> >>> amount of information (including the dump itself).
-> >>
-> >> When the guest OS has crashed, any dumps will be done from the host
-> >> OS using libvirt's core dump mechanism. The guest OS isn't involved
-> >> and is likely too dead to be of any use anyway. Likewise it is
-> >> quite probably too dead to work a virtio-serial channel or any
-> >> similarly complex device. We're really just after the simplest
-> >> possible notification that the guest kernel has paniced.
+On 02/29/2012 12:44 PM, Gleb Natapov wrote:
+> > > > 
+> > > Yes, crash can be so severe that it is not even detected by a kernel
+> > > itself, so not OOPS message even printed. But in most cases if kernel is
+> > > functional enough to print OOPS it is functional enough to call single
+> > > hypercall instruction.
 > > 
-> > If it's alive enough to panic, it's alive enough to kexec its kdump
-> > kernel.  After that it can do anything.
+> > Why not print the oops to virtio-serial?  Or even just a regular serial
+> > port?  That's what bare metal does.
 > > 
-> > Guest-internal dumps are more useful IMO that host-initiated dumps.  In
->
-> Yes, guest-internal dump is better than host dump. But the user may not
-> start guest-internal dump or guest-internal dump failed. So we need the
-> following feature:
-> 1. If the guest-internal dump does not work, the guest's status is 'crashed'.
->    And then the user does the host dump.
-> 2. If the guest-internal dump is working, the guest's status should be
->    'dumping'. The user see this status and know the guest has paniced, and
->     the guest-internal dump is working.
+> The more interface is complex the more chances it will fail during
+> panic. Regular serial is likely more reliable than virtio-serial.
+> Hypercall is likely more reliable than uart. On serial user can
+> fake panic notification. 
 
-I agree.  There is room for host dump, and we do want notification about
-what the guest is doing.  The question is whether we should reuse
-virtio-serial for guest-host communication in this case.  It's more
-complicated, but allows us to avoid touching the hypervisor.
+The serial device is under control of the kernel, so the user can only
+access it if the kernel so allows.
+
+> Can this be problematic?
+
+>From the point of view of the guest, yes, it can generate support calls
+in fill up the admin's dump quota.  From the point of view of the host,
+there's no difference between the guest's admin and a random user.
 
 -- 
 error compiling committee.c: too many arguments to function
