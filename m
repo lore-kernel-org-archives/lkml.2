@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030553Ab2B2P66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 10:58:58 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:52926 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754230Ab2B2P64 (ORCPT
+	id S932702Ab2B2QAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:00:19 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56393 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932327Ab2B2QAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 10:58:56 -0500
-Message-ID: <1330531139.8460.192.camel@deadeye>
-Subject: Re: [PATCH 0/8] validate MAC address before call
- .ndo_set_mac_address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eilon Greenstein <eilong@broadcom.com>, Jon Mason <jdmason@kudzu.us>,
-        Danny Kukawka <dkukawka@suse.de>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Pirko <jpirko@redhat.com>,
-        Joe Perches <joe@perches.com>, John Crispin <blogic@openwrt.org>,
-        <linux-kernel@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        Neil Horman <nhorman@tuxdriver.com>, <netdev@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Date: Wed, 29 Feb 2012 15:58:59 +0000
-In-Reply-To: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
-References: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 11:00:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of larry.finger@gmail.com designates 10.60.20.101 as permitted sender) smtp.mail=larry.finger@gmail.com; dkim=pass header.i=larry.finger@gmail.com
+Message-ID: <4F4E4B8B.8090508@lwfinger.net>
+Date: Wed, 29 Feb 2012 10:00:11 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18742.005
-X-TM-AS-Result: No--12.652100-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: linux-wireless@vger.kernel.org
+CC: Larry Finger <Larry.Finger@lwfinger.net>, linville@tuxdriver.com,
+        chunkeey@web.de, Max Filippov <jcmvbkbc@gmail.com>, m@bues.ch,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not from
+ probe routine
+References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net> <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
+In-Reply-To: <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 16:42 +0100, Danny Kukawka wrote:
-> Validate the given MAC address directly in dev_set_mac_address()
-> if a .ndo_validate_addr function is available before calling
-> the .ndo_set_mac_address function.
-> 
-> Changed .ndo_validate_addr to take a second parameter containing
-> a sockaddr struct to be checked instead of the net_device dev_addr.
-> The behaviour of .ndo_validate_addr is now: if the second parameter
-> is NULL the net_device->dev_addr gets validate, if != NULL
-> the given parameter/sockaddr gets validated instead.
-> 
-> This patch series include adaptations for some drivers which
-> use .ndo_set_mac_address functions directly - to prevent double
-> checks and to enable validations via .ndo_validate_addr.
-[...]
+On 02/13/2012 01:37 PM, Larry Finger wrote:
+> Drivers that load firmware from their probe routine have problems with the
+> latest versions of udev as they get timeouts while waiting for user
+> space to start. The problem is fixed by loading the firmware and starting
+> mac80211 from a delayed_work queue. By using this method, most of the
+> original code is preserved.
+>
+> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
+> ---
+> This one is compile-tested only.
+>
+> Larry
+> ---
 
-You have to do this as a single patch.  The kernel and drivers should
-still build at each stage.
+Any testing done here?
 
-Ben.
+Larry
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+>   drivers/net/wireless/p54/p54spi.c |   38 ++++++++++++++++++++++++++----------
+>   drivers/net/wireless/p54/p54spi.h |    1 +
+>   2 files changed, 28 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
+> index 7faed62..87c2634 100644
+> --- a/drivers/net/wireless/p54/p54spi.c
+> +++ b/drivers/net/wireless/p54/p54spi.c
+> @@ -595,6 +595,30 @@ static void p54spi_op_stop(struct ieee80211_hw *dev)
+>   	cancel_work_sync(&priv->work);
+>   }
+>
+> +static void p54s_load_firmware(struct work_struct *work)
+> +{
+> +	struct p54s_priv *priv = container_of(to_delayed_work(work),
+> +				 struct p54s_priv, firmware_load);
+> +	struct ieee80211_hw *hw = priv->hw;
+> +	int ret;
+> +
+> +	ret = p54spi_request_firmware(hw);
+> +	if (ret<  0)
+> +		goto err_free_common;
+> +
+> +	ret = p54spi_request_eeprom(hw);
+> +	if (ret)
+> +		goto err_free_common;
+> +
+> +	ret = p54_register_common(hw,&priv->spi->dev);
+> +	if (ret)
+> +		goto err_free_common;
+> +	return;
+> +
+> +err_free_common:
+> +	dev_err(&priv->spi->dev, "Failed to read firmware\n");
+> +}
+> +
+>   static int __devinit p54spi_probe(struct spi_device *spi)
+>   {
+>   	struct p54s_priv *priv = NULL;
+> @@ -658,17 +682,9 @@ static int __devinit p54spi_probe(struct spi_device *spi)
+>   	priv->common.stop = p54spi_op_stop;
+>   	priv->common.tx = p54spi_op_tx;
+>
+> -	ret = p54spi_request_firmware(hw);
+> -	if (ret<  0)
+> -		goto err_free_common;
+> -
+> -	ret = p54spi_request_eeprom(hw);
+> -	if (ret)
+> -		goto err_free_common;
+> -
+> -	ret = p54_register_common(hw,&priv->spi->dev);
+> -	if (ret)
+> -		goto err_free_common;
+> +	/* setup and start delayed work to load firmware */
+> +	INIT_DELAYED_WORK(&priv->firmware_load, p54s_load_firmware);
+> +	schedule_delayed_work(&priv->firmware_load, HZ);
+>
+>   	return 0;
+>
+> diff --git a/drivers/net/wireless/p54/p54spi.h b/drivers/net/wireless/p54/p54spi.h
+> index dfaa62a..5f7714b 100644
+> --- a/drivers/net/wireless/p54/p54spi.h
+> +++ b/drivers/net/wireless/p54/p54spi.h
+> @@ -120,6 +120,7 @@ struct p54s_priv {
+>
+>   	enum fw_state fw_state;
+>   	const struct firmware *firmware;
+> +	struct delayed_work firmware_load;
+>   };
+>
+>   #endif /* P54SPI_H */
 
