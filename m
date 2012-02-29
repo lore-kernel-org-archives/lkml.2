@@ -1,44 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030964Ab2B2OA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:00:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58468 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757837Ab2B2OA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:00:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rsayakhova@gmail.com designates 10.180.86.105 as permitted sender) smtp.mail=rsayakhova@gmail.com; dkim=pass header.i=rsayakhova@gmail.com
-From: Renata Sayakhova <rsayakhova@gmail.com>
-To: zbr@ioremap.net
-Cc: linux-kernel@vger.kernel.org, rsayakhova@gmail.com
-Subject: [PATCH 0001] DS2781 Maxim Stand-Alone Fuel Gauge battery and w1 slave drivers
-Date: Wed, 29 Feb 2012 14:58:52 +0100
-Message-Id: <1330523933-32344-1-git-send-email-rsayakhova@gmail.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1030991Ab2B2OAe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:00:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030972Ab2B2OAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 09:00:30 -0500
+Date: Wed, 29 Feb 2012 15:00:12 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Chris Mason <chris.mason@oracle.com>
+cc: Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, "Ted Ts'o" <tytso@mit.edu>
+Subject: Re: getdents - ext4 vs btrfs performance
+In-Reply-To: <20120229135158.GA5054@shiny>
+Message-ID: <alpine.LFD.2.00.1202291453450.23368@dhcp-27-109.brq.redhat.com>
+References: <CADDYkjRnRKPMW53F=oELhwkSt5EQB9v0JkC=inNvZQPKu94Xtw@mail.gmail.com> <20120229135158.GA5054@shiny>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FROM: Renata Sayakhova <renata@oktetlabs.ru>
+On Wed, 29 Feb 2012, Chris Mason wrote:
 
-Implementation of DS2781 Maxim Stand-Alone Fuel Gauge battery and w1 slave drivers.
+> On Wed, Feb 29, 2012 at 02:31:03PM +0100, Jacek Luczak wrote:
+> > Hi All,
+> > 
+> > Long story short: We've found that operations on a directory structure
+> > holding many dirs takes ages on ext4.
+> > 
+> > The Question: Why there's that huge difference in ext4 and btrfs? See
+> > below test results for real values.
+> > 
+> > Background: I had to backup a Jenkins directory holding workspace for
+> > few projects which were co from svn (implies lot of extra .svn dirs).
+> > The copy takes lot of time (at least more than I've expected) and
+> > process was mostly in D (disk sleep). I've dig more and done some
+> > extra test to see if this is not a regression on block/fs site. To
+> > isolate the issue I've also performed same tests on btrfs.
+> > 
+> > Test environment configuration:
+> > 1) HW: HP ProLiant BL460 G6, 48 GB of memory, 2x 6 core Intel X5670 HT
+> > enabled, Smart Array P410i, RAID 1 on top of 2x 10K RPM SAS HDDs.
+> > 2) Kernels: All tests were done on following kernels:
+> >  - 2.6.39.4-3 -- the build ID (3) is used here for internal tacking of
+> > config changes mostly. In -3 we've introduced ,,fix readahead pipeline
+> > break caused by block plug'' patch. Otherwise it's pure 2.6.39.4.
+> >  - 3.2.7 -- latest kernel at the time of testing (3.2.8 has been
+> > release recently).
+> > 3) A subject of tests, directory holding:
+> >  - 54GB of data (measured on ext4)
+> >  - 1978149 files
+> >  - 844008 directories
+> > 4) Mount options:
+> >  - ext4 -- errors=remount-ro,noatime,data=writeback
+> >  - btrfs -- noatime,nodatacow and for later investigation on
+> > copression effect: noatime,nodatacow,compress=lzo
+> 
+> For btrfs, nodatacow and compression don't really mix.  The compression
+> will just override it. (Just FYI, not really related to these results).
+> 
+> > 
+> > In all tests I've been measuring time of execution. Following tests
+> > were performed:
+> > - find . -type d
+> > - find . -type f
+> > - cp -a
+> > - rm -rf
+> > 
+> > Ext4 results:
+> > | Type     | 2.6.39.4-3   | 3.2.7
+> > | Dir cnt  | 17m 40sec  | 11m 20sec
+> > | File cnt |  17m 36sec | 11m 22sec
+> > | Copy    | 1h 28m        | 1h 27m
+> > | Remove| 3m 43sec
+> 
+> Are the btrfs numbers missing? ;)
+> 
+> In order for btrfs to be faster for cp -a, the files probably didn't
+> change much since creation.  Btrfs maintains extra directory indexes
+> that help in sequential backup scans, but this usually means slower
+> delete performance.
 
-Renata Sayakhova (1):
-  DS2781 Maxim Stand-Alone Fuel Gauge battery and w1 slave drivers
+Exactly and IIRC ext4 have directory entries stored in hash order which
+does not really help the sequential access.
 
- drivers/power/Kconfig          |   14 +
- drivers/power/Makefile         |    1 +
- drivers/power/ds2781_battery.c |  874 ++++++++++++++++++++++++++++++++++++++++
- drivers/w1/slaves/Kconfig      |   13 +
- drivers/w1/slaves/Makefile     |    1 +
- drivers/w1/slaves/w1_ds2781.c  |  201 +++++++++
- drivers/w1/slaves/w1_ds2781.h  |  136 +++++++
- drivers/w1/w1_family.h         |    1 +
- 8 files changed, 1241 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/ds2781_battery.c
- create mode 100644 drivers/w1/slaves/w1_ds2781.c
- create mode 100644 drivers/w1/slaves/w1_ds2781.h
+> 
+> But, how exactly did you benchmark it?  If you compare a fresh
+> mkfs.btrfs where you just copied all the data over with an ext4 FS that
+> has been on the disk for a long time, it isn't quite fair to ext4.
+
+I have the same question, note that if the files on ext4 has been worked
+with it may very well be that directory hash trees are not in very good
+shape. You can attempt to optimize that by e2fsck (just run fsck.ext4 -f
+<device>) but that may take quite some time and memory, but it is worth
+trying.
+
+Thanks!
+-Lukas
+
+> 
+> -chris
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 -- 
-1.7.6.3
-
