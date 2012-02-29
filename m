@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030395Ab2B2S2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:28:31 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:57373 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030328Ab2B2S2a (ORCPT
+	id S1030408Ab2B2ScA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:32:00 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35171 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1030187Ab2B2Sb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:28:30 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "David Laight" <David.Laight@ACULAB.COM>
-Cc: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>, <paul.gortmaker@windriver.com>,
-        <tim.bird@am.sony.com>, <kuznet@ms2.inr.ac.ru>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E7D@saturn3.aculab.com>
-	(David Laight's message of "Mon, 27 Feb 2012 11:33:07 -0000")
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E7D@saturn3.aculab.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Wed, 29 Feb 2012 10:28:13 -0800
-Message-ID: <877gz5ze82.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19Wa4GTkInddQ2WEPwN8eOkpY9TXo+xwXw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3881]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      []
-	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: ; 
-X-Spam-Combo: ;"David Laight" <David.Laight@ACULAB.COM>
-X-Spam-Relay-Country: **
-Subject: Re: RFC: memory leak in udp_table_init
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Wed, 29 Feb 2012 13:31:58 -0500
+Date: Wed, 29 Feb 2012 10:31:52 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Hao, Xudong" <xudong.hao@intel.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: Re: [PATCH V2] Quirk for IVB graphics FLR errata
+Message-ID: <20120229103152.59dcedd6@jbarnes-x220>
+In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
+References: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 174.253.241.144 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"David Laight" <David.Laight@ACULAB.COM> writes:
+On Wed, 29 Feb 2012 03:11:24 +0000
+"Hao, Xudong" <xudong.hao@intel.com> wrote:
 
->> It was to match the comment we have few lines above :
->> 
->> /*
->>  * The pid hash table is scaled according to the amount of memory in
-> the
->>  * machine.  From a minimum of 16 slots up to 4096 slots at one
-> gigabyte or
->>  * more.
->>  */
+> For IvyBridge Mobile platform, a system hang may occur if a
+> FLR(Function Level Reset) is asserted to internal graphics.
+> 
+> This quirk patch is workaround for the IVB FLR errata issue.
+> We are disabling the FLR reset handshake between the PCH and CPU
+> display, then manually powering down the panel power sequencing and
+> resetting the PCH display.
+> 
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
+> ---
+>  drivers/pci/quirks.c |   49
+> +++++++++++++++++++++++++++++++++++++++++++++++++ 1 files changed, 49
+> insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
+> 6476547..5223b80 100644 --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -29,6 +29,11 @@
+>  #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+>  #include "pci.h"
+>  
+> +#include "../gpu/drm/i915/i915_reg.h"
 
-The comment was actually correct until someone converted the code to use
-alloc_large_system_hash.
+Ugg... this is ugly.  Should probably go near the definition of the
+quirk at any rate.
 
-> These large hash tables are, IMHO, an indication that the
-> algorithm used is, perhaps, suboptimal.
->
-> Not least of the problems is actually finding a suitable
-> (and fast) hash function that will work with the actual
-> real-life data.
->
-> The pid table is a good example of something where a hash
-> table is unnecessary.
-> Linux should steal the code I put into NetBSD :-)
+> +#include <asm/tsc.h>
+> +/* 10 seconds */
+> +#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
+> +
 
-On this unrelated topic.  What algorithm did you use on NetBSD for
-dealing with pids?
+Same here, the asm/tsc.h can go at the top, but the timeout definition
+should go near the reset function.
 
-A hash chain length of 1 for common sizes is a pretty attractive
-algorithm, as it minimizes the number of cache line misses.  Ages ago
-when I modeled the linux situation that is what I was seeing.
+May as well make it a static const cycles_t as well.
 
-The normal case for the linux pid hash table is that it has 4096
-entries taking 16k or 32k of memory and the typical process load
-has about 200 or so processes.    Making it very easy in the common
-case to have a single entry hash chain.
+> +#define MSG_CTL	0x45010
+> +
+> +static int reset_ivb_igd(struct pci_dev *dev, int probe) {
+> +	u8 *mmio_base;
+> +	u32 val;
+> +
+> +	if (probe)
+> +		return 0;
+> +
+> +	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
+> +				 pci_resource_len(dev, 0));
+> +	if (!mmio_base)
+> +		return -ENOMEM;
+> +
+> +	/* Work Around */
+> +	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
+> +	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
+> +	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
+> +	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
 
-All of the other algorithms I know have a tree structure and thus
-more cache misses (as you traverse the tree) and ultimately worse
-real world performance.
+These clobber existing values.  Since we're doing a reset, clobbering
+PCH_PP_CONTROL should be ok, but clobbering SOUTH_CHICKEN2 is only ok
+if the next driver that loads sets the right bits (if i915 was
+previously using the device, it would have set a couple of bits).
 
-Eric
+But again since it's it a reset that's probably ok, but you should put
+a comment indicating as much.
+
+> +	do {
+> +		cycles_t start_time = get_cycles();
+> +		while (1) {
+> +			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
+> +			if (((val & 0x80000000) == 0)
+> +				&& ((val & 0x30000000) == 0))
+> +				break;
+> +			if (IGD_OPERATION_TIMEOUT < (get_cycles() -
+> start_time))
+> +				break;
+> +			cpu_relax();
+> +		}
+> +	} while (0);
+> +	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
+> +
+> +	iounmap(pci_resource_start(dev, 0));
+> +	return 0;
+> +}
+> +
+>  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
+> +#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
+> +#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+>  
+>  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+>  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
+>  		 reset_intel_82599_sfp_virtfn },
+> +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
+> +		reset_ivb_igd },
+> +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
+> +		reset_ivb_igd },
+>  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
+>  		reset_intel_generic_dev },
+>  	{ 0 }
+
+Looks ok otherwise, thanks.
+
+Jesse
