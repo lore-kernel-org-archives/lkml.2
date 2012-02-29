@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030642Ab2B2S5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:57:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43981 "EHLO mx1.redhat.com"
+	id S1030715Ab2B2TA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 14:00:58 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:46786 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030443Ab2B2S5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:57:54 -0500
-Date: Wed, 29 Feb 2012 19:50:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Questions about ptrace on a dying process
-Message-ID: <20120229185056.GA11757@redhat.com>
-References: <4F4E6915.1010209@am.sony.com>
+	id S1030328Ab2B2TA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 14:00:56 -0500
+Date: Wed, 29 Feb 2012 20:00:46 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3.3] memcg: fix deadlock by inverting lrucare nesting
+Message-ID: <20120229190046.GC1673@cmpxchg.org>
+References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F4E6915.1010209@am.sony.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29, Tim Bird wrote:
->
-> ptrace maintainers (and interested parties)...
->
-> I'm working on a crash handler for Linux, which uses ptrace to retrieve information
-> about a process during it's coredump.  Specifically, from within a core handler
-> program (started within do_coredump() as a user_mode_helper), I would like to make
-> ptrace calls against the dying process.
+On Tue, Feb 28, 2012 at 09:25:02PM -0800, Hugh Dickins wrote:
+> We have forgotten the rules of lock nesting: the irq-safe ones must be
+> taken inside the non-irq-safe ones, otherwise we are open to deadlock:
+> 
+> CPU0                          CPU1
+> ----                          ----
+> lock(&(&pc->lock)->rlock);
+>                               local_irq_disable();
+>                               lock(&(&zone->lru_lock)->rlock);
+>                               lock(&(&pc->lock)->rlock);
+> <Interrupt>
+> lock(&(&zone->lru_lock)->rlock);
+> 
+> To check a different locking issue, I happened to add a spin_lock to
+> memcg's bit_spin_lock in lock_page_cgroup(), and lockdep very quickly
+> complained about __mem_cgroup_commit_charge_lrucare() (on CPU1 above).
+> 
+> So delete __mem_cgroup_commit_charge_lrucare(), passing a bool lrucare
+> to __mem_cgroup_commit_charge() instead, taking zone->lru_lock under
+> lock_page_cgroup() in the lrucare case.
+> 
+> The original was using spin_lock_irqsave, but we'd be in more trouble
+> if it were ever called at interrupt time: unconditional _irq is enough.
+> And ClearPageLRU before del from lru, SetPageLRU before add to lru: no
+> strong reason, but that is the ordering used consistently elsewhere.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Which calls? just curious.
-
-> My problem is that the process state is not entering into TASK_TRACED, when
-> I do an PTRACE_ATTACH against it.
-
-Yes, it can never do ptrace_stop() in do_coredump() paths.
-
-Perhaps you can use PTRACE_O_TRACEEXIT. PTRACE_EVENT_EXIT will be reported
-after the coredumping. I think the core handler should close the pipe first,
-otherwise the dumping tracee will wait for the handler forever.
-
-However. You need PTRACE_SEIZE, not PTRACE_ATTACH. And this can only work
-with the recent patch from Denys which allows to pass PTRACE_O_TRACEEXIT
-with PTRACE_SEIZE (currently in -mm tree).
-
-Just in case, it could have other threads sleeping in TASK_UNINTERRUPTIBLE
-until do_coredump() completes. But these threads have already passed
-ptrace_event(PTRACE_EVENT_EXIT).
-
-Oleg.
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
