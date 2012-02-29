@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab2B2WIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 17:08:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48237 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab2B2WIN (ORCPT
+	id S932341Ab2B2WSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 17:18:36 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33754 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240Ab2B2WSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 17:08:13 -0500
-Date: Wed, 29 Feb 2012 16:08:09 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
-Message-ID: <20120229220809.GC20565@ubuntu-macmini>
-Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
- <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
- <CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
- <20120229175327.GA20565@ubuntu-macmini>
- <CACxGe6uc+LZjuMLS5DZELzAsHsnhObL6mdPzdMnNVbfriTfNwg@mail.gmail.com>
- <20120229195042.GB20565@ubuntu-macmini>
- <CACxGe6tK85FgYAT-1JQbLxEhRS34v2MPsx8urXADi6v2FnQ2gw@mail.gmail.com>
+	Wed, 29 Feb 2012 17:18:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.178.65 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
+Message-ID: <4F4EA437.1040501@gmail.com>
+Date: Wed, 29 Feb 2012 14:18:31 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACxGe6tK85FgYAT-1JQbLxEhRS34v2MPsx8urXADi6v2FnQ2gw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Daney <david.daney@cavium.com>
+CC: David Miller <davem@davemloft.net>, grant.likely@secretlab.ca,
+        linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/2] of: Make of_find_node_by_path() traverse /aliases
+ for relative paths.
+References: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com>	<1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com> <20120229.153633.249570825230282737.davem@davemloft.net> <4F4E99E2.2000607@cavium.com>
+In-Reply-To: <4F4E99E2.2000607@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 03:23:20PM -0600, Grant Likely wrote:
-> On Wed, Feb 29, 2012 at 1:50 PM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > On Wed, Feb 29, 2012 at 12:43:23PM -0600, Grant Likely wrote:
-> >> On Wed, Feb 29, 2012 at 11:53 AM, Seth Forshee
-> >> <seth.forshee@canonical.com> wrote:
-> >> > On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
-> >> >> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
-> >> >> <seth.forshee@canonical.com> wrote:
-> >> >> > Apple laptops with hybrid graphics have a device named gmux that
-> >> >> > controls the muxing of the LVDS panel between the GPUs as well as screen
-> >> >> > brightness. This driver adds support for the gmux device. Only backlight
-> >> >> > control is supported initially.
-> >> >> >
-> >> >> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> >> >>
-> >> >> Works for me.
-> >> >>
-> >> >> Tested-by: Grant Likely <grant.likely@secretlab.ca>
-> >> >>
-> >> >> Now I just need to figure out how to get the desktop backlight widget
-> >> >> to use gmux_backlight instead of acpi_video0...
-> >> >
-> >> > The easy way is to pass acpi_backlight=vendor to the kernel, then you
-> >> > won't have acpi_vidoe0.
-> >>
-> >> That did it, thanks.  I'm assume something is in the works to set it
-> >> up automatically?
-> >
-> > Not that I'm aware of. A number machines have this problem, that the
-> > standard ACPI backlight interfaces are implemented but don't work. This
-> > generally isn't detectable in software; with the Apples at least
-> > everything looks like it's working except that the brightness doesn't
-> > change (but not all Apple laptops are affected, so qurking based on
-> > manufacturer wouldn't work). All we're left with is DMI quirking, which
-> > isn't practical. Maybe we could add something so a platform driver can
-> > tell acpi_video that it knows the ACPI backlight doesn't work, but I
-> > think on some platforms that still is going to be based off of DMI
-> > information.
-> 
-> blacklisting based on specific product name (ie. MacBookPro8,*) or
-> machine model is probably the best.  It wouldn't be the first
-> blacklist in the linux kernel.
+Grant and others,
 
-I think the blacklist would have to be against specific product names.
-For example, the MacBook Pro 8,1 has a working acpi_video backlight and
-no gmux_backlight, the 8,2 has both but only gmux_backlight works, and I
-suspect the 8,3 is the same as the 8,2. We'd probably end up with an
-entry in the blacklist for every single model whose acpi_video backlight
-doesn't work, adding entries for each new generation of MacBooks.
+Really this patch 2/2 is not so critical for me.  I am using it, but can 
+(and perhaps should) avoid using of_find_node_by_path() altogether, thus 
+making the patch unneeded.
 
-And if we start blacklisting Macs we'd have start doing it for other
-machines too, I guess. From what I've seen, open-ended blacklists like
-this get nacked pretty consistently nowadays.
+If you would like, we can drop this one, but I would still very much 
+like '[PATCH v6 1/2] of/lib: Allow scripts/dtc/libfdt to be used from 
+kernel code' to be merged.
 
-Seth
+Do you want me to send the first patch separately, or could you just 
+'cherry-pick' it from this set?
+
+Thanks,
+David Daney
+
+
+On 02/29/2012 01:34 PM, David Daney wrote:
+> On 02/29/2012 12:36 PM, David Miller wrote:
+>> From: David Daney<ddaney.cavm@gmail.com>
+>> Date: Wed, 29 Feb 2012 11:21:04 -0800
+>>
+>>> Currently all paths passed to of_find_node_by_path() must begin with a
+>>> '/', indicating a full path to the desired node.
+>>>
+>>> Augment the look-up code so that if a path does *not* begin with '/',
+>>> the path is used as the name of an /aliases property. The value of
+>>> this alias is then used as the full node path to be found.
+>>>
+>>> Signed-off-by: David Daney<david.daney@cavium.com>
+>>
+>> But as the caller you sure as hell know whether you have a "/"
+>> prefixed name or not.
+>
+> Yes, worst case we could just examine the first character of the string.
+>
+>>
+>> Why complicate an incredibly well designed and simple function for
+>> something you can create another interface for?
+>>
+>
+> Because in this message:
+>
+> http://www.linux-mips.org/archives/linux-mips/2011-02/msg00147.html
+>
+> Grant explicitly asked me to do it this way when he said:
+>
+> of_find_node_by_path() needs to be fixed to also accept alias
+> values so that a string that starts with a '/' is a full path, but
+> no leading '/' means start with an alias. This code will lose a
+> level of indentation if you can make that change to the common
+> code.
+>
+> And then in follow ups to that conversation, we eventually came up
+> with this patch.
+>
+> If you find it particularly objectionable, convince Grant to NACK the
+> patch (but please keep me CCed on the conversation), and I will open
+> code the equivalent in my drivers.
+>
+> Thanks,
+> David Daney
+>
 
