@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965902Ab2B2SMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:12:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:33381 "EHLO mga03.intel.com"
+	id S965932Ab2B2SRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:17:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:32786 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964975Ab2B2SMw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:12:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="71914859"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Topic: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Index: AQHM9jOzRSobI8iWIk6i7fpsFGO9fZZTmLGAgACV04CAAB/YAP//0NAwgACSmoD//3p+kA==
-Date: Wed, 29 Feb 2012 18:11:40 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F040219@ORSMSX104.amr.corp.intel.com>
-References: <1330445487-15020-1-git-send-email-bp@amd64.org>
- <1330445487-15020-2-git-send-email-bp@amd64.org>
- <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab>
- <4F4E145E.4040901@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F040162@ORSMSX104.amr.corp.intel.com>
- <4F4E67C3.9030000@redhat.com>
-In-Reply-To: <4F4E67C3.9030000@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S965845Ab2B2SRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 13:17:14 -0500
+Message-ID: <4F4E6B98.2090306@zytor.com>
+Date: Wed, 29 Feb 2012 10:16:56 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
+To: "Joshua C." <joshuacov@googlemail.com>
+CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
+In-Reply-To: <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That probably means that the needed cpu family/model info is not (or may not) be
-> stored at the MCE structure.
+On 02/29/2012 03:43 AM, Joshua C. wrote:
+>
+> I got the idea that we should somehow check the kbd_state and set the
+> numlock accordingly but this is behind my capabilities. I tried
+> several times to read those boot_params but I have no idea how to do
+> it. Where are they stored, how to access them? Help anyone?
+>
 
-mcelog can run as a daemon, or one-off to process reports from earlier (or
-even from other systems). It picks up cpu/family from /proc/cpuinfo - but can
-also take a command line argument. These get checked against the cpuid
-field in the structure that is read from /dev/mcelog (or decoded from a
-console log with the --ascii option).
+There is a global variable called boot_params; the prototype for it is 
+defined in <asm/setup.h>.
 
-In some cases the checks may be redundant (e.g. running in daemon mode,
-there is no way that /dev/mcelog will not have a cpuid that matches the
-cpu that you are running on!) But better to have too many checks than too
-few.
+So as long as you are on an x86 architecture you can just #include 
+<asm/setup.h> and just access the boot_params structure directly (with 
+the patch provided to add the new field.)
 
--Tony
+	-hpa
