@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2B2Xua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:50:30 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53428 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2B2Xu3 (ORCPT
+	id S1754828Ab2B2XvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:51:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58371 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab2B2XvV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:50:29 -0500
-Date: Wed, 29 Feb 2012 23:52:17 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Eric Andersson <eric.andersson@unixphere.com>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        christoph.mair@gmail.com, stefan.nilsson@unixphere.com,
-        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH 0/3] Replace bmp085 with bmp18x
-Message-ID: <20120229235217.494d49d8@pyramind.ukuu.org.uk>
-In-Reply-To: <201202292018.45557.arnd@arndb.de>
-References: <1330545489-31169-1-git-send-email-eric.andersson@unixphere.com>
-	<201202292018.45557.arnd@arndb.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 18:51:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.175.36 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
+MIME-Version: 1.0
+In-Reply-To: <4F4EB0B9.2080906@zytor.com>
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
+	<4F4BF11E.4090000@zytor.com>
+	<CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+	<4F4C1F76.70403@zytor.com>
+	<alpine.DEB.2.00.1202281927130.24649@be10.lrz>
+	<4F4D1E6A.5000200@zytor.com>
+	<CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
+	<4F4E6B98.2090306@zytor.com>
+	<CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
+	<4F4EB0B9.2080906@zytor.com>
+Date: Thu, 1 Mar 2012 00:51:20 +0100
+Message-ID: <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+From: "Joshua C." <joshuacov@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012 20:18:45 +0000
-Arnd Bergmann <arnd@arndb.de> wrote:
+2012/3/1 H. Peter Anvin <hpa@zytor.com>:
+> Looks good, *except* that this will break the compile for all non-x86
+> architectures.  It might be worthwhile to factor out the
+> architecture-dependent bits for cleanliness.
+>
+>        -hpa
+>
 
-> On Wednesday 29 February 2012, Eric Andersson wrote:
-> > This patch-set replaces the BMP085 driver with a driver for Bosch Sensortec's new
-> > generation of pressure sensors called BMP18x. These pressure sensors can be
-> > connected on I2C but also on SPI as a variant, so the driver implements both.
-> > Register-wise they are fully compatible with the older BMP085, so the driver will
-> > support those chips as well.
-> > 
-> > The driver is based on bmp085.c by Christoph Mair.
-> 
-> Hmm,  the implementation looks fine, but I don't think we should add support
-> for new devices with a one-off interface that we know is getting replaced by
-> something generic.
-> 
-> Why is this not using IIO for its user interface?
 
-This is become a repeating problem
+Will this work?
 
-Either get the IIO layer out of staging (where it appears to have
-congealed) or stop asking people to use it. IIO stuck in staging is
-becoming a problem not a cure. It's creating uncertainty blocking lots of
-stuff that needs to get upstream and that current stream is going to
-become a tide post Android merging.
-
-It needs resolving one way or the other and soon.
-
-Alan
++#if (defined(__i386__) || defined(__x86_64__))
++#include <asm/io.h>
++#include <asm/setup.h>
++#else
++extern struct boot_params boot_params;
++#endif
