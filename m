@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab2B2NCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:02:09 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46404 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757749Ab2B2NCG convert rfc822-to-8bit (ORCPT
+	id S1757946Ab2B2NCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:02:50 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35416 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757749Ab2B2NCs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:02:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of omaplinuxkernel@gmail.com designates 10.52.180.74 as permitted sender) smtp.mail=omaplinuxkernel@gmail.com; dkim=pass header.i=omaplinuxkernel@gmail.com
+	Wed, 29 Feb 2012 08:02:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of julian.calaby@gmail.com designates 10.50.181.165 as permitted sender) smtp.mail=julian.calaby@gmail.com; dkim=pass header.i=julian.calaby@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com>
-Date: Wed, 29 Feb 2012 18:32:05 +0530
-Message-ID: <CAM=Q2ctLm8FKgTek6u9H0jzWJv1bbBUnvDHZfEA=p2ReK8ybUQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep sleep
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Yang <leoli@freescale.com>
+In-Reply-To: <CAGRGNgWngBAx4TRqW3sJ9EUEGW=YFgRD3vcqHMatWsyB=oDTOg@mail.gmail.com>
+References: <CAFxU49m76xaLGv9CFhKcZBhE-8QgT1KSuhnZRcVwzP2ogrGpbQ@mail.gmail.com>
+ <CAGRGNgWngBAx4TRqW3sJ9EUEGW=YFgRD3vcqHMatWsyB=oDTOg@mail.gmail.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Thu, 1 Mar 2012 00:02:27 +1100
+Message-ID: <CAGRGNgV5vmLptT5mFCs02xD_6+SxqO25BA2e67kH6_mcNhi-8w@mail.gmail.com>
+Subject: Re: [PATCH] mac80211: improve PID rate control mechanism by avoiding
+ rate oscillation problem
+To: YIN Wei <yinwei168@gmail.com>
+Cc: johannes <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mattias.nissler@gmx.de,
+        stefano.brivio@polimi.it
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhao,
+Hi Yin,
 
-On Wed, Feb 29, 2012 at 4:09 PM, Zhao Chenhui
-<chenhui.zhao@freescale.com> wrote:
-> When entering deep sleep, the value in the registers I2CFDR and
-> I2CDFSRR are lost. This causes I2C access to fail after resuming.
+One final thing:
+
+On Wed, Feb 29, 2012 at 23:59, Julian Calaby <julian.calaby@gmail.com> wrote:
+>> @@ -318,22 +578,61 @@ rate_control_pid_rate_init(void *priv, s
+>>                        rinfo[i].diff = i * pinfo->norm_offset;
+>>        }
+>>        for (i = 1; i < sband->n_bitrates; i++) {
+>> -               s = false;
+>> +               s = 0;
 >
-> Add suspend/resume routines to save/restore the registers
-> I2CFDR and I2CDFSRR.
+> Why are you using integers with a boolean variable?
 >
-> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> Signed-off-by: Li Yang <leoli@freescale.com>
-> ---
->  drivers/i2c/busses/i2c-mpc.c |   34 +++++++++++++++++++++++++++++++++-
->  1 files changed, 33 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-> index a8ebb84..f95a647 100644
-> --- a/drivers/i2c/busses/i2c-mpc.c
-> +++ b/drivers/i2c/busses/i2c-mpc.c
-> @@ -1,7 +1,9 @@
->  /*
->  * (C) Copyright 2003-2004
->  * Humboldt Solutions Ltd, adrian@humboldt.co.uk.
-> -
-> + *
-> + * Copyright 2012 Freescale Semiconductor, Inc.
-> + *
->  * This is a combined i2c adapter and algorithm driver for the
->  * MPC107/Tsi107 PowerPC northbridge and processors that include
->  * the same I2C unit (8240, 8245, 85xx).
-> @@ -64,6 +66,9 @@ struct mpc_i2c {
->        struct i2c_adapter adap;
->        int irq;
->        u32 real_clk;
-> +#ifdef CONFIG_PM
-> +       u8 fdr, dfsrr;
-How about having  a structure here ?
-> +#endif
->  };
->
->  struct mpc_i2c_divider {
-> @@ -668,6 +673,30 @@ static int __devexit fsl_i2c_remove(struct platform_device *op)
->        return 0;
->  };
->
-> +#ifdef CONFIG_PM
-> +static int mpc_i2c_suspend(struct device *dev)
-> +{
-> +       struct mpc_i2c *i2c = dev_get_drvdata(dev);
-> +
-> +       i2c->fdr = readb(i2c->base + MPC_I2C_FDR);
-> +       i2c->dfsrr = readb(i2c->base + MPC_I2C_DFSRR);
-> +
-> +       return 0;
-> +}
-> +
-> +static int mpc_i2c_resume(struct device *dev)
-> +{
-> +       struct mpc_i2c *i2c = dev_get_drvdata(dev);
-> +
-> +       writeb(i2c->fdr, i2c->base + MPC_I2C_FDR);
-> +       writeb(i2c->dfsrr, i2c->base + MPC_I2C_DFSRR);
-> +
-> +       return 0;
-> +}
-> +
-> +SIMPLE_DEV_PM_OPS(mpc_i2c_pm_ops, mpc_i2c_suspend, mpc_i2c_resume);
-> +#endif
-> +
->  static struct mpc_i2c_data mpc_i2c_data_512x __devinitdata = {
->        .setup = mpc_i2c_setup_512x,
->  };
-> @@ -712,6 +741,9 @@ static struct platform_driver mpc_i2c_driver = {
->                .owner = THIS_MODULE,
->                .name = DRV_NAME,
->                .of_match_table = mpc_i2c_of_match,
-> +#ifdef CONFIG_PM
-> +               .pm = &mpc_i2c_pm_ops,
-> +#endif
->        },
->  };
->
-> --
-> 1.6.4.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>                for (j = 0; j < sband->n_bitrates - i; j++)
+>>                        if (unlikely(sband->bitrates[rinfo[j].index].bitrate >
+>> -                                    sband->bitrates[rinfo[j + 1].index].bitrate)) {
+>> +                               sband->bitrates[rinfo[j + 1].index].bitrate)) {
+
+This whitespace change should be dropped.
+
+>>                                tmp = rinfo[j].index;
+>>                                rinfo[j].index = rinfo[j + 1].index;
+>>                                rinfo[j + 1].index = tmp;
+>>                                rinfo[rinfo[j].index].rev_index = j;
+>>                                rinfo[rinfo[j + 1].index].rev_index = j + 1;
+>> -                               s = true;
+>> +                               s = 1;
+>>                        }
+>>                if (!s)
+>>                        break;
+
+In fact, this entire hunk should be dropped.
+
+Thanks,
+
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
