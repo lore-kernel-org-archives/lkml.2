@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030620Ab2B2Aw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:52:27 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52542 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966169Ab2B2Aw0 (ORCPT
+	id S1757533Ab2B2A6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:58:41 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45185 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752169Ab2B2A6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:52:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 09:50:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] memcg: add page_cgroup flags for dirty page
- tracking
-Message-Id: <20120229095051.739bb363.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120228144746.900395448@intel.com>
-References: <20120228140022.614718843@intel.com>
-	<20120228144746.900395448@intel.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 28 Feb 2012 19:58:39 -0500
+Message-ID: <1330477116.2822.191.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Bug #42707] Hang deconfiguring network interface (in shutdown)
+ on 3.3-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matt Carlson <mcarlson@broadcom.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Date: Tue, 28 Feb 2012 18:58:36 -0600
+In-Reply-To: <20120228233225.GA1322@mcarlson.broadcom.com>
+References: <y44pDJ8xoDC.A.08E.h8rRPB@chimera>
+	 <qCQH7HfZS8E.A.x6F.98rRPB@chimera>
+	 <1330386274.2822.105.camel@dabdike.int.hansenpartnership.com>
+	 <20120228233225.GA1322@mcarlson.broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 22:00:23 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
-
-> From: Greg Thelen <gthelen@google.com>
+On Tue, 2012-02-28 at 15:32 -0800, Matt Carlson wrote:
+> On Mon, Feb 27, 2012 at 05:44:34PM -0600, James Bottomley wrote:
+> > On Thu, 2012-02-23 at 23:55 +0100, Rafael J. Wysocki wrote:
+> > > This message has been generated automatically as a part of a summary report
+> > > of recent regressions.
+> > > 
+> > > The following bug entry is on the current list of known regressions
+> > > from 3.2.  Please verify if it still should be listed and let the tracking team
+> > > know (either way).
+> > > 
+> > > 
+> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=42707
+> > > Subject		: Hang deconfiguring network interface (in shutdown) on 3.3-rc1
+> > > Submitter	: James Bottomley <James.Bottomley@hansenpartnership.com>
+> > > Date		: 2012-01-28 19:56 (27 days old)
+> > > Message-ID	: <1327780565.2924.24.camel@dabdike.int.hansenpartnership.com>
+> > > References	: http://marc.info/?l=linux-kernel&m=132778076214873&w=2
+> > 
+> > Still present in 3.3-rc4; I've bisected it back to this commit:
+> > 
+> > commit 92feeabf3f673767c6ee4cfc7fc224098446c1c1
+> > Author: Matt Carlson <mcarlson@broadcom.com>
+> > Date:   Thu Dec 8 14:40:14 2011 +0000
+> > 
+> >     tg3: Save stats across chip resets
+> > 
+> > and sure enough, just reverting this single commit on 3.3-rc4 fixes the
+> > problem.
+> > 
+> > James
 > 
-> Add additional flags to page_cgroup to track dirty pages
-> within a mem_cgroup.
+> Are you dealing with a bcm5700 or bcm5701 device?
+
+Yes, this is it:
+
+20:02.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5701 Gigabit Ethernet (rev 15)
+	Subsystem: Hewlett-Packard Company Core Lan 1000Base-T
+	Flags: bus master, 66MHz, medium devsel, latency 128, IRQ 72
+	Memory at ffffffff90000000 (64-bit, non-prefetchable) [size=64K]
+	Capabilities: [40] PCI-X non-bridge device
+	Capabilities: [48] Power Management version 2
+	Capabilities: [50] Vital Product Data
+	Capabilities: [58] MSI: Enable- Count=1/8 Maskable- 64bit+
+	Kernel driver in use: tg3
+
+>   If so, can you try
+> the following patch?
 > 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> Subject: [PATCH 1/1] tg3: Fix tg3_get_stats64 for 5700 / 5701 devs
 
-I'm sorry but I changed the design of page_cgroup's flags update
-and never want to add new flags (I'd like to remove page_cgroup->flags.)
+Well, the patch needs some attention:
 
-Please see linux-next.
+  CC [M]  drivers/net/ethernet/broadcom/tg3.o
+drivers/net/ethernet/broadcom/tg3.c: In function 'tg3_get_estats':
+drivers/net/ethernet/broadcom/tg3.c:9882: warning: 'return' with a value, in function returning void
 
-A good example is PCG_FILE_MAPPED, which I removed.
+It also didn't apply incredibly well (the fuzz factors and line offsets
+are a lot higher than they should be):
 
-memcg: use new logic for page stat accounting
-memcg: remove PCG_FILE_MAPPED
+patching file drivers/net/ethernet/broadcom/tg3.c
+Hunk #1 succeeded at 7886 (offset -115 lines).
+Hunk #2 succeeded at 7908 (offset -115 lines).
+Hunk #3 succeeded at 9845 (offset -278 lines).
+Hunk #4 succeeded at 9854 (offset -278 lines).
+Hunk #5 succeeded at 9873 (offset -278 lines).
+Hunk #6 succeeded at 9958 (offset -275 lines).
+Hunk #7 succeeded at 10007 with fuzz 1 (offset -275 lines).
+Hunk #8 succeeded at 10103 with fuzz 2 (offset -2096 lines).
 
-You can make use of PageDirty() and PageWriteback() instead of new flags.. (I hope.)
+but it seems to work.
 
 Thanks,
--Kame
 
-> ---
->  include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
-> 
-> --- linux.orig/include/linux/page_cgroup.h	2012-02-19 10:53:14.000000000 +0800
-> +++ linux/include/linux/page_cgroup.h	2012-02-19 10:53:16.000000000 +0800
-> @@ -10,6 +10,9 @@ enum {
->  	/* flags for mem_cgroup and file and I/O status */
->  	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
->  	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
-> +	PCG_FILE_DIRTY, /* page is dirty */
-> +	PCG_FILE_WRITEBACK, /* page is under writeback */
-> +	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
->  	__NR_PCG_FLAGS,
->  };
->  
-> @@ -64,6 +67,10 @@ static inline void ClearPageCgroup##unam
->  static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
->  	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
->  
-> +#define TESTSETPCGFLAG(uname, lname)			\
-> +static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
-> +	{ return test_and_set_bit(PCG_##lname, &pc->flags); }
-> +
->  /* Cache flag is set only once (at allocation) */
->  TESTPCGFLAG(Cache, CACHE)
->  CLEARPCGFLAG(Cache, CACHE)
-> @@ -77,6 +84,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
->  CLEARPCGFLAG(FileMapped, FILE_MAPPED)
->  TESTPCGFLAG(FileMapped, FILE_MAPPED)
->  
-> +SETPCGFLAG(FileDirty, FILE_DIRTY)
-> +CLEARPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
-> +
-> +SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +
-> +SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +
->  SETPCGFLAG(Migration, MIGRATION)
->  CLEARPCGFLAG(Migration, MIGRATION)
->  TESTPCGFLAG(Migration, MIGRATION)
-> 
-> 
-> 
+James
+
 
