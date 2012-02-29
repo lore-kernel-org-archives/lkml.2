@@ -1,171 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2B2RvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:51:01 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57248 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418Ab2B2Ru6 convert rfc822-to-8bit (ORCPT
+	id S1757656Ab2B2Rv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:51:56 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64375 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab2B2Rvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:50:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of andi.shyti@gmail.com designates 10.52.173.179 as permitted sender) smtp.mail=andi.shyti@gmail.com; dkim=pass header.i=andi.shyti@gmail.com
+	Wed, 29 Feb 2012 12:51:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.84.233 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
-In-Reply-To: <1330532668-5673-3-git-send-email-arun.murthy@stericsson.com>
-References: <1330532668-5673-1-git-send-email-arun.murthy@stericsson.com>
-	<1330532668-5673-3-git-send-email-arun.murthy@stericsson.com>
-Date: Wed, 29 Feb 2012 18:50:57 +0100
-Message-ID: <CANndwHasH6cVdVu=bzYkz2Ri8Hp5OBzaMeVmp6hMkvP99ujc6w@mail.gmail.com>
-Subject: Re: [PATCH 2/4] power: ab8500-charger: AB8500 charger driver
-From: Andi <andi.shyti@gmail.com>
-To: Arun Murthy <arun.murthy@stericsson.com>
-Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        karl.komierowski@stericsson.com, johan.palsson@stericsson.com,
-        linus.walleij@linaro.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAB=4xhq1CPz74LchQ32oyhR1vUKjhMiTXENYbgeh=BoaYNP9JQ@mail.gmail.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org>
+	<1330140111-17201-10-git-send-email-wad@chromium.org>
+	<20120227175407.GD10608@redhat.com>
+	<CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
+	<20120228164335.GC3664@redhat.com>
+	<CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com>
+	<CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
+	<20120229161437.GA3078@redhat.com>
+	<CABqD9hZLi416irXMMPmysYohrOn1gQjhjDyKTggU80Kd7ywvcA@mail.gmail.com>
+	<20120229170933.GA6149@redhat.com>
+	<CAB=4xhq1CPz74LchQ32oyhR1vUKjhMiTXENYbgeh=BoaYNP9JQ@mail.gmail.com>
+Date: Wed, 29 Feb 2012 11:51:49 -0600
+Message-ID: <CABqD9haTSHdAcGBy4kLrhAs4UFSrMPFNsLC+X-Hf5_ud2_w19Q@mail.gmail.com>
+Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
+From: Will Drewry <wad@chromium.org>
+To: Roland McGrath <mcgrathr@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Denys Vlasenko <dvlasenk@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Feb 29, 2012 at 5:24 PM, Arun Murthy <arun.murthy@stericsson.com> wrote:
-> This driver is responsible for detecting the ac/usb plugin and also includes
-> function to enable ac/usb charging and re-kick the watchdog.
-> It registers with the power supply class and provides information to the user
-> space. The information include status of ac/usb charger device.
-> This information in turn will be used by the abx500 charging algorithm driver
-> to enable/disable and monitor charging.
+On Wed, Feb 29, 2012 at 11:41 AM, Roland McGrath <mcgrathr@google.com> wrote:
+> I don't think TIF_NOTIFY_RESUME is apropos here. �That only triggers on
+> returning to user mode, i.e. after syscall exit. �But regardless of the
+> exact implementation details, I don't think it will be prohibitive to add
+> some means by which the fast-path can back off before actual syscall entry
+> and go to the slow path for ptrace reporting.
 >
-> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/power/ab8500_charger.c       | 2789 ++++++++++++++++++++++++++++++++++
->  include/linux/mfd/abx500/ab8500-bm.h |  554 +++++++
->  2 files changed, 3343 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/power/ab8500_charger.c
->  create mode 100644 include/linux/mfd/abx500/ab8500-bm.h
->
-> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-> new file mode 100644
-> index 0000000..bbc541a
-> --- /dev/null
-> +++ b/drivers/power/ab8500_charger.c
-> @@ -0,0 +1,2789 @@
-> +/**
-> + * ab8500_charger_init_hw_registers() - Set up charger related registers
-> + * @di:                pointer to the ab8500_charger structure
-> + *
-> + * Set up charger OVV, watchdog and maximum voltage registers as well as
-> + * charging of the backup battery
-> + */
-> +static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
-> +{
-> +       int ret = 0;
-> +
-> +       /* Setup maximum charger current and voltage for ABB cut2.0 */
-> +       if (!is_ab8500_1p1_or_earlier(di->parent)) {
-> +               ret = abx500_set_register_interruptible(di->dev,
-> +                       AB8500_CHARGER,
-> +                       AB8500_CH_VOLT_LVL_MAX_REG, CH_VOL_LVL_4P6);
-> +               if (ret) {
-> +                       dev_err(di->dev,
-> +                               "failed to set CH_VOLT_LVL_MAX_REG\n");
-> +                       goto out;
-> +               }
-> +
-> +               ret = abx500_set_register_interruptible(di->dev,
-> +                       AB8500_CHARGER,
-> +                       AB8500_CH_OPT_CRNTLVL_MAX_REG, CH_OP_CUR_LVL_1P6);
-> +               if (ret) {
-> +                       dev_err(di->dev,
-> +                               "failed to set CH_OPT_CRNTLVL_MAX_REG\n");
-> +                       goto out;
-> +               }
-> +       }
-> +
-> +       /* VBUS OVV set to 6.3V and enable automatic current limitiation */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_CHARGER,
-> +               AB8500_USBCH_CTRL2_REG,
-> +               VBUS_OVV_SELECT_6P3V | VBUS_AUTO_IN_CURR_LIM_ENA);
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to set VBUS OVV\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Enable main watchdog in OTP */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_OTP_EMUL, AB8500_OTP_CONF_15, OTP_ENABLE_WD);
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to enable main WD in OTP\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Enable main watchdog */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_SYS_CTRL2_BLOCK,
-> +               AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_ENA);
-> +       if (ret) {
-> +               dev_err(di->dev, "faile to enable main watchdog\n");
-> +               goto out;
-> +       }
-> +
-> +       /*
-> +        * Due to internal synchronisation, Enable and Kick watchdog bits
-> +        * cannot be enabled in a single write.
-> +        * A minimum delay of 2*32 kHz period (62.5µs) must be inserted
-> +        * between writing Enable then Kick bits.
-> +        */
-> +       udelay(63);
+> Since there is no strong reason to think it can't be reorganized that way
+> later, I don't see any good rationale for constraining the seccomp-filter
+> feature definition based on a plan to optimize the implementation in the
+> future.
 
-Are you sure about this udelay?
+Sounds good to me.   I'll move to ptrace_event and save the problem of
+code organization for the future.
 
-> +
-> +       /* Kick main watchdog */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_SYS_CTRL2_BLOCK,
-> +               AB8500_MAIN_WDOG_CTRL_REG,
-> +               (MAIN_WDOG_ENA | MAIN_WDOG_KICK));
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to kick main watchdog\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Disable main watchdog */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_SYS_CTRL2_BLOCK,
-> +               AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_DIS);
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to disable main watchdog\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Set watchdog timeout */
-> +       ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-> +               AB8500_CH_WD_TIMER_REG, WD_TIMER);
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to set charger watchdog timeout\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Backup battery voltage and current */
-> +       ret = abx500_set_register_interruptible(di->dev,
-> +               AB8500_RTC,
-> +               AB8500_RTC_BACKUP_CHG_REG,
-> +               di->bat->bkup_bat_v |
-> +               di->bat->bkup_bat_i);
-> +       if (ret) {
-> +               dev_err(di->dev, "failed to setup backup battery charging\n");
-> +               goto out;
-> +       }
-> +
-> +       /* Enable backup battery charging */
-> +       abx500_mask_and_set_register_interruptible(di->dev,
-> +               AB8500_RTC, AB8500_RTC_CTRL_REG,
-> +               RTC_BUP_CH_ENA, RTC_BUP_CH_ENA);
-> +       if (ret < 0)
-> +               dev_err(di->dev, "%s mask and set failed\n", __func__);
-> +
-> +out:
-> +       return ret;
-> +}
+Thanks!
