@@ -1,123 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030719Ab2B2DMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 22:12:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:50565 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030684Ab2B2DMO convert rfc822-to-8bit (ORCPT
+	id S1030692Ab2B2DVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 22:21:48 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:9954 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755192Ab2B2DVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 22:12:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="112889338"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Subject: [PATCH V2] Quirk for IVB graphics FLR errata
-Thread-Topic: [PATCH V2] Quirk for IVB graphics FLR errata
-Thread-Index: Acz2j13cnHuVdz08QJ6II1JKSiWO3A==
-Date: Wed, 29 Feb 2012 03:11:24 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Feb 2012 22:21:46 -0500
+Message-ID: <1330485702.2512.22.camel@bwh-desktop>
+Subject: Re: linux-next: manual merge of the net-next tree with Linus' tree
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <sfr@canb.auug.org.au>, <netdev@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Feb 2012 03:21:42 +0000
+In-Reply-To: <20120226.230523.1906949835561978402.davem@davemloft.net>
+References: <20120227121125.007c32f9aa7be2470d9e3356@canb.auug.org.au>
+	 <20120226.230523.1906949835561978402.davem@davemloft.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18740.005
+X-TM-AS-Result: No--14.111000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For IvyBridge Mobile platform, a system hang may occur if a FLR(Function Level
- Reset) is asserted to internal graphics.
+On Sun, 2012-02-26 at 23:05 -0500, David Miller wrote:
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 27 Feb 2012 12:11:25 +1100
+> 
+> > Today's linux-next merge of the net-next tree got a conflict in
+> > drivers/net/ethernet/sfc/rx.c between commit ff3bc1e75275 ("sfc: Fix
+> > assignment of ip_summed for pre-allocated skbs") from Linus' tree and
+> > commit db3395697cad ("sfc: Replace efx_rx_buffer::is_page and other
+> > booleans with a flags field") from the net-next tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > necessary.
+> 
+> I just merged net into net-next and resolved this conflict.
 
-This quirk patch is workaround for the IVB FLR errata issue.
-We are disabling the FLR reset handshake between the PCH and CPU display, 
-then manually powering down the panel power sequencing and resetting the PCH display.
+Thank you both.  I should have flagged this when sending the change for
+the net tree.
 
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
----
- drivers/pci/quirks.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
+Ben.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index 6476547..5223b80 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -29,6 +29,11 @@
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
- 
-+#include "../gpu/drm/i915/i915_reg.h"
-+#include <asm/tsc.h>
-+/* 10 seconds */
-+#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
-+
- /*
-  * This quirk function disables memory decoding and releases memory resources
-  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
-@@ -3069,11 +3074,55 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
- 	return 0;
- }
- 
-+#define MSG_CTL	0x45010
-+
-+static int reset_ivb_igd(struct pci_dev *dev, int probe) {
-+	u8 *mmio_base;
-+	u32 val;
-+
-+	if (probe)
-+		return 0;
-+
-+	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
-+				 pci_resource_len(dev, 0));
-+	if (!mmio_base)
-+		return -ENOMEM;
-+
-+	/* Work Around */
-+	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
-+	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
-+	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
-+	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
-+	do {
-+		cycles_t start_time = get_cycles();
-+		while (1) {
-+			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
-+			if (((val & 0x80000000) == 0)
-+				&& ((val & 0x30000000) == 0))
-+				break;
-+			if (IGD_OPERATION_TIMEOUT < (get_cycles() - start_time))
-+				break;
-+			cpu_relax();
-+		}
-+	} while (0);
-+	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
-+
-+	iounmap(pci_resource_start(dev, 0));
-+	return 0;
-+}
-+
- #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
-+#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
-+#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
- 
- static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
- 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
- 		 reset_intel_82599_sfp_virtfn },
-+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
-+		reset_ivb_igd },
-+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
-+		reset_ivb_igd },
- 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
- 		reset_intel_generic_dev },
- 	{ 0 }
---
-1.6.0.rc1
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
