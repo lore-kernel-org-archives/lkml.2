@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab2B2ABg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:01:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54844 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab2B2ABf (ORCPT
+	id S932424Ab2B2ACI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:02:08 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63837 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab2B2ACD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:01:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 09:00:05 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] kernel: cgroup: push rcu read locking from
- css_is_ancestor() to callsite
-Message-Id: <20120229090005.1ef4cdb2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 19:02:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.180.14.230 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
+MIME-Version: 1.0
+In-Reply-To: <1330466863-28469-13-git-send-email-yinghai@kernel.org>
+References: <1330466863-28469-1-git-send-email-yinghai@kernel.org> <1330466863-28469-13-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 28 Feb 2012 17:01:42 -0700
+Message-ID: <CAErSpo66PD3+E3ZFqp73XHabL+8GavpX97pUkd28T6KWTBH-aA@mail.gmail.com>
+Subject: Re: [PATCH 12/24] PCI, ia64: Register busn_res for root buses
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 15:14:48 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Tue, Feb 28, 2012 at 3:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: linux-ia64@vger.kernel.org
+> ---
+>  arch/ia64/include/asm/pci.h |    1 +
+>  arch/ia64/pci/pci.c         |    5 +++++
+>  2 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
+> index b22e5f5..6e54220 100644
+> --- a/arch/ia64/include/asm/pci.h
+> +++ b/arch/ia64/include/asm/pci.h
+> @@ -94,6 +94,7 @@ struct pci_controller {
+>
+>        unsigned int windows;
+>        struct pci_window *window;
+> +       struct resource busn;
 
-> Library functions should not grab locks when the callsites can do it,
-> even if the lock nests like the rcu read-side lock does.
-> 
-> Push the rcu_read_lock() from css_is_ancestor() to its single user,
-> mem_cgroup_same_or_subtree() in preparation for another user that may
-> already hold the rcu read-side lock.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Why do you add a new struct resource here?  Can't you just use the one
+passed in from acpi_pci_root_add()?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+>        void *platform_data;
+>  };
+> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+> index d1ce320..b250f0f 100644
+> --- a/arch/ia64/pci/pci.c
+> +++ b/arch/ia64/pci/pci.c
+> @@ -332,6 +332,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+>        struct acpi_device *device = root->device;
+>        int domain = root->segment;
+>        int bus = root->secondary.start;
+> +       int busmax = root->secondary.end;
+>        struct pci_controller *controller;
+>        unsigned int windows = 0;
+>        struct pci_root_info info;
+> @@ -372,6 +373,10 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
+>                acpi_walk_resources(device->handle, METHOD_NAME__CRS,
+>                        add_window, &info);
+>        }
+> +       controller->busn.start = bus;
+> +       controller->busn.end = busmax;
+> +       conttoller->busn.flags = IORESOURCE_BUS;
 
+Typo here - "conttoller" should be "controller".
 
+> +       pci_add_resource(&info.resources, &controller->busn);
+>        /*
+>         * See arch/x86/pci/acpi.c.
+>         * The desired pci bus might already be scanned in a quirk. We
+> --
+> 1.7.7
+>
