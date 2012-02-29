@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966141Ab2B2Xgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:36:32 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33520 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965028Ab2B2Xgb (ORCPT
+	id S1757353Ab2B2Xh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:37:56 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33399 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2B2Xhy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:36:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.85.35 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Wed, 29 Feb 2012 18:37:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yhlu.kernel@gmail.com designates 10.236.155.6 as permitted sender) smtp.mail=yhlu.kernel@gmail.com; dkim=pass header.i=yhlu.kernel@gmail.com
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 29 Feb 2012 15:36:09 -0800
-X-Google-Sender-Auth: Pig_exhkaJCEwLRGgsz-JgZ7K3U
-Message-ID: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
-Subject: .. anybody know of any filesystems that depend on the exact VFS
- 'namehash' implementation?
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <CAErSpo63hAtPMFdSEuVCcgw5ERMkiKx2Z8pREc2PdiCwmWpvkg@mail.gmail.com>
+References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
+	<1330556858-11768-40-git-send-email-yinghai@kernel.org>
+	<CAErSpo63hAtPMFdSEuVCcgw5ERMkiKx2Z8pREc2PdiCwmWpvkg@mail.gmail.com>
+Date: Wed, 29 Feb 2012 15:37:53 -0800
+X-Google-Sender-Auth: nrngeVrvUUr24W8gT1jZqUufgOs
+Message-ID: <CAE9FiQUeRno4ZCy37XQ+cwrFYG-XoDq7q=XjKrOVy5E85bS-ig@mail.gmail.com>
+Subject: Re: [PATCH 39/39] x86, PCI: kill busn in acpi pci_root_info
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I'm doing my normal profiling ("empty kernel build" is my favorite
-one), and link_path_walk() and __d_lookup_rcu() remain some of the
-hottest kernel functions due to their per-character loops.
+On Wed, Feb 29, 2012 at 3:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Feb 29, 2012 at 4:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Bjorn thought that we should just use that in acpi_root.
+>>
+>> Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  arch/x86/pci/acpi.c |   19 ++++++-------------
+>>  1 files changed, 6 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+>> index ff5243e..5178917 100644
+>> --- a/arch/x86/pci/acpi.c
+>> +++ b/arch/x86/pci/acpi.c
+>> @@ -12,7 +12,6 @@ struct pci_root_info {
+>>        char name[16];
+>>        unsigned int res_num;
+>>        struct resource *res;
+>> -       struct resource busn;
+>>        struct pci_sysdata sd;
+>>  };
+>>
+>> @@ -283,9 +282,6 @@ static void add_resources(struct pci_root_info *info,
+>>        int i;
+>>        struct resource *res, *root, *conflict;
+>>
+>> -       if (info->busn.flags & IORESOURCE_BUS)
+>> -               pci_add_resource(resources, &info->busn);
+>> -
+>>        coalesce_windows(info, IORESOURCE_MEM);
+>>        coalesce_windows(info, IORESOURCE_IO);
+>>
+>> @@ -346,16 +342,12 @@ static void release_pci_root_info(struct pci_host_bridge *bridge)
+>>
+>>  static void
+>>  probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+>> -                   int busnum, int busmax, int domain)
+>> +                   int busnum, int domain)
+>>  {
+>>        size_t size;
+>>
+>>        sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
+>>        info->bridge = device;
+>> -       info->busn.name = info->name;
+>> -       info->busn.start = busnum;
+>> -       info->busn.end = busmax;
+>> -       info->busn.flags = IORESOURCE_BUS;
+>
+> You just *added* this stuff in a prior patch that hasn't been merged
+> yet.  Why can't you just fix that series rather than doing the
+> add/remove churn?
 
-I can improve __d_lookup_rcu() on my machine by what appears to be
-around 15% by doing things a "unsigned long" at a time (it would be an
-option that only works on little-endian and with cheap unaligned
-accesses, although the big-endian modifications should be pretty
-trivial).
+as i said before, I'm not quite sure about the life cycle about that object.
 
-Sure, that optimization would have to be disabled if you do
-DEBUG_PAGEALLOC, because it might opportunistically access bytes past
-the end of the string, but it does seem to be a very reasonable and
-easy thing to do apart from that small detail, and the numbers do look
-good.
+still need to wait some months to verify that on system that does
+support pci root bus hot plug etc.
 
-Basically, dentry_cmp() just becomes
+or we can just this patch for now.
 
-        /* Little-endian with fast unaligned accesses? */
-        unsigned long a,b,mask;
-
-        if (scount != tcount)
-                return 1;
-
-        for (;;) {
-                a = *(unsigned long *)cs;
-                b = *(unsigned long *)ct;
-                if (tcount < sizeof(unsigned long))
-                        break;
-                if (a != b)
-                        return 1;
-                cs += sizeof(unsigned long);
-                ct += sizeof(unsigned long);
-                tcount -= sizeof(unsigned long);
-                if (!tcount)
-                        return 0;
-        }
-        mask = ~(~0ul << tcount*8);
-        return !!((a ^ b) & mask);
-
-for that case, and gcc generates good code for it.
-
-However, doing the same thing for link_path_walk() would require that
-we actually change the hash function we use internally in the VFS
-layer, and while I think that shouldn't really be a problem, I worry
-that some filesystem might actually use the hash we generate and save
-it somewhere on disk (rather than only use it for the hashed lookup
-itself).
-
-Computing the hash one long-word at a time is trivial if we just
-change what the hash is. Finding the terminating NUL or '/' characters
-that involves some big constants (0x2f2f2f2f2f2f2f2f,
-0x0101010101010101 and 0x8080808080808080 but seems similarly fairly
-easy. But if filesystems actually depend on our current hash
-algorithm, the word-at-a-time model falls apart.
-
-Anybody? I think we've kept the namehash unchanged since very early
-on, so I could imagine that somebody has grown to think that it's
-"stable". As far as I can tell, the current hash function goes back to
-2.4.2 (just over ten years ago).
-
-                       Linus
+Yinghai
