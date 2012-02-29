@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2B2FmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 00:42:10 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41091 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab2B2FmI (ORCPT
+	id S1753776Ab2B2Foq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 00:44:46 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38814 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab2B2Fop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 00:42:08 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 14:40:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH next] memcg: remove PCG_FILE_MAPPED fix cosmetic fix
-Message-Id: <20120229144037.19ec6efa.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LSU.2.00.1202282127110.4875@eggly.anvils>
-References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils>
-	<alpine.LSU.2.00.1202282127110.4875@eggly.anvils>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 29 Feb 2012 00:44:45 -0500
+Message-ID: <4F4DBB26.2060907@linux.vnet.ibm.com>
+Date: Wed, 29 Feb 2012 11:14:06 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andi Kleen <ak@linux.intel.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: fix lg_lock/br_lock.
+References: <87ehtf3lqh.fsf@rustcorp.com.au> <20120227155338.7b5110cd.akpm@linux-foundation.org> <20120228084359.GJ21106@elte.hu> <20120228132719.f375071a.akpm@linux-foundation.org>
+In-Reply-To: <20120228132719.f375071a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12022819-1396-0000-0000-000000BECF33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 21:28:40 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+Hi Andrew,
 
-> mem_cgroup_move_account() begins with "anon = PageAnon(page)", and
-> then anon is used thereafter: testing PageAnon(page) in the middle
-> makes the reader wonder if there's some race to guard against - no.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+On 02/29/2012 02:57 AM, Andrew Morton wrote:
 
-Thanks.
+> On Tue, 28 Feb 2012 09:43:59 +0100
+> Ingo Molnar <mingo@elte.hu> wrote:
+> 
+>> This patch should also probably go upstream through the 
+>> locking/lockdep tree? Mind sending it us once you think it's 
+>> ready?
+> 
+> Oh goody, that means you own
+> http://marc.info/?l=linux-kernel&m=131419353511653&w=2.
+>
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> ---
+That bug got fixed sometime around Dec 2011. See commit e30e2fdf
+(VFS: Fix race between CPU hotplug and lglocks)
+
+> I do think the brlock code is sick, but Nick has turned into an ex-Nick
+> and nobody works on it.
 > 
->  mm/memcontrol.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- 3.3-rc5-next/mm/memcontrol.c	2012-02-27 09:56:59.072001463 -0800
-> +++ linux/mm/memcontrol.c	2012-02-28 20:45:43.488100423 -0800
-> @@ -2560,7 +2560,7 @@ static int mem_cgroup_move_account(struc
->  
->  	move_lock_mem_cgroup(from, &flags);
->  
-> -	if (!PageAnon(page) && page_mapped(page)) {
-> +	if (!anon && page_mapped(page)) {
->  		/* Update mapped_file data for mem_cgroup */
->  		preempt_disable();
->  		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> 
+
+ 
+Regards,
+Srivatsa S. Bhat
 
