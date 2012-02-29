@@ -1,109 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2B2TV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 14:21:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43893 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758277Ab2B2TVY (ORCPT
+	id S1758314Ab2B2TVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 14:21:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59076 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758280Ab2B2TVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 14:21:24 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.101.152.32 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
+	Wed, 29 Feb 2012 14:21:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.78.231 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v6 0/2] of: Device Tree enhancements needed by MIPS/OCTEON
-Date: Wed, 29 Feb 2012 11:21:02 -0800
-Message-Id: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v6 2/2] of: Make of_find_node_by_path() traverse /aliases for relative paths.
+Date: Wed, 29 Feb 2012 11:21:04 -0800
+Message-Id: <1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-These two patches have been around for quite a while now.  I am
-currently making a big push to get all out-of-tree OCTEON patches
-upstream, and these two are prerequisites for all the rest.  The last
-changes requested by Grant Likely and David Gibson (last May) are
-incorporated.
+Currently all paths passed to of_find_node_by_path() must begin with a
+'/', indicating a full path to the desired node.
 
-As always, more comments are welcome, but it would be nice to see them
-get merged too.
+Augment the look-up code so that if a path does *not* begin with '/',
+the path is used as the name of an /aliases property.  The value of
+this alias is then used as the full node path to be found.
 
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/of/base.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 62 insertions(+), 3 deletions(-)
 
-v6: No changes other than to split these out of the MIPS/OCTEON patch
-    set to allow them to be merged separately if desired.
-
-v5: Build libfdt in the lib directory instead of devices/of, and
-    include all libfdt files.
-
-    Changes to of_find_node_by_path() requested by Grant Likely.
-
-v4: No changes to these two patches.
-
-v3: libfdt building moved to devices/of/libfdt.  Cleanup and style
-    improvements as suggested by Grant Likley.
-
-v2: No changes to these two patches.
-
-
-Background: The Octeon family of SOCs has a variety of on-chip
-controllers for Ethernet, MDIO, I2C, and several other I/O devices.
-These chips are used on boards with a great variety of different
-configurations.  To date, the configuration and bus topology
-information has been hard coded in the drivers and support code.
-
-To facilitate supporting new chips and boards, we make use use the
-Device Tree to encode the configuration information.  Migration to use
-of the device tree is as follows:
-
-o A device tree template is statically linked into the kernel image.
-  Based on SOC type and board type, legacy configuration probing code
-  is used to prune and patch the device tree template.
-
-o New SOCs and boards will directly use a device tree passed by the
-  bootloader.
-
-
-These two patches are prerequisites for the bulk of the OCTEON changes.
-
-1/2 - Infrastructure to allow scripts/dtc/libfdt to be used in the
-      kernel.  As mentioned above, when using legacy bootloaders, we
-      prune an in-kernel FDT image based on legacy probing code.
-      libfdt is used to do the pruning.
-
-2/2 - Enhancements to of_find_node_by_path() to allow it to traverse
-      /aliases.  This is used by the OCTEON Ethernet drivers.
-
-
-David Daney (2):
-  of/lib: Allow scripts/dtc/libfdt to be used from kernel code
-  of: Make of_find_node_by_path() traverse /aliases for relative paths.
-
- drivers/of/base.c          |   65 +++++++++++++++++++++++++++++++++++++++++--
- include/linux/libfdt.h     |    8 +++++
- include/linux/libfdt_env.h |   13 +++++++++
- lib/Kconfig                |    6 ++++
- lib/Makefile               |    5 +++
- lib/fdt.c                  |    2 +
- lib/fdt_ro.c               |    2 +
- lib/fdt_rw.c               |    2 +
- lib/fdt_strerror.c         |    2 +
- lib/fdt_sw.c               |    2 +
- lib/fdt_wip.c              |    2 +
- 11 files changed, 106 insertions(+), 3 deletions(-)
- create mode 100644 include/linux/libfdt.h
- create mode 100644 include/linux/libfdt_env.h
- create mode 100644 lib/fdt.c
- create mode 100644 lib/fdt_ro.c
- create mode 100644 lib/fdt_rw.c
- create mode 100644 lib/fdt_strerror.c
- create mode 100644 lib/fdt_sw.c
- create mode 100644 lib/fdt_wip.c
-
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 5806449..0bbe47c 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -365,22 +365,81 @@ EXPORT_SYMBOL(of_get_next_child);
+ 
+ /**
+  *	of_find_node_by_path - Find a node matching a full OF path
+- *	@path:	The full path to match
++ *	@path: Either the full path to match, or if the path does not
++ *	       start with '/', the name of a property of the /aliases
++ *	       node (an alias).  In the case of an alias, the node
++ *	       matching the alias' value will be returned.
+  *
+  *	Returns a node pointer with refcount incremented, use
+  *	of_node_put() on it when done.
+  */
+ struct device_node *of_find_node_by_path(const char *path)
+ {
+-	struct device_node *np = allnodes;
++	struct device_node *np = NULL;
++	struct device_node *aliases = NULL;
++	char *alias = NULL;
++	char *new_path = NULL;
++	char *ps;
+ 
+ 	read_lock(&devtree_lock);
+-	for (; np; np = np->allnext) {
++
++	/*
++	 * The following code has three possibilities:
++	 * 1) '/' at start of string; path == ps; (based at root)
++	 * 2) '/' at offset in string; path < ps; (relative to alias)
++	 * 3) '/' not found; ps == NULL; (alias only)
++	 *
++	 * If ps != path, then it is either a pure alias (ps == NULL),
++	 * or an alias with a relative path (path < ps).  Either way,
++	 * look up the path pointed to by the alias.
++	 */
++	ps = strchr(path, '/');
++	if (path != ps) {
++		aliases = of_find_node_by_path("/aliases");
++		if (!aliases)
++			goto out;
++
++		/*
++		 * Duplicate the alias part of the string so it can be
++		 * NULL terminated.
++		 */
++		alias = kstrndup(path,
++				 ps ? (ps - path) : strlen(path), GFP_KERNEL);
++		if (!alias)
++			goto out;
++		path = of_get_property(aliases, alias, NULL);
++		if (!path || path[0] != '/')
++			goto out;
++
++		/* If ps is not NULL, then there is a relative path to append */
++		if (ps) {
++			new_path = kzalloc(strlen(path) + strlen(ps) + 1,
++					   GFP_KERNEL);
++			if (!new_path)
++				goto out;
++
++			sprintf(new_path, "%s%s", path, ps);
++			path = new_path;
++		}
++	}
++
++	/*
++	 * At this point, path now points to the full unaliased path
++	 * to a node, regardless of whether or not it started with an
++	 * alias.
++	 */
++
++	for (np = allnodes; np; np = np->allnext) {
+ 		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
+ 		    && of_node_get(np))
+ 			break;
+ 	}
++out:
++	if (aliases)
++		of_node_put(aliases);
+ 	read_unlock(&devtree_lock);
++	kfree(alias);
++	kfree(new_path);
+ 	return np;
+ }
+ EXPORT_SYMBOL(of_find_node_by_path);
 -- 
 1.7.2.3
 
