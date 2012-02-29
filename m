@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab2B2AXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:23:12 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62090 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116Ab2B2AXI convert rfc822-to-8bit (ORCPT
+	id S1030532Ab2B2AYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:24:37 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38362 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757116Ab2B2AYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:23:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.216.139.25 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
+	Tue, 28 Feb 2012 19:24:36 -0500
+Message-ID: <4F4D704A.7040508@xenotime.net>
+Date: Tue, 28 Feb 2012 16:24:42 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWBvYZO-D+Z2zwdd0a-bkatF-0YPtmxKP4Se75vccgPrA@mail.gmail.com>
-References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
- <1330466863-28469-13-git-send-email-yinghai@kernel.org> <CAErSpo66PD3+E3ZFqp73XHabL+8GavpX97pUkd28T6KWTBH-aA@mail.gmail.com>
- <CAE9FiQWBvYZO-D+Z2zwdd0a-bkatF-0YPtmxKP4Se75vccgPrA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 28 Feb 2012 17:22:46 -0700
-Message-ID: <CAErSpo5NOqnqWxCBV+NecA34z0YJHP7FCy6mNd5GUJ8q__CZHw@mail.gmail.com>
-Subject: Re: [PATCH 12/24] PCI, ia64: Register busn_res for root buses
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Build regressions/improvements in v3.3-rc5 (C lang questions)
+References: <1330462222-25201-1-git-send-email-geert@linux-m68k.org> <4F4D663D.2040100@xenotime.net> <CA+55aFzzfuiu-ScRmRFYWDmrstYC4kvS0QQidBZsmjCpL_tkqw@mail.gmail.com>
+In-Reply-To: <CA+55aFzzfuiu-ScRmRFYWDmrstYC4kvS0QQidBZsmjCpL_tkqw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 5:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Feb 28, 2012 at 4:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Feb 28, 2012 at 3:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>> Cc: Tony Luck <tony.luck@intel.com>
->>> Cc: Fenghua Yu <fenghua.yu@intel.com>
->>> Cc: linux-ia64@vger.kernel.org
->>> ---
->>>  arch/ia64/include/asm/pci.h |    1 +
->>>  arch/ia64/pci/pci.c         |    5 +++++
->>>  2 files changed, 6 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
->>> index b22e5f5..6e54220 100644
->>> --- a/arch/ia64/include/asm/pci.h
->>> +++ b/arch/ia64/include/asm/pci.h
->>> @@ -94,6 +94,7 @@ struct pci_controller {
->>>
->>>        unsigned int windows;
->>>        struct pci_window *window;
->>> +       struct resource busn;
+On 02/28/2012 04:08 PM, Linus Torvalds wrote:
+
+> On Tue, Feb 28, 2012 at 3:41 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
 >>
->> Why do you add a new struct resource here?  Can't you just use the one
->> passed in from acpi_pci_root_add()?
->
-> not quite sure about the life cycle for that object.
+>>>   + src/drivers/usb/misc/sisusbvga/sisusb.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 982
+>>>   + src/fs/ecryptfs/miscdev.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 448, 488
+>>
+>> Do the (2) above mean that some platform's gcc is borked?
+>> (I don't see these on i386 or x86_64.)
+> 
+> Hmm. We had something similar long ago on i386, where the kernel
+> "size_t" was "unsigned long", but user-mode size_t was "unsigned int"
+> (or maybe it was the other way around). Anyway, it's obviously
+> physically the same type, but it would make gcc unhappy because gcc
+> felt that somebody was doing something bad.
+> 
+>>>   + src/fs/ecryptfs/miscdev.c: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int':  => 433, 433:60
+>>
+>> I can see that warning on 32-bit i386 (X86_32), but if I change the
+>> "%lu" to "%u", it causes this warning on 64-bit x86_64:
+>>
+>> fs/ecryptfs/miscdev.c:433:38: warning: format '%u' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+>>
+>> so how is this supposed to be handled?
+> 
+> I suspect that one should be "%zu", because we have
+> 
+>   /* 4 + ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES comes from tag 65 packet format */
+>   #define MAX_MSG_PKT_SIZE        (PKT_TYPE_SIZE + PKT_CTR_SIZE \
+>                                  + ECRYPTFS_MAX_PKT_LEN_SIZE \
+>                                  + sizeof(struct ecryptfs_message) \
+>                                  + 4 + ECRYPTFS_MAX_ENCRYPTED_KEY_BYTES)
+> 
+> so it's the "sizeof(struct ecryptfs_message)" that makes it a size_t
+> (everything else is int, if I look at it right, and int+size_t is
+> going to be size_t)
+> 
+> Of course, if the platform then has the compiler and the kernel
+> disagreeing about size_t like above, that isn't going to help
+> anything. But does it fix the x86-32/64 warnings?
 
-The struct acpi_pci_root is allocated in acpi_pci_root_add() and freed
-in acpi_pci_root_remove(), so it should be safe for PCI to use.
 
-Same thing applies for x86, of course.
+Yes, it does fix both cases (and I should have tried that).
+Thanks.
 
-Bjorn
+-- 
