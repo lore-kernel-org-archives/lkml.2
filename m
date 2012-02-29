@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965694Ab2B2Xyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:54:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49783 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522Ab2B2Xyf (ORCPT
+	id S1757452Ab2B2X61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:58:27 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64153 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965451Ab2B2Xyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:54:35 -0500
-Date: Thu, 1 Mar 2012 10:54:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: bad commit in the regmap tree
-Message-Id: <20120301105425.ef188f8724204c55ec805929@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u"
+	Wed, 29 Feb 2012 18:54:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.72.170 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+MIME-Version: 1.0
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, Will Drewry <wad@chromium.org>
+Subject: [PATCH v12 03/13] seccomp: kill the seccomp_t typedef
+Date: Wed, 29 Feb 2012 17:53:30 -0600
+Message-Id: <1330559620-23543-3-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Replaces the seccomp_t typedef with struct seccomp to match modern
+kernel style.
 
-Hi Mark,
+v8-v10: no changes
+v7: struct seccomp_struct -> struct seccomp
+v6: original inclusion in this series.
 
-I noticed that commit 0308333a9987 ("regmap: Add stub for
-regcache_sync_region()") is the same as its parent commit 868d3fdeaae9
-("regmap: Add stub for regcache_sync_region()").  So the function
-regcache_sync_region() has been added to include/linux/regmap.h twice
-(the context is not sufficient to stop the patch applying twice).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Will Drewry <wad@chromium.org>
+Reviewed-by: James Morris <jmorris@namei.org>
+---
+ include/linux/sched.h   |    2 +-
+ include/linux/seccomp.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u
-Content-Type: application/pgp-signature
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7fe1083..2ee7041 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1445,7 +1445,7 @@ struct task_struct {
+ 	uid_t loginuid;
+ 	unsigned int sessionid;
+ #endif
+-	seccomp_t seccomp;
++	struct seccomp seccomp;
+ 
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index cc7a4e9..d61f27f 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -7,7 +7,9 @@
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
+-typedef struct { int mode; } seccomp_t;
++struct seccomp {
++	int mode;
++};
+ 
+ extern void __secure_computing(int);
+ static inline void secure_computing(int this_syscall)
+@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
+ extern long prctl_get_seccomp(void);
+ extern long prctl_set_seccomp(unsigned long);
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return s->mode;
+ }
+@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
+ 
+ #include <linux/errno.h>
+ 
+-typedef struct { } seccomp_t;
++struct seccomp { };
+ 
+ #define secure_computing(x) do { } while (0)
+ 
+@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
+ 	return -EINVAL;
+ }
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return 0;
+ }
+-- 
+1.7.5.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPTrqxAAoJEECxmPOUX5FEpXgP/RjSLO+Xp187kULQc0B5s2rf
-NUdv1g88BW6UxswfGqCxfUWGl4TakUCi92RMC026XPhtKWzSZztv5rmXHQoIZRTh
-d63HaBnsb/mXItpCspc4twVYnuEejIP3G+KgUwDnQc5itG4mmKr/dmirbt3DMCQS
-qGgYsflHCRd61bcv5D2wryu++nw3uV8cWipTG3KHA3frHkg++3/odkOKpeMv2e7R
-lI9i64oUluhxTsqjttIT1vNDwL+ohX1hzhmDJLZw+rqZmX9g1vxtNja1KxLIPksO
-mOw4Na0/B+9QbDtxM2cMQXvzwRQ8cjQj0YtCxwP0b786L7DD6jLDkl8HBqwh+aYt
-jgagBe90Lwc7wlVXcyQYa9LVwKKCOkNJj7zob/8veaw3P4mMc1csjfVRT59Dz/2Y
-miwFkng6jqblHc9xdc5PwuXcher7xxZN4Xb4vwjV8Ksg0c34iJB+DNiEWMU8wIyy
-F8w/UltvOzKHHxFChf0oSyT7HVcN0XrByEWL308wQ8CBE1A/PiW/C/0VVRa8FOqM
-+o91Bv3Q+Y1tz6BEQwx7zoRWnt3K7baYqBoHOetjw4c5BPL56oYYDmmAqneiFcq3
-9lFJH3+iQFVKAyNkkb0LLeOWL0KMbTxvjT3KMMmrTR2N1ar8dKroEeuDrA+3vAYR
-4wDdOEZXQ4HCRZdvyBW4
-=GZXq
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u--
