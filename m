@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab2B2WSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 17:18:36 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33754 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab2B2WSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 17:18:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.178.65 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
-Message-ID: <4F4EA437.1040501@gmail.com>
-Date: Wed, 29 Feb 2012 14:18:31 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S932366Ab2B2WUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 17:20:13 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:60960 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932292Ab2B2WUM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 17:20:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.14.98.133 as permitted sender) smtp.mail=mturquette@ti.com
 MIME-Version: 1.0
-To: David Daney <david.daney@cavium.com>
-CC: David Miller <davem@davemloft.net>, grant.likely@secretlab.ca,
-        linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/2] of: Make of_find_node_by_path() traverse /aliases
- for relative paths.
-References: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com>	<1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com> <20120229.153633.249570825230282737.davem@davemloft.net> <4F4E99E2.2000607@cavium.com>
-In-Reply-To: <4F4E99E2.2000607@cavium.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1330508617-6490-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1330408010-25780-1-git-send-email-myungjoo.ham@samsung.com> <1330508617-6490-1-git-send-email-myungjoo.ham@samsung.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 29 Feb 2012 14:19:48 -0800
+Message-ID: <CAJOA=zNQ_fqVXvRdGjwB+GnQZMRzYO-WuLNZh50BMsj4V=ThyQ@mail.gmail.com>
+Subject: Re: [PATCH v2 RESEND] PM / devfreq: add PM QoS support
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        mark gross <markgross@thegnar.org>, myungjoo.ham@gmail.com,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant and others,
+On Wed, Feb 29, 2012 at 1:43 AM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> +       /* Check the sanity of qos_list/qos_type */
+> +       if (profile->qos_type || profile->qos_list) {
+> +               switch (profile->qos_type) {
+> +               case PM_QOS_CPU_DMA_LATENCY:
+> +               case PM_QOS_NETWORK_LATENCY:
+> +                       devfreq->qos_use_max = false;
+> +                       break;
+> +               case PM_QOS_NETWORK_THROUGHPUT:
+> +                       devfreq->qos_use_max = true;
+> +                       break;
 
-Really this patch 2/2 is not so critical for me.  I am using it, but can 
-(and perhaps should) avoid using of_find_node_by_path() altogether, thus 
-making the patch unneeded.
+Hello MyungJoo!
 
-If you would like, we can drop this one, but I would still very much 
-like '[PATCH v6 1/2] of/lib: Allow scripts/dtc/libfdt to be used from 
-kernel code' to be merged.
+I see that you re-using the same old PM QoS handles in this
+implementation.  Do you feel this is the right way to do it?  Your
+example of using DMA for multimedia devices (given in the changelog)
+has nothing to do with network throughput, yet that constraint-type is
+used here.
 
-Do you want me to send the first patch separately, or could you just 
-'cherry-pick' it from this set?
+I wonder if a better solution than overloading these classifications exist.
 
-Thanks,
-David Daney
+Just to toss around ideas, what about having per-device PM QoS
+throughput constraints which are generalized (e.g., not tied to a
+concept such as "network").  I've Cc'd Jean Pihet (yet again) who has
+some good experience making PM QoS-type interfaces work on a
+per-device basis.
 
+I wonder, ultimately, if instead of feeding QoS constraints into
+devfreq if a better design might be to have devfreq feed input into a
+greater QoS framework.  E.g:
 
-On 02/29/2012 01:34 PM, David Daney wrote:
-> On 02/29/2012 12:36 PM, David Miller wrote:
->> From: David Daney<ddaney.cavm@gmail.com>
->> Date: Wed, 29 Feb 2012 11:21:04 -0800
->>
->>> Currently all paths passed to of_find_node_by_path() must begin with a
->>> '/', indicating a full path to the desired node.
->>>
->>> Augment the look-up code so that if a path does *not* begin with '/',
->>> the path is used as the name of an /aliases property. The value of
->>> this alias is then used as the full node path to be found.
->>>
->>> Signed-off-by: David Daney<david.daney@cavium.com>
->>
->> But as the caller you sure as hell know whether you have a "/"
->> prefixed name or not.
->
-> Yes, worst case we could just examine the first character of the string.
->
->>
->> Why complicate an incredibly well designed and simple function for
->> something you can create another interface for?
->>
->
-> Because in this message:
->
-> http://www.linux-mips.org/archives/linux-mips/2011-02/msg00147.html
->
-> Grant explicitly asked me to do it this way when he said:
->
-> of_find_node_by_path() needs to be fixed to also accept alias
-> values so that a string that starts with a '/' is a full path, but
-> no leading '/' means start with an alias. This code will lose a
-> level of indentation if you can make that change to the common
-> code.
->
-> And then in follow ups to that conversation, we eventually came up
-> with this patch.
->
-> If you find it particularly objectionable, convince Grant to NACK the
-> patch (but please keep me CCed on the conversation), and I will open
-> code the equivalent in my drivers.
->
-> Thanks,
-> David Daney
->
+A scalable bus used by many devices might have two different device
+drivers that want to call pm_qos_device_tput(...), and also the
+devfreq driver for that bus also calls pm_qos_device_tput(...).  So
+essentially there are three points in the code where inputs can be
+driven into one common per-device QoS layer for the generic concept of
+"device throughput".  This way devfreq support is not a prerequisite
+for scaling a device in a generic way, but a nice framework for
+devices which can monitor their own activity level, built on top of a
+per-device pm qos layer.
 
+Thoughts?
+Mike
