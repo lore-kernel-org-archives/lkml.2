@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965818Ab2B2XLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:11:53 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26568 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965631Ab2B2XJg (ORCPT
+	id S965917Ab2B2XL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:11:56 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:29195 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965631Ab2B2XLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:09:36 -0500
+	Wed, 29 Feb 2012 18:11:54 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,80 +16,95 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/39] x86, PCI: Merge pcibios_scan_root and pci_scan_bus_on_node
-Date: Wed, 29 Feb 2012 15:07:14 -0800
-Message-Id: <1330556858-11768-16-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 39/39] x86, PCI: kill busn in acpi pci_root_info
+Date: Wed, 29 Feb 2012 15:07:38 -0800
+Message-Id: <1330556858-11768-40-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
 References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090206.4F4EAFEA.00F1,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4F4EB039.00A0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those two almost the same.
-Let pcibios_scan_root call pci_scan_bus_on_node instead.
+Bjorn thought that we should just use that in acpi_root.
 
+Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/common.c |   27 ++++-----------------------
- 1 files changed, 4 insertions(+), 23 deletions(-)
+ arch/x86/pci/acpi.c |   19 ++++++-------------
+ 1 files changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 323481e..8e04ec5 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -430,9 +430,7 @@ void __init dmi_check_pciprobe(void)
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index ff5243e..5178917 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -12,7 +12,6 @@ struct pci_root_info {
+ 	char name[16];
+ 	unsigned int res_num;
+ 	struct resource *res;
+-	struct resource busn;
+ 	struct pci_sysdata sd;
+ };
  
- struct pci_bus * __devinit pcibios_scan_root(int busnum)
+@@ -283,9 +282,6 @@ static void add_resources(struct pci_root_info *info,
+ 	int i;
+ 	struct resource *res, *root, *conflict;
+ 
+-	if (info->busn.flags & IORESOURCE_BUS)
+-		pci_add_resource(resources, &info->busn);
+-
+ 	coalesce_windows(info, IORESOURCE_MEM);
+ 	coalesce_windows(info, IORESOURCE_IO);
+ 
+@@ -346,16 +342,12 @@ static void release_pci_root_info(struct pci_host_bridge *bridge)
+ 
+ static void
+ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+-		    int busnum, int busmax, int domain)
++		    int busnum, int domain)
  {
--	LIST_HEAD(resources);
- 	struct pci_bus *bus = NULL;
--	struct pci_sysdata *sd;
+ 	size_t size;
  
- 	while ((bus = pci_find_next_bus(bus)) != NULL) {
- 		if (bus->number == busnum) {
-@@ -441,28 +439,10 @@ struct pci_bus * __devinit pcibios_scan_root(int busnum)
+ 	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
+ 	info->bridge = device;
+-	info->busn.name = info->name;
+-	info->busn.start = busnum;
+-	info->busn.end = busmax;
+-	info->busn.flags = IORESOURCE_BUS;
+ 
+ 	info->res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
+@@ -379,7 +371,6 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	struct pci_root_info *info = NULL;
+ 	int domain = root->segment;
+ 	int busnum = root->secondary.start;
+-	int busmax = root->secondary.end;
+ 	LIST_HEAD(resources);
+ 	struct pci_bus *bus;
+ 	struct pci_sysdata *sd;
+@@ -432,15 +423,17 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(info);
+ 	} else {
+-		probe_pci_root_info(info, device, busnum, busmax, domain);
++		probe_pci_root_info(info, device, busnum, domain);
+ 
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+ 		 * defaults or native bridge info if we're ignoring _CRS.
+ 		 */
+-		if (pci_use_crs)
++		if (pci_use_crs) {
++                       /* insert busn res at first */
++			pci_add_resource(&resources,  &root->secondary);
+ 			add_resources(info, &resources);
+-		else {
++		} else {
+ 			free_pci_root_info_res(info);
+ 			x86_pci_root_bus_resources(busnum, &resources);
  		}
- 	}
- 
--	/* Allocate per-root-bus (not per bus) arch-specific data.
--	 * TODO: leak; this memory is never freed.
--	 * It's arguable whether it's worth the trouble to care.
--	 */
--	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
--	if (!sd) {
--		printk(KERN_ERR "PCI: OOM, not probing PCI bus %02x\n", busnum);
--		return NULL;
--	}
--
--	sd->node = get_mp_bus_to_node(busnum);
--
--	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
--	x86_pci_root_bus_resources(busnum, &resources);
--	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, sd, &resources);
--	if (!bus) {
--		pci_free_resource_list(&resources);
--		kfree(sd);
--	}
--
--	return bus;
-+	return pci_scan_bus_on_node(busnum, &pci_root_ops,
-+					get_mp_bus_to_node(busnum));
- }
-+
- void __init pcibios_set_cache_line_size(void)
- {
- 	struct cpuinfo_x86 *c = &boot_cpu_data;
-@@ -656,6 +636,7 @@ struct pci_bus * __devinit pci_scan_bus_on_node(int busno, struct pci_ops *ops,
- 	}
- 	sd->node = node;
- 	x86_pci_root_bus_resources(busno, &resources);
-+	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busno);
- 	bus = pci_scan_root_bus(NULL, busno, ops, sd, &resources);
- 	if (!bus) {
- 		pci_free_resource_list(&resources);
 -- 
 1.7.7
 
