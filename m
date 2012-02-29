@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2B2Rv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:51:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64375 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab2B2Rvy convert rfc822-to-8bit (ORCPT
+	id S1757841Ab2B2Rxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:53:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47346 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757503Ab2B2Rxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:51:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.84.233 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	Wed, 29 Feb 2012 12:53:31 -0500
+Date: Wed, 29 Feb 2012 11:53:27 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
+Message-ID: <20120229175327.GA20565@ubuntu-macmini>
+Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
+	Matthew Garrett <mjg@redhat.com>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
+ <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
+ <CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAB=4xhq1CPz74LchQ32oyhR1vUKjhMiTXENYbgeh=BoaYNP9JQ@mail.gmail.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
-	<1330140111-17201-10-git-send-email-wad@chromium.org>
-	<20120227175407.GD10608@redhat.com>
-	<CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
-	<20120228164335.GC3664@redhat.com>
-	<CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com>
-	<CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
-	<20120229161437.GA3078@redhat.com>
-	<CABqD9hZLi416irXMMPmysYohrOn1gQjhjDyKTggU80Kd7ywvcA@mail.gmail.com>
-	<20120229170933.GA6149@redhat.com>
-	<CAB=4xhq1CPz74LchQ32oyhR1vUKjhMiTXENYbgeh=BoaYNP9JQ@mail.gmail.com>
-Date: Wed, 29 Feb 2012 11:51:49 -0600
-Message-ID: <CABqD9haTSHdAcGBy4kLrhAs4UFSrMPFNsLC+X-Hf5_ud2_w19Q@mail.gmail.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-From: Will Drewry <wad@chromium.org>
-To: Roland McGrath <mcgrathr@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:41 AM, Roland McGrath <mcgrathr@google.com> wrote:
-> I don't think TIF_NOTIFY_RESUME is apropos here.  That only triggers on
-> returning to user mode, i.e. after syscall exit.  But regardless of the
-> exact implementation details, I don't think it will be prohibitive to add
-> some means by which the fast-path can back off before actual syscall entry
-> and go to the slow path for ptrace reporting.
->
-> Since there is no strong reason to think it can't be reorganized that way
-> later, I don't see any good rationale for constraining the seccomp-filter
-> feature definition based on a plan to optimize the implementation in the
-> future.
+On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
+> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > Apple laptops with hybrid graphics have a device named gmux that
+> > controls the muxing of the LVDS panel between the GPUs as well as screen
+> > brightness. This driver adds support for the gmux device. Only backlight
+> > control is supported initially.
+> >
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> 
+> Works for me.
+> 
+> Tested-by: Grant Likely <grant.likely@secretlab.ca>
+> 
+> Now I just need to figure out how to get the desktop backlight widget
+> to use gmux_backlight instead of acpi_video0...
 
-Sounds good to me.   I'll move to ptrace_event and save the problem of
-code organization for the future.
+The easy way is to pass acpi_backlight=vendor to the kernel, then you
+won't have acpi_vidoe0.
 
-Thanks!
+Seth
