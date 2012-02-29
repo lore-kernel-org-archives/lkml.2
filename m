@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031212Ab2B2Q0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 11:26:01 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:33902 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030941Ab2B2QZE (ORCPT
+	id S1031189Ab2B2QZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:25:59 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:51257 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030948Ab2B2QZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 11:25:04 -0500
+	Wed, 29 Feb 2012 11:25:05 -0500
 From: Arun Murthy <arun.murthy@stericsson.com>
 To: <cbou@mail.ru>, <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>
 Cc: <arun.murthy@stericsson.com>, <karl.komierowski@stericsson.com>,
         <johan.palsson@stericsson.com>, <linus.walleij@linaro.org>
-Subject: =?UTF-8?q?=5BPATCH=202/4=5D=20power=3A=20ab8500-charger=3A=20AB8500=20charger=20driver?=
-Date: Wed, 29 Feb 2012 21:54:26 +0530
-Message-ID: <1330532668-5673-3-git-send-email-arun.murthy@stericsson.com>
+Subject: [PATCH 1/4] power: abx500-chargalg: Add abx500 charging algorithm
+Date: Wed, 29 Feb 2012 21:54:25 +0530
+Message-ID: <1330532668-5673-2-git-send-email-arun.murthy@stericsson.com>
 X-Mailer: git-send-email 1.7.4.3
 In-Reply-To: <1330532668-5673-1-git-send-email-arun.murthy@stericsson.com>
 References: <1330532668-5673-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is responsible for detecting the ac/usb plugin and also includes
-function to enable ac/usb charging and re-kick the watchdog.
-It registers with the power supply class and provides information to the user
-space. The information include status of ac/usb charger device.
-This information in turn will be used by the abx500 charging algorithm driver
-to enable/disable and monitor charging.
+This is a charging algorithm driver for abx500 variants. It is the central
+entity for battery driver and is responsible for charging and monitoring
+the battery driver. It is a hardware independant driver and also monitors
+other abx500 power supply devices.
 
 Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/power/ab8500_charger.c       | 2789 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/abx500/ab8500-bm.h |  554 +++++++
- 2 files changed, 3343 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/ab8500_charger.c
- create mode 100644 include/linux/mfd/abx500/ab8500-bm.h
+ drivers/power/abx500_chargalg.c           | 1921 +++++++++++++++++++++++++++++
+ include/linux/mfd/abx500.h                |  273 ++++
+ include/linux/mfd/abx500/ux500_chargalg.h |   38 +
+ 3 files changed, 2232 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/abx500_chargalg.c
+ create mode 100644 include/linux/mfd/abx500/ux500_chargalg.h
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+diff --git a/drivers/power/abx500_chargalg.c b/drivers/power/abx500_chargalg.c
 new file mode 100644
-index 0000000..bbc541a
+index 0000000..fbb6a1f
 --- /dev/null
-+++ b/drivers/power/ab8500_charger.c
-@@ -0,0 +1,2789 @@
++++ b/drivers/power/abx500_chargalg.c
+@@ -0,0 +1,1921 @@
 +/*
 + * Copyright (C) ST-Ericsson SA 2012
 + *
-+ * Charger driver for AB8500
++ * Charging algorithm driver for abx500 variants
 + *
 + * License Terms: GNU General Public License v2
-+ * Author:
++ * Authors:
 + *	Johan Palsson <johan.palsson@stericsson.com>
 + *	Karl Komierowski <karl.komierowski@stericsson.com>
 + *	Arun R Murthy <arun.murthy@stericsson.com>
@@ -67,1411 +65,854 @@ index 0000000..bbc541a
 +#include <linux/platform_device.h>
 +#include <linux/power_supply.h>
 +#include <linux/completion.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/err.h>
 +#include <linux/workqueue.h>
 +#include <linux/kobject.h>
-+#include <linux/mfd/abx500/ab8500.h>
 +#include <linux/mfd/abx500.h>
-+#include <linux/mfd/abx500/ab8500-bm.h>
-+#include <linux/mfd/abx500/ab8500-gpadc.h>
 +#include <linux/mfd/abx500/ux500_chargalg.h>
-+#include <linux/usb/otg.h>
++#include <linux/mfd/abx500/ab8500-bm.h>
 +
-+/* Charger constants */
-+#define NO_PW_CONN			0
-+#define AC_PW_CONN			1
-+#define USB_PW_CONN			2
++/* Watchdog kick interval */
++#define CHG_WD_INTERVAL			(6 * HZ)
 +
-+#define MAIN_WDOG_ENA			0x01
-+#define MAIN_WDOG_KICK			0x02
-+#define MAIN_WDOG_DIS			0x00
-+#define CHARG_WD_KICK			0x01
-+#define MAIN_CH_ENA			0x01
-+#define MAIN_CH_NO_OVERSHOOT_ENA_N	0x02
-+#define USB_CH_ENA			0x01
-+#define USB_CHG_NO_OVERSHOOT_ENA_N	0x02
-+#define MAIN_CH_DET			0x01
-+#define MAIN_CH_CV_ON			0x04
-+#define USB_CH_CV_ON			0x08
-+#define VBUS_DET_DBNC100		0x02
-+#define VBUS_DET_DBNC1			0x01
-+#define OTP_ENABLE_WD			0x01
++/* End-of-charge criteria counter */
++#define EOC_COND_CNT			10
 +
-+#define MAIN_CH_INPUT_CURR_SHIFT	4
-+#define VBUS_IN_CURR_LIM_SHIFT		4
++/* Recharge criteria counter */
++#define RCH_COND_CNT			3
 +
-+#define LED_INDICATOR_PWM_ENA		0x01
-+#define LED_INDICATOR_PWM_DIS		0x00
-+#define LED_IND_CUR_5MA			0x04
-+#define LED_INDICATOR_PWM_DUTY_252_256	0xBF
++#define to_abx500_chargalg_device_info(x) container_of((x), \
++	struct abx500_chargalg, chargalg_psy);
 +
-+/* HW failure constants */
-+#define MAIN_CH_TH_PROT			0x02
-+#define VBUS_CH_NOK			0x08
-+#define USB_CH_TH_PROT			0x02
-+#define VBUS_OVV_TH			0x01
-+#define MAIN_CH_NOK			0x01
-+#define VBUS_DET			0x80
-+
-+/* UsbLineStatus register bit masks */
-+#define AB8500_USB_LINK_STATUS		0x78
-+#define AB8500_STD_HOST_SUSP		0x18
-+
-+/* Watchdog timeout constant */
-+#define WD_TIMER			0x30 /* 4min */
-+#define WD_KICK_INTERVAL		(60 * HZ)
-+
-+/* Lowest charger voltage is 3.39V -> 0x4E */
-+#define LOW_VOLT_REG			0x4E
-+
-+/* UsbLineStatus register - usb types */
-+enum ab8500_charger_link_status {
-+	USB_STAT_NOT_CONFIGURED,
-+	USB_STAT_STD_HOST_NC,
-+	USB_STAT_STD_HOST_C_NS,
-+	USB_STAT_STD_HOST_C_S,
-+	USB_STAT_HOST_CHG_NM,
-+	USB_STAT_HOST_CHG_HS,
-+	USB_STAT_HOST_CHG_HS_CHIRP,
-+	USB_STAT_DEDICATED_CHG,
-+	USB_STAT_ACA_RID_A,
-+	USB_STAT_ACA_RID_B,
-+	USB_STAT_ACA_RID_C_NM,
-+	USB_STAT_ACA_RID_C_HS,
-+	USB_STAT_ACA_RID_C_HS_CHIRP,
-+	USB_STAT_HM_IDGND,
-+	USB_STAT_RESERVED,
-+	USB_STAT_NOT_VALID_LINK,
++enum abx500_chargers {
++	NO_CHG,
++	AC_CHG,
++	USB_CHG,
 +};
 +
-+enum ab8500_usb_state {
-+	AB8500_BM_USB_STATE_RESET_HS,	/* HighSpeed Reset */
-+	AB8500_BM_USB_STATE_RESET_FS,	/* FullSpeed/LowSpeed Reset */
-+	AB8500_BM_USB_STATE_CONFIGURED,
-+	AB8500_BM_USB_STATE_SUSPEND,
-+	AB8500_BM_USB_STATE_RESUME,
-+	AB8500_BM_USB_STATE_MAX,
++struct abx500_chargalg_charger_info {
++	enum abx500_chargers conn_chg;
++	enum abx500_chargers prev_conn_chg;
++	enum abx500_chargers online_chg;
++	enum abx500_chargers prev_online_chg;
++	enum abx500_chargers charger_type;
++	bool usb_chg_ok;
++	bool ac_chg_ok;
++	int usb_volt;
++	int usb_curr;
++	int ac_volt;
++	int ac_curr;
++	int usb_vset;
++	int usb_iset;
++	int ac_vset;
++	int ac_iset;
 +};
 +
-+/* VBUS input current limits supported in AB8500 in mA */
-+#define USB_CH_IP_CUR_LVL_0P05		50
-+#define USB_CH_IP_CUR_LVL_0P09		98
-+#define USB_CH_IP_CUR_LVL_0P19		193
-+#define USB_CH_IP_CUR_LVL_0P29		290
-+#define USB_CH_IP_CUR_LVL_0P38		380
-+#define USB_CH_IP_CUR_LVL_0P45		450
-+#define USB_CH_IP_CUR_LVL_0P5		500
-+#define USB_CH_IP_CUR_LVL_0P6		600
-+#define USB_CH_IP_CUR_LVL_0P7		700
-+#define USB_CH_IP_CUR_LVL_0P8		800
-+#define USB_CH_IP_CUR_LVL_0P9		900
-+#define USB_CH_IP_CUR_LVL_1P0		1000
-+#define USB_CH_IP_CUR_LVL_1P1		1100
-+#define USB_CH_IP_CUR_LVL_1P3		1300
-+#define USB_CH_IP_CUR_LVL_1P4		1400
-+#define USB_CH_IP_CUR_LVL_1P5		1500
-+
-+#define VBAT_TRESH_IP_CUR_RED		3800
-+
-+#define to_ab8500_charger_usb_device_info(x) container_of((x), \
-+	struct ab8500_charger, usb_chg)
-+#define to_ab8500_charger_ac_device_info(x) container_of((x), \
-+	struct ab8500_charger, ac_chg)
-+
-+/**
-+ * struct ab8500_charger_interrupts - ab8500 interupts
-+ * @name:	name of the interrupt
-+ * @isr		function pointer to the isr
-+ */
-+struct ab8500_charger_interrupts {
-+	char *name;
-+	irqreturn_t (*isr)(int irq, void *data);
++struct abx500_chargalg_suspension_status {
++	bool suspended_change;
++	bool ac_suspended;
++	bool usb_suspended;
 +};
 +
-+struct ab8500_charger_info {
-+	int charger_connected;
-+	int charger_online;
-+	int charger_voltage;
-+	int cv_active;
-+	bool wd_expired;
++struct abx500_chargalg_battery_data {
++	int temp;
++	int volt;
++	int avg_curr;
++	int inst_curr;
++	int percent;
 +};
 +
-+struct ab8500_charger_event_flags {
++enum abx500_chargalg_states {
++	STATE_HANDHELD_INIT,
++	STATE_HANDHELD,
++	STATE_CHG_NOT_OK_INIT,
++	STATE_CHG_NOT_OK,
++	STATE_HW_TEMP_PROTECT_INIT,
++	STATE_HW_TEMP_PROTECT,
++	STATE_NORMAL_INIT,
++	STATE_NORMAL,
++	STATE_WAIT_FOR_RECHARGE_INIT,
++	STATE_WAIT_FOR_RECHARGE,
++	STATE_MAINTENANCE_A_INIT,
++	STATE_MAINTENANCE_A,
++	STATE_MAINTENANCE_B_INIT,
++	STATE_MAINTENANCE_B,
++	STATE_TEMP_UNDEROVER_INIT,
++	STATE_TEMP_UNDEROVER,
++	STATE_TEMP_LOWHIGH_INIT,
++	STATE_TEMP_LOWHIGH,
++	STATE_SUSPENDED_INIT,
++	STATE_SUSPENDED,
++	STATE_OVV_PROTECT_INIT,
++	STATE_OVV_PROTECT,
++	STATE_SAFETY_TIMER_EXPIRED_INIT,
++	STATE_SAFETY_TIMER_EXPIRED,
++	STATE_BATT_REMOVED_INIT,
++	STATE_BATT_REMOVED,
++	STATE_WD_EXPIRED_INIT,
++	STATE_WD_EXPIRED,
++};
++
++static const char *states[] = {
++	"HANDHELD_INIT",
++	"HANDHELD",
++	"CHG_NOT_OK_INIT",
++	"CHG_NOT_OK",
++	"HW_TEMP_PROTECT_INIT",
++	"HW_TEMP_PROTECT",
++	"NORMAL_INIT",
++	"NORMAL",
++	"WAIT_FOR_RECHARGE_INIT",
++	"WAIT_FOR_RECHARGE",
++	"MAINTENANCE_A_INIT",
++	"MAINTENANCE_A",
++	"MAINTENANCE_B_INIT",
++	"MAINTENANCE_B",
++	"TEMP_UNDEROVER_INIT",
++	"TEMP_UNDEROVER",
++	"TEMP_LOWHIGH_INIT",
++	"TEMP_LOWHIGH",
++	"SUSPENDED_INIT",
++	"SUSPENDED",
++	"OVV_PROTECT_INIT",
++	"OVV_PROTECT",
++	"SAFETY_TIMER_EXPIRED_INIT",
++	"SAFETY_TIMER_EXPIRED",
++	"BATT_REMOVED_INIT",
++	"BATT_REMOVED",
++	"WD_EXPIRED_INIT",
++	"WD_EXPIRED",
++};
++
++struct abx500_chargalg_events {
++	bool batt_unknown;
 +	bool mainextchnotok;
++	bool batt_ovv;
++	bool batt_rem;
++	bool btemp_underover;
++	bool btemp_lowhigh;
 +	bool main_thermal_prot;
 +	bool usb_thermal_prot;
++	bool main_ovv;
 +	bool vbus_ovv;
 +	bool usbchargernotok;
-+	bool chgwdexp;
-+	bool vbus_collapse;
-+};
-+
-+struct ab8500_charger_usb_state {
-+	bool usb_changed;
-+	int usb_current;
-+	enum ab8500_usb_state state;
-+	spinlock_t usb_lock;
++	bool safety_timer_expired;
++	bool maintenance_timer_expired;
++	bool ac_wd_expired;
++	bool usb_wd_expired;
++	bool ac_cv_active;
++	bool usb_cv_active;
++	bool vbus_collapsed;
 +};
 +
 +/**
-+ * struct ab8500_charger - ab8500 Charger device information
-+ * @dev:		Pointer to the structure device
-+ * @max_usb_in_curr:	Max USB charger input current
-+ * @vbus_detected:	VBUS detected
-+ * @vbus_detected_start:
-+ *			VBUS detected during startup
-+ * @ac_conn:		This will be true when the AC charger has been plugged
-+ * @vddadc_en_ac:	Indicate if VDD ADC supply is enabled because AC
-+ *			charger is enabled
-+ * @vddadc_en_usb:	Indicate if VDD ADC supply is enabled because USB
-+ *			charger is enabled
-+ * @vbat		Battery voltage
-+ * @old_vbat		Previously measured battery voltage
-+ * @autopower		Indicate if we should have automatic pwron after pwrloss
-+ * @parent:		Pointer to the struct ab8500
-+ * @gpadc:		Pointer to the struct gpadc
-+ * @pdata:		Pointer to the abx500_charger platform data
-+ * @bat:		Pointer to the abx500_bm platform data
-+ * @flags:		Structure for information about events triggered
-+ * @usb_state:		Structure for usb stack information
-+ * @ac_chg:		AC charger power supply
-+ * @usb_chg:		USB charger power supply
-+ * @ac:			Structure that holds the AC charger properties
-+ * @usb:		Structure that holds the USB charger properties
-+ * @regu:		Pointer to the struct regulator
-+ * @charger_wq:		Work queue for the IRQs and checking HW state
-+ * @check_vbat_work	Work for checking vbat threshold to adjust vbus current
-+ * @check_hw_failure_work:	Work for checking HW state
-+ * @check_usbchgnotok_work:	Work for checking USB charger not ok status
-+ * @kick_wd_work:		Work for kicking the charger watchdog in case
-+ *				of ABB rev 1.* due to the watchog logic bug
-+ * @ac_work:			Work for checking AC charger connection
-+ * @detect_usb_type_work:	Work for detecting the USB type connected
-+ * @usb_link_status_work:	Work for checking the new USB link status
-+ * @usb_state_changed_work:	Work for checking USB state
-+ * @check_main_thermal_prot_work:
-+ *				Work for checking Main thermal status
-+ * @check_usb_thermal_prot_work:
-+ *				Work for checking USB thermal status
++ * struct abx500_charge_curr_maximization - Charger maximization parameters
++ * @original_iset:	the non optimized/maximised charger current
++ * @current_iset:	the charging current used at this moment
++ * @test_delta_i:	the delta between the current we want to charge and the
++			current that is really going into the battery
++ * @condition_cnt:	number of iterations needed before a new charger current
++			is set
++ * @max_current:	maximum charger current
++ * @wait_cnt:		to avoid too fast current step down in case of charger
++ *			voltage collapse, we insert this delay between step
++ *			down
++ * @level:		tells in how many steps the charging current has been
++			increased
 + */
-+struct ab8500_charger {
++struct abx500_charge_curr_maximization {
++	int original_iset;
++	int current_iset;
++	int test_delta_i;
++	int condition_cnt;
++	int max_current;
++	int wait_cnt;
++	u8 level;
++};
++
++enum maxim_ret {
++	MAXIM_RET_NOACTION,
++	MAXIM_RET_CHANGE,
++	MAXIM_RET_IBAT_TOO_HIGH,
++};
++
++/**
++ * struct abx500_chargalg - abx500 Charging algorithm device information
++ * @dev:		pointer to the structure device
++ * @charge_status:	battery operating status
++ * @eoc_cnt:		counter used to determine end-of_charge
++ * @rch_cnt:		counter used to determine start of recharge
++ * @maintenance_chg:	indicate if maintenance charge is active
++ * @t_hyst_norm		temperature hysteresis when the temperature has been
++ *			over or under normal limits
++ * @t_hyst_lowhigh	temperature hysteresis when the temperature has been
++ *			over or under the high or low limits
++ * @charge_state:	current state of the charging algorithm
++ * @ccm			charging current maximization parameters
++ * @chg_info:		information about connected charger types
++ * @batt_data:		data of the battery
++ * @susp_status:	current charger suspension status
++ * @pdata:		pointer to the abx500_chargalg platform data
++ * @bat:		pointer to the abx500_bm platform data
++ * @chargalg_psy:	structure that holds the battery properties exposed by
++ *			the charging algorithm
++ * @events:		structure for information about events triggered
++ * @chargalg_wq:		work queue for running the charging algorithm
++ * @chargalg_periodic_work:	work to run the charging algorithm periodically
++ * @chargalg_wd_work:		work to kick the charger watchdog periodically
++ * @chargalg_work:		work to run the charging algorithm instantly
++ * @safety_timer:		charging safety timer
++ * @maintenance_timer:		maintenance charging timer
++ * @chargalg_kobject:		structure of type kobject
++ */
++struct abx500_chargalg {
 +	struct device *dev;
-+	int max_usb_in_curr;
-+	bool vbus_detected;
-+	bool vbus_detected_start;
-+	bool ac_conn;
-+	bool vddadc_en_ac;
-+	bool vddadc_en_usb;
-+	int vbat;
-+	int old_vbat;
-+	bool autopower;
-+	struct ab8500 *parent;
-+	struct ab8500_gpadc *gpadc;
-+	struct abx500_charger_platform_data *pdata;
++	int charge_status;
++	int eoc_cnt;
++	int rch_cnt;
++	bool maintenance_chg;
++	int t_hyst_norm;
++	int t_hyst_lowhigh;
++	enum abx500_chargalg_states charge_state;
++	struct abx500_charge_curr_maximization ccm;
++	struct abx500_chargalg_charger_info chg_info;
++	struct abx500_chargalg_battery_data batt_data;
++	struct abx500_chargalg_suspension_status susp_status;
++	struct abx500_chargalg_platform_data *pdata;
 +	struct abx500_bm_data *bat;
-+	struct ab8500_charger_event_flags flags;
-+	struct ab8500_charger_usb_state usb_state;
-+	struct ux500_charger ac_chg;
-+	struct ux500_charger usb_chg;
-+	struct ab8500_charger_info ac;
-+	struct ab8500_charger_info usb;
-+	struct regulator *regu;
-+	struct workqueue_struct *charger_wq;
-+	struct delayed_work check_vbat_work;
-+	struct delayed_work check_hw_failure_work;
-+	struct delayed_work check_usbchgnotok_work;
-+	struct delayed_work kick_wd_work;
-+	struct work_struct ac_work;
-+	struct work_struct detect_usb_type_work;
-+	struct work_struct usb_link_status_work;
-+	struct work_struct usb_state_changed_work;
-+	struct work_struct check_main_thermal_prot_work;
-+	struct work_struct check_usb_thermal_prot_work;
-+	struct otg_transceiver *otg;
-+	struct notifier_block nb;
++	struct power_supply chargalg_psy;
++	struct ux500_charger *ac_chg;
++	struct ux500_charger *usb_chg;
++	struct abx500_chargalg_events events;
++	struct workqueue_struct *chargalg_wq;
++	struct delayed_work chargalg_periodic_work;
++	struct delayed_work chargalg_wd_work;
++	struct work_struct chargalg_work;
++	struct timer_list safety_timer;
++	struct timer_list maintenance_timer;
++	struct kobject chargalg_kobject;
 +};
 +
-+/* AC properties */
-+static enum power_supply_property ab8500_charger_ac_props[] = {
++/* Main battery properties */
++static enum power_supply_property abx500_chargalg_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
 +	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_CURRENT_NOW,
-+};
-+
-+/* USB properties */
-+static enum power_supply_property ab8500_charger_usb_props[] = {
-+	POWER_SUPPLY_PROP_HEALTH,
-+	POWER_SUPPLY_PROP_CURRENT_AVG,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_ONLINE,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
-+	POWER_SUPPLY_PROP_CURRENT_NOW,
 +};
 +
 +/**
-+ * ab8500_power_loss_handling - set how we handle powerloss.
-+ * @di:		pointer to the ab8500_charger structure
++ * abx500_chargalg_safety_timer_expired() - Expiration of the safety timer
++ * @data:	pointer to the abx500_chargalg structure
 + *
-+ * Magic nummbers are from STE HW department.
++ * This function gets called when the safety timer for the charger
++ * expires
 + */
-+static void ab8500_power_loss_handling(struct ab8500_charger *di)
++static void abx500_chargalg_safety_timer_expired(unsigned long data)
 +{
-+	u8 reg;
-+	int ret;
++	struct abx500_chargalg *di = (struct abx500_chargalg *) data;
++	dev_err(di->dev, "Safety timer expired\n");
++	di->events.safety_timer_expired = true;
 +
-+	dev_dbg(di->dev, "Autopower : %d\n", di->autopower);
-+
-+	/* read the autopower register */
-+	ret = abx500_get_register_interruptible(di->dev, 0x15, 0x00, &reg);
-+	if (ret) {
-+		dev_err(di->dev, "%d write failed\n", __LINE__);
-+		return;
-+	}
-+
-+	/* enable the OPT emulation registers */
-+	ret = abx500_set_register_interruptible(di->dev, 0x11, 0x00, 0x2);
-+	if (ret) {
-+		dev_err(di->dev, "%d write failed\n", __LINE__);
-+		return;
-+	}
-+
-+	if (di->autopower)
-+		reg |= 0x8;
-+	else
-+		reg &= ~0x8;
-+
-+	/* write back the changed value to autopower reg */
-+	ret = abx500_set_register_interruptible(di->dev, 0x15, 0x00, reg);
-+	if (ret) {
-+		dev_err(di->dev, "%d write failed\n", __LINE__);
-+		return;
-+	}
-+
-+	/* disable the set OTP registers again */
-+	ret = abx500_set_register_interruptible(di->dev, 0x11, 0x00, 0x0);
-+	if (ret) {
-+		dev_err(di->dev, "%d write failed\n", __LINE__);
-+		return;
-+	}
++	/* Trigger execution of the algorithm instantly */
++	queue_work(di->chargalg_wq, &di->chargalg_work);
 +}
 +
 +/**
-+ * ab8500_power_supply_changed - a wrapper with local extentions for
-+ * power_supply_changed
-+ * @di:	  pointer to the ab8500_charger structure
-+ * @psy:  pointer to power_supply_that have changed.
++ * abx500_chargalg_maintenance_timer_expired() - Expiration of
++ * the maintenance timer
++ * @i:		pointer to the abx500_chargalg structure
 + *
++ * This function gets called when the maintenence timer
++ * expires
 + */
-+static void ab8500_power_supply_changed(struct ab8500_charger *di,
-+					struct power_supply *psy)
++static void abx500_chargalg_maintenance_timer_expired(unsigned long data)
 +{
-+	if (di->pdata->autopower_cfg) {
-+		if (!di->usb.charger_connected &&
-+		    !di->ac.charger_connected &&
-+		    di->autopower) {
-+			di->autopower = false;
-+			ab8500_power_loss_handling(di);
-+		} else if (!di->autopower &&
-+			   (di->ac.charger_connected ||
-+			    di->usb.charger_connected)) {
-+			di->autopower = true;
-+			ab8500_power_loss_handling(di);
-+		}
-+	}
-+	power_supply_changed(psy);
-+}
 +
-+static void ab8500_charger_set_usb_connected(struct ab8500_charger *di,
-+	bool connected)
-+{
-+	if (connected != di->usb.charger_connected) {
-+		dev_dbg(di->dev, "USB connected:%i\n", connected);
-+		di->usb.charger_connected = connected;
-+		sysfs_notify(&di->usb_chg.psy.dev->kobj, NULL, "present");
-+	}
++	struct abx500_chargalg *di = (struct abx500_chargalg *) data;
++	dev_dbg(di->dev, "Maintenance timer expired\n");
++	di->events.maintenance_timer_expired = true;
++
++	/* Trigger execution of the algorithm instantly */
++	queue_work(di->chargalg_wq, &di->chargalg_work);
 +}
 +
 +/**
-+ * ab8500_charger_get_ac_voltage() - get ac charger voltage
-+ * @di:		pointer to the ab8500_charger structure
++ * abx500_chargalg_state_to() - Change charge state
++ * @di:		pointer to the abx500_chargalg structure
 + *
-+ * Returns ac charger voltage (on success)
++ * This function gets called when a charge state change should occur
 + */
-+static int ab8500_charger_get_ac_voltage(struct ab8500_charger *di)
++static void abx500_chargalg_state_to(struct abx500_chargalg *di,
++	enum abx500_chargalg_states state)
 +{
-+	int vch;
++	dev_dbg(di->dev,
++		"State changed: %s (From state: [%d] %s =to=> [%d] %s )\n",
++		di->charge_state == state ? "NO" : "YES",
++		di->charge_state,
++		states[di->charge_state],
++		state,
++		states[state]);
 +
-+	/* Only measure voltage if the charger is connected */
-+	if (di->ac.charger_connected) {
-+		vch = ab8500_gpadc_convert(di->gpadc, MAIN_CHARGER_V);
-+		if (vch < 0)
-+			dev_err(di->dev, "%s gpadc conv failed,\n", __func__);
-+	} else {
-+		vch = 0;
-+	}
-+	return vch;
++	di->charge_state = state;
 +}
 +
 +/**
-+ * ab8500_charger_ac_cv() - check if the main charger is in CV mode
-+ * @di:		pointer to the ab8500_charger structure
++ * abx500_chargalg_check_charger_connection() - Check charger connection change
++ * @di:		pointer to the abx500_chargalg structure
 + *
-+ * Returns ac charger CV mode (on success) else error code
++ * This function will check if there is a change in the charger connection
++ * and change charge state accordingly. AC has precedence over USB.
 + */
-+static int ab8500_charger_ac_cv(struct ab8500_charger *di)
++static int abx500_chargalg_check_charger_connection(struct abx500_chargalg *di)
 +{
-+	u8 val;
-+	int ret = 0;
-+
-+	/* Only check CV mode if the charger is online */
-+	if (di->ac.charger_online) {
-+		ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_STATUS1_REG, &val);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return 0;
-+		}
-+
-+		if (val & MAIN_CH_CV_ON)
-+			ret = 1;
-+		else
-+			ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_get_vbus_voltage() - get vbus voltage
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * This function returns the vbus voltage.
-+ * Returns vbus voltage (on success)
-+ */
-+static int ab8500_charger_get_vbus_voltage(struct ab8500_charger *di)
-+{
-+	int vch;
-+
-+	/* Only measure voltage if the charger is connected */
-+	if (di->usb.charger_connected) {
-+		vch = ab8500_gpadc_convert(di->gpadc, VBUS_V);
-+		if (vch < 0)
-+			dev_err(di->dev, "%s gpadc conv failed\n", __func__);
-+	} else {
-+		vch = 0;
-+	}
-+	return vch;
-+}
-+
-+/**
-+ * ab8500_charger_get_usb_current() - get usb charger current
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * This function returns the usb charger current.
-+ * Returns usb current (on success) and error code on failure
-+ */
-+static int ab8500_charger_get_usb_current(struct ab8500_charger *di)
-+{
-+	int ich;
-+
-+	/* Only measure current if the charger is online */
-+	if (di->usb.charger_online) {
-+		ich = ab8500_gpadc_convert(di->gpadc, USB_CHARGER_C);
-+		if (ich < 0)
-+			dev_err(di->dev, "%s gpadc conv failed\n", __func__);
-+	} else {
-+		ich = 0;
-+	}
-+	return ich;
-+}
-+
-+/**
-+ * ab8500_charger_get_ac_current() - get ac charger current
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * This function returns the ac charger current.
-+ * Returns ac current (on success) and error code on failure.
-+ */
-+static int ab8500_charger_get_ac_current(struct ab8500_charger *di)
-+{
-+	int ich;
-+
-+	/* Only measure current if the charger is online */
-+	if (di->ac.charger_online) {
-+		ich = ab8500_gpadc_convert(di->gpadc, MAIN_CHARGER_C);
-+		if (ich < 0)
-+			dev_err(di->dev, "%s gpadc conv failed\n", __func__);
-+	} else {
-+		ich = 0;
-+	}
-+	return ich;
-+}
-+
-+/**
-+ * ab8500_charger_usb_cv() - check if the usb charger is in CV mode
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * Returns ac charger CV mode (on success) else error code
-+ */
-+static int ab8500_charger_usb_cv(struct ab8500_charger *di)
-+{
-+	int ret;
-+	u8 val;
-+
-+	/* Only check CV mode if the charger is online */
-+	if (di->usb.charger_online) {
-+		ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_USBCH_STAT1_REG, &val);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return 0;
-+		}
-+
-+		if (val & USB_CH_CV_ON)
-+			ret = 1;
-+		else
-+			ret = 0;
-+	} else {
-+		ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_detect_chargers() - Detect the connected chargers
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * Returns the type of charger connected.
-+ * For USB it will not mean we can actually charge from it
-+ * but that there is a USB cable connected that we have to
-+ * identify. This is used during startup when we don't get
-+ * interrupts of the charger detection
-+ *
-+ * Returns an integer value, that means,
-+ * NO_PW_CONN  no power supply is connected
-+ * AC_PW_CONN  if the AC power supply is connected
-+ * USB_PW_CONN  if the USB power supply is connected
-+ * AC_PW_CONN + USB_PW_CONN if USB and AC power supplies are both connected
-+ */
-+static int ab8500_charger_detect_chargers(struct ab8500_charger *di)
-+{
-+	int result = NO_PW_CONN;
-+	int ret;
-+	u8 val;
-+
-+	/* Check for AC charger */
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CH_STATUS1_REG, &val);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return ret;
-+	}
-+
-+	if (val & MAIN_CH_DET)
-+		result = AC_PW_CONN;
-+
-+	/* Check for USB charger */
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CH_USBCH_STAT1_REG, &val);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return ret;
-+	}
-+
-+	if ((val & VBUS_DET_DBNC1) && (val & VBUS_DET_DBNC100))
-+		result |= USB_PW_CONN;
-+
-+	return result;
-+}
-+
-+/**
-+ * ab8500_charger_max_usb_curr() - get the max curr for the USB type
-+ * @di:			pointer to the ab8500_charger structure
-+ * @link_status:	the identified USB type
-+ *
-+ * Get the maximum current that is allowed to be drawn from the host
-+ * based on the USB type.
-+ * Returns error code in case of failure else 0 on success
-+ */
-+static int ab8500_charger_max_usb_curr(struct ab8500_charger *di,
-+	enum ab8500_charger_link_status link_status)
-+{
-+	int ret = 0;
-+
-+	switch (link_status) {
-+	case USB_STAT_STD_HOST_NC:
-+	case USB_STAT_STD_HOST_C_NS:
-+	case USB_STAT_STD_HOST_C_S:
-+		dev_dbg(di->dev, "USB Type - Standard host is "
-+			"detected through USB driver\n");
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P09;
-+		break;
-+	case USB_STAT_HOST_CHG_HS_CHIRP:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
-+		break;
-+	case USB_STAT_HOST_CHG_HS:
-+	case USB_STAT_ACA_RID_C_HS:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P9;
-+		break;
-+	case USB_STAT_ACA_RID_A:
++	if (di->chg_info.conn_chg != di->chg_info.prev_conn_chg ||
++		di->susp_status.suspended_change) {
 +		/*
-+		 * Dedicated charger level minus maximum current accessory
-+		 * can consume (300mA). Closest level is 1100mA
++		 * Charger state changed or suspension
++		 * has changed since last update
 +		 */
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P1;
-+		break;
-+	case USB_STAT_ACA_RID_B:
-+		/*
-+		 * Dedicated charger level minus 120mA (20mA for ACA and
-+		 * 100mA for potential accessory). Closest level is 1300mA
-+		 */
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P3;
-+		break;
-+	case USB_STAT_DEDICATED_CHG:
-+	case USB_STAT_HOST_CHG_NM:
-+	case USB_STAT_ACA_RID_C_HS_CHIRP:
-+	case USB_STAT_ACA_RID_C_NM:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_1P5;
-+		break;
-+	case USB_STAT_RESERVED:
-+		/*
-+		 * This state is used to indicate that VBUS has dropped below
-+		 * the detection level 4 times in a row. This is due to the
-+		 * charger output current is set to high making the charger
-+		 * voltage collapse. This have to be propagated through to
-+		 * chargalg. This is done using the property
-+		 * POWER_SUPPLY_PROP_CURRENT_AVG = 1
-+		 */
-+		di->flags.vbus_collapse = true;
-+		dev_dbg(di->dev, "USB Type - USB_STAT_RESERVED "
-+			"VBUS has collapsed\n");
-+		ret = -1;
-+		break;
-+	case USB_STAT_HM_IDGND:
-+	case USB_STAT_NOT_CONFIGURED:
-+	case USB_STAT_NOT_VALID_LINK:
-+		dev_err(di->dev, "USB Type - Charging not allowed\n");
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
-+		ret = -ENXIO;
-+		break;
-+	default:
-+		dev_err(di->dev, "USB Type - Unknown\n");
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
-+		ret = -ENXIO;
-+		break;
-+	};
-+
-+	dev_dbg(di->dev, "USB Type - 0x%02x MaxCurr: %d",
-+		link_status, di->max_usb_in_curr);
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_read_usb_type() - read the type of usb connected
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * Detect the type of the plugged USB
-+ * Returns error code in case of failure else 0 on success
-+ */
-+static int ab8500_charger_read_usb_type(struct ab8500_charger *di)
-+{
-+	int ret;
-+	u8 val;
-+
-+	ret = abx500_get_register_interruptible(di->dev,
-+		AB8500_INTERRUPT, AB8500_IT_SOURCE21_REG, &val);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return ret;
-+	}
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_USB,
-+		AB8500_USB_LINE_STAT_REG, &val);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return ret;
-+	}
-+
-+	/* get the USB type */
-+	val = (val & AB8500_USB_LINK_STATUS) >> 3;
-+	ret = ab8500_charger_max_usb_curr(di,
-+		(enum ab8500_charger_link_status) val);
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_detect_usb_type() - get the type of usb connected
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * Detect the type of the plugged USB
-+ * Returns error code in case of failure else 0 on success
-+ */
-+static int ab8500_charger_detect_usb_type(struct ab8500_charger *di)
-+{
-+	int i, ret;
-+	u8 val;
-+
-+	/*
-+	 * On getting the VBUS rising edge detect interrupt there
-+	 * is a 250ms delay after which the register UsbLineStatus
-+	 * is filled with valid data.
-+	 */
-+	for (i = 0; i < 10; i++) {
-+		msleep(250);
-+		ret = abx500_get_register_interruptible(di->dev,
-+			AB8500_INTERRUPT, AB8500_IT_SOURCE21_REG,
-+			&val);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return ret;
-+		}
-+		ret = abx500_get_register_interruptible(di->dev, AB8500_USB,
-+			AB8500_USB_LINE_STAT_REG, &val);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return ret;
-+		}
-+		/*
-+		 * Until the IT source register is read the UsbLineStatus
-+		 * register is not updated, hence doing the same
-+		 * Revisit this:
-+		 */
-+
-+		/* get the USB type */
-+		val = (val & AB8500_USB_LINK_STATUS) >> 3;
-+		if (val)
-+			break;
-+	}
-+	ret = ab8500_charger_max_usb_curr(di,
-+		(enum ab8500_charger_link_status) val);
-+
-+	return ret;
-+}
-+
-+/*
-+ * This array maps the raw hex value to charger voltage used by the AB8500
-+ * Values taken from the UM0836
-+ */
-+static int ab8500_charger_voltage_map[] = {
-+	3500 ,
-+	3525 ,
-+	3550 ,
-+	3575 ,
-+	3600 ,
-+	3625 ,
-+	3650 ,
-+	3675 ,
-+	3700 ,
-+	3725 ,
-+	3750 ,
-+	3775 ,
-+	3800 ,
-+	3825 ,
-+	3850 ,
-+	3875 ,
-+	3900 ,
-+	3925 ,
-+	3950 ,
-+	3975 ,
-+	4000 ,
-+	4025 ,
-+	4050 ,
-+	4060 ,
-+	4070 ,
-+	4080 ,
-+	4090 ,
-+	4100 ,
-+	4110 ,
-+	4120 ,
-+	4130 ,
-+	4140 ,
-+	4150 ,
-+	4160 ,
-+	4170 ,
-+	4180 ,
-+	4190 ,
-+	4200 ,
-+	4210 ,
-+	4220 ,
-+	4230 ,
-+	4240 ,
-+	4250 ,
-+	4260 ,
-+	4270 ,
-+	4280 ,
-+	4290 ,
-+	4300 ,
-+	4310 ,
-+	4320 ,
-+	4330 ,
-+	4340 ,
-+	4350 ,
-+	4360 ,
-+	4370 ,
-+	4380 ,
-+	4390 ,
-+	4400 ,
-+	4410 ,
-+	4420 ,
-+	4430 ,
-+	4440 ,
-+	4450 ,
-+	4460 ,
-+	4470 ,
-+	4480 ,
-+	4490 ,
-+	4500 ,
-+	4510 ,
-+	4520 ,
-+	4530 ,
-+	4540 ,
-+	4550 ,
-+	4560 ,
-+	4570 ,
-+	4580 ,
-+	4590 ,
-+	4600 ,
-+};
-+
-+/*
-+ * This array maps the raw hex value to charger current used by the AB8500
-+ * Values taken from the UM0836
-+ */
-+static int ab8500_charger_current_map[] = {
-+	100 ,
-+	200 ,
-+	300 ,
-+	400 ,
-+	500 ,
-+	600 ,
-+	700 ,
-+	800 ,
-+	900 ,
-+	1000 ,
-+	1100 ,
-+	1200 ,
-+	1300 ,
-+	1400 ,
-+	1500 ,
-+};
-+
-+/*
-+ * This array maps the raw hex value to VBUS input current used by the AB8500
-+ * Values taken from the UM0836
-+ */
-+static int ab8500_charger_vbus_in_curr_map[] = {
-+	USB_CH_IP_CUR_LVL_0P05,
-+	USB_CH_IP_CUR_LVL_0P09,
-+	USB_CH_IP_CUR_LVL_0P19,
-+	USB_CH_IP_CUR_LVL_0P29,
-+	USB_CH_IP_CUR_LVL_0P38,
-+	USB_CH_IP_CUR_LVL_0P45,
-+	USB_CH_IP_CUR_LVL_0P5,
-+	USB_CH_IP_CUR_LVL_0P6,
-+	USB_CH_IP_CUR_LVL_0P7,
-+	USB_CH_IP_CUR_LVL_0P8,
-+	USB_CH_IP_CUR_LVL_0P9,
-+	USB_CH_IP_CUR_LVL_1P0,
-+	USB_CH_IP_CUR_LVL_1P1,
-+	USB_CH_IP_CUR_LVL_1P3,
-+	USB_CH_IP_CUR_LVL_1P4,
-+	USB_CH_IP_CUR_LVL_1P5,
-+};
-+
-+static int ab8500_voltage_to_regval(int voltage)
-+{
-+	int i;
-+
-+	/* Special case for voltage below 3.5V */
-+	if (voltage < ab8500_charger_voltage_map[0])
-+		return LOW_VOLT_REG;
-+
-+	for (i = 1; i < ARRAY_SIZE(ab8500_charger_voltage_map); i++) {
-+		if (voltage < ab8500_charger_voltage_map[i])
-+			return i - 1;
-+	}
-+
-+	/* If not last element, return error */
-+	i = ARRAY_SIZE(ab8500_charger_voltage_map) - 1;
-+	if (voltage == ab8500_charger_voltage_map[i])
-+		return i;
-+	else
-+		return -1;
-+}
-+
-+static int ab8500_current_to_regval(int curr)
-+{
-+	int i;
-+
-+	if (curr < ab8500_charger_current_map[0])
-+		return 0;
-+
-+	for (i = 0; i < ARRAY_SIZE(ab8500_charger_current_map); i++) {
-+		if (curr < ab8500_charger_current_map[i])
-+			return i - 1;
-+	}
-+
-+	/* If not last element, return error */
-+	i = ARRAY_SIZE(ab8500_charger_current_map) - 1;
-+	if (curr == ab8500_charger_current_map[i])
-+		return i;
-+	else
-+		return -1;
-+}
-+
-+static int ab8500_vbus_in_curr_to_regval(int curr)
-+{
-+	int i;
-+
-+	if (curr < ab8500_charger_vbus_in_curr_map[0])
-+		return 0;
-+
-+	for (i = 0; i < ARRAY_SIZE(ab8500_charger_vbus_in_curr_map); i++) {
-+		if (curr < ab8500_charger_vbus_in_curr_map[i])
-+			return i - 1;
-+	}
-+
-+	/* If not last element, return error */
-+	i = ARRAY_SIZE(ab8500_charger_vbus_in_curr_map) - 1;
-+	if (curr == ab8500_charger_vbus_in_curr_map[i])
-+		return i;
-+	else
-+		return -1;
-+}
-+
-+/**
-+ * ab8500_charger_get_usb_cur() - get usb current
-+ * @di:		pointer to the ab8500_charger structre
-+ *
-+ * The usb stack provides the maximum current that can be drawn from
-+ * the standard usb host. This will be in mA.
-+ * This function converts current in mA to a value that can be written
-+ * to the register. Returns -1 if charging is not allowed
-+ */
-+static int ab8500_charger_get_usb_cur(struct ab8500_charger *di)
-+{
-+	switch (di->usb_state.usb_current) {
-+	case 100:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P09;
-+		break;
-+	case 200:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P19;
-+		break;
-+	case 300:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P29;
-+		break;
-+	case 400:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P38;
-+		break;
-+	case 500:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P5;
-+		break;
-+	default:
-+		di->max_usb_in_curr = USB_CH_IP_CUR_LVL_0P05;
-+		return -1;
-+		break;
-+	};
-+	return 0;
-+}
-+
-+/**
-+ * ab8500_charger_set_vbus_in_curr() - set VBUS input current limit
-+ * @di:		pointer to the ab8500_charger structure
-+ * @ich_in:	charger input current limit
-+ *
-+ * Sets the current that can be drawn from the USB host
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_set_vbus_in_curr(struct ab8500_charger *di,
-+		int ich_in)
-+{
-+	int ret;
-+	int input_curr_index;
-+	int min_value;
-+
-+	/* We should always use to lowest current limit */
-+	min_value = min(di->bat->chg_params->usb_curr_max, ich_in);
-+
-+	switch (min_value) {
-+	case 100:
-+		if (di->vbat < VBAT_TRESH_IP_CUR_RED)
-+			min_value = USB_CH_IP_CUR_LVL_0P05;
-+		break;
-+	case 500:
-+		if (di->vbat < VBAT_TRESH_IP_CUR_RED)
-+			min_value = USB_CH_IP_CUR_LVL_0P45;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	input_curr_index = ab8500_vbus_in_curr_to_regval(min_value);
-+	if (input_curr_index < 0) {
-+		dev_err(di->dev, "VBUS input current limit too high\n");
-+		return -ENXIO;
-+	}
-+
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_USBCH_IPT_CRNTLVL_REG,
-+		input_curr_index << VBUS_IN_CURR_LIM_SHIFT);
-+	if (ret)
-+		dev_err(di->dev, "%s write failed\n", __func__);
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_led_en() - turn on/off chargign led
-+ * @di:		pointer to the ab8500_charger structure
-+ * @on:		flag to turn on/off the chargign led
-+ *
-+ * Power ON/OFF charging LED indication
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_led_en(struct ab8500_charger *di, int on)
-+{
-+	int ret;
-+
-+	if (on) {
-+		/* Power ON charging LED indicator, set LED current to 5mA */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_LED_INDICATOR_PWM_CTRL,
-+			(LED_IND_CUR_5MA | LED_INDICATOR_PWM_ENA));
-+		if (ret) {
-+			dev_err(di->dev, "Power ON LED failed\n");
-+			return ret;
-+		}
-+		/* LED indicator PWM duty cycle 252/256 */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_LED_INDICATOR_PWM_DUTY,
-+			LED_INDICATOR_PWM_DUTY_252_256);
-+		if (ret) {
-+			dev_err(di->dev, "Set LED PWM duty cycle failed\n");
-+			return ret;
-+		}
-+	} else {
-+		/* Power off charging LED indicator */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_LED_INDICATOR_PWM_CTRL,
-+			LED_INDICATOR_PWM_DIS);
-+		if (ret) {
-+			dev_err(di->dev, "Power-off LED failed\n");
-+			return ret;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * ab8500_charger_ac_en() - enable or disable ac charging
-+ * @di:		pointer to the ab8500_charger structure
-+ * @enable:	enable/disable flag
-+ * @vset:	charging voltage
-+ * @iset:	charging current
-+ *
-+ * Enable/Disable AC/Mains charging and turns on/off the charging led
-+ * respectively.
-+ **/
-+static int ab8500_charger_ac_en(struct ux500_charger *charger,
-+	int enable, int vset, int iset)
-+{
-+	int ret;
-+	int volt_index;
-+	int curr_index;
-+	int input_curr_index;
-+	u8 overshoot = 0;
-+
-+	struct ab8500_charger *di = to_ab8500_charger_ac_device_info(charger);
-+
-+	if (enable) {
-+		/* Check if AC is connected */
-+		if (!di->ac.charger_connected) {
-+			dev_err(di->dev, "AC charger not connected\n");
-+			return -ENXIO;
-+		}
-+
-+		/* Enable AC charging */
-+		dev_dbg(di->dev, "Enable AC: %dmV %dmA\n", vset, iset);
-+
-+		/*
-+		 * Due to a bug in AB8500, BTEMP_HIGH/LOW interrupts
-+		 * will be triggered everytime we enable the VDD ADC supply.
-+		 * This will turn off charging for a short while.
-+		 * It can be avoided by having the supply on when
-+		 * there is a charger enabled. Normally the VDD ADC supply
-+		 * is enabled everytime a GPADC conversion is triggered. We will
-+		 * force it to be enabled from this driver to have
-+		 * the GPADC module independant of the AB8500 chargers
-+		 */
-+		if (!di->vddadc_en_ac) {
-+			regulator_enable(di->regu);
-+			di->vddadc_en_ac = true;
-+		}
-+
-+		/* Check if the requested voltage or current is valid */
-+		volt_index = ab8500_voltage_to_regval(vset);
-+		curr_index = ab8500_current_to_regval(iset);
-+		input_curr_index = ab8500_current_to_regval(
-+			di->bat->chg_params->ac_curr_max);
-+		if (volt_index < 0 || curr_index < 0 || input_curr_index < 0) {
-+			dev_err(di->dev,
-+				"Charger voltage or current too high, "
-+				"charging not started\n");
-+			return -ENXIO;
-+		}
-+
-+		/* ChVoltLevel: maximum battery charging voltage */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_VOLT_LVL_REG, (u8) volt_index);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+		/* MainChInputCurr: current that can be drawn from the charger*/
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_MCH_IPT_CURLVL_REG,
-+			input_curr_index << MAIN_CH_INPUT_CURR_SHIFT);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+		/* ChOutputCurentLevel: protected output current */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+
-+		/* Check if VBAT overshoot control should be enabled */
-+		if (!di->bat->enable_overshoot)
-+			overshoot = MAIN_CH_NO_OVERSHOOT_ENA_N;
-+
-+		/* Enable Main Charger */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_MCH_CTRL1, MAIN_CH_ENA | overshoot);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+
-+		/* Power on charging LED indication */
-+		ret = ab8500_charger_led_en(di, true);
-+		if (ret < 0)
-+			dev_err(di->dev, "failed to enable LED\n");
-+
-+		di->ac.charger_online = 1;
-+	} else {
-+		/* Disable AC charging */
-+		if (is_ab8500_1p1_or_earlier(di->parent)) {
-+			/*
-+			 * For ABB revision 1.0 and 1.1 there is a bug in the
-+			 * watchdog logic. That means we have to continously
-+			 * kick the charger watchdog even when no charger is
-+			 * connected. This is only valid once the AC charger
-+			 * has been enabled. This is a bug that is not handled
-+			 * by the algorithm and the watchdog have to be kicked
-+			 * by the charger driver when the AC charger
-+			 * is disabled
-+			 */
-+			if (di->ac_conn) {
-+				queue_delayed_work(di->charger_wq,
-+					&di->kick_wd_work,
-+					round_jiffies(WD_KICK_INTERVAL));
++		if ((di->chg_info.conn_chg & AC_CHG) &&
++			!di->susp_status.ac_suspended) {
++			dev_dbg(di->dev, "Charging source is AC\n");
++			if (di->chg_info.charger_type != AC_CHG) {
++				di->chg_info.charger_type = AC_CHG;
++				abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
 +			}
-+
-+			/*
-+			 * We can't turn off charging completely
-+			 * due to a bug in AB8500 cut1.
-+			 * If we do, charging will not start again.
-+			 * That is why we set the lowest voltage
-+			 * and current possible
-+			 */
-+			ret = abx500_set_register_interruptible(di->dev,
-+				AB8500_CHARGER,
-+				AB8500_CH_VOLT_LVL_REG, CH_VOL_LVL_3P5);
-+			if (ret) {
-+				dev_err(di->dev,
-+					"%s write failed\n", __func__);
-+				return ret;
-+			}
-+
-+			ret = abx500_set_register_interruptible(di->dev,
-+				AB8500_CHARGER,
-+				AB8500_CH_OPT_CRNTLVL_REG, CH_OP_CUR_LVL_0P1);
-+			if (ret) {
-+				dev_err(di->dev,
-+					"%s write failed\n", __func__);
-+				return ret;
-+			}
++		} else if ((di->chg_info.conn_chg & USB_CHG) &&
++			!di->susp_status.usb_suspended) {
++			dev_dbg(di->dev, "Charging source is USB\n");
++			di->chg_info.charger_type = USB_CHG;
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		} else if (di->chg_info.conn_chg &&
++			(di->susp_status.ac_suspended ||
++			di->susp_status.usb_suspended)) {
++			dev_dbg(di->dev, "Charging is suspended\n");
++			di->chg_info.charger_type = NO_CHG;
++			abx500_chargalg_state_to(di, STATE_SUSPENDED_INIT);
 +		} else {
-+			ret = abx500_set_register_interruptible(di->dev,
-+				AB8500_CHARGER,
-+				AB8500_MCH_CTRL1, 0);
-+			if (ret) {
-+				dev_err(di->dev,
-+					"%s write failed\n", __func__);
-+				return ret;
-+			}
++			dev_dbg(di->dev, "Charging source is OFF\n");
++			di->chg_info.charger_type = NO_CHG;
++			abx500_chargalg_state_to(di, STATE_HANDHELD_INIT);
 +		}
-+
-+		ret = ab8500_charger_led_en(di, false);
-+		if (ret < 0)
-+			dev_err(di->dev, "failed to disable LED\n");
-+
-+		di->ac.charger_online = 0;
-+		di->ac.wd_expired = false;
-+
-+		/* Disable regulator if enabled */
-+		if (di->vddadc_en_ac) {
-+			regulator_disable(di->regu);
-+			di->vddadc_en_ac = false;
-+		}
-+
-+		dev_dbg(di->dev, "%s Disabled AC charging\n", __func__);
++		di->chg_info.prev_conn_chg = di->chg_info.conn_chg;
++		di->susp_status.suspended_change = false;
 +	}
-+	ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+
-+	return ret;
++	return di->chg_info.conn_chg;
 +}
 +
 +/**
-+ * ab8500_charger_usb_en() - enable usb charging
-+ * @di:		pointer to the ab8500_charger structure
-+ * @enable:	enable/disable flag
-+ * @vset:	charging voltage
-+ * @ich_out:	charger output current
++ * abx500_chargalg_start_safety_timer() - Start charging safety timer
++ * @di:		pointer to the abx500_chargalg structure
 + *
-+ * Enable/Disable USB charging and turns on/off the charging led respectively.
-+ * Returns error code in case of failure else 0(on success)
++ * The safety timer is used to avoid overcharging of old or bad batteries.
++ * There are different timers for AC and USB
 + */
-+static int ab8500_charger_usb_en(struct ux500_charger *charger,
-+	int enable, int vset, int ich_out)
++static void abx500_chargalg_start_safety_timer(struct abx500_chargalg *di)
 +{
-+	int ret;
-+	int volt_index;
-+	int curr_index;
-+	u8 overshoot = 0;
++	unsigned long timer_expiration = 0;
 +
-+	struct ab8500_charger *di = to_ab8500_charger_usb_device_info(charger);
++	switch (di->chg_info.charger_type) {
++	case AC_CHG:
++		timer_expiration =
++		round_jiffies(jiffies +
++			(di->bat->main_safety_tmr_h * 3600 * HZ));
++		break;
 +
-+	if (enable) {
-+		/* Check if USB is connected */
-+		if (!di->usb.charger_connected) {
-+			dev_err(di->dev, "USB charger not connected\n");
-+			return -ENXIO;
-+		}
++	case USB_CHG:
++		timer_expiration =
++		round_jiffies(jiffies +
++			(di->bat->usb_safety_tmr_h * 3600 * HZ));
++		break;
 +
++	default:
++		dev_err(di->dev, "Unknown charger to charge from\n");
++		break;
++	}
++
++	di->events.safety_timer_expired = false;
++	di->safety_timer.expires = timer_expiration;
++	if (!timer_pending(&di->safety_timer))
++		add_timer(&di->safety_timer);
++	else
++		mod_timer(&di->safety_timer, timer_expiration);
++}
++
++/**
++ * abx500_chargalg_stop_safety_timer() - Stop charging safety timer
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * The safety timer is stopped whenever the NORMAL state is exited
++ */
++static void abx500_chargalg_stop_safety_timer(struct abx500_chargalg *di)
++{
++	di->events.safety_timer_expired = false;
++	del_timer(&di->safety_timer);
++}
++
++/**
++ * abx500_chargalg_start_maintenance_timer() - Start charging maintenance timer
++ * @di:		pointer to the abx500_chargalg structure
++ * @duration:	duration of ther maintenance timer in hours
++ *
++ * The maintenance timer is used to maintain the charge in the battery once
++ * the battery is considered full. These timers are chosen to match the
++ * discharge curve of the battery
++ */
++static void abx500_chargalg_start_maintenance_timer(struct abx500_chargalg *di,
++	int duration)
++{
++	unsigned long timer_expiration;
++
++	/* Convert from hours to jiffies */
++	timer_expiration = round_jiffies(jiffies + (duration * 3600 * HZ));
++
++	di->events.maintenance_timer_expired = false;
++	di->maintenance_timer.expires = timer_expiration;
++	if (!timer_pending(&di->maintenance_timer))
++		add_timer(&di->maintenance_timer);
++	else
++		mod_timer(&di->maintenance_timer, timer_expiration);
++}
++
++/**
++ * abx500_chargalg_stop_maintenance_timer() - Stop maintenance timer
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * The maintenance timer is stopped whenever maintenance ends or when another
++ * state is entered
++ */
++static void abx500_chargalg_stop_maintenance_timer(struct abx500_chargalg *di)
++{
++	di->events.maintenance_timer_expired = false;
++	del_timer(&di->maintenance_timer);
++}
++
++/**
++ * abx500_chargalg_kick_watchdog() - Kick charger watchdog
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * The charger watchdog have to be kicked periodically whenever the charger is
++ * on, else the ABB will reset the system
++ */
++static int abx500_chargalg_kick_watchdog(struct abx500_chargalg *di)
++{
++	/* Check if charger exists and kick watchdog if charging */
++	if (di->ac_chg && di->ac_chg->ops.kick_wd &&
++			di->chg_info.online_chg & AC_CHG)
++		return di->ac_chg->ops.kick_wd(di->ac_chg);
++	else if (di->usb_chg && di->usb_chg->ops.kick_wd &&
++			di->chg_info.online_chg & USB_CHG)
++		return di->usb_chg->ops.kick_wd(di->usb_chg);
++
++	return -ENXIO;
++}
++
++/**
++ * abx500_chargalg_ac_en() - Turn on/off the AC charger
++ * @di:		pointer to the abx500_chargalg structure
++ * @enable:	charger on/off
++ * @vset:	requested charger output voltage
++ * @iset:	requested charger output current
++ *
++ * The AC charger will be turned on/off with the requested charge voltage and
++ * current
++ */
++static int abx500_chargalg_ac_en(struct abx500_chargalg *di, int enable,
++	int vset, int iset)
++{
++	if (!di->ac_chg || !di->ac_chg->ops.enable)
++		return -ENXIO;
++
++	/* Select maximum of what both the charger and the battery supports */
++	if (di->ac_chg->max_out_volt)
++		vset = min(vset, di->ac_chg->max_out_volt);
++	if (di->ac_chg->max_out_curr)
++		iset = min(iset, di->ac_chg->max_out_curr);
++
++	di->chg_info.ac_iset = iset;
++	di->chg_info.ac_vset = vset;
++
++	return di->ac_chg->ops.enable(di->ac_chg, enable, vset, iset);
++}
++
++/**
++ * abx500_chargalg_usb_en() - Turn on/off the USB charger
++ * @di:		pointer to the abx500_chargalg structure
++ * @enable:	charger on/off
++ * @vset:	requested charger output voltage
++ * @iset:	requested charger output current
++ *
++ * The USB charger will be turned on/off with the requested charge voltage and
++ * current
++ */
++static int abx500_chargalg_usb_en(struct abx500_chargalg *di, int enable,
++	int vset, int iset)
++{
++	if (!di->usb_chg || !di->usb_chg->ops.enable)
++		return -ENXIO;
++
++	/* Select maximum of what both the charger and the battery supports */
++	if (di->usb_chg->max_out_volt)
++		vset = min(vset, di->usb_chg->max_out_volt);
++	if (di->usb_chg->max_out_curr)
++		iset = min(iset, di->usb_chg->max_out_curr);
++
++	di->chg_info.usb_iset = iset;
++	di->chg_info.usb_vset = vset;
++
++	return di->usb_chg->ops.enable(di->usb_chg, enable, vset, iset);
++}
++
++/**
++ * abx500_chargalg_update_chg_curr() - Update charger current
++ * @di:		pointer to the abx500_chargalg structure
++ * @iset:	requested charger output current
++ *
++ * The charger output current will be updated for the charger
++ * that is currently in use
++ */
++static int abx500_chargalg_update_chg_curr(struct abx500_chargalg *di,
++		int iset)
++{
++	/* Check if charger exists and update current if charging */
++	if (di->ac_chg && di->ac_chg->ops.update_curr &&
++			di->chg_info.charger_type & AC_CHG) {
 +		/*
-+		 * Due to a bug in AB8500, BTEMP_HIGH/LOW interrupts
-+		 * will be triggered everytime we enable the VDD ADC supply.
-+		 * This will turn off charging for a short while.
-+		 * It can be avoided by having the supply on when
-+		 * there is a charger enabled. Normally the VDD ADC supply
-+		 * is enabled everytime a GPADC conversion is triggered. We will
-+		 * force it to be enabled from this driver to have
-+		 * the GPADC module independant of the AB8500 chargers
++		 * Select maximum of what both the charger
++		 * and the battery supports
 +		 */
-+		if (!di->vddadc_en_usb) {
-+			regulator_enable(di->regu);
-+			di->vddadc_en_usb = true;
-+		}
++		if (di->ac_chg->max_out_curr)
++			iset = min(iset, di->ac_chg->max_out_curr);
 +
-+		/* Enable USB charging */
-+		dev_dbg(di->dev, "Enable USB: %dmV %dmA\n", vset, ich_out);
++		di->chg_info.ac_iset = iset;
 +
-+		/* Check if the requested voltage or current is valid */
-+		volt_index = ab8500_voltage_to_regval(vset);
-+		curr_index = ab8500_current_to_regval(ich_out);
-+		if (volt_index < 0 || curr_index < 0) {
-+			dev_err(di->dev,
-+				"Charger voltage or current too high, "
-+				"charging not started\n");
-+			return -ENXIO;
-+		}
++		return di->ac_chg->ops.update_curr(di->ac_chg, iset);
++	} else if (di->usb_chg && di->usb_chg->ops.update_curr &&
++			di->chg_info.charger_type & USB_CHG) {
++		/*
++		 * Select maximum of what both the charger
++		 * and the battery supports
++		 */
++		if (di->usb_chg->max_out_curr)
++			iset = min(iset, di->usb_chg->max_out_curr);
 +
-+		/* ChVoltLevel: max voltage upto which battery can be charged */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_VOLT_LVL_REG, (u8) volt_index);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+		/* USBChInputCurr: current that can be drawn from the usb */
-+		ret = ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
-+		if (ret) {
-+			dev_err(di->dev, "setting USBChInputCurr failed\n");
-+			return ret;
-+		}
-+		/* ChOutputCurentLevel: protected output current */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
-+		/* Check if VBAT overshoot control should be enabled */
-+		if (!di->bat->enable_overshoot)
-+			overshoot = USB_CHG_NO_OVERSHOOT_ENA_N;
++		di->chg_info.usb_iset = iset;
 +
-+		/* Enable USB Charger */
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_USBCH_CTRL1_REG, USB_CH_ENA | overshoot);
-+		if (ret) {
-+			dev_err(di->dev, "%s write failed\n", __func__);
-+			return ret;
-+		}
++		return di->usb_chg->ops.update_curr(di->usb_chg, iset);
++	}
 +
-+		/* If success power on charging LED indication */
-+		ret = ab8500_charger_led_en(di, true);
-+		if (ret < 0)
-+			dev_err(di->dev, "failed to enable LED\n");
++	return -ENXIO;
++}
 +
-+		queue_delayed_work(di->charger_wq, &di->check_vbat_work, HZ);
++/**
++ * abx500_chargalg_stop_charging() - Stop charging
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * This function is called from any state where charging should be stopped.
++ * All charging is disabled and all status parameters and timers are changed
++ * accordingly
++ */
++static void abx500_chargalg_stop_charging(struct abx500_chargalg *di)
++{
++	abx500_chargalg_ac_en(di, false, 0, 0);
++	abx500_chargalg_usb_en(di, false, 0, 0);
++	abx500_chargalg_stop_safety_timer(di);
++	abx500_chargalg_stop_maintenance_timer(di);
++	di->charge_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++	di->maintenance_chg = false;
++	cancel_delayed_work(&di->chargalg_wd_work);
++	power_supply_changed(&di->chargalg_psy);
++}
 +
-+		di->usb.charger_online = 1;
++/**
++ * abx500_chargalg_hold_charging() - Pauses charging
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * This function is called in the case where maintenance charging has been
++ * disabled and instead a battery voltage mode is entered to check when the
++ * battery voltage has reached a certain recharge voltage
++ */
++static void abx500_chargalg_hold_charging(struct abx500_chargalg *di)
++{
++	abx500_chargalg_ac_en(di, false, 0, 0);
++	abx500_chargalg_usb_en(di, false, 0, 0);
++	abx500_chargalg_stop_safety_timer(di);
++	abx500_chargalg_stop_maintenance_timer(di);
++	di->charge_status = POWER_SUPPLY_STATUS_CHARGING;
++	di->maintenance_chg = false;
++	cancel_delayed_work(&di->chargalg_wd_work);
++	power_supply_changed(&di->chargalg_psy);
++}
++
++/**
++ * abx500_chargalg_start_charging() - Start the charger
++ * @di:		pointer to the abx500_chargalg structure
++ * @vset:	requested charger output voltage
++ * @iset:	requested charger output current
++ *
++ * A charger will be enabled depending on the requested charger type that was
++ * detected previously.
++ */
++static void abx500_chargalg_start_charging(struct abx500_chargalg *di,
++	int vset, int iset)
++{
++	switch (di->chg_info.charger_type) {
++	case AC_CHG:
++		dev_dbg(di->dev,
++			"AC parameters: Vset %d, Ich %d\n", vset, iset);
++		abx500_chargalg_usb_en(di, false, 0, 0);
++		abx500_chargalg_ac_en(di, true, vset, iset);
++		break;
++
++	case USB_CHG:
++		dev_dbg(di->dev,
++			"USB parameters: Vset %d, Ich %d\n", vset, iset);
++		abx500_chargalg_ac_en(di, false, 0, 0);
++		abx500_chargalg_usb_en(di, true, vset, iset);
++		break;
++
++	default:
++		dev_err(di->dev, "Unknown charger to charge from\n");
++		break;
++	}
++}
++
++/**
++ * abx500_chargalg_check_temp() - Check battery temperature ranges
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * The battery temperature is checked against the predefined limits and the
++ * charge state is changed accordingly
++ */
++static void abx500_chargalg_check_temp(struct abx500_chargalg *di)
++{
++	if (di->batt_data.temp > (di->bat->temp_low + di->t_hyst_norm) &&
++		di->batt_data.temp < (di->bat->temp_high - di->t_hyst_norm)) {
++		/* Temp OK! */
++		di->events.btemp_underover = false;
++		di->events.btemp_lowhigh = false;
++		di->t_hyst_norm = 0;
++		di->t_hyst_lowhigh = 0;
 +	} else {
-+		/* Disable USB charging */
-+		ret = abx500_set_register_interruptible(di->dev,
-+			AB8500_CHARGER,
-+			AB8500_USBCH_CTRL1_REG, 0);
-+		if (ret) {
-+			dev_err(di->dev,
-+				"%s write failed\n", __func__);
-+			return ret;
++		if (((di->batt_data.temp >= di->bat->temp_high) &&
++			(di->batt_data.temp <
++				(di->bat->temp_over - di->t_hyst_lowhigh))) ||
++			((di->batt_data.temp >
++				(di->bat->temp_under + di->t_hyst_lowhigh)) &&
++			(di->batt_data.temp <= di->bat->temp_low))) {
++			/* TEMP minor!!!!! */
++			di->events.btemp_underover = false;
++			di->events.btemp_lowhigh = true;
++			di->t_hyst_norm = di->bat->temp_hysteresis;
++			di->t_hyst_lowhigh = 0;
++		} else if (di->batt_data.temp <= di->bat->temp_under ||
++			di->batt_data.temp >= di->bat->temp_over) {
++			/* TEMP major!!!!! */
++			di->events.btemp_underover = true;
++			di->events.btemp_lowhigh = false;
++			di->t_hyst_norm = 0;
++			di->t_hyst_lowhigh = di->bat->temp_hysteresis;
++		} else {
++		/* Within hysteresis */
++		dev_dbg(di->dev, "Within hysteresis limit temp: %d "
++				"hyst_lowhigh %d, hyst normal %d\n",
++				di->batt_data.temp, di->t_hyst_lowhigh,
++				di->t_hyst_norm);
 +		}
-+
-+		ret = ab8500_charger_led_en(di, false);
-+		if (ret < 0)
-+			dev_err(di->dev, "failed to disable LED\n");
-+
-+		di->usb.charger_online = 0;
-+		di->usb.wd_expired = false;
-+
-+		/* Disable regulator if enabled */
-+		if (di->vddadc_en_usb) {
-+			regulator_disable(di->regu);
-+			di->vddadc_en_usb = false;
-+		}
-+
-+		dev_dbg(di->dev, "%s Disabled USB charging\n", __func__);
-+
-+		/* Cancel any pending Vbat check work */
-+		if (delayed_work_pending(&di->check_vbat_work))
-+			cancel_delayed_work(&di->check_vbat_work);
-+
 +	}
-+	ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+
-+	return ret;
 +}
 +
 +/**
-+ * ab8500_charger_watchdog_kick() - kick charger watchdog
-+ * @di:		pointer to the ab8500_charger structure
++ * abx500_chargalg_check_charger_voltage() - Check charger voltage
++ * @di:		pointer to the abx500_chargalg structure
 + *
-+ * Kick charger watchdog
-+ * Returns error code in case of failure else 0(on success)
++ * Charger voltage is checked against maximum limit
 + */
-+static int ab8500_charger_watchdog_kick(struct ux500_charger *charger)
++static void abx500_chargalg_check_charger_voltage(struct abx500_chargalg *di)
 +{
-+	int ret;
-+	struct ab8500_charger *di;
-+
-+	if (charger->psy.type == POWER_SUPPLY_TYPE_MAINS)
-+		di = to_ab8500_charger_ac_device_info(charger);
-+	else if (charger->psy.type == POWER_SUPPLY_TYPE_USB)
-+		di = to_ab8500_charger_usb_device_info(charger);
++	if (di->chg_info.usb_volt > di->bat->chg_params->usb_volt_max)
++		di->chg_info.usb_chg_ok = false;
 +	else
-+		return -ENXIO;
++		di->chg_info.usb_chg_ok = true;
 +
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CHARG_WD_CTRL, CHARG_WD_KICK);
-+	if (ret)
-+		dev_err(di->dev, "Failed to kick WD!\n");
++	if (di->chg_info.ac_volt > di->bat->chg_params->ac_volt_max)
++		di->chg_info.ac_chg_ok = false;
++	else
++		di->chg_info.ac_chg_ok = true;
 +
-+	return ret;
 +}
 +
 +/**
-+ * ab8500_charger_update_charger_current() - update charger current
-+ * @di:		pointer to the ab8500_charger structure
++ * abx500_chargalg_end_of_charge() - Check if end-of-charge criteria is fulfilled
++ * @di:		pointer to the abx500_chargalg structure
 + *
-+ * Update the charger output current for the specified charger
-+ * Returns error code in case of failure else 0(on success)
++ * End-of-charge criteria is fulfilled when the battery voltage is above a
++ * certain limit and the battery current is below a certain limit for a
++ * predefined number of consecutive seconds. If true, the battery is full
 + */
-+static int ab8500_charger_update_charger_current(struct ux500_charger *charger,
-+		int ich_out)
++static void abx500_chargalg_end_of_charge(struct abx500_chargalg *di)
 +{
-+	int ret;
-+	int curr_index;
-+	struct ab8500_charger *di;
-+
-+	if (charger->psy.type == POWER_SUPPLY_TYPE_MAINS)
-+		di = to_ab8500_charger_ac_device_info(charger);
-+	else if (charger->psy.type == POWER_SUPPLY_TYPE_USB)
-+		di = to_ab8500_charger_usb_device_info(charger);
-+	else
-+		return -ENXIO;
-+
-+	curr_index = ab8500_current_to_regval(ich_out);
-+	if (curr_index < 0) {
-+		dev_err(di->dev,
-+			"Charger current too high, "
-+			"charging not started\n");
-+		return -ENXIO;
++	if (di->charge_status == POWER_SUPPLY_STATUS_CHARGING &&
++		di->charge_state == STATE_NORMAL &&
++		!di->maintenance_chg && (di->batt_data.volt >=
++		di->bat->bat_type[di->bat->batt_id].termination_vol ||
++		di->events.usb_cv_active || di->events.ac_cv_active) &&
++		di->batt_data.avg_curr <
++		di->bat->bat_type[di->bat->batt_id].termination_curr &&
++		di->batt_data.avg_curr > 0) {
++		if (++di->eoc_cnt >= EOC_COND_CNT) {
++			di->eoc_cnt = 0;
++			di->charge_status = POWER_SUPPLY_STATUS_FULL;
++			di->maintenance_chg = true;
++			dev_dbg(di->dev, "EOC reached!\n");
++			power_supply_changed(&di->chargalg_psy);
++		} else {
++			dev_dbg(di->dev,
++				" EOC limit reached for the %d"
++				" time, out of %d before EOC\n",
++				di->eoc_cnt,
++				EOC_COND_CNT);
++		}
++	} else {
++		di->eoc_cnt = 0;
 +	}
-+
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CH_OPT_CRNTLVL_REG, (u8) curr_index);
-+	if (ret) {
-+		dev_err(di->dev, "%s write failed\n", __func__);
-+		return ret;
-+	}
-+
-+	/* Reset the main and usb drop input current measurement counter */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+				AB8500_CHARGER_CTRL,
-+				0x1);
-+	if (ret) {
-+		dev_err(di->dev, "%s write failed\n", __func__);
-+		return ret;
-+	}
-+
-+	return ret;
 +}
 +
-+static int ab8500_charger_get_ext_psy_data(struct device *dev, void *data)
++static void init_maxim_chg_curr(struct abx500_chargalg *di)
++{
++	di->ccm.original_iset =
++		di->bat->bat_type[di->bat->batt_id].normal_cur_lvl;
++	di->ccm.current_iset =
++		di->bat->bat_type[di->bat->batt_id].normal_cur_lvl;
++	di->ccm.test_delta_i = di->bat->maxi->charger_curr_step;
++	di->ccm.max_current = di->bat->maxi->chg_curr;
++	di->ccm.condition_cnt = di->bat->maxi->wait_cycles;
++	di->ccm.level = 0;
++}
++
++/**
++ * abx500_chargalg_chg_curr_maxim - increases the charger current to
++ *			compensate for the system load
++ * @di		pointer to the abx500_chargalg structure
++ *
++ * This maximization function is used to raise the charger current to get the
++ * battery current as close to the optimal value as possible. The battery
++ * current during charging is affected by the system load
++ */
++static enum maxim_ret abx500_chargalg_chg_curr_maxim(struct abx500_chargalg *di)
++{
++	int delta_i;
++
++	if (!di->bat->maxi->ena_maxi)
++		return MAXIM_RET_NOACTION;
++
++	delta_i = di->ccm.original_iset - di->batt_data.inst_curr;
++
++	if (di->events.vbus_collapsed) {
++		dev_dbg(di->dev, "Charger voltage has collapsed %d\n",
++				di->ccm.wait_cnt);
++		if (di->ccm.wait_cnt == 0) {
++			dev_dbg(di->dev, "lowering current\n");
++			di->ccm.wait_cnt++;
++			di->ccm.condition_cnt = di->bat->maxi->wait_cycles;
++			di->ccm.max_current =
++				di->ccm.current_iset - di->ccm.test_delta_i;
++			di->ccm.current_iset = di->ccm.max_current;
++			di->ccm.level--;
++			return MAXIM_RET_CHANGE;
++		} else {
++			dev_dbg(di->dev, "waiting\n");
++			/* Let's go in here twice before lowering curr again */
++			di->ccm.wait_cnt = (di->ccm.wait_cnt + 1) % 3;
++			return MAXIM_RET_NOACTION;
++		}
++	}
++
++	di->ccm.wait_cnt = 0;
++
++	if ((di->batt_data.inst_curr > di->ccm.original_iset)) {
++		dev_dbg(di->dev, " Maximization Ibat (%dmA) too high"
++			" (limit %dmA) (current iset: %dmA)!\n",
++			di->batt_data.inst_curr, di->ccm.original_iset,
++			di->ccm.current_iset);
++
++		if (di->ccm.current_iset == di->ccm.original_iset)
++			return MAXIM_RET_NOACTION;
++
++		di->ccm.condition_cnt = di->bat->maxi->wait_cycles;
++		di->ccm.current_iset = di->ccm.original_iset;
++		di->ccm.level = 0;
++
++		return MAXIM_RET_IBAT_TOO_HIGH;
++	}
++
++	if (delta_i > di->ccm.test_delta_i &&
++		(di->ccm.current_iset + di->ccm.test_delta_i) <
++		di->ccm.max_current) {
++		if (di->ccm.condition_cnt-- == 0) {
++			/* Increse the iset with cco.test_delta_i */
++			di->ccm.condition_cnt = di->bat->maxi->wait_cycles;
++			di->ccm.current_iset += di->ccm.test_delta_i;
++			di->ccm.level++;
++			dev_dbg(di->dev, " Maximization needed, increase"
++				" with %d mA to %dmA (Optimal ibat: %d)"
++				" Level %d\n",
++				di->ccm.test_delta_i,
++				di->ccm.current_iset,
++				di->ccm.original_iset,
++				di->ccm.level);
++			return MAXIM_RET_CHANGE;
++		} else {
++			return MAXIM_RET_NOACTION;
++		}
++	}  else {
++		di->ccm.condition_cnt = di->bat->maxi->wait_cycles;
++		return MAXIM_RET_NOACTION;
++	}
++}
++
++static void handle_maxim_chg_curr(struct abx500_chargalg *di)
++{
++	enum maxim_ret ret;
++	int result;
++
++	ret = abx500_chargalg_chg_curr_maxim(di);
++	switch (ret) {
++	case MAXIM_RET_CHANGE:
++		result = abx500_chargalg_update_chg_curr(di,
++			di->ccm.current_iset);
++		if (result)
++			dev_err(di->dev, "failed to set chg curr\n");
++		break;
++	case MAXIM_RET_IBAT_TOO_HIGH:
++		result = abx500_chargalg_update_chg_curr(di,
++			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
++		if (result)
++			dev_err(di->dev, "failed to set chg curr\n");
++		break;
++
++	case MAXIM_RET_NOACTION:
++	default:
++		/* Do nothing..*/
++		break;
++	}
++}
++
++static int abx500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 +{
 +	struct power_supply *psy;
 +	struct power_supply *ext;
-+	struct ab8500_charger *di;
++	struct abx500_chargalg *di;
 +	union power_supply_propval ret;
 +	int i, j;
 +	bool psy_found = false;
-+	struct ux500_charger *usb_chg;
 +
-+	usb_chg = (struct ux500_charger *)data;
-+	psy = &usb_chg->psy;
-+
-+	di = to_ab8500_charger_usb_device_info(usb_chg);
-+
++	psy = (struct power_supply *)data;
 +	ext = dev_get_drvdata(dev);
-+
++	di = to_abx500_chargalg_device_info(psy);
 +	/* For all psy where the driver name appears in any supplied_to */
 +	for (i = 0; i < ext->num_supplicants; i++) {
 +		if (!strcmp(ext->supplied_to[i], psy->name))
 +			psy_found = true;
 +	}
-+
 +	if (!psy_found)
 +		return 0;
 +
@@ -1480,18 +921,286 @@ index 0000000..bbc541a
 +		enum power_supply_property prop;
 +		prop = ext->properties[j];
 +
++		/* Initialize chargers if not already done */
++		if (!di->ac_chg &&
++			ext->type == POWER_SUPPLY_TYPE_MAINS)
++			di->ac_chg = psy_to_ux500_charger(ext);
++		else if (!di->usb_chg &&
++			ext->type == POWER_SUPPLY_TYPE_USB)
++			di->usb_chg = psy_to_ux500_charger(ext);
++
 +		if (ext->get_property(ext, prop, &ret))
 +			continue;
-+
 +		switch (prop) {
-+		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		case POWER_SUPPLY_PROP_PRESENT:
 +			switch (ext->type) {
 +			case POWER_SUPPLY_TYPE_BATTERY:
-+				di->vbat = ret.intval / 1000;
++				/* Battery present */
++				if (ret.intval)
++					di->events.batt_rem = false;
++				/* Battery removed */
++				else
++					di->events.batt_rem = true;
++				break;
++			case POWER_SUPPLY_TYPE_MAINS:
++				/* AC disconnected */
++				if (!ret.intval &&
++					(di->chg_info.conn_chg & AC_CHG)) {
++					di->chg_info.prev_conn_chg =
++						di->chg_info.conn_chg;
++					di->chg_info.conn_chg &= ~AC_CHG;
++				}
++				/* AC connected */
++				else if (ret.intval &&
++					!(di->chg_info.conn_chg & AC_CHG)) {
++					di->chg_info.prev_conn_chg =
++						di->chg_info.conn_chg;
++					di->chg_info.conn_chg |= AC_CHG;
++				}
++				break;
++			case POWER_SUPPLY_TYPE_USB:
++				/* USB disconnected */
++				if (!ret.intval &&
++					(di->chg_info.conn_chg & USB_CHG)) {
++					di->chg_info.prev_conn_chg =
++						di->chg_info.conn_chg;
++					di->chg_info.conn_chg &= ~USB_CHG;
++				}
++				/* USB connected */
++				else if (ret.intval &&
++					!(di->chg_info.conn_chg & USB_CHG)) {
++					di->chg_info.prev_conn_chg =
++						di->chg_info.conn_chg;
++					di->chg_info.conn_chg |= USB_CHG;
++				}
 +				break;
 +			default:
 +				break;
 +			}
++			break;
++
++		case POWER_SUPPLY_PROP_ONLINE:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_BATTERY:
++				break;
++			case POWER_SUPPLY_TYPE_MAINS:
++				/* AC offline */
++				if (!ret.intval &&
++					(di->chg_info.online_chg & AC_CHG)) {
++					di->chg_info.prev_online_chg =
++						di->chg_info.online_chg;
++					di->chg_info.online_chg &= ~AC_CHG;
++				}
++				/* AC online */
++				else if (ret.intval &&
++					!(di->chg_info.online_chg & AC_CHG)) {
++					di->chg_info.prev_online_chg =
++						di->chg_info.online_chg;
++					di->chg_info.online_chg |= AC_CHG;
++					queue_delayed_work(di->chargalg_wq,
++						&di->chargalg_wd_work, 0);
++				}
++				break;
++			case POWER_SUPPLY_TYPE_USB:
++				/* USB offline */
++				if (!ret.intval &&
++					(di->chg_info.online_chg & USB_CHG)) {
++					di->chg_info.prev_online_chg =
++						di->chg_info.online_chg;
++					di->chg_info.online_chg &= ~USB_CHG;
++				}
++				/* USB online */
++				else if (ret.intval &&
++					!(di->chg_info.online_chg & USB_CHG)) {
++					di->chg_info.prev_online_chg =
++						di->chg_info.online_chg;
++					di->chg_info.online_chg |= USB_CHG;
++					queue_delayed_work(di->chargalg_wq,
++						&di->chargalg_wd_work, 0);
++				}
++				break;
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_HEALTH:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_BATTERY:
++				break;
++			case POWER_SUPPLY_TYPE_MAINS:
++				switch (ret.intval) {
++				case POWER_SUPPLY_HEALTH_UNSPEC_FAILURE:
++					di->events.mainextchnotok = true;
++					di->events.main_thermal_prot = false;
++					di->events.main_ovv = false;
++					di->events.ac_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_DEAD:
++					di->events.ac_wd_expired = true;
++					di->events.mainextchnotok = false;
++					di->events.main_ovv = false;
++					di->events.main_thermal_prot = false;
++					break;
++				case POWER_SUPPLY_HEALTH_COLD:
++				case POWER_SUPPLY_HEALTH_OVERHEAT:
++					di->events.main_thermal_prot = true;
++					di->events.mainextchnotok = false;
++					di->events.main_ovv = false;
++					di->events.ac_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
++					di->events.main_ovv = true;
++					di->events.mainextchnotok = false;
++					di->events.main_thermal_prot = false;
++					di->events.ac_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_GOOD:
++					di->events.main_thermal_prot = false;
++					di->events.mainextchnotok = false;
++					di->events.main_ovv = false;
++					di->events.ac_wd_expired = false;
++					break;
++				default:
++					break;
++				}
++				break;
++
++			case POWER_SUPPLY_TYPE_USB:
++				switch (ret.intval) {
++				case POWER_SUPPLY_HEALTH_UNSPEC_FAILURE:
++					di->events.usbchargernotok = true;
++					di->events.usb_thermal_prot = false;
++					di->events.vbus_ovv = false;
++					di->events.usb_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_DEAD:
++					di->events.usb_wd_expired = true;
++					di->events.usbchargernotok = false;
++					di->events.usb_thermal_prot = false;
++					di->events.vbus_ovv = false;
++					break;
++				case POWER_SUPPLY_HEALTH_COLD:
++				case POWER_SUPPLY_HEALTH_OVERHEAT:
++					di->events.usb_thermal_prot = true;
++					di->events.usbchargernotok = false;
++					di->events.vbus_ovv = false;
++					di->events.usb_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
++					di->events.vbus_ovv = true;
++					di->events.usbchargernotok = false;
++					di->events.usb_thermal_prot = false;
++					di->events.usb_wd_expired = false;
++					break;
++				case POWER_SUPPLY_HEALTH_GOOD:
++					di->events.usbchargernotok = false;
++					di->events.usb_thermal_prot = false;
++					di->events.vbus_ovv = false;
++					di->events.usb_wd_expired = false;
++					break;
++				default:
++					break;
++				}
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_BATTERY:
++				di->batt_data.volt = ret.intval / 1000;
++				break;
++			case POWER_SUPPLY_TYPE_MAINS:
++				di->chg_info.ac_volt = ret.intval / 1000;
++				break;
++			case POWER_SUPPLY_TYPE_USB:
++				di->chg_info.usb_volt = ret.intval / 1000;
++				break;
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_VOLTAGE_AVG:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_MAINS:
++				/* AVG is used to indicate when we are
++				 * in CV mode */
++				if (ret.intval)
++					di->events.ac_cv_active = true;
++				else
++					di->events.ac_cv_active = false;
++
++				break;
++			case POWER_SUPPLY_TYPE_USB:
++				/* AVG is used to indicate when we are
++				 * in CV mode */
++				if (ret.intval)
++					di->events.usb_cv_active = true;
++				else
++					di->events.usb_cv_active = false;
++
++				break;
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_TECHNOLOGY:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_BATTERY:
++				if (ret.intval)
++					di->events.batt_unknown = false;
++				else
++					di->events.batt_unknown = true;
++
++				break;
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_TEMP:
++			di->batt_data.temp = ret.intval / 10;
++			break;
++
++		case POWER_SUPPLY_PROP_CURRENT_NOW:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_MAINS:
++					di->chg_info.ac_curr =
++						ret.intval / 1000;
++					break;
++			case POWER_SUPPLY_TYPE_USB:
++					di->chg_info.usb_curr =
++						ret.intval / 1000;
++				break;
++			case POWER_SUPPLY_TYPE_BATTERY:
++				di->batt_data.inst_curr = ret.intval / 1000;
++				break;
++			default:
++				break;
++			}
++			break;
++
++		case POWER_SUPPLY_PROP_CURRENT_AVG:
++			switch (ext->type) {
++			case POWER_SUPPLY_TYPE_BATTERY:
++				di->batt_data.avg_curr = ret.intval / 1000;
++				break;
++			case POWER_SUPPLY_TYPE_USB:
++				if (ret.intval)
++					di->events.vbus_collapsed = true;
++				else
++					di->events.vbus_collapsed = false;
++				break;
++			default:
++				break;
++			}
++			break;
++		case POWER_SUPPLY_PROP_CAPACITY:
++			di->batt_data.percent = ret.intval;
 +			break;
 +		default:
 +			break;
@@ -1501,1629 +1210,809 @@ index 0000000..bbc541a
 +}
 +
 +/**
-+ * ab8500_charger_check_vbat_work() - keep vbus current within spec
-+ * @work	pointer to the work_struct structure
++ * abx500_chargalg_external_power_changed() - callback for power supply changes
++ * @psy:       pointer to the structure power_supply
 + *
-+ * Due to a asic bug it is necessary to lower the input current to the vbus
-+ * charger when charging with at some specific levels. This issue is only valid
-+ * for below a certain battery voltage. This function makes sure that the
-+ * the allowed current limit isn't exceeded.
++ * This function is the entry point of the pointer external_power_changed
++ * of the structure power_supply.
++ * This function gets executed when there is a change in any external power
++ * supply that this driver needs to be notified of.
 + */
-+static void ab8500_charger_check_vbat_work(struct work_struct *work)
++static void abx500_chargalg_external_power_changed(struct power_supply *psy)
 +{
-+	int t = 10;
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, check_vbat_work.work);
++	struct abx500_chargalg *di = to_abx500_chargalg_device_info(psy);
 +
++	/*
++	 * Trigger execution of the algorithm instantly and read
++	 * all power_supply properties there instead
++	 */
++	queue_work(di->chargalg_wq, &di->chargalg_work);
++}
++
++/**
++ * abx500_chargalg_algorithm() - Main function for the algorithm
++ * @di:		pointer to the abx500_chargalg structure
++ *
++ * This is the main control function for the charging algorithm.
++ * It is called periodically or when something happens that will
++ * trigger a state change
++ */
++static void abx500_chargalg_algorithm(struct abx500_chargalg *di)
++{
++	int charger_status;
++
++	/* Collect data from all power_supply class devices */
 +	class_for_each_device(power_supply_class, NULL,
-+		&di->usb_chg.psy, ab8500_charger_get_ext_psy_data);
++		&di->chargalg_psy, abx500_chargalg_get_ext_psy_data);
 +
-+	/* First run old_vbat is 0. */
-+	if (di->old_vbat == 0)
-+		di->old_vbat = di->vbat;
++	abx500_chargalg_end_of_charge(di);
++	abx500_chargalg_check_temp(di);
++	abx500_chargalg_check_charger_voltage(di);
 +
-+	if (!((di->old_vbat <= VBAT_TRESH_IP_CUR_RED &&
-+		di->vbat <= VBAT_TRESH_IP_CUR_RED) ||
-+		(di->old_vbat > VBAT_TRESH_IP_CUR_RED &&
-+		di->vbat > VBAT_TRESH_IP_CUR_RED))) {
-+
-+		dev_dbg(di->dev, "Vbat did cross threshold, curr: %d, new: %d,"
-+			" old: %d\n", di->max_usb_in_curr, di->vbat,
-+			di->old_vbat);
-+		ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
-+		power_supply_changed(&di->usb_chg.psy);
++	charger_status = abx500_chargalg_check_charger_connection(di);
++	/*
++	 * First check if we have a charger connected.
++	 * Also we don't allow charging of unknown batteries if configured
++	 * this way
++	 */
++	if (!charger_status ||
++		(di->events.batt_unknown && !di->bat->chg_unknown_bat)) {
++		if (di->charge_state != STATE_HANDHELD) {
++			di->events.safety_timer_expired = false;
++			abx500_chargalg_state_to(di, STATE_HANDHELD_INIT);
++		}
 +	}
 +
-+	di->old_vbat = di->vbat;
++	/* If suspended, we should not continue checking the flags */
++	else if (di->charge_state == STATE_SUSPENDED_INIT ||
++		di->charge_state == STATE_SUSPENDED) {
++		/* We don't do anything here, just don,t continue */
++	}
++
++	/* Safety timer expiration */
++	else if (di->events.safety_timer_expired) {
++		if (di->charge_state != STATE_SAFETY_TIMER_EXPIRED)
++			abx500_chargalg_state_to(di,
++				STATE_SAFETY_TIMER_EXPIRED_INIT);
++	}
++	/*
++	 * Check if any interrupts has occured
++	 * that will prevent us from charging
++	 */
++
++	/* Battery removed */
++	else if (di->events.batt_rem) {
++		if (di->charge_state != STATE_BATT_REMOVED)
++			abx500_chargalg_state_to(di, STATE_BATT_REMOVED_INIT);
++	}
++	/* Main or USB charger not ok. */
++	else if (di->events.mainextchnotok || di->events.usbchargernotok) {
++		/*
++		 * If vbus_collapsed is set, we have to lower the charger
++		 * current, which is done in the normal state below
++		 */
++		if (di->charge_state != STATE_CHG_NOT_OK &&
++				!di->events.vbus_collapsed)
++			abx500_chargalg_state_to(di, STATE_CHG_NOT_OK_INIT);
++	}
++	/* VBUS, Main or VBAT OVV. */
++	else if (di->events.vbus_ovv ||
++			di->events.main_ovv ||
++			di->events.batt_ovv ||
++			!di->chg_info.usb_chg_ok ||
++			!di->chg_info.ac_chg_ok) {
++		if (di->charge_state != STATE_OVV_PROTECT)
++			abx500_chargalg_state_to(di, STATE_OVV_PROTECT_INIT);
++	}
++	/* USB Thermal, stop charging */
++	else if (di->events.main_thermal_prot ||
++		di->events.usb_thermal_prot) {
++		if (di->charge_state != STATE_HW_TEMP_PROTECT)
++			abx500_chargalg_state_to(di,
++				STATE_HW_TEMP_PROTECT_INIT);
++	}
++	/* Battery temp over/under */
++	else if (di->events.btemp_underover) {
++		if (di->charge_state != STATE_TEMP_UNDEROVER)
++			abx500_chargalg_state_to(di,
++				STATE_TEMP_UNDEROVER_INIT);
++	}
++	/* Watchdog expired */
++	else if (di->events.ac_wd_expired ||
++		di->events.usb_wd_expired) {
++		if (di->charge_state != STATE_WD_EXPIRED)
++			abx500_chargalg_state_to(di, STATE_WD_EXPIRED_INIT);
++	}
++	/* Battery temp high/low */
++	else if (di->events.btemp_lowhigh) {
++		if (di->charge_state != STATE_TEMP_LOWHIGH)
++			abx500_chargalg_state_to(di, STATE_TEMP_LOWHIGH_INIT);
++	}
++
++	dev_dbg(di->dev,
++		"[CHARGALG] Vb %d Ib_avg %d Ib_inst %d Tb %d Cap %d Maint %d "
++		"State %s Active_chg %d Chg_status %d AC %d USB %d "
++		"AC_online %d USB_online %d AC_CV %d USB_CV %d AC_I %d "
++		"USB_I %d AC_Vset %d AC_Iset %d USB_Vset %d USB_Iset %d\n",
++		di->batt_data.volt,
++		di->batt_data.avg_curr,
++		di->batt_data.inst_curr,
++		di->batt_data.temp,
++		di->batt_data.percent,
++		di->maintenance_chg,
++		states[di->charge_state],
++		di->chg_info.charger_type,
++		di->charge_status,
++		di->chg_info.conn_chg & AC_CHG,
++		di->chg_info.conn_chg & USB_CHG,
++		di->chg_info.online_chg & AC_CHG,
++		di->chg_info.online_chg & USB_CHG,
++		di->events.ac_cv_active,
++		di->events.usb_cv_active,
++		di->chg_info.ac_curr,
++		di->chg_info.usb_curr,
++		di->chg_info.ac_vset,
++		di->chg_info.ac_iset,
++		di->chg_info.usb_vset,
++		di->chg_info.usb_iset);
++
++	switch (di->charge_state) {
++	case STATE_HANDHELD_INIT:
++		abx500_chargalg_stop_charging(di);
++		di->charge_status = POWER_SUPPLY_STATUS_DISCHARGING;
++		abx500_chargalg_state_to(di, STATE_HANDHELD);
++		/* Intentional fallthrough */
++
++	case STATE_HANDHELD:
++		break;
++
++	case STATE_SUSPENDED_INIT:
++		if (di->susp_status.ac_suspended)
++			abx500_chargalg_ac_en(di, false, 0, 0);
++		if (di->susp_status.usb_suspended)
++			abx500_chargalg_usb_en(di, false, 0, 0);
++		abx500_chargalg_stop_safety_timer(di);
++		abx500_chargalg_stop_maintenance_timer(di);
++		di->charge_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		di->maintenance_chg = false;
++		abx500_chargalg_state_to(di, STATE_SUSPENDED);
++		power_supply_changed(&di->chargalg_psy);
++		/* Intentional fallthrough */
++
++	case STATE_SUSPENDED:
++		/* CHARGING is suspended */
++		break;
++
++	case STATE_BATT_REMOVED_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_BATT_REMOVED);
++		/* Intentional fallthrough */
++
++	case STATE_BATT_REMOVED:
++		if (!di->events.batt_rem)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_HW_TEMP_PROTECT_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_HW_TEMP_PROTECT);
++		/* Intentional fallthrough */
++
++	case STATE_HW_TEMP_PROTECT:
++		if (!di->events.main_thermal_prot &&
++				!di->events.usb_thermal_prot)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_OVV_PROTECT_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_OVV_PROTECT);
++		/* Intentional fallthrough */
++
++	case STATE_OVV_PROTECT:
++		if (!di->events.vbus_ovv &&
++				!di->events.main_ovv &&
++				!di->events.batt_ovv &&
++				di->chg_info.usb_chg_ok &&
++				di->chg_info.ac_chg_ok)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_CHG_NOT_OK_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_CHG_NOT_OK);
++		/* Intentional fallthrough */
++
++	case STATE_CHG_NOT_OK:
++		if (!di->events.mainextchnotok &&
++				!di->events.usbchargernotok)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_SAFETY_TIMER_EXPIRED_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_SAFETY_TIMER_EXPIRED);
++		/* Intentional fallthrough */
++
++	case STATE_SAFETY_TIMER_EXPIRED:
++		/* We exit this state when charger is removed */
++		break;
++
++	case STATE_NORMAL_INIT:
++		abx500_chargalg_start_charging(di,
++			di->bat->bat_type[di->bat->batt_id].normal_vol_lvl,
++			di->bat->bat_type[di->bat->batt_id].normal_cur_lvl);
++		abx500_chargalg_state_to(di, STATE_NORMAL);
++		abx500_chargalg_start_safety_timer(di);
++		abx500_chargalg_stop_maintenance_timer(di);
++		init_maxim_chg_curr(di);
++		di->charge_status = POWER_SUPPLY_STATUS_CHARGING;
++		di->eoc_cnt = 0;
++		di->maintenance_chg = false;
++		power_supply_changed(&di->chargalg_psy);
++
++		break;
++
++	case STATE_NORMAL:
++		handle_maxim_chg_curr(di);
++		if (di->charge_status == POWER_SUPPLY_STATUS_FULL &&
++			di->maintenance_chg) {
++			if (di->bat->no_maintenance)
++				abx500_chargalg_state_to(di,
++					STATE_WAIT_FOR_RECHARGE_INIT);
++			else
++				abx500_chargalg_state_to(di,
++					STATE_MAINTENANCE_A_INIT);
++		}
++		break;
++
++	/* This state will be used when the maintenance state is disabled */
++	case STATE_WAIT_FOR_RECHARGE_INIT:
++		abx500_chargalg_hold_charging(di);
++		abx500_chargalg_state_to(di, STATE_WAIT_FOR_RECHARGE);
++		di->rch_cnt = RCH_COND_CNT;
++		/* Intentional fallthrough */
++
++	case STATE_WAIT_FOR_RECHARGE:
++		if (di->batt_data.volt <=
++			di->bat->bat_type[di->bat->batt_id].recharge_vol) {
++			if (di->rch_cnt-- == 0)
++				abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		} else
++			di->rch_cnt = RCH_COND_CNT;
++		break;
++
++	case STATE_MAINTENANCE_A_INIT:
++		abx500_chargalg_stop_safety_timer(di);
++		abx500_chargalg_start_maintenance_timer(di,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_a_chg_timer_h);
++		abx500_chargalg_start_charging(di,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_a_vol_lvl,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_a_cur_lvl);
++		abx500_chargalg_state_to(di, STATE_MAINTENANCE_A);
++		power_supply_changed(&di->chargalg_psy);
++		/* Intentional fallthrough*/
++
++	case STATE_MAINTENANCE_A:
++		if (di->events.maintenance_timer_expired) {
++			abx500_chargalg_stop_maintenance_timer(di);
++			abx500_chargalg_state_to(di, STATE_MAINTENANCE_B_INIT);
++		}
++		break;
++
++	case STATE_MAINTENANCE_B_INIT:
++		abx500_chargalg_start_maintenance_timer(di,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_b_chg_timer_h);
++		abx500_chargalg_start_charging(di,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_b_vol_lvl,
++			di->bat->bat_type[
++				di->bat->batt_id].maint_b_cur_lvl);
++		abx500_chargalg_state_to(di, STATE_MAINTENANCE_B);
++		power_supply_changed(&di->chargalg_psy);
++		/* Intentional fallthrough*/
++
++	case STATE_MAINTENANCE_B:
++		if (di->events.maintenance_timer_expired) {
++			abx500_chargalg_stop_maintenance_timer(di);
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		}
++		break;
++
++	case STATE_TEMP_LOWHIGH_INIT:
++		abx500_chargalg_start_charging(di,
++			di->bat->bat_type[
++				di->bat->batt_id].low_high_vol_lvl,
++			di->bat->bat_type[
++				di->bat->batt_id].low_high_cur_lvl);
++		abx500_chargalg_stop_maintenance_timer(di);
++		di->charge_status = POWER_SUPPLY_STATUS_CHARGING;
++		abx500_chargalg_state_to(di, STATE_TEMP_LOWHIGH);
++		power_supply_changed(&di->chargalg_psy);
++		/* Intentional fallthrough */
++
++	case STATE_TEMP_LOWHIGH:
++		if (!di->events.btemp_lowhigh)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_WD_EXPIRED_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_WD_EXPIRED);
++		/* Intentional fallthrough */
++
++	case STATE_WD_EXPIRED:
++		if (!di->events.ac_wd_expired &&
++				!di->events.usb_wd_expired)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++
++	case STATE_TEMP_UNDEROVER_INIT:
++		abx500_chargalg_stop_charging(di);
++		abx500_chargalg_state_to(di, STATE_TEMP_UNDEROVER);
++		/* Intentional fallthrough */
++
++	case STATE_TEMP_UNDEROVER:
++		if (!di->events.btemp_underover)
++			abx500_chargalg_state_to(di, STATE_NORMAL_INIT);
++		break;
++	}
++
++	/* Start charging directly if the new state is a charge state */
++	if (di->charge_state == STATE_NORMAL_INIT ||
++			di->charge_state == STATE_MAINTENANCE_A_INIT ||
++			di->charge_state == STATE_MAINTENANCE_B_INIT)
++		queue_work(di->chargalg_wq, &di->chargalg_work);
++}
++
++/**
++ * abx500_chargalg_periodic_work() - Periodic work for the algorithm
++ * @work:	pointer to the work_struct structure
++ *
++ * Work queue function for the charging algorithm
++ */
++static void abx500_chargalg_periodic_work(struct work_struct *work)
++{
++	struct abx500_chargalg *di = container_of(work,
++		struct abx500_chargalg, chargalg_periodic_work.work);
++
++	abx500_chargalg_algorithm(di);
 +
 +	/*
-+	 * No need to check the battery voltage every second when not close to
-+	 * the threshold.
++	 * If a charger is connected then the battery has to be monitored
++	 * frequently, else the work can be delayed.
 +	 */
-+	if (di->vbat < (VBAT_TRESH_IP_CUR_RED + 100) &&
-+		(di->vbat > (VBAT_TRESH_IP_CUR_RED - 100)))
-+			t = 1;
-+
-+	queue_delayed_work(di->charger_wq, &di->check_vbat_work, t * HZ);
++	if (di->chg_info.conn_chg)
++		queue_delayed_work(di->chargalg_wq,
++			&di->chargalg_periodic_work,
++			di->bat->interval_charging * HZ);
++	else
++		queue_delayed_work(di->chargalg_wq,
++			&di->chargalg_periodic_work,
++			di->bat->interval_not_charging * HZ);
 +}
 +
 +/**
-+ * ab8500_charger_check_hw_failure_work() - check main charger failure
++ * abx500_chargalg_wd_work() - periodic work to kick the charger watchdog
 + * @work:	pointer to the work_struct structure
 + *
-+ * Work queue function for checking the main charger status
++ * Work queue function for kicking the charger watchdog
 + */
-+static void ab8500_charger_check_hw_failure_work(struct work_struct *work)
++static void abx500_chargalg_wd_work(struct work_struct *work)
 +{
 +	int ret;
-+	u8 reg_value;
++	struct abx500_chargalg *di = container_of(work,
++		struct abx500_chargalg, chargalg_wd_work.work);
 +
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, check_hw_failure_work.work);
++	dev_dbg(di->dev, "abx500_chargalg_wd_work\n");
 +
-+	/* Check if the status bits for HW failure is still active */
-+	if (di->flags.mainextchnotok) {
-+		ret = abx500_get_register_interruptible(di->dev,
-+			AB8500_CHARGER, AB8500_CH_STATUS2_REG, &reg_value);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return;
-+		}
-+		if (!(reg_value & MAIN_CH_NOK)) {
-+			di->flags.mainextchnotok = false;
-+			ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+		}
-+	}
-+	if (di->flags.vbus_ovv) {
-+		ret = abx500_get_register_interruptible(di->dev,
-+			AB8500_CHARGER, AB8500_CH_USBCH_STAT2_REG,
-+			&reg_value);
-+		if (ret < 0) {
-+			dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+			return;
-+		}
-+		if (!(reg_value & VBUS_OVV_TH)) {
-+			di->flags.vbus_ovv = false;
-+			ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+		}
-+	}
-+	/* If we still have a failure, schedule a new check */
-+	if (di->flags.mainextchnotok || di->flags.vbus_ovv) {
-+		queue_delayed_work(di->charger_wq,
-+			&di->check_hw_failure_work, round_jiffies(HZ));
-+	}
-+}
-+
-+/**
-+ * ab8500_charger_kick_watchdog_work() - kick the watchdog
-+ * @work:	pointer to the work_struct structure
-+ *
-+ * Work queue function for kicking the charger watchdog.
-+ *
-+ * For ABB revision 1.0 and 1.1 there is a bug in the watchdog
-+ * logic. That means we have to continously kick the charger
-+ * watchdog even when no charger is connected. This is only
-+ * valid once the AC charger has been enabled. This is
-+ * a bug that is not handled by the algorithm and the
-+ * watchdog have to be kicked by the charger driver
-+ * when the AC charger is disabled
-+ */
-+static void ab8500_charger_kick_watchdog_work(struct work_struct *work)
-+{
-+	int ret;
-+
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, kick_wd_work.work);
-+
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CHARG_WD_CTRL, CHARG_WD_KICK);
-+	if (ret)
-+		dev_err(di->dev, "Failed to kick WD!\n");
-+
-+	/* Schedule a new watchdog kick */
-+	queue_delayed_work(di->charger_wq,
-+		&di->kick_wd_work, round_jiffies(WD_KICK_INTERVAL));
-+}
-+
-+/**
-+ * ab8500_charger_ac_work() - work to get and set main charger status
-+ * @work:	pointer to the work_struct structure
-+ *
-+ * Work queue function for checking the main charger status
-+ */
-+static void ab8500_charger_ac_work(struct work_struct *work)
-+{
-+	int ret;
-+
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, ac_work);
-+
-+	/*
-+	 * Since we can't be sure that the events are received
-+	 * synchronously, we have the check if the main charger is
-+	 * connected by reading the status register
-+	 */
-+	ret = ab8500_charger_detect_chargers(di);
++	ret = abx500_chargalg_kick_watchdog(di);
 +	if (ret < 0)
-+		return;
++		dev_err(di->dev, "failed to kick watchdog\n");
 +
-+	if (ret & AC_PW_CONN) {
-+		di->ac.charger_connected = 1;
-+		di->ac_conn = true;
-+	} else {
-+		di->ac.charger_connected = 0;
-+	}
-+
-+	ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+	sysfs_notify(&di->ac_chg.psy.dev->kobj, NULL, "present");
++	queue_delayed_work(di->chargalg_wq,
++		&di->chargalg_wd_work, CHG_WD_INTERVAL);
 +}
 +
 +/**
-+ * ab8500_charger_detect_usb_type_work() - work to detect USB type
-+ * @work:	Pointer to the work_struct structure
++ * abx500_chargalg_work() - Work to run the charging algorithm instantly
++ * @work:	pointer to the work_struct structure
 + *
-+ * Detect the type of USB plugged
++ * Work queue function for calling the charging algorithm
 + */
-+void ab8500_charger_detect_usb_type_work(struct work_struct *work)
++static void abx500_chargalg_work(struct work_struct *work)
 +{
-+	int ret;
++	struct abx500_chargalg *di = container_of(work,
++		struct abx500_chargalg, chargalg_work);
 +
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, detect_usb_type_work);
++	abx500_chargalg_algorithm(di);
++}
 +
-+	/*
-+	 * Since we can't be sure that the events are received
-+	 * synchronously, we have the check if is
-+	 * connected by reading the status register
-+	 */
-+	ret = ab8500_charger_detect_chargers(di);
-+	if (ret < 0)
-+		return;
++/**
++ * abx500_chargalg_get_property() - get the chargalg properties
++ * @psy:	pointer to the power_supply structure
++ * @psp:	pointer to the power_supply_property structure
++ * @val:	pointer to the power_supply_propval union
++ *
++ * This function gets called when an application tries to get the
++ * chargalg properties by reading the sysfs files.
++ * status:     charging/discharging/full/unknown
++ * health:     health of the battery
++ * Returns error code in case of failure else 0 on success
++ */
++static int abx500_chargalg_get_property(struct power_supply *psy,
++	enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	struct abx500_chargalg *di;
 +
-+	if (!(ret & USB_PW_CONN)) {
-+		di->vbus_detected = 0;
-+		ab8500_charger_set_usb_connected(di, false);
-+		ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+	} else {
-+		di->vbus_detected = 1;
++	di = to_abx500_chargalg_device_info(psy);
 +
-+		if (is_ab8500_1p1_or_earlier(di->parent)) {
-+			ret = ab8500_charger_detect_usb_type(di);
-+			if (!ret) {
-+				ab8500_charger_set_usb_connected(di, true);
-+				ab8500_power_supply_changed(di,
-+							    &di->usb_chg.psy);
-+			}
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = di->charge_status;
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		if (di->events.batt_ovv) {
++			val->intval = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++		} else if (di->events.btemp_underover) {
++			if (di->batt_data.temp <= di->bat->temp_under)
++				val->intval = POWER_SUPPLY_HEALTH_COLD;
++			else
++				val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
 +		} else {
-+			/* For ABB cut2.0 and onwards we have an IRQ,
-+			 * USB_LINK_STATUS that will be triggered when the USB
-+			 * link status changes. The exception is USB connected
-+			 * during startup. Then we don't get a
-+			 * USB_LINK_STATUS IRQ
-+			 */
-+			if (di->vbus_detected_start) {
-+				di->vbus_detected_start = false;
-+				ret = ab8500_charger_detect_usb_type(di);
-+				if (!ret) {
-+					ab8500_charger_set_usb_connected(di,
-+						true);
-+					ab8500_power_supply_changed(di,
-+						&di->usb_chg.psy);
-+				}
-+			}
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
 +		}
++		break;
++	default:
++		return -EINVAL;
 +	}
++	return 0;
 +}
++
++/* Exposure to the sysfs interface */
 +
 +/**
-+ * ab8500_charger_usb_link_status_work() - work to detect USB type
-+ * @work:	pointer to the work_struct structure
++ * abx500_chargalg_sysfs_charger() - sysfs store operations
++ * @kobj:      pointer to the struct kobject
++ * @attr:      pointer to the struct attribute
++ * @buf:       buffer that holds the parameter passed from userspace
++ * @length:    length of the parameter passed
 + *
-+ * Detect the type of USB plugged
++ * Returns length of the buffer(input taken from user space) on success
++ * else error code on failure
++ * The operation to be performed on passing the parameters from the user space.
 + */
-+static void ab8500_charger_usb_link_status_work(struct work_struct *work)
++static ssize_t abx500_chargalg_sysfs_charger(struct kobject *kobj,
++	struct attribute *attr, const char *buf, size_t length)
 +{
++	struct abx500_chargalg *di = container_of(kobj,
++		struct abx500_chargalg, chargalg_kobject);
++	long int param;
++	int ac_usb;
 +	int ret;
++	char entry = *attr->name;
 +
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, usb_link_status_work);
++	switch (entry) {
++	case 'c':
++		ret = strict_strtol(buf, 10, &param);
++		if (ret < 0)
++			return ret;
 +
-+	/*
-+	 * Since we can't be sure that the events are received
-+	 * synchronously, we have the check if  is
-+	 * connected by reading the status register
-+	 */
-+	ret = ab8500_charger_detect_chargers(di);
-+	if (ret < 0)
-+		return;
-+
-+	if (!(ret & USB_PW_CONN)) {
-+		di->vbus_detected = 0;
-+		ab8500_charger_set_usb_connected(di, false);
-+		ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+	} else {
-+		di->vbus_detected = 1;
-+		ret = ab8500_charger_read_usb_type(di);
-+		if (!ret) {
-+			/* Update maximum input current */
-+			ret = ab8500_charger_set_vbus_in_curr(di,
-+					di->max_usb_in_curr);
-+			if (ret)
-+				return;
-+
-+			ab8500_charger_set_usb_connected(di, true);
-+			ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+		} else if (ret == -ENXIO) {
-+			/* No valid charger type detected */
-+			ab8500_charger_set_usb_connected(di, false);
-+			ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+		}
-+	}
-+}
-+
-+static void ab8500_charger_usb_state_changed_work(struct work_struct *work)
-+{
-+	int ret;
-+	unsigned long flags;
-+
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, usb_state_changed_work);
-+
-+	if (!di->vbus_detected)
-+		return;
-+
-+	spin_lock_irqsave(&di->usb_state.usb_lock, flags);
-+	di->usb_state.usb_changed = false;
-+	spin_unlock_irqrestore(&di->usb_state.usb_lock, flags);
-+
-+	/*
-+	 * wait for some time until you get updates from the usb stack
-+	 * and negotiations are completed
-+	 */
-+	msleep(250);
-+
-+	if (di->usb_state.usb_changed)
-+		return;
-+
-+	dev_dbg(di->dev, "%s USB state: 0x%02x mA: %d\n",
-+		__func__, di->usb_state.state, di->usb_state.usb_current);
-+
-+	switch (di->usb_state.state) {
-+	case AB8500_BM_USB_STATE_RESET_HS:
-+	case AB8500_BM_USB_STATE_RESET_FS:
-+	case AB8500_BM_USB_STATE_SUSPEND:
-+	case AB8500_BM_USB_STATE_MAX:
-+		ab8500_charger_set_usb_connected(di, false);
-+		ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+		break;
-+
-+	case AB8500_BM_USB_STATE_RESUME:
-+		/*
-+		 * when suspend->resume there should be delay
-+		 * of 1sec for enabling charging
-+		 */
-+		msleep(1000);
-+		/* Intentional fall through */
-+	case AB8500_BM_USB_STATE_CONFIGURED:
-+		/*
-+		 * USB is configured, enable charging with the charging
-+		 * input current obtained from USB driver
-+		 */
-+		if (!ab8500_charger_get_usb_cur(di)) {
-+			/* Update maximum input current */
-+			ret = ab8500_charger_set_vbus_in_curr(di,
-+					di->max_usb_in_curr);
-+			if (ret)
-+				return;
-+
-+			ab8500_charger_set_usb_connected(di, true);
-+			ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+		}
-+		break;
-+
-+	default:
++		ac_usb = param;
++		switch (ac_usb) {
++		case 0:
++			/* Disable charging */
++			di->susp_status.ac_suspended = true;
++			di->susp_status.usb_suspended = true;
++			di->susp_status.suspended_change = true;
++			/* Trigger a state change */
++			queue_work(di->chargalg_wq,
++				&di->chargalg_work);
++			break;
++		case 1:
++			/* Enable AC Charging */
++			di->susp_status.ac_suspended = false;
++			di->susp_status.suspended_change = true;
++			/* Trigger a state change */
++			queue_work(di->chargalg_wq,
++				&di->chargalg_work);
++			break;
++		case 2:
++			/* Enable USB charging */
++			di->susp_status.usb_suspended = false;
++			di->susp_status.suspended_change = true;
++			/* Trigger a state change */
++			queue_work(di->chargalg_wq,
++				&di->chargalg_work);
++			break;
++		default:
++			dev_info(di->dev, "Wrong input\n"
++				"Enter 0. Disable AC/USB Charging\n"
++				"1. Enable AC charging\n"
++				"2. Enable USB Charging\n");
++		};
 +		break;
 +	};
++	return strlen(buf);
 +}
 +
-+/**
-+ * ab8500_charger_check_usbchargernotok_work() - check USB chg not ok status
-+ * @work:	pointer to the work_struct structure
-+ *
-+ * Work queue function for checking the USB charger Not OK status
-+ */
-+static void ab8500_charger_check_usbchargernotok_work(struct work_struct *work)
++static struct attribute abx500_chargalg_en_charger = \
 +{
-+	int ret;
-+	u8 reg_value;
-+	bool prev_status;
++	.name = "chargalg",
++	.mode = S_IWUGO,
++};
 +
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, check_usbchgnotok_work.work);
++static struct attribute *abx500_chargalg_chg[] = {
++	&abx500_chargalg_en_charger,
++	NULL
++};
 +
-+	/* Check if the status bit for usbchargernotok is still active */
-+	ret = abx500_get_register_interruptible(di->dev,
-+		AB8500_CHARGER, AB8500_CH_USBCH_STAT2_REG, &reg_value);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return;
-+	}
-+	prev_status = di->flags.usbchargernotok;
++const struct sysfs_ops abx500_chargalg_sysfs_ops = {
++	.store = abx500_chargalg_sysfs_charger,
++};
 +
-+	if (reg_value & VBUS_CH_NOK) {
-+		di->flags.usbchargernotok = true;
-+		/* Check again in 1sec */
-+		queue_delayed_work(di->charger_wq,
-+			&di->check_usbchgnotok_work, HZ);
-+	} else {
-+		di->flags.usbchargernotok = false;
-+		di->flags.vbus_collapse = false;
-+	}
-+
-+	if (prev_status != di->flags.usbchargernotok)
-+		ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+}
++static struct kobj_type abx500_chargalg_ktype = {
++	.sysfs_ops = &abx500_chargalg_sysfs_ops,
++	.default_attrs = abx500_chargalg_chg,
++};
 +
 +/**
-+ * ab8500_charger_check_main_thermal_prot_work() - check main thermal status
-+ * @work:	pointer to the work_struct structure
++ * abx500_chargalg_sysfs_exit() - de-init of sysfs entry
++ * @di:                pointer to the struct abx500_chargalg
 + *
-+ * Work queue function for checking the Main thermal prot status
++ * This function removes the entry in sysfs.
 + */
-+static void ab8500_charger_check_main_thermal_prot_work(
-+	struct work_struct *work)
++static void abx500_chargalg_sysfs_exit(struct abx500_chargalg *di)
 +{
-+	int ret;
-+	u8 reg_value;
-+
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, check_main_thermal_prot_work);
-+
-+	/* Check if the status bit for main_thermal_prot is still active */
-+	ret = abx500_get_register_interruptible(di->dev,
-+		AB8500_CHARGER, AB8500_CH_STATUS2_REG, &reg_value);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return;
-+	}
-+	if (reg_value & MAIN_CH_TH_PROT)
-+		di->flags.main_thermal_prot = true;
-+	else
-+		di->flags.main_thermal_prot = false;
-+
-+	ab8500_power_supply_changed(di, &di->ac_chg.psy);
++	kobject_del(&di->chargalg_kobject);
 +}
 +
 +/**
-+ * ab8500_charger_check_usb_thermal_prot_work() - check usb thermal status
-+ * @work:	pointer to the work_struct structure
++ * abx500_chargalg_sysfs_init() - init of sysfs entry
++ * @di:                pointer to the struct abx500_chargalg
 + *
-+ * Work queue function for checking the USB thermal prot status
-+ */
-+static void ab8500_charger_check_usb_thermal_prot_work(
-+	struct work_struct *work)
-+{
-+	int ret;
-+	u8 reg_value;
-+
-+	struct ab8500_charger *di = container_of(work,
-+		struct ab8500_charger, check_usb_thermal_prot_work);
-+
-+	/* Check if the status bit for usb_thermal_prot is still active */
-+	ret = abx500_get_register_interruptible(di->dev,
-+		AB8500_CHARGER, AB8500_CH_USBCH_STAT2_REG, &reg_value);
-+	if (ret < 0) {
-+		dev_err(di->dev, "%s ab8500 read failed\n", __func__);
-+		return;
-+	}
-+	if (reg_value & USB_CH_TH_PROT)
-+		di->flags.usb_thermal_prot = true;
-+	else
-+		di->flags.usb_thermal_prot = false;
-+
-+	ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+}
-+
-+/**
-+ * ab8500_charger_mainchunplugdet_handler() - main charger unplugged
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_mainchunplugdet_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "Main charger unplugged\n");
-+	queue_work(di->charger_wq, &di->ac_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_mainchplugdet_handler() - main charger plugged
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_mainchplugdet_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "Main charger plugged\n");
-+	queue_work(di->charger_wq, &di->ac_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_mainextchnotok_handler() - main charger not ok
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_mainextchnotok_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "Main charger not ok\n");
-+	di->flags.mainextchnotok = true;
-+	ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+
-+	/* Schedule a new HW failure check */
-+	queue_delayed_work(di->charger_wq, &di->check_hw_failure_work, 0);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_mainchthprotr_handler() - Die temp is above main charger
-+ * thermal protection threshold
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_mainchthprotr_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev,
-+		"Die temp above Main charger thermal protection threshold\n");
-+	queue_work(di->charger_wq, &di->check_main_thermal_prot_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_mainchthprotf_handler() - Die temp is below main charger
-+ * thermal protection threshold
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_mainchthprotf_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev,
-+		"Die temp ok for Main charger thermal protection threshold\n");
-+	queue_work(di->charger_wq, &di->check_main_thermal_prot_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_vbusdetf_handler() - VBUS falling detected
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_vbusdetf_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "VBUS falling detected\n");
-+	queue_work(di->charger_wq, &di->detect_usb_type_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_vbusdetr_handler() - VBUS rising detected
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_vbusdetr_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	di->vbus_detected = true;
-+	dev_dbg(di->dev, "VBUS rising detected\n");
-+	queue_work(di->charger_wq, &di->detect_usb_type_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_usblinkstatus_handler() - USB link status has changed
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_usblinkstatus_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "USB link status changed\n");
-+
-+	queue_work(di->charger_wq, &di->usb_link_status_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_usbchthprotr_handler() - Die temp is above usb charger
-+ * thermal protection threshold
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_usbchthprotr_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev,
-+		"Die temp above USB charger thermal protection threshold\n");
-+	queue_work(di->charger_wq, &di->check_usb_thermal_prot_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_usbchthprotf_handler() - Die temp is below usb charger
-+ * thermal protection threshold
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_usbchthprotf_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev,
-+		"Die temp ok for USB charger thermal protection threshold\n");
-+	queue_work(di->charger_wq, &di->check_usb_thermal_prot_work);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_usbchargernotokr_handler() - USB charger not ok detected
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_usbchargernotokr_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "Not allowed USB charger detected\n");
-+	queue_delayed_work(di->charger_wq, &di->check_usbchgnotok_work, 0);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_chwdexp_handler() - Charger watchdog expired
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_chwdexp_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "Charger watchdog expired\n");
-+
-+	/*
-+	 * The charger that was online when the watchdog expired
-+	 * needs to be restarted for charging to start again
-+	 */
-+	if (di->ac.charger_online) {
-+		di->ac.wd_expired = true;
-+		ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+	}
-+	if (di->usb.charger_online) {
-+		di->usb.wd_expired = true;
-+		ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_vbusovv_handler() - VBUS overvoltage detected
-+ * @irq:       interrupt number
-+ * @_di:       pointer to the ab8500_charger structure
-+ *
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_charger_vbusovv_handler(int irq, void *_di)
-+{
-+	struct ab8500_charger *di = _di;
-+
-+	dev_dbg(di->dev, "VBUS overvoltage detected\n");
-+	di->flags.vbus_ovv = true;
-+	ab8500_power_supply_changed(di, &di->usb_chg.psy);
-+
-+	/* Schedule a new HW failure check */
-+	queue_delayed_work(di->charger_wq, &di->check_hw_failure_work, 0);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * ab8500_charger_ac_get_property() - get the ac/mains properties
-+ * @psy:       pointer to the power_supply structure
-+ * @psp:       pointer to the power_supply_property structure
-+ * @val:       pointer to the power_supply_propval union
-+ *
-+ * This function gets called when an application tries to get the ac/mains
-+ * properties by reading the sysfs files.
-+ * AC/Mains properties are online, present and voltage.
-+ * online:     ac/mains charging is in progress or not
-+ * present:    presence of the ac/mains
-+ * voltage:    AC/Mains voltage
++ * This function adds an entry in sysfs.
 + * Returns error code in case of failure else 0(on success)
 + */
-+static int ab8500_charger_ac_get_property(struct power_supply *psy,
-+	enum power_supply_property psp,
-+	union power_supply_propval *val)
-+{
-+	struct ab8500_charger *di;
-+
-+	di = to_ab8500_charger_ac_device_info(psy_to_ux500_charger(psy));
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		if (di->flags.mainextchnotok)
-+			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+		else if (di->ac.wd_expired || di->usb.wd_expired)
-+			val->intval = POWER_SUPPLY_HEALTH_DEAD;
-+		else if (di->flags.main_thermal_prot)
-+			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
-+		else
-+			val->intval = POWER_SUPPLY_HEALTH_GOOD;
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = di->ac.charger_online;
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = di->ac.charger_connected;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		di->ac.charger_voltage = ab8500_charger_get_ac_voltage(di);
-+		val->intval = di->ac.charger_voltage * 1000;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		/*
-+		 * This property is used to indicate when CV mode is entered
-+		 * for the AC charger
-+		 */
-+		di->ac.cv_active = ab8500_charger_ac_cv(di);
-+		val->intval = di->ac.cv_active;
-+		break;
-+	case POWER_SUPPLY_PROP_CURRENT_NOW:
-+		val->intval = ab8500_charger_get_ac_current(di) * 1000;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * ab8500_charger_usb_get_property() - get the usb properties
-+ * @psy:        pointer to the power_supply structure
-+ * @psp:        pointer to the power_supply_property structure
-+ * @val:        pointer to the power_supply_propval union
-+ *
-+ * This function gets called when an application tries to get the usb
-+ * properties by reading the sysfs files.
-+ * USB properties are online, present and voltage.
-+ * online:     usb charging is in progress or not
-+ * present:    presence of the usb
-+ * voltage:    vbus voltage
-+ * Returns error code in case of failure else 0(on success)
-+ */
-+static int ab8500_charger_usb_get_property(struct power_supply *psy,
-+	enum power_supply_property psp,
-+	union power_supply_propval *val)
-+{
-+	struct ab8500_charger *di;
-+
-+	di = to_ab8500_charger_usb_device_info(psy_to_ux500_charger(psy));
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_HEALTH:
-+		if (di->flags.usbchargernotok)
-+			val->intval = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-+		else if (di->ac.wd_expired || di->usb.wd_expired)
-+			val->intval = POWER_SUPPLY_HEALTH_DEAD;
-+		else if (di->flags.usb_thermal_prot)
-+			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
-+		else if (di->flags.vbus_ovv)
-+			val->intval = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
-+		else
-+			val->intval = POWER_SUPPLY_HEALTH_GOOD;
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = di->usb.charger_online;
-+		break;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = di->usb.charger_connected;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+		di->usb.charger_voltage = ab8500_charger_get_vbus_voltage(di);
-+		val->intval = di->usb.charger_voltage * 1000;
-+		break;
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		/*
-+		 * This property is used to indicate when CV mode is entered
-+		 * for the USB charger
-+		 */
-+		di->usb.cv_active = ab8500_charger_usb_cv(di);
-+		val->intval = di->usb.cv_active;
-+		break;
-+	case POWER_SUPPLY_PROP_CURRENT_NOW:
-+		val->intval = ab8500_charger_get_usb_current(di) * 1000;
-+		break;
-+	case POWER_SUPPLY_PROP_CURRENT_AVG:
-+		/*
-+		 * This property is used to indicate when VBUS has collapsed
-+		 * due to too high output current from the USB charger
-+		 */
-+		if (di->flags.vbus_collapse)
-+			val->intval = 1;
-+		else
-+			val->intval = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * ab8500_charger_init_hw_registers() - Set up charger related registers
-+ * @di:		pointer to the ab8500_charger structure
-+ *
-+ * Set up charger OVV, watchdog and maximum voltage registers as well as
-+ * charging of the backup battery
-+ */
-+static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
++static int abx500_chargalg_sysfs_init(struct abx500_chargalg *di)
 +{
 +	int ret = 0;
 +
-+	/* Setup maximum charger current and voltage for ABB cut2.0 */
-+	if (!is_ab8500_1p1_or_earlier(di->parent)) {
-+		ret = abx500_set_register_interruptible(di->dev,
-+			AB8500_CHARGER,
-+			AB8500_CH_VOLT_LVL_MAX_REG, CH_VOL_LVL_4P6);
-+		if (ret) {
-+			dev_err(di->dev,
-+				"failed to set CH_VOLT_LVL_MAX_REG\n");
-+			goto out;
-+		}
-+
-+		ret = abx500_set_register_interruptible(di->dev,
-+			AB8500_CHARGER,
-+			AB8500_CH_OPT_CRNTLVL_MAX_REG, CH_OP_CUR_LVL_1P6);
-+		if (ret) {
-+			dev_err(di->dev,
-+				"failed to set CH_OPT_CRNTLVL_MAX_REG\n");
-+			goto out;
-+		}
-+	}
-+
-+	/* VBUS OVV set to 6.3V and enable automatic current limitiation */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_CHARGER,
-+		AB8500_USBCH_CTRL2_REG,
-+		VBUS_OVV_SELECT_6P3V | VBUS_AUTO_IN_CURR_LIM_ENA);
-+	if (ret) {
-+		dev_err(di->dev, "failed to set VBUS OVV\n");
-+		goto out;
-+	}
-+
-+	/* Enable main watchdog in OTP */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_OTP_EMUL, AB8500_OTP_CONF_15, OTP_ENABLE_WD);
-+	if (ret) {
-+		dev_err(di->dev, "failed to enable main WD in OTP\n");
-+		goto out;
-+	}
-+
-+	/* Enable main watchdog */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_SYS_CTRL2_BLOCK,
-+		AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_ENA);
-+	if (ret) {
-+		dev_err(di->dev, "faile to enable main watchdog\n");
-+		goto out;
-+	}
-+
-+	/*
-+	 * Due to internal synchronisation, Enable and Kick watchdog bits
-+	 * cannot be enabled in a single write.
-+	 * A minimum delay of 2*32 kHz period (62.5µs) must be inserted
-+	 * between writing Enable then Kick bits.
-+	 */
-+	udelay(63);
-+
-+	/* Kick main watchdog */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_SYS_CTRL2_BLOCK,
-+		AB8500_MAIN_WDOG_CTRL_REG,
-+		(MAIN_WDOG_ENA | MAIN_WDOG_KICK));
-+	if (ret) {
-+		dev_err(di->dev, "failed to kick main watchdog\n");
-+		goto out;
-+	}
-+
-+	/* Disable main watchdog */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_SYS_CTRL2_BLOCK,
-+		AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_DIS);
-+	if (ret) {
-+		dev_err(di->dev, "failed to disable main watchdog\n");
-+		goto out;
-+	}
-+
-+	/* Set watchdog timeout */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+		AB8500_CH_WD_TIMER_REG, WD_TIMER);
-+	if (ret) {
-+		dev_err(di->dev, "failed to set charger watchdog timeout\n");
-+		goto out;
-+	}
-+
-+	/* Backup battery voltage and current */
-+	ret = abx500_set_register_interruptible(di->dev,
-+		AB8500_RTC,
-+		AB8500_RTC_BACKUP_CHG_REG,
-+		di->bat->bkup_bat_v |
-+		di->bat->bkup_bat_i);
-+	if (ret) {
-+		dev_err(di->dev, "failed to setup backup battery charging\n");
-+		goto out;
-+	}
-+
-+	/* Enable backup battery charging */
-+	abx500_mask_and_set_register_interruptible(di->dev,
-+		AB8500_RTC, AB8500_RTC_CTRL_REG,
-+		RTC_BUP_CH_ENA, RTC_BUP_CH_ENA);
++	ret = kobject_init_and_add(&di->chargalg_kobject,
++		&abx500_chargalg_ktype,
++		NULL, "abx500_chargalg");
 +	if (ret < 0)
-+		dev_err(di->dev, "%s mask and set failed\n", __func__);
++		dev_err(di->dev, "failed to create sysfs entry\n");
 +
-+out:
 +	return ret;
 +}
-+
-+/*
-+ * ab8500 charger driver interrupts and their respective isr
-+ */
-+static struct ab8500_charger_interrupts ab8500_charger_irq[] = {
-+	{"MAIN_CH_UNPLUG_DET", ab8500_charger_mainchunplugdet_handler},
-+	{"MAIN_CHARGE_PLUG_DET", ab8500_charger_mainchplugdet_handler},
-+	{"MAIN_EXT_CH_NOT_OK", ab8500_charger_mainextchnotok_handler},
-+	{"MAIN_CH_TH_PROT_R", ab8500_charger_mainchthprotr_handler},
-+	{"MAIN_CH_TH_PROT_F", ab8500_charger_mainchthprotf_handler},
-+	{"VBUS_DET_F", ab8500_charger_vbusdetf_handler},
-+	{"VBUS_DET_R", ab8500_charger_vbusdetr_handler},
-+	{"USB_LINK_STATUS", ab8500_charger_usblinkstatus_handler},
-+	{"USB_CH_TH_PROT_R", ab8500_charger_usbchthprotr_handler},
-+	{"USB_CH_TH_PROT_F", ab8500_charger_usbchthprotf_handler},
-+	{"USB_CHARGER_NOT_OKR", ab8500_charger_usbchargernotokr_handler},
-+	{"VBUS_OVV", ab8500_charger_vbusovv_handler},
-+	{"CH_WD_EXP", ab8500_charger_chwdexp_handler},
-+};
-+
-+static int ab8500_charger_usb_notifier_call(struct notifier_block *nb,
-+		unsigned long event, void *power)
-+{
-+	struct ab8500_charger *di =
-+		container_of(nb, struct ab8500_charger, nb);
-+	enum ab8500_usb_state bm_usb_state;
-+	unsigned mA = *((unsigned *)power);
-+
-+	if (event != USB_EVENT_VBUS) {
-+		dev_dbg(di->dev, "not a standard host, returning\n");
-+		return NOTIFY_DONE;
-+	}
-+
-+	/* TODO: State is fabricate  here. See if charger really needs USB
-+	 * state or if mA is enough
-+	 */
-+	if ((di->usb_state.usb_current == 2) && (mA > 2))
-+		bm_usb_state = AB8500_BM_USB_STATE_RESUME;
-+	else if (mA == 0)
-+		bm_usb_state = AB8500_BM_USB_STATE_RESET_HS;
-+	else if (mA == 2)
-+		bm_usb_state = AB8500_BM_USB_STATE_SUSPEND;
-+	else if (mA >= 8) /* 8, 100, 500 */
-+		bm_usb_state = AB8500_BM_USB_STATE_CONFIGURED;
-+	else /* Should never occur */
-+		bm_usb_state = AB8500_BM_USB_STATE_RESET_FS;
-+
-+	dev_dbg(di->dev, "%s usb_state: 0x%02x mA: %d\n",
-+		__func__, bm_usb_state, mA);
-+
-+	spin_lock(&di->usb_state.usb_lock);
-+	di->usb_state.usb_changed = true;
-+	spin_unlock(&di->usb_state.usb_lock);
-+
-+	di->usb_state.state = bm_usb_state;
-+	di->usb_state.usb_current = mA;
-+
-+	queue_work(di->charger_wq, &di->usb_state_changed_work);
-+
-+	return NOTIFY_OK;
-+}
++/* Exposure to the sysfs interface <<END>> */
 +
 +#if defined(CONFIG_PM)
-+static int ab8500_charger_resume(struct platform_device *pdev)
++static int abx500_chargalg_resume(struct platform_device *pdev)
 +{
-+	int ret;
-+	struct ab8500_charger *di = platform_get_drvdata(pdev);
++	struct abx500_chargalg *di = platform_get_drvdata(pdev);
++
++	/* Kick charger watchdog if charging (any charger online) */
++	if (di->chg_info.online_chg)
++		queue_delayed_work(di->chargalg_wq, &di->chargalg_wd_work, 0);
 +
 +	/*
-+	 * For ABB revision 1.0 and 1.1 there is a bug in the watchdog
-+	 * logic. That means we have to continously kick the charger
-+	 * watchdog even when no charger is connected. This is only
-+	 * valid once the AC charger has been enabled. This is
-+	 * a bug that is not handled by the algorithm and the
-+	 * watchdog have to be kicked by the charger driver
-+	 * when the AC charger is disabled
++	 * Run the charging algorithm directly to be sure we don't
++	 * do it too seldom
 +	 */
-+	if (di->ac_conn && is_ab8500_1p1_or_earlier(di->parent)) {
-+		ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
-+			AB8500_CHARG_WD_CTRL, CHARG_WD_KICK);
-+		if (ret)
-+			dev_err(di->dev, "Failed to kick WD!\n");
-+
-+		/* If not already pending start a new timer */
-+		if (!delayed_work_pending(
-+			&di->kick_wd_work)) {
-+			queue_delayed_work(di->charger_wq, &di->kick_wd_work,
-+				round_jiffies(WD_KICK_INTERVAL));
-+		}
-+	}
-+
-+	/* If we still have a HW failure, schedule a new check */
-+	if (di->flags.mainextchnotok || di->flags.vbus_ovv) {
-+		queue_delayed_work(di->charger_wq,
-+			&di->check_hw_failure_work, 0);
-+	}
++	queue_delayed_work(di->chargalg_wq, &di->chargalg_periodic_work, 0);
 +
 +	return 0;
 +}
 +
-+static int ab8500_charger_suspend(struct platform_device *pdev,
++static int abx500_chargalg_suspend(struct platform_device *pdev,
 +	pm_message_t state)
 +{
-+	struct ab8500_charger *di = platform_get_drvdata(pdev);
++	struct abx500_chargalg *di = platform_get_drvdata(pdev);
 +
-+	/* Cancel any pending HW failure check */
-+	if (delayed_work_pending(&di->check_hw_failure_work))
-+		cancel_delayed_work(&di->check_hw_failure_work);
++	if (di->chg_info.online_chg)
++		cancel_delayed_work_sync(&di->chargalg_wd_work);
++
++	cancel_delayed_work_sync(&di->chargalg_periodic_work);
 +
 +	return 0;
 +}
 +#else
-+#define ab8500_charger_suspend      NULL
-+#define ab8500_charger_resume       NULL
++#define abx500_chargalg_suspend      NULL
++#define abx500_chargalg_resume       NULL
 +#endif
 +
-+static int __devexit ab8500_charger_remove(struct platform_device *pdev)
++static int __devexit abx500_chargalg_remove(struct platform_device *pdev)
 +{
-+	struct ab8500_charger *di = platform_get_drvdata(pdev);
-+	int i, irq, ret;
++	struct abx500_chargalg *di = platform_get_drvdata(pdev);
 +
-+	/* Disable AC charging */
-+	ab8500_charger_ac_en(&di->ac_chg, false, 0, 0);
-+
-+	/* Disable USB charging */
-+	ab8500_charger_usb_en(&di->usb_chg, false, 0, 0);
-+
-+	/* Disable interrupts */
-+	for (i = 0; i < ARRAY_SIZE(ab8500_charger_irq); i++) {
-+		irq = platform_get_irq_byname(pdev, ab8500_charger_irq[i].name);
-+		free_irq(irq, di);
-+	}
-+
-+	/* disable the regulator */
-+	regulator_put(di->regu);
-+
-+	/* Backup battery voltage and current disable */
-+	ret = abx500_mask_and_set_register_interruptible(di->dev,
-+		AB8500_RTC, AB8500_RTC_CTRL_REG, RTC_BUP_CH_ENA, 0);
-+	if (ret < 0)
-+		dev_err(di->dev, "%s mask and set failed\n", __func__);
-+
-+	otg_unregister_notifier(di->otg, &di->nb);
-+	otg_put_transceiver(di->otg);
++	/* sysfs interface to enable/disbale charging from user space */
++	abx500_chargalg_sysfs_exit(di);
 +
 +	/* Delete the work queue */
-+	destroy_workqueue(di->charger_wq);
++	destroy_workqueue(di->chargalg_wq);
 +
 +	flush_scheduled_work();
-+	power_supply_unregister(&di->usb_chg.psy);
-+	power_supply_unregister(&di->ac_chg.psy);
++	power_supply_unregister(&di->chargalg_psy);
 +	platform_set_drvdata(pdev, NULL);
 +	kfree(di);
 +
 +	return 0;
 +}
 +
-+static int __devinit ab8500_charger_probe(struct platform_device *pdev)
++static int __devinit abx500_chargalg_probe(struct platform_device *pdev)
 +{
-+	int irq, i, charger_status, ret = 0;
 +	struct abx500_bm_plat_data *plat_data;
++	int ret = 0;
 +
-+	struct ab8500_charger *di =
-+		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
++	struct abx500_chargalg *di =
++		kzalloc(sizeof(struct abx500_chargalg), GFP_KERNEL);
 +	if (!di)
 +		return -ENOMEM;
 +
-+	/* get parent data */
++	/* get device struct */
 +	di->dev = &pdev->dev;
-+	di->parent = dev_get_drvdata(pdev->dev.parent);
-+	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
 +
-+	/* initialize lock */
-+	spin_lock_init(&di->usb_state.usb_lock);
-+
-+	/* get charger specific platform data */
 +	plat_data = pdev->dev.platform_data;
-+	di->pdata = plat_data->charger;
-+
-+	if (!di->pdata) {
-+		dev_err(di->dev, "no charger platform data supplied\n");
-+		ret = -EINVAL;
-+		goto free_device_info;
-+	}
-+
-+	/* get battery specific platform data */
++	di->pdata = plat_data->chargalg;
 +	di->bat = plat_data->battery;
-+	if (!di->bat) {
-+		dev_err(di->dev, "no battery platform data supplied\n");
-+		ret = -EINVAL;
-+		goto free_device_info;
-+	}
 +
-+	di->autopower = false;
++	/* chargalg supply */
++	di->chargalg_psy.name = "abx500_chargalg";
++	di->chargalg_psy.type = POWER_SUPPLY_TYPE_BATTERY;
++	di->chargalg_psy.properties = abx500_chargalg_props;
++	di->chargalg_psy.num_properties = ARRAY_SIZE(abx500_chargalg_props);
++	di->chargalg_psy.get_property = abx500_chargalg_get_property;
++	di->chargalg_psy.supplied_to = di->pdata->supplied_to;
++	di->chargalg_psy.num_supplicants = di->pdata->num_supplicants;
++	di->chargalg_psy.external_power_changed =
++		abx500_chargalg_external_power_changed;
 +
-+	/* AC supply */
-+	/* power_supply base class */
-+	di->ac_chg.psy.name = "ab8500_ac";
-+	di->ac_chg.psy.type = POWER_SUPPLY_TYPE_MAINS;
-+	di->ac_chg.psy.properties = ab8500_charger_ac_props;
-+	di->ac_chg.psy.num_properties = ARRAY_SIZE(ab8500_charger_ac_props);
-+	di->ac_chg.psy.get_property = ab8500_charger_ac_get_property;
-+	di->ac_chg.psy.supplied_to = di->pdata->supplied_to;
-+	di->ac_chg.psy.num_supplicants = di->pdata->num_supplicants;
-+	/* ux500_charger sub-class */
-+	di->ac_chg.ops.enable = &ab8500_charger_ac_en;
-+	di->ac_chg.ops.kick_wd = &ab8500_charger_watchdog_kick;
-+	di->ac_chg.ops.update_curr = &ab8500_charger_update_charger_current;
-+	di->ac_chg.max_out_volt = ab8500_charger_voltage_map[
-+		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
-+	di->ac_chg.max_out_curr = ab8500_charger_current_map[
-+		ARRAY_SIZE(ab8500_charger_current_map) - 1];
++	/* Initilialize safety timer */
++	init_timer(&di->safety_timer);
++	di->safety_timer.function = abx500_chargalg_safety_timer_expired;
++	di->safety_timer.data = (unsigned long) di;
 +
-+	/* USB supply */
-+	/* power_supply base class */
-+	di->usb_chg.psy.name = "ab8500_usb";
-+	di->usb_chg.psy.type = POWER_SUPPLY_TYPE_USB;
-+	di->usb_chg.psy.properties = ab8500_charger_usb_props;
-+	di->usb_chg.psy.num_properties = ARRAY_SIZE(ab8500_charger_usb_props);
-+	di->usb_chg.psy.get_property = ab8500_charger_usb_get_property;
-+	di->usb_chg.psy.supplied_to = di->pdata->supplied_to;
-+	di->usb_chg.psy.num_supplicants = di->pdata->num_supplicants;
-+	/* ux500_charger sub-class */
-+	di->usb_chg.ops.enable = &ab8500_charger_usb_en;
-+	di->usb_chg.ops.kick_wd = &ab8500_charger_watchdog_kick;
-+	di->usb_chg.ops.update_curr = &ab8500_charger_update_charger_current;
-+	di->usb_chg.max_out_volt = ab8500_charger_voltage_map[
-+		ARRAY_SIZE(ab8500_charger_voltage_map) - 1];
-+	di->usb_chg.max_out_curr = ab8500_charger_current_map[
-+		ARRAY_SIZE(ab8500_charger_current_map) - 1];
++	/* Initilialize maintenance timer */
++	init_timer(&di->maintenance_timer);
++	di->maintenance_timer.function =
++		abx500_chargalg_maintenance_timer_expired;
++	di->maintenance_timer.data = (unsigned long) di;
 +
-+
-+	/* Create a work queue for the charger */
-+	di->charger_wq =
-+		create_singlethread_workqueue("ab8500_charger_wq");
-+	if (di->charger_wq == NULL) {
++	/* Create a work queue for the chargalg */
++	di->chargalg_wq =
++		create_singlethread_workqueue("abx500_chargalg_wq");
++	if (di->chargalg_wq == NULL) {
 +		dev_err(di->dev, "failed to create work queue\n");
 +		goto free_device_info;
 +	}
 +
-+	/* Init work for HW failure check */
-+	INIT_DELAYED_WORK_DEFERRABLE(&di->check_hw_failure_work,
-+		ab8500_charger_check_hw_failure_work);
-+	INIT_DELAYED_WORK_DEFERRABLE(&di->check_usbchgnotok_work,
-+		ab8500_charger_check_usbchargernotok_work);
++	/* Init work for chargalg */
++	INIT_DELAYED_WORK_DEFERRABLE(&di->chargalg_periodic_work,
++		abx500_chargalg_periodic_work);
++	INIT_DELAYED_WORK_DEFERRABLE(&di->chargalg_wd_work,
++		abx500_chargalg_wd_work);
 +
-+	/*
-+	 * For ABB revision 1.0 and 1.1 there is a bug in the watchdog
-+	 * logic. That means we have to continously kick the charger
-+	 * watchdog even when no charger is connected. This is only
-+	 * valid once the AC charger has been enabled. This is
-+	 * a bug that is not handled by the algorithm and the
-+	 * watchdog have to be kicked by the charger driver
-+	 * when the AC charger is disabled
-+	 */
-+	INIT_DELAYED_WORK_DEFERRABLE(&di->kick_wd_work,
-+		ab8500_charger_kick_watchdog_work);
++	/* Init work for chargalg */
++	INIT_WORK(&di->chargalg_work, abx500_chargalg_work);
 +
-+	INIT_DELAYED_WORK_DEFERRABLE(&di->check_vbat_work,
-+		ab8500_charger_check_vbat_work);
++	/* To detect charger at startup */
++	di->chg_info.prev_conn_chg = -1;
 +
-+	/* Init work for charger detection */
-+	INIT_WORK(&di->usb_link_status_work,
-+		ab8500_charger_usb_link_status_work);
-+	INIT_WORK(&di->ac_work, ab8500_charger_ac_work);
-+	INIT_WORK(&di->detect_usb_type_work,
-+		ab8500_charger_detect_usb_type_work);
-+
-+	INIT_WORK(&di->usb_state_changed_work,
-+		ab8500_charger_usb_state_changed_work);
-+
-+	/* Init work for checking HW status */
-+	INIT_WORK(&di->check_main_thermal_prot_work,
-+		ab8500_charger_check_main_thermal_prot_work);
-+	INIT_WORK(&di->check_usb_thermal_prot_work,
-+		ab8500_charger_check_usb_thermal_prot_work);
-+
-+	/*
-+	 * VDD ADC supply needs to be enabled from this driver when there
-+	 * is a charger connected to avoid erroneous BTEMP_HIGH/LOW
-+	 * interrupts during charging
-+	 */
-+	di->regu = regulator_get(di->dev, "vddadc");
-+	if (IS_ERR(di->regu)) {
-+		ret = PTR_ERR(di->regu);
-+		dev_err(di->dev, "failed to get vddadc regulator\n");
-+		goto free_charger_wq;
-+	}
-+
-+
-+	/* Initialize OVV, and other registers */
-+	ret = ab8500_charger_init_hw_registers(di);
++	/* Register chargalg power supply class */
++	ret = power_supply_register(di->dev, &di->chargalg_psy);
 +	if (ret) {
-+		dev_err(di->dev, "failed to initialize ABB registers\n");
-+		goto free_regulator;
-+	}
-+
-+	/* Register AC charger class */
-+	ret = power_supply_register(di->dev, &di->ac_chg.psy);
-+	if (ret) {
-+		dev_err(di->dev, "failed to register AC charger\n");
-+		goto free_regulator;
-+	}
-+
-+	/* Register USB charger class */
-+	ret = power_supply_register(di->dev, &di->usb_chg.psy);
-+	if (ret) {
-+		dev_err(di->dev, "failed to register USB charger\n");
-+		goto free_ac;
-+	}
-+
-+	di->otg = otg_get_transceiver();
-+	if (!di->otg) {
-+		dev_err(di->dev, "failed to get otg transceiver\n");
-+		ret = -EINVAL;
-+		goto free_usb;
-+	}
-+	di->nb.notifier_call = ab8500_charger_usb_notifier_call;
-+	ret = otg_register_notifier(di->otg, &di->nb);
-+	if (ret) {
-+		dev_err(di->dev, "failed to register otg notifier\n");
-+		goto put_otg_transceiver;
-+	}
-+
-+	/* Identify the connected charger types during startup */
-+	charger_status = ab8500_charger_detect_chargers(di);
-+	if (charger_status & AC_PW_CONN) {
-+		di->ac.charger_connected = 1;
-+		di->ac_conn = true;
-+		ab8500_power_supply_changed(di, &di->ac_chg.psy);
-+		sysfs_notify(&di->ac_chg.psy.dev->kobj, NULL, "present");
-+	}
-+
-+	if (charger_status & USB_PW_CONN) {
-+		dev_dbg(di->dev, "VBUS Detect during startup\n");
-+		di->vbus_detected = true;
-+		di->vbus_detected_start = true;
-+		queue_work(di->charger_wq,
-+			&di->detect_usb_type_work);
-+	}
-+
-+	/* Register interrupts */
-+	for (i = 0; i < ARRAY_SIZE(ab8500_charger_irq); i++) {
-+		irq = platform_get_irq_byname(pdev, ab8500_charger_irq[i].name);
-+		ret = request_threaded_irq(irq, NULL, ab8500_charger_irq[i].isr,
-+			IRQF_SHARED | IRQF_NO_SUSPEND,
-+			ab8500_charger_irq[i].name, di);
-+
-+		if (ret != 0) {
-+			dev_err(di->dev, "failed to request %s IRQ %d: %d\n"
-+				, ab8500_charger_irq[i].name, irq, ret);
-+			goto free_irq;
-+		}
-+		dev_dbg(di->dev, "Requested %s IRQ %d: %d\n",
-+			ab8500_charger_irq[i].name, irq, ret);
++		dev_err(di->dev, "failed to register chargalg psy\n");
++		goto free_chargalg_wq;
 +	}
 +
 +	platform_set_drvdata(pdev, di);
 +
++	/* sysfs interface to enable/disable charging from user space */
++	ret = abx500_chargalg_sysfs_init(di);
++	if (ret) {
++		dev_err(di->dev, "failed to create sysfs entry\n");
++		goto free_psy;
++	}
++
++	/* Run the charging algorithm */
++	queue_delayed_work(di->chargalg_wq, &di->chargalg_periodic_work, 0);
++
++	dev_info(di->dev, "probe success\n");
 +	return ret;
 +
-+free_irq:
-+	otg_unregister_notifier(di->otg, &di->nb);
-+
-+	/* We also have to free all successfully registered irqs */
-+	for (i = i - 1; i >= 0; i--) {
-+		irq = platform_get_irq_byname(pdev, ab8500_charger_irq[i].name);
-+		free_irq(irq, di);
-+	}
-+put_otg_transceiver:
-+	otg_put_transceiver(di->otg);
-+free_usb:
-+	power_supply_unregister(&di->usb_chg.psy);
-+free_ac:
-+	power_supply_unregister(&di->ac_chg.psy);
-+free_regulator:
-+	regulator_put(di->regu);
-+free_charger_wq:
-+	destroy_workqueue(di->charger_wq);
++free_psy:
++	power_supply_unregister(&di->chargalg_psy);
++free_chargalg_wq:
++	destroy_workqueue(di->chargalg_wq);
 +free_device_info:
 +	kfree(di);
 +
 +	return ret;
 +}
 +
-+static struct platform_driver ab8500_charger_driver = {
-+	.probe = ab8500_charger_probe,
-+	.remove = __devexit_p(ab8500_charger_remove),
-+	.suspend = ab8500_charger_suspend,
-+	.resume = ab8500_charger_resume,
++static struct platform_driver abx500_chargalg_driver = {
++	.probe = abx500_chargalg_probe,
++	.remove = __devexit_p(abx500_chargalg_remove),
++	.suspend = abx500_chargalg_suspend,
++	.resume = abx500_chargalg_resume,
 +	.driver = {
-+		.name = "ab8500-charger",
++		.name = "abx500-chargalg",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init ab8500_charger_init(void)
++static int __init abx500_chargalg_init(void)
 +{
-+	return platform_driver_register(&ab8500_charger_driver);
++	return platform_driver_register(&abx500_chargalg_driver);
 +}
 +
-+static void __exit ab8500_charger_exit(void)
++static void __exit abx500_chargalg_exit(void)
 +{
-+	platform_driver_unregister(&ab8500_charger_driver);
++	platform_driver_unregister(&abx500_chargalg_driver);
 +}
 +
-+subsys_initcall_sync(ab8500_charger_init);
-+module_exit(ab8500_charger_exit);
++module_init(abx500_chargalg_init);
++module_exit(abx500_chargalg_exit);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Johan Palsson, Karl Komierowski, Arun R Murthy");
-+MODULE_ALIAS("platform:ab8500-charger");
-+MODULE_DESCRIPTION("AB8500 charger management driver");
-diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
-new file mode 100644
-index 0000000..4b7342c
---- /dev/null
-+++ b/include/linux/mfd/abx500/ab8500-bm.h
-@@ -0,0 +1,554 @@
-+/*
-+ * Copyright ST-Ericsson 2012.
-+ *
-+ * Author: Arun Murthy <arun.murthy@stericsson.com>
-+ * Licensed under GPLv2.
-+ */
-+
-+#ifndef _AB8500_BM_H
-+#define _AB8500_BM_H
-+
-+#include <linux/kernel.h>
-+
-+/*
-+ * System control 2 register offsets.
-+ * bank = 0x02
-+ */
-+#define AB8500_MAIN_WDOG_CTRL_REG	0x01
-+#define AB8500_LOW_BAT_REG		0x03
-+#define AB8500_BATT_OK_REG		0x04
-+/*
-+ * USB/ULPI register offsets
-+ * Bank : 0x5
-+ */
-+#define AB8500_USB_LINE_STAT_REG	0x80
-+
-+/*
-+ * Charger / status register offfsets
-+ * Bank : 0x0B
-+ */
-+#define AB8500_CH_STATUS1_REG		0x00
-+#define AB8500_CH_STATUS2_REG		0x01
-+#define AB8500_CH_USBCH_STAT1_REG	0x02
-+#define AB8500_CH_USBCH_STAT2_REG	0x03
-+#define AB8500_CH_FSM_STAT_REG		0x04
-+#define AB8500_CH_STAT_REG		0x05
-+
-+/*
-+ * Charger / control register offfsets
-+ * Bank : 0x0B
-+ */
-+#define AB8500_CH_VOLT_LVL_REG		0x40
-+#define AB8500_CH_VOLT_LVL_MAX_REG	0x41  /*Only in Cut2.0*/
-+#define AB8500_CH_OPT_CRNTLVL_REG	0x42
-+#define AB8500_CH_OPT_CRNTLVL_MAX_REG	0x43  /*Only in Cut2.0*/
-+#define AB8500_CH_WD_TIMER_REG		0x50
-+#define AB8500_CHARG_WD_CTRL		0x51
-+#define AB8500_BTEMP_HIGH_TH		0x52
-+#define AB8500_LED_INDICATOR_PWM_CTRL	0x53
-+#define AB8500_LED_INDICATOR_PWM_DUTY	0x54
-+#define AB8500_BATT_OVV			0x55
-+#define AB8500_CHARGER_CTRL		0x56
-+#define AB8500_BAT_CTRL_CURRENT_SOURCE	0x60  /*Only in Cut2.0*/
-+
-+/*
-+ * Charger / main control register offsets
-+ * Bank : 0x0B
-+ */
-+#define AB8500_MCH_CTRL1		0x80
-+#define AB8500_MCH_CTRL2		0x81
-+#define AB8500_MCH_IPT_CURLVL_REG	0x82
-+#define AB8500_CH_WD_REG		0x83
-+
-+/*
-+ * Charger / USB control register offsets
-+ * Bank : 0x0B
-+ */
-+#define AB8500_USBCH_CTRL1_REG		0xC0
-+#define AB8500_USBCH_CTRL2_REG		0xC1
-+#define AB8500_USBCH_IPT_CRNTLVL_REG	0xC2
-+
-+/*
-+ * Gas Gauge register offsets
-+ * Bank : 0x0C
-+ */
-+#define AB8500_GASG_CC_CTRL_REG		0x00
-+#define AB8500_GASG_CC_ACCU1_REG	0x01
-+#define AB8500_GASG_CC_ACCU2_REG	0x02
-+#define AB8500_GASG_CC_ACCU3_REG	0x03
-+#define AB8500_GASG_CC_ACCU4_REG	0x04
-+#define AB8500_GASG_CC_SMPL_CNTRL_REG	0x05
-+#define AB8500_GASG_CC_SMPL_CNTRH_REG	0x06
-+#define AB8500_GASG_CC_SMPL_CNVL_REG	0x07
-+#define AB8500_GASG_CC_SMPL_CNVH_REG	0x08
-+#define AB8500_GASG_CC_CNTR_AVGOFF_REG	0x09
-+#define AB8500_GASG_CC_OFFSET_REG	0x0A
-+#define AB8500_GASG_CC_NCOV_ACCU	0x10
-+#define AB8500_GASG_CC_NCOV_ACCU_CTRL	0x11
-+#define AB8500_GASG_CC_NCOV_ACCU_LOW	0x12
-+#define AB8500_GASG_CC_NCOV_ACCU_MED	0x13
-+#define AB8500_GASG_CC_NCOV_ACCU_HIGH	0x14
-+
-+/*
-+ * Interrupt register offsets
-+ * Bank : 0x0E
-+ */
-+#define AB8500_IT_SOURCE2_REG		0x01
-+#define AB8500_IT_SOURCE21_REG		0x14
-+
-+/*
-+ * RTC register offsets
-+ * Bank: 0x0F
-+ */
-+#define AB8500_RTC_BACKUP_CHG_REG	0x0C
-+#define AB8500_RTC_CC_CONF_REG		0x01
-+#define AB8500_RTC_CTRL_REG		0x0B
-+
-+/*
-+ * OTP register offsets
-+ * Bank : 0x15
-+ */
-+#define AB8500_OTP_CONF_15		0x0E
-+
-+/* GPADC constants from AB8500 spec, UM0836 */
-+#define ADC_RESOLUTION			1024
-+#define ADC_CH_MAIN_MIN			0
-+#define ADC_CH_MAIN_MAX			20030
-+#define ADC_CH_VBUS_MIN			0
-+#define ADC_CH_VBUS_MAX			20030
-+#define ADC_CH_VBAT_MIN			2300
-+#define ADC_CH_VBAT_MAX			4800
-+#define ADC_CH_BKBAT_MIN		0
-+#define ADC_CH_BKBAT_MAX		3200
-+
-+/* Main charge i/p current */
-+#define MAIN_CH_IP_CUR_0P9A		0x80
-+#define MAIN_CH_IP_CUR_1P0A		0x90
-+#define MAIN_CH_IP_CUR_1P1A		0xA0
-+#define MAIN_CH_IP_CUR_1P2A		0xB0
-+#define MAIN_CH_IP_CUR_1P3A		0xC0
-+#define MAIN_CH_IP_CUR_1P4A		0xD0
-+#define MAIN_CH_IP_CUR_1P5A		0xE0
-+
-+/* ChVoltLevel */
-+#define CH_VOL_LVL_3P5			0x00
-+#define CH_VOL_LVL_4P0			0x14
-+#define CH_VOL_LVL_4P05			0x16
-+#define CH_VOL_LVL_4P1			0x1B
-+#define CH_VOL_LVL_4P15			0x20
-+#define CH_VOL_LVL_4P2			0x25
-+#define CH_VOL_LVL_4P6			0x4D
-+
-+/* ChOutputCurrentLevel */
-+#define CH_OP_CUR_LVL_0P1		0x00
-+#define CH_OP_CUR_LVL_0P2		0x01
-+#define CH_OP_CUR_LVL_0P3		0x02
-+#define CH_OP_CUR_LVL_0P4		0x03
-+#define CH_OP_CUR_LVL_0P5		0x04
-+#define CH_OP_CUR_LVL_0P6		0x05
-+#define CH_OP_CUR_LVL_0P7		0x06
-+#define CH_OP_CUR_LVL_0P8		0x07
-+#define CH_OP_CUR_LVL_0P9		0x08
-+#define CH_OP_CUR_LVL_1P4		0x0D
-+#define CH_OP_CUR_LVL_1P5		0x0E
-+#define CH_OP_CUR_LVL_1P6		0x0F
-+
-+/* BTEMP High thermal limits */
-+#define BTEMP_HIGH_TH_57_0		0x00
-+#define BTEMP_HIGH_TH_52		0x01
-+#define BTEMP_HIGH_TH_57_1		0x02
-+#define BTEMP_HIGH_TH_62		0x03
-+
-+/* current is mA */
-+#define USB_0P1A			100
-+#define USB_0P2A			200
-+#define USB_0P3A			300
-+#define USB_0P4A			400
-+#define USB_0P5A			500
-+
-+#define LOW_BAT_3P1V			0x20
-+#define LOW_BAT_2P3V			0x00
-+#define LOW_BAT_RESET			0x01
-+#define LOW_BAT_ENABLE			0x01
-+
-+/* Backup battery constants */
-+#define BUP_ICH_SEL_50UA		0x00
-+#define BUP_ICH_SEL_150UA		0x04
-+#define BUP_ICH_SEL_300UA		0x08
-+#define BUP_ICH_SEL_700UA		0x0C
-+
-+#define BUP_VCH_SEL_2P5V		0x00
-+#define BUP_VCH_SEL_2P6V		0x01
-+#define BUP_VCH_SEL_2P8V		0x02
-+#define BUP_VCH_SEL_3P1V		0x03
-+
-+/* Battery OVV constants */
-+#define BATT_OVV_ENA			0x02
-+#define BATT_OVV_TH_3P7			0x00
-+#define BATT_OVV_TH_4P75		0x01
-+
-+/* A value to indicate over voltage */
-+#define BATT_OVV_VALUE			4750
-+
-+/* VBUS OVV constants */
-+#define VBUS_OVV_SELECT_MASK		0x78
-+#define VBUS_OVV_SELECT_5P6V		0x00
-+#define VBUS_OVV_SELECT_5P7V		0x08
-+#define VBUS_OVV_SELECT_5P8V		0x10
-+#define VBUS_OVV_SELECT_5P9V		0x18
-+#define VBUS_OVV_SELECT_6P0V		0x20
-+#define VBUS_OVV_SELECT_6P1V		0x28
-+#define VBUS_OVV_SELECT_6P2V		0x30
-+#define VBUS_OVV_SELECT_6P3V		0x38
-+
-+#define VBUS_AUTO_IN_CURR_LIM_ENA	0x04
-+
-+/* Fuel Gauge constants */
-+#define RESET_ACCU			0x02
-+#define READ_REQ			0x01
-+#define CC_DEEP_SLEEP_ENA		0x02
-+#define CC_PWR_UP_ENA			0x01
-+#define CC_SAMPLES_40			0x28
-+#define RD_NCONV_ACCU_REQ		0x01
-+#define CC_CALIB			0x08
-+#define CC_INTAVGOFFSET_ENA		0x10
-+#define CC_MUXOFFSET			0x80
-+#define CC_INT_CAL_N_AVG_MASK		0x60
-+#define CC_INT_CAL_SAMPLES_16		0x40
-+#define CC_INT_CAL_SAMPLES_8		0x20
-+#define CC_INT_CAL_SAMPLES_4		0x00
-+
-+/* RTC constants */
-+#define RTC_BUP_CH_ENA			0x10
-+
-+/* BatCtrl Current Source Constants */
-+#define BAT_CTRL_7U_ENA			0x01
-+#define BAT_CTRL_20U_ENA		0x02
-+#define BAT_CTRL_CMP_ENA		0x04
-+#define FORCE_BAT_CTRL_CMP_HIGH		0x08
-+#define BAT_CTRL_PULL_UP_ENA		0x10
-+
-+/* Battery type */
-+#define BATTERY_UNKNOWN			00
-+
++MODULE_AUTHOR("Johan Palsson, Karl Komierowski");
++MODULE_ALIAS("platform:abx500-chargalg");
++MODULE_DESCRIPTION("abx500 battery charging algorithm");
+diff --git a/include/linux/mfd/abx500.h b/include/linux/mfd/abx500.h
+index 1bfbb11..38de4a4 100644
+--- a/include/linux/mfd/abx500.h
++++ b/include/linux/mfd/abx500.h
+@@ -145,6 +145,279 @@ struct abx500_init_settings {
+ 	u8 setting;
+ };
+ 
++/* Battery driver related data */
 +/*
 + * ADC for the battery thermistor.
-+ * When using the ADC_THERM_BATCTRL the battery ID resistor is combined with
-+ * a NTC resistor to both identify the battery and to measure its temperature.
-+ * Different phone manufactures uses different techniques to both identify the
-+ * battery and to read its temperature.
++ * When using the ABx500_ADC_THERM_BATCTRL the battery ID resistor is combined
++ * with a NTC resistor to both identify the battery and to measure its
++ * temperature. Different phone manufactures uses different techniques to both
++ * identify the battery and to read its temperature.
 + */
-+enum adc_therm {
-+	ADC_THERM_BATCTRL,
-+	ADC_THERM_BATTEMP,
++enum abx500_adc_therm {
++	ABx500_ADC_THERM_BATCTRL,
++	ABx500_ADC_THERM_BATTEMP,
 +};
 +
 +/**
-+ * struct res_to_temp - defines one point in a temp to res curve. To
++ * struct abx500_res_to_temp - defines one point in a temp to res curve. To
 + * be used in battery packs that combines the identification resistor with a
 + * NTC resistor.
 + * @temp:			battery pack temperature in Celcius
 + * @resist:			NTC resistor net total resistance
 + */
-+struct res_to_temp {
++struct abx500_res_to_temp {
 +	int temp;
 +	int resist;
 +};
 +
 +/**
-+ * struct batres_vs_temp - defines one point in a temp vs battery internal
-+ * resistance curve.
-+ * @temp:			battery pack temperature in Celcius
-+ * @resist:			battery internal reistance in mOhm
-+ */
-+struct batres_vs_temp {
-+	int temp;
-+	int resist;
-+};
-+
-+/**
-+ * struct v_to_cap - Table for translating voltage to capacity
++ * struct abx500_v_to_cap - Table for translating voltage to capacity
 + * @voltage:		Voltage in mV
 + * @capacity:		Capacity in percent
 + */
-+struct v_to_cap {
++struct abx500_v_to_cap {
 +	int voltage;
 +	int capacity;
 +};
 +
 +/* Forward declaration */
-+struct ab8500_fg;
++struct abx500_fg;
 +
 +/**
-+ * struct ab8500_fg_parameters - Fuel gauge algorithm parameters, in seconds
++ * struct abx500_fg_parameters - Fuel gauge algorithm parameters, in seconds
 + * if not specified
 + * @recovery_sleep_timer:	Time between measurements while recovering
 + * @recovery_total_time:	Total recovery time
@@ -3135,6 +2024,7 @@ index 0000000..4b7342c
 + * @accu_high_curr:		FG accumulation time in high current mode
 + * @high_curr_threshold:	High current threshold, in mA
 + * @lowbat_threshold:		Low battery threshold, in mV
++ * @overbat_threshold:		Over battery threshold, in mV
 + * @battok_falling_th_sel0	Threshold in mV for battOk signal sel0
 + *				Resolution in 50 mV step.
 + * @battok_raising_th_sel1	Threshold in mV for battOk signal sel1
@@ -3145,7 +2035,7 @@ index 0000000..4b7342c
 + * @maint_thres			This is the threshold where we stop reporting
 + *				battery full while in maintenance, in per cent
 + */
-+struct ab8500_fg_parameters {
++struct abx500_fg_parameters {
 +	int recovery_sleep_timer;
 +	int recovery_total_time;
 +	int init_timer;
@@ -3156,6 +2046,7 @@ index 0000000..4b7342c
 +	int accu_high_curr;
 +	int high_curr_threshold;
 +	int lowbat_threshold;
++	int overbat_threshold;
 +	int battok_falling_th_sel0;
 +	int battok_raising_th_sel1;
 +	int user_cap_limit;
@@ -3163,13 +2054,13 @@ index 0000000..4b7342c
 +};
 +
 +/**
-+ * struct ab8500_charger_maximization - struct used by the board config.
++ * struct abx500_charger_maximization - struct used by the board config.
 + * @use_maxi:		Enable maximization for this battery type
 + * @maxi_chg_curr:	Maximum charger current allowed
 + * @maxi_wait_cycles:	cycles to wait before setting charger current
 + * @charger_curr_step	delta between two charger current settings (mA)
 + */
-+struct ab8500_maxim_parameters {
++struct abx500_maxim_parameters {
 +	bool ena_maxi;
 +	int chg_curr;
 +	int wait_cycles;
@@ -3177,7 +2068,7 @@ index 0000000..4b7342c
 +};
 +
 +/**
-+ * struct battery_type - different batteries supported
++ * struct abx500_battery_type - different batteries supported
 + * @name:			battery technology
 + * @resis_high:			battery upper resistance limit
 + * @resis_low:			battery lower resistance limit
@@ -3206,7 +2097,7 @@ index 0000000..4b7342c
 + * @n_batres_tbl_elements	number of elements in the batres_tbl
 + * @batres_tbl			battery internal resistance vs temperature table
 + */
-+struct battery_type {
++struct abx500_battery_type {
 +	int name;
 +	int resis_high;
 +	int resis_low;
@@ -3227,22 +2118,22 @@ index 0000000..4b7342c
 +	int low_high_vol_lvl;
 +	int battery_resistance;
 +	int n_temp_tbl_elements;
-+	struct res_to_temp *r_to_t_tbl;
++	struct abx500_res_to_temp *r_to_t_tbl;
 +	int n_v_cap_tbl_elements;
-+	struct v_to_cap *v_to_cap_tbl;
++	struct abx500_v_to_cap *v_to_cap_tbl;
 +	int n_batres_tbl_elements;
 +	struct batres_vs_temp *batres_tbl;
 +};
 +
 +/**
-+ * struct ab8500_bm_capacity_levels - ab8500 capacity level data
++ * struct abx500_bm_capacity_levels - abx500 capacity level data
 + * @critical:		critical capacity level in percent
 + * @low:		low capacity level in percent
 + * @normal:		normal capacity level in percent
 + * @high:		high capacity level in percent
 + * @full:		full capacity level in percent
 + */
-+struct ab8500_bm_capacity_levels {
++struct abx500_bm_capacity_levels {
 +	int critical;
 +	int low;
 +	int normal;
@@ -3251,13 +2142,13 @@ index 0000000..4b7342c
 +};
 +
 +/**
-+ * struct ab8500_bm_charger_parameters - Charger specific parameters
++ * struct abx500_bm_charger_parameters - Charger specific parameters
 + * @usb_volt_max:	maximum allowed USB charger voltage in mV
 + * @usb_curr_max:	maximum allowed USB charger current in mA
 + * @ac_volt_max:	maximum allowed AC charger voltage in mV
 + * @ac_curr_max:	maximum allowed AC charger current in mA
 + */
-+struct ab8500_bm_charger_parameters {
++struct abx500_bm_charger_parameters {
 +	int usb_volt_max;
 +	int usb_curr_max;
 +	int ac_volt_max;
@@ -3265,11 +2156,12 @@ index 0000000..4b7342c
 +};
 +
 +/**
-+ * struct ab8500_bm_data - ab8500 battery management data
++ * struct abx500_bm_data - abx500 battery management data
 + * @temp_under		under this temp, charging is stopped
 + * @temp_low		between this temp and temp_under charging is reduced
 + * @temp_high		between this temp and temp_over charging is reduced
 + * @temp_over		over this temp, charging is stopped
++ * @temp_now		present battery temperature
 + * @temp_interval_chg	temperature measurement interval in s when charging
 + * @temp_interval_nochg	temperature measurement interval in s when not charging
 + * @main_safety_tmr_h	safety timer for main charger
@@ -3277,9 +2169,10 @@ index 0000000..4b7342c
 + * @bkup_bat_v		voltage which we charge the backup battery with
 + * @bkup_bat_i		current which we charge the backup battery with
 + * @no_maintenance	indicates that maintenance charging is disabled
-+ * @adc_therm		placement of thermistor, batctrl or battemp adc
++ * @abx500_adc_therm	placement of thermistor, batctrl or battemp adc
 + * @chg_unknown_bat	flag to enable charging of unknown batteries
 + * @enable_overshoot	flag to enable VBAT overshoot control
++ * @auto_trig		flag to enable auto adc trigger
 + * @fg_res		resistance of FG resistor in 0.1mOhm
 + * @n_btypes		number of elements in array bat_type
 + * @batt_id		index of the identified battery in array bat_type
@@ -3293,11 +2186,12 @@ index 0000000..4b7342c
 + * @chg_params		charger parameters
 + * @fg_params		fuel gauge parameters
 + */
-+struct ab8500_bm_data {
++struct abx500_bm_data {
 +	int temp_under;
 +	int temp_low;
 +	int temp_high;
 +	int temp_over;
++	int temp_now;
 +	int temp_interval_chg;
 +	int temp_interval_nochg;
 +	int main_safety_tmr_h;
@@ -3307,7 +2201,8 @@ index 0000000..4b7342c
 +	bool no_maintenance;
 +	bool chg_unknown_bat;
 +	bool enable_overshoot;
-+	enum adc_therm adc_therm;
++	bool auto_trig;
++	enum abx500_adc_therm adc_therm;
 +	int fg_res;
 +	int n_btypes;
 +	int batt_id;
@@ -3315,86 +2210,89 @@ index 0000000..4b7342c
 +	int interval_not_charging;
 +	int temp_hysteresis;
 +	int gnd_lift_resistance;
-+	const struct ab8500_maxim_parameters *maxi;
-+	const struct ab8500_bm_capacity_levels *cap_levels;
-+	const struct battery_type *bat_type;
-+	const struct ab8500_bm_charger_parameters *chg_params;
-+	const struct ab8500_fg_parameters *fg_params;
++	const struct abx500_maxim_parameters *maxi;
++	const struct abx500_bm_capacity_levels *cap_levels;
++	const struct abx500_battery_type *bat_type;
++	const struct abx500_bm_charger_parameters *chg_params;
++	const struct abx500_fg_parameters *fg_params;
 +};
 +
-+struct ab8500_charger_platform_data {
++struct abx500_chargalg_platform_data {
++	char **supplied_to;
++	size_t num_supplicants;
++};
++
++struct abx500_charger_platform_data {
 +	char **supplied_to;
 +	size_t num_supplicants;
 +	bool autopower_cfg;
 +};
 +
-+struct ab8500_btemp_platform_data {
++struct abx500_btemp_platform_data {
 +	char **supplied_to;
 +	size_t num_supplicants;
 +};
 +
-+struct ab8500_fg_platform_data {
++struct abx500_fg_platform_data {
 +	char **supplied_to;
 +	size_t num_supplicants;
 +};
 +
-+struct ab8500_chargalg_platform_data {
-+	char **supplied_to;
-+	size_t num_supplicants;
++struct abx500_bm_plat_data {
++	struct abx500_bm_data *battery;
++	struct abx500_charger_platform_data *charger;
++	struct abx500_btemp_platform_data *btemp;
++	struct abx500_fg_platform_data *fg;
++	struct abx500_chargalg_platform_data *chargalg;
 +};
-+struct ab8500_btemp;
-+struct ab8500_gpadc;
-+struct ab8500_fg;
-+#ifdef CONFIG_AB8500_BM
-+void ab8500_fg_reinit(void);
-+void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
-+struct ab8500_btemp *ab8500_btemp_get(void);
-+int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp);
-+struct ab8500_fg *ab8500_fg_get(void);
-+int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev);
-+int ab8500_fg_inst_curr_start(struct ab8500_fg *di);
-+int ab8500_fg_inst_curr_finalize(struct ab8500_fg *di, int *res);
-+int ab8500_fg_inst_curr_done(struct ab8500_fg *di);
 +
-+#else
-+int ab8500_fg_inst_curr_done(struct ab8500_fg *di)
-+{
-+}
-+static void ab8500_fg_reinit(void)
-+{
-+}
-+static void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA)
-+{
-+}
-+static struct ab8500_btemp *ab8500_btemp_get(void)
-+{
-+	return NULL;
-+}
-+static int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp)
-+{
-+	return 0;
-+}
-+struct ab8500_fg *ab8500_fg_get(void)
-+{
-+	return NULL;
-+}
-+static int ab8500_fg_inst_curr_blocking(struct ab8500_fg *dev)
-+{
-+	return -ENODEV;
-+}
+ int abx500_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
+ 	u8 value);
+ int abx500_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
+diff --git a/include/linux/mfd/abx500/ux500_chargalg.h b/include/linux/mfd/abx500/ux500_chargalg.h
+new file mode 100644
+index 0000000..9b07725
+--- /dev/null
++++ b/include/linux/mfd/abx500/ux500_chargalg.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2012
++ * Author: Johan Gardsmark <johan.gardsmark@stericsson.com> for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
 +
-+static inline int ab8500_fg_inst_curr_start(struct ab8500_fg *di)
-+{
-+	return -ENODEV;
-+}
++#ifndef _UX500_CHARGALG_H
++#define _UX500_CHARGALG_H
 +
-+static inline int ab8500_fg_inst_curr_finalize(struct ab8500_fg *di, int *res)
-+{
-+	return -ENODEV;
-+}
++#include <linux/power_supply.h>
++
++#define psy_to_ux500_charger(x) container_of((x), \
++		struct ux500_charger, psy)
++
++/* Forward declaration */
++struct ux500_charger;
++
++struct ux500_charger_ops {
++	int (*enable) (struct ux500_charger *, int, int, int);
++	int (*kick_wd) (struct ux500_charger *);
++	int (*update_curr) (struct ux500_charger *, int);
++};
++
++/**
++ * struct ux500_charger - power supply ux500 charger sub class
++ * @psy			power supply base class
++ * @ops			ux500 charger operations
++ * @max_out_volt	maximum output charger voltage in mV
++ * @max_out_curr	maximum output charger current in mA
++ */
++struct ux500_charger {
++	struct power_supply psy;
++	struct ux500_charger_ops ops;
++	int max_out_volt;
++	int max_out_curr;
++};
 +
 +#endif
-+#endif /* _AB8500_BM_H */
 -- 
 1.7.4.3
 
