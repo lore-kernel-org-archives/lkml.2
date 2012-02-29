@@ -1,73 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030307Ab2B2S0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:26:32 -0500
+	id S966059Ab2B2S0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:26:51 -0500
 Received: from mga09.intel.com ([134.134.136.24]:58226 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965971Ab2B2S0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S966018Ab2B2S0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Feb 2012 13:26:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="116195297"
+   d="scan'208";a="116195351"
 From: Darren Hart <dvhart@linux.intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Feng Tang <feng.tang@intel.com>,
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk parameter
-Date: Wed, 29 Feb 2012 10:24:39 -0800
-Message-Id: <cover.1330539597.git.dvhart@linux.intel.com>
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: [PATCH 2/4] pch_uart: Add Fish River Island II uart clock quirks
+Date: Wed, 29 Feb 2012 10:24:45 -0800
+Message-Id: <74aee0c6f54f3cb6b55578163020d243ae79ae49.1330539597.git.dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <8b7e59a1f360a5f1ca9382ff53d9be941ef07f7b.1330539597.git.dvhart@linux.intel.com>
+References: <8b7e59a1f360a5f1ca9382ff53d9be941ef07f7b.1330539597.git.dvhart@linux.intel.com>
+In-Reply-To: <cover.1330539597.git.dvhart@linux.intel.com>
+References: <cover.1330539597.git.dvhart@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series does some minor clean-up to the pch_uart driver, adds support
-for the Fish River Island II UART clock quirks, and introduces a user_uartclk
-parameter to aid in developing for early and changing hardware.
+Add support for the Fish River Island II (FRI2) UART clock following the CM-iTC
+quirk handling mechanism. Depending on the firmware installed on the device, the
+FRI2 uses a 48MHz or a 64MHz UART clock. This is detected with DMI strings.
 
-In order to support an early serial console, we cannot rely on the pch_phub
-probe function to setup the CFGCLK register. This series relies on the board
-quirks and does not force the setting of the CLKREG in the pch_phub code.
-Instead, it aligns with what is the default configuration (defined by firmware)
-for a given board. The user_uartclk parameter provides a mechanism to force a
-specific uartclk if necessary.
+Add similar UART clock quirk handling to the pch_console_setup() function to
+enable kernel messages on boards with non-standard UART clocks.
 
-I looked at the PCI code briefly to see about forcing the clock to 192MHz on
-all boards early on to avoid having to use quirks, but it was not clear to me
-if this could be done before PCI was initialized as the IO base is derived
-from pci_iomap(pdev...). Perhaps this can be done, and I would be happy to
-revisit this as a follow-up patch. As this current patch series follows existing
-precedent to support a specific board and it does not impact the existing boards
-or the default behavior, I'd like to see this merged as is, rather than hold out
-for a much more invasive change forcing the clock to 192MHz. Is this acceptable? 
+Per Alan's suggestion, abstract out UART clock selection into
+pch_uart_get_uartclk() to avoid code duplication.
 
-V2: Incorporates Alan Cox's feedback into 2/4: Add Fish River Island II uart
-    clock quirks, refactoring the clock quirks into a new function and using
-    a more appropriate name for a reused string variable.
-    Add support for the two firmware variants for the FRI2.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Feng Tang <feng.tang@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Alan Cox <alan@linux.intel.com>
+CC: linux-serial@vger.kernel.org
+---
+ drivers/tty/serial/pch_uart.c |   42 +++++++++++++++++++++++++++-------------
+ 1 files changed, 28 insertions(+), 14 deletions(-)
 
---
-Darren
-
-The following changes since commit 164974a8f2a482f1abcb027c6d1a89dd79b14297:
-
-  ecryptfs: fix printk format warning for size_t (2012-02-28 16:55:30 -0800)
-
-are available in the git repository at:
-  git://git.infradead.org/users/dvhart/linux-2.6.git pch_uart_v2
-  http://git.infradead.org/users/dvhart/linux-2.6.git/shortlog/refs/heads/pch_uart_v2
-
-Darren Hart (4):
-  pch_uart: Use uartclk instead of base_baud
-  pch_uart: Add Fish River Island II uart clock quirks
-  pch_uart: Add user_uartclk parameter
-  pch_uart: Use existing default_baud in setup_console
-
- drivers/tty/serial/pch_uart.c |   59 +++++++++++++++++++++++++++--------------
- 1 files changed, 39 insertions(+), 20 deletions(-)
-
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index c565817..3a2b0ae 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -203,7 +203,10 @@ enum {
+ 
+ #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+ 
+-#define DEFAULT_UARTCLK 1843200 /* 1.8432MHz */
++#define DEFAULT_UARTCLK   1843200 /*   1.8432 MHz */
++#define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
++#define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
++#define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
+ 
+ struct pch_uart_buffer {
+ 	unsigned char *buf;
+@@ -292,6 +295,26 @@ static const int trigger_level_64[4] = { 1, 16, 32, 56 };
+ static const int trigger_level_16[4] = { 1, 4, 8, 14 };
+ static const int trigger_level_1[4] = { 1, 1, 1, 1 };
+ 
++/* Return UART clock, checking for board specific clocks. */
++static int pch_uart_get_uartclk(void)
++{
++	const char *cmp;
++
++	cmp = dmi_get_system_info(DMI_BOARD_NAME);
++	if (cmp && strstr(cmp, "CM-iTC"))
++		return CMITC_UARTCLK;
++
++	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
++	if (cmp && strnstr(cmp, "FRI2", 4))
++		return FRI2_64_UARTCLK;
++
++	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
++	if (cmp && strstr(cmp, "Fish River Island II"))
++		return FRI2_48_UARTCLK;
++
++	return DEFAULT_UARTCLK;
++}
++
+ static void pch_uart_hal_request(struct pci_dev *pdev, int fifosize,
+ 				 int uartclk)
+ {
+@@ -1506,8 +1529,7 @@ static int __init pch_console_setup(struct console *co, char *options)
+ 	if (!port || (!port->iobase && !port->membase))
+ 		return -ENODEV;
+ 
+-	/* setup uartclock */
+-	port->uartclk = DEFAULT_UARTCLK;
++	port->uartclk = pch_uart_get_uartclk();
+ 
+ 	if (options)
+ 		uart_parse_options(options, &baud, &parity, &bits, &flow);
+@@ -1550,10 +1572,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	unsigned int iobase;
+ 	unsigned int mapbase;
+ 	unsigned char *rxbuf;
+-	int fifosize, uartclk;
++	int fifosize;
+ 	int port_type;
+ 	struct pch_uart_driver_data *board;
+-	const char *board_name;
+ 
+ 	board = &drv_dat[id->driver_data];
+ 	port_type = board->port_type;
+@@ -1566,13 +1587,6 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	if (!rxbuf)
+ 		goto init_port_free_txbuf;
+ 
+-	uartclk = DEFAULT_UARTCLK;
+-
+-	/* quirk for CM-iTC board */
+-	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (board_name && strstr(board_name, "CM-iTC"))
+-		uartclk = 192000000; /* 192.0MHz */
+-
+ 	switch (port_type) {
+ 	case PORT_UNKNOWN:
+ 		fifosize = 256; /* EG20T/ML7213: UART0 */
+@@ -1597,7 +1611,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	priv->rxbuf.size = PAGE_SIZE;
+ 
+ 	priv->fifo_size = fifosize;
+-	priv->uartclk = uartclk;
++	priv->uartclk = pch_uart_get_uartclk();
+ 	priv->port_type = PORT_MAX_8250 + port_type + 1;
+ 	priv->port.dev = &pdev->dev;
+ 	priv->port.iobase = iobase;
+@@ -1614,7 +1628,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	spin_lock_init(&priv->port.lock);
+ 
+ 	pci_set_drvdata(pdev, priv);
+-	pch_uart_hal_request(pdev, fifosize, uartclk);
++	pch_uart_hal_request(pdev, fifosize, priv->uartclk);
+ 
+ #ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
+ 	pch_uart_ports[board->line_no] = priv;
 -- 
 1.7.6.5
 
