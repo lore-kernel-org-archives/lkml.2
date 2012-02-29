@@ -1,268 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab2B2WzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 17:55:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49065 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756593Ab2B2WzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 17:55:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM / devfreq: add relation of recommended frequency.
-Date: Wed, 29 Feb 2012 23:59:04 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kevin Hilman <khilman@ti.com>, Mike Turquette <mturquette@ti.com>,
-        myungjoo.ham@gmail.com
-References: <1328858388-22384-1-git-send-email-myungjoo.ham@samsung.com>
-In-Reply-To: <1328858388-22384-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1756913Ab2B2W4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 17:56:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61795 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab2B2W4w convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 17:56:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of joshuacov@googlemail.com designates 10.236.175.36 as permitted sender) smtp.mail=joshuacov@googlemail.com; dkim=pass header.i=joshuacov@googlemail.com
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202292359.05122.rjw@sisk.pl>
+In-Reply-To: <4F4E6B98.2090306@zytor.com>
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com>
+	<4F4BF11E.4090000@zytor.com>
+	<CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com>
+	<4F4C1F76.70403@zytor.com>
+	<alpine.DEB.2.00.1202281927130.24649@be10.lrz>
+	<4F4D1E6A.5000200@zytor.com>
+	<CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
+	<4F4E6B98.2090306@zytor.com>
+Date: Wed, 29 Feb 2012 23:56:51 +0100
+Message-ID: <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+From: "Joshua C." <joshuacov@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Sorry, I seem to have overlooked this patch.
-
-On Friday, February 10, 2012, MyungJoo Ham wrote:
-> The semantics of "target frequency" given to devfreq driver from
-> devfreq framework has always been interpretted as "at least" or GLB
-> (greatest lower bound). However, the framework might want the
-> device driver to limit its max frequency (LUB: least upper bound),
-> especially if it is given by thermal framework (it's too hot).
-> 
-> Thus, the target fuction should have another parameter to express
-> whether the framework wants GLB or LUB. And, the additional parameter,
-> "u32 options", does it.
-
-I'd call that "flags" (which usually is the case in the kernel for things
-handled with the help of bitwise operators).
-
-> With the update, devfreq_recommended_opp() is also updated.
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+2012/2/29 H. Peter Anvin <hpa@zytor.com>:
+> On 02/29/2012 03:43 AM, Joshua C. wrote:
+>>
+>>
+>> I got the idea that we should somehow check the kbd_state and set the
+>> numlock accordingly but this is behind my capabilities. I tried
+>> several times to read those boot_params but I have no idea how to do
+>> it. Where are they stored, how to access them? Help anyone?
+>>
 >
-> ---
->  drivers/devfreq/devfreq.c     |   44 ++++++++++++++++++++++++++++++----------
->  drivers/devfreq/exynos4_bus.c |   16 +++++++++++---
->  include/linux/devfreq.h       |   18 ++++++++++++++--
->  3 files changed, 60 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index a33fc6c..83392a6 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -84,6 +84,7 @@ int update_devfreq(struct devfreq *devfreq)
->  {
->  	unsigned long freq;
->  	int err = 0;
-> +	u32 options = 0;
->  
->  	if (!mutex_is_locked(&devfreq->lock)) {
->  		WARN(true, "devfreq->lock must be locked by the caller.\n");
-> @@ -104,18 +105,23 @@ int update_devfreq(struct devfreq *devfreq)
->  	 * qos_min_freq
->  	 */
->  
-> -	if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq)
-> +	if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
->  		freq = devfreq->qos_min_freq;
-> -	if (devfreq->max_freq && freq > devfreq->max_freq)
-> +		options &= ~(1 << 0);
+> There is a global variable called boot_params; the prototype for it is
+> defined in <asm/setup.h>.
+>
+> So as long as you are on an x86 architecture you can just #include
+> <asm/setup.h> and just access the boot_params structure directly (with the
+> patch provided to add the new field.)
+>
+>        -hpa
 
-What exactly is the (1 << 0) for?
+I think I figured it out. This is the patch I tested on a desktop and
+a laptop and it works the way it should.
+--------------
 
-Whatever the case is I'd just use one flag name, e.g.
-DEVFREQ_LEAST_UPPER_BOUND (equal to (1U << 0), and assume that the other
-option is to be chosen when this flag is not set.
+>From 0e3f1393132fd61f43e950065ae888b5ee103a96 Mon Sep 17 00:00:00 2001
+From: Joshua Cov <joshuacov@googlemail.com>
+Date: Thu, 1 Mar 2012 00:21:55 +0100
+Subject: [PATCH] Use BIOS Keyboard variable to set Numlock
 
+The PC BIOS does provide a NUMLOCK flag containing the desired state
+of the LED. This patch sets the current state according to the data in
+the bios and introduces a module parameter "numlock" which can be used
+to explicitely ignore the BIOS Setting (1 = use BIOS Setting, 0 =
+don't use it).
 
-> +		options |= DEVFREQ_OPTION_FREQ_LUB;
+Signed-Off-By: Joshua Cov <joshuacov@googlemail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Bodo Eggert <7eggert@gmx.de>
 
-So the above would become:
+---
+ arch/x86/boot/main.c             |   18 ++++++++++++------
+ arch/x86/include/asm/bootparam.h |    3 ++-
+ drivers/tty/vt/keyboard.c        |   37 +++++++++++++++++++++++--------------
+ 3 files changed, 37 insertions(+), 21 deletions(-)
 
-+       if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
-                freq = devfreq->qos_min_freq;
--       if (devfreq->max_freq && freq > devfreq->max_freq)
-+               options |= DEVFREQ_LEAST_UPPER_BOUND;
-+       }
+diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
+index 40358c8..cf6083d 100644
+--- a/arch/x86/boot/main.c
++++ b/arch/x86/boot/main.c
+@@ -57,14 +57,20 @@ static void copy_boot_params(void)
+ }
 
-> +	}
-> +	if (devfreq->max_freq && freq > devfreq->max_freq) {
->  		freq = devfreq->max_freq;
-> -	if (devfreq->min_freq && freq < devfreq->min_freq)
-> +		options &= ~(1 << 0);
-> +		options |= DEVFREQ_OPTION_FREQ_GLB;
-> +	}
+ /*
+- * Set the keyboard repeat rate to maximum.  Unclear why this
++ * Query the keyboard lock status as given by the BIOS, and
++ * set the keyboard repeat rate to maximum.  Unclear why the latter
+  * is done here; this might be possible to kill off as stale code.
+  */
+-static void keyboard_set_repeat(void)
++static void keyboard_init(void)
+ {
+-	struct biosregs ireg;
++	struct biosregs ireg, oreg;
+ 	initregs(&ireg);
+-	ireg.ax = 0x0305;
++
++	ireg.ah = 0x02;		/* Get keyboard status */
++	intcall(0x16, &ireg, &oreg);
++	boot_params.kbd_status = oreg.al;
++
++	ireg.ax = 0x0305;	/* Set keyboard repeat rate */
+ 	intcall(0x16, &ireg, NULL);
+ }
 
-and this one would become:
+@@ -151,8 +157,8 @@ void main(void)
+ 	/* Detect memory layout */
+ 	detect_memory();
 
-+       if (devfreq->max_freq && freq > devfreq->max_freq) {
-                freq = devfreq->max_freq;
--       if (devfreq->min_freq && freq < devfreq->min_freq)
-+               options &= ~DEVFREQ_LEAST_UPPER_BOUND;
-+       }
+-	/* Set keyboard repeat rate (why?) */
+-	keyboard_set_repeat();
++	/* Set keyboard repeat rate (why?) and query the lock flags */
++	keyboard_init();
 
-Then, the code would be much easier to follow.
+ 	/* Query MCA information */
+ 	query_mca();
+diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
+index 2f90c51..eb45aa6 100644
+--- a/arch/x86/include/asm/bootparam.h
++++ b/arch/x86/include/asm/bootparam.h
+@@ -112,7 +112,8 @@ struct boot_params {
+ 	__u8  e820_entries;				/* 0x1e8 */
+ 	__u8  eddbuf_entries;				/* 0x1e9 */
+ 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
+-	__u8  _pad6[6];					/* 0x1eb */
++	__u8  kbd_status;				/* 0x1eb */
++	__u8  _pad6[5];					/* 0x1ec */
+ 	struct setup_header hdr;    /* setup header */	/* 0x1f1 */
+ 	__u8  _pad7[0x290-0x1f1-sizeof(struct setup_header)];
+ 	__u32 edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];	/* 0x290 */
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index a605549..40a33bf 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -24,6 +24,8 @@
 
-> +	if (devfreq->min_freq && freq < devfreq->min_freq) {
->  		freq = devfreq->min_freq;
-> +		options &= ~(1 << 0);
-> +		options |= DEVFREQ_OPTION_FREQ_LUB;
-> +	}
->  
-> -	/*
-> -	 * TODO in the devfreq-next:
-> -	 * add relation or use rance (freq_min, freq_max)
-> -	 */
-> -	err = devfreq->profile->target(devfreq->dev.parent, &freq);
-> +	err = devfreq->profile->target(devfreq->dev.parent, &freq, options);
->  	if (err)
->  		return err;
->  
-> @@ -771,14 +777,30 @@ module_exit(devfreq_exit);
->   *			     freq value given to target callback.
->   * @dev		The devfreq user device. (parent of devfreq)
->   * @freq	The frequency given to target function
-> + * @floor	false: find LUB first and use GLB if LUB not available.
-> + *		true:  find GLB first and use LUB if GLB not available.
-> + *
-> + * LUB: least upper bound (at least this freq or above, but the least)
-> + * GLB: greatest lower bound (at most this freq or below, but the most)
->   *
->   */
-> -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
-> +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
-> +				    bool floor)
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-Why don't you use "u32 flags" here too?
++#include <asm/io.h>
++#include <asm/setup.h>
+ #include <linux/consolemap.h>
+ #include <linux/module.h>
+ #include <linux/sched.h>
+@@ -52,19 +54,6 @@ extern void ctrl_alt_del(void);
 
->  {
-> -	struct opp *opp = opp_find_freq_ceil(dev, freq);
-> +	struct opp *opp;
->  
-> -	if (opp == ERR_PTR(-ENODEV))
-> +	if (floor) {
+ #define KBD_DEFMODE ((1 << VC_REPEAT) | (1 << VC_META))
 
-That would become
+-/*
+- * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
+- * This seems a good reason to start with NumLock off. On HIL keyboards
+- * of PARISC machines however there is no NumLock key and everyone
+expects the keypad
+- * to be used for numbers.
+- */
+-
+-#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
+defined(CONFIG_KEYBOARD_HIL_OLD))
+-#define KBD_DEFLEDS (1 << VC_NUMLOCK)
+-#else
+-#define KBD_DEFLEDS 0
+-#endif
+-
+ #define KBD_DEFLOCK 0
 
-+	if (options & DEVFREQ_LEAST_UPPER_BOUND) {
+ void compute_shiftstate(void);
+@@ -1428,12 +1417,32 @@ static struct input_handler kbd_handler = {
+ 	.id_table	= kbd_ids,
+ };
 
-which is a bit more meaningful IMO.
++/* Let the user decide if we should use the value from the BIOS. */
++static int numlock = 1;
++MODULE_PARM_DESC(numlock, "Should we use the NumLock state returned
+by the BIOS? \
++				(1 = use BIOS Setting, 0 = don't use it)");
++module_param_named(numlock, numlock, int, 0400);
++
+ int __init kbd_init(void)
+ {
+ 	int i;
+ 	int error;
 
->  		opp = opp_find_freq_floor(dev, freq);
-> +
-> +		if (opp == ERR_PTR(-ENODEV))
-> +			opp = opp_find_freq_ceil(dev, freq);
-> +	} else {
-> +		opp = opp_find_freq_ceil(dev, freq);
-> +
-> +		if (opp == ERR_PTR(-ENODEV))
-> +			opp = opp_find_freq_floor(dev, freq);
-> +	}
-> +
->  	return opp;
->  }
->  
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 590d686..c0a78da 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -619,13 +619,21 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
->  	return err;
->  }
->  
-> -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
-> +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
-> +			      u32 options)
->  {
->  	int err = 0;
-> -	struct busfreq_data *data = dev_get_drvdata(dev);
-> -	struct opp *opp = devfreq_recommended_opp(dev, _freq);
-> -	unsigned long old_freq = opp_get_freq(data->curr_opp);
-> +	unsigned long def = *_freq;
-> +	struct platform_device *pdev = container_of(dev, struct platform_device,
-> +						    dev);
-> +	struct busfreq_data *data = platform_get_drvdata(pdev);
-> +	struct opp *opp = devfreq_recommended_opp(dev, _freq, options &
-> +						  DEVFREQ_OPTION_FREQ_GLB);
->  	unsigned long freq = opp_get_freq(opp);
-> +	unsigned long old_freq = opp_get_freq(data->curr_opp);
-> +
-> +	if (IS_ERR(opp))
-> +		return PTR_ERR(opp);
->  
->  	if (old_freq == freq)
->  		return 0;
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index b853379..1aff012 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -59,6 +59,16 @@ struct devfreq_pm_qos_table {
->  	s32 qos_value;
->  };
->  
-> +/*
-> + * target callback, which is to provide additional information to the
-> + * devfreq driver.
-> + */
-> +
-> +/* The resulting frequency should be at least this. (least upper bound) */
-> +#define DEVFREQ_OPTION_FREQ_LUB	0x0
-> +/* The resulting frequency should be at most this. (greatest lower bound) */
-> +#define DEVFREQ_OPTION_FREQ_GLB 0x1
-
-As I said, I'd use one option name and call it DEVFREQ_LEAST_UPPER_BOUND.
-It is not necessary to give a name to the alternative. :-)
-
-> +
->  /**
->   * struct devfreq_dev_profile - Devfreq's user device profile
->   * @initial_freq	The operating frequency when devfreq_add_device() is
-> @@ -76,6 +86,8 @@ struct devfreq_pm_qos_table {
->   *			higher than any operable frequency, set maximum.
->   *			Before returning, target function should set
->   *			freq at the current frequency.
-> + *			The "option" parameter's possible values are
-> + *			explained above with "DEVFREQ_OPTION_*" macros.
->   * @get_dev_status	The device should provide the current performance
->   *			status to devfreq, which is used by governors.
->   * @exit		An optional callback that is called when devfreq
-> @@ -95,7 +107,7 @@ struct devfreq_dev_profile {
->  	bool qos_use_max;
->  	struct devfreq_pm_qos_table *qos_list;
->  
-> -	int (*target)(struct device *dev, unsigned long *freq);
-> +	int (*target)(struct device *dev, unsigned long *freq, u32 options);
->  	int (*get_dev_status)(struct device *dev,
->  			      struct devfreq_dev_status *stat);
->  	void (*exit)(struct device *dev);
-> @@ -198,7 +210,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
->  
->  /* Helper functions for devfreq user device driver with OPP. */
->  extern struct opp *devfreq_recommended_opp(struct device *dev,
-> -					   unsigned long *freq);
-> +					   unsigned long *freq, bool floor);
->  extern int devfreq_register_opp_notifier(struct device *dev,
->  					 struct devfreq *devfreq);
->  extern int devfreq_unregister_opp_notifier(struct device *dev,
-> @@ -253,7 +265,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
->  }
->  
->  static struct opp *devfreq_recommended_opp(struct device *dev,
-> -					   unsigned long *freq)
-> +					   unsigned long *freq, bool floor)
->  {
->  	return -EINVAL;
->  }
-> 
-
-Thanks,
-Rafael
+-        for (i = 0; i < MAX_NR_CONSOLES; i++) {
++	/*
++	* Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
++	* This seems a good reason to start with NumLock off. On HIL keyboards
++	* of PARISC machines however there is no NumLock key and everyone
+expects the keypad
++	* to be used for numbers. That's why we start with NumLock off and
+ask the bios
++	* for the correct state.
++	*/
++
++	int KBD_DEFLEDS = 0 << VC_NUMLOCK;
++
++	/* Numlock status bit set? */
++	if ((boot_params.kbd_status & 0x20) && numlock)
++		KBD_DEFLEDS = 1 << VC_NUMLOCK;
++
++	for (i = 0; i < MAX_NR_CONSOLES; i++) {
+ 		kbd_table[i].ledflagstate = KBD_DEFLEDS;
+ 		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
+ 		kbd_table[i].ledmode = LED_SHOW_FLAGS;
+-- 
+1.7.7.6
