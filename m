@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab2B2CFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:05:42 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56467 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752773Ab2B2CFk (ORCPT
+	id S1757576Ab2B2CMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:12:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64105 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2B2CMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:05:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.152.125.41 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
+	Tue, 28 Feb 2012 21:12:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mcgrof@gmail.com designates 10.50.88.161 as permitted sender) smtp.mail=mcgrof@gmail.com; dkim=pass header.i=mcgrof@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <20120228174505.GP3683@opensource.wolfsonmicro.com>
-References: <CAJ0PZbRsh_Cnqy8Vtf1FWLajBr=R5iQ=Jog+w+qPE-uKrh5XQA@mail.gmail.com>
-	<20120228164413.GA11021@kroah.com>
-	<20120228165727.GO3683@opensource.wolfsonmicro.com>
-	<20120228170246.GA11415@kroah.com>
-	<20120228174505.GP3683@opensource.wolfsonmicro.com>
-Date: Wed, 29 Feb 2012 11:05:39 +0900
-Message-ID: <CAJ0PZbT=yD3SFBVYbcL37Dgyc3UVzk2LRQ_VWABW4cY_hfDuHA@mail.gmail.com>
-Subject: Re: [PULL-REQUEST] EXTCON Patches (Re: [PATCH v6 0/5] Introduce
- External Connector Class (extcon))
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120228.205347.1718771650331094141.davem@davemloft.net>
+References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com> <20120228.205347.1718771650331094141.davem@davemloft.net>
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Date: Tue, 28 Feb 2012 18:12:31 -0800
+X-Google-Sender-Auth: 3Q_k2u3A-SxDIkSJzykwsOkS5Xc
+Message-ID: <CAB=NE6VXyQ-k1Sm3Xf_ABE35+PHSoNqX=AJpLBjNu0sdAdnY4g@mail.gmail.com>
+Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qca-linux-team@qualcomm.com, nic-devel@qualcomm.com,
+        kgiori@qca.qualcomm.com, chris.snook@gmail.com,
+        mathieu@qca.qualcomm.com, bryanh@quicinc.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 2:45 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Feb 28, 2012 at 09:02:46AM -0800, Greg KH wrote:
->> On Tue, Feb 28, 2012 at 04:57:28PM +0000, Mark Brown wrote:
+On Tue, Feb 28, 2012 at 5:53 PM, David Miller <davem@davemloft.net> wrote:
+> From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+> Date: Tue, 28 Feb 2012 17:50:09 -0800
 >
->> > There's a few more kernel changes needed there before full acceptance
->> > would be possible - for example, should have an integration into the
->> > audio stack as one of the uses of the switch API on Android is for
->> > headset detection.
+>> The next patch adds the new QCA alx Ethernet driver that
+>> supercedes the atl1c Ethernet driver. For details please
+>> read the commit log of the patch. Given the size you can
+>> download the patch from:
 >
->> Is this integration planned?
+> What's wrong with making evolutionary fixes to atl1c instead
+> of replacing it wholesale?
 >
-> Don't know if anyone has a specific plan at the moment, though there's
-> enough people care that I'd imagine it'll happen if Android decides to
-> use this stuff.
->
-> That said I don't see this as a blocker myself - it's more like an
-> afternoon or whatever of work than a serious development effort to do
-> the updates, but a similar thing applies to most of the Android
-> userspace updates.
+> This isn't the way to do it Luis.
 
-I'm not sure which Android kernel devide drivers are going to be upstreamed.
+I *vehemently* tried to change direction of this driver development to
+do exactly what you stated when this driver was first posted last year
+in October of 2011 [0]. I could not get commitment on that route
+mainly due to the large delta and lack of resources to address this. I
+knew this would still be a hard sale but what I proposed was a
+comprise --  consider a replacement *if* we can get QCA engineers
+tasked to work upstream and committed to fixing *all* issues reported,
+*and* also properly tested and compared drivers.
 
-However, if the swtich device driver writers decide to keep the
-functionality limited to the original Android switch class by not
-providing cable names additionally, the changes will probably be
-limited to ":s/switch/extcon/g" for API calls and struct name.
+The other option we had reviewed here was to get this into staging but
+the garbage driver code is all resolved now. Its your call. This is
+the best I could get commitment and resources on.
 
+[0] http://markmail.org/message/7dk7ltdcdlx5ksu6
 
-Cheers!
-MyungJoo.
-
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+  Luis
