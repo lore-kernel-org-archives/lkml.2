@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab2B2OwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:52:15 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41393 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab2B2OwN (ORCPT
+	id S1758131Ab2B2OzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:55:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56410 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758083Ab2B2OzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:52:13 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Wed, 29 Feb 2012 15:51:44 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 0/3] [media] s5p-tv: Add initial DT-support to s5p-tv's
- subdevices
-To: t.stanislaws@samsung.com
-Cc: m.szyprowski@samsung.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        thomas.abraham@linaro.org,
-        Karol Lewandowski <k.lewandowsk@samsung.com>
-Message-id: <1330527107-21222-1-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 1.7.8.3
+	Wed, 29 Feb 2012 09:55:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.213.8.195 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120229144244.GF5054@shiny>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
+	<20120229144244.GF5054@shiny>
+Date: Wed, 29 Feb 2012 15:55:07 +0100
+Message-ID: <CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        lczerner@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds initial device tree support to drivers used by
-s5p-tv on Exynos4.
+2012/2/29 Chris Mason <chris.mason@oracle.com>:
+> On Wed, Feb 29, 2012 at 03:07:45PM +0100, Jacek Luczak wrote:
+>
+> [ btrfs faster than ext for find and cp -a ]
+>
+>> 2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
+>>
+>> I will try to answer the question from the broken email I've sent.
+>>
+>> @Lukas, it was always a fresh FS on top of LVM logical volume. I've
+>> been cleaning cache/remounting to sync all data before (re)doing
+>> tests.
+>
+> The next step is to get cp -a out of the picture, in this case you're
+> benchmarking both the read speed and the write speed (what are you
+> copying to btw?).
 
-DT support for s5p-tv driver itself would benefit from changes to v4l
-core (missing OF helper functions) and thus, will be sent later in
-separate patchset.
+It's simple cp -a Jenkins{,.bak} so dir to dir copy on same volume.
 
-Karol Lewandowski (3):
-  [media] s5p-tv: Add initial DT-support for sii9234
-  [media] s5p-tv: Add initial DT-support for HDMIPHY
-  [media] s5p-tv: Add initial DT-support for TV mixer
+> Using tar cf /dev/zero <some_dir> is one way to get a consistent picture
+> of the read speed.
 
- Documentation/devicetree/bindings/i2c/sii9234.txt |   14 ++++++++++++++
- drivers/media/video/s5p-tv/hdmiphy_drv.c          |   10 ++++++++++
- drivers/media/video/s5p-tv/mixer_drv.c            |    9 +++++++++
- drivers/media/video/s5p-tv/sii9234_drv.c          |   20 +++++++++++++++++++-
- 4 files changed, 52 insertions(+), 1 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/sii9234.txt
+IMO the problem is not - only - in read speed. The directory order hit
+here. There's a difference in the sequential tests that place btrfs as
+the winner but still this should not have that huge influence on
+getdents. I know a bit on the difference between ext4 and btrfs
+directory handling and I would not expect that huge difference. On the
+production system where the issue has been observed doing some real
+work in the background copy takes up to 4h.
 
--- 
-1.7.8.3
+For me btrfs looks perfect here, what could be worth checking is the
+change of timing in syscall between 39.4 and 3.2.7. Before getdents
+was not that high on the list while now it jumps to second position
+but without huge impact on the timings.
 
+> You can confirm the theory that it is directory order causing problems
+> by using acp to read the data.
+>
+> http://oss.oracle.com/~mason/acp/acp-0.6.tar.bz2
+
+Will check this still today and report back.
+
+-jacek
