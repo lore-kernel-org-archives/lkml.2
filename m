@@ -1,134 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab2B2MqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:46:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58619 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430Ab2B2MqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:46:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: RFC: what do we do with system controllers?
-Date: Wed, 29 Feb 2012 12:45:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, linux-arm-kernel@lists.infradead.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mattias NILSSON <mattias.i.nilsson@stericsson.com>,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-References: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
-In-Reply-To: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
+	id S1756095Ab2B2Mw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:52:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754351Ab2B2Mwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:52:54 -0500
+Message-ID: <4F4E1F91.9080705@redhat.com>
+Date: Wed, 29 Feb 2012 09:52:33 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Borislav Petkov <bp@amd64.org>
+CC: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org>
+In-Reply-To: <1330445487-15020-2-git-send-email-bp@amd64.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202291245.54038.arnd@arndb.de>
-X-Provags-ID: V02:K0:i03dkmFzJiW2ergdXmDmMy8lQhDVhPuLziDfLbyhd3O
- v4+FQ6gbfiUZPQUNImBOkPf4A5ZiWjZvkC5fMGSZoeaINqpkes
- 5ggWTVvJ7kk0OZgnokk1BFxlPPHcagWYk1gMHPusEiSk2f4XWR
- z4OI/OAE4mSDYQdsprjDkP4l1ctiHYWlHHIL8RUP1zEmFlL2Mq
- CZ+wXWaHBrpNLA6wN7QnCySudJAPKm1QCrSPLrHj7UC+8ihZWm
- vuy0efCR+xe1lqGaj1k4b7zfGGhgkN6VuFBLXvUV1hPmrivKqF
- tTgFza1eEH4/7FcdC7+RAPGcadSucFLxEL+gllJ9xfaApjloT5
- KswwhwK2LSCTATniMDNM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 February 2012, Linus Walleij wrote:
-
+Em 28-02-2012 13:11, Borislav Petkov escreveu:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> * Reset or shut down the system
-> * Reset individual ASIC blocks
-> * Control some core voltage domains
-> * Control system frequency
-> * Select clocking of indvidual ASIC IP blocks:
-> * Provide some versioning numbers for the entire system
-> * Enable and reset external buses such as PCI
-> * (De)protect flash memory
-> * Provide a communication channel to another control unit
-> * Set some clock divisors for misc units
-> * LEDs, GPIO etc communication channel
-> * USB transciever control:
-> * Get OTP (one-time-programmable) bits:
-> * Set up DDR control registers:
-> * Pin control:
-
-Nice list, thanks for putting that together.
-
-> The current way to split this problem is to:
+> The idea here is to pass an additional decoded MCE message through
+> the tracepoint and into the ring buffer for userspace to consume. The
+> designated consumers are RAS daemons and other tools collecting RAS
+> information.
 > 
-> - Push each subfunctionality into a specialized subsystem
->   PLL and clocks to drivers/clk using the new framework
->   RealSoonNow for example, pin control we have in place
->   regulators can handle domain switches...
+> Drop unneeded fields while at it, thus saving some room in the ring
+> buffer.
 > 
-> - Put in place an arbitration hub-like mechanism using MFD
-
-Right.
-
-> This can be done in two ways:
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>  include/trace/events/mce.h       |   22 +++++++---------------
+>  2 files changed, 8 insertions(+), 16 deletions(-)
 > 
-> - Permanently map the register range and let subdrivers
->   poke directly into the registers they're interested in.
-> 
-> - Map the register range in a hub driver (often MFD) and
->   write accessor functions for all subfunctionality.
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 5a11ae2e9e91..072e020ecaf3 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -144,7 +144,7 @@ void mce_log(struct mce *mce)
+>  	int ret = 0;
+>  
+>  	/* Emit the trace record: */
+> -	trace_mce_record(mce);
+> +	trace_mce_record("", mce);
+>  
+>  	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
+>  	if (ret == NOTIFY_STOP)
+> diff --git a/include/trace/events/mce.h b/include/trace/events/mce.h
+> index 4cbbcef6baa8..5fada9a40708 100644
+> --- a/include/trace/events/mce.h
+> +++ b/include/trace/events/mce.h
+> @@ -10,11 +10,12 @@
+>  
+>  TRACE_EVENT(mce_record,
+>  
+> -	TP_PROTO(struct mce *m),
+> +	TP_PROTO(const char *msg, struct mce *m),
 
-Generally, I would always prefer the second of these ways,
-because it allows one to keep the necessary locking local to
-the implementation of the system controller driver.
+While is very easy to fold everything into a single errror message field,
+doing that makes harder for userspace to break the string into the components, 
+as already discussed.
 
-> As far as the drivers are small and nice the heterogeneous
-> character of these device register ranges are not much
-> of a problem. Some will argue to not fix what ain't broken
-> and not move these out of arch/arm/* at all.
+The big advantage of using perf, instead of printk is that it allows to pass
+the fields into a binary form, instead of passing a single string to userspace.
+We should use this feature, otherwise, there's no sense on using perf at all.
 
-That argument certainly has its merits, after all the way that
-the system controller works is one of the central aspects
-of a platform/subarchitecture.
+Also, even if we agree on some string format to make parsing easier, we're not
+good on preserving the kernel-userspace API for string messages, so regressions
+can (and will likely) be introduced by a simple change at the "msg" field.
 
-> What we need to discuss is if this is how we go about
-> taking care of these devices going forward - what shall be
-> the preferred design pattern?
-> 
-> My current assumption is that we need to get these things
-> out of arch/arm/* and into proper subsystems, using
-> drivers/mfd/* as an arbitration point. However I am not
-> sure that everyone really agrees on this. Right now it's
-> more a modus operandi and following what someone else
-> does than a conscious decision to do this.
-> 
-> We have discussed creating drivers/scm/* (system controller
-> modules) but I'm pretty unsure of what the definition of
-> such creatures would be, and the border toward MFD
-> would be pretty blurred.
+On a complex environment, the network farm is monitored by a Network Management
+System. On such systems, there are some fields that are very relevant:
+	- how critical is the error;
+	- the location of the error;
+	- the error message.
 
-Agreed.
+So, we should, at least, break it into 3 fields. Yet, for location, there are
+two ways of reporting it: The silkscreen label of the affected component
+(a CPU socket label, a memory slot label, a PCI slot label, etc),
+and the location of the affected element, which generally more granular, like
+the cache level, the memory bank, etc.
 
-> x86 have conveniently put some of their equivalents under
-> drivers/platform/x86 but if I understood Arnd correctly
-> creating drivers/platform/arm would break the intentions
-> of that directory.
+What I'm saying is that, we should, at least, add 4 fields there, instead of one:
 
-The problem I have with using drivers/platform for this is that
-it encourages grouping of drivers by their host-side connection
-rather than by their functionality. We're moving away from
-that model in most other places in the kernel, and we should
-try to discourage it for new code. The drivers/platform/x86
-directory contains stuff like rfkill, input, backlight, etc
-drivers, all of which have (or should have) other places for
-them to live in already.
+	- severity
+	- location
+	- silkscreen_label
+	- error_msg
+	
+The severity should be an enum type. 
 
-I don't mind having a new location for system controllers
-outside of (or below) drivers/mfd, but I would try to avoid
-naming it "platform" because I fear that leads people to stuff
-all sorts of drivers in there because they happen to be
-implemented as 'platform_driver'.
+>  
+> -	TP_ARGS(m),
+> +	TP_ARGS(msg, m),
+>  
+>  	TP_STRUCT__entry(
+> +		__string(	msg,		msg		)
+>  		__field(	u64,		mcgcap		)
+>  		__field(	u64,		mcgstatus	)
+>  		__field(	u64,		status		)
+> @@ -24,15 +25,12 @@ TRACE_EVENT(mce_record,
+>  		__field(	u64,		tsc		)
+>  		__field(	u64,		walltime	)
+>  		__field(	u32,		cpu		)
 
-	Arnd
+This one can be merged into the location field, for the errors where
+it is pertinent.
+
+> -		__field(	u32,		cpuid		)
+> -		__field(	u32,		apicid		)
+
+It seems safe to get rid of them.
+
+> -		__field(	u32,		socketid	)
+
+For CPU errors, the socket ID is the location of the error. This is
+probably the most important "ID" field, as it represents the component
+that may need to be replaced.
+
+Yet, by adding a silkscreen_label field, it seems safe to get rid of it.
+
+>  		__field(	u8,		cs		)
+>  		__field(	u8,		bank		)
+> -		__field(	u8,		cpuvendor	)
+
+Assuming that some daemon would collect those errors on the monitored machine
+and pass them to another machine that will store it and parse (this is a typical
+scenario for monitored environments),  I don't think we can get rid of the
+cpuvendor, as this field is required to decode the MCE registers. It is likely
+that we need to add also the CPU family and step here, as the MCE decoding
+depends on them.
+
+On the other hand, the userspace daemon can easily get it by parsing /proc/cpuinfo.
+
+So, it is probably ok to remove it.
+
+>  	),
+>  
+>  	TP_fast_assign(
+> +		__assign_str(msg,	msg);
+>  		__entry->mcgcap		= m->mcgcap;
+>  		__entry->mcgstatus	= m->mcgstatus;
+>  		__entry->status		= m->status;
+> @@ -42,25 +40,19 @@ TRACE_EVENT(mce_record,
+>  		__entry->tsc		= m->tsc;
+>  		__entry->walltime	= m->time;
+>  		__entry->cpu		= m->extcpu;
+> -		__entry->cpuid		= m->cpuid;
+> -		__entry->apicid		= m->apicid;
+> -		__entry->socketid	= m->socketid;
+>  		__entry->cs		= m->cs;
+>  		__entry->bank		= m->bank;
+> -		__entry->cpuvendor	= m->cpuvendor;
+>  	),
+>  
+> -	TP_printk("CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: %x",
+> +	TP_printk("%s" HW_ERR "CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, TIME: %llu)",
+> +		__get_str(msg),
+>  		__entry->cpu,
+>  		__entry->mcgcap, __entry->mcgstatus,
+>  		__entry->bank, __entry->status,
+>  		__entry->addr, __entry->misc,
+>  		__entry->cs, __entry->ip,
+>  		__entry->tsc,
+> -		__entry->cpuvendor, __entry->cpuid,
+> -		__entry->walltime,
+> -		__entry->socketid,
+> -		__entry->apicid)
+> +		__entry->walltime)
+>  );
+>  
+>  #endif /* _TRACE_MCE_H */
+
