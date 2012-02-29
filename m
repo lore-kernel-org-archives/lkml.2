@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab2B2XZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:25:03 -0500
-Received: from broadrack.ru ([195.178.208.66]:56281 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932300Ab2B2XZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:25:00 -0500
-Date: Thu, 1 Mar 2012 02:24:57 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Renata Sayakhova <rsayakhova@gmail.com>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH] DS2781 Maxim Stand-Alone Fuel Gauge battery and w1
- slave drivers
-Message-ID: <20120229232457.GA12803@ioremap.net>
-References: <1330523933-32344-1-git-send-email-rsayakhova@gmail.com>
- <1330523933-32344-2-git-send-email-rsayakhova@gmail.com>
- <20120229185259.GC32077@ioremap.net>
- <CAO0_4pY_MXgx1gFRK9ino0P9RAO3e3E00PFCJvjpq2A-6Oz=1Q@mail.gmail.com>
+	id S1757080Ab2B2X1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:27:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54359 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752184Ab2B2X1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 18:27:32 -0500
+Date: Wed, 29 Feb 2012 23:27:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Balaji Rao <balajirrao@openmoko.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFC] regulator: Fix n_voltage settings for pcf50633
+ regulator
+Message-ID: <20120229232730.GD8295@opensource.wolfsonmicro.com>
+References: <1330490735.7885.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jL2BoiuKMElzg3CS"
 Content-Disposition: inline
-In-Reply-To: <CAO0_4pY_MXgx1gFRK9ino0P9RAO3e3E00PFCJvjpq2A-6Oz=1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1330490735.7885.2.camel@phoenix>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 12:17:30AM +0100, Renata Sayakhova (rsayakhova@gmail.com) wrote:
-> w1_process (w1.c line 982) holds mutex. If during w1_search_process (w1.c
-> line 983) slave is found and battery initcall is already done at this
-> moment than battery probe() is called. This call leads to
-> power_supply_register() and device_add() which does among other things call
-> battery properties. battery_get_property() should normally results in
-> w1_ds2781_read() and w1_ds2781_io(), but w1_ds2781_io() calls itself
-> mutex_lock.
-> 
-> So this weird function is a workaround to avoid a second mutex_lock during
-> battery probe(). mutex_holder is set before power_supply_register() and
-> unset when probe is done.
-> 
-> This is very brief, if it's not clear I'll try to explain in more details.
-> I found this workaround in implementation of ds2780 battery and w1 slave
-> drivers.
 
-So basically IO routins caled from ->probe() are already locked so we
-protect against deadlock. Ok, I see.
+--jL2BoiuKMElzg3CS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I have no objections, patch looks good
-Greg, please pull it into your tree
-Thank you
+On Wed, Feb 29, 2012 at 12:45:35PM +0800, Axel Lin wrote:
+> Current code has off-by-one n_voltage settings for AUTO/DOWN*/LDO* regulators.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Applied, thanks.
 
+--jL2BoiuKMElzg3CS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-	Evgeniy Polyakov
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPTrRbAAoJEBus8iNuMP3d8ZEP/1EntOFpOsWzK2OCH11ZpDcv
+TpAuGDAc8amNtlBYFNfkYvKfMtcsA1VpdTB/bKxBcdQk8tFqwBDGknG0NcQR5KLd
+7VFU/h9bsz5knVAVRItxVnl7A+MthzHvwcDy7kdhJ4+Kv2vLCgWEmmoovUrYasqk
+uzmwT5GPhenj8WqHi/HbVHVPrr5WgkevE0hST3vL2tk4wtDDg9z/aKkMqdVXEAqJ
+zBEd/uE9LCcpraikVnalg7Kyoq0rrxccIl2CxW2Lb+Qk2IfxEEVSYYPOOroDcJta
+CFBbKW3unRZqjYALht9i4W7bFpRibbSLeZxJD5X3KBNSGOYeW42bwT9cA3ASJwTI
+PJkrBFnv+UhJBJTKef7qzjm8mV+wkxq/t+KaXGY2kUMPU+/oKirgW4VIGkUkqioX
+L4x8YQLLOnd3NrqU6N2YwWnxJnyNNfdWGPLyl6oA22Mf+fQfeCWatpilJhmzzd+w
+raqRzb/qwT5+PZ+LCLaVTj4o6NiwkmKoMPmYg00JrhsPcE/uc1ORdUuEK8w6WD4j
+CHhH7MzoV6pUsYC4VBkr9/cRok7NQMxpeeLKfi6bILR+41MEmakTqnCCcVlW7Kgg
+MzjS6SqHjQOWKswmxzBMnNbctGDJM/JU0TY5zWjmpA3epro9GENnSoJTuJngl5py
+9DsK80ZM+V3rNG5pcw0C
+=m5NU
+-----END PGP SIGNATURE-----
+
+--jL2BoiuKMElzg3CS--
