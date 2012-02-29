@@ -1,195 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030681Ab2B2Dae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 22:30:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44760 "EHLO mx1.redhat.com"
+	id S1030707Ab2B2Dcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 22:32:41 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:42994 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755192Ab2B2Dad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 22:30:33 -0500
-Date: Wed, 29 Feb 2012 00:27:36 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] mm: SLAB Out-of-memory diagnostics
-Message-ID: <20120229032715.GA23758@t510.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965021Ab2B2Dck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 22:32:40 -0500
+Date: Tue, 28 Feb 2012 19:32:37 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mcgrof@frijolero.org>,
+        <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
+        <kgiori@qca.qualcomm.com>, <chris.snook@gmail.com>,
+        <mathieu@qca.qualcomm.com>, <bryanh@quicinc.com>
+Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+Message-ID: <20120228193237.2d56f2b8@nehalam.linuxnetplumber.net>
+In-Reply-To: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
+References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
-allocator to help on debugging OOM conditions. This patch also adds a new
-sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
-allocation flag and forces the kernel to report every slab allocation failure.
+On Tue, 28 Feb 2012 17:50:09 -0800
+"Luis R. Rodriguez" <rodrigue@qca.qualcomm.com> wrote:
 
-An example print out looks like this:
+> From: Luis R. Rodriguez <mcgrof@frijolero.org>
+> 
+> The next patch adds the new QCA alx Ethernet driver that
+> supercedes the atl1c Ethernet driver. For details please
+> read the commit log of the patch. Given the size you can
+> download the patch from:
+> 
+> http://bombadil.infradead.org/~mcgrof/2012/02/28/add-alx-next-20120228.patch
+> sha1sum: 8a8f7b6f1cbe737e70ec3b3eda483a6925fd9bd6
 
-  <snip page allocator out-of-memory message>
-  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-     cache: bio-0, object size: 192, order: 0
-     node0: slabs: 3/3, objs: 60/60, free: 0
+Evolution is better. The new driver has lots of new callbacks to handle
+the fact it is dealing with two different chipsets. Not only that your callbacks
+are built at runtime which leads to security concerns.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- Documentation/sysctl/vm.txt |   23 ++++++++++++++++++
- include/linux/slab.h        |    2 +
- kernel/sysctl.c             |    9 +++++++
- mm/slab.c                   |   55 ++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 88 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 96f0ee8..75bdf91 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -498,6 +498,29 @@ this is causing problems for your system/application.
- 
- ==============================================================
- 
-+oom_dump_slabs_forced
-+
-+Overrides the effects of __GFP_NOWARN page allocation flag, thus forcing
-+the system to print warnings about every allocation failure for the
-+slab allocator, and helping on debugging certain OOM conditions.
-+The print out is pretty similar, and complements data that is reported by
-+the page allocator out-of-memory warning:
-+
-+<snip page allocator out-of-memory message>
-+  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-+     cache: bio-0, object size: 192, order: 0
-+     node0: slabs: 3/3, objs: 60/60, free: 0
-+
-+If this is set to zero, the default behavior is observed and warnings will only
-+be printed out for allocation requests that didn't set the __GFP_NOWARN flag.
-+
-+When set to non-zero, this information is shown whenever the allocator finds
-+itself failing to grant a request, regardless the __GFP_NOWARN flag status.
-+
-+The default value is 0 (disabled).
-+
-+==============================================================
-+
- oom_dump_tasks
- 
- Enables a system-wide task dump (excluding kernel threads) to be
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 573c809..ca57021 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -353,4 +353,6 @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
- 
- void __init kmem_cache_init_late(void);
- 
-+/* sysctl */
-+extern int sysctl_oom_dump_slabs;
- #endif	/* _LINUX_SLAB_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f487f25..71fe8ec 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1040,6 +1040,15 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#if defined(CONFIG_SLAB)
-+       {
-+               .procname       = "oom_dump_slabs_forced",
-+               .data           = &sysctl_oom_dump_slabs,
-+               .maxlen         = sizeof(sysctl_oom_dump_slabs),
-+               .mode           = 0644,
-+               .proc_handler   = proc_dointvec,
-+       },
-+#endif
- 	{
- 		.procname	= "overcommit_ratio",
- 		.data		= &sysctl_overcommit_ratio,
-diff --git a/mm/slab.c b/mm/slab.c
-index f0bd785..993ca4c 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -168,6 +168,9 @@
- 			 SLAB_DEBUG_OBJECTS | SLAB_NOLEAKTRACE | SLAB_NOTRACK)
- #endif
- 
-+/* sysctl */
-+int sysctl_oom_dump_slabs = 0;
-+
- /*
-  * kmem_bufctl_t:
-  *
-@@ -1731,6 +1734,52 @@ static int __init cpucache_init(void)
- }
- __initcall(cpucache_init);
- 
-+static noinline void
-+slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-+{
-+	struct kmem_list3 *l3;
-+	struct slab *slabp;
-+	unsigned long flags;
-+	int node;
-+
-+	printk(KERN_WARNING
-+		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
-+		nodeid, gfpflags);
-+	printk(KERN_WARNING "   cache: %s, object size: %d, order: %d\n",
-+		cachep->name, cachep->buffer_size, cachep->gfporder);
-+
-+	for_each_online_node(node) {
-+		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
-+		unsigned long active_slabs = 0, num_slabs = 0;
-+
-+		l3 = cachep->nodelists[node];
-+		if (!l3)
-+			continue;
-+
-+		spin_lock_irqsave(&l3->list_lock, flags);
-+		list_for_each_entry(slabp, &l3->slabs_full, list) {
-+			active_objs += cachep->num;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_partial, list) {
-+			active_objs += slabp->inuse;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_free, list)
-+			num_slabs++;
-+
-+		free_objects += l3->free_objects;
-+		spin_unlock_irqrestore(&l3->list_lock, flags);
-+
-+		num_slabs += active_slabs;
-+		num_objs = num_slabs * cachep->num;
-+		printk(KERN_WARNING
-+			"   node%d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
-+			node, active_slabs, num_slabs, active_objs, num_objs,
-+			free_objects);
-+	}
-+}
-+
- /*
-  * Interface to system's page allocator. No need to hold the cache-lock.
-  *
-@@ -1757,8 +1806,12 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 		flags |= __GFP_RECLAIMABLE;
- 
- 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
--	if (!page)
-+	if (!page) {
-+		if ((sysctl_oom_dump_slabs || !(flags & __GFP_NOWARN)) &&
-+		    printk_ratelimit())
-+			slab_out_of_memory(cachep, flags, nodeid);
- 		return NULL;
-+	}
- 
- 	nr_pages = (1 << cachep->gfporder);
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
--- 
-1.7.7.6
-
+There is a reason the two Marvell based drivers (skge and sky2) are
+different drivers. Having to do extra per-chip callbacks is a clear sign
+the driver should be split in two.
