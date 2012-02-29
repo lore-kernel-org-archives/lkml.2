@@ -1,87 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030601Ab2B2AoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:44:13 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36486 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965840Ab2B2AoL (ORCPT
+	id S1030617Ab2B2ApV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:45:21 -0500
+Received: from mailgw01.mediatek.com ([218.249.47.110]:49257 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965840Ab2B2ApU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:44:11 -0500
-Date: Wed, 29 Feb 2012 04:44:03 +0400
-From: Igor Murzov <intergalactic.anonymous@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Igor Murzov <e-mail@date.by>, "Sergey V." <sftp.mtuci@gmail.com>
-Subject: Re: [PATCH 1/2] ACPI video: Harden video bus adding.
-Message-ID: <20120229044403.56e07c88@garik>
-In-Reply-To: <20120229001258.GA10606@core.coreip.homeip.net>
-References: <20120229035142.31016e6f@garik>
-	<20120229001258.GA10606@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.4; i486-slackware-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 19:45:20 -0500
+From: =?utf-8?B?TWVuZyBaaGFuZyAo5byg6JCMKQ==?= <Meng.Zhang@mediatek.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "phil@ipom.com" <phil@ipom.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "usb-storage@lists.one-eyed-alien.net" 
+	<usb-storage@lists.one-eyed-alien.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Feb 2012 08:45:11 +0800
+Subject: RE: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+Thread-Topic: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+Thread-Index: Acz2Dc/k8g+684CjRXaO81IaucKJtwAAYEAgABronvA=
+Message-ID: <0D3EFCAF29FAA54FB91286E54DF1085C23048506F1@MTKMBS30.mediatek.inc>
+References: <4F4C998D.4000805@mediatek.com> <4F4CBCB6.7080901@mvista.com>
+ <0D3EFCAF29FAA54FB91286E54DF1085C23048506D5@MTKMBS30.mediatek.inc>
+In-Reply-To: <0D3EFCAF29FAA54FB91286E54DF1085C23048506D5@MTKMBS30.mediatek.inc>
+Accept-Language: en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1T0jSe7030796
 
-On Tue, 28 Feb 2012 16:12:59 -0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+Dear Sergei,
 
-> Hi Igor,
-> 
-> On Wed, Feb 29, 2012 at 03:51:42AM +0400, Igor Murzov wrote:
-> > From 127b9fc18ee646d92039c45d7fa3680a107928a2 Mon Sep 17 00:00:00 2001
-> > From: Igor Murzov <e-mail@date.by>
-> > Date: Mon, 27 Feb 2012 21:50:17 +0400
-> > Subject: [PATCH 1/2] ACPI video: Harden video bus adding.
-> > 
-> > It is always better to check return values.
-> > 
-> > Signed-off-by: Igor Murzov <e-mail@date.by>
-> > ---
-> >  drivers/acpi/video.c |   28 +++++++++++++++++++---------
-> >  1 files changed, 19 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index eaef02a..1bc6370 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -548,24 +548,25 @@ acpi_video_device_EDID(struct acpi_video_device *device,
-> >   *		1. 	The system BIOS should NOT automatically control the brightness 
-> >   *			level of the LCD when the power changes from AC to DC.
-> >   * Return Value:
-> > - * 		-1	wrong arg.
-> > + * 		-EINVAL	wrong arg.
-> >   */
-> >  
-> >  static int
-> >  acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
-> >  {
-> > -	u64 status = 0;
-> > +	int status = 0;
-> >  	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
-> >  	struct acpi_object_list args = { 1, &arg0 };
-> >  
-> >  
-> >  	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
-> > -		status = -1;
-> > +		status = -EINVAL;
-> >  		goto Failed;
-> >  	}
-> >  	arg0.integer.value = (lcd_flag << 2) | bios_flag;
-> >  	video->dos_setting = arg0.integer.value;
-> > -	acpi_evaluate_object(video->device->handle, "_DOS", &args, NULL);
-> > +	status = acpi_evaluate_object(video->device->handle, "_DOS",
-> > +	                              &args, NULL);
-> 
-> Here (as well as in the rest of your patch) you are mixing up errors
-> from the standard Unix -E* namespace and ACPI AE_* namespace. You need
-> to settle on one and be consistent (and also make sure that upper layers
-> get wha they expect, namely -E* namespace).
+Sorry I misunderstand it. I'll correct the format and re-submit soon.
 
-Thanks for the reply. Will fix this and resend.
+Thanks.
 
+BR.
+Meng Zhang
 
--- Igor
+-----Original Message-----
+From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Meng Zhang (å¼ èŒ)
+Sent: Tuesday, February 28, 2012 8:00 PM
+To: Sergei Shtylyov
+Cc: mdharm-usb@one-eyed-alien.net; phil@ipom.com; stern@rowland.harvard.edu; linux-usb@vger.kernel.org; usb-storage@lists.one-eyed-alien.net; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+
+Hi, about the indentation I saw in initializers.c is also tab with 2 spaces.. should I change this to 2 tabs manually?
+
+Thanks!
+
+BR.
+Meng Zhang
+
+-----Original Message-----
+From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Sergei Shtylyov
+Sent: Tuesday, February 28, 2012 7:39 PM
+To: Meng Zhang (å¼ èŒ)
+Cc: mdharm-usb@one-eyed-alien.net; phil@ipom.com; stern@rowland.harvard.edu; linux-usb@vger.kernel.org; usb-storage@lists.one-eyed-alien.net; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+
+Hello.
+
+On 28-02-2012 13:08, Meng Zhang wrote:
+
+> from: Meng Zhang <meng.zhang@mediatek.com>
+
+> 1. Add entrys for mediatek MT6276M in unusual_devs.h
+
+> 2. Add init function for mediatek MT6276M to switch to COM port mode
+
+> 3. usb-devices outputs after running with this patch:
+> T: Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
+> D: Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs= 1
+> P: Vendor=0e8d ProdID=00a1 Rev=02.00
+> S: Manufacturer=MediaTek Inc
+> S: Product=Product
+> C: #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
+> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
+> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+
+> 4. patch based on branch:
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+
+    This information (4) should be under the --- tear line.
+
+> Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+[...]
+
+> diff --git a/drivers/usb/storage/initializers.c
+> b/drivers/usb/storage/initializers.c
+> index 105d900..44985a1 100644
+> --- a/drivers/usb/storage/initializers.c
+> +++ b/drivers/usb/storage/initializers.c
+> @@ -104,3 +104,30 @@ int usb_stor_huawei_e220_init(struct us_data *us) 
+> US_DEBUGP("Huawei mode set result is %d\n", result); return 0; }
+> +
+> +/* switch MediaTek MT6276M to COM port mode */ int 
+> +usb_stor_mediatek_mt6276m_init(struct us_data *us) {  const unsigned 
+> +char rezero_msg[] = {
+
+    Unfortunately, when I reply to messages with "format=flowed", source formatting is spoiled. :-(
+
+> + 0x55, 0x53, 0x42, 0x43, 0x78, 0x56, 0x34, 0x12,
+
+    All indentation here should be done with tabs, not tab and two spaces.
+
+> + 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xf0, 0x01, 0x03, 0x00, 
+> + 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+> + 0x00 };
+
+WBR, Sergei
+--
+To unsubscribe from this list: send the line "unsubscribe linux-usb" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+éŸ¬{.n?å£ç…¯å£„?%å¨lzwmå‘´bæ¿Ğ éª’rç¬¡zXĞ©ç»)éŸ°éª…w*jgîƒŒ?ç§¹æ® å¨¸î•/ä¾é‹¤ç½æˆ?å¨¹æ«’ç’€??æ‘ºçœå›¤î’¿ç“½ç´é–”?é—:+vå¢¾å¦›é‘¶ä½¶
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
