@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965667Ab2B2Jx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:53:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60344 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965223Ab2B2Jx4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:53:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329929337-16648-14-git-send-email-m.szyprowski@samsung.com>
-References: <1329929337-16648-1-git-send-email-m.szyprowski@samsung.com> <1329929337-16648-14-git-send-email-m.szyprowski@samsung.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 29 Feb 2012 17:53:35 +0800
-Message-ID: <CAGsJ_4ygM6YAUj5mcskuEYcaJqYVHp_qzbUJvE9_huFhFcWtkg@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv23 13/16] drivers: add Contiguous Memory Allocator
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
+	id S965731Ab2B2J4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:56:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965392Ab2B2J4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 04:56:05 -0500
+Date: Wed, 29 Feb 2012 11:55:57 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+Message-ID: <20120229095557.GE24600@redhat.com>
+References: <4F4AF1FB.6000903@cn.fujitsu.com>
+ <4F4CB926.6050600@redhat.com>
+ <4F4D7F5E.5040202@cn.fujitsu.com>
+ <4F4DF4C6.90609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4DF4C6.90609@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/23 Marek Szyprowski <m.szyprowski@samsung.com>:
-> The Contiguous Memory Allocator is a set of helper functions for DMA
-> mapping framework that improves allocations of contiguous memory chunks.
->
-> CMA grabs memory on system boot, marks it with MIGRATE_CMA migrate type
-> and gives back to the system. Kernel is allowed to allocate only movable
-> pages within CMA's managed memory so that it can be used for example for
-> page cache when DMA mapping do not use it. On
-> dma_alloc_from_contiguous() request such pages are migrated out of CMA
-> area to free required contiguous block and fulfill the request. This
-> allows to allocate large contiguous chunks of memory at any time
-> assuming that there is enough free memory available in the system.
->
-> This code is heavily based on earlier works by Michal Nazarewicz.
->
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Tested-by: Rob Clark <rob.clark@linaro.org>
-> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
+On Wed, Feb 29, 2012 at 11:49:58AM +0200, Avi Kivity wrote:
+> On 02/29/2012 03:29 AM, Wen Congyang wrote:
+> > At 02/28/2012 07:23 PM, Avi Kivity Wrote:
+> > > On 02/27/2012 05:01 AM, Wen Congyang wrote:
+> > >> We can know the guest is paniced when the guest runs on xen.
+> > >> But we do not have such feature on kvm. This patch implemnts
+> > >> this feature, and the implementation is the same as xen:
+> > >> register panic notifier, and call hypercall when the guest
+> > >> is paniced.
+> > > 
+> > > What's the motivation for this?  "Xen does this" is insufficient.
+> >
+> > Another purpose is: management app(for example: libvirt) can do auto
+> > dump when the guest is crashed. If management app does not do auto
+> > dump, the guest's user can do dump by hand if he sees the guest is
+> > paniced.
+> >
+> > I am thinking about another status: dumping. This status tells
+> > the guest's user that the guest is paniced, and the OS's dump function
+> > is working.
+> >
+> > These two status can tell the guest's user whether the guest is pancied,
+> > and what should he do if the guest is paniced.
+> >
+> 
+> How about using a virtio-serial channel for this?  You can transfer any
+> amount of information (including the dump itself).
+> 
+Isn't it unreliable after the guest panicked? Having special kdump
+kernel that transfers dump to a host via virtio-serial channel though
+sounds interesting. May be that's what you mean.
 
-if there is a /proc/cmainfo like /proc/slabinfo, it might be helpful
-to people as we can see the usage of CMA clearly.
-
-Thanks
-barry
+--
+			Gleb.
