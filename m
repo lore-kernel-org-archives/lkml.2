@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966149Ab2B2XVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:21:51 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26097 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964983Ab2B2XIx (ORCPT
+	id S966153Ab2B2XWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:22:19 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46983 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab2B2XWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:08:53 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH 29/39] PCI, parisc: Register busn_res for root buses
-Date: Wed, 29 Feb 2012 15:07:28 -0800
-Message-Id: <1330556858-11768-30-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F4EAFEE.00EB,ss=1,re=0.000,fgs=0
+	Wed, 29 Feb 2012 18:22:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of muthu.lkml@gmail.com designates 10.52.17.239 as permitted sender) smtp.mail=muthu.lkml@gmail.com; dkim=pass header.i=muthu.lkml@gmail.com
+MIME-Version: 1.0
+Date: Wed, 29 Feb 2012 18:22:14 -0500
+Message-ID: <CAFR8uef08sDCR=FM_v4EV0CLX9f4UuJezSTPFX6V7T-4b7xBVQ@mail.gmail.com>
+Subject: [PATCH] Fix setting bio flags in drivers (sd_dif/floppy).
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        Jens Axboe <axboe@kernel.dk>, martin.petersen@oracle.com,
+        Matt Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Helge Deller <deller@gmx.de>
-Cc: linux-parisc@vger.kernel.org
----
- drivers/parisc/dino.c    |    5 +++++
- drivers/parisc/lba_pci.c |    3 +++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+Fix setting bio flags in drivers (sd_dif/floppy).
 
-diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
-index 0610e91..def94af 100644
---- a/drivers/parisc/dino.c
-+++ b/drivers/parisc/dino.c
-@@ -984,6 +984,10 @@ static int __init dino_probe(struct parisc_device *dev)
- 	if (dino_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
- 
-+	dino_dev->hba.bus_num.start = dino_current_bus;
-+	dino_dev->hba.bus_num.end = 255;
-+	dino_dev->hba.bus_num.flags |= IORESOURCE_BUS;
-+	pci_add_resource(&resources, &dino_dev->hba.bus_num);
- 	/*
- 	** It's not used to avoid chicken/egg problems
- 	** with configuration accessor functions.
-@@ -999,6 +1003,7 @@ static int __init dino_probe(struct parisc_device *dev)
- 		return 0;
+Signed-off-by: Muthukumar R <muthur@gmail.com>
+
+---------------------------
+
+ drivers/block/floppy.c |    2 +-
+ drivers/scsi/sd_dif.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+------------------------
+
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 9baf11e..744f078 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3832,7 +3832,7 @@ static int __floppy_read_block_0(struct
+block_device *bdev)
+ 	bio.bi_size = size;
+ 	bio.bi_bdev = bdev;
+ 	bio.bi_sector = 0;
+-	bio.bi_flags = BIO_QUIET;
++	bio.bi_flags = (1 << BIO_QUIET);
+ 	init_completion(&complete);
+ 	bio.bi_private = &complete;
+ 	bio.bi_end_io = floppy_rb0_complete;
+diff --git a/drivers/scsi/sd_dif.c b/drivers/scsi/sd_dif.c
+index 0cb39ff..f8fb2d6 100644
+--- a/drivers/scsi/sd_dif.c
++++ b/drivers/scsi/sd_dif.c
+@@ -408,7 +408,7 @@ int sd_dif_prepare(struct request *rq, sector_t
+hw_sector, unsigned int sector_s
+ 			kunmap_atomic(sdt, KM_USER0);
+ 		}
+
+-		bio->bi_flags |= BIO_MAPPED_INTEGRITY;
++		bio->bi_flags |= (1 << BIO_MAPPED_INTEGRITY);
  	}
- 
-+	pci_bus_update_busn_res_end(bus, bus->subordinate);
- 	bus->subordinate = pci_scan_child_bus(bus);
- 
- 	/* This code *depends* on scanning being single threaded
-diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
-index e885764..df1e9f9 100644
---- a/drivers/parisc/lba_pci.c
-+++ b/drivers/parisc/lba_pci.c
-@@ -1503,6 +1503,9 @@ lba_driver_probe(struct parisc_device *dev)
- 	if (lba_dev->hba.gmmio_space.flags)
- 		pci_add_resource(&resources, &lba_dev->hba.gmmio_space);
- 
-+	lba_dev->hba.bus_num.flags |= IORESOURCE_BUS;
-+	pci_add_resource(&resources, &lba_dev->hba.bus_num);
-+
- 	dev->dev.platform_data = lba_dev;
- 	lba_bus = lba_dev->hba.hba_bus =
- 		pci_create_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
--- 
-1.7.7
 
+ 	return 0;
