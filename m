@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab2B2B1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:27:18 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:45119 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836Ab2B2B1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:27:17 -0500
-Date: Tue, 28 Feb 2012 20:26:44 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: boot/compressed/misc.s: Include <linux/bug.h> to
- fix build break
-Message-ID: <20120229012644.GA4265@windriver.com>
-References: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
+	id S965804Ab2B2B16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:27:58 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54113 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932392Ab2B2B1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 20:27:55 -0500
+Message-ID: <4F4D7F5E.5040202@cn.fujitsu.com>
+Date: Wed, 29 Feb 2012 09:29:02 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com>
+In-Reply-To: <4F4CB926.6050600@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-29 09:26:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-29 09:26:06,
+	Serialize complete at 2012-02-29 09:26:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[PATCH] ARM: boot/compressed/misc.s: Include <linux/bug.h> to fix build break] On 27/02/2012 (Mon 12:52) Stephen Warren wrote:
-
-> Commmit cf86c17 "kernel.h: doesn't explicitly use bug.h, so don't include
-> it." caused the following build failure on ARM:
+At 02/28/2012 07:23 PM, Avi Kivity Wrote:
+> On 02/27/2012 05:01 AM, Wen Congyang wrote:
+>> We can know the guest is paniced when the guest runs on xen.
+>> But we do not have such feature on kvm. This patch implemnts
+>> this feature, and the implementation is the same as xen:
+>> register panic notifier, and call hypercall when the guest
+>> is paniced.
 > 
->   CC      arch/arm/boot/compressed/misc.o
-> In file included from arch/arm/boot/compressed/misc.c:28:0:
-> arch/arm/mach-tegra/include/mach/uncompress.h: In function 'arch_decomp_setup':
-> arch/arm/mach-tegra/include/mach/uncompress.h:125:2: error: implicit declaration of function 'BUILD_BUG_ON_ZERO' [-Werror=implicit-function-declaration]
-> cc2: some warnings being treated as errors
-> 
-> Include <linux/bug.h> to fix that.
+> What's the motivation for this?  "Xen does this" is insufficient.
 
-Hi Stephen,
+Another purpose is: management app(for example: libvirt) can do auto
+dump when the guest is crashed. If management app does not do auto
+dump, the guest's user can do dump by hand if he sees the guest is
+paniced.
 
-I wouldn't want to put bug.h in arm/boot/compressed/misc.c simply
-because I've built all the arm configs and I don't see this on
-running any of the existing arch/arm/config builds.
+I am thinking about another status: dumping. This status tells
+the guest's user that the guest is paniced, and the OS's dump function
+is working.
 
-However, if arch/arm/mach-tegra/include/mach/uncompress.h is using
-things from it, then perhaps it needs to include bug.h I think.
+These two status can tell the guest's user whether the guest is pancied,
+and what should he do if the guest is paniced.
 
-Russell is totally correct in saying that uncompress has no business in
-calling/linking generic infrastructure functions, but your error message
-is a use of _BUILD_ bug stuff.  The early init code clearly can't do
-printk or similar, but should still be able to use BUILD_BUG type stuff
-that is meant to blow up on the x-compile host and not the target.  Use
-of BUILD_BUG is different from use of (runtime) BUG.  Does it warrant a
-separate header though?  It could, but I don't think we want to go there.
-
-The other interesting thing here, is that you see this when the kernel.h
-stops including bug.h -- so that means you've got an implicit presence
-of kernel.h -- which means you can legally (but incorrectly) link to
-things like printk() which simply dont make sense at this early stage of
-boot.  So I have to think that the exclusion of headers like bug.h to
-protect yourself from hurting yourself was already non-functional before
-you start.  The way things are currently requires the author to really
-think about the context they are operating in regardless.
-
-Using BUG in this context is wrong.  Using BUILD_BUG seems OK to me.
-
-Paul.
---
-
-> 
-> This should probably be squashed into commit a3a3a1a "bug.h: add include
-> of it to various implicit C users".
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  arch/arm/boot/compressed/misc.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
-> index 8e2a8fc..30055be 100644
-> --- a/arch/arm/boot/compressed/misc.c
-> +++ b/arch/arm/boot/compressed/misc.c
-> @@ -18,6 +18,7 @@
->  
->  unsigned int __machine_arch_type;
->  
-> +#include <linux/bug.h>
->  #include <linux/compiler.h>	/* for inline */
->  #include <linux/types.h>
->  #include <linux/linkage.h>
-> -- 
-> 1.7.0.4
-> 
+Thanks
+Wen Congyang
