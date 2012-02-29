@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966260Ab2B2ChW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:37:22 -0500
-Received: from mail-iy0-f194.google.com ([209.85.210.194]:51056 "EHLO
-	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965501Ab2B2ChV (ORCPT
+	id S966257Ab2B2CrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:47:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33688 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966223Ab2B2CrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:37:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of missingsailor@gmail.com designates 10.50.159.234 as permitted sender) smtp.mail=missingsailor@gmail.com; dkim=pass header.i=missingsailor@gmail.com
-Message-ID: <4F4D8F56.9090808@mediatek.com>
-Date: Wed, 29 Feb 2012 10:37:10 +0800
-From: Meng Zhang <meng.zhang@mediatek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Tue, 28 Feb 2012 21:47:03 -0500
 MIME-Version: 1.0
-To: mdharm-usb@one-eyed-alien.net, phil@ipom.com, stern@rowland.harvard.edu
-CC: linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120228102337.GF18045@n2100.arm.linux.org.uk>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
+	<20120227104858.GR22562@n2100.arm.linux.org.uk>
+	<20120227110204.GA30199@n2100.arm.linux.org.uk>
+	<CAOAMb1BjC2bF=rpJAhRUrB_U2mp8HGWxfcp+=TZ1etWzjUEwig@mail.gmail.com>
+	<20120228083545.GA18045@n2100.arm.linux.org.uk>
+	<CAOAMb1CJ=G45G3JsxwP23GSdEOnDmY5xVoQmWLXaKJJv2cLOLg@mail.gmail.com>
+	<20120228092140.GD18045@n2100.arm.linux.org.uk>
+	<CAOAMb1Cqfrk-b-yd1CMt2Hac7_j3i6WL8D8yQJDWjg_S18dAsw@mail.gmail.com>
+	<20120228102337.GF18045@n2100.arm.linux.org.uk>
+Date: Wed, 29 Feb 2012 11:47:02 +0900
+Message-ID: <CAOAMb1CvjxGHSekURXAhw5DL2W2-3Smw3ZTWuAi2E-1UBxHEFg@mail.gmail.com>
+Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+From: Chanho Min <chanho0207@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from: Meng Zhang <meng.zhang@mediatek.com>
+> Which is why my patch explicitly clears the receive interrupt status
+> before requesting the interrupt.  Have you read my patch?
+This is the hang-up scenario with your patch.
 
-1. Add entrys for mediatek MT6276M in unusual_devs.h
+pl011_startup(struct uart_port *port)
+ 	uap->port.uartclk = clk_get_rate(uap->clk);
 
-2. Add init function for mediatek MT6276M to switch to COM port mode
+	/* Clear pending error and receive interrupts */
+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+...
+1. RX Interrupt is occurred after interrupt is cleared. Even if
+interrupt is masked/disabled before(or probe time), RIS's Rx interrupt
+is set to 1. Of course, masked status is zero.
+...
+2. RXFE of flag register is zero and fifo is not empty before LCRH is cleared.
+	writew(0, uap->port.membase + uap->lcrh_rx);
+3. RXFE of flag register is changed to '1'  after LCRH is cleared. but
+the fifo is not actually empty.
+...
+4. Finally, We enable interrupts.
+	spin_lock_irq(&uap->port.lock);
+	uap->im = UART011_RTIM;
+	if (!pl011_dma_rx_running(uap))
+		uap->im |= UART011_RXIM;
+	writew(uap->im, uap->port.membase + UART011_IMSC);
+	spin_unlock_irq(&uap->port.lock);
+5. The RIS's field which is enabled by IMSC is reflected to MIS as
+soon as the interrupt enable. (We checked this on our ARM platform )
+6. IRQ context is started. pl011_fifo_to_tty is called by pl011_int.
+static int pl011_fifo_to_tty(struct uart_amba_port *uap)
+...
+	while (max_count--) {
+		status = readw(uap->port.membase + UART01x_FR);
+		if (status & UART01x_FR_RXFE)
+			break;
+...
+7. pl011_fifo_to_tty can't read any data from DR because of the break
+condition for RXFE. Rx interrupt can't be cleared. cpu is looping in
+irq context.
 
-3. usb-devices outputs after running with this patch:
-T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=0e8d ProdID=00a1 Rev=02.00
-S:  Manufacturer=MediaTek Inc
-S:  Product=Product
-C:  #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+This is why we need to be cleared just after LCRH is cleared not
+before irq_request. Let's get back to my patch. Even if data is
+received before or after interrupt is cleared, flag register will show
+actual fifo status. Interrupt handler runs normally after the uart
+operation is started up by enabling interrupt.
 
-Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
----
++       spin_lock_irq(&uap->port.lock);
+        writew(0, uap->port.membase + uap->lcrh_rx);
++       /* Clear pending error and receive interrupts */
++       writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++               UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++       spin_unlock_irq(&uap->port.lock);
 
-this patch is based on branch:
-	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-
-  drivers/usb/storage/initializers.c |   27 +++++++++++++++++++++++++++
-  drivers/usb/storage/initializers.h |    3 +++
-  drivers/usb/storage/unusual_devs.h |    9 +++++++++
-  3 files changed, 39 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/usb/storage/initializers.c 
-b/drivers/usb/storage/initializers.c
-index 105d900..3ea233e 100644
---- a/drivers/usb/storage/initializers.c
-+++ b/drivers/usb/storage/initializers.c
-@@ -104,3 +104,30 @@ int usb_stor_huawei_e220_init(struct us_data *us)
-  	US_DEBUGP("Huawei mode set result is %d\n", result);
-  	return 0;
-  }
-+
-+/* switch MediaTek MT6276M to COM port mode */
-+int usb_stor_mediatek_mt6276m_init(struct us_data *us)
-+{
-+	const unsigned char rezero_msg[] = {
-+		0x55, 0x53, 0x42, 0x43, 0x78, 0x56, 0x34, 0x12,
-+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xf0,
-+		0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-+	};
-+	char *buffer;
-+	int result;
-+
-+	US_DEBUGP("Initializing mediatek USB device...\n");
-+
-+	buffer = kzalloc(32, GFP_KERNEL);
-+	if (buffer == NULL)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	memcpy(buffer, rezero_msg, sizeof(rezero_msg));
-+	result = usb_stor_bulk_transfer_buf(us,
-+			us->send_bulk_pipe,
-+			buffer, sizeof(rezero_msg), NULL);
-+	
-+	kfree(buffer);
-+	return result;
-+}
-diff --git a/drivers/usb/storage/initializers.h 
-b/drivers/usb/storage/initializers.h
-index 529327f..6c9337f 100644
---- a/drivers/usb/storage/initializers.h
-+++ b/drivers/usb/storage/initializers.h
-@@ -48,3 +48,6 @@ int usb_stor_ucr61s2b_init(struct us_data *us);
-
-  /* This places the HUAWEI E220 devices in multi-port mode */
-  int usb_stor_huawei_e220_init(struct us_data *us);
-+
-+/* switch MediaTek MT6276M to COM port mode */
-+int usb_stor_mediatek_mt6276m_init(struct us_data *us);
-diff --git a/drivers/usb/storage/unusual_devs.h 
-b/drivers/usb/storage/unusual_devs.h
-index 856ad92..574c291 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1356,6 +1356,15 @@ UNUSUAL_DEV( 0x0e21, 0x0520, 0x0100, 0x0100,
-  		USB_SC_DEVICE, USB_PR_BULK, NULL,
-  		US_FL_NEED_OVERRIDE ),
-
-+/* Reported by Meng Zhang <meng.zhang@mediatek.com>
-+ * switch mediatek USB devices into COM port mode
-+ */
-+UNUSUAL_DEV(0x0e8d, 0x0002, 0x0000, 0x0300,
-+		"MediaTek Inc.",
-+		"MT6276M",
-+		USB_SC_DEVICE, USB_PR_DEVICE,
-+		usb_stor_mediatek_mt6276m_init, 0),
-+
-  /* Submitted by Antoine Mairesse <antoine.mairesse@free.fr> */
-  UNUSUAL_DEV( 0x0ed1, 0x6660, 0x0100, 0x0300,
-  		"USB",
+Thanks,
+Chanho Min
