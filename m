@@ -1,229 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031067Ab2B2OkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:40:13 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52484 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab2B2OkL convert rfc822-to-8bit (ORCPT
+	id S1031075Ab2B2OlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:41:12 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:39253 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030947Ab2B2OlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:40:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.23.199 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
+	Wed, 29 Feb 2012 09:41:11 -0500
+Date: Wed, 29 Feb 2012 15:40:54 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+Message-ID: <20120229144054.GH21224@aftab>
+References: <1330445487-15020-1-git-send-email-bp@amd64.org>
+ <1330445487-15020-2-git-send-email-bp@amd64.org>
+ <4F4E1F91.9080705@redhat.com>
+ <20120229134556.GG21224@aftab>
+ <4F4E3059.7040004@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120229092859.a0411859.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20120229092859.a0411859.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 29 Feb 2012 22:40:09 +0800
-Message-ID: <CAJd=RBAVaWud3f6AUSr1PDWS_VvBgiSMobRdLyokwx3bcHqCKQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] memcg: avoid THP split in task migration
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4E3059.7040004@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 8:28 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue, 28 Feb 2012 16:12:32 -0500
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
->
->> Currently we can't do task migration among memory cgroups without THP split,
->> which means processes heavily using THP experience large overhead in task
->> migration. This patch introduce the code for moving charge of THP and makes
->> THP more valuable.
->>
->> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->> Cc: Hillf Danton <dhillf@gmail.com>
->
->
-> Thank you!
+On Wed, Feb 29, 2012 at 11:04:09AM -0300, Mauro Carvalho Chehab wrote:
+> No, you didn't. Every time i touch on this point, you just say that it
+> doesn't fit without giving any explanation why not.
 
-   ++hd;
+Let me explain it to you one _last_ time:
 
->
-> A comment below.
->
->> ---
->>  mm/memcontrol.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++----
->>  1 files changed, 70 insertions(+), 6 deletions(-)
->>
->> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
->> index c83aeb5..e97c041 100644
->> --- linux-next-20120228.orig/mm/memcontrol.c
->> +++ linux-next-20120228/mm/memcontrol.c
->> @@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
->>       return ret;
->>  }
->>
->> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
->> +/*
->> + * We don't consider swapping or file mapped pages because THP does not
->> + * support them for now.
->> + */
->> +static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
+- severity: No real need for it. If the error is severe enough, the
+kernel handles automatically, i.e. memory poisoning and recovery. In all
+the other cases it is not severe enough.
 
-static int is_target_thp_for_mc(struct vm_area_struct *vma,
-or
-static int is_target_pmd_for_mc(struct vm_area_struct *vma,
-sounds better?
+- location: this is contained in the ->cpu field.
 
->> +             unsigned long addr, pmd_t pmd, union mc_target *target)
->> +{
->> +     struct page *page = NULL;
->> +     struct page_cgroup *pc;
->> +     int ret = 0;
->> +
->> +     if (pmd_present(pmd))
->> +             page = pmd_page(pmd);
->> +     if (!page)
->> +             return 0;
->> +     VM_BUG_ON(!PageHead(page));
+- silkscreen_label: <sarcasm> yeah, I'm getting a, say, a Data
+Cache error during an L1 linefill from L2, what the f*ck does the
+silkscreen label mean for such an error?! Well, nobody knows wtf it
+means!</sarcasm>
 
-With a huge and stable pmd, the above operations on page could be
-compacted into one line?
+- error_msg: already there in my patch.
 
-	page = pmd_page(pmd);
+So go and read and try _understanding_ this before you come back with
+more crap, ok?
 
->> +     get_page(page);
->> +     pc = lookup_page_cgroup(page);
->> +     if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
->> +             ret = MC_TARGET_PAGE;
->> +             if (target)
+> Running away from this discussion won't help at all.
 
-After checking target, looks only get_page() needed?
+Not running away - trying not to waste time with bullshit.
 
->> +                     target->page = page;
->> +     }
->> +     if (!ret || !target)
->> +             put_page(page);
->> +     return ret;
->> +}
->> +#else
->> +static inline int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
->> +             unsigned long addr, pmd_t pmd, union mc_target *target)
->> +{
->> +     return 0;
->> +}
->> +#endif
->> +
->>  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->>                                       unsigned long addr, unsigned long end,
->>                                       struct mm_walk *walk)
->> @@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->>       pte_t *pte;
->>       spinlock_t *ptl;
->>
->> -     split_huge_page_pmd(walk->mm, pmd);
->> +     if (pmd_trans_huge_lock(pmd, vma) == 1) {
->> +             if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
+-- 
+Regards/Gruss,
+Boris.
 
-		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-looks clearer
-
->> +                     mc.precharge += HPAGE_PMD_NR;
-
-As HPAGE_PMD_NR is directly used, compiler beeps if THP disabled, I guess.
-
-If yes, please cleanup huge_mm.h with s/BUG()/BUILD_BUG()/ and with
-both HPAGE_PMD_ORDER and HPAGE_PMD_NR also defined,
-to easy others a bit.
-
->> +             spin_unlock(&walk->mm->page_table_lock);
-
-		spin_unlock(&vma->mm->page_table_lock);
-looks clearer
->> +             cond_resched();
->> +             return 0;
->> +     }
->>
->>       pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->>       for (; addr != end; pte++, addr += PAGE_SIZE)
->> @@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
->>       struct vm_area_struct *vma = walk->private;
->>       pte_t *pte;
->>       spinlock_t *ptl;
->> +     int type;
->> +     union mc_target target;
->> +     struct page *page;
->> +     struct page_cgroup *pc;
->> +
->> +     if (pmd_trans_huge_lock(pmd, vma) == 1) {
->> +             if (!mc.precharge)
->> +                     return 0;
-
-Bang, return without page table lock released.
-
->> +             type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
->> +             if (type == MC_TARGET_PAGE) {
->> +                     page = target.page;
->> +                     if (!isolate_lru_page(page)) {
->> +                             pc = lookup_page_cgroup(page);
->
-> Here is a diffuclut point. Please see mem_cgroup_split_huge_fixup(). It splits
-
-Hard and hard point IMO.
-
-> updates memcg's status of splitted pages under lru_lock and compound_lock
-> but not under mm->page_table_lock.
->
-> Looking into split_huge_page()
->
->        split_huge_page()  # take anon_vma lock
->                __split_huge_page()
->                        __split_huge_page_refcount() # take lru_lock, compound_lock.
->                                mem_cgroup_split_huge_fixup()
->                        __split_huge_page_map() # take page table lock.
->
-[copied from Naoya-san's reply]
-
-> I'm afraid this callchain is not correct.
-
-s/correct/complete/
-
-> Page table lock seems to be taken before we enter the main split work.
->
->    split_huge_page
->        take anon_vma lock
->        __split_huge_page
->            __split_huge_page_splitting
->                lock page_table_lock     <--- *1
->                page_check_address_pmd
->                unlock page_table_lock
-
-Yeah, splitters are blocked.
-Plus from the *ugly* documented lock function(another
-cleanup needed), the embedded mmap_sem also blocks splitters.
-
-That said, could we simply wait and see results of test cases?
-
--hd
-
-/* mmap_sem must be held on entry */
-static inline int pmd_trans_huge_lock(pmd_t *pmd,
-				      struct vm_area_struct *vma)
-{
-	VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
-	if (pmd_trans_huge(*pmd))
-		return __pmd_trans_huge_lock(pmd, vma);
-	else
-		return 0;
-}
-
->            __split_huge_page_refcount
->                lock lru_lock
->                compound_lock
->                mem_cgroup_split_huge_fixup
->                compound_unlock
->                unlock lru_lock
->            __split_huge_page_map
->                lock page_table_lock
->                ... some work
->                unlock page_table_lock
->        unlock anon_vma lock
->
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
