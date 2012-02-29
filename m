@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab2B2RyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:54:06 -0500
-Received: from mail-in-08.arcor-online.net ([151.189.21.48]:56459 "EHLO
-	mail-in-08.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752867Ab2B2RyD (ORCPT
+	id S1757802Ab2B2R7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:59:22 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:45845 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754532Ab2B2R7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:54:03 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 231969BEE7
-Date: Wed, 29 Feb 2012 18:54:02 +0100 (CET)
-From: Bodo Eggert <7eggert@gmx.de>
-To: "Joshua C." <joshuacov@googlemail.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Bodo Eggert <7eggert@gmx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-In-Reply-To: <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1202291836120.12283@be10.lrz>
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz>
- <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 29 Feb 2012 12:59:21 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v2] pinctrl: make the pinmux-pins more helpful
+Date: Wed, 29 Feb 2012 18:58:52 +0100
+Message-ID: <1330538332-16088-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1442818780-1330538042=:12283"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Linus Walleij <linus.walleij@linaro.org>
 
---8323329-1442818780-1330538042=:12283
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+The debugfs file pinmux-pins used to tell which function was
+enabled but now states simply which device owns the pin. Being
+owned by the pinctrl driver itself means just that it's hogged
+so be a bit more helpful by printing that.
 
-On Wed, 29 Feb 2012, Joshua C. wrote:
-> 2012/2/28 H. Peter Anvin <hpa@zytor.com>:
->> On 02/28/2012 10:32 AM, Bodo Eggert wrote:
+ChangeLog v1->v2:
+- Preserve the self-referential owner field, just clarify that
+  when the pin controller states itself as owner this means
+  that it's hogged.
 
->>> Asking the BIOS is as correct as querying the memory location (defined
->>> to have same result), but more expensive.
->>
->>
->> Not quite, in reality; it is more likely to work on systems which implem=
-ent
->> various kinds of bypass schemes. =A0The key aspect of this, though, is t=
-hat
->> this is done on a BIOS path and not by groping a memory location which m=
-ay
->> not even be initialized on non-BIOS systems.
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinmux.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-> I got the idea that we should somehow check the kbd_state and set the
-> numlock accordingly but this is behind my capabilities. I tried
-> several times to read those boot_params but I have no idea how to do
-> it. Where are they stored, how to access them? Help anyone?
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 98b89d6..2a40561 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -626,8 +626,8 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+ 
+ 	/* The pin number can be retrived from the pin controller descriptor */
+ 	for (i = 0; i < pctldev->desc->npins; i++) {
+-
+ 		struct pin_desc *desc;
++		bool is_hog = false;
+ 
+ 		pin = pctldev->desc->pins[i].number;
+ 		desc = pin_desc_get(pctldev, pin);
+@@ -635,9 +635,14 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
+ 		if (desc == NULL)
+ 			continue;
+ 
+-		seq_printf(s, "pin %d (%s): %s\n", pin,
++		if (desc->owner &&
++		    !strcmp(desc->owner, pinctrl_dev_get_name(pctldev)))
++			is_hog = true;
++
++		seq_printf(s, "pin %d (%s): %s%s\n", pin,
+ 			   desc->name ? desc->name : "unnamed",
+-			   desc->owner ? desc->owner : "UNCLAIMED");
++			   desc->owner ? desc->owner : "UNCLAIMED",
++			   is_hog ? " (HOG)" : "");
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.8
 
-There are two bytes in the BIOS data area, one (0x417 + 0x418) containing=
-=20
-the settings that are supposed to be set and one that contains the values=
-=20
-sent to the keyboard most recently (0x496 + 0x497). Both values are=20
-compared on each int16 call and the LED are set accordingly if the=20
-corresponding bits differ.
-
-You can change the LED states by setting the according byte and calling=20
-any keyboard interrupt function, e.g. querying the availability of=20
-characters in the buffer. I don't know about any other way to do the same=
-=20
-using only the BIOS.
---8323329-1442818780-1330538042=:12283--
