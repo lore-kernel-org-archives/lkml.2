@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030878Ab2B2HsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 02:48:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62508 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab2B2HsJ (ORCPT
+	id S1030886Ab2B2HtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 02:49:12 -0500
+Received: from mail.southpole.se ([193.12.106.18]:48755 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030857Ab2B2HtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 02:48:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of david.feuer@gmail.com designates 10.204.155.69 as permitted sender) smtp.mail=david.feuer@gmail.com; dkim=pass header.i=david.feuer@gmail.com
-MIME-Version: 1.0
-Date: Wed, 29 Feb 2012 02:48:07 -0500
-Message-ID: <CAMgWh9tRJ45+X0iuTWXOLeohADi_fbd68e8-cAAroHr2QvyZmQ@mail.gmail.com>
-Subject: i915 drm crashes with link to relevant i915_error_state
-From: David Feuer <david.feuer@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Feb 2012 02:49:10 -0500
+Message-ID: <1330501749.2964.4.camel@crucifix>
+Subject: Re: [PATCH 2/2] OpenRISC: IRQ: Include module.h
+From: Jonas Bonn <jonas@southpole.se>
+To: Richard Weinberger <richard@nod.at>
+Cc: arnd@arndb.de, linux@openrisc.net, linux-kernel@vger.kernel.org
+Date: Wed, 29 Feb 2012 08:49:09 +0100
+In-Reply-To: <1330476393-14264-2-git-send-email-richard@nod.at>
+References: <1330476393-14264-1-git-send-email-richard@nod.at>
+	 <1330476393-14264-2-git-send-email-richard@nod.at>
+Organization: South Pole AB
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+X-Assp-Version: 2.1.1(11364) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 01749-05838
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've put up the i915_error_state at
-http://techhouse.org/~dfeuer/i915_error_state to (hopefully) allow
-this message to go through.
 
-dfeuer@Lemur ~ $ uname -a
-Linux Lemur 3.3.0-030300rc5-generic #201202251535 SMP Sat Feb 25
-20:36:29 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux
+Thanks.  There is already a patch in linux-next for this.
 
-The relevant syslog bit:
+However, the patch in linux-next pulls in export.h instead of module.h.
+I think export.h is the correct header file to be using here, but let me
+know if you see it differently.
 
-Feb 29 02:00:07 Lemur kernel: [58897.766802]
-[drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU
-hung
-Feb 29 02:00:07 Lemur kernel: [58897.766814] [drm] capturing error
-event; look for more information in /debug/dri/0/i915_error_state
-Feb 29 02:00:07 Lemur udevd[8093]: failed to execute
-'/usr/share/apport/apport-gpu-error-intel.py'
-'/usr/share/apport/apport-gpu-error-intel.py': No such file or
-directory
-Feb 29 02:00:07 Lemur kernel: [58897.770984] [drm:i915_wait_request]
-*ERROR* i915_wait_request returns -11 (awaiting 3071104 at 3071098,
-next 3071105)
-Feb 29 02:01:07 Lemur udevd[8097]: failed to execute
-'/usr/share/apport/apport-gpu-error-intel.py'
-'/usr/share/apport/apport-gpu-error-intel.py': No such file or
-directory
-Feb 29 02:01:07 Lemur kernel: [58957.629331]
-[drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU
-hung
-Feb 29 02:01:07 Lemur kernel: [58957.629371] [drm:i915_wait_request]
-*ERROR* i915_wait_request returns -11 (awaiting 3105772 at 3105766,
-next 3105773)
+Thanks for helping out with build-testing the OpenRISC arch... much
+appreciated.
 
-Note:
+/Jonas
 
-I got these two incidents running supertuxkart, which is my favorite
-way to generate drm crashes. fgfs (flight sim) and blender (3d
-graphics editor) are quite efficient for that too, though much less so
-than in previous kernel versions.
+On Wed, 2012-02-29 at 01:46 +0100, Richard Weinberger wrote:
+> Fixes:
+>   CC      arch/openrisc/kernel/irq.o
+> arch/openrisc/kernel/irq.c:35:1: warning: data definition has no type or storage class
+> arch/openrisc/kernel/irq.c:35:1: warning: type defaults to ‘int’ in declaration of ‘EXPORT_SYMBOL’
+> arch/openrisc/kernel/irq.c:35:1: warning: parameter names (without types) in function declaration
+> arch/openrisc/kernel/irq.c:42:1: warning: data definition has no type or storage class
+> arch/openrisc/kernel/irq.c:42:1: warning: type defaults to ‘int’ in declaration of ‘EXPORT_SYMBOL’
+> arch/openrisc/kernel/irq.c:42:1: warning: parameter names (without types) in function declaration
+> arch/openrisc/kernel/irq.c:173:1: warning: data definition has no type or storage class
+> arch/openrisc/kernel/irq.c:173:1: warning: type defaults to ‘int’ in declaration of ‘EXPORT_SYMBOL_GPL’
+> arch/openrisc/kernel/irq.c:173:1: warning: parameter names (without types) in function declaration
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/openrisc/kernel/irq.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
+> index 59b3023..f917925 100644
+> --- a/arch/openrisc/kernel/irq.c
+> +++ b/arch/openrisc/kernel/irq.c
+> @@ -14,6 +14,7 @@
+>   *      2 of the License, or (at your option) any later version.
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/ptrace.h>
+>  #include <linux/errno.h>
+>  #include <linux/interrupt.h>
 
-David Feuer
+
