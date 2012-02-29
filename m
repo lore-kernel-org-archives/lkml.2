@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966185Ab2B2AjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:39:23 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39753 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965411Ab2B2AjV (ORCPT
+	id S966181Ab2B2AkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:40:22 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45655 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965411Ab2B2AkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:39:21 -0500
-Date: Tue, 28 Feb 2012 16:39:15 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Igor Murzov <intergalactic.anonymous@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Igor Murzov <e-mail@date.by>, "Sergey V." <sftp.mtuci@gmail.com>
-Subject: Re: [RFC][PATCH 2/2] ACPI video: Don't start video device until its
- associated input device has been reigstered
-Message-ID: <20120229003915.GA11111@core.coreip.homeip.net>
-References: <20120229035142.31016e6f@garik>
- <20120229035518.306c57a8@garik>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120229035518.306c57a8@garik>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Feb 2012 19:40:20 -0500
+Date: Wed, 29 Feb 2012 00:41:56 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, tilman@imap.cc, mac@melware.de, isdn@linux-pingi.de,
+        jslaby@suse.cz, linux-kernel@vger.kernel.org, hjlipp@web.de,
+        gigaset307x-common@lists.sourceforge.net, jirislaby@gmail.com
+Subject: Re: "whitespace coding style cleanup" broke coding style
+Message-ID: <20120229004156.7d17302d@pyramind.ukuu.org.uk>
+In-Reply-To: <20120228.184246.556442272540134467.davem@davemloft.net>
+References: <1330466751.21481.18.camel@joe2Laptop>
+	<4F4D5E84.8090404@imap.cc>
+	<1330471687.31737.19.camel@joe2Laptop>
+	<20120228.184246.556442272540134467.davem@davemloft.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 03:55:18AM +0400, Igor Murzov wrote:
-> From 202f25d44b1cf871697c88a6a3a8d854674db4d8 Mon Sep 17 00:00:00 2001
-> From: Igor Murzov <e-mail@date.by>
-> Date: Mon, 27 Feb 2012 21:57:59 +0400
-> Subject: [PATCH 2/2] ACPI video: Don't start video device until its
->  associated input device has been reigstered
+On Tue, 28 Feb 2012 18:42:46 -0500 (EST)
+David Miller <davem@davemloft.net> wrote:
 
 > 
-> ---
->  drivers/acpi/video.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> index 1bc6370..b9e114c 100644
-> --- a/drivers/acpi/video.c
-> +++ b/drivers/acpi/video.c
-> @@ -1659,9 +1659,6 @@ static int acpi_video_bus_add(struct acpi_device *device)
->  	error = acpi_video_bus_get_devices(video, device);
->  	if (error)
->  		goto err_free_video;
-> -	error = acpi_video_bus_start_devices(video);
-> -	if (error)
-> -		goto err_put_video;
->  
->  	video->input = input = input_allocate_device();
->  	if (!input) {
-> @@ -1703,13 +1700,18 @@ static int acpi_video_bus_add(struct acpi_device *device)
->  	if (error)
->  		goto err_free_input_dev;
->  
-> +	error = acpi_video_bus_start_devices(video);
-> +	if (error)
-> +		goto err_unregister_pm_notifier;
-> +
+> The truth is that isdn is unmaintained, so I just apply all ISDN
+> patches directly after I review them, and I will continue to do so
+> with impunity.
 
-Registered input device should be unregistered with
-input_unregister_device(), not input_free_device(). Your change breaks
-this.
-
-Also, notify() will not be called until acpi_video_bus_add() completes
-so current code should be perfectly fine.
-
->  	return 0;
->  
-> + err_unregister_pm_notifier:
-> +	unregister_pm_notifier(&video->pm_nb);
->   err_free_input_dev:
->  	input_free_device(input);
->   err_stop_video:
->  	acpi_video_bus_stop_devices(video);
-> - err_put_video:
->  	acpi_video_bus_put_devices(video);
->  	kfree(video->attached_array);
->   err_free_video:
-> -- 
-> 1.7.5.1
-> 
-
-Thanks.
-
--- 
-Dmitry
+Except the Gigaset which has its own maintainer entry and active
+maintainer...
