@@ -1,184 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2B2Mw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:52:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351Ab2B2Mwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:52:54 -0500
-Message-ID: <4F4E1F91.9080705@redhat.com>
-Date: Wed, 29 Feb 2012 09:52:33 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1756852Ab2B2M6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:58:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36542 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab2B2M6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:58:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.132.72 as permitted sender) smtp.mail=dave.martin@linaro.org
+Date: Wed, 29 Feb 2012 12:58:26 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Peter Maydell <peter.maydell@linaro.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+Message-ID: <20120229125826.GC2077@linaro.org>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop>
+ <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+ <20120227180355.GB2023@linaro.org>
+ <1330371219.10008.34.camel@dagon.hellion.org.uk>
+ <20120228102040.GB2063@linaro.org>
+ <1330426133.31269.70.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.00.1202281149210.23091@kaball-desktop>
+ <20120229093436.GA2077@linaro.org>
+ <1330509362.4270.20.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org>
-In-Reply-To: <1330445487-15020-2-git-send-email-bp@amd64.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330509362.4270.20.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-02-2012 13:11, Borislav Petkov escreveu:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Feb 29, 2012 at 09:56:02AM +0000, Ian Campbell wrote:
+> On Wed, 2012-02-29 at 09:34 +0000, Dave Martin wrote:
+> > On Tue, Feb 28, 2012 at 12:28:29PM +0000, Stefano Stabellini wrote:
 > 
-> The idea here is to pass an additional decoded MCE message through
-> the tracepoint and into the ring buffer for userspace to consume. The
-> designated consumers are RAS daemons and other tools collecting RAS
-> information.
+> > > I don't have a very strong opinion on which register we should use, but
+> > > I would like to avoid r7 if it is already actively used by gcc.
+> > 
+> > But there is no framepointer for Thumb-2 code (?)
 > 
-> Drop unneeded fields while at it, thus saving some room in the ring
-> buffer.
+> Peter Maydell suggested there was:
+> > r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
+> > makes it worth avoiding in this context.
 > 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  include/trace/events/mce.h       |   22 +++++++---------------
->  2 files changed, 8 insertions(+), 16 deletions(-)
+> Sounds like it might be a gcc-ism, possibly a non-default option?
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 5a11ae2e9e91..072e020ecaf3 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -144,7 +144,7 @@ void mce_log(struct mce *mce)
->  	int ret = 0;
->  
->  	/* Emit the trace record: */
-> -	trace_mce_record(mce);
-> +	trace_mce_record("", mce);
->  
->  	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
->  	if (ret == NOTIFY_STOP)
-> diff --git a/include/trace/events/mce.h b/include/trace/events/mce.h
-> index 4cbbcef6baa8..5fada9a40708 100644
-> --- a/include/trace/events/mce.h
-> +++ b/include/trace/events/mce.h
-> @@ -10,11 +10,12 @@
->  
->  TRACE_EVENT(mce_record,
->  
-> -	TP_PROTO(struct mce *m),
-> +	TP_PROTO(const char *msg, struct mce *m),
+> Anyway, I think r12 will be fine for our purposes so the point is rather
+> moot.
 
-While is very easy to fold everything into a single errror message field,
-doing that makes harder for userspace to break the string into the components, 
-as already discussed.
+Just had a chat with some tools guys -- apparently, when passing register
+arguments to gcc inline asms there really isn't a guarantee that those
+variables will be in the expected registers on entry to the inline asm.
 
-The big advantage of using perf, instead of printk is that it allows to pass
-the fields into a binary form, instead of passing a single string to userspace.
-We should use this feature, otherwise, there's no sense on using perf at all.
+If gcc reorders other function calls or other code around the inline asm
+(which it can do, except under certain controlled situations), then
+intervening code can clobber any registers in general.
 
-Also, even if we agree on some string format to make parsing easier, we're not
-good on preserving the kernel-userspace API for string messages, so regressions
-can (and will likely) be introduced by a simple change at the "msg" field.
+Or, to summarise another way, there is no way to control which register
+is used to pass something to an inline asm in general (often we get away
+with this, and there are a lot of inline asms in the kernel that assume
+it works, but the more you inline the more likely you are to get nasty
+surprises).  There is no workaroud, except on some architectures where
+special asm constraints allow specific individual registers to be
+specified for operands (i386 for example).
 
-On a complex environment, the network farm is monitored by a Network Management
-System. On such systems, there are some fields that are very relevant:
-	- how critical is the error;
-	- the location of the error;
-	- the error message.
+If you need a specific register, this means that you must set up that
+register explicitly inside the asm if you want a guarantee that the
+code will work:
 
-So, we should, at least, break it into 3 fields. Yet, for location, there are
-two ways of reporting it: The silkscreen label of the affected component
-(a CPU socket label, a memory slot label, a PCI slot label, etc),
-and the location of the affected element, which generally more granular, like
-the cache level, the memory bank, etc.
+	asm volatile (
+		"movw	r12, %[hvc_num]\n\t"
+		...
+		"hvc	#0"
+		:: [hvc_num] "i" (NUMBER) : "r12"
+	);
 
-What I'm saying is that, we should, at least, add 4 fields there, instead of one:
+Of course, if you need to set up more than about 5 or 6 registers in
+this way, the doubled register footprint means that the compiler will
+have to start spilling stuff to the stack.
 
-	- severity
-	- location
-	- silkscreen_label
-	- error_msg
-	
-The severity should be an enum type. 
 
->  
-> -	TP_ARGS(m),
-> +	TP_ARGS(msg, m),
->  
->  	TP_STRUCT__entry(
-> +		__string(	msg,		msg		)
->  		__field(	u64,		mcgcap		)
->  		__field(	u64,		mcgstatus	)
->  		__field(	u64,		status		)
-> @@ -24,15 +25,12 @@ TRACE_EVENT(mce_record,
->  		__field(	u64,		tsc		)
->  		__field(	u64,		walltime	)
->  		__field(	u32,		cpu		)
+This is the kind of problem which goes away when out-of-lining the
+hvc wrapper behind a C function interface, since the ABI then provides
+guarantees about how values are mershaled into and out of that code.
 
-This one can be merged into the location field, for the errors where
-it is pertinent.
 
-> -		__field(	u32,		cpuid		)
-> -		__field(	u32,		apicid		)
+Notwithstanding the above, even if we do make theoretically unsound
+(but often true) assumptions about inline asms, ARM will be no worse
+than other arches in this respect.
 
-It seems safe to get rid of them.
 
-> -		__field(	u32,		socketid	)
+Other than serving as a reminder that inline asm is a deep can of
+worms, this doesn't really give us a neat solution...
 
-For CPU errors, the socket ID is the location of the error. This is
-probably the most important "ID" field, as it represents the component
-that may need to be replaced.
-
-Yet, by adding a silkscreen_label field, it seems safe to get rid of it.
-
->  		__field(	u8,		cs		)
->  		__field(	u8,		bank		)
-> -		__field(	u8,		cpuvendor	)
-
-Assuming that some daemon would collect those errors on the monitored machine
-and pass them to another machine that will store it and parse (this is a typical
-scenario for monitored environments),  I don't think we can get rid of the
-cpuvendor, as this field is required to decode the MCE registers. It is likely
-that we need to add also the CPU family and step here, as the MCE decoding
-depends on them.
-
-On the other hand, the userspace daemon can easily get it by parsing /proc/cpuinfo.
-
-So, it is probably ok to remove it.
-
->  	),
->  
->  	TP_fast_assign(
-> +		__assign_str(msg,	msg);
->  		__entry->mcgcap		= m->mcgcap;
->  		__entry->mcgstatus	= m->mcgstatus;
->  		__entry->status		= m->status;
-> @@ -42,25 +40,19 @@ TRACE_EVENT(mce_record,
->  		__entry->tsc		= m->tsc;
->  		__entry->walltime	= m->time;
->  		__entry->cpu		= m->extcpu;
-> -		__entry->cpuid		= m->cpuid;
-> -		__entry->apicid		= m->apicid;
-> -		__entry->socketid	= m->socketid;
->  		__entry->cs		= m->cs;
->  		__entry->bank		= m->bank;
-> -		__entry->cpuvendor	= m->cpuvendor;
->  	),
->  
-> -	TP_printk("CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: %x",
-> +	TP_printk("%s" HW_ERR "CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, TIME: %llu)",
-> +		__get_str(msg),
->  		__entry->cpu,
->  		__entry->mcgcap, __entry->mcgstatus,
->  		__entry->bank, __entry->status,
->  		__entry->addr, __entry->misc,
->  		__entry->cs, __entry->ip,
->  		__entry->tsc,
-> -		__entry->cpuvendor, __entry->cpuid,
-> -		__entry->walltime,
-> -		__entry->socketid,
-> -		__entry->apicid)
-> +		__entry->walltime)
->  );
->  
->  #endif /* _TRACE_MCE_H */
-
+---Dave
