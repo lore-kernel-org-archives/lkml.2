@@ -1,178 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab2B2Kna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:43:30 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:36938 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751299Ab2B2Kn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:43:28 -0500
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: RFC [PATCH] SMP: Don't schedule tasks on inactive cpu(s)
-Date: Wed, 29 Feb 2012 11:42:30 +0100
-Message-ID: <1330512150-20727-1-git-send-email-jonas.aberg@stericsson.com>
-X-Mailer: git-send-email 1.7.9
+	id S1757649Ab2B2Kox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:44:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754006Ab2B2Kov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:44:51 -0500
+Message-ID: <4F4E0195.6010605@redhat.com>
+Date: Wed, 29 Feb 2012 12:44:37 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Daniel P. Berrange" <berrange@redhat.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095842.GF5050@redhat.com> <4F4DF86C.5010407@redhat.com> <20120229101913.GG5050@redhat.com>
+In-Reply-To: <20120229101913.GG5050@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the ability to schedule tasks on cpus that are online,
-but not active.  The reason for this patch is that during cpu hotplug
-on ARM (atleast) there is a short window where cpuX (X > 0) is online, but
-busy-waiting on cpu0 to put it active, meanwhile cpu0 can be interrupted
-and try to schedule something on the cpu that is busy checking its active bit.
+On 02/29/2012 12:19 PM, Daniel P. Berrange wrote:
+> On Wed, Feb 29, 2012 at 12:05:32PM +0200, Avi Kivity wrote:
+> > On 02/29/2012 11:58 AM, Daniel P. Berrange wrote:
+> > > > 
+> > > > How about using a virtio-serial channel for this?  You can transfer any
+> > > > amount of information (including the dump itself).
+> > >
+> > > When the guest OS has crashed, any dumps will be done from the host
+> > > OS using libvirt's core dump mechanism. The guest OS isn't involved
+> > > and is likely too dead to be of any use anyway. Likewise it is
+> > > quite probably too dead to work a virtio-serial channel or any
+> > > similarly complex device. We're really just after the simplest
+> > > possible notification that the guest kernel has paniced.
+> > 
+> > If it's alive enough to panic, it's alive enough to kexec its kdump
+> > kernel.  After that it can do anything.
+> > 
+> > Guest-internal dumps are more useful IMO that host-initiated dumps.  In
+> > a cloud, the host-initiated dump is left on the host, outside the reach
+> > of the guest admin, outside the guest image where all the symbols are,
+> > and sometimes not even on the same host if a live migration occurred. 
+> > It's more useful in small setups, or if the problem is in the
+> > hypervisor, not the guest.
+>
+> I don't think guest vs host dumps should be considered mutually exclusive,
+> they both have pluses+minuses.
 
-I am aware that this patch is not how this issue (described more in detail
-below) shall be corrected, it is just an attempt to hide it and highlight the
-issue.
+True.
 
-On a dual core ARM system (u8500):
+> Configuring kexec+kdump requires non-negligable guest admin configuration
+> work before it's usable, and this work is guest OS specific, if it is possible
+> at all. 
 
-CPU0 wakes up CPU1 from enable_nobnboot_cpus in suspend thread.
+I think it's on by default on Windows and requires installing a package
+on Linux, which may be part of the default configuration on many distros.
 
-CPU1 is executing secondary_start_kernel, waiting for CPU1 to set the active
-bit before enabling interrupts.
+> A permanent panic notifier that's built in the kernel by default
+> requires zero guest admin config, and can allow host admin to automate
+> collection of dumps across all their hosts/guests. The KVM hypercall
+> notification is fairly trivially ported to any OS kernel, by comparison
+> with a full virtio + virtio-serial impl.
 
-CPU0: Suspend thread is waiting for CPU1 to go online in __cpu_up, but
-is preempted by a timer interrupt. Kondemand thread is woken up to handle
-do_dbs_timer, and decides to switch frequency.
-This involves informing other CPU since the localtimer on each core needs
-to be reprogrammed, so we execute twd_cpufreq_notifier.
-We get stuck in generic_exec_single, waiting (with preempt_off) for
-CPU1 to acknowledge execution of the function.
-But CPU1 is waiting for CPU0:Suspend, with interrupts off.
+That's the path of least resistance.  But it's not necessarily the best
+path.  We end up with a wide set of disconnected ABIs instead of a
+narrow set that is more flexible.
 
-Stacks of relevant threads:
-PID: 0      TASK: df05ee40  CPU: 1   COMMAND: "swapper"
- #0 [<c0544e6c>] (secondary_start_kernel) from [<c00a1cf8>]
-
-PID: 570    TASK: df1b8220  CPU: 0   COMMAND: "kondemand/0"
- #0 [<c00afc94>] (generic_exec_single) from [<c00afefc>]
- #1 [<c00afefc>] (smp_call_function_single) from [<c00b01b8>]
- #2 [<c00b01b8>] (smp_call_function) from [<c008717c>]
- #3 [<c008717c>] (on_each_cpu) from [<c003eec4>]
- #4 [<c003eec4>] (twd_cpufreq_notifier) from [<c00a1790>]
- #5 [<c00a1790>] (notifier_call_chain) from [<c00a18f0>]
- #6 [<c00a18f0>] (__srcu_notifier_call_chain) from [<c00a191c>]
- #7 [<c00a191c>] (srcu_notifier_call_chain) from [<c037880c>]
- #8 [<c037880c>] (cpufreq_notify_transition) from [<c004d6ac>]
- #9 [<c004d6ac>] (ux500_cpufreq_target) from [<c0377c58>]
-
-PID: 19     TASK: df0b2e80  CPU: 0   COMMAND: "suspend"
- #0 [<c05487a0>] (schedule) from [<c0548a34>]
- #1 [<c0548a34>] (preempt_schedule_irq) from [<c00392ec>]
- #2 [<c00392ec>] (svc_preempt) from [<c020a6d0>]
- #3 [<c0047dd0>] (mtu_timer_delay_loop) from [<c020a6d0>]
- #4 [<c020a6d0>] (__delay) from [<c0544fd0>]
- #5 [<c0544fd0>] (__cpu_up) from [<c0545bd8>]
- #6 [<c0545bd8>] (_cpu_up) from [<c0534824>]
- #7 [<c0534824>] (enable_nonboot_cpus) from [<c00b6e4c>]
- #8 [<c00b6e4c>] (suspend_devices_and_enter) from [<c00b6fe4>]
- #9 [<c00b6fe4>] (enter_state) from [<c00b82bc>]
-
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
----
- kernel/smp.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..3144ff5 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -175,7 +175,7 @@ void generic_smp_call_function_interrupt(void)
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
--	WARN_ON_ONCE(!cpu_online(cpu));
-+	WARN_ON_ONCE(!cpu_online(cpu) || !cpu_active(cpu));
- 
- 	/*
- 	 * Ensure entry is visible on call_function_queue after we have
-@@ -255,7 +255,8 @@ void generic_smp_call_function_single_interrupt(void)
- 	/*
- 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
- 	 */
--	WARN_ON_ONCE(!cpu_online(smp_processor_id()));
-+	WARN_ON_ONCE(!cpu_online(smp_processor_id()) ||
-+		     !cpu_active(smp_processor_id()));
- 
- 	raw_spin_lock(&q->lock);
- 	list_replace_init(&q->list, &list);
-@@ -324,7 +325,8 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
- 		func(info);
- 		local_irq_restore(flags);
- 	} else {
--		if ((unsigned)cpu < nr_cpu_ids && cpu_online(cpu)) {
-+		if ((unsigned)cpu < nr_cpu_ids && cpu_online(cpu) &&
-+		    cpu_active(cpu)) {
- 			struct call_single_data *data = &d;
- 
- 			if (!wait)
-@@ -336,7 +338,7 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
- 			data->info = info;
- 			generic_exec_single(cpu, data, wait);
- 		} else {
--			err = -ENXIO;	/* CPU not online */
-+			err = -ENXIO;	/* CPU not online or active */
- 		}
- 	}
- 
-@@ -367,6 +369,7 @@ int smp_call_function_any(const struct cpumask *mask,
- {
- 	unsigned int cpu;
- 	const struct cpumask *nodemask;
-+	struct cpumask online_and_active;
- 	int ret;
- 
- 	/* Try for same CPU (cheapest) */
-@@ -378,12 +381,18 @@ int smp_call_function_any(const struct cpumask *mask,
- 	nodemask = cpumask_of_node(cpu_to_node(cpu));
- 	for (cpu = cpumask_first_and(nodemask, mask); cpu < nr_cpu_ids;
- 	     cpu = cpumask_next_and(cpu, nodemask, mask)) {
--		if (cpu_online(cpu))
-+		if (cpu_online(cpu) && cpu_active(cpu))
- 			goto call;
- 	}
- 
--	/* Any online will do: smp_call_function_single handles nr_cpu_ids. */
--	cpu = cpumask_any_and(mask, cpu_online_mask);
-+	/*
-+	 * Any online and active will do: smp_call_function_single handles
-+	 * nr_cpu_ids.
-+	 */
-+
-+	cpumask_and(&online_and_active, cpu_online_mask, cpu_active_mask);
-+
-+	cpu = cpumask_any_and(mask, &online_and_active);
- call:
- 	ret = smp_call_function_single(cpu, func, info, wait);
- 	put_cpu();
-@@ -430,7 +439,7 @@ void __smp_call_function_single(int cpu, struct call_single_data *data,
- 
- /**
-  * smp_call_function_many(): Run a function on a set of other CPUs.
-- * @mask: The set of cpus to run on (only runs on online subset).
-+ * @mask: The set of cpus to run on (only runs on online and active subset).
-  * @func: The function to run. This must be fast and non-blocking.
-  * @info: An arbitrary pointer to pass to the function.
-  * @wait: If true, wait (atomically) until function has completed
-@@ -515,6 +524,10 @@ void smp_call_function_many(const struct cpumask *mask,
- 
- 	/* We rely on the "and" being processed before the store */
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
-+
-+	/* Remove any non-active cpus */
-+	cpumask_and(data->cpumask, data->cpumask, cpu_active_mask);
-+
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
- 	refs = cpumask_weight(data->cpumask);
- 
 -- 
-1.7.9
+error compiling committee.c: too many arguments to function
 
