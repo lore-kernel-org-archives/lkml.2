@@ -1,169 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2B2MFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:05:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48434 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab2B2MFp (ORCPT
+	id S1756593Ab2B2MGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:06:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35923 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab2B2MGq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:05:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.88.132 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330517290.3545.107.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 0/4] jffs2: logging message neatening
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joe Perches <joe@perches.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 14:08:10 +0200
-In-Reply-To: <cover.1329349881.git.joe@perches.com>
-References: <cover.1329349881.git.joe@perches.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-DUeS6NuylrFk6p5kRC1e"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Wed, 29 Feb 2012 07:06:46 -0500
+Message-ID: <1330517195.11248.148.camel@twins>
+Subject: Re: Inconsistent load average on tickless kernels
+From: Peter Zijlstra <peterz@infradead.org>
+To: =?UTF-8?Q?Les=C5=82aw_Kope=C4=87?= <leslaw.kopec@nasza-klasa.pl>
+Cc: Aman Gupta <aman@tmm1.net>, linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Date: Wed, 29 Feb 2012 13:06:35 +0100
+In-Reply-To: <4F465F6E.9070605@nasza-klasa.pl>
+References: <CAK=uwuy80LaNdQ4P49i+bGUXFvxf1zB=oKqNBTdAyvFc+mOTyw@mail.gmail.com>
+	 <4F465F6E.9070605@nasza-klasa.pl>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-02-23 at 16:46 +0100, Lesław Kopeć wrote:
 
---=-DUeS6NuylrFk6p5kRC1e
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Each kernel was compiled with CONFIG_NO_HZ enabled (no-hz variant) and
+> disabled (hz variant). Here's a snapshot of load 15 on each kernel:
 
-On Wed, 2012-02-15 at 15:56 -0800, Joe Perches wrote:
-> Joe Perches (4):
->   jffs2: Convert most D1/D2 macros to jffs2_dbg
->   jffs2: Convert printks to pr_<level>
->   jffs2: Use pr_fmt and remove jffs: from formats
->   jffs2: Standardize JFFS_<LEVEL> uses
+> 				no-hz	hz
+> 2.6.32.55-*			0.59	0.57
+> 2.6.32.55-*-74f5187ac8		3.56	11.79
+> 2.6.32.55-*-0f004f5a69		0.61	11.76
+> 2.6.37-rc5-*-0f004f5a69		0.67	11.65
+> 2.6.37-rc5-*-pre-0f004f5a69	3.97	12.05
 
-Thanks for the work, appreciated. But your patch introduces new sparse
-and smatch warnings, which did not exist before your patch:
+Missing here is a kernel build with CONFIG_NO_HZ but booted with
+nohz=off; this would be an interesting data point because it includes
+all the funny code but still ticks are the right frequency.
 
-Successfully built configuration "l2_mxs_defconfig,arm,arm-unknown-linux-gn=
-ueabi-", results:
+> My observations are:
+> 
+> 1. On tickless kernels load is very low where no or both patches
+> (74f5187ac8 and 0f004f5a69) are applied.
+> 
+> 2. Kernels that have only patch 74f5187ac8 applied have the smallest
+> difference between hz and no-hz variants. Still no-hz kernels are
+> returning values lower than their hz siblings.
+> 
+> 3. Non-tickless kernels seem to be reporting correct load values.
+> Overall trend and values are matching CPU utilization. Only exception is
+> 2.6.32.55-hz which reports the same values as 2.6.32.55-no-hz.
+> 
+> 4. If x processes are using all available cycles load is correctly
+> incremented by x. This behavior is consistent on all kernels.
 
---- before_patching.log
-+++ after_patching.log=20
-@@ @@
-+fs/jffs2/file.c:330:2: warning: signed and unsigned type in conditional ex=
-pression [-Wsign-compare]
-@@ @@
--fs/jffs2/read.c:154 jffs2_read_dnode(129) warn: possible memory leak of 'd=
-ecomprbuf' [smatch]
--fs/jffs2/read.c:154 jffs2_read_dnode(129) warn: possible memory leak of 'r=
-eadbuf' [smatch]
-+fs/jffs2/read.c:154 jffs2_read_dnode(131) warn: possible memory leak of 'd=
-ecomprbuf' [smatch]
-+fs/jffs2/read.c:154 jffs2_read_dnode(131) warn: possible memory leak of 'r=
-eadbuf' [smatch]
-@@ @@
--fs/jffs2/scan.c:108:54: warning: suggest braces around empty body in an 'i=
-f' statement [-Wempty-body]
-@@ @@
-+fs/jffs2/super.c:377:1: error: directive in argument list [sparse]
-+fs/jffs2/super.c:379:1: error: directive in argument list [sparse]
-+fs/jffs2/super.c:380:1: error: directive in argument list [sparse]
-+fs/jffs2/super.c:382:1: error: directive in argument list [sparse]
+Yay! at least we get something right.. Also, I think we actually will go
+down to load 0 if the machine is idle, we used to get that wrong for
+nohz too.
 
-Would you please take a look? Ideally patches should eliminate warnings,
-not introduce new ones.
+> Steps to reproduce: run a bunch of CPU bound processes that will not use
+> all available cycles. The biggest difference between expected and
+> measured load is around 30% CPU utilization in my case.
 
-Also, your patch does not apply cleanly to my l2-mtd tree - and this is
-the tree which is currently used for merging MTD and JFFS2 stuff
-upstream, and it is in linux-next as well. Would you send patches
-against the l2 tree?
+Hrmm, this suggests we age too hard with nohz code.. in your test case
+is there significant idle time? That is, suppose you run each cpu at 30%
+what is the period of you load? Running 3s out of 10s is significantly
+different from running .3ms out of 1ms.
 
-Also, there are several checkpatch.pl complaints, please, take a look:
+> Has there been any other patches that correct load calculation? Maybe
+> I'm testing it in a wrong way? I'd appreciate any suggestions. I'd be
+> happy to test new patches. Sadly, I cannot propose any fixes as kernel
+> sources are still a mystery to me.
 
----------------------------------------------------------------------------=
------
+Darned load-tracking stuff.. I went over it again but couldn't spot
+anything obviously broken. I suspect the tail magic of
+calc_global_nohz() is busted, just not seeing it atm.
 
-checkpatch.pl has some complaints:
+Will go brew myself a fresh pot of tea and stare more.
 
----------------------------------------------------------------------------=
------
-
-checkpatch.pl results for patch "[PATCH 2/4] jffs2: Convert printks to pr_<=
-level>"
-
-WARNING:LONG_LINE: line over 80 characters
-#893: FILE: fs/jffs2/nodemgmt.c:269:
-+                               list_empty(&c->erase_pending_list) ? "yes" =
-: "no");
-
-WARNING:LONG_LINE: line over 80 characters
-#1094: FILE: fs/jffs2/scan.c:31:
-+                       pr_notice("Further such events for this erase block=
- will not be printed\n"); \
-
-total: 0 errors, 2 warnings, 1523 lines checked
-
----------------------------------------------------------------------------=
------
-
-checkpatch.pl results for patch "[PATCH 3/4] jffs2: Use pr_fmt and remove j=
-ffs: from formats"
-
-WARNING:LONG_LINE: line over 80 characters
-#102: FILE: fs/jffs2/build.c:312:
-+       dbg_fsbuild("trigger levels (size %d KiB, block size %d KiB, %d blo=
-cks)\n",
-
-total: 0 errors, 1 warnings, 432 lines checked
-
----------------------------------------------------------------------------=
------
-
-checkpatch.pl results for the entire squashed patch-set
-
-WARNING:LONG_LINE: line over 80 characters
-#3480: FILE: fs/jffs2/nodemgmt.c:269:
-+                               list_empty(&c->erase_pending_list) ? "yes" =
-: "no");
-
-WARNING:LONG_LINE: line over 80 characters
-#3681: FILE: fs/jffs2/scan.c:31:
-+                       pr_notice("Further such events for this erase block=
- will not be printed\n"); \
-
-WARNING:LONG_LINE: line over 80 characters
-#4448: FILE: fs/jffs2/build.c:312:
-+       dbg_fsbuild("trigger levels (size %d KiB, block size %d KiB, %d blo=
-cks)\n",
-
-total: 0 errors, 3 warnings, 4324 lines checked
-
----------------------------------------------------------------------------=
------
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-DUeS6NuylrFk6p5kRC1e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPThUqAAoJECmIfjd9wqK0MwUP/2Zqg92PUXG78NU5Fl2/To2z
-T1stQcJHjRCjt7IELjeZvbl4xWUpW+ayqEz4cx710rFbIKpQ2pmEdzJg4kjIsh/r
-qKstZ8zKeq5rmydJkF4WHva2t5FKtHSsMR5b0sBGyZlT7+9x77FTn1IVFKtXgyfq
-9gxWN85roV8lSj/dK5sZAtLK/xhMCHJca6xwriRfgfLD1c1lDJwK8M+ek205KQ8o
-HjvmEuygTmhzE1VglqeZaNQdrV9fsKwRXNYE3Jot184AdOcYEW+PsZR3enz2YOIc
-/1RD8QGzRNRP2fHTeXyd+O4AsOXcGHeGHtQBgcqKZvZq2pLIiEJ1w3vhyd0m2qa7
-r4EKLdahd1aYxWEQqjKFL05sXGtW3ZbPArghjQQ83T/9vZJwAaHi/AUywtthX+2w
-Z+vhPEBzPneTYwIYBnaBgb99Wu6xzcRTZaHnc5OwByAb6YZqn23omqNZWE6HvXfR
-qOH8Zl4rHrLQN8MS1TYjSV1qxHrQuNvJHv2WEjLPwE32oAn/4LK6LpFYUjuwlesC
-dyLZg1/7lGvkngR76Qy/Xkhzc4sXcKWZ5PfGAuRKRHkhj0WjuL+P84s8SAICVT5I
-aC/uy2suFG3xjdeMnMxzLTFc5D1JtKH78MTydaOhzLWTtxtiI0hJGvAAQNevLEax
-Afz+H1HbF2ERFkka0+I+
-=lXR9
------END PGP SIGNATURE-----
-
---=-DUeS6NuylrFk6p5kRC1e--
 
