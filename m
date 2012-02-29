@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966202Ab2B2B74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:59:56 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50269 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753692Ab2B2B7z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:59:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.152.114.133 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
+	id S1757554Ab2B2CDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:03:08 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:46279 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773Ab2B2CDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 21:03:06 -0500
+Date: Wed, 29 Feb 2012 03:02:46 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
+ the reclaimed hierarchy
+Message-ID: <20120229020246.GF1702@cmpxchg.org>
+References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+ <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
+ <20120229093946.611a20d3.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJ0PZbQ9iTO+CqNLyAYiRFq8BqZXoyLfBFGvw78k53C+4yLY=w@mail.gmail.com>
-References: <CAJ0PZbRsh_Cnqy8Vtf1FWLajBr=R5iQ=Jog+w+qPE-uKrh5XQA@mail.gmail.com>
-	<20120228164413.GA11021@kroah.com>
-	<CAJ0PZbQ9iTO+CqNLyAYiRFq8BqZXoyLfBFGvw78k53C+4yLY=w@mail.gmail.com>
-Date: Wed, 29 Feb 2012 10:59:53 +0900
-Message-ID: <CAJ0PZbQZ68fydbntXFxoLZ=U+FOLZfW-Wc3t76+uLq3oFnnzMA@mail.gmail.com>
-Subject: Re: [PULL-REQUEST] EXTCON Patches (Re: [PATCH v6 0/5] Introduce
- External Connector Class (extcon))
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229093946.611a20d3.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 10:57 AM, MyungJoo Ham <myungjoo.ham@gmail.com> wrote:
-> On Wed, Feb 29, 2012 at 1:44 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Tue, Feb 28, 2012 at 05:58:02PM +0900, MyungJoo Ham wrote:
->>> Hello Arnd,
->>>
->>>
->>> Presuming that the requests and comments upto v5 patchsets were
->>> addressed in the last patchset (v6), here goes a pull request of
->>> Extcon.
->>
->> Wait, please, before this code can be accepted, I would like to get
->> verification that you have also made the needed changes to the Android
->> userspace side of this interface, and that the code works there, and it
->> is on its way to be included in the main Android repo.
->>
->> Is this true?  If not, what is the plans for this to happen?  Without
->> that happening, I don't think this code can be accepted, do you?
->>
->> thanks,
->>
->> greg k-h
->
-> When an extcon device driver is not using the extended features
-> (multistate & mutually-exclusiveness) and CONFIG_ANDROID is on, the
-> userspace interface is same as the Android kernel's switch class (name
-> and state ABI, which were read-only in Android kernel).
->
-> If an extcon device drivers uses the extended features (multistate &
-> mutually-exclusiveness) by adding "cable names", the state ABI will
-> provided information in different format. Besides, Android kernel's
-> switch device driver cannot provide the extended feature anyway.
+On Wed, Feb 29, 2012 at 09:39:46AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 28 Feb 2012 15:14:49 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
+> >  	int referenced_ptes, referenced_page;
+> >  	unsigned long vm_flags;
+> >  
+> > -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
+> > +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
+> > +					  &vm_flags);
+> 
+> 
+> I'm sorry if I don't understand the codes... !sc->target_mem_cgroup case is handled ?
 
+Yes, but it's not obvious from the diff alone.  page_referenced() does
+this:
 
-ps. If CONFIG_ANDROID is on and the extended features (that were not
-in Android kernel) are used by an extcon device driver, then, the
-format of state ABI will be different. However, the path should be the
-same although there will be additional sysfs entries.
+		/*
+		 * If we are reclaiming on behalf of a cgroup, skip
+		 * counting on behalf of references from different
+		 * cgroups
+		 */
+		if (memcg && !mm_match_cgroup(vma->vm_mm, memcg))
+			continue;
 
-
->
->
-> Thanks.
->
->
-> Cheers!
-> MyungJoo.
-> --
-> MyungJoo Ham, Ph.D.
-> System S/W Lab, S/W Center, Samsung Electronics
-
-
-
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+As a result, !sc->target_mem_cgroup -- global reclaim -- will never
+ignore references, or put differently, respect references from all
+memcgs, which is what we want.
