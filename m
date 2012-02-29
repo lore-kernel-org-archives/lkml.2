@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2B2F4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 00:56:00 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37191 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134Ab2B2Fz6 (ORCPT
+	id S932510Ab2B2F43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 00:56:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44408 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134Ab2B2F40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 00:55:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 29 Feb 2012 14:54:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH next] memcg: remove PCG_CACHE page_cgroup flag fix
-Message-Id: <20120229145425.df27eaec.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LSU.2.00.1202282128500.4875@eggly.anvils>
-References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils>
-	<alpine.LSU.2.00.1202282128500.4875@eggly.anvils>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 00:56:26 -0500
+Date: Tue, 28 Feb 2012 23:56:22 -0600 (CST)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@happy
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] Input: atkbd - Add force relese key quirk for HP
+ ProBook
+In-Reply-To: <20120229010311.GA11492@core.coreip.homeip.net>
+Message-ID: <alpine.DEB.2.02.1202282351510.5366@happy>
+References: <1330475770-4153-1-git-send-email-manoj.iyer@canonical.com> <1330475770-4153-2-git-send-email-manoj.iyer@canonical.com> <20120229004604.GB21093@kroah.com> <20120229010311.GA11492@core.coreip.homeip.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 21:30:17 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+Dimitry,
 
-> Swapping tmpfs loads show absurd wrapped rss and wrong cache in memcg's
-> memory.stat statistics: __mem_cgroup_uncharge_common() is failing to
-> distinguish the anon and tmpfs cases.
-> 
-I thought I tested this..maybe my test was wrong, sorry.
+This quirk helps a few HP ProBooks to make brightness keys typematic. Can 
+you please tell me why you think its better handling this in user space? I 
+see other quirks similar to this in atkbd, just trying to understand. Yes, 
+we did quirk this in udev rules to make brightness keys works as expected. 
+But thought it might help others who see this issue with HP ProBooks by 
+quirking it in kernel.
 
-
-> Mostly we can decide between them by PageAnon, which is reliable once
-> it has been set; but there are several callers who need to uncharge a
-> MEM_CGROUP_CHARGE_TYPE_MAPPED page before it was fully initialized,
-> so allow that case to override the PageAnon decision.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-It seems I should revisit these and consinder some cleanup...
-
-_OFF TOPIC_
-To be honest, I don't like to have anon/rss counter in memory.stat because
-we have LRU statistics. It seems enough.. If shmem counter is required,
-I think we should have shmem counter rather than anon/rss.
+Thanks
+Manoj
 
 
-> 
->  mm/memcontrol.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> --- 3.3-rc5-next/mm/memcontrol.c	2012-02-25 10:06:52.496035568 -0800
-> +++ linux/mm/memcontrol.c	2012-02-26 10:44:32.146365398 -0800
-> @@ -2944,13 +2944,16 @@ __mem_cgroup_uncharge_common(struct page
->  	if (!PageCgroupUsed(pc))
->  		goto unlock_out;
->  
-> +	anon = PageAnon(page);
-> +
->  	switch (ctype) {
->  	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
-> +		anon = true;
-> +		/* fallthrough */
->  	case MEM_CGROUP_CHARGE_TYPE_DROP:
->  		/* See mem_cgroup_prepare_migration() */
->  		if (page_mapped(page) || PageCgroupMigration(pc))
->  			goto unlock_out;
-> -		anon = true;
->  		break;
->  	case MEM_CGROUP_CHARGE_TYPE_SWAPOUT:
->  		if (!PageAnon(page)) {	/* Shared memory */
-> @@ -2958,10 +2961,8 @@ __mem_cgroup_uncharge_common(struct page
->  				goto unlock_out;
->  		} else if (page_mapped(page)) /* Anon */
->  				goto unlock_out;
-> -		anon = true;
->  		break;
->  	default:
-> -		anon = false;
->  		break;
->  	}
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
+On Tue, 28 Feb 2012, Dmitry Torokhov wrote:
+
+> On Tue, Feb 28, 2012 at 04:46:04PM -0800, Greg KH wrote:
+>> On Tue, Feb 28, 2012 at 06:36:10PM -0600, Manoj Iyer wrote:
+>>> HP ProBooks do not send a key release for brightness keys, as a
+>>> result, brightness does not move up/down when the brightness key
+>>> is held down. This quirk makes the brightness keys on HP ProBooks
+>>> typematic.
+>>>
+>>> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+>>> ---
+>>>  drivers/input/keyboard/atkbd.c |   16 ++++++++++++++++
+>>>  1 files changed, 16 insertions(+), 0 deletions(-)
+>>
+>> <formletter>
+>>
+>> This is not the correct way to submit patches for inclusion in the
+>> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+>> for how to do this properly.
+>>
+>> </formletter>
+>
+> Also, this should be handled from userspace by having usev write to
+> /sys/bus/serio/devices/serioX/force_release attribute on affected boxes.
+>
+> -- 
+> Dmitry
+>
+>
+
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
