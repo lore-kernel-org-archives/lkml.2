@@ -1,90 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030435Ab2B2GoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 01:44:17 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34647 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030429Ab2B2GoP (ORCPT
+	id S1030560Ab2B2Go2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 01:44:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36830 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965214Ab2B2GoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 01:44:15 -0500
-Date: Wed, 29 Feb 2012 14:32:17 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
-Message-ID: <20120229063217.GA13386@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20120229172127.7b430cecc7ab2350d4e4a1b8@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120229172127.7b430cecc7ab2350d4e4a1b8@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Feb 2012 01:44:24 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshsy@gmail.com designates 10.68.130.69 as permitted sender) smtp.mail=santoshsy@gmail.com; dkim=pass header.i=santoshsy@gmail.com
+From: Santosh Y <santoshsy@gmail.com>
+To: James.Bottomley@hansenpartnership.com
+Cc: linux-scsi@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd.bergmann@linaro.org, saugata.das@linaro.org, dsaxena@linaro.org,
+        stephen.doel@linaro.org, venkat@linaro.org, ilho215.lee@samsung.com,
+        nala.la@samsung.com, girish.shivananjappa@linaro.org,
+        vishak.g@samsung.com, k.rajesh@samsung.com, yejin.moon@samsung.com,
+        sreekumar.c@samsung.com, vinholikatti@gmail.com, linkinjeon@gmail.com,
+        michaelc@cs.wisc.edu, Santosh Yaraganavi <santoshsy@gmail.com>
+Subject: [PATCH v3 3/5] [SCSI] ufshcd: UFSHCI error handling
+Date: Wed, 29 Feb 2012 12:11:52 +0530
+Message-Id: <1330497714-26504-4-git-send-email-santoshsy@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330497714-26504-1-git-send-email-santoshsy@gmail.com>
+References: <1330497714-26504-1-git-send-email-santoshsy@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 05:21:27PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in
-> drivers/rtc/rtc-sa1100.c between commit 3888c09074db ("rtc: sa1100:
-> declare irq in resource") from the arm-soc tree and commit "drivers/rtc:
-> remove IRQF_DISABLED" from the akpm tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+From: Santosh Yaraganavi <santoshsy@gmail.com>
 
-Your fix looks good to me.
+UFSHCI error handling includes support for:
+ - UFS host controller errors
+ - System bus errors
+ - Unipro errors
 
-Thanks,
-Yong
+Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+Reviewed-by: Arnd Bergmann <arnd@linaro.org>
+Reviewed-by: Vishak G <vishak.g@samsung.com>
+Reviewed-by: Girish K S <girish.shivananjappa@linaro.org>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+v2 -> v3:
+	- use shost_priv() instead of accessing hostdata directly.
+v1 -> v2:
+	- ufshcd_do_reset(): change return value to SUCCESS/FAILED,
+	  since the function can also be called from UFSHCD registered
+	  SCSI midlayer error handling routines.
+	  Ex: .eh_host_reset_handler which expects return value
+	  SUCCESS/FAILED
+	- ufshcd_do_reset(): aquire spin_lock_irqsave only for
+	  instructions which share common data structure.
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/rtc/rtc-sa1100.c
-> index c105774,e70b4e6..0000000
-> --- a/drivers/rtc/rtc-sa1100.c
-> +++ b/drivers/rtc/rtc-sa1100.c
-> @@@ -102,23 -156,20 +102,23 @@@ static irqreturn_t sa1100_rtc_interrupt
->   
->   static int sa1100_rtc_open(struct device *dev)
->   {
->  +	struct sa1100_rtc *info = dev_get_drvdata(dev);
->  +	struct rtc_device *rtc = info->rtc;
->   	int ret;
->  -	struct platform_device *plat_dev = to_platform_device(dev);
->  -	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
->   
->  -	ret = request_irq(IRQ_RTC1Hz, sa1100_rtc_interrupt, 0,
->  +	ret = clk_prepare_enable(info->clk);
->  +	if (ret)
->  +		goto fail_clk;
-> - 	ret = request_irq(info->irq_1hz, sa1100_rtc_interrupt, IRQF_DISABLED,
-> ++	ret = request_irq(info->irq_1hz, sa1100_rtc_interrupt, 0,
->   		"rtc 1Hz", dev);
->   	if (ret) {
->  -		dev_err(dev, "IRQ %d already in use.\n", IRQ_RTC1Hz);
->  +		dev_err(dev, "IRQ %d already in use.\n", info->irq_1hz);
->   		goto fail_ui;
->   	}
-> - 	ret = request_irq(info->irq_alarm, sa1100_rtc_interrupt, IRQF_DISABLED,
->  -	ret = request_irq(IRQ_RTCAlrm, sa1100_rtc_interrupt, 0,
-> ++	ret = request_irq(info->irq_alarm, sa1100_rtc_interrupt, 0,
->   		"rtc Alrm", dev);
->   	if (ret) {
->  -		dev_err(dev, "IRQ %d already in use.\n", IRQ_RTCAlrm);
->  +		dev_err(dev, "IRQ %d already in use.\n", info->irq_alarm);
->   		goto fail_ai;
->   	}
->   	rtc->max_user_freq = RTC_FREQ;
+ drivers/scsi/ufs/ufshcd.c |   97 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 97 insertions(+), 0 deletions(-)
 
-
-
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 43b9c62..fa2fa96 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -138,6 +138,8 @@ struct uic_command {
+  * @ufshcd_state: UFSHCD states
+  * @int_enable_mask: Interrupt Mask Bits
+  * @uic_workq: Work queue for UIC completion handling
++ * @feh_workq: Work queue for fatal controller error handling
++ * @errors: HBA errors
+  */
+ struct ufs_hba {
+ 	void __iomem *mmio_base;
+@@ -171,6 +173,10 @@ struct ufs_hba {
+ 
+ 	/* Work Queues */
+ 	struct work_struct uic_workq;
++	struct work_struct feh_workq;
++
++	/* HBA Errors */
++	u32 errors;
+ };
+ 
+ /**
+@@ -893,6 +899,9 @@ static int ufshcd_make_hba_operational(struct ufs_hba *hba)
+ 	/* Configure interrupt aggregation */
+ 	ufshcd_config_int_aggr(hba, INT_AGGR_CONFIG);
+ 
++	if (hba->ufshcd_state == UFSHCD_STATE_RESET)
++		scsi_unblock_requests(hba->host);
++
+ 	hba->ufshcd_state = UFSHCD_STATE_OPERATIONAL;
+ 	scsi_scan_host(hba->host);
+ out:
+@@ -994,6 +1003,51 @@ static int ufshcd_initialize_hba(struct ufs_hba *hba)
+ }
+ 
+ /**
++ * ufshcd_do_reset - reset the host controller
++ * @hba: per adapter instance
++ *
++ * Returns SUCCESS/FAILED
++ */
++static int ufshcd_do_reset(struct ufs_hba *hba)
++{
++	struct ufshcd_lrb *lrbp;
++	unsigned long flags;
++	int tag;
++
++	/* block commands from midlayer */
++	scsi_block_requests(hba->host);
++
++	spin_lock_irqsave(hba->host->host_lock, flags);
++	hba->ufshcd_state = UFSHCD_STATE_RESET;
++
++	/* send controller to reset state */
++	ufshcd_hba_stop(hba);
++	spin_unlock_irqrestore(hba->host->host_lock, flags);
++
++	/* abort outstanding commands */
++	for (tag = 0; tag < hba->nutrs; tag++) {
++		if (test_bit(tag, &hba->outstanding_reqs)) {
++			lrbp = &hba->lrb[tag];
++			scsi_dma_unmap(lrbp->cmd);
++			lrbp->cmd->result = DID_RESET << 16;
++			lrbp->cmd->scsi_done(lrbp->cmd);
++			lrbp->cmd = NULL;
++		}
++	}
++
++	/* clear outstanding request bit maps */
++	hba->outstanding_reqs = 0;
++
++	/* start the initialization process */
++	if (ufshcd_initialize_hba(hba)) {
++		dev_err(&hba->pdev->dev,
++			"Reset: Controller initialization failed\n");
++		return FAILED;
++	}
++	return SUCCESS;
++}
++
++/**
+  * ufshcd_slave_alloc - handle initial SCSI device configurations
+  * @sdev: pointer to SCSI device
+  *
+@@ -1240,12 +1294,54 @@ static void ufshcd_uic_cc_handler (struct work_struct *work)
+ }
+ 
+ /**
++ * ufshcd_fatal_err_handler - handle fatal errors
++ * @hba: per adapter instance
++ */
++static void ufshcd_fatal_err_handler(struct work_struct *work)
++{
++	struct ufs_hba *hba;
++	hba = container_of(work, struct ufs_hba, feh_workq);
++
++	/* check if reset is already in progress */
++	if (hba->ufshcd_state != UFSHCD_STATE_RESET)
++		ufshcd_do_reset(hba);
++}
++
++/**
++ * ufshcd_err_handler - Check for fatal errors
++ * @work: pointer to a work queue structure
++ */
++static void ufshcd_err_handler(struct ufs_hba *hba)
++{
++	u32 reg;
++
++	if (hba->errors & INT_FATAL_ERRORS)
++		goto fatal_eh;
++
++	if (hba->errors & UIC_ERROR) {
++
++		reg = readl(hba->mmio_base +
++			    REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
++		if (reg & UIC_DATA_LINK_LAYER_ERROR_PA_INIT)
++			goto fatal_eh;
++	}
++	return;
++fatal_eh:
++	hba->ufshcd_state = UFSHCD_STATE_ERROR;
++	schedule_work(&hba->feh_workq);
++}
++
++/**
+  * ufshcd_sl_intr - Interrupt service routine
+  * @hba: per adapter instance
+  * @intr_status: contains interrupts generated by the controller
+  */
+ static void ufshcd_sl_intr(struct ufs_hba *hba, u32 intr_status)
+ {
++	hba->errors = UFSHCD_ERROR_MASK & intr_status;
++	if (hba->errors)
++		ufshcd_err_handler(hba);
++
+ 	if (intr_status & UIC_COMMAND_COMPL)
+ 		schedule_work(&hba->uic_workq);
+ 
+@@ -1492,6 +1588,7 @@ ufshcd_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 
+ 	/* Initialize work queues */
+ 	INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
++	INIT_WORK(&hba->feh_workq, ufshcd_fatal_err_handler);
+ 
+ 	/* IRQ registration */
+ 	err = request_irq(pdev->irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
 -- 
-Only stand for myself
+1.7.5.4
+
