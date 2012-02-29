@@ -1,108 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965587Ab2B2XOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:14:41 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26484 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965443Ab2B2XJ0 (ORCPT
+	id S965794Ab2B2XO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:14:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36866 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab2B2XOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:09:26 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 17/39] x86, PCI: put busn resource in pci_root_info for acpi path
-Date: Wed, 29 Feb 2012 15:07:16 -0800
-Message-Id: <1330556858-11768-18-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090206.4F4EAFE2.00AD,ss=1,re=0.000,fgs=0
+	Wed, 29 Feb 2012 18:14:40 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel@ffwll.ch designates 10.180.87.100 as permitted sender) smtp.mail=daniel@ffwll.ch; dkim=pass header.i=daniel@ffwll.ch
+Date: Thu, 1 Mar 2012 00:14:53 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
+ PAGE_SIZE
+Message-ID: <20120229231453.GA6662@phenom.ffwll.local>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+References: <20120224124003.93780408.akpm@linux-foundation.org>
+ <1330524211-2698-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20120229150146.2cc64fac.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229150146.2cc64fac.akpm@linux-foundation.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will put it in resources list and pass it for create_root_bus
+On Wed, Feb 29, 2012 at 03:01:46PM -0800, Andrew Morton wrote:
+> On Wed, 29 Feb 2012 15:03:31 +0100
+> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> 
+> > drm/i915 wants to read/write more than one page in its fastpath
+> > and hence needs to prefault more than PAGE_SIZE bytes.
+> > 
+> > I've checked the callsites and they all already clamp size when
+> > calling fault_in_pages_* to the same as for the subsequent
+> > __copy_to|from_user and hence don't rely on the implicit clamping
+> > to PAGE_SIZE.
+> > 
+> > Also kill a copy&pasted spurious space in both functions while at it.
+> > 
+> > v2: As suggested by Andrew Morton, add a multipage parameter to both
+> > functions to avoid the additional branch for the pagemap.c hotpath.
+> > My gcc 4.6 here seems to dtrt and indeed reap these branches where not
+> > needed.
+> > 
+> 
+> I don't think this produced a very good result :(
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/pci/acpi.c |   18 +++++++++++++-----
- 1 files changed, 13 insertions(+), 5 deletions(-)
+And I halfway expected this mail here ;-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 2331ccb..ff5243e 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -12,7 +12,7 @@ struct pci_root_info {
- 	char name[16];
- 	unsigned int res_num;
- 	struct resource *res;
--	int busnum;
-+	struct resource busn;
- 	struct pci_sysdata sd;
- };
- 
-@@ -283,6 +283,9 @@ static void add_resources(struct pci_root_info *info,
- 	int i;
- 	struct resource *res, *root, *conflict;
- 
-+	if (info->busn.flags & IORESOURCE_BUS)
-+		pci_add_resource(resources, &info->busn);
-+
- 	coalesce_windows(info, IORESOURCE_MEM);
- 	coalesce_windows(info, IORESOURCE_IO);
- 
-@@ -343,11 +346,17 @@ static void release_pci_root_info(struct pci_host_bridge *bridge)
- 
- static void
- probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
--		    int busnum, int domain)
-+		    int busnum, int busmax, int domain)
- {
- 	size_t size;
- 
-+	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
- 	info->bridge = device;
-+	info->busn.name = info->name;
-+	info->busn.start = busnum;
-+	info->busn.end = busmax;
-+	info->busn.flags = IORESOURCE_BUS;
-+
- 	info->res_num = 0;
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
- 				info);
-@@ -360,8 +369,6 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
- 	if (!info->res)
- 		return;
- 
--	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
--
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
- 				info);
- }
-@@ -372,6 +379,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 	struct pci_root_info *info = NULL;
- 	int domain = root->segment;
- 	int busnum = root->secondary.start;
-+	int busmax = root->secondary.end;
- 	LIST_HEAD(resources);
- 	struct pci_bus *bus;
- 	struct pci_sysdata *sd;
-@@ -424,7 +432,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(info);
- 	} else {
--		probe_pci_root_info(info, device, busnum, domain);
-+		probe_pci_root_info(info, device, busnum, busmax, domain);
- 
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
+> > ...
+> >
+> > -static inline int fault_in_pages_writeable(char __user *uaddr, int size)
+> > +static inline int fault_in_pages_writeable(char __user *uaddr, int size,
+> > +					   bool multipage)
+> >  {
+> >  	int ret;
+> > +	char __user *end = uaddr + size - 1;
+> >  
+> >  	if (unlikely(size == 0))
+> >  		return 0;
+> > @@ -416,36 +419,46 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
+> >  	 * Writing zeroes into userspace here is OK, because we know that if
+> >  	 * the zero gets there, we'll be overwriting it.
+> >  	 */
+> > -	ret = __put_user(0, uaddr);
+> > -	if (ret == 0) {
+> > -		char __user *end = uaddr + size - 1;
+> > +	do {
+> > +		ret = __put_user(0, uaddr);
+> > +		if (ret != 0)
+> > +			return ret;
+> > +		uaddr += PAGE_SIZE;
+> > +	} while (multipage && uaddr <= end);
+> >  
+> > +	if (ret == 0) {
+> >  		/*
+> >  		 * If the page was already mapped, this will get a cache miss
+> >  		 * for sure, so try to avoid doing it.
+> >  		 */
+> > -		if (((unsigned long)uaddr & PAGE_MASK) !=
+> > +		if (((unsigned long)uaddr & PAGE_MASK) ==
+> >  				((unsigned long)end & PAGE_MASK))
+> > -		 	ret = __put_user(0, end);
+> > +			ret = __put_user(0, end);
+> >  	}
+> >  	return ret;
+> >  }
+> 
+> One effect of this change for the filemap.c callsite is that `uaddr'
+> now gets incremented by PAGE_SIZE.  That happens to not break anything
+> because we then mask `uaddr' with PAGE_MASK, and if gcc were really
+> smart, it could remove that addition.  But it's a bit ugly.
+
+Yep, gcc is not clever enough to reap the addl on uaddr (and change the
+check for 'do we need to fault the 2nd page to' from jne to je again).
+I've checked that before submitting - maybe should have mentioned this.
+
+> Ideally the patch would have no effect upon filemap.o size, but with an
+> allmodconfig config I'm seeing
+> 
+>    text    data     bss     dec     hex filename
+>   22876     118    7344   30338    7682 mm/filemap.o	(before)
+>   22925     118    7392   30435    76e3 mm/filemap.o	(after)
+> 
+> so we are adding read()/write() overhead, and bss mysteriously got larger.
+> 
+> Can we improve on this?  Even if it's some dumb
+> 
+> static inline int fault_in_pages_writeable(char __user *uaddr, int size,
+> 					   bool multipage)
+> {
+> 	if (multipage) {
+> 		do-this
+> 	} else {
+> 		do-that
+> 	}
+> }
+> 
+> the code duplication between do-this and do-that is regrettable, but at
+> least it's all in the same place in the same file, so we won't
+> accidentally introduce skew later on.
+> 
+> Alternatively, add a separate fault_in_multi_pages_writeable() to
+> pagemap.h.  I have a bad feeling this is what your original patch did!
+> 
+> (But we *should* be able to make this work!  Why did this version of
+> the patch go so wrong?)
+
+Well, I couldn't reconcile the non-multipage with the multipage versions
+of these functions - at least not without changing them slightly (like
+this patch here does). Which is why I've asked you whether I should just
+add a new multipage version of these. I personally deem your proposal of
+using and if (multipage) with no shared code too ugly. But you've shot at
+it a bit, so I've figured that this version here is what you want.
+
+I'll redo this patch by adding _multipage versions of these 2 functions
+for i915.
+
+Yours, Daniel
 -- 
-1.7.7
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
