@@ -1,151 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965436Ab2B2JtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:49:14 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38080 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757158Ab2B2JtL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:49:11 -0500
+	id S1030189Ab2B2JuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:50:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965223Ab2B2JuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 04:50:07 -0500
+Message-ID: <4F4DF4C6.90609@redhat.com>
+Date: Wed, 29 Feb 2012 11:49:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1329929337-16648-13-git-send-email-m.szyprowski@samsung.com>
-References: <1329929337-16648-1-git-send-email-m.szyprowski@samsung.com> <1329929337-16648-13-git-send-email-m.szyprowski@samsung.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 29 Feb 2012 17:48:49 +0800
-Message-ID: <CAGsJ_4z_TR_UKhjxg-rzATodKJoNn2R-17KkqbeC-fLh3dK3sQ@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv23 12/16] mm: trigger page reclaim in
- alloc_contig_range() to stabilise watermarks
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com>
+In-Reply-To: <4F4D7F5E.5040202@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/23 Marek Szyprowski <m.szyprowski@samsung.com>:
-> alloc_contig_range() performs memory allocation so it also should keep
-> track on keeping the correct level of memory watermarks. This commit adds
-> a call to *_slowpath style reclaim to grab enough pages to make sure that
-> the final collection of contiguous pages from freelists will not starve
-> the system.
+On 02/29/2012 03:29 AM, Wen Congyang wrote:
+> At 02/28/2012 07:23 PM, Avi Kivity Wrote:
+> > On 02/27/2012 05:01 AM, Wen Congyang wrote:
+> >> We can know the guest is paniced when the guest runs on xen.
+> >> But we do not have such feature on kvm. This patch implemnts
+> >> this feature, and the implementation is the same as xen:
+> >> register panic notifier, and call hypercall when the guest
+> >> is paniced.
+> > 
+> > What's the motivation for this?  "Xen does this" is insufficient.
 >
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
-> Tested-by: Rob Clark <rob.clark@linaro.org>
-> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
-> ---
->  include/linux/mmzone.h |    9 +++++++
->  mm/page_alloc.c        |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 71 insertions(+), 0 deletions(-)
+> Another purpose is: management app(for example: libvirt) can do auto
+> dump when the guest is crashed. If management app does not do auto
+> dump, the guest's user can do dump by hand if he sees the guest is
+> paniced.
 >
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 4781f30..77db8c0 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -63,8 +63,10 @@ enum {
+> I am thinking about another status: dumping. This status tells
+> the guest's user that the guest is paniced, and the OS's dump function
+> is working.
 >
->  #ifdef CONFIG_CMA
->  #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-> +#  define cma_wmark_pages(zone)        zone->min_cma_pages
->  #else
->  #  define is_migrate_cma(migratetype) false
-> +#  define cma_wmark_pages(zone) 0
->  #endif
+> These two status can tell the guest's user whether the guest is pancied,
+> and what should he do if the guest is paniced.
 >
->  #define for_each_migratetype_order(order, type) \
-> @@ -371,6 +373,13 @@ struct zone {
->        /* see spanned/present_pages for more description */
->        seqlock_t               span_seqlock;
->  #endif
-> +#ifdef CONFIG_CMA
-> +       /*
-> +        * CMA needs to increase watermark levels during the allocation
-> +        * process to make sure that the system is not starved.
-> +        */
-> +       unsigned long           min_cma_pages;
-> +#endif
->        struct free_area        free_area[MAX_ORDER];
->
->  #ifndef CONFIG_SPARSEMEM
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 7a0d286..39cd74f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5092,6 +5092,11 @@ static void __setup_per_zone_wmarks(void)
->                                        low + (min >> 2);
->                zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) +
->                                        low + (min >> 1);
-> +
-> +               zone->watermark[WMARK_MIN] += cma_wmark_pages(zone);
-> +               zone->watermark[WMARK_LOW] += cma_wmark_pages(zone);
-> +               zone->watermark[WMARK_HIGH] += cma_wmark_pages(zone);
-> +
->                setup_zone_migrate_reserve(zone);
->                spin_unlock_irqrestore(&zone->lock, flags);
->        }
-> @@ -5695,6 +5700,56 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->        return ret > 0 ? 0 : ret;
->  }
->
-> +/*
-> + * Update zone's cma pages counter used for watermark level calculation.
-> + */
-> +static inline void __update_cma_watermarks(struct zone *zone, int count)
-> +{
-> +       unsigned long flags;
-> +       spin_lock_irqsave(&zone->lock, flags);
-> +       zone->min_cma_pages += count;
-> +       spin_unlock_irqrestore(&zone->lock, flags);
-> +       setup_per_zone_wmarks();
-> +}
-> +
-> +/*
-> + * Trigger memory pressure bump to reclaim some pages in order to be able to
-> + * allocate 'count' pages in single page units. Does similar work as
-> + *__alloc_pages_slowpath() function.
-> + */
-> +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
-> +{
-> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-> +       struct zonelist *zonelist = node_zonelist(0, gfp_mask);
-> +       int did_some_progress = 0;
-> +       int order = 1;
-> +       unsigned long watermark;
-> +
-> +       /*
-> +        * Increase level of watermarks to force kswapd do his job
-> +        * to stabilise at new watermark level.
-> +        */
-> +       __update_cma_watermarks(zone, count);
-> +
-> +       /* Obey watermarks as if the page was being allocated */
-> +       watermark = low_wmark_pages(zone) + count;
-> +       while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
-> +               wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
-> +
-> +               did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
-> +                                                     NULL);
-> +               if (!did_some_progress) {
-> +                       /* Exhausted what can be done so it's blamo time */
-> +                       out_of_memory(zonelist, gfp_mask, order, NULL);
 
-out_of_memory() has got another param in the newest next/master tree,
-out_of_memory(zonelist, gfp_mask, order, NULL, false) should be OK.
+How about using a virtio-serial channel for this?  You can transfer any
+amount of information (including the dump itself).
 
--barry
+-- 
+error compiling committee.c: too many arguments to function
+
