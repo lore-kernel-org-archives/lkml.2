@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965174Ab2B2XJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:09:15 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25701 "EHLO
+	id S965117Ab2B2XJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:09:14 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25695 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383Ab2B2XI3 (ORCPT
+	with ESMTP id S932381Ab2B2XI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:08:29 -0500
+	Wed, 29 Feb 2012 18:08:28 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,118 +16,81 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 19/39] x86, PCI: put busn resource in pci_root_info for no_crs path
-Date: Wed, 29 Feb 2012 15:07:18 -0800
-Message-Id: <1330556858-11768-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 04/39] PCI: rename pci_host_bridge() to find_pci_root_bridge()
+Date: Wed, 29 Feb 2012 15:07:03 -0800
+Message-Id: <1330556858-11768-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
 References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F4EAFE4.00AA,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090202.4F4EAFE4.00DE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will put it in resources list and pass it for create_root_bus
+Separate find_pci_root_bus out.
+
+-v2: according to Bjorn, remove extra null checking.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/amd_bus.c  |    1 -
- arch/x86/pci/bus_numa.c |   22 ++++++++++++++--------
- arch/x86/pci/bus_numa.h |    3 +--
- 3 files changed, 15 insertions(+), 11 deletions(-)
+ drivers/pci/host-bridge.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index aff155d..03397ea 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -116,7 +116,6 @@ static int __init early_fill_mp_bus_info(void)
- 		link = (reg >> 8) & 0x03;
- 
- 		info = alloc_pci_root_info(min_bus, max_bus, node, link);
--		sprintf(info->name, "PCI Bus #%02x", min_bus);
- 	}
- 
- 	/* get the default node and link for left over res */
-diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
-index 772949f..b5b9d91 100644
---- a/arch/x86/pci/bus_numa.c
-+++ b/arch/x86/pci/bus_numa.c
-@@ -14,7 +14,7 @@ static struct pci_root_info *x86_find_pci_root_info(int bus)
- 		return NULL;
- 
- 	list_for_each_entry(info, &pci_root_infos, list)
--		if (info->bus_min == bus)
-+		if (info->busn.start == bus)
- 			return info;
- 
- 	return NULL;
-@@ -31,6 +31,8 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
- 	printk(KERN_DEBUG "PCI: root bus %02x: hardware-probed resources\n",
- 	       bus);
- 
-+	pci_add_resource(resources, &info->busn);
-+
- 	list_for_each_entry(root_res, &info->resources, list) {
- 		struct resource *res;
- 		struct resource *root;
-@@ -54,6 +56,7 @@ default_resources:
- 	printk(KERN_DEBUG "PCI: root bus %02x: using default resources\n", bus);
- 	pci_add_resource(resources, &ioport_resource);
- 	pci_add_resource(resources, &iomem_resource);
-+	pci_add_resource(resources, &busn_resource);
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index dfaff3f..b3ddcc5 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -16,15 +16,22 @@ void add_to_pci_host_bridges(struct pci_host_bridge *bridge)
+ 	list_add_tail(&bridge->list, &pci_host_bridges);
  }
  
- struct pci_root_info __init *alloc_pci_root_info(int bus_min, int bus_max,
-@@ -66,9 +69,13 @@ struct pci_root_info __init *alloc_pci_root_info(int bus_min, int bus_max,
- 	if (!info)
- 		return info;
- 
-+	sprintf(info->name, "PCI Bus #%02x", bus_min);
-+
- 	INIT_LIST_HEAD(&info->resources);
--	info->bus_min = bus_min;
--	info->bus_max = bus_max;
-+	info->busn.name  = info->name;
-+	info->busn.start = bus_min;
-+	info->busn.end   = bus_max;
-+	info->busn.flags = IORESOURCE_BUS;
- 	info->node = node;
- 	info->link = link;
- 
-@@ -80,14 +87,13 @@ struct pci_root_info __init *alloc_pci_root_info(int bus_min, int bus_max,
- void print_pci_root_info(struct pci_root_info *info, char *name, bool nodelink)
+-static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
++static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
  {
- 	struct pci_root_res *root_res;
--	int busnum = info->bus_min;
-+	int busnum = info->busn.start;
+ 	struct pci_bus *bus;
+-	struct pci_host_bridge *bridge;
  
- 	if (!nodelink)
--		printk(KERN_DEBUG "%s: [%02x, %02x]\n", name,
--				info->bus_min, info->bus_max);
-+		printk(KERN_DEBUG "%s: %pR\n", name, &info->busn);
- 	else
--		printk(KERN_DEBUG "%s: [%02x, %02x] on node %x link %x\n", name,
--			info->bus_min, info->bus_max, info->node, info->link);
-+		printk(KERN_DEBUG "%s: %pR on node %x link %x\n", name,
-+			&info->busn, info->node, info->link);
+ 	bus = dev->bus;
+ 	while (bus->parent)
+ 		bus = bus->parent;
  
- 	list_for_each_entry(root_res, &info->resources, list)
- 		printk(KERN_DEBUG "%s: %02x %pR\n", name, busnum,
-diff --git a/arch/x86/pci/bus_numa.h b/arch/x86/pci/bus_numa.h
-index deada6a..f9919c3 100644
---- a/arch/x86/pci/bus_numa.h
-+++ b/arch/x86/pci/bus_numa.h
-@@ -13,8 +13,7 @@ struct pci_root_info {
- 	struct list_head list;
- 	char name[12];
- 	struct list_head resources;
--	int bus_min;
--	int bus_max;
-+	struct resource busn;
- 	int node;
- 	int link;
- };
++	return bus;
++}
++
++static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
++{
++	struct pci_bus *bus = find_pci_root_bus(dev);
++	struct pci_host_bridge *bridge;
++
+ 	list_for_each_entry(bridge, &pci_host_bridges, list) {
+ 		if (bridge->bus == bus)
+ 			return bridge;
+@@ -42,7 +49,7 @@ void __weak pcibios_resource_to_bus(struct pci_dev *dev,
+ 				    struct pci_bus_region *region,
+ 				    struct resource *res)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+ 	resource_size_t offset = 0;
+ 
+@@ -70,12 +77,13 @@ static bool region_contains(struct pci_bus_region *region1,
+ void __weak pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 				    struct pci_bus_region *region)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+-	struct pci_bus_region bus_region;
+ 	resource_size_t offset = 0;
+ 
+ 	list_for_each_entry(window, &bridge->windows, list) {
++		struct pci_bus_region bus_region;
++
+ 		if (resource_type(res) != resource_type(window->res))
+ 			continue;
+ 
 -- 
 1.7.7
 
