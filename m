@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965984Ab2B2Xep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:34:45 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:48656 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965013Ab2B2Xem convert rfc822-to-8bit (ORCPT
+	id S966141Ab2B2Xgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:36:32 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33520 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965028Ab2B2Xgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:34:42 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Keith Chew <keith.chew@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
-	<m1ehtd8qez.fsf@fess.ebiederm.org>
-	<CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
-	<87obshxt4w.fsf@xmission.com>
-	<CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
-Date: Wed, 29 Feb 2012 15:34:30 -0800
-In-Reply-To: <CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
-	(Keith Chew's message of "Thu, 1 Mar 2012 11:06:53 +1300")
-Message-ID: <87zkc1w6wp.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 29 Feb 2012 18:36:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.85.35 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+kJsGhxwx4vbguUTPAGH4w/vQWjZ7HvUw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      []
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: ; 
-X-Spam-Combo: ;Keith Chew <keith.chew@gmail.com>
-X-Spam-Relay-Country: **
-Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 29 Feb 2012 15:36:09 -0800
+X-Google-Sender-Auth: Pig_exhkaJCEwLRGgsz-JgZ7K3U
+Message-ID: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
+Subject: .. anybody know of any filesystems that depend on the exact VFS
+ 'namehash' implementation?
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keith Chew <keith.chew@gmail.com> writes:
+So I'm doing my normal profiling ("empty kernel build" is my favorite
+one), and link_path_walk() and __d_lookup_rcu() remain some of the
+hottest kernel functions due to their per-character loops.
 
-> Hi Eric
->
->>
->> Historically a lot of issues have had to do with which cpu you are
->> entering the bios from.  So you might try pinning your process
->> to differen cpus and see if you can make the failure more deterministic.
->>
->
-> We are using a Celeron 575 uniprocessor, so we do not have the option
-> to pin on another cpu. I have tried compiling the kernel in both UP
-> and SMP configuration, but sadly both causes the hang.
+I can improve __d_lookup_rcu() on my machine by what appears to be
+around 15% by doing things a "unsigned long" at a time (it would be an
+option that only works on little-endian and with cheap unaligned
+accesses, although the big-endian modifications should be pretty
+trivial).
 
-Ok.  That rules out a bunch of things, and emerengy_restart may not
-be much different in practice.
+Sure, that optimization would have to be disabled if you do
+DEBUG_PAGEALLOC, because it might opportunistically access bytes past
+the end of the string, but it does seem to be a very reasonable and
+easy thing to do apart from that small detail, and the numbers do look
+good.
 
->> Ugh.  The other possibility is that there is an intermittent failure in
->> the hardware, that prevents the boot/reboot.  Wrong values on pull-up
->> resistors have been known to cause that kind of thing.
->>
->
-> Thank you very much for this pointer, will feed that back to the
-> manufacturer and see if it will give them some clues. The original
-> purpose for this reboot exercise was to ensure the software will
-> handle a power failure without any OS/data corruptions. With this new
-> discovery of unreliable reboot, the next worry is "If reboot is not
-> reliable, is the boot process also susceptible to the same issue?". I
-> have not rigged up any hardware to simulate a periodic full shutdown
-> and boot up process, but will be planning to set this up next.
->
-> Thanks again, if you have any other suggestions for us to try, I am
-> all ears!
+Basically, dentry_cmp() just becomes
 
-I would check with your BIOS folks and perhaps play with the kernel
-option.  The most reliable way to peform a reset is to trigger a board
-reset by writing to 0xcf9 or a similar register.  I expect your BIOS
-does that and you can probably get the kernel to do that.  I would
-definitely test to see if you can write to the mostly standard
-0xcf9 register directly from the kernel and trigger a reset directly.
+        /* Little-endian with fast unaligned accesses? */
+        unsigned long a,b,mask;
 
-Once past a reset and with a single cpu all of the failures will be
-happening in the boot path.  So the only possible points of failure
-are in devices that are different between a soft reset and a power on
-reset.
+        if (scount != tcount)
+                return 1;
 
-I would check to see if your board perhaps supports post codes or any
-other debugging that will let you see where you are hanging.
+        for (;;) {
+                a = *(unsigned long *)cs;
+                b = *(unsigned long *)ct;
+                if (tcount < sizeof(unsigned long))
+                        break;
+                if (a != b)
+                        return 1;
+                cs += sizeof(unsigned long);
+                ct += sizeof(unsigned long);
+                tcount -= sizeof(unsigned long);
+                if (!tcount)
+                        return 0;
+        }
+        mask = ~(~0ul << tcount*8);
+        return !!((a ^ b) & mask);
 
-It sounds like there is some very rare failure, that is going to be
-a challenge to track down.  I would definitely test more than one
-motherboard to ensure that you can reproduce the problem on more
-than one piece of hardware.  Sometimes hardware is just broken.
+for that case, and gcc generates good code for it.
 
-Eric
+However, doing the same thing for link_path_walk() would require that
+we actually change the hash function we use internally in the VFS
+layer, and while I think that shouldn't really be a problem, I worry
+that some filesystem might actually use the hash we generate and save
+it somewhere on disk (rather than only use it for the hashed lookup
+itself).
+
+Computing the hash one long-word at a time is trivial if we just
+change what the hash is. Finding the terminating NUL or '/' characters
+that involves some big constants (0x2f2f2f2f2f2f2f2f,
+0x0101010101010101 and 0x8080808080808080 but seems similarly fairly
+easy. But if filesystems actually depend on our current hash
+algorithm, the word-at-a-time model falls apart.
+
+Anybody? I think we've kept the namehash unchanged since very early
+on, so I could imagine that somebody has grown to think that it's
+"stable". As far as I can tell, the current hash function goes back to
+2.4.2 (just over ten years ago).
+
+                       Linus
