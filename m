@@ -1,102 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab2B2TWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 14:22:15 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11446 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758284Ab2B2TWN convert rfc822-to-8bit (ORCPT
+	id S1758327Ab2B2TWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 14:22:42 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57823 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758282Ab2B2TWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 14:22:13 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 29 Feb 2012 11:21:54 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 11:21:53 -0800
-Subject: RE: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT, define
- hogs as that state
-Thread-Topic: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT,
- define hogs as that state
-Thread-Index: Acz3AOCp5y5xKkqgSxOjNxZWh1Gf3wAB+cagAAOUMVA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF2125@HQMAIL01.nvidia.com>
-References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
- <CACRpkdaaYF8UqweNm6sQ3dke9J76J2oY62BPBSisPo9myf7W4g@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209D@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209D@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Feb 2012 14:22:40 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland Stigge <stigge@antcom.de>
+Subject: [GIT PULL] arm-soc fixes for v3.3
+Date: Wed, 29 Feb 2012 19:22:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Tony Lindgren <tony@atomide.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202291922.31251.arnd@arndb.de>
+X-Provags-ID: V02:K0:iQdvNjIa2hOxXdgO5Q991TEl5hZoPVMXxzRWm5dNtPA
+ DJ/9E/ChsjmVCPXd74zAk3kkUn3T2+5hqu+1MIUf8ABH9l5PUI
+ 9QDfSPHw19ltXbN98B9rZtXN4eUbxaoF/+cYRjNr4i4W2+v0KO
+ PJV67KRmvCsYcscRECJaiMOs+XcFr727xNv9DaY9XzdZS7dIxD
+ WSoswqjN5ip/ix2hVIHv9Mo+L4I1kS2kwrGgWoaFOOlT+A6PD4
+ 62qbRHuudXL+4O13SmeSYpV9969PfCmvRKpnCweo/StQguVe2a
+ v+v6PxCcJg2AU/T4GdYvJG1QCMxqE26fOFDEqIjG1Lw+O5DPy8
+ IZToHhNqA6fFOEb7EXns=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Wednesday, February 29, 2012 10:42 AM:
-> Linus Walleij wrote at Wednesday, February 29, 2012 9:41 AM:
-> > Aha now I see the problem here...
-> >
-> > On Tue, Feb 28, 2012 at 12:55 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> >
-> > > This provides a single centralized name for the default state.
-> > (...)
-> > > -/* Hog a single map entry and add to the hoglist */
-> > > -static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
-> > (...)
-> > > -static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
-> > (...)
-> > > -       pinctrl_hog_maps(pctldev);
-> > > +       pctldev->p = pinctrl_get(pctldev->dev, PINCTRL_STATE_DEFAULT);
-> > > +       if (!IS_ERR(pctldev->p))
-> > > +               pinctrl_enable(pctldev->p);
-> >
-> > So what happens here is that my hogs will try to activate three different
-> > functions in the same struct pinctrl *p.
-> >
-> > This fails the sanity check in pinmux.c:
-> >
-> > 	/*
-> > 	 * If the function selector is already set, it needs to be identical,
-> > 	 * we support several groups with one function but not several
-> > 	 * functions with one or several groups in the same pinmux.
-> > 	 */
-> > 	if (p->func_selector != UINT_MAX &&
-> > 	    p->func_selector != func_selector) {
-> > 		dev_err(pctldev->dev,
-> > 			"dual function defines in the map for device %s\n",
-> > 		       devname);
-> > 		return -EINVAL;
-> > 	}
-> > 	p->func_selector = func_selector;
-> 
-> Oh right, I'd forgotten about that check at this stage in the patch
-> series.
-> 
-> Later in the series, this restriction is removed; each setting in a state
-> is completely independent, and could easily program a different function
-> onto each group, or the same function. At this stage in the series, a
-> struct pinctrl can't represent everything that a set of mapping table
-> entries can, but later struct pinctrl is fully capable.
-> 
-> I guess the solution here is to just make this patch introduce the
-> PINCTRL_STATE_DEFAULT define, but defer most usage of it until later
-> in the series when this restriction is removed.
+Hi Linus,
 
-Actually, it looks very easy to move the func_selector field out of
-struct pinctrl into struct pinmux_group, which would solve this problem
-in what I consider the correct way. I'll code up a patch to do that and
-stack it before this current patch.
+Here is another set of arm-soc bug fixes on top of v3.3-rc5. The few larger
+bits are all for devices that still need to get set up in board code.
 
--- 
-nvpublic
+Only three platforms are in this set of fixes: omap2+, pxa and lpc32xx.
 
+	Arnd
+
+The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+
+  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes-3.3-rc6
+
+Arnd Bergmann (3):
+      Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
+      Merge branch 'fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge branch 'lpc32xx/fixes' of git://git.antcom.de/linux-2.6 into fixes
+
+Arnout Vandecappelle (Essensium/Mind) (1):
+      OMAP3 EVM: remove out-of-bounds array access of gpio_leds
+
+Axel Lin (2):
+      ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+      pxa/hx4700: add platform device and I2C info for AK4641 codec
+
+Danny Kukawka (3):
+      ARM: pxa: fix including linux/gpio.h twice
+      arch/arm/mach-mmp/: some files include some headers twice
+      arch/arm/mach-pxa/: included linux/gpio.h twice
+
+Felipe Balbi (1):
+      ARM: OMAP2+: usb-host: fix compile warning
+
+Haojian Zhuang (2):
+      ARM: pxa: fix wrong parsing gpio event on spitz
+      ARM: pxa: fix mixed declarations and code in sharpsl_pm
+
+Matt Porter (1):
+      ARM: OMAP2+: gpmc-smsc911x: add required smsc911x regulators
+
+NeilBrown (1):
+      ARM: OMAP: add RCU locking to omap2_set_init_voltage.
+
+Ohad Ben-Cohen (1):
+      ARM: OMAP2: fix mailbox init code
+
+Roland Stigge (5):
+      ARM: LPC32xx: Fix irq on GPI_28
+      ARM: LPC32xx: Fix interrupt controller init
+      ARM: LPC32xx: irq.c: Clear latched event
+      ARM: LPC32xx: serial.c: HW bug workaround
+      ARM: LPC32xx: serial.c: Fixed loop limit
+
+Santosh Shilimkar (2):
+      ARM: OMAP4: cpuidle: Fix the C-state reporting to cpuidle governor.
+      ARM: OMAP4: Move the barrier memboclk_steal() as part of reserve callback
+
+Tony Lindgren (5):
+      Merge branch 'for_3.3/fixes/pm' of git://git.kernel.org/.../khilman/linux-omap-pm into fixes
+      ARM: OMAP: Fix kernel panic with HSMMC when twl4030_gpio is a module
+      ARM: OMAP: Fix build error when mmc_omap is built as module
+      Merge branch 'fixes-mmc' into fixes
+      ARM: OMAP1: Fix out-of-bounds array access for Innovator
+
+ arch/arm/mach-lpc32xx/include/mach/irqs.h     |    2 +-
+ arch/arm/mach-lpc32xx/irq.c                   |   25 +++++++++--
+ arch/arm/mach-lpc32xx/serial.c                |   20 +++++++++-
+ arch/arm/mach-mmp/aspenite.c                  |    1 -
+ arch/arm/mach-mmp/pxa168.c                    |    1 -
+ arch/arm/mach-mmp/tavorevb.c                  |    1 -
+ arch/arm/mach-omap1/board-innovator.c         |    4 +-
+ arch/arm/mach-omap2/Kconfig                   |    4 +-
+ arch/arm/mach-omap2/board-n8x0.c              |    4 ++
+ arch/arm/mach-omap2/board-omap3evm.c          |    2 +-
+ arch/arm/mach-omap2/common.h                  |    1 +
+ arch/arm/mach-omap2/cpuidle44xx.c             |    5 +-
+ arch/arm/mach-omap2/gpmc-smsc911x.c           |   52 +++++++++++++++++++++++++
+ arch/arm/mach-omap2/hsmmc.c                   |    6 +++
+ arch/arm/mach-omap2/io.c                      |    1 +
+ arch/arm/mach-omap2/mailbox.c                 |   10 ++++-
+ arch/arm/mach-omap2/mux.c                     |    2 +-
+ arch/arm/mach-omap2/omap4-common.c            |   25 ++++++++----
+ arch/arm/mach-omap2/pm.c                      |    3 +
+ arch/arm/mach-omap2/usb-host.c                |    6 +-
+ arch/arm/mach-pxa/hx4700.c                    |   25 ++++++++++++
+ arch/arm/mach-pxa/pxa25x.c                    |    1 -
+ arch/arm/mach-pxa/pxa27x.c                    |    1 -
+ arch/arm/mach-pxa/saarb.c                     |    1 -
+ arch/arm/mach-pxa/sharpsl_pm.c                |    3 +-
+ arch/arm/mach-pxa/spitz_pm.c                  |    5 +-
+ arch/arm/plat-omap/common.c                   |    1 +
+ arch/arm/plat-omap/include/plat/omap-secure.h |    6 +++
+ drivers/pcmcia/pxa2xx_base.c                  |   12 +----
+ 29 files changed, 181 insertions(+), 49 deletions(-)
