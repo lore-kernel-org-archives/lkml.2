@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab2B2QAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 11:00:19 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56393 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932327Ab2B2QAR (ORCPT
+	id S932723Ab2B2QIF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:08:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37391 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab2B2QIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 11:00:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of larry.finger@gmail.com designates 10.60.20.101 as permitted sender) smtp.mail=larry.finger@gmail.com; dkim=pass header.i=larry.finger@gmail.com
-Message-ID: <4F4E4B8B.8090508@lwfinger.net>
-Date: Wed, 29 Feb 2012 10:00:11 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: linux-wireless@vger.kernel.org
-CC: Larry Finger <Larry.Finger@lwfinger.net>, linville@tuxdriver.com,
-        chunkeey@web.de, Max Filippov <jcmvbkbc@gmail.com>, m@bues.ch,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not from
- probe routine
-References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net> <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
-In-Reply-To: <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 11:08:02 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.43.51.135 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
+Message-ID: <1330531826.3545.128.camel@sauron.fi.intel.com>
+Subject: Re: [patch] Move CRC computation to separate function
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Date: Wed, 29 Feb 2012 18:10:26 +0200
+In-Reply-To: <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
+	 <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-sITxPpcgRQ9Xzto0rYxK"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2012 01:37 PM, Larry Finger wrote:
-> Drivers that load firmware from their probe routine have problems with the
-> latest versions of udev as they get timeouts while waiting for user
-> space to start. The problem is fixed by loading the firmware and starting
-> mac80211 from a delayed_work queue. By using this method, most of the
-> original code is preserved.
->
-> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
-> ---
-> This one is compile-tested only.
->
-> Larry
-> ---
 
-Any testing done here?
+--=-sITxPpcgRQ9Xzto0rYxK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Larry
-
->   drivers/net/wireless/p54/p54spi.c |   38 ++++++++++++++++++++++++++----------
->   drivers/net/wireless/p54/p54spi.h |    1 +
->   2 files changed, 28 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
-> index 7faed62..87c2634 100644
-> --- a/drivers/net/wireless/p54/p54spi.c
-> +++ b/drivers/net/wireless/p54/p54spi.c
-> @@ -595,6 +595,30 @@ static void p54spi_op_stop(struct ieee80211_hw *dev)
->   	cancel_work_sync(&priv->work);
+On Mon, 2012-02-20 at 21:15 +0100, Joel Reardon wrote:
+> This patch moves the computation of CRCs for data nodes from=20
+> within ubifs_prepare_node to a separate function ubifs_set_datanode_crc,=
+=20
+> which takes a data node, and computes and sets the CRC. This is to avoid=
+=20
+> duplication of the CRC computation code in other places where it may be=
+=20
+> needed.
+>=20
+> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+> diff -uprN -X linux-3.2.1-vanilla/Documentation/dontdiff=20
+> linux-3.2.1-vanilla/fs/ubifs/io.c linux-3.2.1-ubifsec/fs/ubifs/io.c
+> --- linux-3.2.1-vanilla/fs/ubifs/io.c   2012-01-12 20:42:45.000000000=20
+> +0100
+> +++ linux-3.2.1-ubifsec/fs/ubifs/io.c   2012-02-20 20:17:48.796684293=20
+> +0100
+> @@ -367,6 +367,18 @@ static unsigned long long next_sqnum(str
 >   }
->
-> +static void p54s_load_firmware(struct work_struct *work)
+
+This patch is line-wrapped and cannot be applied. Would you please send
+a non-wrapped version. You may experiment by sending to yourself, then
+saving, and then applying using "git am".
+
+>=20
+>   /**
+> + * ubifs_set_datanode_crc - writes the crc for a data node to the common
+> + * header.
+> + * @node: the data node
+> + */
+> +void ubifs_set_datanode_crc(void *node)
 > +{
-> +	struct p54s_priv *priv = container_of(to_delayed_work(work),
-> +				 struct p54s_priv, firmware_load);
-> +	struct ieee80211_hw *hw = priv->hw;
-> +	int ret;
-> +
-> +	ret = p54spi_request_firmware(hw);
-> +	if (ret<  0)
-> +		goto err_free_common;
-> +
-> +	ret = p54spi_request_eeprom(hw);
-> +	if (ret)
-> +		goto err_free_common;
-> +
-> +	ret = p54_register_common(hw,&priv->spi->dev);
-> +	if (ret)
-> +		goto err_free_common;
-> +	return;
-> +
-> +err_free_common:
-> +	dev_err(&priv->spi->dev, "Failed to read firmware\n");
+> +       struct ubifs_ch *ch =3D (struct ubifs_ch *) node;
+> +       int len =3D le32_to_cpu(ch->len);
+> +       ch->crc =3D cpu_to_le32(crc32(UBIFS_CRC32_INIT, node + 8, len - 8=
+));
 > +}
-> +
->   static int __devinit p54spi_probe(struct spi_device *spi)
->   {
->   	struct p54s_priv *priv = NULL;
-> @@ -658,17 +682,9 @@ static int __devinit p54spi_probe(struct spi_device *spi)
->   	priv->common.stop = p54spi_op_stop;
->   	priv->common.tx = p54spi_op_tx;
->
-> -	ret = p54spi_request_firmware(hw);
-> -	if (ret<  0)
-> -		goto err_free_common;
-> -
-> -	ret = p54spi_request_eeprom(hw);
-> -	if (ret)
-> -		goto err_free_common;
-> -
-> -	ret = p54_register_common(hw,&priv->spi->dev);
-> -	if (ret)
-> -		goto err_free_common;
-> +	/* setup and start delayed work to load firmware */
-> +	INIT_DELAYED_WORK(&priv->firmware_load, p54s_load_firmware);
-> +	schedule_delayed_work(&priv->firmware_load, HZ);
->
->   	return 0;
->
-> diff --git a/drivers/net/wireless/p54/p54spi.h b/drivers/net/wireless/p54/p54spi.h
-> index dfaa62a..5f7714b 100644
-> --- a/drivers/net/wireless/p54/p54spi.h
-> +++ b/drivers/net/wireless/p54/p54spi.h
-> @@ -120,6 +120,7 @@ struct p54s_priv {
->
->   	enum fw_state fw_state;
->   	const struct firmware *firmware;
-> +	struct delayed_work firmware_load;
->   };
->
->   #endif /* P54SPI_H */
+
+This changes is not needed unless there is other code which needs this
+function. So once I get a non-wrapped patch I can create a branch for
+you in the UBIFS tree and collect your patches. Once they are ready,
+they can be merged.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-sITxPpcgRQ9Xzto0rYxK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPTk3yAAoJECmIfjd9wqK0n6oP/R7Pn1CXx1QyTjsyZiO1JcHo
+joWMErZwZ4+UB5lC0A/XZOfiG80Po0QpG0vEIOEw4q+ppA4DdccrqWZ1WwdE+a3I
+ZYcpH/aFZuThjXAXfW6wsOXpMQZcD1KHwT92W1ajXn5NeQ07EiEL4Z3+XZNoTtqL
+L9vaUfRyLZNXnTEtw0DaSn4VDMUpWrJwvGRzM6bzxPZ5LEbkycenTZ1T6nmTSRWd
+RB41efS9ck9QViZZBve2LRzWFdqQKX8aCOpCnXArXA6y5Q6e/b5KMqdCutWt1IaJ
+mskt4+U4hAo2qoksI9a37AG7ncEl1YZP+iMEA3wp7hfrS6c9UOpumkRC/hQdoPHj
+WViJK9uh26dJ/yGshDB4a7x2nmHIJmmvJpo5rTGz36PP3MG3tjJ/nzJNxASvBX09
+zmvln3gUu2ekMI7jyPwVpM6IPNRo7QGT0sYSkY009oWX2X2+IAD4MU6oL/id9O/G
+2UHxcCYKbxuZsrNdub8qEcp7J9M0PDKeFOK+KOYgFJuRHdqf+1rFdCWQTCJQKjJo
+ftKdS9RakR4KfpBtQ1mWyLGX6syqcfyHAa7zi80/hkHlvCZSj8YPYXFc3qxpaEb+
+Q0wFVP0suR8lQrVoPLSRvn7YVy5jKB8BeBsDqkyrWI65o+It62qEsc1r89z7ptrD
+oQI1Fymhrwb3uFgChBnY
+=xntw
+-----END PGP SIGNATURE-----
+
+--=-sITxPpcgRQ9Xzto0rYxK--
 
