@@ -1,607 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030952Ab2B2N5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:57:16 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13524 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030661Ab2B2N5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:57:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112764829"
-Date: Wed, 29 Feb 2012 21:51:56 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 5/9] writeback: introduce the pageout work
-Message-ID: <20120229135156.GA31106@localhost>
-References: <20120228140022.614718843@intel.com>
- <20120228144747.198713792@intel.com>
+	id S1030969Ab2B2N5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:57:49 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:10207
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030781Ab2B2N5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 08:57:47 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M05QRY-02-4I8-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>
+CC: <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Avi Kivity <avi@redhat.com>, Stephane Eranian <eranian@google.com>,
+        David Ahern <dsahern@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH v2] perf/x86: Fix HO/GO counting with SVM disabled
+Date: Wed, 29 Feb 2012 14:57:32 +0100
+Message-ID: <1330523852-19566-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
+References: <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228144747.198713792@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This relays file pageout IOs to the flusher threads.
+It turned out that a performance counter on AMD does not
+count at all when the GO or HO bit is set in the control
+register and SVM is disabled in EFER.
 
-It's much more important now that page reclaim generally does not
-writeout filesystem-backed pages.
+This patch works around this issue by masking out the HO bit
+in the performance counter control register when SVM is not
+enabled.
 
-The ultimate target is to gracefully handle the LRU lists pressured by
-dirty/writeback pages. In particular, problems (1-2) are addressed here.
+The GO bit is not touched because it is only set when the
+user wants to count in guest-mode only. So when SVM is
+disabled the counter should not run at all and the
+not-counting is the intended behaviour.
 
-1) I/O efficiency
-
-The flusher will piggy back the nearby ~10ms worth of dirty pages for I/O.
-
-This takes advantage of the time/spacial locality in most workloads: the
-nearby pages of one file are typically populated into the LRU at the same
-time, hence will likely be close to each other in the LRU list. Writing
-them in one shot helps clean more pages effectively for page reclaim.
-
-For the common dd style sequential writes that have excellent locality,
-up to ~128ms data will be wrote around by the pageout work, which helps
-make I/O performance very close to that of the background writeback.
-
-2) writeback work coordinations
-
-To avoid memory allocations at page reclaim, a mempool for struct
-wb_writeback_work is created.
-
-wakeup_flusher_threads() is removed because it can easily delay the
-more oriented pageout works and even exhaust the mempool reservations.
-It's also found to not I/O efficient by frequently submitting writeback
-works with small ->nr_pages. wakeup_flusher_threads() is called with
-total_scanned. Which could be (LRU_size / 4096). Given 1GB LRU_size,
-the write chunk would be 256KB.  This is much smaller than the old 4MB
-and the now preferred write chunk size (write_bandwidth/2).  For
-direct reclaim, sc->nr_to_reclaim=32 and total_scanned starts with
-(LRU_size / 4096), which *always* exceeds writeback_threshold in boxes
-with more than 1GB memory. So the flusher end up constantly be fed
-with small writeout requests.
-
-Typically the flusher will be working on the background/periodic works
-when there are heavy dirtier tasks. And wb_writeback() will quit the
-background/periodic work when pageout or other works are queued. So
-the pageout works can typically be pick up and executed quickly by the
-flusher: the background/periodic works are the dominant ones and there
-are rarely other type of works in the way.
-
-However the other type of works, if ever they come, can still block us
-for long time. Will need a proper way to guarantee fairness.
-
-Jan Kara: limit the search scope; remove works and unpin inodes on umount.
-
-CC: Jan Kara <jack@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: stable@vger.kernel.org # 3.2
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- fs/fs-writeback.c                |  278 +++++++++++++++++++++++++++--
- fs/super.c                       |    1 
- include/linux/backing-dev.h      |    2 
- include/linux/writeback.h        |   16 +
- include/trace/events/writeback.h |   12 -
- mm/vmscan.c                      |   36 ++-
- 6 files changed, 316 insertions(+), 29 deletions(-)
+ arch/x86/include/asm/perf_event.h    |    8 +++++++
+ arch/x86/kernel/cpu/perf_event.h     |    6 ++++-
+ arch/x86/kernel/cpu/perf_event_amd.c |   37 ++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/svm.c                   |    5 ++++
+ 4 files changed, 53 insertions(+), 3 deletions(-)
 
---- linux.orig/fs/fs-writeback.c	2012-02-29 08:41:52.057540723 +0800
-+++ linux/fs/fs-writeback.c	2012-02-29 21:38:20.215305104 +0800
-@@ -36,9 +36,37 @@
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 096c975e..ffad310 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -242,4 +242,12 @@ static inline void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
+ static inline void perf_events_lapic_init(void)	{ }
+ #endif
  
- /*
-  * Passed into wb_writeback(), essentially a subset of writeback_control
-+ *
-+ * The wb_writeback_work is created (and hence auto destroyed) either on stack,
-+ * or dynamically allocated from the mempool. The implicit rule is: the caller
-+ * shall allocate wb_writeback_work on stack iif it want to wait for completion
-+ * of the work (aka. synchronous work).
-+ *
-+ * The work is then queued into bdi->work_list, where the flusher picks up one
-+ * wb_writeback_work at a time, dequeue, execute and finally either free it
-+ * (mempool allocated) or wake up the caller (on stack).
-+ *
-+ * It's possible for vmscan to queue lots of pageout works in short time.
-+ * However it does not need too many IOs in flight to saturate a typical disk.
-+ * Limiting the queue size helps reduce the queuing delays. So the below rules
-+ * are applied:
-+ *
-+ * - when LOTS_OF_WRITEBACK_WORKS = WB_WORK_MEMPOOL_SIZE / 8 = 128 works are
-+ *   queued, vmscan should start throttling itself (to the rate the flusher can
-+ *   consume pageout works).
-+ *
-+ * - when 2 * LOTS_OF_WRITEBACK_WORKS wb_writeback_work are queued, will refuse
-+ *   to queue new pageout works
-+ *
-+ * - the remaining mempool reservations are available for other types of works
-  */
- struct wb_writeback_work {
- 	long nr_pages;
-+	/*
-+	 * WB_REASON_LAPTOP_TIMER, WB_REASON_FREE_MORE_MEM and some
-+	 * WB_REASON_SYNC callers queue works with ->sb == NULL. They just want
-+	 * to knock down the bdi dirty pages and don't care about the exact sb.
-+	 */
- 	struct super_block *sb;
- 	unsigned long *older_than_this;
- 	enum writeback_sync_modes sync_mode;
-@@ -48,6 +76,13 @@ struct wb_writeback_work {
- 	unsigned int for_background:1;
- 	enum wb_reason reason;		/* why was writeback initiated? */
- 
-+	/*
-+	 * When (inode != NULL), it's a pageout work for cleaning the inode
-+	 * pages from start to start+nr_pages.
-+	 */
-+	struct inode *inode;
-+	pgoff_t start;
++#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
++extern void amd_pmu_enable_virt(void);
++extern void amd_pmu_disable_virt(void);
++#else /* CONFIG_PERF_EVENTS && CONFIG_CPU_SUP_AMD */
++static inline void amd_pmu_enable_virt(void) { }
++static inline void amd_pmu_disable_virt(void) { }
++#endif /* CONFIG_PERF_EVENTS && CONFIG_CPU_SUP_AMD */
 +
- 	struct list_head list;		/* pending work list */
- 	struct completion *done;	/* set if the caller waits */
- };
-@@ -57,6 +92,28 @@ struct wb_writeback_work {
-  */
- int nr_pdflush_threads;
- 
-+static mempool_t *wb_work_mempool;
-+
-+static void *wb_work_alloc(gfp_t gfp_mask, void *pool_data)
-+{
-+	/*
-+	 * Avoid page allocation on page reclaim. The mempool reservations are
-+	 * typically more than enough for good disk utilization.
-+	 */
-+	if (current->flags & PF_MEMALLOC)
-+		return NULL;
-+
-+	return kmalloc(sizeof(struct wb_writeback_work), gfp_mask);
-+}
-+
-+static __init int wb_work_init(void)
-+{
-+	wb_work_mempool = mempool_create(WB_WORK_MEMPOOL_SIZE,
-+					 wb_work_alloc, mempool_kfree, NULL);
-+	return wb_work_mempool ? 0 : -ENOMEM;
-+}
-+fs_initcall(wb_work_init);
-+
- /**
-  * writeback_in_progress - determine whether there is writeback in progress
-  * @bdi: the device's backing_dev_info structure.
-@@ -111,6 +168,22 @@ static void bdi_queue_work(struct backin
- {
- 	trace_writeback_queue(bdi, work);
- 
-+	/*
-+	 * The iput() for pageout works may occasionally dive deep into complex
-+	 * fs code. This brings new possibilities/sources of deadlock:
-+	 *
-+	 *   free work => iput => fs code => queue writeback work and wait on it
-+	 *
-+	 * In the above scheme, the flusher ends up waiting endless for itself.
-+	 */
-+	if (unlikely(current == bdi->wb.task ||
-+		     current == default_backing_dev_info.wb.task)) {
-+		WARN_ON_ONCE(1); /* recursion; deadlock if ->done is set */
-+		if (work->done)
-+			complete(work->done);
-+		return;
-+	}
-+
- 	spin_lock_bh(&bdi->wb_lock);
- 	list_add_tail(&work->list, &bdi->work_list);
- 	if (!bdi->wb.task)
-@@ -129,7 +202,7 @@ __bdi_start_writeback(struct backing_dev
- 	 * This is WB_SYNC_NONE writeback, so if allocation fails just
- 	 * wakeup the thread for old dirty data writeback
+ #endif /* _ASM_X86_PERF_EVENT_H */
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 8944062..2c581b9 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -148,6 +148,8 @@ struct cpu_hw_events {
+ 	 * AMD specific bits
  	 */
--	work = kzalloc(sizeof(*work), GFP_ATOMIC);
-+	work = mempool_alloc(wb_work_mempool, GFP_ATOMIC);
- 	if (!work) {
- 		if (bdi->wb.task) {
- 			trace_writeback_nowork(bdi);
-@@ -138,6 +211,7 @@ __bdi_start_writeback(struct backing_dev
- 		return;
- 	}
+ 	struct amd_nb		*amd_nb;
++	/* Inverted mask of bits to clear in the perf_ctr ctrl registers */
++	u64			perf_ctr_virt_mask;
  
-+	memset(work, 0, sizeof(*work));
- 	work->sync_mode	= WB_SYNC_NONE;
- 	work->nr_pages	= nr_pages;
- 	work->range_cyclic = range_cyclic;
-@@ -187,6 +261,176 @@ void bdi_start_background_writeback(stru
- }
- 
- /*
-+ * Check if @work already covers @offset, or try to extend it to cover @offset.
-+ * Returns true if the wb_writeback_work now encompasses the requested offset.
-+ */
-+static bool extend_writeback_range(struct wb_writeback_work *work,
-+				   pgoff_t offset,
-+				   unsigned long unit)
-+{
-+	pgoff_t end = work->start + work->nr_pages;
-+
-+	if (offset >= work->start && offset < end)
-+		return true;
-+
-+	/*
-+	 * For sequential workloads with good locality, include up to 8 times
-+	 * more data in one chunk. The unit chunk size is calculated so that it
-+	 * costs 8-16ms to write so many pages. So 8 times means we can extend
-+	 * it up to 128ms. It's a good value because 128ms data transfer time
-+	 * makes the typical overheads of 8ms disk seek time look small enough.
-+	 */
-+	if (work->nr_pages >= 8 * unit)
-+		return false;
-+
-+	/* the unsigned comparison helps eliminate one compare */
-+	if (work->start - offset < unit) {
-+		work->nr_pages += unit;
-+		work->start -= unit;
-+		return true;
-+	}
-+
-+	if (offset - end < unit) {
-+		work->nr_pages += unit;
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+/*
-+ * schedule writeback on a range of inode pages.
-+ */
-+static struct wb_writeback_work *
-+alloc_queue_pageout_work(struct backing_dev_info *bdi,
-+			 struct inode *inode,
-+			 pgoff_t start,
-+			 pgoff_t len)
-+{
-+	struct wb_writeback_work *work;
-+
-+	/*
-+	 * Grab the inode until the work is executed. We are calling this from
-+	 * page reclaim context and the only thing pinning the address_space
-+	 * for the moment is the page lock.
-+	 */
-+	if (!igrab(inode))
-+		return NULL;
-+
-+	work = mempool_alloc(wb_work_mempool, GFP_NOWAIT);
-+	if (!work)
-+		return NULL;
-+
-+	memset(work, 0, sizeof(*work));
-+	work->sync_mode		= WB_SYNC_NONE;
-+	work->sb		= inode->i_sb;
-+	work->inode		= inode;
-+	work->start		= start;
-+	work->nr_pages		= len;
-+	work->reason		= WB_REASON_PAGEOUT;
-+
-+	bdi_queue_work(bdi, work);
-+
-+	return work;
-+}
-+
-+/*
-+ * Called by page reclaim code to flush the dirty page ASAP. Do write-around to
-+ * improve IO throughput. The nearby pages will have good chance to reside in
-+ * the same LRU list that vmscan is working on, and even close to each other
-+ * inside the LRU list in the common case of sequential read/write.
-+ *
-+ * ret > 0: success, allocated/queued a new pageout work;
-+ *	    there are at least @ret writeback works queued now
-+ * ret = 0: success, reused/extended a previous pageout work
-+ * ret < 0: failed
-+ */
-+int queue_pageout_work(struct address_space *mapping, struct page *page)
-+{
-+	struct backing_dev_info *bdi = mapping->backing_dev_info;
-+	struct inode *inode = mapping->host;
-+	struct wb_writeback_work *work;
-+	unsigned long write_around_pages;
-+	pgoff_t offset = page->index;
-+	int i = 0;
-+	int ret = -1;
-+
-+	BUG_ON(!inode);
-+
-+	/*
-+	 * piggy back 8-16ms worth of data
-+	 */
-+	write_around_pages = bdi->avg_write_bandwidth + MIN_WRITEBACK_PAGES;
-+	write_around_pages = rounddown_pow_of_two(write_around_pages) >> 6;
-+
-+	spin_lock_bh(&bdi->wb_lock);
-+	list_for_each_entry_reverse(work, &bdi->work_list, list) {
-+		/*
-+		 * vmscan will slow down page reclaim when there are more than
-+		 * LOTS_OF_WRITEBACK_WORKS queued. Limit search depth to two
-+		 * times larger.
-+		 */
-+		if (i++ > 2 * LOTS_OF_WRITEBACK_WORKS)
-+			break;
-+		if (work->inode != inode)
-+			continue;
-+		if (extend_writeback_range(work, offset, write_around_pages)) {
-+			ret = 0;
-+			break;
-+		}
-+	}
-+	spin_unlock_bh(&bdi->wb_lock);
-+
-+	/*
-+	 * if we failed to add the page to an existing wb_writeback_work and
-+	 * there are not too many existing ones, allocate and queue a new one
-+	 */
-+	if (ret && i <= 2 * LOTS_OF_WRITEBACK_WORKS) {
-+		offset = round_down(offset, write_around_pages);
-+		work = alloc_queue_pageout_work(bdi, inode,
-+						offset, write_around_pages);
-+		if (work)
-+			ret = i;
-+	}
-+	return ret;
-+}
-+
-+static void wb_free_work(struct wb_writeback_work *work)
-+{
-+	if (work->inode)
-+		iput(work->inode);
-+	/*
-+	 * Notify the caller of completion if this is a synchronous
-+	 * work item, otherwise just free it.
-+	 */
-+	if (work->done)
-+		complete(work->done);
-+	else
-+		mempool_free(work, wb_work_mempool);
-+}
-+
-+/*
-+ * Remove works for @sb; or if (@sb == NULL), remove all works on @bdi.
-+ */
-+void bdi_remove_writeback_works(struct backing_dev_info *bdi,
-+				struct super_block *sb)
-+{
-+	struct wb_writeback_work *work, *tmp;
-+	LIST_HEAD(dispose);
-+
-+	spin_lock_bh(&bdi->wb_lock);
-+	list_for_each_entry_safe(work, tmp, &bdi->work_list, list) {
-+		if (sb && work->sb && sb != work->sb)
-+			continue;
-+		list_move(&work->list, &dispose);
-+	}
-+	spin_unlock_bh(&bdi->wb_lock);
-+
-+	list_for_each_entry(work, &dispose, list)
-+		wb_free_work(work);
-+}
-+
-+/*
-  * Remove the inode from the writeback list it is on.
-  */
- void inode_wb_list_del(struct inode *inode)
-@@ -833,6 +1077,24 @@ static unsigned long get_nr_dirty_pages(
- 		get_nr_dirty_inodes();
- }
- 
-+/*
-+ * Clean pages for page reclaim. Returns the number of pages written.
-+ */
-+static long wb_pageout(struct bdi_writeback *wb, struct wb_writeback_work *work)
-+{
-+	struct writeback_control wbc = {
-+		.sync_mode = WB_SYNC_NONE,
-+		.nr_to_write = LONG_MAX,
-+		.range_start = (loff_t)work->start << PAGE_CACHE_SHIFT,
-+		.range_end = (loff_t)(work->start + work->nr_pages - 1)
-+						<< PAGE_CACHE_SHIFT,
-+	};
-+
-+	do_writepages(work->inode->i_mapping, &wbc);
-+
-+	return LONG_MAX - wbc.nr_to_write;
-+}
-+
- static long wb_check_background_flush(struct bdi_writeback *wb)
+ 	void				*kfree_on_online;
+ };
+@@ -417,9 +419,11 @@ void x86_pmu_disable_all(void);
+ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+ 					  u64 enable_mask)
  {
- 	if (over_bground_thresh(wb->bdi)) {
-@@ -905,16 +1167,12 @@ long wb_do_writeback(struct bdi_writebac
- 
- 		trace_writeback_exec(bdi, work);
- 
--		wrote += wb_writeback(wb, work);
--
--		/*
--		 * Notify the caller of completion if this is a synchronous
--		 * work item, otherwise just free it.
--		 */
--		if (work->done)
--			complete(work->done);
-+		if (!work->inode)
-+			wrote += wb_writeback(wb, work);
- 		else
--			kfree(work);
-+			wrote += wb_pageout(wb, work);
++	u64 disable_mask = __this_cpu_read(cpu_hw_events.perf_ctr_virt_mask);
 +
-+		wb_free_work(work);
- 	}
+ 	if (hwc->extra_reg.reg)
+ 		wrmsrl(hwc->extra_reg.reg, hwc->extra_reg.config);
+-	wrmsrl(hwc->config_base, hwc->config | enable_mask);
++	wrmsrl(hwc->config_base, (hwc->config | enable_mask) & ~disable_mask);
+ }
  
- 	/*
---- linux.orig/include/trace/events/writeback.h	2012-02-29 08:41:52.021540723 +0800
-+++ linux/include/trace/events/writeback.h	2012-02-29 16:35:48.115056756 +0800
-@@ -23,7 +23,7 @@
+ void x86_pmu_enable_all(int added);
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 0397b23..67250a5 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -1,4 +1,5 @@
+ #include <linux/perf_event.h>
++#include <linux/export.h>
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+@@ -357,7 +358,9 @@ static void amd_pmu_cpu_starting(int cpu)
+ 	struct amd_nb *nb;
+ 	int i, nb_id;
  
- #define WB_WORK_REASON							\
- 		{WB_REASON_BACKGROUND,		"background"},		\
--		{WB_REASON_TRY_TO_FREE_PAGES,	"try_to_free_pages"},	\
-+		{WB_REASON_PAGEOUT,		"pageout"},		\
- 		{WB_REASON_SYNC,		"sync"},		\
- 		{WB_REASON_PERIODIC,		"periodic"},		\
- 		{WB_REASON_LAPTOP_TIMER,	"laptop_timer"},	\
-@@ -45,6 +45,8 @@ DECLARE_EVENT_CLASS(writeback_work_class
- 		__field(int, range_cyclic)
- 		__field(int, for_background)
- 		__field(int, reason)
-+		__field(unsigned long, ino)
-+		__field(unsigned long, start)
- 	),
- 	TP_fast_assign(
- 		struct device *dev = bdi->dev;
-@@ -58,9 +60,11 @@ DECLARE_EVENT_CLASS(writeback_work_class
- 		__entry->range_cyclic = work->range_cyclic;
- 		__entry->for_background	= work->for_background;
- 		__entry->reason = work->reason;
-+		__entry->ino = work->inode ? work->inode->i_ino : 0;
-+		__entry->start = work->start;
- 	),
- 	TP_printk("bdi %s: sb_dev %d:%d nr_pages=%ld sync_mode=%d "
--		  "kupdate=%d range_cyclic=%d background=%d reason=%s",
-+		  "kupdate=%d range_cyclic=%d background=%d reason=%s ino=%lu start=%lu",
- 		  __entry->name,
- 		  MAJOR(__entry->sb_dev), MINOR(__entry->sb_dev),
- 		  __entry->nr_pages,
-@@ -68,7 +72,9 @@ DECLARE_EVENT_CLASS(writeback_work_class
- 		  __entry->for_kupdate,
- 		  __entry->range_cyclic,
- 		  __entry->for_background,
--		  __print_symbolic(__entry->reason, WB_WORK_REASON)
-+		  __print_symbolic(__entry->reason, WB_WORK_REASON),
-+		  __entry->ino,
-+		  __entry->start
- 	)
- );
- #define DEFINE_WRITEBACK_WORK_EVENT(name) \
---- linux.orig/include/linux/writeback.h	2012-02-29 08:41:52.037540723 +0800
-+++ linux/include/linux/writeback.h	2012-02-29 21:31:32.095295409 +0800
-@@ -40,7 +40,7 @@ enum writeback_sync_modes {
-  */
- enum wb_reason {
- 	WB_REASON_BACKGROUND,
--	WB_REASON_TRY_TO_FREE_PAGES,
-+	WB_REASON_PAGEOUT,
- 	WB_REASON_SYNC,
- 	WB_REASON_PERIODIC,
- 	WB_REASON_LAPTOP_TIMER,
-@@ -94,6 +94,20 @@ long writeback_inodes_wb(struct bdi_writ
- 				enum wb_reason reason);
- long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
- void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
-+int queue_pageout_work(struct address_space *mapping, struct page *page);
+-	if (boot_cpu_data.x86_max_cores < 2)
++	cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
 +
-+/*
-+ * Tailored for vmscan which may submit lots of pageout works. The page reclaim
-+ * should try to slow down the pageout work submission rate when the queue size
-+ * grows to LOTS_OF_WRITEBACK_WORKS. queue_pageout_work() will accordingly limit
-+ * its search depth to (2 * LOTS_OF_WRITEBACK_WORKS).
-+ *
-+ * Note that the limited search and work pool is not a big problem: 1024 IOs
-+ * under flight are typically more than enough to saturate the disk. And the
-+ * overheads of searching in the work list didn't even show up in perf report.
-+ */
-+#define WB_WORK_MEMPOOL_SIZE		1024
-+#define LOTS_OF_WRITEBACK_WORKS		(WB_WORK_MEMPOOL_SIZE / 8)
++	if (boot_cpu_data.x86_max_cores < 2 || boot_cpu_data.x86 == 0x15)
+ 		return;
  
- /* writeback.h requires fs.h; it, too, is not included from here. */
- static inline void wait_on_inode(struct inode *inode)
---- linux.orig/fs/super.c	2012-02-29 08:41:52.045540723 +0800
-+++ linux/fs/super.c	2012-02-29 11:19:57.474606367 +0800
-@@ -389,6 +389,7 @@ void generic_shutdown_super(struct super
+ 	nb_id = amd_get_nb_id(cpu);
+@@ -587,9 +590,9 @@ static __initconst const struct x86_pmu amd_pmu_f15h = {
+ 	.put_event_constraints	= amd_put_event_constraints,
  
- 		fsnotify_unmount_inodes(&sb->s_inodes);
+ 	.cpu_prepare		= amd_pmu_cpu_prepare,
+-	.cpu_starting		= amd_pmu_cpu_starting,
+ 	.cpu_dead		= amd_pmu_cpu_dead,
+ #endif
++	.cpu_starting		= amd_pmu_cpu_starting,
+ };
  
-+		bdi_remove_writeback_works(sb->s_bdi, sb);
- 		evict_inodes(sb);
+ __init int amd_pmu_init(void)
+@@ -621,3 +624,33 @@ __init int amd_pmu_init(void)
  
- 		if (sop->put_super)
---- linux.orig/include/linux/backing-dev.h	2012-02-29 08:41:52.029540722 +0800
-+++ linux/include/linux/backing-dev.h	2012-02-29 11:19:57.474606367 +0800
-@@ -126,6 +126,8 @@ int bdi_has_dirty_io(struct backing_dev_
- void bdi_arm_supers_timer(void);
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi);
- void bdi_lock_two(struct bdi_writeback *wb1, struct bdi_writeback *wb2);
-+void bdi_remove_writeback_works(struct backing_dev_info *bdi,
-+				struct super_block *sb);
- 
- extern spinlock_t bdi_lock;
- extern struct list_head bdi_list;
---- linux.orig/mm/vmscan.c	2012-02-29 08:41:52.009540722 +0800
-+++ linux/mm/vmscan.c	2012-02-29 21:31:31.463295395 +0800
-@@ -874,12 +874,22 @@ static unsigned long shrink_page_list(st
- 			nr_dirty++;
- 
- 			/*
--			 * Only kswapd can writeback filesystem pages to
--			 * avoid risk of stack overflow but do not writeback
--			 * unless under significant pressure.
-+			 * Pages may be dirtied anywhere inside the LRU. This
-+			 * ensures they undergo a full period of LRU iteration
-+			 * before considering pageout. The intention is to
-+			 * delay writeout to the flusher thread, unless when
-+			 * run into a long segment of dirty pages.
-+			 */
-+			if (references == PAGEREF_RECLAIM_CLEAN &&
-+			    priority == DEF_PRIORITY)
-+				goto keep_locked;
+ 	return 0;
+ }
 +
-+			/*
-+			 * Try relaying the pageout I/O to the flusher threads
-+			 * for better I/O efficiency and avoid stack overflow.
- 			 */
--			if (page_is_file_cache(page) &&
--					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
-+			if (page_is_file_cache(page) && mapping &&
-+			    queue_pageout_work(mapping, page) >= 0) {
- 				/*
- 				 * Immediately reclaim when written back.
- 				 * Similar in principal to deactivate_page()
-@@ -892,8 +902,13 @@ static unsigned long shrink_page_list(st
- 				goto keep_locked;
- 			}
- 
--			if (references == PAGEREF_RECLAIM_CLEAN)
-+			/*
-+			 * Only kswapd can writeback filesystem pages to
-+			 * avoid risk of stack overflow.
-+			 */
-+			if (page_is_file_cache(page) && !current_is_kswapd())
- 				goto keep_locked;
++void amd_pmu_enable_virt(void)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
 +
- 			if (!may_enter_fs)
- 				goto keep_locked;
- 			if (!sc->may_writepage)
-@@ -2373,17 +2388,8 @@ static unsigned long do_try_to_free_page
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
- 			goto out;
++	cpuc->perf_ctr_virt_mask = 0;
++
++	/* Reload all events */
++	x86_pmu_disable_all();
++	x86_pmu_enable_all(0);
++}
++EXPORT_SYMBOL_GPL(amd_pmu_enable_virt);
++
++void amd_pmu_disable_virt(void)
++{
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++
++	/*
++	 * We only mask out the Host-only bit so that host-only counting works
++	 * when SVM is disabled. If someone sets up a guest-only counter when
++	 * SVM is disabled the Guest-only bits still gets set and the counter
++	 * will not count anything.
++	 */
++	cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
++
++	/* Reload all events */
++	x86_pmu_disable_all();
++	x86_pmu_enable_all(0);
++}
++EXPORT_SYMBOL_GPL(amd_pmu_disable_virt);
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 5fa553b..e385214 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -29,6 +29,7 @@
+ #include <linux/ftrace_event.h>
+ #include <linux/slab.h>
  
--		/*
--		 * Try to write back as many pages as we just scanned.  This
--		 * tends to cause slow streaming writers to write data to the
--		 * disk smoothly, at the dirtying rate, which is nice.   But
--		 * that's undesirable in laptop mode, where we *want* lumpy
--		 * writeout.  So in laptop mode, write out the whole world.
--		 */
- 		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
- 		if (total_scanned > writeback_threshold) {
--			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
--						WB_REASON_TRY_TO_FREE_PAGES);
- 			sc->may_writepage = 1;
- 		}
++#include <asm/perf_event.h>
+ #include <asm/tlbflush.h>
+ #include <asm/desc.h>
+ #include <asm/kvm_para.h>
+@@ -575,6 +576,8 @@ static void svm_hardware_disable(void *garbage)
+ 		wrmsrl(MSR_AMD64_TSC_RATIO, TSC_RATIO_DEFAULT);
  
+ 	cpu_svm_disable();
++
++	amd_pmu_disable_virt();
+ }
+ 
+ static int svm_hardware_enable(void *garbage)
+@@ -622,6 +625,8 @@ static int svm_hardware_enable(void *garbage)
+ 
+ 	svm_init_erratum_383();
+ 
++	amd_pmu_enable_virt();
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
+
+
