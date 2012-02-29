@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab2B2OWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:22:43 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:50605 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995Ab2B2OWl (ORCPT
+	id S1031046Ab2B2Odk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:33:40 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60541 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031010Ab2B2Odj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:22:41 -0500
-Date: Wed, 29 Feb 2012 09:05:49 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Jacek Luczak <difrost.kernel@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, "Ted Ts'o" <tytso@mit.edu>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120229140549.GC5054@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-	Al Viro <viro@zeniv.linux.org.uk>, Ted Ts'o <tytso@mit.edu>
-References: <CADDYkjRnRKPMW53F=oELhwkSt5EQB9v0JkC=inNvZQPKu94Xtw@mail.gmail.com>
- <20120229135158.GA5054@shiny>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120229135158.GA5054@shiny>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F4E34AF.0137,ss=1,re=0.000,fgs=0
+	Wed, 29 Feb 2012 09:33:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dnlplm@gmail.com designates 10.14.27.142 as permitted sender) smtp.mail=dnlplm@gmail.com; dkim=pass header.i=dnlplm@gmail.com
+From: Daniele Palmas <dnlplm@gmail.com>
+To: Matthias Urlichs <smurf@smurf.noris.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniele.palmas@telit.com, Daniele Palmas <dnlplm@gmail.com>
+Subject: [PATCH 1/1] USB: option driver: adding support for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL modems
+Date: Wed, 29 Feb 2012 15:32:05 +0100
+Message-Id: <1330525925-8395-1-git-send-email-dnlplm@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 08:51:58AM -0500, Chris Mason wrote:
-> On Wed, Feb 29, 2012 at 02:31:03PM +0100, Jacek Luczak wrote:
-> > Ext4 results:
-> > | Type     | 2.6.39.4-3   | 3.2.7
-> > | Dir cnt  | 17m 40sec  | 11m 20sec
-> > | File cnt |  17m 36sec | 11m 22sec
-> > | Copy    | 1h 28m        | 1h 27m
-> > | Remove| 3m 43sec
-> 
-> Are the btrfs numbers missing? ;)
+Adding PID for Telit CC864-SINGLE, CC864-DUAL and DE910-DUAL
+modems
 
-[ answered in a different reply, btrfs is faster in everything except
-delete ]
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+---
+ drivers/usb/serial/option.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-The btrfs readdir uses an index that is much more likely to be
-sequential on disk than ext.  This makes the readdir more sequential and
-it makes the actual file IO more sequential because we're reading things
-in the order they were created instead of (random) htree index order.
-
-> 
-> In order for btrfs to be faster for cp -a, the files probably didn't
-> change much since creation.  Btrfs maintains extra directory indexes
-> that help in sequential backup scans, but this usually means slower
-> delete performance.
-> 
-> But, how exactly did you benchmark it?  If you compare a fresh
-> mkfs.btrfs where you just copied all the data over with an ext4 FS that
-> has been on the disk for a long time, it isn't quite fair to ext4.
-> 
-
-But, the consistent benchmarking part is really important.  We shouldn't
-put an aged ext4 up against a fresh mkfs.btrfs.  Did you do ext4
-comparisons on a fresh copy?
-
--chris
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index b54afce..3eeb477 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -307,6 +307,9 @@ static void option_instat_callback(struct urb *urb);
+ #define TELIT_VENDOR_ID				0x1bc7
+ #define TELIT_PRODUCT_UC864E			0x1003
+ #define TELIT_PRODUCT_UC864G			0x1004
++#define TELIT_PRODUCT_CC864_DUAL		0x1005
++#define TELIT_PRODUCT_CC864_SINGLE		0x1006
++#define TELIT_PRODUCT_DE910_DUAL		0x1010
+ 
+ /* ZTE PRODUCTS */
+ #define ZTE_VENDOR_ID				0x19d2
+@@ -768,6 +771,9 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
+-- 
+1.7.5.4
 
