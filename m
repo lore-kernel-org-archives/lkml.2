@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031103Ab2B2RIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:08:18 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:4838
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030302Ab2B2RIQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:08:16 -0500
-X-SpamScore: -20
-X-BigFish: PS-20(zz9371I1be0I168aJ542M1432N1a09J98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:157.55.61.13;KIP:(null);UIP:(null);IPV:NLI;H:CH1PRD0802HT004.namprd08.prod.outlook.com;RD:none;EFVD:NLI
-From: Chris Kelly <ckelly@ozmodevices.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: build failure after merge of the final tree
- (staging tree related)
-Thread-Topic: linux-next: build failure after merge of the final tree
- (staging tree related)
-Thread-Index: AQHM9R9H2So6mvM4AUKIL+SJlIfCzJZRP+YAgAI76MCAAAgcgIAAmlvQ
-Date: Wed, 29 Feb 2012 17:08:02 +0000
-Message-ID: <57C28D85C66F5C49B9E212CBFAFDAC1F23013A86@CH1PRD0802MB115.namprd08.prod.outlook.com>
-References: <20120227181303.9aa93b8a8ed02428e9310c5e@canb.auug.org.au>
-	<20120227211630.GA18418@kroah.com>
-	<57C28D85C66F5C49B9E212CBFAFDAC1F23010F80@CH1PRD0802MB120.namprd08.prod.outlook.com>
- <20120229185227.7f14b1863c7a5d16220bac3f@canb.auug.org.au>
-In-Reply-To: <20120229185227.7f14b1863c7a5d16220bac3f@canb.auug.org.au>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.42.110.9]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1031209Ab2B2RI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:08:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030302Ab2B2RIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 12:08:24 -0500
+Message-ID: <4F4E5B70.6080400@redhat.com>
+Date: Wed, 29 Feb 2012 19:08:00 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-OriginatorOrg: ozmodevices.com
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH v2] perf/x86: Fix HO/GO counting with SVM disabled
+References: <1330444544-15665-1-git-send-email-joerg.roedel@amd.com> <1330523852-19566-1-git-send-email-joerg.roedel@amd.com> <4F4E5999.6080600@redhat.com> <20120229170536.GE10684@amd.com>
+In-Reply-To: <20120229170536.GE10684@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-Many thanks for your reply. This is exactly what I needed. I have submitted a patch to fix the problem and it builds OK with the compiler you suggested below.
-
-Kind regards
-Chris Kelly
-
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: 29 February 2012 7:52 AM
-To: Chris Kelly
-Cc: Greg KH; linux-next@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (staging tree related)
-
-Hi Chris,
-
-On Wed, 29 Feb 2012 07:35:35 +0000 Chris Kelly <ckelly@ozmodevices.com> wrote:
+On 02/29/2012 07:05 PM, Joerg Roedel wrote:
+> On Wed, Feb 29, 2012 at 07:00:09PM +0200, Avi Kivity wrote:
+> > On 02/29/2012 03:57 PM, Joerg Roedel wrote:
+> > > It turned out that a performance counter on AMD does not
+> > > count at all when the GO or HO bit is set in the control
+> > > register and SVM is disabled in EFER.
+> > >
+> > > This patch works around this issue by masking out the HO bit
+> > > in the performance counter control register when SVM is not
+> > > enabled.
+> > >
+> > > The GO bit is not touched because it is only set when the
+> > > user wants to count in guest-mode only. So when SVM is
+> > > disabled the counter should not run at all and the
+> > > not-counting is the intended behaviour.
+> > >
+> > > diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> > > index 0397b23..67250a5 100644
+> > > --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> > > +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> > > @@ -1,4 +1,5 @@
+> > >  #include <linux/perf_event.h>
+> > > +#include <linux/export.h>
+> > >  #include <linux/types.h>
+> > >  #include <linux/init.h>
+> > >  #include <linux/slab.h>
+> > > @@ -357,7 +358,9 @@ static void amd_pmu_cpu_starting(int cpu)
+> > >  	struct amd_nb *nb;
+> > >  	int i, nb_id;
+> > >  
+> > > -	if (boot_cpu_data.x86_max_cores < 2)
+> > > +	cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
+> > > +
+> > > +	if (boot_cpu_data.x86_max_cores < 2 || boot_cpu_data.x86 == 0x15)
+> > >  		return;
+> > 
+> > Why this (boot_cpu_data.x86 == 0x15) change?
 >
-> Hi Greg,
-> 
-> I believe I understand the cause of the problem and would like to 
-> submit a patch to fix it. However, I am unclear on what the starting 
-> point is given that the final patch was reverted from linux-next. Do I 
-> assume that patch will be reapplied before the applying the new patch 
-> or should I provide another patch to reapply the reverted patch? Is it 
-> acceptable to submit patches generated against the head of linux-next?
+> This is because this function did not run on Fam15h before but now it
+> has to so that cpuc->perf_ctr_virt_mask is initialized. The other stuff
+> done in this function is setup for northbridge counter. These are not
+> yet implemented for Fam15h CPUs so this setup must not run on those
+> CPUs. Therefore the check was added.
+> Once northbridge counters are implemented for Fam15h this check can go
+> away again.
+>
 
-Your patches are all still in Greg's tree which I merge into linux-next every day.  I have then been reverting that last patch each day.  Your patch should be against Greg's tree (or your last patch) and then when the fix is in Greg's tree, I will get it in linux-next and stop reverting the other patch.
+Thanks.  Ingo, this had better go through tip.git since most of the
+changes are perf related.
 
-> Before submitting the patch, I would like to test that the patch 
-> really does fix the issue found by Stephen. Since it doesn't occur 
-> when building for x32 or x64 then I need to setup a PowerPC 
-> cross-compile tool chain. Do you have any suggestions as to where I 
-> can pull a prebuilt tool chain or do I need to build directly from the GNU sources.
-
-http://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.0/x86_64-gcc-4.6.0-nolibc_powerpc64-linux.tar.xz
-
-That is am x86_64 hosted powerpc64 compiler suitable for building the kernel.
-
---
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+error compiling committee.c: too many arguments to function
 
