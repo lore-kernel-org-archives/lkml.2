@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965426Ab2B2Rlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:41:40 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45476 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab2B2Rlh (ORCPT
+	id S1756928Ab2B2RmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:42:07 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7411 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab2B2RmE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:41:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mcgrathr@google.com designates 10.50.168.99 as permitted sender) smtp.mail=mcgrathr@google.com; dkim=pass header.i=mcgrathr@google.com
+	Wed, 29 Feb 2012 12:42:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 29 Feb 2012 09:41:46 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Feb 2012 09:41:44 -0800
+Subject: RE: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT, define
+ hogs as that state
+Thread-Topic: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT,
+ define hogs as that state
+Thread-Index: Acz3AOCp5y5xKkqgSxOjNxZWh1Gf3wAB+cag
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF209D@HQMAIL01.nvidia.com>
+References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
+ <CACRpkdaaYF8UqweNm6sQ3dke9J76J2oY62BPBSisPo9myf7W4g@mail.gmail.com>
+In-Reply-To: <CACRpkdaaYF8UqweNm6sQ3dke9J76J2oY62BPBSisPo9myf7W4g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20120229170933.GA6149@redhat.com>
-References: <1330140111-17201-1-git-send-email-wad@chromium.org>
- <1330140111-17201-10-git-send-email-wad@chromium.org> <20120227175407.GD10608@redhat.com>
- <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com>
- <20120228164335.GC3664@redhat.com> <CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com>
- <CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
- <20120229161437.GA3078@redhat.com> <CABqD9hZLi416irXMMPmysYohrOn1gQjhjDyKTggU80Kd7ywvcA@mail.gmail.com>
- <20120229170933.GA6149@redhat.com>
-From: Roland McGrath <mcgrathr@google.com>
-Date: Wed, 29 Feb 2012 09:41:13 -0800
-Message-ID: <CAB=4xhq1CPz74LchQ32oyhR1vUKjhMiTXENYbgeh=BoaYNP9JQ@mail.gmail.com>
-Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        Denys Vlasenko <dvlasenk@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think TIF_NOTIFY_RESUME is apropos here.  That only triggers on
-returning to user mode, i.e. after syscall exit.  But regardless of the
-exact implementation details, I don't think it will be prohibitive to add
-some means by which the fast-path can back off before actual syscall entry
-and go to the slow path for ptrace reporting.
+Linus Walleij wrote at Wednesday, February 29, 2012 9:41 AM:
+> Aha now I see the problem here...
+> 
+> On Tue, Feb 28, 2012 at 12:55 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> > This provides a single centralized name for the default state.
+> (...)
+> > -/* Hog a single map entry and add to the hoglist */
+> > -static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
+> (...)
+> > -static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
+> (...)
+> > -       pinctrl_hog_maps(pctldev);
+> > +       pctldev->p = pinctrl_get(pctldev->dev, PINCTRL_STATE_DEFAULT);
+> > +       if (!IS_ERR(pctldev->p))
+> > +               pinctrl_enable(pctldev->p);
+> 
+> So what happens here is that my hogs will try to activate three different
+> functions in the same struct pinctrl *p.
+> 
+> This fails the sanity check in pinmux.c:
+> 
+> 	/*
+> 	 * If the function selector is already set, it needs to be identical,
+> 	 * we support several groups with one function but not several
+> 	 * functions with one or several groups in the same pinmux.
+> 	 */
+> 	if (p->func_selector != UINT_MAX &&
+> 	    p->func_selector != func_selector) {
+> 		dev_err(pctldev->dev,
+> 			"dual function defines in the map for device %s\n",
+> 		       devname);
+> 		return -EINVAL;
+> 	}
+> 	p->func_selector = func_selector;
 
-Since there is no strong reason to think it can't be reorganized that way
-later, I don't see any good rationale for constraining the seccomp-filter
-feature definition based on a plan to optimize the implementation in the
-future.
+Oh right, I'd forgotten about that check at this stage in the patch
+series.
 
+Later in the series, this restriction is removed; each setting in a state
+is completely independent, and could easily program a different function
+onto each group, or the same function. At this stage in the series, a
+struct pinctrl can't represent everything that a set of mapping table
+entries can, but later struct pinctrl is fully capable.
 
-Thanks,
-Roland
+I guess the solution here is to just make this patch introduce the
+PINCTRL_STATE_DEFAULT define, but defer most usage of it until later
+in the series when this restriction is removed.
+
+Note that if you apply all my patches together, you should find that
+U300 is unbroken, so you can at least test everything. Actually
+committing that probably isn't a good idea since it'll break git bisect
+for a little while though.
+
+-- 
+nvpublic
+
