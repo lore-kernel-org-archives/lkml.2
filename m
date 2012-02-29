@@ -1,156 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab2B2Gkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 01:40:41 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:30471
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754426Ab2B2Gkk (ORCPT
+	id S965394Ab2B2Gkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 01:40:46 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51385 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab2B2Gkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 01:40:40 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 29 Feb 2012 14:46:34 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>, <B29396@freescale.com>,
-        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
-        <thomas.abraham@linaro.org>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 4/6] pinctrl: API changes to support multiple states
- per device
-Message-ID: <20120229064633.GA14703@shlinux2.ap.freescale.net>
-References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
- <1330460852-23486-5-git-send-email-swarren@nvidia.com>
+	Wed, 29 Feb 2012 01:40:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yong.zhang0@gmail.com designates 10.236.192.230 as permitted sender) smtp.mail=yong.zhang0@gmail.com; dkim=pass header.i=yong.zhang0@gmail.com
+Date: Wed, 29 Feb 2012 14:36:35 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Venki Pallipadi <venki@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+Message-ID: <20120229063635.GB13386@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+ <1329989454.24994.57.camel@twins>
+ <CABeCy1a0U8Hk3Yfp54M-U80t2fbPrFQw=GnNQ_V082e9VxJQow@mail.gmail.com>
+ <20120224054150.GA17543@zhy>
+ <20120226013253.GN2393@linux.vnet.ibm.com>
+ <20120227090646.GA1112@zhy>
+ <20120227170527.GD2463@linux.vnet.ibm.com>
+ <20120228071255.GD1112@zhy>
+ <20120228130548.GA2465@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1330460852-23486-5-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20120228130548.GA2465@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 01:27:30PM -0700, Stephen Warren wrote:
-> The API model is changed from:
+On Tue, Feb 28, 2012 at 05:05:52AM -0800, Paul E. McKenney wrote:
+> On Tue, Feb 28, 2012 at 03:12:55PM +0800, Yong Zhang wrote:
+> > On Mon, Feb 27, 2012 at 09:05:27AM -0800, Paul E. McKenney wrote:
+> > > On Mon, Feb 27, 2012 at 05:06:46PM +0800, Yong Zhang wrote:
+> > > > On Sat, Feb 25, 2012 at 05:32:53PM -0800, Paul E. McKenney wrote:
+> > > > > On Fri, Feb 24, 2012 at 01:41:50PM +0800, Yong Zhang wrote:
+> > > > > > On Thu, Feb 23, 2012 at 11:34:11AM -0800, Venki Pallipadi wrote:
+> > > > > > > On Thu, Feb 23, 2012 at 1:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > > > > > > Why not scheduler_ipi()?
+> > > > > > > 
+> > > > > > > Was trying to avoid irq_enter/exit. As the work here is done in idle
+> > > > > > > thread context, I though we could avoid enter/exit. 
+> > > > > > 
+> > > > > > It seems we could not.
+> > > > > > At least RCU need it, see commit c5d753a55, otherwise we will get
+> > > > > > warning like 'RCU used illegally from extended quiescent state!'
+> > > > > 
+> > > > > If the use is tracing, then Steven Rostedt's patchset plus use of his
+> > > > > _rcuidle() tracing variants handles this:
+> > > > > 
+> > > > > 	https://lkml.org/lkml/2012/2/7/231
+> > > > > 
+> > > > > If this is instead algorithmic use of RCU, a set of patches I have queued
+> > > > > up for 3.4 will be required.
+> > > > 
+> > > > scheduler_ipi() doing more than tracing. Will look at your patches :)
+> > > 
+> > > Ah!  The key question is whether or not the code in question is called
+> > > both from idle and from non-idle.
+> > 
+> > In fact before this patch from Venki, the only call site of scheduler_ipi()
+> > is resched irq handler. Then Venki introduce __scheduler_ipi()(which avoid
+> > irq_enter()/irq_exit()) into cpu_idle(). So the answer is yes.
 > 
-> p = pinctrl_get(dev, "state1");
-> pinctrl_enable(p);
-> ...
-> pinctrl_disable(p);
-> pinctrl_put(p);
-> p = pinctrl_get(dev, "state2");
-> pinctrl_enable(p);
-> ...
-> pinctrl_disable(p);
-> pinctrl_put(p);
+> Ah, that explains why I didn't see it in my testing.  ;-)
 > 
-> to this:
+> > But when I was testing this patch, I didn't see explicit warning on
+> > illegal rcu usage. The reason maybe 1) there are no much rcu dereference
+> > in scheduler_ipi(), but we indeed do tracing in it; 2) rq->lock provide
+> > some kind of protection.
+> > Maybe I'm overstraining, but it is potential danger.
 > 
-> p = pinctrl_get(dev);
-> s1 = pinctrl_lookup_state(p, "state1");
-> s2 = pinctrl_lookup_state(p, "state2");
-> pinctrl_select_state(p, s1);
-> ...
-> pinctrl_select_state(p, s2);
-> ...
-> pinctrl_put(p);
-> 
-> This allows devices to directly transition between states without
-> disabling the pin controller programming and put()/get()ing the
-> configuration data each time. This model will also better suit pinconf
-> programming, which doesn't have a concept of "disable".
-> 
-> The special-case hogging feature of pin controllers is re-written to use
-> the regular APIs instead of special-case code. Hence, the pinmux-hogs
-> debugfs file is removed; see the top-level pinctrl-handles files for
-> equivalent data.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v2: Make use of PINCTRL_STATE_DEFAULT, split out some documentation
-> cleanup into an earlier patch. Various minor fixes. Fixes due to
-> rebasing on updated earlier patches. Remove usecount field from struct
-> pinctrl; allow only one concurrent pinctrl_get() per device.
-> 
-Glad to hear this.
+> Did you have CONFIG_PROVE_RCU=y when testing?
 
-The whole patch looks pretty good to me.
-A few trivial comments, else
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+Yeah.
 
-> +static struct pinctrl *find_pinctrl(struct device *dev)
-> +{
-> +	struct pinctrl *p;
-> +
-> +	list_for_each_entry(p, &pinctrldev_list, node)
-s/pinctrldev_list/pinctrl_list ?
+> zgrep PROVE /proc/config.gz 
+CONFIG_PROVE_LOCKING=y
+CONFIG_PROVE_RCU=y
+CONFIG_PROVE_RCU_REPEATEDLY=y
 
-> -static void pinctrl_disable_locked(struct pinctrl *p)
-> +static int pinctrl_select_state_locked(struct pinctrl *p,
-> +				       struct pinctrl_state *state)
->  {
-> -	struct pinctrl_setting *setting;
-> +	struct pinctrl_setting *setting, *setting2;
-> +	int ret;
->  
-> -	if (p == NULL)
-> -		return;
-> +	if (p->state == state)
-> +		return 0;
->  
-> -	if (--p->usecount == 0) {
-> -		list_for_each_entry(setting, &p->settings, node)
-> -			pinmux_disable_setting(setting);
-> +	if (p->state) {
-> +		/*
-> +		 * The set of groups with a mux configuration in the old state
-> +		 * may not be identical to the set of groups with a mux setting
-> +		 * in the new state. While this might be unusual, it's entirely
-> +		 * possible for the "user"-supplied mapping table to be written
-> +		 * that way. For each group that was configured in the old state
-> +		 * but not in the new state, this code puts that group into a
-> +		 * safe/disabled state.
-It means the old state function of some groups may not have been disabled before
-enabling the new function mode.
-May it be a little error-prone?
-Maybe we can not depend on user to disable a function before enable another for
-a group when doing pinmux_enable_setting considering they may be different
-registers.
+> 
+> > But anyway, it's not an issue anymore since Venki removed __scheduler_ipi()
+> > in his latest version.
+> 
+> OK.
+> 
+> > > This will be easiest if the code is
+> > > called only from idle, in which case you should only need this one:
+> > > 
+> > > 	https://lkml.org/lkml/2012/2/3/498
+> > 
+> > Hmm... Yeah, RCU_NONIDLE() could survive IMHO :)
+> 
+> Seems like it might be needed sooner rather than later...
 
-> +		 */
-> +		list_for_each_entry(setting, &p->state->settings, node) {
-> +			bool found = false;
-> +			list_for_each_entry(setting2, &state->settings, node) {
-> +				if (setting2->group_selector ==
-> +						setting->group_selector) {
-> +					found = true;
-> +					break;
-> +				}
-> +			}
-> +			if (!found)
-> +				pinmux_disable_setting(setting);
-> +		}
-> +	}
-> +
-> +	p->state = state;
-> +
-> +	/* Apply all the settings for the new state */
-> +	list_for_each_entry(setting, &state->settings, node) {
-> +		ret = pinmux_enable_setting(setting);
-> +		if (ret < 0) {
-> +			/* FIXME: Difficult to return to prev state */
-> +			return ret;
-> +		}
->  	}
-> +
-> +	return 0;
->  }
->  
->  /**
+;-)
 
-Regards
-Dong Aisheng
-
+Thanks,
+Yong
