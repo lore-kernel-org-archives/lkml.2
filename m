@@ -1,151 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030980Ab2B2OHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:07:49 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46119 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030191Ab2B2OHr convert rfc822-to-8bit (ORCPT
+	id S1030986Ab2B2OJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:09:42 -0500
+Received: from 7.mo5.mail-out.ovh.net ([178.32.124.100]:51323 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030191Ab2B2OJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:07:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-Date: Wed, 29 Feb 2012 15:07:45 +0100
-Message-ID: <CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: linux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        chris.mason@oracle.com, lczerner@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Feb 2012 09:09:41 -0500
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-kernel@vger.kernel.org
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: [For-3.2 PATCH 1/1] avr32: select generic atomic64_t support
+Date: Wed, 29 Feb 2012 15:00:22 +0100
+Message-Id: <1330524023-22266-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Ovh-Tracer-Id: 3576421055791672088
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegtddrtdefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpefhvffufffkofestddtredtredttd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrudefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpefhvffufffkofestddtredtredttd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
-> Hi Chris,
->
-> the last one was borked :) Please check this one.
->
-> -jacek
->
-> 2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
->> Hi All,
->>
->> /*Sorry for sending incomplete email, hit wrong button :) I guess I
->> can't use Gmail */
->>
->> Long story short: We've found that operations on a directory structure
->> holding many dirs takes ages on ext4.
->>
->> The Question: Why there's that huge difference in ext4 and btrfs? See
->> below test results for real values.
->>
->> Background: I had to backup a Jenkins directory holding workspace for
->> few projects which were co from svn (implies lot of extra .svn dirs).
->> The copy takes lot of time (at least more than I've expected) and
->> process was mostly in D (disk sleep). I've dig more and done some
->> extra test to see if this is not a regression on block/fs site. To
->> isolate the issue I've also performed same tests on btrfs.
->>
->> Test environment configuration:
->> 1) HW: HP ProLiant BL460 G6, 48 GB of memory, 2x 6 core Intel X5670 HT
->> enabled, Smart Array P410i, RAID 1 on top of 2x 10K RPM SAS HDDs.
->> 2) Kernels: All tests were done on following kernels:
->>  - 2.6.39.4-3 -- the build ID (3) is used here for internal tacking of
->> config changes mostly. In -3 we've introduced ,,fix readahead pipeline
->> break caused by block plug'' patch. Otherwise it's pure 2.6.39.4.
->>  - 3.2.7 -- latest kernel at the time of testing (3.2.8 has been
->> release recently).
->> 3) A subject of tests, directory holding:
->>  - 54GB of data (measured on ext4)
->>  - 1978149 files
->>  - 844008 directories
->> 4) Mount options:
->>  - ext4 -- errors=remount-ro,noatime,
->> data=writeback
->>  - btrfs -- noatime,nodatacow and for later investigation on
->> copression effect: noatime,nodatacow,compress=lzo
->>
->> In all tests I've been measuring time of execution. Following tests
->> were performed:
->> - find . -type d
->> - find . -type f
->> - cp -a
->> - rm -rf
->>
->> Ext4 results:
->> | Type     | 2.6.39.4-3   | 3.2.7
->> | Dir cnt  | 17m 40sec  | 11m 20sec
->> | File cnt |  17m 36sec | 11m 22sec
->> | Copy    | 1h 28m        | 1h 27m
->> | Remove| 3m 43sec    | 3m 38sec
->>
->> Btrfs results (without lzo comression):
->> | Type     | 2.6.39.4-3   | 3.2.7
->> | Dir cnt  | 2m 22sec  | 2m 21sec
->> | File cnt |  2m 26sec | 2m 23sec
->> | Copy    | 36m 22sec | 39m 35sec
->> | Remove| 7m 51sec   | 10m 43sec
->>
->> From above one can see that copy takes close to 1h less on btrfs. I've
->> done strace counting times of calls, results are as follows (from
->> 3.2.7):
->> 1) Ext4 (only to elements):
->> % time     seconds  usecs/call     calls    errors syscall
->> ------ ----------- ----------- --------- --------- ----------------
->>  57.01   13.257850           1  15082163           read
->>  23.40    5.440353           3   1687702           getdents
->>  6.15    1.430559           0   3672418           lstat
->>  3.80    0.883767           0  13106961           write
->>  2.32    0.539959           0   4794099           open
->>  1.69    0.393589           0    843695           mkdir
->>  1.28    0.296700           0   5637802           setxattr
->>  0.80    0.186539           0   7325195           stat
->>
->> 2) Btrfs:
->> % time     seconds  usecs/call     calls    errors syscall
->> ------ ----------- ----------- --------- --------- ----------------
->> 53.38    9.486210           1  15179751           read
->> 11.38    2.021662           1   1688328           getdents
->>  10.64    1.890234           0   4800317           open
->>  6.83    1.213723           0  13201590           write
->>  4.85    0.862731           0   5644314           setxattr
->>  3.50    0.621194           1    844008           mkdir
->>  2.75    0.489059           0   3675992         1 lstat
->>  1.71    0.303544           0   5644314           llistxattr
->>  1.50    0.265943           0   1978149           utimes
->>  1.02    0.180585           0   5644314    844008 getxattr
->>
->> On btrfs getdents takes much less time which prove the bottleneck in
->> copy time on ext4 is this syscall. In 2.6.39.4 it shows even less time
->> for getdents:
->> % time     seconds  usecs/call     calls    errors syscall
->> ------ ----------- ----------- --------- --------- ----------------
->>  50.77   10.978816           1  15033132           read
->>  14.46    3.125996           1   4733589           open
->>  7.15    1.546311           0   5566988           setxattr
->>  5.89    1.273845           0   3626505           lstat
->>  5.81    1.255858           1   1667050           getdents
->>  5.66    1.224403           0  13083022           write
->>  3.40    0.735114           1    833371           mkdir
->>  1.96    0.424881           0   5566988           llistxattr
->>
->>
->> Why so huge difference in the getdents timings?
->>
->> -Jacek
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
 
-I will try to answer the question from the broken email I've sent.
+commit 31e0017e6f6fb5cfdfaf932c1f98c9bef8d57688 upstream.
 
-@Lukas, it was always a fresh FS on top of LVM logical volume. I've
-been cleaning cache/remounting to sync all data before (re)doing
-tests.
+Enable use of the generic atomic64 implementation on AVR32 platforms.
+Without this the kernel fails to build as the architecture does not
+provide its version.
 
--Jacek
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: stable@vger.kernel.org
+---
+ arch/avr32/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-BTW: Sorry for the email mixture. I just can't get this gmail thing to
-work (why forcing top posting:/). Please use this thread.
+diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+index 197e96f..3dea7231 100644
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -8,6 +8,7 @@ config AVR32
+ 	select HAVE_KPROBES
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
++	select GENERIC_ATOMIC64
+ 	select HARDIRQS_SW_RESEND
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+-- 
+1.7.7
+
