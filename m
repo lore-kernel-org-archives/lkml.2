@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab2B2Rng (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:43:36 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:48935 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab2B2Rne (ORCPT
+	id S1757085Ab2B2RpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:45:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37129 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab2B2RpB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:43:34 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jan Kara <jack@suse.cz>
-Cc: Alex Elder <elder@dreamhost.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1329399979-3647-1-git-send-email-jack@suse.cz>
-	<1329399979-3647-10-git-send-email-jack@suse.cz>
-	<1329419084.3121.39.camel@doink> <20120220110006.GA6799@quack.suse.cz>
-Date: Wed, 29 Feb 2012 09:46:40 -0800
-In-Reply-To: <20120220110006.GA6799@quack.suse.cz> (Jan Kara's message of
-	"Mon, 20 Feb 2012 12:00:06 +0100")
-Message-ID: <m1vcmp8rcv.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+EnJUKUQj3XGPIHz0zd++7Kgr/jrTAXaU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jan Kara <jack@suse.cz>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH 09/11] sysfs: Push file_update_time() into bin_page_mkwrite()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Wed, 29 Feb 2012 12:45:01 -0500
+Message-ID: <1330537489.11248.164.camel@twins>
+Subject: Re: [PATCH v2] perf/x86: Fix HO/GO counting with SVM disabled
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
+        Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Date: Wed, 29 Feb 2012 18:44:49 +0100
+In-Reply-To: <1330523852-19566-1-git-send-email-joerg.roedel@amd.com>
+References: <1330444544-15665-1-git-send-email-joerg.roedel@amd.com>
+	 <1330523852-19566-1-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
+On Wed, 2012-02-29 at 14:57 +0100, Joerg Roedel wrote:
 
-> On Thu 16-02-12 13:04:44, Alex Elder wrote:
->> On Thu, 2012-02-16 at 14:46 +0100, Jan Kara wrote:
->> > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> > Signed-off-by: Jan Kara <jack@suse.cz>
->> > ---
->> >  fs/sysfs/bin.c |    2 ++
->> >  1 files changed, 2 insertions(+), 0 deletions(-)
->> > 
->> > diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
->> > index a475983..6ceb16f 100644
->> > --- a/fs/sysfs/bin.c
->> > +++ b/fs/sysfs/bin.c
->> > @@ -225,6 +225,8 @@ static int bin_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->> >  	if (!sysfs_get_active(attr_sd))
->> >  		return VM_FAULT_SIGBUS;
->> >  
->> > +	file_update_time(file);
->> > +
->> >  	ret = 0;
->> >  	if (bb->vm_ops->page_mkwrite)
->> >  		ret = bb->vm_ops->page_mkwrite(vma, vmf);
->> 
->> If the filesystem's page_mkwrite() function is responsible
->> for updating the time, can't the call to file_update_time()
->> here be conditional?
->> 
->> I.e:
->> 	ret = 0;
->> 	if (bb->vm_ops->page_mkwrite)
->>  		ret = bb->vm_ops->page_mkwrite(vma, vmf);
->> 	else
->> 		file_update_time(file);
->   Hmm, I didn't look previously where do we get bb->vm_ops. It seems they
-> are inherited from vma->vm_ops so what you suggest should be safe without
-> any further changes. So I can do that if someone who understands the sysfs
-> code likes it more.
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 8944062..2c581b9 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -148,6 +148,8 @@ struct cpu_hw_events {
+>          * AMD specific bits
+>          */
+>         struct amd_nb           *amd_nb;
+> +       /* Inverted mask of bits to clear in the perf_ctr ctrl registers */
+> +       u64                     perf_ctr_virt_mask;
+>  
+>         void                            *kfree_on_online;
+>  };
+> @@ -417,9 +419,11 @@ void x86_pmu_disable_all(void);
+>  static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+>                                           u64 enable_mask)
+>  {
+> +       u64 disable_mask = __this_cpu_read(cpu_hw_events.perf_ctr_virt_mask);
+> +
+>         if (hwc->extra_reg.reg)
+>                 wrmsrl(hwc->extra_reg.reg, hwc->extra_reg.config);
+> -       wrmsrl(hwc->config_base, hwc->config | enable_mask);
+> +       wrmsrl(hwc->config_base, (hwc->config | enable_mask) & ~disable_mask);
+>  }
 
-I do.  Essentially sysfs is being a stackable filesystem here, because
-sysfs needs the ability to remove a file mapping.
+Its starting to look like we should kill this helper, the extra_reg muck
+is Intel only and the disable_mask is AMD.
 
-In practice we could probably get away without a single
-file_update_time(file) here because there are mmio mappings.  Normally
-for pci resources, but we might as well use good form since we can.
 
-Eric
+
+Queued it for now though.. 
