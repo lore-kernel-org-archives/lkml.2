@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab2B2KjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:39:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51501 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab2B2KjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:39:23 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Improve performance of later WM1811 revisions
-Date: Wed, 29 Feb 2012 10:39:18 +0000
-Message-Id: <1330511958-5796-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1757635Ab2B2Kjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:39:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754006Ab2B2Kjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:39:42 -0500
+Message-ID: <4F4E0061.1050508@redhat.com>
+Date: Wed, 29 Feb 2012 12:39:29 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com> <4F4DF913.5030809@redhat.com> <4F4DFB37.8060208@cn.fujitsu.com>
+In-Reply-To: <4F4DFB37.8060208@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply tunings from earlier silicon revisions to revisions up to D and also
-tweak an additional setting for improved DC servo performance.
+On 02/29/2012 12:17 PM, Wen Congyang wrote:
+> >>>
+> >> Yes, crash can be so severe that it is not even detected by a kernel
+> >> itself, so not OOPS message even printed. But in most cases if kernel is
+> >> functional enough to print OOPS it is functional enough to call single
+> >> hypercall instruction.
+> > 
+> > Why not print the oops to virtio-serial?  Or even just a regular serial
+> > port?  That's what bare metal does.
+>
+> If virtio-serial's driver has bug or the guest doesn't have such device...
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+We have the same issue with the hypercall; and virtio-serial is
+available on many deployed versions.
 
-As this applies on top of things queued in regmap (the patches stuff)
-and seems fairly obvious from a framework point of view I've just gone
-ahead and applied it.
+> > 
+> >>>> Having special kdump
+> >>>> kernel that transfers dump to a host via virtio-serial channel though
+> >>>> sounds interesting. May be that's what you mean.
+> >>>
+> >>> Yes.  The "panic, starting dump" signal should be initiated by the
+> >>> panicking kernel though, in case the dump fails.
+> >>>
+> >> Then panic hypercall sounds like a reasonable solution.
+> > 
+> > It is, but I'm trying to see if we can get away with doing nothing.
+> > 
+>
+> If we have a reliable way with doing nothing, it is better. But I donot
+> find such way.
 
- drivers/mfd/wm8994-core.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+We won't have a 100% reliable way.  But I think a variant of the driver
+that doesn't use interrupts, or just using the ordinary serial driver,
+should be reliable enough.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 4b36f02..4b8b78c 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -361,6 +361,7 @@ static const __devinitdata struct reg_default wm8958_reva_patch[] = {
- 
- static const __devinitdata struct reg_default wm1811_reva_patch[] = {
- 	{ 0x102, 0x3 },
-+	{ 0x56, 0x7 },
- 	{ 0x5d, 0x7e },
- 	{ 0x5e, 0x0 },
- 	{ 0x102, 0x0 },
-@@ -524,6 +525,8 @@ static __devinit int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 		switch (wm8994->revision) {
- 		case 0:
- 		case 1:
-+		case 2:
-+		case 3:
- 			regmap_patch = wm1811_reva_patch;
- 			patch_regs = ARRAY_SIZE(wm1811_reva_patch);
- 			break;
 -- 
-1.7.9.1
+error compiling committee.c: too many arguments to function
 
