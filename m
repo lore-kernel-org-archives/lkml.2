@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab2B2IaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:30:12 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39167 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab2B2IaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:30:09 -0500
-Date: Wed, 29 Feb 2012 09:29:44 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] cpumask: fix lg_lock/br_lock.
-Message-ID: <20120229082944.GA10425@elte.hu>
-References: <87ehtf3lqh.fsf@rustcorp.com.au>
- <20120227155338.7b5110cd.akpm@linux-foundation.org>
- <20120228084359.GJ21106@elte.hu>
- <20120228132719.f375071a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228132719.f375071a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1754736Ab2B2IbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:31:07 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:58814 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2B2IbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 03:31:06 -0500
+Subject: Re: [PATCH] mac80211: improve PID rate control mechanism by
+ avoiding rate oscillation problem
+From: Johannes Berg <johannes@sipsolutions.net>
+To: YIN Wei <yinwei168@gmail.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mattias.nissler@gmx.de, stefano.brivio@polimi.it
+In-Reply-To: <CAFxU49=OASHEDc2m8BfCGD6_gHcr6SFaap+b9ZnErWhNWFG8oQ@mail.gmail.com> (sfid-20120229_031816_008358_36E52A04)
+References: <CAFxU49=OASHEDc2m8BfCGD6_gHcr6SFaap+b9ZnErWhNWFG8oQ@mail.gmail.com>
+	 (sfid-20120229_031816_008358_36E52A04)
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Feb 2012 09:31:03 +0100
+Message-ID: <1330504263.4714.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-02-29 at 12:17 +1000, YIN Wei wrote:
+> From: Wei YIN
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+You want an email address here,
 
-> On Tue, 28 Feb 2012 09:43:59 +0100
-> Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > This patch should also probably go upstream through the 
-> > locking/lockdep tree? Mind sending it us once you think it's 
-> > ready?
-> 
-> Oh goody, that means you own 
-> http://marc.info/?l=linux-kernel&m=131419353511653&w=2.
->
-> I do think the brlock code is sick, but Nick has turned into 
-> an ex-Nick and nobody works on it.
+> Improve PID rate control mechanism by solving the rate oscillation
+> problem. Current PID mechanism is based on a PID  controller which
+> tries to minimise the difference between the frame loss ratio (FLR)
+> and the target FLR. Therefore it is straight forward that it increases
+> to a higher rate when the FLR is less than the target without thinking
+> whether the higher rate can be supported. If the higher rate cannot be
+> supported, significant FLR will occur, which causes the mechanisms to
+> decrease the rate sharply. The proposed approach only updates the rate
+> when the proposed rate by the PID controller can achieve better
+> throughput than the old rate. This patch applies to kernel 3.3.0.
+> Signed-off-by: Wei YIN
 
-The main problem, highlighted by the above soft lockup report, 
-is that lglocks and brlocks go outside the regular spinlock 
-facilities and thus avoid quite a bit of generic lock debugging 
-for no good reason. Those patches should never have gone 
-upstream in their incomplete form via the VFS tree.
+and here.
 
-As part of any cleanup they should first be converted from 
-arch_spinlock_t to regular spinlock_t - I bet if that is done 
-then that not only simplifies the wrappers massively, it also 
-turns the above soft lockup report into a nice, actionable 
-lockdep splat.
+Also since you sent as HTML, it never made it to the list and can't be
+applied as a patch, care to resend?
 
-Andi's deficient patch does not address that main shortcoming of 
-brlocks/lglocks, it just addresses a symptom - while introducing 
-a handful of new symptoms of suckage.
+johannes
 
-I'll review and process resubmitted patches from Andi if he 
-wants to submit a proper, complete series - but there's a 
-quality threshold and in this case I'd rather keep 1970's 
-preprocessor code that sucks very visibly and possibly attracts 
-someone with a clue than have a sloppy patch hiding the deeper 
-design problems done by a clueless person who is also openly 
-hostile towards the concept of producing quality code.
 
-Thanks,
-
-	Ingo
