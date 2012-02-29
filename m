@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab2B2Wiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 17:38:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1081 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334Ab2B2Wit convert rfc822-to-8bit (ORCPT
+	id S1756731Ab2B2Wkg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 17:40:36 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41594 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756590Ab2B2Wke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 17:38:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 29 Feb 2012 14:38:35 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 14:38:16 -0800
-Subject: RE: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Thread-Topic: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Thread-Index: Acz2+NW8/EUB2EZiR5atvw78J2PLzQAOclDQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF21F3@HQMAIL01.nvidia.com>
-References: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178FACB954@HQMAIL01.nvidia.com>
- <20120229154229.GL12917@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20120229154229.GL12917@tbergstrom-lnx.Nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 29 Feb 2012 17:40:34 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Zhengwang Ruan <ruan.zhengwang@gmail.com>, fweisbec@gmail.com,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Trace: initialize variable to clear warning
+In-Reply-To: Your message of "Tue, 28 Feb 2012 09:16:31 EST."
+             <1330438591.25686.214.camel@gandalf.stny.rr.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
+            <1330438591.25686.214.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1330555230_2845P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 29 Feb 2012 17:40:30 -0500
+Message-ID: <48875.1330555230@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4F4EA95F.0063,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Wednesday, February 29, 2012 8:42 AM:
-> On Wed, Feb 15, 2012 at 10:27:43PM +0100, Stephen Warren wrote:
-> > Peter De Schrijver wrote at Thursday, February 09, 2012 4:48 PM:
-> > > This patchset introduces support for secondary cores on tegra30. It also
-> > > introduces some functions for the flowcontroller and adds basic support for
-> > > tegra30 powerdomains.
-> >
-> > The code looks fine to me. I do notice the following when running
-> > "shutdown -h now":
-> >
-> > [   27.762124] SMP: failed to stop secondary CPUs
+--==_Exmh_1330555230_2845P
+Content-Type: text/plain; charset=us-ascii
 
-I can't seem to reproduce this at all on next-20120229 anymore. What
-kind of repro frequency are you seeing, and does it get fixed if you
-update to that baseline?
+On Tue, 28 Feb 2012 09:16:31 EST, Steven Rostedt said:
 
-(I tried 20 times with shutdown, and 15 of them I reverted all the CPU
-and cache errata in case they affected the issue at all)
+> This is a bug in gcc that's fixed in 4.6 and beyond. I don't want to
+> remove this warning because it will hide a real bug if page2 really does
+> become uninitialized. If 4.6 gives a warning here, then I'll fix it.
 
--- 
-nvpublic
+> > -	void *page2;
+> > +	void *uninitialized_var(page2);
+
+How would you feel about this?
+
+-	void *page2;
++	void *page2; /* gcc 4.5 bug causes incorrect "uninitialized" warning */
+
+or something similar?
+
+
+--==_Exmh_1330555230_2845P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT06pXQdmEQWDXROgAQKFhw/+IQdoMTFFMpedv2M0s3nwiRMUBmsCc2cU
+yUnSAeuQOhLdAg6jVauLwvA7S/cGYbOYeRIo+BdqOwc2VcvBXWPTGSpZvlsn22eA
+m7Zc/rcX53fyljDSO/o/9INKjUYoDPTptij6ljIZmkQbAS+JpsSpOSRTvkVIM4vR
+Rc+Vw0dH6o0yQkgSMLAasjCbnNmQ2ZeoIj3QP2+y+6zvfHMoL5JDHbzbAvA6v6ar
+j9QD7PnWOTGF8acZVOnKkSlxYgAW3wJcTUKEVaImsvmOyZe8xjdEJivchs0mzP57
+Lc/UNUPys2HOHxT5WyLgOVueleyc4aanNFKxKo6pt55oPP/MC/FKH1XIq/ZriLYf
+YVLXN3E9QnMIl38gwI/Pl5z8p7RUE9/E7ieLGbyIYjH2fkaWUKYwZmitv9FF92Dr
+cVHzWr2Pj+dsC8IJV1vlzInr9uhk/6HNx0xVwdQq2CMURUlGJPQdqKk9YRdOtDUI
+zB02i4HNIH189frmoET+dMeLIq8OUKp9Qtoals1tdeJZEM6jOMILpnoS3kbILt2G
+y7+NHFwpXbwz5uoOc+lLl7psehF1oG0yCx8JaowGPdgUvawxfEFcB0RkQqLCmwdU
+Q6W/uOV7FphzZ3ngZzZkU0II93do8J9WHddNugt2Xbx1JgQoMkqlYWW4YMDTqS/l
+KKWmX/KAvWg=
+=00p4
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1330555230_2845P--
 
