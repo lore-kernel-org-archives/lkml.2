@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2B2PnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 10:43:14 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:38761 "EHLO
+	id S932517Ab2B2Pop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 10:44:45 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:38784 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752120Ab2B2PnM (ORCPT
+	by vger.kernel.org with ESMTP id S1757308Ab2B2PnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 10:43:12 -0500
+	Wed, 29 Feb 2012 10:43:14 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Jon Mason <jdmason@kudzu.us>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] neterion/s2io: fix s2io_set_mac_addr() to prevent double checks
-Date: Wed, 29 Feb 2012 16:42:55 +0100
-Message-Id: <1330530176-24952-8-git-send-email-danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/8] cris/eth_v10: use dev_set_mac_address() instead of e100_set_mac_address()
+Date: Wed, 29 Feb 2012 16:42:51 +0100
+Message-Id: <1330530176-24952-4-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
 References: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330530192;1e2f3111;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330530194;78b5cb18;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix s2io_set_mac_addr() to prevent double validation checks from
-dev_set_mac_address().
-
-Don't use s2io_set_mac_addr() in s2io_io_resume() since it makes
-no sense to copy netdev->dev_addr to itself. Use do_s2io_prog_unicast()
-instead since this is what's needed and checked here.
+Use dev_set_mac_address() instead of e100_set_mac_address() directly
+to get validation checks for free.
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/net/ethernet/neterion/s2io.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/net/cris/eth_v10.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
-index 22a8de0..cf7b3eb 100644
---- a/drivers/net/ethernet/neterion/s2io.c
-+++ b/drivers/net/ethernet/neterion/s2io.c
-@@ -5247,9 +5247,6 @@ static int s2io_set_mac_addr(struct net_device *dev, void *p)
- {
- 	struct sockaddr *addr = p;
+diff --git a/drivers/net/cris/eth_v10.c b/drivers/net/cris/eth_v10.c
+index 7cb2785..ce6f3e6 100644
+--- a/drivers/net/cris/eth_v10.c
++++ b/drivers/net/cris/eth_v10.c
+@@ -377,8 +377,7 @@ etrax_ethernet_init(void)
+ 	}
  
--	if (!is_valid_ether_addr(addr->sa_data))
--		return -EADDRNOTAVAIL;
+ 	/* set the default MAC address */
 -
- 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
+-	e100_set_mac_address(dev, &default_mac);
++	dev_set_mac_address(dev, &default_mac);
  
- 	/* store the MAC address in CAM */
-@@ -8658,7 +8655,7 @@ static void s2io_io_resume(struct pci_dev *pdev)
- 			return;
- 		}
+ 	/* Initialize speed indicator stuff. */
  
--		if (s2io_set_mac_addr(netdev, netdev->dev_addr) == FAILURE) {
-+		if (do_s2io_prog_unicast(netdev, netdev->dev_addr) == FAILURE) {
- 			s2io_card_down(sp);
- 			pr_err("Can't restore mac addr after reset.\n");
- 			return;
 -- 
 1.7.8.3
 
