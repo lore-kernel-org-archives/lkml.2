@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab2B2UdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:33:10 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:38300 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754283Ab2B2UdJ (ORCPT
+	id S1755606Ab2B2Uhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:37:47 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:47957 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755467Ab2B2Uhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:33:09 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: rVvrmwUVM1mpwJIUtu54TUdRon1zJWDzBUVhNwXuPgbZppj
- dBI4BMjEOj_L7EjtoNl.kILJz4dEL9lZNhq.SNyWVqKklsGVyLc2c9z_ul5_
- CUpX1Apx1fCUIQtqq4eQyeKG9Th9PpK1n9gAu2vkSIHTX33Q0MiC0XIW.OL0
- 6t4VXD6MTXOwwu1IVMogBVEcxRGV4X4PYmyBVAt927nea_CeQ1W7ncKW4sHH
- una_6m0dycLn3EgnXE9ymc6J.bkJUyHBsm1y87Lg.REqxz_3M6a6LNzM5IWH
- uQI9Xrn43Fq3lI8Gc5a6QlE5gq4IpNi9EN6vLT8VF3VMDyFQ2WE.lla_gZe4
- bm5zDirc8bVm36sXQeB5s5bKDhTxCTW2Ye.PVcAR7615uFz2nZ3ucLHBeQ9.
- Hf93GAN7aHVJT6ZuIj6Hqjqr.fCu_NoRKT0Qn
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 29 Feb 2012 14:33:06 -0600 (CST)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] fix move/migrate_pages() race on task struct
-In-Reply-To: <20120229123120.127e21fd.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1202291432350.6746@router.home>
-References: <20120223180740.C4EC4156@kernel> <alpine.DEB.2.00.1202231240590.9878@router.home> <4F468F09.5050200@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231334290.10914@router.home> <4F469BC7.50705@linux.vnet.ibm.com> <alpine.DEB.2.00.1202231536240.13554@router.home>
- <m1ehtkapn9.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1202240859340.2621@router.home> <4F47BF56.6010602@linux.vnet.ibm.com> <alpine.DEB.2.00.1202241053220.3726@router.home> <alpine.DEB.2.00.1202241105280.3726@router.home> <4F47C800.4090903@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1202241131400.3726@router.home> <87sjhzun47.fsf@xmission.com> <alpine.DEB.2.00.1202271238450.32410@router.home> <87d390janv.fsf@xmission.com> <alpine.DEB.2.00.1202271636230.6435@router.home> <alpine.DEB.2.00.1202281329190.25590@router.home>
- <20120229123120.127e21fd.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 29 Feb 2012 15:37:46 -0500
+Date: Wed, 29 Feb 2012 15:37:43 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Eric Andersson <eric.andersson@unixphere.com>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        christoph.mair@gmail.com, stefan.nilsson@unixphere.com,
+        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH 0/3] Replace bmp085 with bmp18x
+Message-ID: <20120229203743.GA21671@elliptictech.com>
+References: <1330545489-31169-1-git-send-email-eric.andersson@unixphere.com>
+ <201202292018.45557.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201202292018.45557.arnd@arndb.de>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012, Andrew Morton wrote:
+On 2012-02-29 20:18 +0000, Arnd Bergmann wrote:
+> On Wednesday 29 February 2012, Eric Andersson wrote:
+> > This patch-set replaces the BMP085 driver with a driver for Bosch Sensortec's new
+> > generation of pressure sensors called BMP18x. These pressure sensors can be
+> > connected on I2C but also on SPI as a variant, so the driver implements both.
+> > Register-wise they are fully compatible with the older BMP085, so the driver will
+> > support those chips as well.
+> > 
+> > The driver is based on bmp085.c by Christoph Mair.
+> 
+> Hmm,  the implementation looks fine, but I don't think we should add support
+> for new devices with a one-off interface that we know is getting replaced by
+> something generic.
 
-> What was the user-visible impact of the bug?
+Notwithstanding the value of using newer generic interfaces, from what I
+can tell, there are no new sysfs attributes added by this driver over
+the one it replaces.  If this driver is going to supersede the old one,
+it has to retain the existing interface.  Otherwise, we must keep both
+drivers in the tree to avoid regressions.
 
-THis was an oops reported by Dave Hansen after he inserted some loops in
-the code to trigger a race condition.
+> Why is this not using IIO for its user interface?
+
+Because IIO is currently in staging, and this driver is not?
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
