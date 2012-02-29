@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2B2Lsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 06:48:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58175 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2B2Lsq convert rfc822-to-8bit (ORCPT
+	id S1754497Ab2B2Lxx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 06:53:53 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:39963 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab2B2Lxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 06:48:46 -0500
-Message-ID: <1330516117.11248.138.camel@twins>
-Subject: Re: RFC [PATCH] SMP: Don't schedule tasks on inactive cpu(s)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jonas Aaberg <jonas.aberg@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 29 Feb 2012 12:48:37 +0100
-In-Reply-To: <1330513384.11248.129.camel@twins>
-References: <1330512150-20727-1-git-send-email-jonas.aberg@stericsson.com>
-	 <1330513384.11248.129.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 29 Feb 2012 06:53:51 -0500
+X-RZG-AUTH: :Kn4WYUGIbOjlVJ8mt92bsC5fdUZMkrJc8Jqs4Bkhh/Ln9RvcMyeEGiAMTRoxjWgNss9jB0c=
+Message-ID: <Z0043fo1TA7N4v.RZmta@mo-p00-ob.rzone.de>
+X-RZG-CLASS-ID: mo00
+Reply-To: <officeunited@e-mail.ua>
+From: "Maria Colgate" <frrta@www1.beka-hospitec.de>
+Subject: Attention! Attention!! Attention!!! (READ ATTACHED MAIL FOR DETAILS)
+Date: Wed, 29 Feb 2012 02:50:29 -0800
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_009A_01C2A9A6.13705106"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 12:03 +0100, Peter Zijlstra wrote:
-> On Wed, 2012-02-29 at 11:42 +0100, Jonas Aaberg wrote:
-> > This patch removes the ability to schedule tasks on cpus that are online,
-> > but not active.  The reason for this patch is that during cpu hotplug
-> > on ARM (atleast) there is a short window where cpuX (X > 0) is online, but
-> > busy-waiting on cpu0 to put it active, meanwhile cpu0 can be interrupted
-> > and try to schedule something on the cpu that is busy checking its active bit.
-> 
-> https://lkml.org/lkml/2011/12/15/255
-> 
-> that one?
-> 
-> I _think_ its correct, but it would be so good if someone else could
-> verify.
+This is a multi-part message in MIME format.
 
-Relevant patches to consider are: e761b772 and 3a101d05.
+------=_NextPart_000_009A_01C2A9A6.13705106
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Having looked at this again, I think we lost something in 3a101d05 since
-it moves cpuset_update_active_cpus() from CPU_DEAD to CPU_DOWN_PREPARE
-(and DOWN_FAILED) -- not that it matters that much. Also this patch does
-leaves me somewhat puzzled as to what cpu_active_mask is for now..
 
-The suggested patch linked above moves setting active to CPU_STARTING
-which is _before_ online. It looks like some parts of the scheduler
-don't look at online at all anymore so that opens a 'window' where we
-could select a cpu that isn't part of the sched_domain nor online
-(select_fallback_rq and cpuset_cpus_allowed_fallback).
+------=_NextPart_000_009A_01C2A9A6.13705106
+Content-Type: application/octet-stream;
+	name="Attention! Attention!! Attention!!!.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Attention! Attention!! Attention!!!.rtf"
 
-Now this isn't really a problem because of stop-machine, by the time
-anybody gets to run again both online and active are set and we should
-be good to go. The bad part is of course us relying on this silly
-stop-machine semantic.
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGYwXGZzMjAgQXR0ZW50aW9uISBBdHRlbnRpb24hISBBdHRlbnRpb24h
+ISEgIFxwYXINCiBccGFyDQpUaGUgb2ZmaWNlIG9mIHRoZSBFdXJvcGVhbiBV
+bmlvbiwgdGhlIFByZXNpZGVudCBGZWRlcmFsIFJlcHVibGljIG9mIE5pZ2Vy
+aWFuIFxwYXINCihEci4gR29vZGx1Y2sgRS4gSm9uYXRoYW4pLCB0aGUgQ0lB
+LCBGQkksIEVGQ0MsIEJyaXRpc2ggR292ZXJubWVudCwgQW1lcmljYW4gXHBh
+cg0KR292ZXJubWVudCBhbmQgVW5pdGVkIE5hdGlvbnMgT3JnYW5pemF0aW9u
+IGluIEJlbmluIFJlcHVibGljLCBHaGFuYSwgQnVya2luYSBccGFyDQpGYXNv
+LCBNYWxheXNpYSwgU291dGggQWZyaWNhLCBUb2dvLCBTZW5lZ2FsIGluIGNv
+bGxhYm9yYXRpb24gd2l0aCBVSyAoTG9uZG9uKSBccGFyDQpccGFyDQpccGFy
+DQpccGFyDQpBbnRpLUNyaW1lIFNxdWFkIHJlY2VpdmVkIGEgcmVwb3J0IG9m
+IGZ1bmQgdHJhbnNhY3Rpb24vc2NhbSBhZ2FpbnN0IHlvdSBhbmQgXHBhcg0K
+b3RoZXIgQnJpdGlzaCwgVVMgYW5kIEFzaWFuIGNpdGl6ZW5zIGluY2x1ZGlu
+ZyBvdGhlciBjb3VudHJpZXMgd2hvbSB0aGUgXHBhcg0KYWZvcmVtZW50aW9u
+ZWQgY291bnRyaWVzIHZpdGFsIG9mZmljZXMvYXV0aG9yaXRpZXMgaGF2ZSBy
+ZWNvbXBlbnNlZCB5b3UgXHBhcg0KZHVlIHRvIG1lZXRpbmcgaGVsZCB3aXRo
+IHRoZSBJbnRlcm5hdGlvbmFsIEZpbmFuY2lhbCBBZ2VuY3ksIHRoZSBJTUYs
+XHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KIFxwYXINCmZvdXIgY291bnRyaWVz
+IEdvdmVybm1lbnQgYW5kIHRoZSBXb3JsZCBIaWdoIENvbW1pc3Npb24gYWdh
+aW5zdCBmcmF1ZCBccGFyDQphbmQgb3RoZXIgaW50ZXJuYXRpb25hbCBmdW5k
+IHRyYW5zYWN0aW9uIGFjdGl2aXRpZXMgYnkgdGhlIGZvdXIgY291bnRyeSBc
+cGFyDQpDaXRpemVucyBkdXJpbmcgdGhlIHJlY2VudCBHMjAgYW5kIEFDU1Ag
+bWVldGluZy4gXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KWW91ciBu
+YW1lIHdhcyBhbW9uZyB0aG9zZSBccGFyDQphcHByb3ZlZCBsaXN0ZWQgYmVu
+ZWZpY2lhcnkgdG8gYmUgcGFpZCBieSB0aGUgSW50ZXJuYXRpb25hbCBGaW5h
+bmNpYWwgXHBhcg0KSW50ZWxsaWdlbnQgVW5pdCAoTkZJVSkgdGhyb3VnaCB0
+aGUgVW5pdGVkIE5hdGlvbnMgYWNjb3VudCBob2xkZXIgYmFuay4gXHBhcg0K
+XHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KIFxwYXINCllvdSBhcmUg
+dG8gY29udGFjdCB0aGUgVU4gYXBwb2ludGVkIG9mZmljZXIgaW1tZWRpYXRl
+bHkgZm9yIHRoZSByZWxlYXNlL3RyYW5zZmVyIFxwYXINCm9mIHlvdXIgYXBw
+cm92ZWQgY29tcGVuc2F0aW9uIGZ1bmQgdmFsdWVkICQ3NTAsMDAwLjAwIFVu
+aXRlZCBTdGF0ZXMgRG9sbGFycyBvbmx5LiBccGFyDQpccGFyDQpccGFyDQpX
+aXRoIG1hdHRlciBvZiB1cmdlbmN5LCB5b3UgYXJlIHRvIHJlY29uZmlybSB0
+byB0aGUgVU4gYXBwb2ludGVkIG9mZmljZXIgeW91ciBccGFyDQpmdWxsIGRh
+dGEgYXMgZm9sbG93czogQSkgWW91ciBGdWxsIE5hbWUsIEIpIFByZXNlbnQg
+QWRkcmVzcywgQykgSG9tZSBhbmQgTW9iaWxlIFxwYXINClRlbGVwaG9uZSBO
+dW1iZXJzLCBEKSBPY2N1cGF0aW9uLCBFKSBDb21wYW55IE5hbWUgYW5kIFBv
+c2l0aW9uLiBccGFyDQogXHBhcg0KXHBhcg0KXHBhcg0KQXMgc29vbiBhcyB5
+b3Ugc2VuZCB0aGlzIGluZm9ybWF0aW9uIHRvIHRoZSBvZmZpY2VyIGhlIHdp
+bGwgZGlyZWN0IHlvdSBhY2NvcmRpbmdseSBccGFyDQpvbiB0aGUgcmVsZWFz
+ZSBvZiB5b3VyIEZ1bmQuIFlvdSBhcmUgdG8gY29udGFjdCBNci5NZW5zaGEg
+QmFhaCBIZWFkIHN1cGVydmlzb3IgXHBhcg0Kd2l0aCB0aGUgaW5mb3JtYXRp
+b24gYmVsb3csIGZvciB0aGUgcmVsZWFzZSBvZiB5b3VyIGZ1bmQgbm93LiBc
+cGFyDQpccGFyDQpccGFyDQogXHBhcg0KQ29udGFjdCBQZXJzb246IE1yLk1l
+bnNoYSBCYWFoLiBccGFyDQpDLzg4MTUgb2ZmIFJpbmcgUm9hZCwgUC5PLkJv
+eCAyNTE1IFxwYXINCkNhZGFzdHJhbCwgWm9uZSBBLCBDZW50cmFsIEJ1c2lu
+ZXNzIERpc3RyaWN0IFxwYXINCkFjY3JhLUdoYW5hLiBccGFyDQpccGFyDQpc
+cGFyDQpFbWFpbDogb2ZmaWNldW5pdGVkQGUtbWFpbC51YVxwYXINCm1lbnNo
+YWJhYWgyQGdsb2JvbWFpbC5jb21ccGFyDQpZb3VycyBpbiBTZXJ2aWNlLCBc
+cGFyDQogXHBhcg0KXHBhcg0KXHBhcg0KTWFyaWEgQ29sZ2F0ZSAoU2VjcmV0
+YXJ5IEZvcmVpZ24gQWZmYWlyKSBccGFyDQpXb3JsZCBCYW5rIFBheW1lbnQg
+TW9uaXRvcmluZyBVbml0LlxwYXINCjE4MTggSCBTdHJlZXQsIE4uVy5XYXNo
+aW5ndG9uLCBEQyAyMDQzMyBccGFyDQpVbml0ZWQgU3RhdGVzIG9mIEFtZXJp
+Y2EuIFxwYXINCn0NCgA=
 
-Bah, hotplug is such a pain.. 
+------=_NextPart_000_009A_01C2A9A6.13705106--
