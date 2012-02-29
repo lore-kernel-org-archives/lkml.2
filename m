@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030689Ab2B2QZL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 11:25:11 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:36459 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030904Ab2B2QZJ (ORCPT
+	id S1031144Ab2B2QZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:25:33 -0500
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:37907 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030302Ab2B2QZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 11:25:09 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [PATCH 0/8] validate MAC address before call .ndo_set_mac_address
-Date: Wed, 29 Feb 2012 17:24:05 +0100
-User-Agent: KMail/1.9.10
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de> <1330531139.8460.192.camel@deadeye> <201202291714.43843.danny.kukawka@bisect.de>
-In-Reply-To: <201202291714.43843.danny.kukawka@bisect.de>
+	Wed, 29 Feb 2012 11:25:29 -0500
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <cbou@mail.ru>, <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: <arun.murthy@stericsson.com>, <karl.komierowski@stericsson.com>,
+        <johan.palsson@stericsson.com>, <linus.walleij@linaro.org>
+Subject: [PATCH 0/4] AB8500 Battery Management Driver
+Date: Wed, 29 Feb 2012 21:54:24 +0530
+Message-ID: <1330532668-5673-1-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.4.3
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201202291724.06641.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330532709;3a890635;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mittwoch, 29. Februar 2012, Danny Kukawka wrote:
-> On Mittwoch, 29. Februar 2012, you wrote:
-> > On Wed, 2012-02-29 at 16:42 +0100, Danny Kukawka wrote:
-> > > Validate the given MAC address directly in dev_set_mac_address()
-> > > if a .ndo_validate_addr function is available before calling
-> > > the .ndo_set_mac_address function.
-> > >
-> > > Changed .ndo_validate_addr to take a second parameter containing
-> > > a sockaddr struct to be checked instead of the net_device dev_addr.
-> > > The behaviour of .ndo_validate_addr is now: if the second parameter
-> > > is NULL the net_device->dev_addr gets validate, if != NULL
-> > > the given parameter/sockaddr gets validated instead.
-> > >
-> > > This patch series include adaptations for some drivers which
-> > > use .ndo_set_mac_address functions directly - to prevent double
-> > > checks and to enable validations via .ndo_validate_addr.
-> >
-> > [...]
-> >
-> > You have to do this as a single patch.  The kernel and drivers should
-> > still build at each stage.
->
-> Okay. In this case only patch 1 and 2 needs to be merged into one
-> commit/patch since the other will even work with out patch one or two. I
-> will send a new version of the series as soon as I get more comments on the
-> content.
+Technical reference manual is available at
+http://www.stericsson.com/developers/CD00291561_UM1031_AB8500_user_manual-rev5_CTDS_public.pdf
 
-I have to send a new version anyway since I've accidently forgot to run 
-checkpatch.pl. Sorry.
+AB8500 battery driver consists of
+	Generic charging algorithm(abx500-chargalg.c)
+	Charger driver(ab8500-charger.c)
+	Fuel Gauge driver(ab8500-fg.c)
+	Battery temperature driver(ab8500-btemp.c)
+The power supply class driver can act as a supply as well as supplicant. Any
+state change in one power supply class driver can be notified to its
+supplicants using notification mechanism provided by Power Supply Class frame
+work. Each Power supply class driver lists its supplicant names in "supplied_to"
+struct member, and each power_supply_changed() call issued by power supply class
+driver will notify supplicants via external_power_changed callback.
 
-Danny
+Charging Algorithm:
+	Hardware independent driver
+	Enables/Disables charger and kicks charger watchdog
+	Supports both AC/Mains and USB charging.
+		Main charger takes precedense over USB charging
+	Supports CCCV charging
+	End Of Charge(EOC) detection
+	Maintenance charging
+	Safety checks and measurements taken
+		charging safety timer expired
+		charger & battery  temperature high/low
+		charging watchdog expired
+		charger & battery over voltage
+		battery removal
+
+Fuel Gauge:
+	Voltage mode
+		When current consumption is low, battery voltage is used to
+		derive the battery capacity and also during start-up this
+		mode is used.
+	Fuel Gauge mode
+		When current consumption is high or while charging fuel gauge
+		is used to obtain accumulated charge. Using this and the known
+		battery full charge, capacity is calculated.
+
+Arun Murthy (4):
+  power: abx500-chargalg: Add abx500 charging algorithm
+  power: ab8500-charger: AB8500 charger driver
+  power: ab8500-fg: A8500 fuel gauge driver
+  power: ab8500-btemp: AB8500 battery temperature driver
+
+ drivers/power/Kconfig                     |   12 +
+ drivers/power/Makefile                    |    1 +
+ drivers/power/ab8500_btemp.c              | 1123 ++++++++++++
+ drivers/power/ab8500_charger.c            | 2789 +++++++++++++++++++++++++++++
+ drivers/power/ab8500_fg.c                 | 2636 +++++++++++++++++++++++++++
+ drivers/power/abx500_chargalg.c           | 1921 ++++++++++++++++++++
+ include/linux/mfd/abx500.h                |  273 +++
+ include/linux/mfd/abx500/ab8500-bm.h      |  554 ++++++
+ include/linux/mfd/abx500/ux500_chargalg.h |   38 +
+ 9 files changed, 9347 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/ab8500_btemp.c
+ create mode 100644 drivers/power/ab8500_charger.c
+ create mode 100644 drivers/power/ab8500_fg.c
+ create mode 100644 drivers/power/abx500_chargalg.c
+ create mode 100644 include/linux/mfd/abx500/ab8500-bm.h
+ create mode 100644 include/linux/mfd/abx500/ux500_chargalg.h
+
+-- 
+1.7.4.3
+
