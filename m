@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab2B2UV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:21:27 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57262 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070Ab2B2UV0 (ORCPT
+	id S1755562Ab2B2UZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:25:11 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:29837 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab2B2UZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:21:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.200.195 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Wed, 29 Feb 2012 12:21:13 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: the briq panel isn't a tty, make it use its own
- locking
-Message-ID: <20120229202113.GA31780@kroah.com>
-References: <20120223133931.6227.89653.stgit@bob.linux.org.uk>
- <1330029747.20389.37.camel@pasglop>
- <20120223225602.747c31df@pyramind.ukuu.org.uk>
- <1330047437.20389.40.camel@pasglop>
+	Wed, 29 Feb 2012 15:25:09 -0500
+Date: Wed, 29 Feb 2012 22:16:06 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
+Message-ID: <20120229191605.GB22598@mwanda>
+References: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QTprm0S8XgL7H0Dt"
 Content-Disposition: inline
-In-Reply-To: <1330047437.20389.40.camel@pasglop>
+In-Reply-To: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F4E899D.0053,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 24, 2012 at 12:37:17PM +1100, Benjamin Herrenschmidt wrote:
-> On Thu, 2012-02-23 at 22:56 +0000, Alan Cox wrote:
-> > > Hrm, I don't think anybody maintains it but I do have a BriQ somewhere
-> > > in storage, so I suppose I could pick it up, not that I need another
-> > > crap driver to deal with right now though...
-> > 
-> > In which case can we just stuff it into the tree, or take the briq driver
-> > out into staging as this is the last blocker on tackling the tty_lock
-> > entirely in the tty layer 
-> 
-> Just remove the driver, I don't think anybody cares.
 
-Wonderful, I'll go do that right now :)
+--QTprm0S8XgL7H0Dt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-greg k-h
+On Wed, Feb 29, 2012 at 10:36:57PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>=20
+> Silencing Static checker warning.
+> 1. Endian warning
+
+It's not an endian warning, it's an endian bug.  This code won't
+work on big endian systems.  Don't mix bugfixes and other changes.
+
+Probably at some point someone will be updating their kernel for
+an embedded platform and they'll do a "git log --pretty=3Doneline" and
+they'll notice your endian fix and decide it's super important to
+them.  Right now it's hard to find.
+
+regards,
+dan carpenter
+
+
+--QTprm0S8XgL7H0Dt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPTnl1AAoJEOnZkXI/YHqRVnUQAJNniV+rYnA0u4/Q15rKd8NG
+NE9qhnPl8J5SX7T/AtsZzAhK2I9ApwM4f15EXMYYTFFanFzlO8uD+yzn9gTLqRGH
+vPyplTVRZ1clBURAB5jnfge3KTsVgYL3k7rMA54Fu6EozjTYTn+mBMP4HyDrk8WE
+GqFCsoZU+cKrENJjfOLw6KX+cZRpLlKXixnlHfvo0iz7kO4S6/3ffX65ykcvm63C
+1+Wvdy+q629XHcUILWXnwQtLVgdwnyY9/pZvtBFHCArwajxxWecbRQXWjILO6afO
+cXyE2SR1I/8uWMEHwz3pTQfttt4X32kXJv63K77ptVunn3i/138X2S6NG9wVJxIO
+SqawQjZbhpBTpxvPShUxWeOgiT8XN8Ermu0CqbayJC5AcwSvZRKfPpESaXyuSD2d
+RIjycqRvAbDul38Pxepc/eTLYF5hZ6fjTzwg3UhS9kjEf0h+juNNX1y0Exm87jbP
+UQLGsywIWSvAF0zwUzlzeiO030KBsuUU8y2cqXjLQDikyK7t67Y1mbo3PI5Ayk1k
+Ag51jSb/3/t+Tf6wy4kHqE+rjFH87+eMeYsBEBc+58P8Grz3KRry66hXIwjTX4gp
+mqCDJ+niqjIDrF+jsVmaQ66XmUAUouoVMAyQKMyt6bpShOwjD4qIedDScSnVNJ8c
+MxOx69QozgPh4XyER386
+=4C6b
+-----END PGP SIGNATURE-----
+
+--QTprm0S8XgL7H0Dt--
