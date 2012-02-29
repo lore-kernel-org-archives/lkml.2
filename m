@@ -1,79 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab2B2Rro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:47:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60451 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757059Ab2B2Rrn (ORCPT
+	id S1757544Ab2B2RvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:51:01 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57248 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757418Ab2B2Ru6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:47:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.236.5 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Wed, 29 Feb 2012 12:50:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of andi.shyti@gmail.com designates 10.52.173.179 as permitted sender) smtp.mail=andi.shyti@gmail.com; dkim=pass header.i=andi.shyti@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF2083@HQMAIL01.nvidia.com>
-References: <1330062969-25016-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BD8BCC79@HQMAIL01.nvidia.com>
-	<CACRpkdZ-a+kyknb-q+_=TLGcNshwkLAY4918bwD7e6LzL3sWbg@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BDDF2083@HQMAIL01.nvidia.com>
-Date: Wed, 29 Feb 2012 18:47:42 +0100
-Message-ID: <CACRpkdZX+=9m-b+y9+tk0GQ+0TKmKasez+c=yY89ofkompf=bA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: make the pinmux-pins more helpful
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1330532668-5673-3-git-send-email-arun.murthy@stericsson.com>
+References: <1330532668-5673-1-git-send-email-arun.murthy@stericsson.com>
+	<1330532668-5673-3-git-send-email-arun.murthy@stericsson.com>
+Date: Wed, 29 Feb 2012 18:50:57 +0100
+Message-ID: <CANndwHasH6cVdVu=bzYkz2Ri8Hp5OBzaMeVmp6hMkvP99ujc6w@mail.gmail.com>
+Subject: Re: [PATCH 2/4] power: ab8500-charger: AB8500 charger driver
+From: Andi <andi.shyti@gmail.com>
+To: Arun Murthy <arun.murthy@stericsson.com>
+Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        karl.komierowski@stericsson.com, johan.palsson@stericsson.com,
+        linus.walleij@linaro.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 6:27 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Wednesday, February 29, 2012 2:39 AM:
->> On Fri, Feb 24, 2012 at 5:44 PM, Stephen Warren <swarren@nvidia.com> wrote:
->>
->> > If we do make a change like this, I'd prefer the format to be:
->> >
->> > UNCLAIMED
->> > "%s (HOG)", desc->owner
->> > desc->owner
->>
->> I don't see the point, the debugfs files are supposed to be
->> human-readable, a human is not interested in the fact that
->> the pinctrl device itself is owning the pin, what is interesting is
->> that it is hogged.
+Hi,
+
+On Wed, Feb 29, 2012 at 5:24 PM, Arun Murthy <arun.murthy@stericsson.com> wrote:
+> This driver is responsible for detecting the ac/usb plugin and also includes
+> function to enable ac/usb charging and re-kick the watchdog.
+> It registers with the power supply class and provides information to the user
+> space. The information include status of ac/usb charger device.
+> This information in turn will be used by the abx500 charging algorithm driver
+> to enable/disable and monitor charging.
 >
-> Well, I'm a human and I care far more that the pin controller device is
-> what owns the configuration rather than some artificial "hog" concept
-> is present...
-
-Yeah OK I'll try to add both then to please both instances of
-human...
-
->> On U300 it makes a lot of sense even thogh it is essentially
->> group based. When sitting with the datasheet with the pin names
->> and use groups it's simple to see exactly how any one pin is muxed
->> for the moment and troubleshoot from there.
+> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/power/ab8500_charger.c       | 2789 ++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/abx500/ab8500-bm.h |  554 +++++++
+>  2 files changed, 3343 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/power/ab8500_charger.c
+>  create mode 100644 include/linux/mfd/abx500/ab8500-bm.h
 >
-> If the HW muxes per group, then there's no concept of "which function is
-> selected for a pin", since functions are selected for a group not for a
-> pin.
->
-> So, the datasheet will be written in terms of "group X supports functions
-> A, B, C, D", not pins P, Q, R support functions "A, B, C, D". So,
-> representing mux function in debugfs at the group level would make a lot
-> more sense given that HW design.
+> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+> new file mode 100644
+> index 0000000..bbc541a
+> --- /dev/null
+> +++ b/drivers/power/ab8500_charger.c
+> @@ -0,0 +1,2789 @@
+> +/**
+> + * ab8500_charger_init_hw_registers() - Set up charger related registers
+> + * @di:                pointer to the ab8500_charger structure
+> + *
+> + * Set up charger OVV, watchdog and maximum voltage registers as well as
+> + * charging of the backup battery
+> + */
+> +static int ab8500_charger_init_hw_registers(struct ab8500_charger *di)
+> +{
+> +       int ret = 0;
+> +
+> +       /* Setup maximum charger current and voltage for ABB cut2.0 */
+> +       if (!is_ab8500_1p1_or_earlier(di->parent)) {
+> +               ret = abx500_set_register_interruptible(di->dev,
+> +                       AB8500_CHARGER,
+> +                       AB8500_CH_VOLT_LVL_MAX_REG, CH_VOL_LVL_4P6);
+> +               if (ret) {
+> +                       dev_err(di->dev,
+> +                               "failed to set CH_VOLT_LVL_MAX_REG\n");
+> +                       goto out;
+> +               }
+> +
+> +               ret = abx500_set_register_interruptible(di->dev,
+> +                       AB8500_CHARGER,
+> +                       AB8500_CH_OPT_CRNTLVL_MAX_REG, CH_OP_CUR_LVL_1P6);
+> +               if (ret) {
+> +                       dev_err(di->dev,
+> +                               "failed to set CH_OPT_CRNTLVL_MAX_REG\n");
+> +                       goto out;
+> +               }
+> +       }
+> +
+> +       /* VBUS OVV set to 6.3V and enable automatic current limitiation */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_CHARGER,
+> +               AB8500_USBCH_CTRL2_REG,
+> +               VBUS_OVV_SELECT_6P3V | VBUS_AUTO_IN_CURR_LIM_ENA);
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to set VBUS OVV\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Enable main watchdog in OTP */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_OTP_EMUL, AB8500_OTP_CONF_15, OTP_ENABLE_WD);
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to enable main WD in OTP\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Enable main watchdog */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_SYS_CTRL2_BLOCK,
+> +               AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_ENA);
+> +       if (ret) {
+> +               dev_err(di->dev, "faile to enable main watchdog\n");
+> +               goto out;
+> +       }
+> +
+> +       /*
+> +        * Due to internal synchronisation, Enable and Kick watchdog bits
+> +        * cannot be enabled in a single write.
+> +        * A minimum delay of 2*32 kHz period (62.5µs) must be inserted
+> +        * between writing Enable then Kick bits.
+> +        */
+> +       udelay(63);
 
-I think we're talking past each other, it's that old thing with group
-concepts again. I'd just say that for debugging
-and understanding the muxing on U300 style hardware this
-is very useful. It may be pointless in Tegra style HW.
+Are you sure about this udelay?
 
-Yours,
-Linus Walleij
+> +
+> +       /* Kick main watchdog */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_SYS_CTRL2_BLOCK,
+> +               AB8500_MAIN_WDOG_CTRL_REG,
+> +               (MAIN_WDOG_ENA | MAIN_WDOG_KICK));
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to kick main watchdog\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Disable main watchdog */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_SYS_CTRL2_BLOCK,
+> +               AB8500_MAIN_WDOG_CTRL_REG, MAIN_WDOG_DIS);
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to disable main watchdog\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Set watchdog timeout */
+> +       ret = abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+> +               AB8500_CH_WD_TIMER_REG, WD_TIMER);
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to set charger watchdog timeout\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Backup battery voltage and current */
+> +       ret = abx500_set_register_interruptible(di->dev,
+> +               AB8500_RTC,
+> +               AB8500_RTC_BACKUP_CHG_REG,
+> +               di->bat->bkup_bat_v |
+> +               di->bat->bkup_bat_i);
+> +       if (ret) {
+> +               dev_err(di->dev, "failed to setup backup battery charging\n");
+> +               goto out;
+> +       }
+> +
+> +       /* Enable backup battery charging */
+> +       abx500_mask_and_set_register_interruptible(di->dev,
+> +               AB8500_RTC, AB8500_RTC_CTRL_REG,
+> +               RTC_BUP_CH_ENA, RTC_BUP_CH_ENA);
+> +       if (ret < 0)
+> +               dev_err(di->dev, "%s mask and set failed\n", __func__);
+> +
+> +out:
+> +       return ret;
+> +}
