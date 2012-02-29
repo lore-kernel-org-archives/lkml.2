@@ -1,128 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030608Ab2B2KKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:10:05 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:39639 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab2B2KKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:10:02 -0500
-Date: Wed, 29 Feb 2012 19:16:23 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Avi Kivity <avi@redhat.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
-Message-Id: <20120229191623.d1edb0aa.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4F4DEEFA.6000506@redhat.com>
-References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120223203541.f51c11c9.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F4CBEAA.5030708@redhat.com>
-	<20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp>
-	<4F4DEEFA.6000506@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1030654Ab2B2KLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:11:06 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58886 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S965547Ab2B2KLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:11:00 -0500
+Message-ID: <4F4DF8B0.9000608@cn.fujitsu.com>
+Date: Wed, 29 Feb 2012 18:06:40 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>, kvm list <kvm@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C8EEB.8040709@cn.fujitsu.com> <4F4C9F8C.1060901@siemens.com> <4F4CA17F.4020504@cn.fujitsu.com> <4F4CAA43.3020805@siemens.com> <20120228104528.GB24600@redhat.com> <4F4D7AA4.3070801@cn.fujitsu.com> <20120229093627.GC24600@redhat.com>
+In-Reply-To: <20120229093627.GC24600@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-29 18:03:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-29 18:03:55,
+	Serialize complete at 2012-02-29 18:03:55
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> wrote:
+At 02/29/2012 05:36 PM, Gleb Natapov Wrote:
+> On Wed, Feb 29, 2012 at 09:08:52AM +0800, Wen Congyang wrote:
+>> At 02/28/2012 06:45 PM, Gleb Natapov Wrote:
+>>> On Tue, Feb 28, 2012 at 11:19:47AM +0100, Jan Kiszka wrote:
+>>>> On 2012-02-28 10:42, Wen Congyang wrote:
+>>>>> At 02/28/2012 05:34 PM, Jan Kiszka Wrote:
+>>>>>> On 2012-02-28 09:23, Wen Congyang wrote:
+>>>>>>> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
+>>>>>>>> On 2012-02-27 04:01, Wen Congyang wrote:
+>>>>>>>>> We can know the guest is paniced when the guest runs on xen.
+>>>>>>>>> But we do not have such feature on kvm. This patch implemnts
+>>>>>>>>> this feature, and the implementation is the same as xen:
+>>>>>>>>> register panic notifier, and call hypercall when the guest
+>>>>>>>>> is paniced.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>>>>>>>> ---
+>>>>>>>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
+>>>>>>>>>  arch/x86/kvm/svm.c       |    8 ++++++--
+>>>>>>>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
+>>>>>>>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
+>>>>>>>>>  include/linux/kvm.h      |    1 +
+>>>>>>>>>  include/linux/kvm_para.h |    1 +
+>>>>>>>>>  6 files changed, 37 insertions(+), 6 deletions(-)
+>>>>>>>>>
+>>>>>>>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+>>>>>>>>> index f0c6fd6..b928d1d 100644
+>>>>>>>>> --- a/arch/x86/kernel/kvm.c
+>>>>>>>>> +++ b/arch/x86/kernel/kvm.c
+>>>>>>>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+>>>>>>>>>  	.notifier_call = kvm_pv_reboot_notify,
+>>>>>>>>>  };
+>>>>>>>>>  
+>>>>>>>>> +static int
+>>>>>>>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
+>>>>>>>>> +{
+>>>>>>>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
+>>>>>>>>> +	return NOTIFY_DONE;
+>>>>>>>>> +}
+>>>>>>>>> +
+>>>>>>>>> +static struct notifier_block kvm_pv_panic_nb = {
+>>>>>>>>> +	.notifier_call = kvm_pv_panic_notify,
+>>>>>>>>> +};
+>>>>>>>>> +
+>>>>>>>>
+>>>>>>>> You should split up host and guest-side changes.
+>>>>>>>>
+>>>>>>>>>  static u64 kvm_steal_clock(int cpu)
+>>>>>>>>>  {
+>>>>>>>>>  	u64 steal;
+>>>>>>>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
+>>>>>>>>>  
+>>>>>>>>>  	paravirt_ops_setup();
+>>>>>>>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
+>>>>>>>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
+>>>>>>>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+>>>>>>>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
+>>>>>>>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+>>>>>>>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>>>>>>>>> index 0b7690e..38b4705 100644
+>>>>>>>>> --- a/arch/x86/kvm/svm.c
+>>>>>>>>> +++ b/arch/x86/kvm/svm.c
+>>>>>>>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
+>>>>>>>>>  
+>>>>>>>>>  static int vmmcall_interception(struct vcpu_svm *svm)
+>>>>>>>>>  {
+>>>>>>>>> +	int ret;
+>>>>>>>>> +
+>>>>>>>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
+>>>>>>>>>  	skip_emulated_instruction(&svm->vcpu);
+>>>>>>>>> -	kvm_emulate_hypercall(&svm->vcpu);
+>>>>>>>>> -	return 1;
+>>>>>>>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
+>>>>>>>>> +
+>>>>>>>>> +	/* Ignore the error? */
+>>>>>>>>> +	return ret == 0 ? 0 : 1;
+>>>>>>>>
+>>>>>>>> Why can't kvm_emulate_hypercall return the right value?
+>>>>>>>
+>>>>>>> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
+>>>>>>> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
+>>>>>>> If vcpu's CPL > 0, does kvm need to exit and tell it to
+>>>>>>> qemu?
+>>>>>>
+>>>>>> No, there is currently no exit to userspace due to hypercalls, neither
+>>>>>> of HV nor KVM kind.
+>>>>>>
+>>>>>> The point is that the return code of kvm_emulate_hypercall is unused so
+>>>>>> far, so you can easily redefine it to encode continue vs. exit to
+>>>>>> userspace. Once someone has different needs, this could still be
+>>>>>> refactored again.
+>>>>>
+>>>>> So, it is OK to change the return value of kvm_hv_hypercall() if vcpu's
+>>>>> CPL > 0?
+>>>>
+>>>> Yes, change it to encode what vendor modules need to return to their
+>>>> callers.
+>>>>
+>>> Better introduce new request flag and set it in your hypercall emulation. See
+>>> how triple fault is handled.
+>>
+>> triple fault sets KVM_EXIT_SHUTDOWN and exits to userspace. Do you mean introduce
+>> a new value(like KVM_EXIT_SHUTDOWN)?
+>>
+> I mean introduce new request bit (like KVM_REQ_TRIPLE_FAULT) and set it
+> in your hypercall if exit to userspace is needed instead of changing
+> return values.
 
-> Okay.  But note you don't need the alignment check; simply allocate the
-> array aligned, and a multiple of 16 bytes, in the first place.
+I donot notice it. Thanks for you suggestion. I will modify my patch.
 
-OKay, then we can do something like:
+Thanks
+Wen Congyang
 
-	for each (x = bitmap[i], y = bitmap[i+1])
-		if (!x && !y)
-			continue
-		else if ...
-			cmpxchg16b or 8b
-		...
-
-I will try later.
-
-> > In addition, we should care about the new API.  It is not decided about
-> > what kind of range can be ordered.  I think restricting the range to be
-> > long size aligned is natural.  Do you have any plan?
 > 
-> Not really.  But the current changes are all internal and don't affect
-> the user API.
-
-Then I will do my best to improve the performance now!
-
-> > __ffs is really fast compared to other APIs.
+> --
+> 			Gleb.
 > 
-> You could do something like this
-> 
->     for (i = 0; i < bitmap_size_in_longs; ++i) {
->         mask = bitmap[i];
->         if (!mask)
->                continue;
->         for (j = __ffs(mask); mask; mask &= mask - 1, j = __ffs(mask))
->                 handle i * BITS_PER_LONG + j;
->     }
-> 
-> This gives you the speed of __ffs() but without working on zero bits.
 
-Yes, I will do this in v2.
-
-> > We may see partial display updates if we do not hold the mmu_lock during
-> > xchg loop: it is possible that pages near the end of the framebuffer alone
-> > gets updated sometimes - I noticed this problem when I fixed the TLB flush
-> > issue.
-> 
-> I don't understand why this happens.
-
-Because only mmu_lock protects the bitmap for VGA.
-
-xchg i = 1
-xchg i = 2
-...
-xchg i = N
-
-We cannot get a complete snapshot without mmu_lock; if the guest faults on
-the Nth page during xchg'ing i = 1, 2, ... then the i = N alone will
-become newer.
-
-But others will be updated by the next call, so the problem is restricted:
-maybe not noticeable.
-
-> > Not a big problem but still maybe-noticeable change, so I think we should
-> > do it separately with some comments if needed.
-> 
-> Well if it's noticable on the framebuffer it's also noticable with live
-> migration.  We could do it later, but we need to really understand it first.
-
-About live migration, we do not mind whether the bitmap is a complete snapshot.
-In addition, we cannot do anything because the emulator can access the bitmap
-without mmu_lock.
-
-What we are doing is calling GET_DIRTY_LOG slot by slot: so already the
-result is not a snapshot at all.
-
-In the end, at the last stage, we will stop the guest and get a complete snapshot.
-
-> > In addition, we do not want to scan the dirty bitmap twice.  Using the
-> > bits value soon after it is read into a register seems to be the fastest.
-> 
-> Probably.
-> 
-> > BTW, I also want to decide the design of the new API at this chance.
-> 
-> Let's wait with that.  We're adding APIs too quickly.  Let's squeeze
-> everything we can out of the current APIs.
-
-I agree with you of course.
-
-At the same time, we cannot say anything without actually implementing
-sample userspace programs.
-
-So I want to see how much improvement the proposed API can achieve.
-
-I thought this might be a good GSoC project but ...
-
-
-Takuya
