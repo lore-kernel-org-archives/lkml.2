@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030848Ab2B2Hhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 02:37:41 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38484 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755793Ab2B2Hhj (ORCPT
+	id S1030870Ab2B2HnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 02:43:15 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:33511 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755880Ab2B2HnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 02:37:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.112.54.36 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
-Date: Wed, 29 Feb 2012 09:37:23 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Rafael Aquini <aquini@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Josef Bacik <josef@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] mm: SLAB Out-of-memory diagnostics
-In-Reply-To: <20120229032715.GA23758@t510.redhat.com>
-Message-ID: <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
-References: <20120229032715.GA23758@t510.redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 29 Feb 2012 02:43:14 -0500
+Date: Wed, 29 Feb 2012 16:49:34 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Avi Kivity <avi@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
+Message-Id: <20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <4F4CBEAA.5030708@redhat.com>
+References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120223203541.f51c11c9.yoshikawa.takuya@oss.ntt.co.jp>
+	<4F4CBEAA.5030708@redhat.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012, Rafael Aquini wrote:
-> Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
-> allocator to help on debugging OOM conditions. This patch also adds a new
-> sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
-> allocation flag and forces the kernel to report every slab allocation failure.
+Avi Kivity <avi@redhat.com> wrote:
+
+> > The key part of the implementation is the use of xchg() operation for
+> > clearing dirty bits atomically.  Since this allows us to update only
+> > BITS_PER_LONG pages at once, we need to iterate over the dirty bitmap
+> > until every dirty bit is cleared again for the next call.
 > 
-> An example print out looks like this:
+> What about using cmpxchg16b?  That should reduce locked ops by a factor
+> of 2 (but note it needs 16 bytes alignment).
+
+I tried cmpxchg16b first: the implementation could not be naturally
+combined with the for loop over the unsigned long array.
+
+	Extra "if not zero", alignement check and ... it was ugly
+	and I guessed it would be slow.
+
+Taking it into account that cmpxchg16b needs more cycles than others,
+I think this should be tried carefully with more measurement later.
+
+How about concentrating on xchg now?
+
+The implementation is simple and gives us enough improvement for now.
+At least, I want to see whether xchg-based implementation works well
+for one release.
+
+	GET_DIRTY_LOG can be easily tuned to one particular case and
+	it is really hard to check whether the implementation works well
+	for every important case.  I really want feedback from users
+	before adding non-obvious optimization.
+
+In addition, we should care about the new API.  It is not decided about
+what kind of range can be ordered.  I think restricting the range to be
+long size aligned is natural.  Do you have any plan?
+
+> > Another point to note is that we do not use for_each_set_bit() to check
+> > which ones in each BITS_PER_LONG pages are actually dirty.  Instead we
+> > simply use __ffs() and __fls() and pass the range in between the two
+> > positions found by them to kvm_mmu_write_protect_pt_range().
 > 
->   <snip page allocator out-of-memory message>
->   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
->      cache: bio-0, object size: 192, order: 0
->      node0: slabs: 3/3, objs: 60/60, free: 0
+> This seems artificial.
+
+OK, then I want to pass the bits (unsingned long) as a mask.
+
+Non-NPT machines may gain some.
+
+> > Even though the passed range may include clean pages, it is much faster
+> > than repeatedly call find_next_bit() due to the locality of dirty pages.
 > 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> ---
->  Documentation/sysctl/vm.txt |   23 ++++++++++++++++++
->  include/linux/slab.h        |    2 +
->  kernel/sysctl.c             |    9 +++++++
->  mm/slab.c                   |   55 ++++++++++++++++++++++++++++++++++++++++++-
->  4 files changed, 88 insertions(+), 1 deletions(-)
+> Perhaps this is due to the implementation of find_next_bit()?  would
+> using bsf improve things?
 
-No SLUB support for this?
+I need to explain what I did in the past.
 
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index 96f0ee8..75bdf91 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -498,6 +498,29 @@ this is causing problems for your system/application.
->  
->  ==============================================================
->  
-> +oom_dump_slabs_forced
-> +
-> +Overrides the effects of __GFP_NOWARN page allocation flag, thus forcing
-> +the system to print warnings about every allocation failure for the
-> +slab allocator, and helping on debugging certain OOM conditions.
-> +The print out is pretty similar, and complements data that is reported by
-> +the page allocator out-of-memory warning:
-> +
-> +<snip page allocator out-of-memory message>
-> +  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-> +     cache: bio-0, object size: 192, order: 0
-> +     node0: slabs: 3/3, objs: 60/60, free: 0
-> +
-> +If this is set to zero, the default behavior is observed and warnings will only
-> +be printed out for allocation requests that didn't set the __GFP_NOWARN flag.
-> +
-> +When set to non-zero, this information is shown whenever the allocator finds
-> +itself failing to grant a request, regardless the __GFP_NOWARN flag status.
-> +
-> +The default value is 0 (disabled).
-> +
-> +==============================================================
-> +
+Before srcu-less work, I had already noticed the slowness of
+for_each_set_bit() and replaced it with simple for loop like now: the
+improvement was significant.
 
-Why do you want to add a sysctl for this? That'd be an ABI that we need to 
-keep around forever.
+Yes, find_next_bit() is for generic use and not at all good when there
+are many consecutive bits set: it cannot assume anything so needs to check
+a lot of cases - we have long size aligned bitmap and "bits" is already
+known to be non-zero after the first check of the for loop.
 
-Is there any reason we shouldn't just enable this unconditionally?
+Of course, doing 64 function calls alone should be avoided in our case.
+I also do not want to call kvm_mmu_* for each bit.
 
-			Pekka
+So, above, I proposed just passing "bits" to kvm_mmu_*: we can check
+each bit i in a register before using rmap[i] if needed.
+
+__ffs is really fast compared to other APIs.
+
+One note is that we will lose in cases like bits = 0xffffffff..
+
+2271171.4    12064.9       138.6      16K     -45
+3375866.2    14743.3       103.0      32K     -55
+4408395.6    10720.0        67.2      64K     -51
+5915336.2    26538.1        45.1     128K     -44
+8497356.4    16441.0        32.4     256K     -29
+
+So the last one will become worse.  For other 4 patterns I am not sure.
+
+I thought that we should tune to the last case for gaining a lot from
+the locality of WWS.  What do you think about this point?
+
+> > -	} else {
+> > -		r = -EFAULT;
+> > -		if (clear_user(log->dirty_bitmap, n))
+> > -			goto out;
+> > +		kvm_mmu_write_protect_pt_range(kvm, memslot, start, end);
+> 
+> If indeed the problem is find_next_bit(), then we could hanve
+> kvm_mmu_write_protect_slot_masked() which would just take the bitmap as
+> a parameter.  This would allow covering just this function with the
+> spinlock, not the xchg loop.
+
+We may see partial display updates if we do not hold the mmu_lock during
+xchg loop: it is possible that pages near the end of the framebuffer alone
+gets updated sometimes - I noticed this problem when I fixed the TLB flush
+issue.
+
+Not a big problem but still maybe-noticeable change, so I think we should
+do it separately with some comments if needed.
+
+In addition, we do not want to scan the dirty bitmap twice.  Using the
+bits value soon after it is read into a register seems to be the fastest.
+
+
+BTW, I also want to decide the design of the new API at this chance.
+
+	Takuya
