@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030442Ab2B2Hwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 02:52:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10892 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab2B2Hwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 02:52:32 -0500
-Content-Type: multipart/mixed; boundary="===============1035576336=="
-MIME-Version: 1.0
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="123028661"
-From: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-To: Huang Shijie <b32955@freescale.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>, "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+	id S1030577Ab2B2Hwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 02:52:55 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37061 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030366Ab2B2Hwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 02:52:53 -0500
+Date: Wed, 29 Feb 2012 18:52:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Kelly <ckelly@ozmodevices.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 0/2] patch set about the MXS-DMA
-Thread-Topic: [PATCH v6 0/2] patch set about the MXS-DMA
-Thread-Index: AQHM7HJtTKOcAdp5s0SJ9Za/ontjD5ZTRnyAgABPfAA=
-Date: Wed, 29 Feb 2012 07:52:27 +0000
-Message-ID: <1330502098.3545.78.camel@sauron.fi.intel.com>
-References: <1329373053-19494-1-git-send-email-b32955@freescale.com>
-	 <4F4D9725.3090100@freescale.com>
-In-Reply-To: <4F4D9725.3090100@freescale.com>
-Reply-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.160]
-MIME-Version: 1.0
+Subject: Re: linux-next: build failure after merge of the final tree
+ (staging tree related)
+Message-Id: <20120229185227.7f14b1863c7a5d16220bac3f@canb.auug.org.au>
+In-Reply-To: <57C28D85C66F5C49B9E212CBFAFDAC1F23010F80@CH1PRD0802MB120.namprd08.prod.outlook.com>
+References: <20120227181303.9aa93b8a8ed02428e9310c5e@canb.auug.org.au>
+	<20120227211630.GA18418@kroah.com>
+	<57C28D85C66F5C49B9E212CBFAFDAC1F23010F80@CH1PRD0802MB120.namprd08.prod.outlook.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_Feb_2012_18_52_27_+1100_Ir80ll8LsjUAqTBl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============1035576336==
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-9K266iUeum0N5msiMUhs"
-
---=-9K266iUeum0N5msiMUhs
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Wed__29_Feb_2012_18_52_27_+1100_Ir80ll8LsjUAqTBl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-02-29 at 11:10 +0800, Huang Shijie wrote:
-> Hi:
->=20
-> ping.
+Hi Chris,
 
-Is this patch-set independent or requires something like gpma patches?
+On Wed, 29 Feb 2012 07:35:35 +0000 Chris Kelly <ckelly@ozmodevices.com> wro=
+te:
+>
+> Hi Greg,
+>=20
+> I believe I understand the cause of the problem and would like to submit
+> a patch to fix it. However, I am unclear on what the starting point is gi=
+ven
+> that the final patch was reverted from linux-next. Do I assume that patch
+> will be reapplied before the applying the new patch or should I provide
+> another patch to reapply the reverted patch? Is it acceptable to submit
+> patches generated against the head of linux-next?
+
+Your patches are all still in Greg's tree which I merge into linux-next
+every day.  I have then been reverting that last patch each day.  Your
+patch should be against Greg's tree (or your last patch) and then when
+the fix is in Greg's tree, I will get it in linux-next and stop reverting
+the other patch.
+
+> Before submitting the patch, I would like to test that the patch really
+> does fix the issue found by Stephen. Since it doesn't occur when building
+> for x32 or x64 then I need to setup a PowerPC cross-compile tool chain. Do
+> you have any suggestions as to where I can pull a prebuilt tool chain or
+> do I need to build directly from the GNU sources.
+
+http://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.0/x86_64-gcc=
+-4.6.0-nolibc_powerpc64-linux.tar.xz
+
+That is am x86_64 hosted powerpc64 compiler suitable for building the
+kernel.
 
 --=20
-Best Regards,
-Artem Bityutskiy
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-9K266iUeum0N5msiMUhs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+--Signature=_Wed__29_Feb_2012_18_52_27_+1100_Ir80ll8LsjUAqTBl
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPTdnSAAoJECmIfjd9wqK0UBkP/jREokO8SztjTQET6O9crX+L
-9spU0Vg2O20j0Cr+/xGeZ+nDbq0VtMCln63bB6Wl9VwMaBfg3RRVrPUTBIKsUk4Z
-oxCMw2PDJmUav2tgwB15oa8297kL9M5j9mfg4swQgayBsKhqzjblfVkfuH9wT4bn
-8Wyn2tjUo2fLrjDrIuqkTwb5jYpZm188UpVZA5VN4HzzG4xdD3qvuBLHvXGVjjv3
-U3dxtESo/TU1ObjZoVA61TJteh2DHHyqyDL9F/1pleVKHjB+6v63zt+v3PqMLUni
-m0TwiXcBtnYZBIkQuZ9uzmrpnvuxIIfCJRajIHHU+DZSE6CdZnuOPDzd6WDRMChp
-JTJhaR2TMmY+XtKs8hWNmHJz1o2uapse3bXeIyox2RTHiZWMIKF31gjO+06prX2V
-WlkV+UqoXaMBB4C9pkjmZhC29B5CT1nxcKqVIwvP9Q9puht0W4dNXntqzrcAWzbq
-dvUAM1d34hF4SYyRT60SEagUM1HjPjkapTqivpG2crz773pBKELHu+J1S8s9ldj5
-fsVqTsNHsp+eB5VOd9zeMbRH/daDErxbqkepVshRt1jsiue3FojrpdeZowcsPQqo
-6ERyVlQRgQ3gCRWjSN2Dch32xvHX9Ph607kxpK7XhM0FqEwTaaQoh3U9Wb72pxRc
-Jrr1/Sej4TWhc+a4D5H0
-=wxJl
+iQIcBAEBCAAGBQJPTdk7AAoJEECxmPOUX5FEJjEP/0B5u2CevOE8zSzHroYPh/Y2
+OS5CupYclrzi9hlN+8WqRZMhvNgToZkaEcrRBEfxrhwU2kcZG0ChPAjO/t9rNxB9
+qedv35SMkC03foOjA/k/g3SUC97gLlF/jub+zKIs/WGMoNrtfa+2rxBhzTHXhKWz
+dfNtMZn6O+xTJKAInnQ35G60z4ddxTb7qjE5ByAYQJRTZUHmVb8iNT31gzMoCth7
+7YFhVv0mLVIjRO8wMcJHXO5lHTsrifseBoT+L6MAraWD2c1ZQXUa/hMzleAHm01o
+QqO5fvVuJb8Swyw/U//GMzyPc9QIiXb4nZnWT20htnQEKx5nMYDJ+V2bKfEHmoci
+Jp3HE3yyECchqY6jauLFyxw+JztFHeVcsleTqIlnfV87HQv0bKXoBliIwQpzogtI
+m+sv8ikV6z81YOW2AhCWqaPjE0KWq1aZqDnBYAztlZzCGC7nIgwPdCZxpVGpKzng
+Bw3B8opxFZL/n39YoA0mn2JtWhQ9uR85jZV5FcuSZATSOco3TyRWROuNbeolXKex
+sp6KPVWga3VmmD4ORZHXIXNrKEs50iIH06vFiU17iA1E2p8oT8XCtcYTV9pduktd
+HhdkOx/9mlMTm0Y6TkrSulq0qhA6GTv6kV+0xLVrLpEsFf+5alAMnlJBtRbaSw1y
+eOMLmxquAeMk8o+LjJnl
+=W9Gl
 -----END PGP SIGNATURE-----
 
---=-9K266iUeum0N5msiMUhs--
---===============1035576336==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki =
-
-Business Identity Code: 0357606 - 4 =
-
-Domiciled in Helsinki =
-
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
---===============1035576336==--
+--Signature=_Wed__29_Feb_2012_18_52_27_+1100_Ir80ll8LsjUAqTBl--
