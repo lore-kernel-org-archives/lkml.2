@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab2B2QWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 11:22:37 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40811 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932662Ab2B2QWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 11:22:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jhautbois@gmail.com designates 10.180.92.73 as permitted sender) smtp.mail=jhautbois@gmail.com; dkim=pass header.i=jhautbois@gmail.com
+	id S932793Ab2B2QX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:23:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932746Ab2B2QXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 11:23:24 -0500
+Date: Wed, 29 Feb 2012 17:14:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        Denys Vlasenko <dvlasenk@redhat.com>
+Subject: Re: [PATCH v11 10/12] ptrace,seccomp: Add PTRACE_SECCOMP support
+Message-ID: <20120229161437.GA3078@redhat.com>
+References: <1330140111-17201-1-git-send-email-wad@chromium.org> <1330140111-17201-10-git-send-email-wad@chromium.org> <20120227175407.GD10608@redhat.com> <CABqD9hY1P7LfmBwQwSG7jDZmw6d_pZH4q2cZq_4ssjQUKRA32w@mail.gmail.com> <20120228164335.GC3664@redhat.com> <CABqD9hY7=DpxWzf3+WNsK=LuLrabf=oHxyy+CQgu0JLxZ80zPQ@mail.gmail.com> <CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
 MIME-Version: 1.0
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Wed, 29 Feb 2012 17:22:13 +0100
-Message-ID: <CAL8zT=j3aeS5xhUOpGe4hJ05Ls0TCtf354hG=eHYvGT-fjmrjg@mail.gmail.com>
-Subject: Combining perf timechart with perf sched map
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABqD9hZ3apFGi+BmX5UNgz=NJUbTigj6acDKG=wu9rrL0wN1Ww@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+On 02/28, Will Drewry wrote:
+>
+> On Tue, Feb 28, 2012 at 11:04 AM, Will Drewry <wad@chromium.org> wrote:
+> > On Tue, Feb 28, 2012 at 10:43 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >>
+> >> Great. In this case this patch becomes really trivial. Just 2 defines
+> >> in ptrace.h and the unconditional ptrace_event() under SECCOMP_RET_TRACE.
+>
+> hrm the only snag is that I can't then rely on TIF_SYSCALL_TRACE to
+> ensure seccomp is in the slow-path.  Right now, on x86, seccomp is
+> slow-path, but it doesn't have to be to have the syscall and args.
+> However, for ptrace to behavior properly, I believed it did need to be
+> in the slow path.  If SECCOMP_RET_TRACE doesn't rely on
+> PTRACE_SYSCALL, then it introduces a need for seccomp to always be in
+> the slow path or to flag (somehow) when it needs slow path.
 
-First things first : I didn't know how to ask my question, so pardon
-me if the subject of this mail is not a good one.
+My understanding of this magic is very limited, and I'm afraid
+I misunderstood... So please correct me.
 
-I am trying to use the amazing perf tool using 'perf sched map' and I
-must say it is quite difficult to follow when there is lots of CPUs
-(24 in my case) and lots of process (more than 100) to analyse.
-I wondered if there is a solution like combining the timechart tool
-with this one in order to produce a graphical colored output which
-would help noticing workload balancing issues.
-Maybe is it already possible ?
-If not, maybe a tool like kernelshark would be a good tool for that,
-but I have to say I am not fluent in python so I don't really know how
-I can help with this.
+But what is the problem? system_call checks _TIF_WORK_SYSCALL_ENTRY
+which includes _TIF_SECCOMP | _TIF_SYSCALL_TRACE, and jumps to
+tracesys which does SAVE_REST.
 
-Thanks in advance for your help,
-Regards,
-JM
+Anyway. secure_computing() is called by syscall_trace_enter() which
+also calls tracehook_report_syscall_entry(). If SECCOMP_RET_TRACE
+can't do ptrace_event() then why tracehook_report_syscall_entry() is
+fine?
+
+Oleg.
+
