@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2B2Iiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:38:50 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44347 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab2B2Iit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:38:49 -0500
-Date: Wed, 29 Feb 2012 09:38:45 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        shawn.guo@freescale.com, vinod.koul@intel.com,
-        dan.j.williams@intel.com, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] dma: imx-sdma: Add error check on sdma_get_firmware
-Message-ID: <20120229083845.GU3852@pengutronix.de>
-References: <1329756590-19993-1-git-send-email-festevam@gmail.com>
+	id S1755796Ab2B2IjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:39:24 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755395Ab2B2IjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 03:39:22 -0500
+Message-ID: <4F4DE438.6050707@nod.at>
+Date: Wed, 29 Feb 2012 09:39:20 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329756590-19993-1-git-send-email-festevam@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:35:52 up 108 days, 16:22, 30 users,  load average: 0.00, 0.02,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Jonas Bonn <jonas@southpole.se>
+CC: arnd@arndb.de, linux@openrisc.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] OpenRISC: IRQ: Include module.h
+References: <1330476393-14264-1-git-send-email-richard@nod.at>  <1330476393-14264-2-git-send-email-richard@nod.at> <1330501749.2964.4.camel@crucifix>
+In-Reply-To: <1330501749.2964.4.camel@crucifix>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF8313FE77F2A93B7EDFF58C5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 02:49:50PM -0200, Fabio Estevam wrote:
-> Add error check on sdma_get_firmware for the pdata case.
-> 
-> While at it, distinguish the error message between the pdata and dt cases.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/dma/imx-sdma.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index bf736ad..52a4e6a 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -1388,7 +1388,11 @@ static int __init sdma_probe(struct platform_device *pdev)
->  		sdma_add_scripts(sdma, pdata->script_addrs);
->  
->  	if (pdata) {
-> -		sdma_get_firmware(sdma, pdata->fw_name);
-> +		ret = sdma_get_firmware(sdma, pdata->fw_name);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "failed to get firmware from pdata\n");
-> +			goto err_init;
-> +		}
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF8313FE77F2A93B7EDFF58C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-No, you shouldn't bail out here. A failure in sdma_get_firmware only
-means that we don't have the RAM scripts, but we can continue with the
-ROM scripts and still do useful things in the driver.
+Am 29.02.2012 08:49, schrieb Jonas Bonn:
+You are right. export.h is better.
+I forgot commit f501693 (module.h: split out the EXPORT_SYMBOL into expor=
+t.h).
 
-Sascha
+> Thanks for helping out with build-testing the OpenRISC arch... much
+> appreciated.
+
+I'm doing more than build-testing.
+Yesterday my FPGA board booted the very first time Linux on OpenRISC. :-)=
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Thanks,
+//richard
+
+
+--------------enigF8313FE77F2A93B7EDFF58C5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPTeQ5AAoJEN9758yqZn9ewlAIALTvuQI8KEBOlfYCWUWJQqYW
+mKyPFAozH5s/EoaupcMLwIjlmU1BzgWp1bGDNinw2ozOzzSuexl1abLvHqGLo45H
+BgEwSiRU/heqC4OrTY1R09eUsW7rt7KSZyBZUGT6SFbzkkcRml05g73FcTDn6/Hq
+vqrKBysqv7CYcsZ9nkDu3liOp0qqardRTLOLj6HwWu5xIj3G+VQvE6m66I/hWYqh
+3DC824K3JYzKcukBEWSY/lZwfksssGlIPKg7eodskQmLjpG/tDYyJQlO9+lcMvHp
+MLtUKD52unzkhd8MNnB/Pzz56F3CtijiyOf1FnTBzXeCNQlDd0+WqgPfVQQtls8=
+=XGYD
+-----END PGP SIGNATURE-----
+
+--------------enigF8313FE77F2A93B7EDFF58C5--
