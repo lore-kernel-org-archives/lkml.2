@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965138Ab2B2BRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:17:31 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63175 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756587Ab2B2BR2 (ORCPT
+	id S932366Ab2B2B1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:27:18 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:45119 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab2B2B1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:17:28 -0500
-Date: Tue, 28 Feb 2012 17:17:21 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Igor Murzov <intergalactic.anonymous@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Igor Murzov <e-mail@date.by>, "Sergey V." <sftp.mtuci@gmail.com>
-Subject: Re: [RFC][PATCH 2/2] ACPI video: Don't start video device until its
- associated input device has been reigstered
-Message-ID: <20120229011721.GB11492@core.coreip.homeip.net>
-References: <20120229035142.31016e6f@garik>
- <20120229035518.306c57a8@garik>
- <20120229003915.GA11111@core.coreip.homeip.net>
+	Tue, 28 Feb 2012 20:27:17 -0500
+Date: Tue, 28 Feb 2012 20:26:44 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: boot/compressed/misc.s: Include <linux/bug.h> to
+ fix build break
+Message-ID: <20120229012644.GA4265@windriver.com>
+References: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120229003915.GA11111@core.coreip.homeip.net>
+In-Reply-To: <1330372350-6432-1-git-send-email-swarren@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 04:39:15PM -0800, Dmitry Torokhov wrote:
-> On Wed, Feb 29, 2012 at 03:55:18AM +0400, Igor Murzov wrote:
-> > From 202f25d44b1cf871697c88a6a3a8d854674db4d8 Mon Sep 17 00:00:00 2001
-> > From: Igor Murzov <e-mail@date.by>
-> > Date: Mon, 27 Feb 2012 21:57:59 +0400
-> > Subject: [PATCH 2/2] ACPI video: Don't start video device until its
-> >  associated input device has been reigstered
-> 
-> > 
-> > ---
-> >  drivers/acpi/video.c |   10 ++++++----
-> >  1 files changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index 1bc6370..b9e114c 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -1659,9 +1659,6 @@ static int acpi_video_bus_add(struct acpi_device *device)
-> >  	error = acpi_video_bus_get_devices(video, device);
-> >  	if (error)
-> >  		goto err_free_video;
-> > -	error = acpi_video_bus_start_devices(video);
-> > -	if (error)
-> > -		goto err_put_video;
-> >  
-> >  	video->input = input = input_allocate_device();
-> >  	if (!input) {
-> > @@ -1703,13 +1700,18 @@ static int acpi_video_bus_add(struct acpi_device *device)
-> >  	if (error)
-> >  		goto err_free_input_dev;
-> >  
-> > +	error = acpi_video_bus_start_devices(video);
-> > +	if (error)
-> > +		goto err_unregister_pm_notifier;
-> > +
-> 
-> Registered input device should be unregistered with
-> input_unregister_device(), not input_free_device(). Your change breaks
-> this.
-> 
-> Also, notify() will not be called until acpi_video_bus_add() completes
-> so current code should be perfectly fine.
+[[PATCH] ARM: boot/compressed/misc.s: Include <linux/bug.h> to fix build break] On 27/02/2012 (Mon 12:52) Stephen Warren wrote:
 
-Hm, I take the last paragraph back - in addition to bus notifier we do
-install device notifier explicitly so it might fire up early. The
-easiest fox would be to move acpi_video_bus_start_devices after
-input_allocate_device() but before input_refister_device() -
-unregistered input devoces can handle input_event() calls just fine.
+> Commmit cf86c17 "kernel.h: doesn't explicitly use bug.h, so don't include
+> it." caused the following build failure on ARM:
+> 
+>   CC      arch/arm/boot/compressed/misc.o
+> In file included from arch/arm/boot/compressed/misc.c:28:0:
+> arch/arm/mach-tegra/include/mach/uncompress.h: In function 'arch_decomp_setup':
+> arch/arm/mach-tegra/include/mach/uncompress.h:125:2: error: implicit declaration of function 'BUILD_BUG_ON_ZERO' [-Werror=implicit-function-declaration]
+> cc2: some warnings being treated as errors
+> 
+> Include <linux/bug.h> to fix that.
 
--- 
-Dmitry
+Hi Stephen,
+
+I wouldn't want to put bug.h in arm/boot/compressed/misc.c simply
+because I've built all the arm configs and I don't see this on
+running any of the existing arch/arm/config builds.
+
+However, if arch/arm/mach-tegra/include/mach/uncompress.h is using
+things from it, then perhaps it needs to include bug.h I think.
+
+Russell is totally correct in saying that uncompress has no business in
+calling/linking generic infrastructure functions, but your error message
+is a use of _BUILD_ bug stuff.  The early init code clearly can't do
+printk or similar, but should still be able to use BUILD_BUG type stuff
+that is meant to blow up on the x-compile host and not the target.  Use
+of BUILD_BUG is different from use of (runtime) BUG.  Does it warrant a
+separate header though?  It could, but I don't think we want to go there.
+
+The other interesting thing here, is that you see this when the kernel.h
+stops including bug.h -- so that means you've got an implicit presence
+of kernel.h -- which means you can legally (but incorrectly) link to
+things like printk() which simply dont make sense at this early stage of
+boot.  So I have to think that the exclusion of headers like bug.h to
+protect yourself from hurting yourself was already non-functional before
+you start.  The way things are currently requires the author to really
+think about the context they are operating in regardless.
+
+Using BUG in this context is wrong.  Using BUILD_BUG seems OK to me.
+
+Paul.
+--
+
+> 
+> This should probably be squashed into commit a3a3a1a "bug.h: add include
+> of it to various implicit C users".
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/boot/compressed/misc.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
+> index 8e2a8fc..30055be 100644
+> --- a/arch/arm/boot/compressed/misc.c
+> +++ b/arch/arm/boot/compressed/misc.c
+> @@ -18,6 +18,7 @@
+>  
+>  unsigned int __machine_arch_type;
+>  
+> +#include <linux/bug.h>
+>  #include <linux/compiler.h>	/* for inline */
+>  #include <linux/types.h>
+>  #include <linux/linkage.h>
+> -- 
+> 1.7.0.4
+> 
