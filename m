@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723Ab2B2QIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 11:08:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37391 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab2B2QIC (ORCPT
+	id S932754Ab2B2QIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 11:08:50 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:51570 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932730Ab2B2QIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 11:08:02 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.43.51.135 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330531826.3545.128.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Move CRC computation to separate function
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Wed, 29 Feb 2012 18:10:26 +0200
-In-Reply-To: <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	 <alpine.DEB.2.00.1202202112220.21022@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-sITxPpcgRQ9Xzto0rYxK"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Wed, 29 Feb 2012 11:08:37 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 0/8] validate MAC address before call .ndo_set_mac_address
+Date: Wed, 29 Feb 2012 17:08:12 +0100
+Message-Id: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1330531717;ab1f0c1a;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Validate the given MAC address directly in dev_set_mac_address()
+if a .ndo_validate_addr function is available before calling
+the .ndo_set_mac_address function.
 
---=-sITxPpcgRQ9Xzto0rYxK
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Changed .ndo_validate_addr to take a second parameter containing
+a sockaddr struct to be checked instead of the net_device dev_addr.
+The behaviour of .ndo_validate_addr is now: if the second parameter
+is NULL the net_device->dev_addr gets validate, if != NULL
+the given parameter/sockaddr gets validated instead.
 
-On Mon, 2012-02-20 at 21:15 +0100, Joel Reardon wrote:
-> This patch moves the computation of CRCs for data nodes from=20
-> within ubifs_prepare_node to a separate function ubifs_set_datanode_crc,=
-=20
-> which takes a data node, and computes and sets the CRC. This is to avoid=
-=20
-> duplication of the CRC computation code in other places where it may be=
-=20
-> needed.
->=20
-> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
-> diff -uprN -X linux-3.2.1-vanilla/Documentation/dontdiff=20
-> linux-3.2.1-vanilla/fs/ubifs/io.c linux-3.2.1-ubifsec/fs/ubifs/io.c
-> --- linux-3.2.1-vanilla/fs/ubifs/io.c   2012-01-12 20:42:45.000000000=20
-> +0100
-> +++ linux-3.2.1-ubifsec/fs/ubifs/io.c   2012-02-20 20:17:48.796684293=20
-> +0100
-> @@ -367,6 +367,18 @@ static unsigned long long next_sqnum(str
->   }
+This patch series include adaptations for some drivers which
+use .ndo_set_mac_address functions directly - to prevent double
+checks and to enable validations via .ndo_validate_addr.
 
-This patch is line-wrapped and cannot be applied. Would you please send
-a non-wrapped version. You may experiment by sending to yourself, then
-saving, and then applying using "git am".
+If these patches get accepted, an other series will follow
+to cleanup the validation checks in the .ndo_set_mac_address 
+functions.
 
->=20
->   /**
-> + * ubifs_set_datanode_crc - writes the crc for a data node to the common
-> + * header.
-> + * @node: the data node
-> + */
-> +void ubifs_set_datanode_crc(void *node)
-> +{
-> +       struct ubifs_ch *ch =3D (struct ubifs_ch *) node;
-> +       int len =3D le32_to_cpu(ch->len);
-> +       ch->crc =3D cpu_to_le32(crc32(UBIFS_CRC32_INIT, node + 8, len - 8=
-));
-> +}
+Note: resend for ML's
 
-This changes is not needed unless there is other code which needs this
-function. So once I get a non-wrapped patch I can create a branch for
-you in the UBIFS tree and collect your patches. Once they are ready,
-they can be merged.
+Danny Kukawka (8):
+  net: validate MAC address directly in dev_set_mac_address()
+  bnx2x: adopt bnx2x_validate_addr() to .ndo_validate_addr changes
+  cris/eth_v10: use dev_set_mac_address() instead of
+    e100_set_mac_address()
+  bcm63xx_enet: use dev_set_mac_address() instead of
+    bcm_enet_set_mac_address()
+  ethoc: add .ndo_validate_addr to net_device_ops
+  lantiq_etop: use dev_set_mac_address() instead of
+    ltq_etop_set_mac_address()
+  neterion/s2io: fix s2io_set_mac_addr() to prevent double checks
+  octeon: use dev_set_mac_address() instead of
+    octeon_mgmt_set_mac_address()
 
---=20
-Best Regards,
-Artem Bityutskiy
+ drivers/net/cris/eth_v10.c                       |    3 +--
+ drivers/net/ethernet/broadcom/bcm63xx_enet.c     |    2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   13 ++++++++++---
+ drivers/net/ethernet/ethoc.c                     |    4 +---
+ drivers/net/ethernet/lantiq_etop.c               |    4 ++--
+ drivers/net/ethernet/neterion/s2io.c             |    5 +----
+ drivers/net/ethernet/octeon/octeon_mgmt.c        |    6 ++----
+ include/linux/etherdevice.h                      |    2 +-
+ include/linux/netdevice.h                        |    7 +++++--
+ net/core/dev.c                                   |    7 ++++++-
+ net/ethernet/eth.c                               |   12 +++++++++---
+ 11 files changed, 39 insertions(+), 26 deletions(-)
 
---=-sITxPpcgRQ9Xzto0rYxK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTk3yAAoJECmIfjd9wqK0n6oP/R7Pn1CXx1QyTjsyZiO1JcHo
-joWMErZwZ4+UB5lC0A/XZOfiG80Po0QpG0vEIOEw4q+ppA4DdccrqWZ1WwdE+a3I
-ZYcpH/aFZuThjXAXfW6wsOXpMQZcD1KHwT92W1ajXn5NeQ07EiEL4Z3+XZNoTtqL
-L9vaUfRyLZNXnTEtw0DaSn4VDMUpWrJwvGRzM6bzxPZ5LEbkycenTZ1T6nmTSRWd
-RB41efS9ck9QViZZBve2LRzWFdqQKX8aCOpCnXArXA6y5Q6e/b5KMqdCutWt1IaJ
-mskt4+U4hAo2qoksI9a37AG7ncEl1YZP+iMEA3wp7hfrS6c9UOpumkRC/hQdoPHj
-WViJK9uh26dJ/yGshDB4a7x2nmHIJmmvJpo5rTGz36PP3MG3tjJ/nzJNxASvBX09
-zmvln3gUu2ekMI7jyPwVpM6IPNRo7QGT0sYSkY009oWX2X2+IAD4MU6oL/id9O/G
-2UHxcCYKbxuZsrNdub8qEcp7J9M0PDKeFOK+KOYgFJuRHdqf+1rFdCWQTCJQKjJo
-ftKdS9RakR4KfpBtQ1mWyLGX6syqcfyHAa7zi80/hkHlvCZSj8YPYXFc3qxpaEb+
-Q0wFVP0suR8lQrVoPLSRvn7YVy5jKB8BeBsDqkyrWI65o+It62qEsc1r89z7ptrD
-oQI1Fymhrwb3uFgChBnY
-=xntw
------END PGP SIGNATURE-----
-
---=-sITxPpcgRQ9Xzto0rYxK--
+-- 
+1.7.8.3
 
