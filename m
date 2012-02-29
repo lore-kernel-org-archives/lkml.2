@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab2B2RWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:22:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39413 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758031Ab2B2RWn (ORCPT
+	id S1758264Ab2B2RXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:23:04 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3807 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758031Ab2B2RXC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:22:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.43.49.201 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330536308.3545.158.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Adding Secure Deletion to UBIFS
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 19:25:08 +0200
-In-Reply-To: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-3bY69MkNSulJmrlkXsOv"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Wed, 29 Feb 2012 12:23:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 29 Feb 2012 09:22:43 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Feb 2012 09:22:42 -0800
+Subject: RE: [PATCH V2 4/6] pinctrl: API changes to support multiple states
+ per device
+Thread-Topic: [PATCH V2 4/6] pinctrl: API changes to support multiple states
+ per device
+Thread-Index: Acz2rQ5bGSBuVie7Qaq921skLmGsxwAWOB4Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF207C@HQMAIL01.nvidia.com>
+References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
+ <1330460852-23486-5-git-send-email-swarren@nvidia.com>
+ <20120229064633.GA14703@shlinux2.ap.freescale.net>
+In-Reply-To: <20120229064633.GA14703@shlinux2.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dong Aisheng wrote at Tuesday, February 28, 2012 11:47 PM:
+> On Tue, Feb 28, 2012 at 01:27:30PM -0700, Stephen Warren wrote:
+...
+> > +static struct pinctrl *find_pinctrl(struct device *dev)
+> > +{
+> > +	struct pinctrl *p;
+> > +
+> > +	list_for_each_entry(p, &pinctrldev_list, node)
+>
+> s/pinctrldev_list/pinctrl_list ?
 
---=-3bY69MkNSulJmrlkXsOv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Uggh. I could have sworn I fixed that before. Perhaps I had the same
+silly error somewhere else too. Thanks for catching it.
+> 
+> > +static int pinctrl_select_state_locked(struct pinctrl *p,
+> > +				       struct pinctrl_state *state)
+...
+> > +	if (p->state) {
+> > +		/*
+> > +		 * The set of groups with a mux configuration in the old state
+> > +		 * may not be identical to the set of groups with a mux setting
+> > +		 * in the new state. While this might be unusual, it's entirely
+> > +		 * possible for the "user"-supplied mapping table to be written
+> > +		 * that way. For each group that was configured in the old state
+> > +		 * but not in the new state, this code puts that group into a
+> > +		 * safe/disabled state.
+>
+> It means the old state function of some groups may not have been disabled before
+> enabling the new function mode.
+> May it be a little error-prone?
+> Maybe we can not depend on user to disable a function before enable another for
+> a group when doing pinmux_enable_setting considering they may be different
+> registers.
 
-On Thu, 2012-02-09 at 16:24 +0100, Joel Reardon wrote:
->=20
-> Each data nodes includes a reference to a key in the KSA. This key is rea=
-d and=20
-> used to decrypt the data. When a new data node is written, an unused key =
-is=20
-> selected from the KSA and used to encrypt the data node. The reference to=
- the=20
-> key is then included with the node. The keys in the KSA are written befor=
-e=20
-> actually being used to encrypt data. To securely delete a data node, we s=
-imply=20
-> mark the corresponding key position as deleted, and during the next purgi=
-ng=20
-> operation the KSA erase block that contains the key is then updated to a=
-=20
-> version that does not contain the key.
+The idea here is that there are two cases:
 
-Why do you need to have your '__u64 crypto_lookup' both in the data node
-and the index? Isn't it enough to have them only inside the data nodes?
-ubifs_branch anyway points to the data node and you can read your
-'crypto_lookup' from there.
+1) (hopefully the typical case)
 
---=20
-Best Regards,
-Artem Bityutskiy
+Group X HAS a mux function set in OLD state
+Group X HAS a mux function set in NEW state
 
---=-3bY69MkNSulJmrlkXsOv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+In this case, we simply call pinmux_enable_setting(new state).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+We do this so that we can transition directly from the old state to the
+new state without going through any artificial intermediate states, to
+make the mux switching as glitchless as possible.
 
-iQIcBAABAgAGBQJPTl91AAoJECmIfjd9wqK0JJcP/AqCnbP9BH9mBFltA8ygnwvt
-BwPhEl/2lcr6ajmFsDgn2B5Z9juo+2Ba6UcYs4eARob87rtnwEzMQDakp+sg7uPd
-SPVXOCdHC5L2+2axFZOUDTCGbGMLm8fO1gxPFJnH9NmwpnP5lJH33kaf/jcxPQvY
-l6wrutaFdN9cIo2UkRVQtOKV++JqV06H7U+4ABhImRB0eu9cUMFA12hOA46+mIw6
-WAysYzd66pfrNUCedxBUycwIg2ckPfOgeESsoCMQB8HIRpmrrrboLRI/aekmbBa5
-tN0RUvuXeiJAjJ//3+g1oaVykPVr8JGjvNi2dHmP5Oiu/izHx5d4v7F6xc0mdvcC
-VpJ7FqssiPTKCkzAv2dI1tItfHoinjNtkwfKMDmIBSEZJSbsLo/WNdosyv+uhvnw
-5kmMbh8j/CtYq6a9OFq3XPcwZCCSbw6FfzCwtogHMd29p2CKpl4OT7NeOlfEDM+G
-HG3JTMF9IJUXwvDnInY86lDGLHk2wOvqHVjC2uCaNHpPG1xc0YVIudaJYxH9MAgv
-4rvQdbEsjlfJ10gzPzJ3pp2pmib3fe6SdeHXMh36IZoptsv7y0M1DSL+8VRMk683
-m0rf7xBxTFc/6nLupPxmbZP50VaUKGCeydian9fhfxv+sOrN3U21wtju4YBXf61J
-NZdafpvQGyjR7THchgZ7
-=/RSv
------END PGP SIGNATURE-----
+If the HW has some restriction where it has to operate like:
 
---=-3bY69MkNSulJmrlkXsOv--
+Old state -> idle -> new state
+
+Rather than:
+
+Old state -> new state
+
+Then I think that should be taken care of within the individual driver;
+given most mux selection is just a register field that feeds into a simple
+signal mux in HW, such a requirement seems pretty unlikely to me, but you
+never know.
+
+2)
+
+Group X HAS a mux function set in OLD state
+Group X DOES NOT have a mux function set in NEW state
+
+In this case, we call pinmux_disable_setting(old state) to ensure that
+the pin is put into some idle state that can't interfere with any other
+pin.
+
+-- 
+nvpublic
 
