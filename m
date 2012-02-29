@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965958Ab2B2Xyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:54:40 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49284 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458Ab2B2Xyg (ORCPT
+	id S965694Ab2B2Xyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:54:39 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49783 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756522Ab2B2Xyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:54:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.161.103 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
-MIME-Version: 1.0
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v12 02/13] net/compat.c,linux/filter.h: share compat_sock_fprog
-Date: Wed, 29 Feb 2012 17:53:29 -0600
-Message-Id: <1330559620-23543-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	Wed, 29 Feb 2012 18:54:35 -0500
+Date: Thu, 1 Mar 2012 10:54:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: bad commit in the regmap tree
+Message-Id: <20120301105425.ef188f8724204c55ec805929@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any other users of bpf_*_filter that take a struct sock_fprog from
-userspace will need to be able to also accept a compat_sock_fprog
-if the arch supports compat calls.  This change let's the existing
-compat_sock_fprog be shared.
+--Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Will Drewry <wad@chromium.org>
+Hi Mark,
 
-v11: introduction
----
- include/linux/filter.h |   11 +++++++++++
- net/compat.c           |    8 --------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+I noticed that commit 0308333a9987 ("regmap: Add stub for
+regcache_sync_region()") is the same as its parent commit 868d3fdeaae9
+("regmap: Add stub for regcache_sync_region()").  So the function
+regcache_sync_region() has been added to include/linux/regmap.h twice
+(the context is not sufficient to stop the patch applying twice).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index bdd02f9..f052f5c 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -10,6 +10,7 @@
- 
- #ifdef __KERNEL__
- #include <linux/atomic.h>
-+#include <linux/compat.h>
- #endif
- 
- /*
-@@ -135,6 +136,16 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
- 
- #ifdef __KERNEL__
- 
-+#ifdef CONFIG_COMPAT
-+/*
-+ * A struct sock_filter is architecture independent.
-+ */
-+struct compat_sock_fprog {
-+	u16		len;
-+	compat_uptr_t	filter;		/* struct sock_filter * */
-+};
-+#endif
-+
- struct sk_buff;
- struct sock;
- 
-diff --git a/net/compat.c b/net/compat.c
-index 73bf0e0..5ba1bdc 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -328,14 +328,6 @@ void scm_detach_fds_compat(struct msghdr *kmsg, struct scm_cookie *scm)
- 	__scm_destroy(scm);
- }
- 
--/*
-- * A struct sock_filter is architecture independent.
-- */
--struct compat_sock_fprog {
--	u16		len;
--	compat_uptr_t	filter;		/* struct sock_filter * */
--};
--
- static int do_set_attach_filter(struct socket *sock, int level, int optname,
- 				char __user *optval, unsigned int optlen)
- {
--- 
-1.7.5.4
+--Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTrqxAAoJEECxmPOUX5FEpXgP/RjSLO+Xp187kULQc0B5s2rf
+NUdv1g88BW6UxswfGqCxfUWGl4TakUCi92RMC026XPhtKWzSZztv5rmXHQoIZRTh
+d63HaBnsb/mXItpCspc4twVYnuEejIP3G+KgUwDnQc5itG4mmKr/dmirbt3DMCQS
+qGgYsflHCRd61bcv5D2wryu++nw3uV8cWipTG3KHA3frHkg++3/odkOKpeMv2e7R
+lI9i64oUluhxTsqjttIT1vNDwL+ohX1hzhmDJLZw+rqZmX9g1vxtNja1KxLIPksO
+mOw4Na0/B+9QbDtxM2cMQXvzwRQ8cjQj0YtCxwP0b786L7DD6jLDkl8HBqwh+aYt
+jgagBe90Lwc7wlVXcyQYa9LVwKKCOkNJj7zob/8veaw3P4mMc1csjfVRT59Dz/2Y
+miwFkng6jqblHc9xdc5PwuXcher7xxZN4Xb4vwjV8Ksg0c34iJB+DNiEWMU8wIyy
+F8w/UltvOzKHHxFChf0oSyT7HVcN0XrByEWL308wQ8CBE1A/PiW/C/0VVRa8FOqM
++o91Bv3Q+Y1tz6BEQwx7zoRWnt3K7baYqBoHOetjw4c5BPL56oYYDmmAqneiFcq3
+9lFJH3+iQFVKAyNkkb0LLeOWL0KMbTxvjT3KMMmrTR2N1ar8dKroEeuDrA+3vAYR
+4wDdOEZXQ4HCRZdvyBW4
+=GZXq
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Mar_2012_10_54_25_+1100_8rT4aQgG.FD8qx8u--
