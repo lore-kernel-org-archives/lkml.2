@@ -1,164 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030402Ab2B2CZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:25:30 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:41074 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757567Ab2B2CZ2 (ORCPT
+	id S1030652Ab2B2C3E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:29:04 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:51985 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab2B2C3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:25:28 -0500
-X-SpamScore: -10
-X-BigFish: VS-10(zz9371I1454I146fK1432N98dKa706lzz1202hzz8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 29 Feb 2012 10:31:25 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/2] pinctrl: Introduce PINCTRL_STATE_DEFAULT,
- define hogs as that state
-Message-ID: <20120229023124.GB3816@shlinux2.ap.freescale.net>
-References: <1330386909-17723-1-git-send-email-swarren@nvidia.com>
- <20120228093015.GC1249@shlinux2.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF17BDDF1D61@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF1D61@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Tue, 28 Feb 2012 21:29:02 -0500
+Date: Tue, 28 Feb 2012 21:28:57 -0500 (EST)
+Message-Id: <20120228.212857.797446903975232476.davem@davemloft.net>
+To: xiong@qca.qualcomm.com
+Cc: rodrigue@qca.qualcomm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qca-linux-team@qualcomm.com,
+        nic-devel@qualcomm.com, kgiori@qca.qualcomm.com, chris.snook@gmail.com,
+        mathieu@qca.qualcomm.com, bryanh@quicinc.com
+Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com>
+References: <20120228.205347.1718771650331094141.davem@davemloft.net>
+	<CAB=NE6VXyQ-k1Sm3Xf_ABE35+PHSoNqX=AJpLBjNu0sdAdnY4g@mail.gmail.com>
+	<157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 28 Feb 2012 18:28:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 09:26:22AM -0800, Stephen Warren wrote:
-> Dong Aisheng wrote at Tuesday, February 28, 2012 2:30 AM:
-> > On Mon, Feb 27, 2012 at 04:55:08PM -0700, Stephen Warren wrote:
-> > > This provides a single centralized name for the default state.
-> > >
-> > > Update PIN_MAP_* macros to use this state name, instead of requiring the
-> > > user to pass a state name in.
-> ...
-> 
-> > > diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> 
-> > >  static struct pinctrl_map __initdata mapping[] = {
-> > > -       PIN_MAP("I2CMAP", "pinctrl-foo", "i2c0", "foo-i2c.0"),
-> > > +	PIN_MAP(PINCTRL_STATE_DEFAULT, "pinctrl-foo", "i2c0", "foo-i2c.0"),
-> >
-> > It seemed Linus already applied your "re-order struct pinctrl_map".
-> > This may need change a bit according to that patch.
-> 
-> Yes, that patch is applied.
-> 
-> However, note that I deliberately did not change PIN_MAP()'s parameter
-> order in that patch. I deferred as much rework of those macros to the
-> later patch "pinctrl: Enhance mapping table to support pin config
-> operations" to avoid repeatedly changing those macros where possible.
-> 
-> For reference, the definition of PIN_MAP() at this point in the series
-> is:
-> 
-> #define PIN_MAP(a, b, c, d) \
->         { .name = a, .ctrl_dev_name = b, .function = c, .dev_name = d }
-> 
-Ok, i see.
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+Date: Wed, 29 Feb 2012 02:19:05 +0000
 
-> (.group is still allowed to be NULL)
-> 
-> > > @@ -1078,8 +944,6 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
-> > >  			    device_root, pctldev, &pinctrl_groups_ops);
-> > >  	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
-> > >  			    device_root, pctldev, &pinctrl_gpioranges_ops);
-> > > -	debugfs_create_file("pinmux-hogs", S_IFREG | S_IRUGO,
-> > > -			    device_root, pctldev, &pinmux_hogs_ops);
-> >
-> > I see you remove the pinnmux-hogs sysfs file here.
-> > I guess you may want to merge it into pinctrl-maps sysfs file since
-> > they're almost same(only difference is device name).
-> > 
-> > Do you think if we can add a special flag for that type of map in sysfs
-> > (e.g. a "Hog" flag behind the regular map debug info)?
-> > Then users do not need to check device's name to see if it's a hogged function.
-> > 
-> > (Anyway, it should be in another patch)
-> 
-> I'd rather not myself; I don't see why "hog" should be a special-case;
-> it's just that the pin controller driver's mapping table entries have
-> it set up certain pin mux/config settings.
-> 
-> That said, feel free to submit a patch for this. I'd prefer that any
-> text you add to the debugfs files to indicate this "hogging" be in
-> addition to anything that's already present rather than replacing it
-> (as has unfortunately happened already in "pinmux-pins"), otherwise
-> it obscures information.
-> 
-Yes, correct.
+>      The code related to hardware of atl1c is quite diff with that
+> in our hand, every time we take much time to find which part should
+> be revised for one bug/issue found on other platform/OSes. the new
+> driver make it easy to fix and support new chipset as well.
 
-> > > diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-> > > index 73fbb27..20e9735 100644
-> > > --- a/include/linux/pinctrl/machine.h
-> > > +++ b/include/linux/pinctrl/machine.h
-> > > @@ -12,6 +12,8 @@
-> > >  #ifndef __LINUX_PINCTRL_MACHINE_H
-> > >  #define __LINUX_PINCTRL_MACHINE_H
-> > >
-> > > +#include "pinctrl.h"
-> > > +
-> > >  /**
-> > >   * struct pinctrl_map - boards/machines shall provide this map for devices
-> > >   * @dev_name: the name of the device using this specific mapping, the name
-> > > @@ -49,17 +51,18 @@ struct pinctrl_map {
-> > >   * Convenience macro to map a system function onto a certain pinctrl device,
-> > >   * to be hogged by the pin control core until the system shuts down.
-> > >   */
-> > > -#define PIN_MAP_SYS_HOG(a, b, c) \
-> > > -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, }
-> > > +#define PIN_MAP_SYS_HOG(a, b) \
-> > > +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
-> > > +	  .function = b, }
-> > >
-> > >  /*
-> > >   * Convenience macro to map a system function onto a certain pinctrl device
-> > >   * using a specified group, to be hogged by the pin control core until the
-> > >   * system shuts down.
-> > >   */
-> > > -#define PIN_MAP_SYS_HOG_GROUP(a, b, c, d)		\
-> > > -	{ .name = a, .ctrl_dev_name = b, .dev_name = b, .function = c, \
-> > > -	  .group = d, }
-> > > +#define PIN_MAP_SYS_HOG_GROUP(a, b, c) \
-> > > +	{ .name = PINCTRL_STATE_DEFAULT, .ctrl_dev_name = a, .dev_name = a, \
-> > > +	  .function = b, .group = c, }
-> > >
-> > 
-> > In your v1 patch, we discussed about the possible requirement of different state
-> > support for hog functions(it seemed still no conclusion, right?).
-> 
-> I agreed to fully support that. However as I mentioned, the support will be
-Great.
+Broadcom gave the same excuses.  Save yourself some typing.
 
-> actually implemented in patch "pinctrl: Enhance mapping table to support
-> pin config operations" since I was already reworking all the mapping
-> table macros there, it felt better to do the rework once in that patch.
-> 
-Reasonable to me.
+I already know what you are going to say and claim are the issues.
 
-> I'm waiting on resolution of the locking patch issue before I repost an
-> updated version of the mapping table rework patch that includes this
-> support.
-> 
-Sounds good.
+I've heard it all before, and none of them justify replacing the
+existing driver wholesale.  We simply don't operate this way.
 
-> > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
+Because you guys didn't upstream your driver properly back when
+the atl1c hardware first came out and Linux needed a driver,
+someone else did.
 
-Regards
-Dong Aisheng
+And we're not removing their driver just because now you guys just
+want to come in and take over simply because you're not willing to
+collaborate properly and contribute to the existing code like everyone
+else on the planet does.
 
+There is no arguing against this, there is no justification, and it
+simply will not happen.  I'm sorry you put some must effort into this
+but you should have been smart and listened to Luis last year when he
+tried to guide you in the right direction.
+
+Listening to Luis would have saved you a lot of wasted engineering.
+
+Maybe you will be smart and listen to him next time.
