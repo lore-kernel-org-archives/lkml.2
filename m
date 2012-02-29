@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab2B2EY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 23:24:27 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:53807 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab2B2EY0 (ORCPT
+	id S1756924Ab2B2E0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 23:26:51 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44469 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755095Ab2B2E0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 23:24:26 -0500
-Date: Wed, 29 Feb 2012 13:30:47 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mtosatti@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/4] KVM: srcu-less dirty logging
-Message-Id: <20120229133047.40d6da57.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4F4CA66F.8090109@redhat.com>
-References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
-	<1330003524.11248.11.camel@twins>
-	<4F4CA66F.8090109@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Feb 2012 23:26:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5NOqnqWxCBV+NecA34z0YJHP7FCy6mNd5GUJ8q__CZHw@mail.gmail.com>
+References: <1330466863-28469-1-git-send-email-yinghai@kernel.org>
+	<1330466863-28469-13-git-send-email-yinghai@kernel.org>
+	<CAErSpo66PD3+E3ZFqp73XHabL+8GavpX97pUkd28T6KWTBH-aA@mail.gmail.com>
+	<CAE9FiQWBvYZO-D+Z2zwdd0a-bkatF-0YPtmxKP4Se75vccgPrA@mail.gmail.com>
+	<CAErSpo5NOqnqWxCBV+NecA34z0YJHP7FCy6mNd5GUJ8q__CZHw@mail.gmail.com>
+Date: Tue, 28 Feb 2012 20:26:48 -0800
+X-Google-Sender-Auth: 7Ikh7O8sswkmRJqUcc1zLn7Ea7A
+Message-ID: <CAE9FiQXiCAxtNCafBtvx2Wj6=te5ciLjbC9icaPn788xQD06kQ@mail.gmail.com>
+Subject: Re: [PATCH 12/24] PCI, ia64: Register busn_res for root buses
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> wrote:
+On Tue, Feb 28, 2012 at 4:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Feb 28, 2012 at 5:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>
+>>> Why do you add a new struct resource here?  Can't you just use the one
+>>> passed in from acpi_pci_root_add()?
+>>
+>> not quite sure about the life cycle for that object.
+>
+> The struct acpi_pci_root is allocated in acpi_pci_root_add() and freed
+> in acpi_pci_root_remove(), so it should be safe for PCI to use.
 
-> There will be an inversion for sure, if __put_user() faults and triggers
-> an mmu notifier (perhaps directly, perhaps through an allocation that
-> triggers a swap).
+ok will change that for ia64.
 
-Ah, I did not notice that possibility.
+>
+> Same thing applies for x86, of course.
 
-Thanks,
-	Takuya
+for x86, will have separate addon patch.
+
+Thanks
+
+      Yinghai
