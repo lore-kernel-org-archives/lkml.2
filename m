@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab2B2Tb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 14:31:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab2B2TbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 14:31:24 -0500
-Message-ID: <1330543855.29701.180.camel@bling.home>
-Subject: Re: RFC: Device isolation groups
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@ozlabs.ru,
-        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 12:30:55 -0700
-In-Reply-To: <20120202012414.GE8700@truffala.fritz.box>
-References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
-	 <1328126919.6937.254.camel@bling.home>
-	 <20120202012414.GE8700@truffala.fritz.box>
+	id S1757677Ab2B2Tce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 14:32:34 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:50475 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754837Ab2B2Tcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 14:32:32 -0500
+Message-ID: <1330543951.21491.15.camel@joe2Laptop>
+Subject: Re: "whitespace coding style cleanup" broke coding style
+From: Joe Perches <joe@perches.com>
+To: Armin Schindler <armin@melware.de>
+Cc: Tilman Schmidt <tilman@imap.cc>, Armin Schindler <mac@melware.de>,
+        Karsten Keil <isdn@linux-pingi.de>, Jiri Slaby <jslaby@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, Hansjoerg Lipp <hjlipp@web.de>,
+        gigaset307x-common@lists.sourceforge.net,
+        Jiri Slaby <jirislaby@gmail.com>, David Miller <davem@davemloft.net>
+Date: Wed, 29 Feb 2012 11:32:31 -0800
+In-Reply-To: <4F4DE175.30002@melware.de>
+References: <4F4B45F6.4090706@suse.cz> <1330361549.9942.7.camel@joe2Laptop>
+	 <4F4D15E1.3090306@imap.cc> <1330466751.21481.18.camel@joe2Laptop>
+	 <4F4D5E84.8090404@imap.cc> <1330471687.31737.19.camel@joe2Laptop>
+	 <4F4DE175.30002@melware.de>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-02 at 12:24 +1100, David Gibson wrote:
-> On Wed, Feb 01, 2012 at 01:08:39PM -0700, Alex Williamson wrote:
-> > On Wed, 2012-02-01 at 15:46 +1100, David Gibson wrote:
-> > > This patch series introduces a new infrastructure to the driver core
-> > > for representing "device isolation groups".  That is, groups of
-> > > devices which can be "isolated" in such a way that the rest of the
-> > > system can be protected from them, even in the presence of userspace
-> > > or a guest OS directly driving the devices.
-> > > 
-> > > Isolation will typically be due to an IOMMU which can safely remap DMA
-> > > and interrupts coming from these devices.  We need to represent whole
-> > > groups, rather than individual devices, because there are a number of
-> > > cases where the group can be isolated as a whole, but devices within
-> > > it cannot be safely isolated from each other - this usually occurs
-> > > because the IOMMU cannot reliably distinguish which device in the
-> > > group initiated a transaction.  In other words, isolation groups
-> > > represent the minimum safe granularity for passthrough to guests or
-> > > userspace.
-> > > 
-> > > This series provides the core infraustrcture for tracking isolation
-> > > groups, and example implementations initializing the groups
-> > > appropriately for two PCI bridges (which include IOMMUs) found on IBM
-> > > POWER systems.
-> > > 
-> > > Actually using the group information is not included here, but David
-> > > Woodhouse has expressed an interest in using a structure like this to
-> > > represent operations in iommu_ops more correctly.
-> > > 
-> > > Some tracking of groups is a prerequisite for safe passthrough of
-> > > devices to guests or userspace, such as done by VFIO.  Current VFIO
-> > > patches use the iommu_ops->device_group mechanism for this.  However,
-> > > that mechanism is awkward, because without an in-kernel concrete
-> > > representation of groups, enumerating a group requires traversing
-> > > every device on a given bus type.  It also fails to cover some very
-> > > plausible IOMMU topologies, because its groups cannot span devices on
-> > > multiple bus types.
-> > 
-> > So far so good, but there's not much meat on the bone yet.
-> 
-> True..
+On Wed, 2012-02-29 at 09:27 +0100, Armin Schindler wrote:
+> On 02/29/2012 12:28 AM, Joe Perches wrote:
+> > One of those, Armin Schindler, (cc'd) hasn't
+> > signed a single commit in git history.
+> True, my last work here was a long time ago.
+> I used to maintain the eicon driver, but this driver
+> is not just old, it is simply outdated for years and
+> I doubt someone will ever use it in newer kernels.
+> It just creates work here.
 
-Any update to this series?  It would be great if we could map out the
-functionality to the point of breaking down and distributing work... or
-determining if the end result has any value add to what VFIO already
-does.  Thanks,
+You could remove yourself from MAINTAINERS if you want.
 
-Alex
+ MAINTAINERS |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5d3ae86..d40a974 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3682,10 +3682,9 @@ F:	include/linux/isdn.h
+ F:	include/linux/isdn/
+ 
+ ISDN SUBSYSTEM (Eicon active card driver)
+-M:	Armin Schindler <mac@melware.de>
+ L:	isdn4linux@listserv.isdn4linux.de (subscribers-only)
+ W:	http://www.melware.de
+-S:	Maintained
++S:	Orphan
+ F:	drivers/isdn/hardware/eicon/
+ 
+ IT87 HARDWARE MONITORING DRIVER
+
+> Some time ago I asked (I don't remember who) why
+> don't we remove that old driver from the kernel.
+> It wasn't done because there is no follow up for the
+> kernel. The new drivers out there are maintained,
+> but will never be part of the kernel (coding style, etc.).
+> I guess the idea was not to remove a driver from the kernel
+> when there is no alternative (in kernel).
+> Maybe I should bring this up again and ask for a removal of the
+> current eicon driver in kernel...
+
+Your choice.
+
+It could be moved to staging as a prelude to removing
+it after a few releases.
+
+I did do a rather large drive-by whitespace cleanup
+of eicon.  It still compiles.  I've no idea if it
+still works though.
+
+cheers, Joe
 
