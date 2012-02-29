@@ -1,110 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965931Ab2B2XMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:12:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34059 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965631Ab2B2XMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:12:12 -0500
-Message-ID: <4F4EB0B9.2080906@zytor.com>
-Date: Wed, 29 Feb 2012 15:11:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Joshua C." <joshuacov@googlemail.com>
-CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
-In-Reply-To: <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S965613Ab2B2XJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:09:35 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25953 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab2B2XIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 18:08:42 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 31/39] PCI: Probe safe range that we can use for unassigned bridge.
+Date: Wed, 29 Feb 2012 15:07:30 -0800
+Message-Id: <1330556858-11768-32-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
+References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F4EAFEF.009D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good, *except* that this will break the compile for all non-x86
-architectures.  It might be worthwhile to factor out the
-architecture-dependent bits for cleanliness.
+Try to allocate from parent bus busn_res. if can not find any big enough, will try
+to extend parent bus top. even the extending is through allocating, after allocating
+will pad the range to parent buses top.
 
-	-hpa
+When extending happens, We will record the parent_res, so could use it as stopper
+for really extend/shrink top later.
 
-On 02/29/2012 02:56 PM, Joshua C. wrote:
-> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-> index a605549..40a33bf 100644
-> --- a/drivers/tty/vt/keyboard.c
-> +++ b/drivers/tty/vt/keyboard.c
-> @@ -24,6 +24,8 @@
-> 
->  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> 
-> +#include <asm/io.h>
-> +#include <asm/setup.h>
->  #include <linux/consolemap.h>
->  #include <linux/module.h>
->  #include <linux/sched.h>
-> @@ -52,19 +54,6 @@ extern void ctrl_alt_del(void);
-> 
->  #define KBD_DEFMODE ((1 << VC_REPEAT) | (1 << VC_META))
-> 
-> -/*
-> - * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
-> - * This seems a good reason to start with NumLock off. On HIL keyboards
-> - * of PARISC machines however there is no NumLock key and everyone
-> expects the keypad
-> - * to be used for numbers.
-> - */
-> -
-> -#if defined(CONFIG_PARISC) && (defined(CONFIG_KEYBOARD_HIL) ||
-> defined(CONFIG_KEYBOARD_HIL_OLD))
-> -#define KBD_DEFLEDS (1 << VC_NUMLOCK)
-> -#else
-> -#define KBD_DEFLEDS 0
-> -#endif
-> -
->  #define KBD_DEFLOCK 0
-> 
->  void compute_shiftstate(void);
-> @@ -1428,12 +1417,32 @@ static struct input_handler kbd_handler = {
->  	.id_table	= kbd_ids,
->  };
-> 
-> +/* Let the user decide if we should use the value from the BIOS. */
-> +static int numlock = 1;
-> +MODULE_PARM_DESC(numlock, "Should we use the NumLock state returned
-> by the BIOS? \
-> +				(1 = use BIOS Setting, 0 = don't use it)");
-> +module_param_named(numlock, numlock, int, 0400);
-> +
->  int __init kbd_init(void)
->  {
->  	int i;
->  	int error;
-> 
-> -        for (i = 0; i < MAX_NR_CONSOLES; i++) {
-> +	/*
-> +	* Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
-> +	* This seems a good reason to start with NumLock off. On HIL keyboards
-> +	* of PARISC machines however there is no NumLock key and everyone
-> expects the keypad
-> +	* to be used for numbers. That's why we start with NumLock off and
-> ask the bios
-> +	* for the correct state.
-> +	*/
-> +
-> +	int KBD_DEFLEDS = 0 << VC_NUMLOCK;
-> +
-> +	/* Numlock status bit set? */
-> +	if ((boot_params.kbd_status & 0x20) && numlock)
-> +		KBD_DEFLEDS = 1 << VC_NUMLOCK;
-> +
-> +	for (i = 0; i < MAX_NR_CONSOLES; i++) {
->  		kbd_table[i].ledflagstate = KBD_DEFLEDS;
->  		kbd_table[i].default_ledflagstate = KBD_DEFLEDS;
->  		kbd_table[i].ledmode = LED_SHOW_FLAGS;
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |  110 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 110 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 96259f8..c540022 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -691,6 +691,116 @@ static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
+ 	pci_bus_update_top(parent, -size, parent_res);
+ }
+ 
++static resource_size_t __devinit find_res_top_free_size(struct resource *res)
++{
++	resource_size_t n_size;
++	struct resource tmp_res;
++
++	/*
++	 *   find out number below res->end, that we can use at first
++	 *	res->start can not be used.
++	 */
++	n_size = resource_size(res) - 1;
++	memset(&tmp_res, 0, sizeof(struct resource));
++	while (n_size > 0) {
++		int ret;
++
++		ret = allocate_resource(res, &tmp_res, n_size,
++			res->end - n_size + 1, res->end,
++			1, NULL, NULL);
++		if (ret == 0) {
++			release_resource(&tmp_res);
++			break;
++		}
++		n_size--;
++	}
++
++	return n_size;
++}
++
++static int __devinit pci_bridge_probe_busn_res(struct pci_bus *bus,
++			 struct pci_dev *dev, struct resource *busn_res,
++			 resource_size_t needed_size, struct resource **p)
++{
++	int ret = -ENOMEM;
++	resource_size_t n_size;
++	struct pci_bus *parent;
++	struct resource *parent_res = NULL;
++	resource_size_t tmp = bus->busn_res.end + 1;
++	int free_sz = -1;
++
++again:
++	/*
++	 * find bigest range in bus->busn_res that we can use in the middle
++	 *  and we can not use bus->busn_res.start.
++	 */
++	n_size = resource_size(&bus->busn_res) - 1;
++	memset(busn_res, 0, sizeof(struct resource));
++	dev_printk(KERN_DEBUG, &dev->dev,
++			"find free busn in busn_res: %pR\n", &bus->busn_res);
++	while (n_size >= needed_size) {
++		ret = allocate_resource(&bus->busn_res, busn_res, n_size,
++				bus->busn_res.start + 1, bus->busn_res.end,
++				1, NULL, NULL);
++		if (ret == 0) {
++			/* found one, prepare to return */
++			release_resource(busn_res);
++
++			return ret;
++		}
++		n_size--;
++	}
++
++	/* try extend the top of parent bus, find free under top af first */
++	if (free_sz < 0) {
++		free_sz = find_res_top_free_size(&bus->busn_res);
++		dev_printk(KERN_DEBUG, &dev->dev,
++			"found free busn %d in busn_res: %pR top\n",
++				free_sz, &bus->busn_res);
++	}
++	n_size = free_sz;
++
++	/* can not extend cross domain boundary */
++	if ((0xff - bus->busn_res.end) < (needed_size - n_size))
++		goto reduce_needed_size;
++
++	/* find exteded range */
++	memset(busn_res, 0, sizeof(struct resource));
++	parent = bus->parent;
++	while (parent) {
++		ret = allocate_resource(&parent->busn_res, busn_res,
++			 needed_size - n_size,
++			 tmp, tmp + needed_size - n_size - 1,
++			 1, NULL, NULL);
++		if (ret == 0)
++			break;
++		parent = parent->parent;
++	}
++
++reduce_needed_size:
++	if (ret != 0) {
++		needed_size--;
++		if (!needed_size)
++			return ret;
++
++		goto again;
++	}
++
++	/* save parent_res, we need it as stopper later */
++	parent_res = busn_res->parent;
++
++	/* prepare busn_res for return */
++	release_resource(busn_res);
++	busn_res->start -= n_size;
++
++	/* extend parent bus top*/
++	pci_bus_extend_top(bus, needed_size - n_size, parent_res);
++
++	*p = parent_res;
++
++	return ret;
++}
++
+ /*
+  * If it's a bridge, configure it and scan the bus behind it.
+  * For CardBus bridges, we don't scan behind as the devices will
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.7
 
