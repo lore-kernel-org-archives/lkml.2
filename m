@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966085Ab2B2S1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:27:31 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:60134 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965944Ab2B2S13 convert rfc822-to-8bit (ORCPT
+	id S1030281Ab2B2S2K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:28:10 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45834 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965743Ab2B2S2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:27:29 -0500
-Date: Wed, 29 Feb 2012 13:25:13 -0500 (EST)
-Message-Id: <20120229.132513.1607879808995168004.davem@davemloft.net>
-To: jwboyer@gmail.com
-Cc: dhdang@apm.com, benh@kernel.crashing.org, paulus@samba.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] powerpc/44x: Add more changes for APM821XX EMAC
- driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+5PVA5hciQSvfkodX-oP_kUZueiTp=0+t8X_0iHQ+ehU0ecOQ@mail.gmail.com>
-References: <1329466058-15969-1-git-send-email-dhdang@apm.com>
-	<CA+5PVA5hciQSvfkodX-oP_kUZueiTp=0+t8X_0iHQ+ehU0ecOQ@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 29 Feb 2012 10:25:16 -0800 (PST)
+	Wed, 29 Feb 2012 13:28:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keith.chew@gmail.com designates 10.101.175.2 as permitted sender) smtp.mail=keith.chew@gmail.com; dkim=pass header.i=keith.chew@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <m1ehtd8qez.fsf@fess.ebiederm.org>
+References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
+	<m1ehtd8qez.fsf@fess.ebiederm.org>
+Date: Thu, 1 Mar 2012 07:28:07 +1300
+Message-ID: <CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
+Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
+From: Keith Chew <keith.chew@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@gmail.com>
-Date: Wed, 29 Feb 2012 08:43:46 -0500
+Hi Eric
 
-> On Fri, Feb 17, 2012 at 3:07 AM, Duc Dang <dhdang@apm.com> wrote:
->> This patch includes:
+<snip>
+
+>> Some interesting results (which can be reproduced consistently):
+>> "echo b > /proc/sysrq-trigger" via DVI-D - after 2-3 days, it hangs
+>> (freezes) before reboot (dmesg only shows "Resetting...", nothing
+>
+> My blind guess would be that it is the BIOS on the machine that is hung.
+>
+
+We have contacted the manufacturer, and they do not believe this is
+the case as the BIOS does not really do much during the reboot.
+Unfortunately, we do not have enough knowledge on the inner workings
+of the BIOS to help or diagnose further. Any pointers here will be
+helpful.
+
+<snip>
 >>
->>  Configure EMAC PHY clock source (clock from PHY or internal clock).
->>
->>  Do not advertise PHY half duplex capability as APM821XX EMAC does not
->> support half duplex mode.
->>
->>  Add changes to support configuring jumbo frame for APM821XX EMAC.
->>
->> Signed-off-by: Duc Dang <dhdang@apm.com>
-> 
-> This should have been sent to netdev.  CC'ing them now.
-> 
-> Ben and David, I can take this change through the 4xx tree if it looks OK to
-> both of you.  The pre-requisite DTS patch will go through my tree, so it might
-> make sense to keep them together.
+>> I would like to make the "echo b" successfully reboot the machine, but
+>> this would appear to be a hardware bug? Is there anything that can be
+>> done in the kernel to make the "echo b" successfully work 100%?
+>
+> echo b > /proc/sysrq-trigger triggers the emergency_restart path which
+> tries but skips some steps so that it has a reasonable chance of working
+> when the kernel is wedged, it looks like some of those steps it skips
+> are needed on your hardware.
+>
 
-Well the patch has coding style problems, for one:
+Yes, I have looked into the kernel code and it does not do much,
+except to tell the hardware to reboot (either via BIOS, keyboard,
+ACPI, etc). I have also tried the reboot=b, reboot=k and reboot=a
+options, and all of them can cause a hang, with reboot=b lasting the
+longest.
 
->> +			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE
->> +					| EMAC_FTR_APM821XX_NO_HALF_DUPLEX
->> +					| EMAC_FTR_460EX_PHY_CLK_FIX);
+We have extended our testing time, and have some more worrying
+results. The command "reboot -fn" which runs > 1 week, got a hang
+after 2 weeks of running. We are now testing with just "reboot" to see
+how long that last.
 
-Should be:
-
->> +			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
->> +					  EMAC_FTR_APM821XX_NO_HALF_DUPLEX |
->> +					  EMAC_FTR_460EX_PHY_CLK_FIX);
-
-And this:
-
->> +		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half
->> +					| SUPPORTED_100baseT_Half
->> +					| SUPPORTED_10baseT_Half);
-
-Should be:
-
->> +		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half |
->> +				     SUPPORTED_100baseT_Half |
->> +				     SUPPORTED_10baseT_Half);
+Regards
+Keith
