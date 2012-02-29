@@ -1,99 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030401Ab2B2EHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 23:07:54 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53699 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965474Ab2B2EHw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 23:07:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mdharm@one-eyed-alien.net designates 10.52.176.129 as permitted sender) smtp.mail=mdharm@one-eyed-alien.net; dkim=pass header.i=mdharm@one-eyed-alien.net
+	id S1030423Ab2B2ETA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 23:19:00 -0500
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:36431 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752207Ab2B2ES5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 23:18:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tarun.kanti@ti.com designates 10.224.187.140 as permitted sender) smtp.mail=tarun.kanti@ti.com
 MIME-Version: 1.0
-In-Reply-To: <0D3EFCAF29FAA54FB91286E54DF1085C23048506EF@MTKMBS30.mediatek.inc>
-References: <4F4C998D.4000805@mediatek.com> <Pine.LNX.4.44L0.1202281028350.1456-100000@iolanthe.rowland.org>
- <0D3EFCAF29FAA54FB91286E54DF1085C23048506EF@MTKMBS30.mediatek.inc>
-From: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Date: Tue, 28 Feb 2012 20:07:32 -0800
-Message-ID: <CAA6KcBAy0iu1KU9Nc0TTB77XNth_h+4M-Uqw96nkP-ypX2jAAA@mail.gmail.com>
-Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
-To: =?UTF-8?B?TWVuZyBaaGFuZyAo5byg6JCMKQ==?= <Meng.Zhang@mediatek.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Josua Dietze <digidietze@draisberghof.de>,
-        Phil Dibowitz <phil@ipom.com>, USB list <linux-usb@vger.kernel.org>,
-        USB Storage list <usb-storage@lists.one-eyed-alien.net>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=GB2312
+In-Reply-To: <87r4xeyexm.fsf@ti.com>
+References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
+	<1329999031-6914-4-git-send-email-tarun.kanti@ti.com>
+	<87ty2bu91e.fsf@ti.com>
+	<CAC83ZvJ97uRSLU-JmO2mnaOuziU=SotghASSJjPvESWL+eATuQ@mail.gmail.com>
+	<87r4xeyexm.fsf@ti.com>
+Date: Wed, 29 Feb 2012 09:48:56 +0530
+Message-ID: <CAC83ZvJ21Y-pSLuxd68W_NpKFDseh6YW45ruPZLUnsNKN9koRQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] gpio/omap: remove suspend_wakeup field from struct gpio_bank
+From: "DebBarma, Tarun Kanti" <tarun.kanti@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices should not be added to unusual_devs.h unless the device CANNOT
-use the usb_modeswitch method.  This most commonly applies when the
-device's usb-storage emulation is poor, and the probing commands sent
-by usb-storage cause the device to crash.
-
-It is much more convenient for users to just upgrade their
-usb_modeswitch utility than it is for them to upgrade a kernel, which
-is much more difficult and much more rare.  As for 'input command
-manually', that is what udev scripts are for.
-
-If this can be handled from userspace by usb_modeswitch, then that is
-where it should be done.
-
-Matt
-
-2012/2/28 Meng Zhang (’≈√») <Meng.Zhang@mediatek.com>:
-> Hi Alan,
+On Wed, Feb 29, 2012 at 12:15 AM, Kevin Hilman <khilman@ti.com> wrote:
+> "DebBarma, Tarun Kanti" <tarun.kanti@ti.com> writes:
 >
-> As far as I know, many other devices used this init function in unusual_devs.h for their "ZeroCD" feature, and I think this is more convenient than let device user install utilities like usb_modeswitch and input command manually.
->
-> Thanks.
->
-> BR.
-> Meng Zhang
->
-> -----Original Message-----
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Alan Stern
-> Sent: Tuesday, February 28, 2012 11:31 PM
-> To: Meng Zhang (’≈√»)
-> Cc: Josua Dietze; Matthew Dharm; Phil Dibowitz; USB list; USB Storage list; Kernel development list
-> Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
->
-> On Tue, 28 Feb 2012, Meng Zhang wrote:
->
->> from: Meng Zhang <meng.zhang@mediatek.com>
+>> On Tue, Feb 28, 2012 at 5:24 AM, Kevin Hilman <khilman@ti.com> wrote:
+>>> Tarun Kanti DebBarma <tarun.kanti@ti.com> writes:
+>>>
+>>>> Since we already have bank->context.wake_en to keep track
+>>>> of gpios which are wakeup enabled, there is no need to have
+>>>> this field any more.
+>>>>
+>>>> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+>>>
+>>> I'm not crazy about this change...
+>>>
+>>>> ---
+>>>> †drivers/gpio/gpio-omap.c | † 11 +++++------
+>>>> †1 files changed, 5 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+>>>> index 64f15d5..b62e861 100644
+>>>> --- a/drivers/gpio/gpio-omap.c
+>>>> +++ b/drivers/gpio/gpio-omap.c
+>>>> @@ -53,7 +53,6 @@ struct gpio_bank {
+>>>> † † † void __iomem *base;
+>>>> † † † u16 irq;
+>>>> † † † u16 virtual_irq_start;
+>>>> - † † u32 suspend_wakeup;
+>>>> † † † u32 non_wakeup_gpios;
+>>>> † † † u32 enabled_non_wakeup_gpios;
+>>>> † † † struct gpio_regs context;
+>>>> @@ -497,9 +496,9 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
+>>>>
+>>>> † † † spin_lock_irqsave(&bank->lock, flags);
+>>>> † † † if (enable)
+>>>> - † † † † † † bank->suspend_wakeup |= gpio_bit;
+>>>> + † † † † † † bank->context.wake_en |= gpio_bit;
+>>>> † † † else
+>>>> - † † † † † † bank->suspend_wakeup &= ~gpio_bit;
+>>>> + † † † † † † bank->context.wake_en &= ~gpio_bit;
+>>>
+>>> The bank->context values are expected to be copies of the actual
+>>> register contents, and here that is clearly not the case.
+>> Right, it should have been this:
 >>
->> 1. Add entrys for mediatek MT6276M in unusual_devs.h
+>> † † † † if (enable)
+>> - † † † † † † † bank->suspend_wakeup |= gpio_bit;
+>> + † † † † † † † bank->context.wake_en |= gpio_bit;
+>> † † † † else
+>> - † † † † † † † bank->suspend_wakeup &= ~gpio_bit;
+>> + † † † † † † † bank->context.wake_en &= ~gpio_bit;
+>> +
+>> + † † † __raw_writel(bank->context.wake_en, bank->base + bank->regs->wkup_en);
 >>
->> 2. Add init function for mediatek MT6276M to switch to COM port mode
->>
->> 3. usb-devices outputs after running with this patch:
->> T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
->> D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
->> P:  Vendor=0e8d ProdID=00a1 Rev=02.00
->> S:  Manufacturer=MediaTek Inc
->> S:  Product=Product
->> C:  #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
->> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
->> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
->> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
->>
->> 4. patch based on branch:
->>       git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->>
->>
->> Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+>>>
+>>> With this change, you're using the context register to track changes
+>>> that you *might* eventually write to the register.
+>> The above change ensures that bank->context.wake_en reflects the
+>> latest register value.
 >
-> Nowadays, aren't such things handled in userspace by the usb_modeswitch program rather than in the kernel driver?
+> OK, but that changes the behavior of the current code.
+Agreed.
+
 >
-> Alan Stern
+> The current code *only* writes this register in suspend and resume.
+> _set_gpio_wakeup() just records the value that is going to be written in
+> suspend.
+Yes.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Matthew Dharm
-Maintainer, USB Mass Storage driver for Linux
+> Now, I'm not saying we shouldn't make the changes you propose above. †We
+> probably should be updating the wake-enable register whenever
+> _set_gpio_wakeup() is run so that GPIO wakeups work across runtime
+> suspend/resume as well.
+>
+> However, you should probably make that functional change a separate
+> patch *before* you do $SUBJECT patch which just changes the variable
+> used to cache the register contents.
+Sure, I will make this change.
+--
+Tarun
+>
+> Kevin
+>
+>
+>> There are two distinct paths through which bank->context.wake_en is
+>> updated now, viz:
+>> Path1:-
+>> chip.irq_set_type() --> gpio_irq_type() --> _set_gpio_triggering() -->
+>> set_gpio_trigger()
+>>
+>> Path2:-
+>> chip.irq_set_wake() --> gpio_wake_enable() --> irq_set_wake()
+>>
+>>>
+>>> IMO, this is more confusing than having a separate field to track this.
+>> So, there is no need have a separate field to keep track of this.
+>> I hope my understanding is right.
+>> --
+>> Tarun
+>>
+>>>
+>>> Kevin
+>>>
+>>>> † † † spin_unlock_irqrestore(&bank->lock, flags);
+>>>>
+>>>> @@ -772,7 +771,7 @@ static int omap_mpuio_suspend_noirq(struct device *dev)
+>>>>
+>>>> † † † spin_lock_irqsave(&bank->lock, flags);
+>>>> † † † bank->context.wake_en = __raw_readl(mask_reg);
+>>>> - † † __raw_writel(0xffff & ~bank->suspend_wakeup, mask_reg);
+>>>> + † † __raw_writel(0xffff & ~bank->context.wake_en, mask_reg);
+>>>> † † † spin_unlock_irqrestore(&bank->lock, flags);
+>>>>
+>>>> † † † return 0;
+>>>> @@ -1137,12 +1136,12 @@ static int omap_gpio_suspend(struct device *dev)
+>>>> † † † if (!bank->mod_usage || !bank->loses_context)
+>>>> † † † † † † † return 0;
+>>>>
+>>>> - † † if (!bank->regs->wkup_en || !bank->suspend_wakeup)
+>>>> + † † if (!bank->regs->wkup_en || !bank->context.wake_en)
+>>>> † † † † † † † return 0;
+>>>>
+>>>> † † † spin_lock_irqsave(&bank->lock, flags);
+>>>> † † † _gpio_rmw(base, bank->regs->wkup_en, 0xffffffff, 0);
+>>>> - † † _gpio_rmw(base, bank->regs->wkup_en, bank->suspend_wakeup, 1);
+>>>> + † † _gpio_rmw(base, bank->regs->wkup_en, bank->context.wake_en, 1);
+>>>> † † † spin_unlock_irqrestore(&bank->lock, flags);
+>>>>
+>>>> † † † return 0;
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at †http://vger.kernel.org/majordomo-info.html
