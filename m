@@ -1,186 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab2B2E46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 23:56:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8275 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab2B2E44 convert rfc822-to-8bit (ORCPT
+	id S1751767Ab2B2FQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 00:16:42 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48830 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab2B2FQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 23:56:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="71652283"
-From: "Liu, ShuoX" <shuox.liu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Brown, Len" <len.brown@intel.com>,
-        "Yanmin_zhang@linux.intel.com" <Yanmin_zhang@linux.intel.com>
-Subject: Subject: [PATCH] cpuidle: Add a sysfs entry to disable specific C
- state for debug purpose.
-Thread-Topic: Subject: [PATCH] cpuidle: Add a sysfs entry to disable
- specific C state for debug purpose.
-Thread-Index: Acz2nmNC30IlWH8hTJu9v281exLbng==
-Date: Wed, 29 Feb 2012 04:55:52 +0000
-Message-ID: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 29 Feb 2012 00:16:41 -0500
+Date: Wed, 29 Feb 2012 16:16:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jett.Zhou" <jtzhou@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120229161627.b8dd92287d066cd7c0a0284e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_Feb_2012_16_16_27_+1100_ekT5a9DE0=NCutiU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+--Signature=_Wed__29_Feb_2012_16_16_27_+1100_ekT5a9DE0=NCutiU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some C states of new CPU might be not good. One reason is BIOS might configure
-them incorrectly. To help developers root cause it quickly, the patch adds a
-new sysfs entry, so developers could disable specific C state manually.
+Hi all,
 
-In addition, C state might have much impact on performance tuning, as it takes
-much time to enter/exit C states, which might delay interrupt processing. With
-the new debug option, developers could check if a deep C state could  impact
-performance and how much impact it could cause.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/Kconfig between commit 6905a65879b5 ("ARM: Make the sched_clock
+framework mandatory") from the arm tree and commit 4a8f83409da6 ("ARM:
+sa1100: clean up clock support") from the arm-soc tree.
 
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- drivers/cpuidle/cpuidle.c        |    1 +
- drivers/cpuidle/governors/menu.c |    5 ++++-
- drivers/cpuidle/sysfs.c          |   34 ++++++++++++++++++++++++++++++++++
- include/linux/cpuidle.h          |    1 +
- 4 files changed, 40 insertions(+), 1 deletions(-)
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 59f4261..7d66d3e 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -197,6 +197,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
- 	state->power_usage = -1;
- 	state->flags = 0;
- 	state->enter = poll_idle;
-+	state->disable = 0;
- }
- #else
- static void poll_idle_init(struct cpuidle_driver *drv) {}
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index ad09526..5c17ca1 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -280,7 +280,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	 * We want to default to C1 (hlt), not to busy polling
- 	 * unless the timer is happening really really soon.
- 	 */
--	if (data->expected_us > 5)
-+	if (data->expected_us > 5 &&
-+		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
- 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
- 
- 	/*
-@@ -290,6 +291,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
- 		struct cpuidle_state *s = &drv->states[i];
- 
-+		if (s->disable)
-+			continue;
- 		if (s->target_residency > data->predicted_us)
- 			continue;
- 		if (s->exit_latency > latency_req)
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index 3fe41fe..1eae29a 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -222,6 +222,9 @@ struct cpuidle_state_attr {
- #define define_one_state_ro(_name, show) \
- static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444, show, NULL)
- 
-+#define define_one_state_rw(_name, show, store) \
-+static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
-+
- #define define_show_state_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			 struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 	return sprintf(buf, "%u\n", state->_name);\
- }
- 
-+#define define_store_state_function(_name) \
-+static ssize_t store_state_##_name(struct cpuidle_state *state, \
-+		const char *buf, size_t size) \
-+{ \
-+	int value; \
-+	sscanf(buf, "%d", &value); \
-+	if (value) \
-+		state->disable = 1; \
-+	else \
-+		state->disable = 0; \
-+	return size; \
-+}
-+
- #define define_show_state_ull_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -251,6 +267,8 @@ define_show_state_ull_function(usage)
- define_show_state_ull_function(time)
- define_show_state_str_function(name)
- define_show_state_str_function(desc)
-+define_show_state_function(disable)
-+define_store_state_function(disable)
- 
- define_one_state_ro(name, show_state_name);
- define_one_state_ro(desc, show_state_desc);
-@@ -258,6 +276,7 @@ define_one_state_ro(latency, show_state_exit_latency);
- define_one_state_ro(power, show_state_power_usage);
- define_one_state_ro(usage, show_state_usage);
- define_one_state_ro(time, show_state_time);
-+define_one_state_rw(disable, show_state_disable, store_state_disable);
- 
- static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_name.attr,
-@@ -266,6 +285,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_power.attr,
- 	&attr_usage.attr,
- 	&attr_time.attr,
-+	&attr_disable.attr,
- 	NULL
- };
- 
-@@ -287,8 +307,22 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
- 	return ret;
- }
- 
-+static ssize_t cpuidle_state_store(struct kobject *kobj,
-+	struct attribute *attr, const char *buf, size_t size)
-+{
-+	int ret = -EIO;
-+	struct cpuidle_state *state = kobj_to_state(kobj);
-+	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
-+
-+	if (cattr->store)
-+		ret = cattr->store(state, buf, size);
-+
-+	return ret;
-+}
-+
- static const struct sysfs_ops cpuidle_state_sysfs_ops = {
- 	.show = cpuidle_state_show,
-+	.store = cpuidle_state_store,
- };
- 
- static void cpuidle_state_sysfs_release(struct kobject *kobj)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 712abcc..eb150a5 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -45,6 +45,7 @@ struct cpuidle_state {
- 	unsigned int	exit_latency; /* in US */
- 	unsigned int	power_usage; /* in mW */
- 	unsigned int	target_residency; /* in US */
-+	unsigned int    disable;
- 
- 	int (*enter)	(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
--- 
-1.7.1
+diff --cc arch/arm/Kconfig
+index 5130989,9f134c4..0000000
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@@ -753,7 -760,8 +753,7 @@@ config ARCH_SA110
+  	select ARCH_HAS_CPUFREQ
+  	select CPU_FREQ
+  	select GENERIC_CLOCKEVENTS
+- 	select HAVE_CLK
++ 	select CLKDEV_LOOKUP
+ -	select HAVE_SCHED_CLOCK
+  	select TICK_ONESHOT
+  	select ARCH_REQUIRE_GPIOLIB
+  	select HAVE_IDE
 
+--Signature=_Wed__29_Feb_2012_16_16_27_+1100_ekT5a9DE0=NCutiU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTbSrAAoJEECxmPOUX5FEniMP/025VYYl6+0YIq/jHVkg+MsH
+uoizLxi/p50hbgPeJcCAMqVV+s3XCgDdprk3KUmRfX38UIAm008lwIwBhhD1vm0m
+7gojfa2b+j2erUwO4P7q83vK3nxhI4A3lI3oY/iKnD2kvAp0hJySBEgd+d5d8/3z
+V4NsDi2zjt0yzYW+MibpiOomYLZbTcK5ZiwKYwV4ya0vllbRSxjGKQC4GVxbA1c/
+1dXJ0LCPmQqLpECajAmLDxM+th03Zy80uFzFfOiyGq2L728hwRhrQc0m5I05VTbP
+Io3/+BF9RBEb1/Mnj+cj7TsQ9aqehKjLBFjOUookDpWFXHb9ICmoHA/OTV2nv7MB
+G7k+XgeCPE0A+jigOgVsk9U5yGcAdaZ1wgDPke16PgJlv5oMByxqOq+FSw8Cu6mn
+e8wyiAo5E/b1BnkQlXzFNlOsptpOXMSXp0r7GFW1aoYW0PHJmVD48htlLnKZPN3w
+/7oXUDqNn+48MNabYHgIBneAxpwR1P12pSFCgolxiQ/nNV/pETNCu4RUNQGLrgO7
+dptJcLnUUw056c5ix+IK9S8ErFZ6FwKptWK5U13a3zWcnIeiiz8gDKsliOnC7hx+
+SH1y1Q3x1m6h9X3ig8/gyfsMEW3fk8pB30QAk7yhEh6aHkSuk8JvDvdwzCFdaEjR
+3u6mleTdEyvc4NeBwC0q
+=od4M
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Feb_2012_16_16_27_+1100_ekT5a9DE0=NCutiU--
