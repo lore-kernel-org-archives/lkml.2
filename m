@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab2B2HIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 02:08:24 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43830 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab2B2HIX (ORCPT
+	id S1030787Ab2B2HLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 02:11:15 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53133 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030462Ab2B2HLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 02:08:23 -0500
-Date: Wed, 29 Feb 2012 10:10:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: Rusty Russell <rusty.russell@linaro.org>,
+	Wed, 29 Feb 2012 02:11:13 -0500
+Date: Wed, 29 Feb 2012 18:11:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Haojian Zhuang <hzhuang1@marvell.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 1/2] vmalloc: use ZERO_SIZE_PTR / ZERO_OR_NULL_PTR
-Message-ID: <20120229071002.GA1003@mwanda>
-References: <1330421640-5137-1-git-send-email-dmitry.antipov@linaro.org>
- <20120228094415.GA2868@mwanda>
- <4F4CC19D.9040608@linaro.org>
- <20120228133037.GG2817@mwanda>
- <4F4DCB59.5060205@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <4F4DCB59.5060205@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4F4DCEE1.0060,ss=1,re=0.000,fgs=0
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the arm-soc tree
+Message-Id: <20120229181103.e05c55bafd959f739d6a336b@canb.auug.org.au>
+In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C060A87D777@SC-VEXCH1.marvell.com>
+References: <20120229172127.7b430cecc7ab2350d4e4a1b8@canb.auug.org.au>
+	<20120229063217.GA13386@zhy>
+	<25B60CDC2F704E4E9D88FFD52780CB4C060A87D777@SC-VEXCH1.marvell.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_Feb_2012_18_11_03_+1100_uawUsS+VYPcxO7v."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__29_Feb_2012_18_11_03_+1100_uawUsS+VYPcxO7v.
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Feb 29, 2012 at 10:53:13AM +0400, Dmitry Antipov wrote:
-> On 02/28/2012 05:30 PM, Dan Carpenter wrote:
->=20
-> >Could you include that in the changelog when the final version is
-> >ready?
->=20
-> What changelog you're saying about?
->=20
+Hi,
 
-The commit message to this patch.  Right now it just says "fix
-vmalloc" but it doesn't say what the bug is or why the new version
-is better.  You and Rusty know the reasons already but we should
-write them down in the changelog so other people can follow along as
-well.
+On Tue, 28 Feb 2012 22:54:06 -0800 Haojian Zhuang <hzhuang1@marvell.com> wr=
+ote:
+>
+> Since there's the conflict on code. Does it mean that I need to re-submit
+> those patches in arm-soc that should be based on commit "drivers/rtc:
+> remove IRQF_DISABLED" from the akpm tree?
 
-regards,
-dan carpenter
+No, that conflict can be resolved by Linus during the next merge window
+(unless someone else wants to do something about it).
 
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__29_Feb_2012_18_11_03_+1100_uawUsS+VYPcxO7v.
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPTc9JAAoJEOnZkXI/YHqRO8IP/3rAPE5uQw79xZdjXcCp+3fy
-/jg1Bi6QACf4aImUxHN8vb8e+7q5T26jlknpw8URxiUqeZpHNRAix157Uo4uMBw2
-Hj3SfKuR6i1RkNuJm+XgNb9F4bM59aOE1AwR6p62lDmivr/stUW80GUor9XOE4+o
-dOV2WPbWian5Q+2wC6sKT9jRrk52zNmZq0Ke1nRc14b4f6ESXqpxCt9KGkU++Cdm
-vX/7gS7CiDw6DPYFujhBpKQt4b/np4X/Ny/2w9DsqywWwoUJSBmEDZk7HnAATJSn
-ytLQpeMXUmFOFmZU3GjhNbC3uMRb9Fq7dR3rR0r9tyhCCM852nOmOR83ql34u32V
-C3+bia/jExny+Vxy6y3U22ifwK0WT2bs0uQEWjFgrAQL6i00LL5HxkQh9EMYtRMZ
-q/+2jS0kIleIHJMG7Bku40/s0LYx9CkDGgYh3oYZ2xggP9qPptk9cYyI48Dgf/pF
-b4JCp7MdUFu2Q0s84yi7MKkRsLpa0hd6mxwj+mettTJFhikanrDKge2ettrW91bH
-S/7t6ElpYIOcxz6Xy3EOtwRhlr1iPk74nHhSG59cUZd7XqYiZhls+4PXXVx8ouYZ
-Cr+ntJ9gJBwizelRnbXfMzfYZ6TWdi0Hr4TUY92MWIO9lImCfVkFxVzleZpXEvJp
-ngHFsYR0CHF+5x6tiVp/
-=SZuG
+iQIcBAEBCAAGBQJPTc+HAAoJEECxmPOUX5FE+ssP/3EN5OjJzfNGj4QuUXd26Kuk
+ESTvGORCj8Rabt3xPFfpFCiCh49XhgHCBFkI+j3QWn4/n9pLw+y5DchuhgbRfXGO
+7KH9IZ167ixTB1HiMbrQj0CbxM2atWKe7tK6CG/Pv7+OLBnIQmZH/J/OM7xts6aP
+9A3vInoSA/hoqiwfpNrjlEOW5EVhf63AWg9BVqRr82fkP/7XiZdc5betDkrErEmg
+HPG2raIjqh8eI21Y1K73JJ0Ty0oajYwUAeQljocSBem/3ctb7BEaw/BfE0OkEKJh
+0r+osif061SQ/uwbZXab53ZOiyDTQx7Di3ELPfrSgmIQisxr8+8CxN0IWvaBVK7F
+YcoFxRnYj1Wrktq9g9lYLq/Jzc6duNZ7QHSX9Tg+hS4y5Uh8Sx4wbC5mLNY0YHvT
+fuojoQ3ODr/DLxU0typYZ/z6ebBsvr48RkxuhLiFMDMIHzxtDb1c7TykEUd+7+Rq
+0ETCP9FzFeG9cAOEQBB/znKZmIl0fbAxZA/zdgGDI65mFosuVCxYZJlyabv04mYD
+Sv5HE52Jk4RSfc628bUVEP0Ws5W1TmCUTw4d97mF8zLr2KqdNUjCKZnESnrZ5gyC
+aOMvJ8m3jZnlQT7ZenKiXWHYrvJm6KPrAgy3g38lVtkg9YbrYSWzsJlhxBfED0rS
+EFeJWRIKDaY7HIoDj+cC
+=O+fv
 -----END PGP SIGNATURE-----
 
---FCuugMFkClbJLl1L--
+--Signature=_Wed__29_Feb_2012_18_11_03_+1100_uawUsS+VYPcxO7v.--
