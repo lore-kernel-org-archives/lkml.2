@@ -1,67 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031048Ab2B2OiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 09:38:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27752 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab2B2OiL (ORCPT
+	id S1031067Ab2B2OkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 09:40:13 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52484 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab2B2OkL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 09:38:11 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6634"; a="165188395"
-X-IronPort-AV: E=Sophos;i="4.73,502,1325491200"; 
-   d="scan'208";a="187740713"
-Message-ID: <4F4E384D.2090802@qca.qualcomm.com>
-Date: Wed, 29 Feb 2012 16:38:05 +0200
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Wed, 29 Feb 2012 09:40:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.23.199 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        David Miller <davem@davemloft.net>,
-        "andrei.emeltchenko.news@gmail.com" 
-	<andrei.emeltchenko.news@gmail.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: Add some --strict coding style checks
-References: <20120221151435.GA19354@tuxdriver.com>	 <20120221.144417.1445117001833888214.davem@davemloft.net>	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>	 <20120221.154053.2103818562080068513.davem@davemloft.net>	 <1329857959.5143.11.camel@joe2Laptop>	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>	 <1329874581.5143.22.camel@joe2Laptop>	 <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>	 <1329875935.5143.24.camel@joe2Laptop>	 <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>	 <1329968622.5143.46.camel@joe2Laptop>	 <804857E1F29AAC47BF68C404FC60A1842A1D36@ORSMSX102.amr.corp.intel.com> <1330108675.18464.21.camel@joe2Laptop>
-In-Reply-To: <1330108675.18464.21.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+In-Reply-To: <20120229092859.a0411859.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20120229092859.a0411859.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 29 Feb 2012 22:40:09 +0800
+Message-ID: <CAJd=RBAVaWud3f6AUSr1PDWS_VvBgiSMobRdLyokwx3bcHqCKQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH] memcg: avoid THP split in task migration
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2012 08:37 PM, Joe Perches wrote:
-> Argument alignment across multiple lines should
-> match the open parenthesis.
-> 
-> Logical continuations should be at the end of
-> the previous line, not the start of a new line.
-> 
-> These are not required by CodingStyle so make the
-> tests active only when using --strict.
-> 
-> Improved_by_examples_from: "Bruce W. Allen" <bruce.w.allan@intel.com>
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Wed, Feb 29, 2012 at 8:28 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 28 Feb 2012 16:12:32 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+>
+>> Currently we can't do task migration among memory cgroups without THP split,
+>> which means processes heavily using THP experience large overhead in task
+>> migration. This patch introduce the code for moving charge of THP and makes
+>> THP more valuable.
+>>
+>> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>> Cc: Hillf Danton <dhillf@gmail.com>
+>
+>
+> Thank you!
 
-Thanks Joe, this is very useful for me. I seem to have one false alarm
-though:
+   ++hd;
 
-drivers/net/wireless/ath/ath6kl/txrx.c:464: CHECK: Alignment should
-match open parenthesis
+>
+> A comment below.
+>
+>> ---
+>>  mm/memcontrol.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+>>  1 files changed, 70 insertions(+), 6 deletions(-)
+>>
+>> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+>> index c83aeb5..e97c041 100644
+>> --- linux-next-20120228.orig/mm/memcontrol.c
+>> +++ linux-next-20120228/mm/memcontrol.c
+>> @@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+>>       return ret;
+>>  }
+>>
+>> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>> +/*
+>> + * We don't consider swapping or file mapped pages because THP does not
+>> + * support them for now.
+>> + */
+>> +static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
 
-This is with patches I haven't sent yet so line numbers most likely
-don't match, but the code in question is this:
+static int is_target_thp_for_mc(struct vm_area_struct *vma,
+or
+static int is_target_pmd_for_mc(struct vm_area_struct *vma,
+sounds better?
 
-	if (!IS_ALIGNED((unsigned long) skb->data - HTC_HDR_LENGTH, 4) &&
-	    skb_cloned(skb)) {
+>> +             unsigned long addr, pmd_t pmd, union mc_target *target)
+>> +{
+>> +     struct page *page = NULL;
+>> +     struct page_cgroup *pc;
+>> +     int ret = 0;
+>> +
+>> +     if (pmd_present(pmd))
+>> +             page = pmd_page(pmd);
+>> +     if (!page)
+>> +             return 0;
+>> +     VM_BUG_ON(!PageHead(page));
 
-Apparently the cast "(unsigned long)" causes the false alarm as when I
-remove it I don't see the warning anymore.
+With a huge and stable pmd, the above operations on page could be
+compacted into one line?
 
-Kalle
+	page = pmd_page(pmd);
+
+>> +     get_page(page);
+>> +     pc = lookup_page_cgroup(page);
+>> +     if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
+>> +             ret = MC_TARGET_PAGE;
+>> +             if (target)
+
+After checking target, looks only get_page() needed?
+
+>> +                     target->page = page;
+>> +     }
+>> +     if (!ret || !target)
+>> +             put_page(page);
+>> +     return ret;
+>> +}
+>> +#else
+>> +static inline int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
+>> +             unsigned long addr, pmd_t pmd, union mc_target *target)
+>> +{
+>> +     return 0;
+>> +}
+>> +#endif
+>> +
+>>  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>>                                       unsigned long addr, unsigned long end,
+>>                                       struct mm_walk *walk)
+>> @@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>>       pte_t *pte;
+>>       spinlock_t *ptl;
+>>
+>> -     split_huge_page_pmd(walk->mm, pmd);
+>> +     if (pmd_trans_huge_lock(pmd, vma) == 1) {
+>> +             if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
+
+		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+looks clearer
+
+>> +                     mc.precharge += HPAGE_PMD_NR;
+
+As HPAGE_PMD_NR is directly used, compiler beeps if THP disabled, I guess.
+
+If yes, please cleanup huge_mm.h with s/BUG()/BUILD_BUG()/ and with
+both HPAGE_PMD_ORDER and HPAGE_PMD_NR also defined,
+to easy others a bit.
+
+>> +             spin_unlock(&walk->mm->page_table_lock);
+
+		spin_unlock(&vma->mm->page_table_lock);
+looks clearer
+>> +             cond_resched();
+>> +             return 0;
+>> +     }
+>>
+>>       pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>>       for (; addr != end; pte++, addr += PAGE_SIZE)
+>> @@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+>>       struct vm_area_struct *vma = walk->private;
+>>       pte_t *pte;
+>>       spinlock_t *ptl;
+>> +     int type;
+>> +     union mc_target target;
+>> +     struct page *page;
+>> +     struct page_cgroup *pc;
+>> +
+>> +     if (pmd_trans_huge_lock(pmd, vma) == 1) {
+>> +             if (!mc.precharge)
+>> +                     return 0;
+
+Bang, return without page table lock released.
+
+>> +             type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
+>> +             if (type == MC_TARGET_PAGE) {
+>> +                     page = target.page;
+>> +                     if (!isolate_lru_page(page)) {
+>> +                             pc = lookup_page_cgroup(page);
+>
+> Here is a diffuclut point. Please see mem_cgroup_split_huge_fixup(). It splits
+
+Hard and hard point IMO.
+
+> updates memcg's status of splitted pages under lru_lock and compound_lock
+> but not under mm->page_table_lock.
+>
+> Looking into split_huge_page()
+>
+>        split_huge_page()  # take anon_vma lock
+>                __split_huge_page()
+>                        __split_huge_page_refcount() # take lru_lock, compound_lock.
+>                                mem_cgroup_split_huge_fixup()
+>                        __split_huge_page_map() # take page table lock.
+>
+[copied from Naoya-san's reply]
+
+> I'm afraid this callchain is not correct.
+
+s/correct/complete/
+
+> Page table lock seems to be taken before we enter the main split work.
+>
+>    split_huge_page
+>        take anon_vma lock
+>        __split_huge_page
+>            __split_huge_page_splitting
+>                lock page_table_lock     <--- *1
+>                page_check_address_pmd
+>                unlock page_table_lock
+
+Yeah, splitters are blocked.
+Plus from the *ugly* documented lock function(another
+cleanup needed), the embedded mmap_sem also blocks splitters.
+
+That said, could we simply wait and see results of test cases?
+
+-hd
+
+/* mmap_sem must be held on entry */
+static inline int pmd_trans_huge_lock(pmd_t *pmd,
+				      struct vm_area_struct *vma)
+{
+	VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
+	if (pmd_trans_huge(*pmd))
+		return __pmd_trans_huge_lock(pmd, vma);
+	else
+		return 0;
+}
+
+>            __split_huge_page_refcount
+>                lock lru_lock
+>                compound_lock
+>                mem_cgroup_split_huge_fixup
+>                compound_unlock
+>                unlock lru_lock
+>            __split_huge_page_map
+>                lock page_table_lock
+>                ... some work
+>                unlock page_table_lock
+>        unlock anon_vma lock
+>
