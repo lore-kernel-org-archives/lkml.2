@@ -1,30 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab2B2MX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:23:29 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47161 "EHLO
+	id S1757980Ab2B2MXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:23:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40613 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab2B2MX1 (ORCPT
+	with ESMTP id S1757521Ab2B2MX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:23:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.205.133.13 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+	Wed, 29 Feb 2012 07:23:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.156.207 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
 From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: Michael Kerrisk <mtk.manpages@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Pavel Emelyanov <xemul@parallels.com>, linux-man@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/2] Update man pages for prctl and kcmp syscall
-Date: Wed, 29 Feb 2012 16:23:15 +0400
-Message-Id: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/2] prctl: Add PR_SET_MM option description
+Date: Wed, 29 Feb 2012 16:23:16 +0400
+Message-Id: <1330518197-12825-2-git-send-email-gorcunov@openvz.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
+References: <1330518197-12825-1-git-send-email-gorcunov@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+---
+ man2/prctl.2 |  104 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 104 insertions(+), 0 deletions(-)
 
-here is a first draft to describe prctl extension and new
-kcmp syscall. So I woule _really_ appreciate any feedback.
-
-Cyrill
+diff --git a/man2/prctl.2 b/man2/prctl.2
+index effad2a..4d6244f 100644
+--- a/man2/prctl.2
++++ b/man2/prctl.2
+@@ -378,6 +378,110 @@ Return the current per-process machine check kill policy.
+ All unused
+ .BR prctl ()
+ arguments must be zero.
++.TP
++.BR PR_SET_MM " (since Linux 3.3)"
++Allows a user to modify certain kernel memory map descriptor fields
++of the calling process.
++Usually these fields are set by the kernel and dynamic loader (see
++.BR ld.so (8)
++for more information) and a regular application should not use this feature.
++Still there are cases such as self-modifying programs, where a program might
++find it useful to change its own memory map.
++The kernel must be built with
++.BR CONFIG_CHECKPOINT_RESTORE
++option turned on, otherwise this feature will not be accessible
++from a user space level.
++The calling process must have
++.BR CAP_SYS_ADMIN
++(see
++.BR capabilities (7)
++for details) capability granted.
++The value in
++.I arg2
++is one of the options below, while
++.I arg3
++provides a new value for this option.
++
++.BR PR_SET_MM_START_CODE
++to set the address above which program text can run.
++The corresponding memory area must be readable and executable,
++but not writable or shareable (see
++.BR mprotect (2)
++and
++.BR mmap (2)
++for more information).
++
++.BR PR_SET_MM_END_CODE
++to set the address below which program text can run.
++The corresponding memory area must be readable and executable,
++but not writable or shareable.
++
++.BR PR_SET_MM_START_DATA
++to set the address above which program data+bss is placed.
++The corresponding memory area must be readable and writable,
++but not executable or shareable.
++
++.B PR_SET_MM_END_DATA
++to set the address below which program data+bss is placed.
++The corresponding memory area must be readable and writable,
++but not executable or shareable.
++
++.BR PR_SET_MM_START_STACK
++to set the start address of the stack.
++The corresponding memory area must be readable and writable.
++
++.BR PR_SET_MM_START_BRK
++to set the address above which program heap can be expanded with
++.BR brk (2)
++call.
++The address must not be greater than ending address of
++the current program data segment, neither it may exceed
++resource limit for data (see
++.BR setrlimit (2)
++for more information).
++
++.BR PR_SET_MM_BRK
++to set the current
++.BR brk (2)
++value.
++The requirements for address are the same as for
++.BR PR_SET_MM_START_BRK
++option.
++
++.BR PR_SET_MM_ARG_START
++to set the address above which program command line is placed.
++
++.BR PR_SET_MM_ARG_END
++to set the address below which program command line is placed.
++
++.BR PR_SET_MM_ENV_START
++to set the address above which program environment is placed.
++
++.BR PR_SET_MM_ENV_END
++to set the address below which program environment is placed.
++
++The address passed with
++.BR PR_SET_MM_ARG_START ,
++.BR PR_SET_MM_ARG_END ,
++.BR PR_SET_MM_ENV_START ,
++.BR PR_SET_MM_ENV_END ,
++should belong to a process stack area, thus corresponding memory area
++must be readable, writable and (depending on the kernel
++configuration) has
++.BR MAP_GROWSDOWN
++attribute set (see
++.BR mmap (2)
++for details).
++
++.BR PR_SET_MM_AUXV
++to set a new auxiliary vector.
++The
++.I arg3
++argument should provide the address of the vector.
++The
++.I arg4
++is the size of the vector.
++.\"
+ .SH "RETURN VALUE"
+ On success,
+ .BR PR_GET_DUMPABLE ,
+-- 
+1.7.7.6
 
