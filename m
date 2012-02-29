@@ -1,95 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab2B2CTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:19:09 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3012 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2B2CTG (ORCPT
+	id S966231Ab2B2CUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:20:31 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:5630
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757562Ab2B2CUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:19:06 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6634"; a="165051943"
-X-IronPort-AV: E=Sophos;i="4.73,496,1325491200"; 
-   d="scan'208";a="206627558"
-From: "Huang, Xiong" <xiong@qca.qualcomm.com>
-To: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>,
-        David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>,
-        "Giori, Kathy" <kgiori@qca.qualcomm.com>,
-        "chris.snook@gmail.com" <chris.snook@gmail.com>,
-        "Olivari, Mathieu" <mathieu@qca.qualcomm.com>,
-        "Huntsman, Bryan" <bryanh@quicinc.com>
-Subject: RE: [PATCH] net: add QCA alx Ethernet driver
-Thread-Topic: [PATCH] net: add QCA alx Ethernet driver
-Thread-Index: AQHM9oR7kTu/A5Gy+kqKXc430uKtxJZTowaAgAAFPID//3p5IA==
-Date: Wed, 29 Feb 2012 02:19:05 +0000
-Message-ID: <157393863283F442885425D2C4542856194154FC@nasanexd02a.na.qualcomm.com>
-References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
- <20120228.205347.1718771650331094141.davem@davemloft.net>
- <CAB=NE6VXyQ-k1Sm3Xf_ABE35+PHSoNqX=AJpLBjNu0sdAdnY4g@mail.gmail.com>
-In-Reply-To: <CAB=NE6VXyQ-k1Sm3Xf_ABE35+PHSoNqX=AJpLBjNu0sdAdnY4g@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.45.230.6]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 28 Feb 2012 21:20:30 -0500
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I179dN1432N98dKzz1202hzzz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 29 Feb 2012 10:26:28 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/20] pinctrl: API changes to support multiple states
+ per device
+Message-ID: <20120229022627.GA3816@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-20-git-send-email-swarren@nvidia.com>
+ <20120227090721.GB26061@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BCFCD@HQMAIL01.nvidia.com>
+ <20120228031851.GA1249@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BDDF1D55@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BDDF1D55@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1T2JIOo031167
 
-Hi David
-     The code related to hardware of atl1c is quite diff with that in our hand, every time we take much time to find which part should be 
-revised for one bug/issue found on other platform/OSes. the new driver make it easy to fix and support new chipset as well.
-
-     We reviewed all patches that applied to atl1c and added it to the alx  during coding. And did tests for both new and old drivers
-You could find the result here:  http://www.linuxfoundation.org/collaborate/workgroups/networking/alx
-
-
-Best Regards
--Xiong
-
- -----Original Message-----
-> From: mcgrof@gmail.com [mailto:mcgrof@gmail.com] On Behalf Of Luis R.
-> Rodriguez
-> Sent: Wednesday, February 29, 2012 10:13
-> To: David Miller
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; qca-linux-team; nic-
-> devel; Giori, Kathy; chris.snook@gmail.com; Olivari, Mathieu; Huntsman, Bryan
-> Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+On Tue, Feb 28, 2012 at 09:04:10AM -0800, Stephen Warren wrote:
+> Dong Aisheng wrote at Monday, February 27, 2012 8:19 PM:
+> > On Mon, Feb 27, 2012 at 10:37:16AM -0800, Stephen Warren wrote:
+> > > Dong Aisheng wrote at Monday, February 27, 2012 2:07 AM:
+> > > > On Sun, Feb 19, 2012 at 11:45:59PM -0700, Stephen Warren wrote:
+> > ..........
+> > >
+> > > > > +static struct pinctrl *pinctrl_get_locked(struct device *dev)
+> > > > > +{
+> > > > > +	struct pinctrl *p;
+> > > > >
+> > > > > -error:
+> > > > > -	list_for_each_entry(setting, &p->settings, node)
+> > > > > -		pinmux_free_setting(setting);
+> > > > > +	if (WARN_ON(!dev))
+> > > > > +		return ERR_PTR(-EINVAL);
+> > > > >
+> > > > > -	kfree(p);
+> > > > > +	p = find_pinctrl(dev);
+> > > > > +	if (p == NULL)
+> > > > > +		p = create_pinctrl(dev);
+> > > > > +	if (IS_ERR(p))
+> > > > > +		return p;
+> > > > > +
+> > > > > +	p->usecount++;
+> > > >
+> > > > I still can not understand what's the purpose of p->usecount?
+> > > > For allowing multi times calling of pinctrl_get for on the same device?
+> > >
+> > > pinctrl_get() could be called multiple times for the same device. Rather
+> > > than create a whole new struct pinctrl each time it's called, we just
+> > > reference count the object so that each call returns the same one, and
+> > > it won't be destroyed until all users have called pinctrl_put().
+> ...
+> > I still can't find in which case the device will have such requirement
+> > since per my understanding pinctrl is a little different from clock
+> > (clock can be used by different devices but we do not allow pins to be
+> > used by difference devices at the same time).
 > 
-> On Tue, Feb 28, 2012 at 5:53 PM, David Miller <davem@davemloft.net> wrote:
-> > From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-> > Date: Tue, 28 Feb 2012 17:50:09 -0800
+> True. It's actually very easy to make pinctrl_get() fail if a struct
+> pinctrl was already created for the device in question. If we do that,
+> we can completely remove the usecount field. I'll update my patch to do
+> that.
+Great.
+
+> 
+> > > > > +static inline struct pinctrl * __must_check pinctrl_get_select(
+> > > > > +					struct device *dev, const char *name)
+> > > > > +{
+> > > > > +	struct pinctrl *p;
+> > > > > +	struct pinctrl_state *s;
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	p = pinctrl_get(dev);
+> > > > > +	if (IS_ERR(p))
+> > > > > +		return p;
+> > > > > +
+> > > > > +	s = pinctrl_lookup_state(p, name);
+> > > > > +	if (IS_ERR(s)) {
+> > > > > +		pinctrl_put(p);
+> > > > > +		return ERR_PTR(PTR_ERR(s));
+> > > > > +	}
+> > > > > +
+> > > > > +	ret = pinctrl_select_state(p, s);
+> > > > > +	if (ret < 0) {
+> > > > > +		pinctrl_put(p);
+> > > > > +		return ERR_PTR(ret);
+> > > >
+> > > > s/ERR_PTR(ret)/ret ?
+> > >
+> > > The function returns a pointer, whereas ret is an int. ERR_PTR() is used
+> > > to wrap the int error code into a pointer value so that the function can
+> > > return either a valid pointer, or an error-code. See include/linux/err.h.
 > >
-> >> The next patch adds the new QCA alx Ethernet driver that supercedes
-> >> the atl1c Ethernet driver. For details please read the commit log of
-> >> the patch. Given the size you can download the patch from:
+> > Hmm, below is what i see in your patch:
+> > +int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+> >  {
+> > +       int ret;
+> > +
+> >         mutex_lock(&pinctrl_mutex);
+> > -       pinctrl_disable_locked(p);
+> > +       ret = pinctrl_select_state_locked(p, state);
+> >         mutex_unlock(&pinctrl_mutex);
+> > +
+> > +       return ret;
+> >  }
 > >
-> > What's wrong with making evolutionary fixes to atl1c instead of
-> > replacing it wholesale?
-> >
-> > This isn't the way to do it Luis.
+> > It seems pinctrl_select_state does not return a pointer.
 > 
-> I *vehemently* tried to change direction of this driver development to do
-> exactly what you stated when this driver was first posted last year in October of
-> 2011 [0]. I could not get commitment on that route mainly due to the large delta
-> and lack of resources to address this. I knew this would still be a hard sale but
-> what I proposed was a comprise --  consider a replacement *if* we can get QCA
-> engineers tasked to work upstream and committed to fixing *all* issues
-> reported,
-> *and* also properly tested and compared drivers.
+> pinctrl_select()_state() returns an int error code.
 > 
-> The other option we had reviewed here was to get this into staging but the
-> garbage driver code is all resolved now. Its your call. This is the best I could get
-> commitment and resources on.
+> pinctrl_get_select() returns a pointer, or an error code encoded into a
+> pointer.
 > 
-> [0] http://markmail.org/message/7dk7ltdcdlx5ksu6
+> ERR_PTR(ret) is used to convert pinctrl_select()'s int error code into
+> a pointer representation of the error code for pinctrl_get_select() to
+> return.
 > 
->   Luis
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Oh, i see.
+You're right, sorry for the noise.
+
+Regards
+Dong Aisheng
+
