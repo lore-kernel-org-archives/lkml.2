@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab2B2BPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:15:18 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50390 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986Ab2B2BPP (ORCPT
+	id S1756280Ab2B2BRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:17:23 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33517 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab2B2BRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:15:15 -0500
+	Tue, 28 Feb 2012 20:17:21 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4F4D7BF9.9070104@jp.fujitsu.com>
-Date: Wed, 29 Feb 2012 10:14:33 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org>
-In-Reply-To: <1330445487-15020-2-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+Date: Wed, 29 Feb 2012 10:15:49 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Greg Thelen <gthelen@google.com>,
+        Jan Kara <jack@suse.cz>, Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] memcg: dirty page accounting support routines
+Message-Id: <20120229101549.1d4ef3f3.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120228144507.acd70d1e.akpm@linux-foundation.org>
+References: <20120228140022.614718843@intel.com>
+	<20120228144747.124608935@intel.com>
+	<20120228144507.acd70d1e.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/29 1:11), Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Tue, 28 Feb 2012 14:45:07 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Tue, 28 Feb 2012 22:00:26 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
 > 
-> The idea here is to pass an additional decoded MCE message through
-> the tracepoint and into the ring buffer for userspace to consume. The
-> designated consumers are RAS daemons and other tools collecting RAS
-> information.
-
-I could not catch the point... Why you need this msg field?
-
-I think that all of information about the error is already packed in
-the record and that we can make a string from the bits in the record
-soon afterward.  From my point of view it seems that what you are
-doing here is just consuming the ring buffer by repeating same
-contents in another format with dynamic length which might be short
-but otherwise could be too long.
-
-And one more unacceptable point is that filling this msg field is
-expected to be done in machine check context where have many
-limitations in kernel's subsystems such as use of memory allocators.
-
-Suggestion; How about having a kind of translator function for
-userland, e.g. an exported function named mce_record_to_msg()?
-Tool obtains raw data from the record in the tracepoint's ring buffer,
-and if it likes, optionally it can pass the record to the translator
-function to get some accomplished string.
-
+> > From: Greg Thelen <gthelen@google.com>
+> > 
+> > Added memcg dirty page accounting support routines.  These routines are
+> > used by later changes to provide memcg aware writeback and dirty page
+> > limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
+> > allow for easier understanding of memcg writeback operation.
+> > 
+> > ...
+> >
+> > +/*
+> > + * Return the number of additional pages that the @memcg cgroup could allocate.
+> > + * If use_hierarchy is set, then this involves checking parent mem cgroups to
+> > + * find the cgroup with the smallest free space.
+> > + */
 > 
-> Drop unneeded fields while at it, thus saving some room in the ring
-> buffer.
+> Comment needs revisting - use_hierarchy does not exist.
+> 
+> > +static unsigned long
+> > +mem_cgroup_hierarchical_free_pages(struct mem_cgroup *memcg)
+> > +{
+> > +	u64 free;
+> > +	unsigned long min_free;
+> > +
+> > +	min_free = global_page_state(NR_FREE_PAGES);
+> > +
+> > +	while (memcg) {
+> > +		free = mem_cgroup_margin(memcg);
+> > +		min_free = min_t(u64, min_free, free);
+> > +		memcg = parent_mem_cgroup(memcg);
+> > +	}
+> > +
+> > +	return min_free;
+> > +}
+> > +
+> > +/*
+> > + * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+> > + * @memcg:     memory cgroup to query
+> > + * @item:      memory statistic item exported to the kernel
+> > + *
+> > + * Return the accounted statistic value.
+> > + */
+> > +unsigned long mem_cgroup_page_stat(struct mem_cgroup *memcg,
+> > +				   enum mem_cgroup_page_stat_item item)
+> > +{
+> > +	struct mem_cgroup *iter;
+> > +	s64 value;
+> > +
+> > +	/*
+> > +	 * If we're looking for dirtyable pages we need to evaluate free pages
+> > +	 * depending on the limit and usage of the parents first of all.
+> > +	 */
+> > +	if (item == MEMCG_NR_DIRTYABLE_PAGES)
+> > +		value = mem_cgroup_hierarchical_free_pages(memcg);
+> > +	else
+> > +		value = 0;
+> > +
+> > +	/*
+> > +	 * Recursively evaluate page statistics against all cgroup under
+> > +	 * hierarchy tree
+> > +	 */
+> > +	for_each_mem_cgroup_tree(iter, memcg)
+> > +		value += mem_cgroup_local_page_stat(iter, item);
+> 
+> What's the locking rule for for_each_mem_cgroup_tree()?  It's unobvious
+> from the code and isn't documented?
+> 
 
-Really unneeded and should be killed? 
-
+Because for_each_mem_cgroup_tree() uses rcu_read_lock() and referernce counting
+internally, it's not required to take any lock in callers.
+One rule is the caller shoud call mem_cgroup_iter_break() if he want to break
+the loop.
 
 Thanks,
-H.Seto
+-Kame
+
+
+
+
+
 
