@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab2B2TWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 14:22:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:57823 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758282Ab2B2TWk (ORCPT
+	id S1758360Ab2B2TZS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 14:25:18 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:52076 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758286Ab2B2TZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 14:22:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland Stigge <stigge@antcom.de>
-Subject: [GIT PULL] arm-soc fixes for v3.3
-Date: Wed, 29 Feb 2012 19:22:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Tony Lindgren <tony@atomide.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
+	Wed, 29 Feb 2012 14:25:16 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: Joe Perches <joe@perches.com>, Kalle Valo <kvalo@qca.qualcomm.com>,
+        Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "John W. Linville" <linville@tuxdriver.com>, Ilan Elias <ilane@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Date: Wed, 29 Feb 2012 11:22:36 -0800
+Subject: RE: coding style issues -- [davem@davemloft.net: Re: pull request:
+ wireless-next 2012-02-06]
+Thread-Topic: coding style issues -- [davem@davemloft.net: Re: pull request:
+ wireless-next 2012-02-06]
+Thread-Index: Acz3Fj3oFF8uTcWmSR+1ZzNO3BsX7AAAGoNA
+Message-ID: <477F20668A386D41ADCC57781B1F70430836762D6C@SC-VEXCH1.marvell.com>
+References: <20120229173421.GA13733@tuxdriver.com>
+	 <477F20668A386D41ADCC57781B1F70430836762D55@SC-VEXCH1.marvell.com>
+ <1330542811.21491.7.camel@joe2Laptop>
+In-Reply-To: <1330542811.21491.7.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202291922.31251.arnd@arndb.de>
-X-Provags-ID: V02:K0:iQdvNjIa2hOxXdgO5Q991TEl5hZoPVMXxzRWm5dNtPA
- DJ/9E/ChsjmVCPXd74zAk3kkUn3T2+5hqu+1MIUf8ABH9l5PUI
- 9QDfSPHw19ltXbN98B9rZtXN4eUbxaoF/+cYRjNr4i4W2+v0KO
- PJV67KRmvCsYcscRECJaiMOs+XcFr727xNv9DaY9XzdZS7dIxD
- WSoswqjN5ip/ix2hVIHv9Mo+L4I1kS2kwrGgWoaFOOlT+A6PD4
- 62qbRHuudXL+4O13SmeSYpV9969PfCmvRKpnCweo/StQguVe2a
- v+v6PxCcJg2AU/T4GdYvJG1QCMxqE26fOFDEqIjG1Lw+O5DPy8
- IZToHhNqA6fFOEb7EXns=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1TJPPY9004519
 
-Hi Linus,
+Hi Joe,
 
-Here is another set of arm-soc bug fixes on top of v3.3-rc5. The few larger
-bits are all for devices that still need to get set up in board code.
+> Subject: RE: coding style issues -- [davem@davemloft.net: Re: pull request: wireless-next 2012-02-06]
+> 
+> On Wed, 2012-02-29 at 10:57 -0800, Bing Zhao wrote:
+> > Joe Perches submitted a patch "[PATCH v2] checkpatch: Add some --strict coding style checks"
+> > I have applied Joe's patch to my local git tree.
+> >
+> > All new patches will follow Dave's rules and be checked with --strict option.
+> > Furthermore, we will have a series of cleanup patches to address the coding style issues in
+> existing code.
+> 
+> Hi Bing.
+> 
+> There's an issue with the checkpatch patch.
+> It doesn't always work correctly when there
+> are consecutive parenthesis.
+> 
+> Kalle Valo showed an example that fails:
+> 
+> 	if (!IS_ALIGNED((unsigned long) skb->data - HTC_HDR_LENGTH, 4) &&
+> 	    skb_cloned(skb)) {
 
-Only three platforms are in this set of fixes: omap2+, pxa and lpc32xx.
+Thanks for letting us know.
 
-	Arnd
+> 
+> I have a tentative fix here, but I'm waiting on
+> Andy Whitcroft to give some guidance on how best
+> to fix it given a minimum perl version of 5.10.
 
-The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+I have "Perl v5.10.0 built for x86_64-linux-gnu-thread-multi" on my system.
+I guess it should be fine.
 
-  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+Thanks,
+Bing
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes-3.3-rc6
+> 
+> The proposed patch doesn't work with perl versions
+> less than 5.10 and there is at least one person
+> that still uses 5.8.
+> 
 
-Arnd Bergmann (3):
-      Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
-      Merge branch 'fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge branch 'lpc32xx/fixes' of git://git.antcom.de/linux-2.6 into fixes
-
-Arnout Vandecappelle (Essensium/Mind) (1):
-      OMAP3 EVM: remove out-of-bounds array access of gpio_leds
-
-Axel Lin (2):
-      ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
-      pxa/hx4700: add platform device and I2C info for AK4641 codec
-
-Danny Kukawka (3):
-      ARM: pxa: fix including linux/gpio.h twice
-      arch/arm/mach-mmp/: some files include some headers twice
-      arch/arm/mach-pxa/: included linux/gpio.h twice
-
-Felipe Balbi (1):
-      ARM: OMAP2+: usb-host: fix compile warning
-
-Haojian Zhuang (2):
-      ARM: pxa: fix wrong parsing gpio event on spitz
-      ARM: pxa: fix mixed declarations and code in sharpsl_pm
-
-Matt Porter (1):
-      ARM: OMAP2+: gpmc-smsc911x: add required smsc911x regulators
-
-NeilBrown (1):
-      ARM: OMAP: add RCU locking to omap2_set_init_voltage.
-
-Ohad Ben-Cohen (1):
-      ARM: OMAP2: fix mailbox init code
-
-Roland Stigge (5):
-      ARM: LPC32xx: Fix irq on GPI_28
-      ARM: LPC32xx: Fix interrupt controller init
-      ARM: LPC32xx: irq.c: Clear latched event
-      ARM: LPC32xx: serial.c: HW bug workaround
-      ARM: LPC32xx: serial.c: Fixed loop limit
-
-Santosh Shilimkar (2):
-      ARM: OMAP4: cpuidle: Fix the C-state reporting to cpuidle governor.
-      ARM: OMAP4: Move the barrier memboclk_steal() as part of reserve callback
-
-Tony Lindgren (5):
-      Merge branch 'for_3.3/fixes/pm' of git://git.kernel.org/.../khilman/linux-omap-pm into fixes
-      ARM: OMAP: Fix kernel panic with HSMMC when twl4030_gpio is a module
-      ARM: OMAP: Fix build error when mmc_omap is built as module
-      Merge branch 'fixes-mmc' into fixes
-      ARM: OMAP1: Fix out-of-bounds array access for Innovator
-
- arch/arm/mach-lpc32xx/include/mach/irqs.h     |    2 +-
- arch/arm/mach-lpc32xx/irq.c                   |   25 +++++++++--
- arch/arm/mach-lpc32xx/serial.c                |   20 +++++++++-
- arch/arm/mach-mmp/aspenite.c                  |    1 -
- arch/arm/mach-mmp/pxa168.c                    |    1 -
- arch/arm/mach-mmp/tavorevb.c                  |    1 -
- arch/arm/mach-omap1/board-innovator.c         |    4 +-
- arch/arm/mach-omap2/Kconfig                   |    4 +-
- arch/arm/mach-omap2/board-n8x0.c              |    4 ++
- arch/arm/mach-omap2/board-omap3evm.c          |    2 +-
- arch/arm/mach-omap2/common.h                  |    1 +
- arch/arm/mach-omap2/cpuidle44xx.c             |    5 +-
- arch/arm/mach-omap2/gpmc-smsc911x.c           |   52 +++++++++++++++++++++++++
- arch/arm/mach-omap2/hsmmc.c                   |    6 +++
- arch/arm/mach-omap2/io.c                      |    1 +
- arch/arm/mach-omap2/mailbox.c                 |   10 ++++-
- arch/arm/mach-omap2/mux.c                     |    2 +-
- arch/arm/mach-omap2/omap4-common.c            |   25 ++++++++----
- arch/arm/mach-omap2/pm.c                      |    3 +
- arch/arm/mach-omap2/usb-host.c                |    6 +-
- arch/arm/mach-pxa/hx4700.c                    |   25 ++++++++++++
- arch/arm/mach-pxa/pxa25x.c                    |    1 -
- arch/arm/mach-pxa/pxa27x.c                    |    1 -
- arch/arm/mach-pxa/saarb.c                     |    1 -
- arch/arm/mach-pxa/sharpsl_pm.c                |    3 +-
- arch/arm/mach-pxa/spitz_pm.c                  |    5 +-
- arch/arm/plat-omap/common.c                   |    1 +
- arch/arm/plat-omap/include/plat/omap-secure.h |    6 +++
- drivers/pcmcia/pxa2xx_base.c                  |   12 +----
- 29 files changed, 181 insertions(+), 49 deletions(-)
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
