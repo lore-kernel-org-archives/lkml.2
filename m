@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2B2Lxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 06:53:53 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:39963 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab2B2Lxv (ORCPT
+	id S1753904Ab2B2L64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 06:58:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55231 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab2B2L6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 06:53:51 -0500
-X-RZG-AUTH: :Kn4WYUGIbOjlVJ8mt92bsC5fdUZMkrJc8Jqs4Bkhh/Ln9RvcMyeEGiAMTRoxjWgNss9jB0c=
-Message-ID: <Z0043fo1TA7N4v.RZmta@mo-p00-ob.rzone.de>
-X-RZG-CLASS-ID: mo00
-Reply-To: <officeunited@e-mail.ua>
-From: "Maria Colgate" <frrta@www1.beka-hospitec.de>
-Subject: Attention! Attention!! Attention!!! (READ ATTACHED MAIL FOR DETAILS)
-Date: Wed, 29 Feb 2012 02:50:29 -0800
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_009A_01C2A9A6.13705106"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 29 Feb 2012 06:58:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.236.34 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
+Message-ID: <1330516879.3545.103.camel@sauron.fi.intel.com>
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <rw@linutronix.de>
+Cc: tglx@linutronix.de, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Date: Wed, 29 Feb 2012 14:01:19 +0200
+In-Reply-To: <4F4E0E9D.7090002@linutronix.de>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	 <1330515322.3545.99.camel@sauron.fi.intel.com>
+	 <4F4E0E9D.7090002@linutronix.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-jFegWjEazJlIbKQhlAa1"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
 
-------=_NextPart_000_009A_01C2A9A6.13705106
-Content-Type: text/plain;
-	charset="Windows-1251"
+--=-jFegWjEazJlIbKQhlAa1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 2012-02-29 at 12:40 +0100, Richard Weinberger wrote:
+> Am 29.02.2012 12:35, schrieb Artem Bityutskiy:
+> > On Tue, 2012-02-14 at 21:06 +0100, Richard Weinberger wrote:
+> >> The following patch set implements checkpointing support for
+> >> UBI. Checkpointing is an optional feature which stores the physical to
+> >> logical eraseblock relations in a checkpointing superblock to reduce
+> >> the initialization time of UBI. The current init time of UBI is
+> >> proportional to the number of physical erase blocks on the FLASH
+> >> device. With checkpointing enabled the scan time is limited to a fixed
+> >> number of blocks.
+> >=20
+> > Notice, your patch-set has huge amount of checkpatch.pl complaints -
+> > please fix them. This will also be consistent with the overall UBI
+> > coding style where I honored checkpatch.pl limitations like identation
+> > style and 80 chars per line.
+> >=20
+>=20
+> All checkpatch.pl complaints will be fixed.
+> But first we have to discuss and address real problems.
+
+Sure, I just to not have time to look at real stuff now.
+
+But yes, I assume you will come up with a good way to stress-test it.
+You will look how the unstable bits problem affects the checkpointing. I
+would suggest you to implement power-cut emulation in UBI just like we
+have it in UBIFS, then run the integck test which already supports UBIFS
+power cut emulation. This will allow to catch a lot of issues.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-jFegWjEazJlIbKQhlAa1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-------=_NextPart_000_009A_01C2A9A6.13705106
-Content-Type: application/octet-stream;
-	name="Attention! Attention!! Attention!!!.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Attention! Attention!! Attention!!!.rtf"
+iQIcBAABAgAGBQJPThOQAAoJECmIfjd9wqK0GHEP+wXJSq1/U/5sj22cWL+zjM4q
+XPzOB3pd0E9CMnqq17DMt+zC9qmGvYn0f+v6LC0x3NbI2eKt/jhrQ86I6u9OU8NL
+k5bZkq512yk0sC6i2uE9HI1dTi8mrFuwNvj6CnHYI9ap6BNMrROmsA3M7r4anajF
+ie+8+LNu5Ekb+3K2IniZQCxcoEsoN8wh2xgoBeDYxmy+7nrXjCdyRXYv6oXetcUj
+HJJpGrGUyrqeJN2R0G5SsTFvcMbPicEpSZBuhgw087l8S9gNvOmaqKkoE0yYzMso
+SqjsjXTWYLrGtgJ6Nc+rPvg+oOU7FcOvT3JW9b3TGSYmM+xFLKM+iLKzbJTi2BWh
+FcwwR+8GbJNNUcktF2aMR2XnYdVacaZruVNhTxj85dUeDMCD5iDp9OolZgHpFdDv
+4kqFJ68B28sJ9uZnJjvWl62JWsZ3hV39r6JD+9QS4GvZMIkLdOhHWbmO+rWi0+C5
+PFkqZhdRsat4Fm3ffsodRq226VGc/HVDg8uqS5yUjIAdO7jflKo3IrHJepqI28U+
+0OCSKvYEkxcfmO8mKi9FYok1Go+oJ+P0CM7gzK9OOtJyx7WccrbqWnfrf1FaozQv
+/1N1J7r7qgA9PvrSwau4pKNeVFok8TBCDNFOatgNvBcXHPu53F1NacBG15iuxKLU
+VcUagiunmeREWO6Mt2r4
+=BjHj
+-----END PGP SIGNATURE-----
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgQXR0ZW50aW9uISBBdHRlbnRpb24hISBBdHRlbnRpb24h
-ISEgIFxwYXINCiBccGFyDQpUaGUgb2ZmaWNlIG9mIHRoZSBFdXJvcGVhbiBV
-bmlvbiwgdGhlIFByZXNpZGVudCBGZWRlcmFsIFJlcHVibGljIG9mIE5pZ2Vy
-aWFuIFxwYXINCihEci4gR29vZGx1Y2sgRS4gSm9uYXRoYW4pLCB0aGUgQ0lB
-LCBGQkksIEVGQ0MsIEJyaXRpc2ggR292ZXJubWVudCwgQW1lcmljYW4gXHBh
-cg0KR292ZXJubWVudCBhbmQgVW5pdGVkIE5hdGlvbnMgT3JnYW5pemF0aW9u
-IGluIEJlbmluIFJlcHVibGljLCBHaGFuYSwgQnVya2luYSBccGFyDQpGYXNv
-LCBNYWxheXNpYSwgU291dGggQWZyaWNhLCBUb2dvLCBTZW5lZ2FsIGluIGNv
-bGxhYm9yYXRpb24gd2l0aCBVSyAoTG9uZG9uKSBccGFyDQpccGFyDQpccGFy
-DQpccGFyDQpBbnRpLUNyaW1lIFNxdWFkIHJlY2VpdmVkIGEgcmVwb3J0IG9m
-IGZ1bmQgdHJhbnNhY3Rpb24vc2NhbSBhZ2FpbnN0IHlvdSBhbmQgXHBhcg0K
-b3RoZXIgQnJpdGlzaCwgVVMgYW5kIEFzaWFuIGNpdGl6ZW5zIGluY2x1ZGlu
-ZyBvdGhlciBjb3VudHJpZXMgd2hvbSB0aGUgXHBhcg0KYWZvcmVtZW50aW9u
-ZWQgY291bnRyaWVzIHZpdGFsIG9mZmljZXMvYXV0aG9yaXRpZXMgaGF2ZSBy
-ZWNvbXBlbnNlZCB5b3UgXHBhcg0KZHVlIHRvIG1lZXRpbmcgaGVsZCB3aXRo
-IHRoZSBJbnRlcm5hdGlvbmFsIEZpbmFuY2lhbCBBZ2VuY3ksIHRoZSBJTUYs
-XHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KIFxwYXINCmZvdXIgY291bnRyaWVz
-IEdvdmVybm1lbnQgYW5kIHRoZSBXb3JsZCBIaWdoIENvbW1pc3Npb24gYWdh
-aW5zdCBmcmF1ZCBccGFyDQphbmQgb3RoZXIgaW50ZXJuYXRpb25hbCBmdW5k
-IHRyYW5zYWN0aW9uIGFjdGl2aXRpZXMgYnkgdGhlIGZvdXIgY291bnRyeSBc
-cGFyDQpDaXRpemVucyBkdXJpbmcgdGhlIHJlY2VudCBHMjAgYW5kIEFDU1Ag
-bWVldGluZy4gXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KWW91ciBu
-YW1lIHdhcyBhbW9uZyB0aG9zZSBccGFyDQphcHByb3ZlZCBsaXN0ZWQgYmVu
-ZWZpY2lhcnkgdG8gYmUgcGFpZCBieSB0aGUgSW50ZXJuYXRpb25hbCBGaW5h
-bmNpYWwgXHBhcg0KSW50ZWxsaWdlbnQgVW5pdCAoTkZJVSkgdGhyb3VnaCB0
-aGUgVW5pdGVkIE5hdGlvbnMgYWNjb3VudCBob2xkZXIgYmFuay4gXHBhcg0K
-XHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KXHBhcg0KIFxwYXINCllvdSBhcmUg
-dG8gY29udGFjdCB0aGUgVU4gYXBwb2ludGVkIG9mZmljZXIgaW1tZWRpYXRl
-bHkgZm9yIHRoZSByZWxlYXNlL3RyYW5zZmVyIFxwYXINCm9mIHlvdXIgYXBw
-cm92ZWQgY29tcGVuc2F0aW9uIGZ1bmQgdmFsdWVkICQ3NTAsMDAwLjAwIFVu
-aXRlZCBTdGF0ZXMgRG9sbGFycyBvbmx5LiBccGFyDQpccGFyDQpccGFyDQpX
-aXRoIG1hdHRlciBvZiB1cmdlbmN5LCB5b3UgYXJlIHRvIHJlY29uZmlybSB0
-byB0aGUgVU4gYXBwb2ludGVkIG9mZmljZXIgeW91ciBccGFyDQpmdWxsIGRh
-dGEgYXMgZm9sbG93czogQSkgWW91ciBGdWxsIE5hbWUsIEIpIFByZXNlbnQg
-QWRkcmVzcywgQykgSG9tZSBhbmQgTW9iaWxlIFxwYXINClRlbGVwaG9uZSBO
-dW1iZXJzLCBEKSBPY2N1cGF0aW9uLCBFKSBDb21wYW55IE5hbWUgYW5kIFBv
-c2l0aW9uLiBccGFyDQogXHBhcg0KXHBhcg0KXHBhcg0KQXMgc29vbiBhcyB5
-b3Ugc2VuZCB0aGlzIGluZm9ybWF0aW9uIHRvIHRoZSBvZmZpY2VyIGhlIHdp
-bGwgZGlyZWN0IHlvdSBhY2NvcmRpbmdseSBccGFyDQpvbiB0aGUgcmVsZWFz
-ZSBvZiB5b3VyIEZ1bmQuIFlvdSBhcmUgdG8gY29udGFjdCBNci5NZW5zaGEg
-QmFhaCBIZWFkIHN1cGVydmlzb3IgXHBhcg0Kd2l0aCB0aGUgaW5mb3JtYXRp
-b24gYmVsb3csIGZvciB0aGUgcmVsZWFzZSBvZiB5b3VyIGZ1bmQgbm93LiBc
-cGFyDQpccGFyDQpccGFyDQogXHBhcg0KQ29udGFjdCBQZXJzb246IE1yLk1l
-bnNoYSBCYWFoLiBccGFyDQpDLzg4MTUgb2ZmIFJpbmcgUm9hZCwgUC5PLkJv
-eCAyNTE1IFxwYXINCkNhZGFzdHJhbCwgWm9uZSBBLCBDZW50cmFsIEJ1c2lu
-ZXNzIERpc3RyaWN0IFxwYXINCkFjY3JhLUdoYW5hLiBccGFyDQpccGFyDQpc
-cGFyDQpFbWFpbDogb2ZmaWNldW5pdGVkQGUtbWFpbC51YVxwYXINCm1lbnNo
-YWJhYWgyQGdsb2JvbWFpbC5jb21ccGFyDQpZb3VycyBpbiBTZXJ2aWNlLCBc
-cGFyDQogXHBhcg0KXHBhcg0KXHBhcg0KTWFyaWEgQ29sZ2F0ZSAoU2VjcmV0
-YXJ5IEZvcmVpZ24gQWZmYWlyKSBccGFyDQpXb3JsZCBCYW5rIFBheW1lbnQg
-TW9uaXRvcmluZyBVbml0LlxwYXINCjE4MTggSCBTdHJlZXQsIE4uVy5XYXNo
-aW5ndG9uLCBEQyAyMDQzMyBccGFyDQpVbml0ZWQgU3RhdGVzIG9mIEFtZXJp
-Y2EuIFxwYXINCn0NCgA=
+--=-jFegWjEazJlIbKQhlAa1--
 
-------=_NextPart_000_009A_01C2A9A6.13705106--
