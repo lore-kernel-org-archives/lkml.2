@@ -1,58 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab2B2JRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:17:18 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35195 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab2B2JRM convert rfc822-to-8bit (ORCPT
+	id S1757120Ab2B2JP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:15:57 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34834 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab2B2JPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:17:12 -0500
-Message-ID: <1330507023.11248.113.camel@twins>
-Subject: Re: [RFC PATCH] kick ksoftirqd more often to please soft lockup
- detector
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Andrzej Jakowski <andrzej.jakowski@intel.com>
-Date: Wed, 29 Feb 2012 10:17:03 +0100
-In-Reply-To: <CABE8wwsmWqDddMqgQ6HvMPkbK+Vu7G7GOY-VO_Tru2JV2NUUcw@mail.gmail.com>
-References: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
-	 <1330422535.11248.78.camel@twins>
-	 <alpine.LFD.2.02.1202282240340.2794@ionos>
-	 <CABE8wwsmWqDddMqgQ6HvMPkbK+Vu7G7GOY-VO_Tru2JV2NUUcw@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 29 Feb 2012 04:15:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.129.196 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Wed, 29 Feb 2012 13:15:47 +0400
+Message-ID: <20120229091547.29236.28230.stgit@zurg>
+In-Reply-To: <20120229090748.29236.35489.stgit@zurg>
+References: <20120229090748.29236.35489.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-28 at 14:16 -0800, Dan Williams wrote:
-> Looks like everyone is guilty:
-> 
-> [  422.765336] softirq took longer than 1/4 tick: 3 NET_RX ffffffff813f0aa0
-> ...
-> [  423.971878] softirq took longer than 1/4 tick: 4 BLOCK ffffffff812519c8
-> [  423.985093] softirq took longer than 1/4 tick: 6 TASKLET ffffffff8103422e
-> [  423.993157] softirq took longer than 1/4 tick: 7 SCHED ffffffff8105e2e1
-> [  424.001018] softirq took longer than 1/4 tick: 9 RCU ffffffff810a0fed
-> [  424.008691] softirq loop took longer than 1/2 tick need_resched:
+This patch adds file/anon filter bits into isolate_mode_t,
+this allows to simplify checks in __isolate_lru_page().
 
-/me kicks himself for not printing the actual duration.. :-)
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/mmzone.h |    4 ++++
+ include/linux/swap.h   |    2 +-
+ mm/compaction.c        |    5 +++--
+ mm/vmscan.c            |   27 +++++++++++++--------------
+ 4 files changed, 21 insertions(+), 17 deletions(-)
 
-> As expected whenever that 1/2 tick message gets emitted the softirq
-> handler is almost running in a need_resched() context.
-
-Yeah.. that's quite expected.
-
-> So is it a good idea to get more aggressive about scheduling ksoftrrqd? 
-
-Nah, moving away from softirq more like. I'll put moving the
-load-balancer into a kthread on the todo list. And it looks like
-everybody else should move to kthreads too.
-
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index eff4918..2fed935 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -193,6 +193,10 @@ struct lruvec {
+ #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+ /* Isolate for asynchronous migration */
+ #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
++/* Isolate swap-backed pages */
++#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
++/* Isolate file-backed pages */
++#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index ba2c8d7..dc6e6a3 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+-extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
++extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 74a8c82..cc054f7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+-	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
++	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
++			      ISOLATE_FILE | ISOLATE_ANON;
+ 
+ 	/* Do not scan outside zone boundaries */
+ 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+@@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 			mode |= ISOLATE_ASYNC_MIGRATE;
+ 
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page, mode, 0) != 0)
++		if (__isolate_lru_page(page, mode) != 0)
+ 			continue;
+ 
+ 		VM_BUG_ON(PageTransCompound(page));
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index af6cfe7..1b70338 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1029,27 +1029,18 @@ keep_lumpy:
+  *
+  * returns 0 on success, -ve errno on failure.
+  */
+-int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
++int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+ {
+-	bool all_lru_mode;
+ 	int ret = -EINVAL;
+ 
+ 	/* Only take pages on the LRU. */
+ 	if (!PageLRU(page))
+ 		return ret;
+ 
+-	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
+-		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+-
+-	/*
+-	 * When checking the active state, we need to be sure we are
+-	 * dealing with comparible boolean values.  Take the logical not
+-	 * of each.
+-	 */
+-	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
++	if (!(mode & (PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE)))
+ 		return ret;
+ 
+-	if (!all_lru_mode && !!page_is_file_cache(page) != file)
++	if (!(mode & (page_is_file_cache(page) ? ISOLATE_FILE : ISOLATE_ANON)))
+ 		return ret;
+ 
+ 	/*
+@@ -1166,7 +1157,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 
+ 		VM_BUG_ON(!PageLRU(page));
+ 
+-		switch (__isolate_lru_page(page, mode, file)) {
++		switch (__isolate_lru_page(page, mode)) {
+ 		case 0:
+ 			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+@@ -1224,7 +1215,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			    !PageSwapCache(cursor_page))
+ 				break;
+ 
+-			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
++			if (__isolate_lru_page(cursor_page, mode) == 0) {
+ 				unsigned int isolated_pages;
+ 
+ 				mem_cgroup_lru_del(cursor_page);
+@@ -1520,6 +1511,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+ 		isolate_mode |= ISOLATE_CLEAN;
++	if (file)
++		isolate_mode |= ISOLATE_FILE;
++	else
++		isolate_mode |= ISOLATE_ANON;
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1682,6 +1677,10 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+ 		isolate_mode |= ISOLATE_CLEAN;
++	if (file)
++		isolate_mode |= ISOLATE_FILE;
++	else
++		isolate_mode |= ISOLATE_ANON;
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
 
