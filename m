@@ -1,149 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030645Ab2B2BHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 20:07:47 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63436 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1030609Ab2B2BHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 20:07:46 -0500
-Message-ID: <4F4D7AA4.3070801@cn.fujitsu.com>
-Date: Wed, 29 Feb 2012 09:08:52 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, kvm list <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4B9C57.3010407@siemens.com> <4F4C8EEB.8040709@cn.fujitsu.com> <4F4C9F8C.1060901@siemens.com> <4F4CA17F.4020504@cn.fujitsu.com> <4F4CAA43.3020805@siemens.com> <20120228104528.GB24600@redhat.com>
-In-Reply-To: <20120228104528.GB24600@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-29 09:05:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-29 09:05:57,
-	Serialize complete at 2012-02-29 09:05:57
+	id S1030642Ab2B2BMc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 20:12:32 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44729 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966198Ab2B2BMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 20:12:31 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 29 Feb 2012 10:10:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] memcg: add kernel calls for memcg dirty page stats
+Message-Id: <20120229101054.98e121fc.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120228144747.044421224@intel.com>
+References: <20120228140022.614718843@intel.com>
+	<20120228144747.044421224@intel.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 02/28/2012 06:45 PM, Gleb Natapov Wrote:
-> On Tue, Feb 28, 2012 at 11:19:47AM +0100, Jan Kiszka wrote:
->> On 2012-02-28 10:42, Wen Congyang wrote:
->>> At 02/28/2012 05:34 PM, Jan Kiszka Wrote:
->>>> On 2012-02-28 09:23, Wen Congyang wrote:
->>>>> At 02/27/2012 11:08 PM, Jan Kiszka Wrote:
->>>>>> On 2012-02-27 04:01, Wen Congyang wrote:
->>>>>>> We can know the guest is paniced when the guest runs on xen.
->>>>>>> But we do not have such feature on kvm. This patch implemnts
->>>>>>> this feature, and the implementation is the same as xen:
->>>>>>> register panic notifier, and call hypercall when the guest
->>>>>>> is paniced.
->>>>>>>
->>>>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>>>> ---
->>>>>>>  arch/x86/kernel/kvm.c    |   12 ++++++++++++
->>>>>>>  arch/x86/kvm/svm.c       |    8 ++++++--
->>>>>>>  arch/x86/kvm/vmx.c       |    8 ++++++--
->>>>>>>  arch/x86/kvm/x86.c       |   13 +++++++++++--
->>>>>>>  include/linux/kvm.h      |    1 +
->>>>>>>  include/linux/kvm_para.h |    1 +
->>>>>>>  6 files changed, 37 insertions(+), 6 deletions(-)
->>>>>>>
->>>>>>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
->>>>>>> index f0c6fd6..b928d1d 100644
->>>>>>> --- a/arch/x86/kernel/kvm.c
->>>>>>> +++ b/arch/x86/kernel/kvm.c
->>>>>>> @@ -331,6 +331,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
->>>>>>>  	.notifier_call = kvm_pv_reboot_notify,
->>>>>>>  };
->>>>>>>  
->>>>>>> +static int
->>>>>>> +kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
->>>>>>> +{
->>>>>>> +	kvm_hypercall0(KVM_HC_GUEST_PANIC);
->>>>>>> +	return NOTIFY_DONE;
->>>>>>> +}
->>>>>>> +
->>>>>>> +static struct notifier_block kvm_pv_panic_nb = {
->>>>>>> +	.notifier_call = kvm_pv_panic_notify,
->>>>>>> +};
->>>>>>> +
->>>>>>
->>>>>> You should split up host and guest-side changes.
->>>>>>
->>>>>>>  static u64 kvm_steal_clock(int cpu)
->>>>>>>  {
->>>>>>>  	u64 steal;
->>>>>>> @@ -417,6 +428,7 @@ void __init kvm_guest_init(void)
->>>>>>>  
->>>>>>>  	paravirt_ops_setup();
->>>>>>>  	register_reboot_notifier(&kvm_pv_reboot_nb);
->>>>>>> +	atomic_notifier_chain_register(&panic_notifier_list, &kvm_pv_panic_nb);
->>>>>>>  	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
->>>>>>>  		spin_lock_init(&async_pf_sleepers[i].lock);
->>>>>>>  	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
->>>>>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
->>>>>>> index 0b7690e..38b4705 100644
->>>>>>> --- a/arch/x86/kvm/svm.c
->>>>>>> +++ b/arch/x86/kvm/svm.c
->>>>>>> @@ -1900,10 +1900,14 @@ static int halt_interception(struct vcpu_svm *svm)
->>>>>>>  
->>>>>>>  static int vmmcall_interception(struct vcpu_svm *svm)
->>>>>>>  {
->>>>>>> +	int ret;
->>>>>>> +
->>>>>>>  	svm->next_rip = kvm_rip_read(&svm->vcpu) + 3;
->>>>>>>  	skip_emulated_instruction(&svm->vcpu);
->>>>>>> -	kvm_emulate_hypercall(&svm->vcpu);
->>>>>>> -	return 1;
->>>>>>> +	ret = kvm_emulate_hypercall(&svm->vcpu);
->>>>>>> +
->>>>>>> +	/* Ignore the error? */
->>>>>>> +	return ret == 0 ? 0 : 1;
->>>>>>
->>>>>> Why can't kvm_emulate_hypercall return the right value?
->>>>>
->>>>> kvm_emulate_hypercall() will call kvm_hv_hypercall(), and
->>>>> kvm_hv_hypercall() will return 0 when vcpu's CPL > 0.
->>>>> If vcpu's CPL > 0, does kvm need to exit and tell it to
->>>>> qemu?
->>>>
->>>> No, there is currently no exit to userspace due to hypercalls, neither
->>>> of HV nor KVM kind.
->>>>
->>>> The point is that the return code of kvm_emulate_hypercall is unused so
->>>> far, so you can easily redefine it to encode continue vs. exit to
->>>> userspace. Once someone has different needs, this could still be
->>>> refactored again.
->>>
->>> So, it is OK to change the return value of kvm_hv_hypercall() if vcpu's
->>> CPL > 0?
->>
->> Yes, change it to encode what vendor modules need to return to their
->> callers.
->>
-> Better introduce new request flag and set it in your hypercall emulation. See
-> how triple fault is handled.
+On Tue, 28 Feb 2012 22:00:25 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-triple fault sets KVM_EXIT_SHUTDOWN and exits to userspace. Do you mean introduce
-a new value(like KVM_EXIT_SHUTDOWN)?
-
-Thanks
-Wen Congyang
-
+> From: Greg Thelen <gthelen@google.com>
 > 
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Add calls into memcg dirty page accounting.  Notify memcg when pages
+> transition between clean, file dirty, writeback, and unstable nfs.  This
+> allows the memory controller to maintain an accurate view of the amount
+> of its memory that is dirty.
 > 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  fs/nfs/write.c      |    4 ++++
+>  mm/filemap.c        |    1 +
+>  mm/page-writeback.c |    4 ++++
+>  mm/truncate.c       |    1 +
+>  4 files changed, 10 insertions(+)
+> 
+> --- linux.orig/fs/nfs/write.c	2012-02-19 10:53:14.000000000 +0800
+> +++ linux/fs/nfs/write.c	2012-02-19 10:53:21.000000000 +0800
+> @@ -449,6 +449,7 @@ nfs_mark_request_commit(struct nfs_page 
+>  	nfsi->ncommit++;
+>  	spin_unlock(&inode->i_lock);
+>  	pnfs_mark_request_commit(req, lseg);
+> +	mem_cgroup_inc_page_stat(req->wb_page, MEMCG_NR_FILE_UNSTABLE_NFS);
+
+Hmm...Is the status UNSTABLE_NFS cannot be obtaiend by 'struct page' ?
+
+One idea to avoid adding a new flag to pc->flags is..
+
+Can't we do this by following if 'req' exists per page ?
+
+	memcg = mem_cgroup_from_page(page);  # update memcg's refcnt+1
+	req->memcg = memcg;		     # record memcg to req.
+	mem_cgroup_inc_nfs_unstable(memcg)   # a new call
+
+
+
+>  	inc_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+>  	inc_bdi_stat(req->wb_page->mapping->backing_dev_info, BDI_RECLAIMABLE);
+>  	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
+> @@ -460,6 +461,7 @@ nfs_clear_request_commit(struct nfs_page
+>  	struct page *page = req->wb_page;
+>  
+>  	if (test_and_clear_bit(PG_CLEAN, &(req)->wb_flags)) {
+> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_UNSTABLE_NFS);
+>  		dec_zone_page_state(page, NR_UNSTABLE_NFS);
+>  		dec_bdi_stat(page->mapping->backing_dev_info, BDI_RECLAIMABLE);
+>  		return 1;
+> @@ -1408,6 +1410,8 @@ void nfs_retry_commit(struct list_head *
+>  		req = nfs_list_entry(page_list->next);
+>  		nfs_list_remove_request(req);
+>  		nfs_mark_request_commit(req, lseg);
+> +		mem_cgroup_dec_page_stat(req->wb_page,
+> +					 MEMCG_NR_FILE_UNSTABLE_NFS);
+>  		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+>  		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
+>  			     BDI_RECLAIMABLE);
+> --- linux.orig/mm/filemap.c	2012-02-19 10:53:14.000000000 +0800
+> +++ linux/mm/filemap.c	2012-02-19 10:53:21.000000000 +0800
+> @@ -142,6 +142,7 @@ void __delete_from_page_cache(struct pag
+>  	 * having removed the page entirely.
+>  	 */
+>  	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_DIRTY);
+
+
+I think we can make use of PageDirty() as explained.
+
+Thanks,
+-Kame
 
