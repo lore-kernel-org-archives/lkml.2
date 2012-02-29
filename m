@@ -1,39 +1,33 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1757479Ab2BYCaS (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Fri, 24 Feb 2012 21:30:18 -0500
-Received: from outrelay01.libero.it ([212.52.84.101]:53400 "EHLO
-        outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1757042Ab2BYCaR (ORCPT
+        id S1030999Ab2B2OKn (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Wed, 29 Feb 2012 09:10:43 -0500
+Received: from mail.technobaik.ru ([77.243.113.25]:3278 "EHLO technobaik.ru"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1030926Ab2B2OKm convert rfc822-to-8bit (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Fri, 24 Feb 2012 21:30:17 -0500
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0B020D.4F48478F.0055,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Message-ID: <10763400.2613221330136975362.JavaMail.defaultUser@defaultHost>
-Date: Sat, 25 Feb 2012 03:29:35 +0100 (CET)
-From: rose <rosebaby_20113@yahoo.com>
-Reply-To: rose <rosebaby_20113@yahoo.com>
-Subject: hi
+        Wed, 29 Feb 2012 09:10:42 -0500
+X-Greylist: delayed 3602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 09:10:42 EST
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.109.21
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear Web-mail User,
+To: Recipients <admin@mail.com>
+From: "Webmail Admin" <admin@mail.com>
+Date: Wed, 29 Feb 2012 05:09:30 -0800
+Reply-To: accountcare07@hotmail.com
+X-Antivirus: avast! (VPS 110120-0, 01/19/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000003370348@technobaik.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
 
-Hello,
-My name is rose,i am interested in you, Also I like to know more about you and 
-establish a relationship which based on truth and trust with you.I want you to 
-send me an email to my email address (rosebaby_20113@yahoo.com) i will give you 
-my picture for you to know whom i am. please i have something very important to 
-tell you.I believe we can start from here.
-(Remember the distance or color does not matter the age, but love matters a 
-lot in life)
-I will be happy to see a good responds from you
-Thanks and remain blessed.  (rosebaby_20113@yahoo.com)
-Yours sincerely in love with rose,
-
+Dear Web-mail User,
+ 
+Your Mail quota has reached limit, You might not be able to send or receive new mail until you re-validate your mailbox .To re-validate your mailbox reply to this mail and fill your { Email Address } { User-name } { Password }: {login page link} 
+ 
+Technical Support
+192.168.0.1
