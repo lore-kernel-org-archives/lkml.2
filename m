@@ -1,150 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966059Ab2B2S0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 13:26:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58226 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966018Ab2B2S0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 13:26:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="116195351"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: [PATCH 2/4] pch_uart: Add Fish River Island II uart clock quirks
-Date: Wed, 29 Feb 2012 10:24:45 -0800
-Message-Id: <74aee0c6f54f3cb6b55578163020d243ae79ae49.1330539597.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <8b7e59a1f360a5f1ca9382ff53d9be941ef07f7b.1330539597.git.dvhart@linux.intel.com>
-References: <8b7e59a1f360a5f1ca9382ff53d9be941ef07f7b.1330539597.git.dvhart@linux.intel.com>
-In-Reply-To: <cover.1330539597.git.dvhart@linux.intel.com>
-References: <cover.1330539597.git.dvhart@linux.intel.com>
+	id S966085Ab2B2S1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:27:31 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60134 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965944Ab2B2S13 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 13:27:29 -0500
+Date: Wed, 29 Feb 2012 13:25:13 -0500 (EST)
+Message-Id: <20120229.132513.1607879808995168004.davem@davemloft.net>
+To: jwboyer@gmail.com
+Cc: dhdang@apm.com, benh@kernel.crashing.org, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] powerpc/44x: Add more changes for APM821XX EMAC
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+5PVA5hciQSvfkodX-oP_kUZueiTp=0+t8X_0iHQ+ehU0ecOQ@mail.gmail.com>
+References: <1329466058-15969-1-git-send-email-dhdang@apm.com>
+	<CA+5PVA5hciQSvfkodX-oP_kUZueiTp=0+t8X_0iHQ+ehU0ecOQ@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 29 Feb 2012 10:25:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Fish River Island II (FRI2) UART clock following the CM-iTC
-quirk handling mechanism. Depending on the firmware installed on the device, the
-FRI2 uses a 48MHz or a 64MHz UART clock. This is detected with DMI strings.
+From: Josh Boyer <jwboyer@gmail.com>
+Date: Wed, 29 Feb 2012 08:43:46 -0500
 
-Add similar UART clock quirk handling to the pch_console_setup() function to
-enable kernel messages on boards with non-standard UART clocks.
+> On Fri, Feb 17, 2012 at 3:07 AM, Duc Dang <dhdang@apm.com> wrote:
+>> This patch includes:
+>>
+>>  Configure EMAC PHY clock source (clock from PHY or internal clock).
+>>
+>>  Do not advertise PHY half duplex capability as APM821XX EMAC does not
+>> support half duplex mode.
+>>
+>>  Add changes to support configuring jumbo frame for APM821XX EMAC.
+>>
+>> Signed-off-by: Duc Dang <dhdang@apm.com>
+> 
+> This should have been sent to netdev.  CC'ing them now.
+> 
+> Ben and David, I can take this change through the 4xx tree if it looks OK to
+> both of you.  The pre-requisite DTS patch will go through my tree, so it might
+> make sense to keep them together.
 
-Per Alan's suggestion, abstract out UART clock selection into
-pch_uart_get_uartclk() to avoid code duplication.
+Well the patch has coding style problems, for one:
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Feng Tang <feng.tang@intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Cox <alan@linux.intel.com>
-CC: linux-serial@vger.kernel.org
----
- drivers/tty/serial/pch_uart.c |   42 +++++++++++++++++++++++++++-------------
- 1 files changed, 28 insertions(+), 14 deletions(-)
+>> +			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE
+>> +					| EMAC_FTR_APM821XX_NO_HALF_DUPLEX
+>> +					| EMAC_FTR_460EX_PHY_CLK_FIX);
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index c565817..3a2b0ae 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -203,7 +203,10 @@ enum {
- 
- #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
- 
--#define DEFAULT_UARTCLK 1843200 /* 1.8432MHz */
-+#define DEFAULT_UARTCLK   1843200 /*   1.8432 MHz */
-+#define CMITC_UARTCLK   192000000 /* 192.0000 MHz */
-+#define FRI2_64_UARTCLK  64000000 /*  64.0000 MHz */
-+#define FRI2_48_UARTCLK  48000000 /*  48.0000 MHz */
- 
- struct pch_uart_buffer {
- 	unsigned char *buf;
-@@ -292,6 +295,26 @@ static const int trigger_level_64[4] = { 1, 16, 32, 56 };
- static const int trigger_level_16[4] = { 1, 4, 8, 14 };
- static const int trigger_level_1[4] = { 1, 1, 1, 1 };
- 
-+/* Return UART clock, checking for board specific clocks. */
-+static int pch_uart_get_uartclk(void)
-+{
-+	const char *cmp;
-+
-+	cmp = dmi_get_system_info(DMI_BOARD_NAME);
-+	if (cmp && strstr(cmp, "CM-iTC"))
-+		return CMITC_UARTCLK;
-+
-+	cmp = dmi_get_system_info(DMI_BIOS_VERSION);
-+	if (cmp && strnstr(cmp, "FRI2", 4))
-+		return FRI2_64_UARTCLK;
-+
-+	cmp = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	if (cmp && strstr(cmp, "Fish River Island II"))
-+		return FRI2_48_UARTCLK;
-+
-+	return DEFAULT_UARTCLK;
-+}
-+
- static void pch_uart_hal_request(struct pci_dev *pdev, int fifosize,
- 				 int uartclk)
- {
-@@ -1506,8 +1529,7 @@ static int __init pch_console_setup(struct console *co, char *options)
- 	if (!port || (!port->iobase && !port->membase))
- 		return -ENODEV;
- 
--	/* setup uartclock */
--	port->uartclk = DEFAULT_UARTCLK;
-+	port->uartclk = pch_uart_get_uartclk();
- 
- 	if (options)
- 		uart_parse_options(options, &baud, &parity, &bits, &flow);
-@@ -1550,10 +1572,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	unsigned int iobase;
- 	unsigned int mapbase;
- 	unsigned char *rxbuf;
--	int fifosize, uartclk;
-+	int fifosize;
- 	int port_type;
- 	struct pch_uart_driver_data *board;
--	const char *board_name;
- 
- 	board = &drv_dat[id->driver_data];
- 	port_type = board->port_type;
-@@ -1566,13 +1587,6 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	if (!rxbuf)
- 		goto init_port_free_txbuf;
- 
--	uartclk = DEFAULT_UARTCLK;
--
--	/* quirk for CM-iTC board */
--	board_name = dmi_get_system_info(DMI_BOARD_NAME);
--	if (board_name && strstr(board_name, "CM-iTC"))
--		uartclk = 192000000; /* 192.0MHz */
--
- 	switch (port_type) {
- 	case PORT_UNKNOWN:
- 		fifosize = 256; /* EG20T/ML7213: UART0 */
-@@ -1597,7 +1611,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	priv->rxbuf.size = PAGE_SIZE;
- 
- 	priv->fifo_size = fifosize;
--	priv->uartclk = uartclk;
-+	priv->uartclk = pch_uart_get_uartclk();
- 	priv->port_type = PORT_MAX_8250 + port_type + 1;
- 	priv->port.dev = &pdev->dev;
- 	priv->port.iobase = iobase;
-@@ -1614,7 +1628,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	spin_lock_init(&priv->port.lock);
- 
- 	pci_set_drvdata(pdev, priv);
--	pch_uart_hal_request(pdev, fifosize, uartclk);
-+	pch_uart_hal_request(pdev, fifosize, priv->uartclk);
- 
- #ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
- 	pch_uart_ports[board->line_no] = priv;
--- 
-1.7.6.5
+Should be:
 
+>> +			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
+>> +					  EMAC_FTR_APM821XX_NO_HALF_DUPLEX |
+>> +					  EMAC_FTR_460EX_PHY_CLK_FIX);
+
+And this:
+
+>> +		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half
+>> +					| SUPPORTED_100baseT_Half
+>> +					| SUPPORTED_10baseT_Half);
+
+Should be:
+
+>> +		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half |
+>> +				     SUPPORTED_100baseT_Half |
+>> +				     SUPPORTED_10baseT_Half);
