@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030301Ab2B2XzG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:55:06 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55284 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030239Ab2B2Xy7 (ORCPT
+	id S1030361Ab2B2Xzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:55:49 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64153 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030236Ab2B2XzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:54:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.200.230 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	Wed, 29 Feb 2012 18:55:04 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.80.39 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -20,10 +20,10 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v12 11/13] x86: Enable HAVE_ARCH_SECCOMP_FILTER
-Date: Wed, 29 Feb 2012 17:53:38 -0600
-Message-Id: <1330559620-23543-11-git-send-email-wad@chromium.org>
+        keescook@chromium.org
+Subject: [PATCH v12 13/13] seccomp: remove duplicated failure logging
+Date: Wed, 29 Feb 2012 17:53:40 -0600
+Message-Id: <1330559620-23543-13-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
 References: <1330559620-23543-1-git-send-email-wad@chromium.org>
@@ -31,68 +31,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable support for seccomp filter on x86:
-- asm/tracehook.h exists
-- syscall_get_arguments() works
-- syscall_rollback() works
-- ptrace_report_syscall() works
-- secure_computing() return value is honored (see below)
+From: Kees Cook <keescook@chromium.org>
 
-This also adds support for honoring the return
-value from secure_computing().
+This consolidates the seccomp filter error logging path and adds more
+details to the audit log.
 
-SECCOMP_RET_TRACE and SECCOMP_RET_TRAP may result in seccomp needing to
-skip a system call without killing the process.  This is done by
-returning a non-zero (-1) value from secure_computing.  This change
-makes x86 respect that return value.
-
-To ensure that minimal kernel code is exposed, a non-zero return value
-results in an immediate return to user space (with an invalid syscall
-number).
-
-Signed-off-by: Will Drewry <wad@chromium.org>
+Acked-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/x86/Kconfig         |    1 +
- arch/x86/kernel/ptrace.c |    7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ include/linux/audit.h |    8 ++++----
+ kernel/auditsc.c      |    9 +++++++--
+ kernel/seccomp.c      |   15 +--------------
+ 3 files changed, 12 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f50b52a..fe35491 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -81,6 +81,7 @@ config X86
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_IOMAP
-+	select HAVE_ARCH_SECCOMP_FILTER
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 9ff7a2c..5aac29b 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -463,7 +463,7 @@ extern void audit_putname(const char *name);
+ extern void __audit_inode(const char *name, const struct dentry *dentry);
+ extern void __audit_inode_child(const struct dentry *dentry,
+ 				const struct inode *parent);
+-extern void __audit_seccomp(unsigned long syscall);
++extern void __audit_seccomp(unsigned long syscall, long signr);
+ extern void __audit_ptrace(struct task_struct *t);
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 78f05e4..cdce22c 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1381,7 +1381,11 @@ long syscall_trace_enter(struct pt_regs *regs)
- 		regs->flags |= X86_EFLAGS_TF;
+ static inline int audit_dummy_context(void)
+@@ -508,10 +508,10 @@ static inline void audit_inode_child(const struct dentry *dentry,
+ }
+ void audit_core_dumps(long signr);
  
- 	/* do the secure computing check first */
--	secure_computing(regs->orig_ax);
-+	if (secure_computing(regs->orig_ax)) {
-+		/* seccomp failures shouldn't expose any additional code. */
-+		ret = -1L;
-+		goto out;
-+	}
- 
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
- 		ret = -1L;
-@@ -1406,6 +1410,7 @@ long syscall_trace_enter(struct pt_regs *regs)
- 				    regs->dx, regs->r10);
- #endif
- 
-+out:
- 	return ret ?: regs->orig_ax;
+-static inline void audit_seccomp(unsigned long syscall)
++static inline void audit_seccomp(unsigned long syscall, long signr)
+ {
+ 	if (unlikely(!audit_dummy_context()))
+-		__audit_seccomp(syscall);
++		__audit_seccomp(syscall, signr);
  }
  
+ static inline void audit_ptrace(struct task_struct *t)
+@@ -634,7 +634,7 @@ extern int audit_signals;
+ #define audit_inode(n,d) do { (void)(d); } while (0)
+ #define audit_inode_child(i,p) do { ; } while (0)
+ #define audit_core_dumps(i) do { ; } while (0)
+-#define audit_seccomp(i) do { ; } while (0)
++#define audit_seccomp(i, s) do { ; } while (0)
+ #define auditsc_get_stamp(c,t,s) (0)
+ #define audit_get_loginuid(t) (-1)
+ #define audit_get_sessionid(t) (-1)
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index af1de0f..74652fe 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -67,6 +67,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/capability.h>
+ #include <linux/fs_struct.h>
++#include <linux/compat.h>
+ 
+ #include "audit.h"
+ 
+@@ -2710,13 +2711,17 @@ void audit_core_dumps(long signr)
+ 	audit_log_end(ab);
+ }
+ 
+-void __audit_seccomp(unsigned long syscall)
++void __audit_seccomp(unsigned long syscall, long signr)
+ {
+ 	struct audit_buffer *ab;
+ 
+ 	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
+-	audit_log_abend(ab, "seccomp", SIGKILL);
++	audit_log_abend(ab, "seccomp", signr);
+ 	audit_log_format(ab, " syscall=%ld", syscall);
++#ifdef CONFIG_COMPAT
++	audit_log_format(ab, " compat=%d", is_compat_task());
++#endif
++	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
+ 	audit_log_end(ab);
+ }
+ 
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 1064327..78ecd6f 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -60,18 +60,6 @@ struct seccomp_filter {
+ /* Limit any path through the tree to 5 megabytes worth of instructions. */
+ #define MAX_INSNS_PER_PATH ((5 << 20) / sizeof(struct sock_filter))
+ 
+-static void seccomp_filter_log_failure(int syscall)
+-{
+-	int compat = 0;
+-#ifdef CONFIG_COMPAT
+-	compat = is_compat_task();
+-#endif
+-	pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+-		current->comm, task_pid_nr(current),
+-		(compat ? "compat " : ""),
+-		syscall, KSTK_EIP(current));
+-}
+-
+ /**
+  * get_u32 - returns a u32 offset into data
+  * @data: a unsigned 64 bit value
+@@ -370,7 +358,6 @@ int __secure_computing_int(int this_syscall)
+ 		default:
+ 			break;
+ 		}
+-		seccomp_filter_log_failure(this_syscall);
+ 		exit_code = SIGSYS;
+ 		break;
+ 	}
+@@ -382,7 +369,7 @@ int __secure_computing_int(int this_syscall)
+ #ifdef SECCOMP_DEBUG
+ 	dump_stack();
+ #endif
+-	audit_seccomp(this_syscall);
++	audit_seccomp(this_syscall, exit_code);
+ 	do_exit(exit_code);
+ 	return -1;	/* never reached */
+ }
 -- 
 1.7.5.4
 
