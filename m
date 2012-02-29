@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab2B2IFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:05:25 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:50363 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2B2IFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:05:24 -0500
-Date: Wed, 29 Feb 2012 19:04:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [RFC][PATCH 5/6] x86, efi: Fix endian issues and unaligned
- accesses
-Message-Id: <20120229190456.f62620c4113466490a4851b5@canb.auug.org.au>
-In-Reply-To: <20120229112852.44bb80f99795999e61608267@canb.auug.org.au>
-References: <1330436245-24875-1-git-send-email-matt@console-pimps.org>
-	<1330436245-24875-6-git-send-email-matt@console-pimps.org>
-	<20120229105210.312c6a8f8115659d41337518@canb.auug.org.au>
-	<20120229111322.9eb4b23ff1672e8853ad3b3b@canb.auug.org.au>
-	<20120229112852.44bb80f99795999e61608267@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+"
+	id S1756849Ab2B2IN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:13:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756302Ab2B2IN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 03:13:26 -0500
+Message-ID: <4F4DDE14.8050406@redhat.com>
+Date: Wed, 29 Feb 2012 09:13:08 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        stable@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] block: avoid false positive warnings on ioctl to partition
+References: <1329464338-8351-1-git-send-email-pbonzini@redhat.com> <4F4B78CE.4010405@redhat.com> <CA+55aFyoTxFcHZXa=XfxrK1JB0cksHxQPsRUiJnhAFeE=-hynw@mail.gmail.com>
+In-Reply-To: <CA+55aFyoTxFcHZXa=XfxrK1JB0cksHxQPsRUiJnhAFeE=-hynw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Il 29/02/2012 01:14, Linus Torvalds ha scritto:
+> So I'm still not convinced this is safe, and feel a bit worried about
+> us possibly silently missing some things. That
+> 
+>    default:
+>       return -ENOIOCTLCMD;
+> 
+> is what worries me.
+> 
+> Blocking the ones we *know* about and understand I'm perfectly fine
+> with. And the SG_IO case looks fine. It's the possibly unknown users
+> that still worry me.
 
-On Wed, 29 Feb 2012 11:28:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi again,
->=20
-> On Wed, 29 Feb 2012 11:13:22 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > OK, I tried just that patch on top of Linus' tree and obviously that
-> > didn't work :-) so I pulled the x86/build branch from the tip tree into
-> > my tree (which contained just Linus' tree of today
-> > (v3.3-rc5-97-g891003a)). and the build failed like this:
-> >=20
-> > arch/x86/boot/tools/build.c:36:22: error: asm/boot.h: No such file or d=
-irectory
-> >=20
-> > The build is an ARCH=3Dx86_64 defconfig with CONFIG_EFI_STUB=3Dy.
->=20
-> I added V=3D1 and the command line for the build of build.c is
->=20
-> gcc -Wp,-MD,arch/x86/boot/tools/.build.d -Iarch/x86/boot -Wall -Wmissing-=
-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer   -I/scratch/sfr/x8=
-6_seg.obj/include   -I/scratch/sfr/x86_seg/tools/include -include /scratch/=
-sfr/x86_seg/include/linux/kconfig.h -o arch/x86/boot/tools/build /scratch/s=
-fr/x86_seg/arch/x86/boot/tools/build.c =20
->=20
-> I am using a separate object tree as well (source tree
-> is /scratch/sfr/x86_seg, object is /scratch/sfr/x86_seg.obj).
+I understand.
 
-I have refetched x86/build after these two patches:
-	x86, tools: Remove unneeded header files from tools/build.c
-	x86, build: Fix portability issues when cross-building
+We do have a good grasp of what's happening.  We did get reports for
+SG_IO, for false positives that would have returned -ENOTTY, and for
+ioctls that need to be passed.  We couldn't expect anything better than
+this, I think.
 
-And the kernel build now completes.
+I checked in the source and all scsi_host-specific ioctls need
+filtering.  Of course we might be missing something really obscure which
+is rarely used in the wild.  But being 100% sure that nothing breaks is
+impossible, unfortunately, so does it make sense to aim at 100%?  And it
+should be extremely easy to bisect failures.  Even with all the
+differences, it reminds me of the recent change to poll.
 
-Thank you all for all the work.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPTdwoAAoJEECxmPOUX5FEk6QP/3VAYXnng0s0VaBZwKT5yVGI
-zEZymkq5KjRAd6uM812fi5lIaShD8cWzyXsymo/LHqy3LEZaLPpIwchJynu0gUNb
-YcSBADW4P8awT+kJUExyKT2Py/e1YvoLJR+RV91GSMtLvno/MdRGrHDCjWarz77a
-7mSigzERrfC1pfi6ldXrHP4vga1CYzDYA8BPAjuBe18pIGBEp3L7CgHdo9OadNWE
-rTsAsohSRj482Y4RscPhjNFT5xeIpEAPi6uWsl0OmBTIN4+dhNLbY7Smwy8GyDnA
-hogt/ZWonbCNWvvYfyDR+VYJd+FXHGDqnDb8ipHVJ0chosaG8uRclUCbZLCa6lUl
-GKzrZUhbhxj+IdFmKAyn/oTA99+HosQEYoikx+udrYOLsPEyqCbRlfYRk/4rbkn2
-ub4TPlctUBFR0wqZmt4t3amBzvLEK2Qx1lzQxyRullukxPGsJ/hzHuP13+H6H7wg
-hwgxft+i8h6GUiwvUXJkRTnTzYuG3UjnH69sA134/gGNydGKdw7rnAy1qWy8KZr4
-nwtyScZrSUQB4RtNk3KscMGvW0IRjKku63MxAbu33OEgJqP/hkLLktSFTTuQdmPb
-mO8FP4STRJzamkOzvk98dW05bCi85CtwJtLWRe2Z1OlHGNVlggCOt2sa571PqLTH
-v6YMew8QWJhHgPhTa7n9
-=4Uur
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Feb_2012_19_04_56_+1100_7dTKBW/Uj3ZSBt7+--
+Paolo
