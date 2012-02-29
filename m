@@ -1,85 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030418Ab2B2NoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 08:44:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64560 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586Ab2B2NoL convert rfc822-to-8bit (ORCPT
+	id S1030619Ab2B2NqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 08:46:06 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41823 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030223Ab2B2NqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 08:44:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of 21cnbao@gmail.com designates 10.205.132.1 as permitted sender) smtp.mail=21cnbao@gmail.com; dkim=pass header.i=21cnbao@gmail.com
+	Wed, 29 Feb 2012 08:46:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.213.101.1 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <op.wafz3gv53l0zgt@mpn-glaptop>
-References: <1329929337-16648-1-git-send-email-m.szyprowski@samsung.com>
- <CAGsJ_4wgVcVjtAa6Qpki=8jSON7MfwJ8yumJ1YXE5p8L3PqUzw@mail.gmail.com>
- <op.wafuu3kr3l0zgt@mpn-glaptop> <CAGsJ_4yk+Ca4RDP=sYaXvEKuJzYNhyZWQ7jfKnpR+zCm=3Dq6Q@mail.gmail.com>
- <op.wafz3gv53l0zgt@mpn-glaptop>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 29 Feb 2012 21:43:49 +0800
-Message-ID: <CAGsJ_4zYttky4+FbzmmaPzQ4b3HwjnpwhX_vE7My9J=ytm20RA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv23 00/16] Contiguous Memory Allocator
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 29 Feb 2012 14:46:01 +0100
+Message-ID: <CADDYkjSVOB-4uiZ0gE-SiqNY7whRdiFr9K8MFt3z06w2ORXhXQ@mail.gmail.com>
+Subject: chris.mason@oracle.com, Al Viro <viro@zeniv.linux.org.uk>, Ted Ts'o <tytso@mit.edu>
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: inux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/29 Michal Nazarewicz <mina86@mina86.com>:
-> On Wed, 29 Feb 2012 14:34:02 +0100, Barry Song <21cnbao@gmail.com> wrote:
->
->> 2012/2/29 Michal Nazarewicz <mina86@mina86.com>:
->>>
->>> On Wed, 29 Feb 2012 10:35:42 +0100, Barry Song <21cnbao@gmail.com> wrote:
->>>>
->>>> and i also write a simple kernel helper to test the CMA:
->
->
->>> Would it make sense to make a patch out of it putting it to tools/cma (or
->>> similar)?
->
->
->> i can send a patch for this. i am just thinking, should it be placed
->> in tools/ as a test utility or Documents/ as an example to explain CMA
->> to users who want to use cma.
->
->
-> I'd put it in tools/.
+Hi All,
 
-ok. i will handle this.
+/*Sorry for sending incomplete email, hit wrong button :) */
 
->
->
->> i also think we should have a seperate document to explain cma in details
->> in documents/, and my helper program can be placed there.
->
->
-> I'm currently writing an article for LWN which I hope will also lead to
-> something
-> worth putting in Documentation/.
->
+Long story short: We've found that operations on a directory structure
+holding many dirs takes ages on ext4.
 
-fine.
+The Question: Why there's that huge difference in ext4 and btrfs? See
+below test results for real values.
 
->
-> --
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Background: I had to backup a Jenkins directory holding workspace for
+few projects which were co from svn (implies lot of extra .svn dirs).
+The copy takes lot of time (at least more than I've expected) and
+process was mostly in D (disk sleep). I've dig more and done some
+extra test to see if this is not a regression on block/fs site. To
+isolate the issue I've also performed same tests on btrfs.
 
--barry
+Test environment configuration:
+1) HW: HP ProLiant BL460 G6, 48 GB of memory, 2x 6 core Intel X5670 HT
+enabled, Smart Array P410i, RAID 1 on top of 2x 10K RPM SAS HDDs.
+2) Kernels: All tests were done on following kernels:
+ - 2.6.39.4-3 -- the build ID (3) is used here for internal tacking of
+config changes mostly. In -3 we've introduced ,,fix readahead pipeline
+break caused by block plug'' patch. Otherwise it's pure 2.6.39.4.
+ - 3.2.7 -- latest kernel at the time of testing (3.2.8 has been
+release recently).
+3) A subject of tests, directory holding:
+ - 54GB of data (measured on ext4)
+ - 1978149 files
+ - 844008 directories
+4) Mount options:
+ - ext4 -- errors=remount-ro,noatime,data=writeback
+ - btrfs -- noatime,nodatacow and for later investigation on
+copression effect: noatime,nodatacow,compress=lzo
+
+In all tests I've been measuring time of execution. Following tests
+were performed:
+- find . -type d
+- find . -type f
+- cp -a
+- rm -rf
+
+Ext4 results:
+| Type     | 2.6.39.4-3   | 3.2.7
+| Dir cnt  | 17m 40sec  | 11m 20sec
+| File cnt |  17m 36sec | 11m 22sec
+| Copy    | 1h 28m        | 1h 27m
+| Remove| 3m 43sec    | 3m 38sec
+
+Btrfs results (without lzo comression):
+| Type     | 2.6.39.4-3   | 3.2.7
+| Dir cnt  | 2m 22sec  | 2m 21sec
+| File cnt |  2m 26sec | 2m 23sec
+| Copy    | 36m 22sec | 39m 35sec
+| Remove| 7m 51sec   | 10m 43sec
+
+>From above one can see that copy takes close to 1h less on btrfs. I've
+done strace counting times of calls, results are as follows (from
+3.2.7):
+1) Ext4 (only to elements):
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 57.01   13.257850           1  15082163           read
+ 23.40    5.440353           3   1687702           getdents
+  6.15    1.430559           0   3672418           lstat
+  3.80    0.883767           0  13106961           write
+  2.32    0.539959           0   4794099           open
+  1.69    0.393589           0    843695           mkdir
+  1.28    0.296700           0   5637802           setxattr
+  0.80    0.186539           0   7325195           stat
+
+2) Btrfs:
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+53.38    9.486210           1  15179751           read
+11.38    2.021662           1   1688328           getdents
+ 10.64    1.890234           0   4800317           open
+  6.83    1.213723           0  13201590           write
+  4.85    0.862731           0   5644314           setxattr
+  3.50    0.621194           1    844008           mkdir
+  2.75    0.489059           0   3675992         1 lstat
+  1.71    0.303544           0   5644314           llistxattr
+  1.50    0.265943           0   1978149           utimes
+  1.02    0.180585           0   5644314    844008 getxattr
+
+On btrfs getdents takes much less time which prove the bottleneck in
+copy time on ext4 is this syscall. In 2.6.39.4 it shows even less time
+for getdents:
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 50.77   10.978816           1  15033132           read
+ 14.46    3.125996           1   4733589           open
+  7.15    1.546311           0   5566988           setxattr
+  5.89    1.273845           0   3626505           lstat
+  5.81    1.255858           1   1667050           getdents
+  5.66    1.224403           0  13083022           write
+  3.40    0.735114           1    833371           mkdir
+  1.96    0.424881           0   5566988           llistxattr
+
+
+Why so huge difference in the getdents timings?
+
+-Jacek
