@@ -1,40 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2B2UJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:09:56 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56914 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab2B2UJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:09:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.219.130 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Wed, 29 Feb 2012 12:09:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.2.2] oom + no-killable-processes.
-Message-ID: <20120229200910.GB31348@kroah.com>
-References: <3905756.9FRF7uBtcE@vmx>
+	id S1755027Ab2B2UKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:10:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab2B2UKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 15:10:38 -0500
+Date: Wed, 29 Feb 2012 15:16:26 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
+        Josef Bacik <josef@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm: SLAB Out-of-memory diagnostics
+Message-ID: <20120229181625.GA7426@t510.redhat.com>
+References: <20120229032715.GA23758@t510.redhat.com>
+ <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3905756.9FRF7uBtcE@vmx>
+In-Reply-To: <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 08:28:23PM +0100, Paweł Sikora wrote:
-> Hi all,
+On Wed, Feb 29, 2012 at 09:37:23AM +0200, Pekka Enberg wrote:
+> On Wed, 29 Feb 2012, Rafael Aquini wrote:
+> > Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
+> > allocator to help on debugging OOM conditions. This patch also adds a new
+> > sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
+> > allocation flag and forces the kernel to report every slab allocation failure.
+> > 
+> > An example print out looks like this:
+> > 
+> >   <snip page allocator out-of-memory message>
+> >   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+> >      cache: bio-0, object size: 192, order: 0
+> >      node0: slabs: 3/3, objs: 60/60, free: 0
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > ---
+> >  Documentation/sysctl/vm.txt |   23 ++++++++++++++++++
+> >  include/linux/slab.h        |    2 +
+> >  kernel/sysctl.c             |    9 +++++++
+> >  mm/slab.c                   |   55 ++++++++++++++++++++++++++++++++++++++++++-
+> >  4 files changed, 88 insertions(+), 1 deletions(-)
 > 
-> i've found on my 8-core opterons following oops (oom+nokillable): http://imgbin.org/index.php?page=image&id=6945
-> usualy the kernel just kills processes from userspace but this time something has gone wrong...
-> sysrq was dead, so no more stacktraces :/
+> No SLUB support for this?
+> 
 
-Is this something new with 3.2.2?  If so, can you bisect it down to the
-patch that causes the problem?  Does 3.2.0 have this issue?  3.2.8?
+SLUB already has its version of slab_out_of_memory. I did not propose the sysctl
+knob for slub, however. (If we find the knob useful, I can propose its extention
+to slub, later). 
 
-thanks,
+> > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> > index 96f0ee8..75bdf91 100644
+> > --- a/Documentation/sysctl/vm.txt
+> > +++ b/Documentation/sysctl/vm.txt
+> > @@ -498,6 +498,29 @@ this is causing problems for your system/application.
+> >  
+> >  ==============================================================
+> >  
+> > +oom_dump_slabs_forced
+> > +
+> > +Overrides the effects of __GFP_NOWARN page allocation flag, thus forcing
+> > +the system to print warnings about every allocation failure for the
+> > +slab allocator, and helping on debugging certain OOM conditions.
+> > +The print out is pretty similar, and complements data that is reported by
+> > +the page allocator out-of-memory warning:
+> > +
+> > +<snip page allocator out-of-memory message>
+> > +  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+> > +     cache: bio-0, object size: 192, order: 0
+> > +     node0: slabs: 3/3, objs: 60/60, free: 0
+> > +
+> > +If this is set to zero, the default behavior is observed and warnings will only
+> > +be printed out for allocation requests that didn't set the __GFP_NOWARN flag.
+> > +
+> > +When set to non-zero, this information is shown whenever the allocator finds
+> > +itself failing to grant a request, regardless the __GFP_NOWARN flag status.
+> > +
+> > +The default value is 0 (disabled).
+> > +
+> > +==============================================================
+> > +
+> 
+> Why do you want to add a sysctl for this? That'd be an ABI that we need to 
+> keep around forever.
+> 
+> Is there any reason we shouldn't just enable this unconditionally?
 
-greg k-h
+I was afraid of this code becoming a source of garrulous and scaring warnings
+by just ignoring __GFP_NOWARN flag, however, I was also concerned with the
+'hiding' effect the flag imposes for certain requests, specially when one is
+interested in checking  all those requests out. Therefore, I thought a sysctl
+knob would be the best option to control the __GFP_NOWARN overriding behavior of
+slab_out_of_memory printouts without messing with the allocation flags
+themselves, as well as not imposing the need for reboots to start checking all
+slab allocation failures out.
+
+ Rafael
