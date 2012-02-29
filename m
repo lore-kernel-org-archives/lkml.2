@@ -1,264 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab2B2JSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:18:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34834 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab2B2JPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:15:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.133.196 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH 2/7] mm/memcg: move reclaim_stat into lruvec
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 13:15:43 +0400
-Message-ID: <20120229091543.29236.90823.stgit@zurg>
-In-Reply-To: <20120229090748.29236.35489.stgit@zurg>
-References: <20120229090748.29236.35489.stgit@zurg>
-User-Agent: StGit/0.15
+	id S964820Ab2B2J0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:26:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756670Ab2B2JZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 04:25:25 -0500
+Message-ID: <4F4DEEFA.6000506@redhat.com>
+Date: Wed, 29 Feb 2012 11:25:14 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
+References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp> <20120223203541.f51c11c9.yoshikawa.takuya@oss.ntt.co.jp> <4F4CBEAA.5030708@redhat.com> <20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+On 02/29/2012 09:49 AM, Takuya Yoshikawa wrote:
+> Avi Kivity <avi@redhat.com> wrote:
+>
+> > > The key part of the implementation is the use of xchg() operation for
+> > > clearing dirty bits atomically.  Since this allows us to update only
+> > > BITS_PER_LONG pages at once, we need to iterate over the dirty bitmap
+> > > until every dirty bit is cleared again for the next call.
+> > 
+> > What about using cmpxchg16b?  That should reduce locked ops by a factor
+> > of 2 (but note it needs 16 bytes alignment).
+>
+> I tried cmpxchg16b first: the implementation could not be naturally
+> combined with the for loop over the unsigned long array.
+>
+> 	Extra "if not zero", alignement check and ... it was ugly
+> 	and I guessed it would be slow.
+>
+> Taking it into account that cmpxchg16b needs more cycles than others,
+> I think this should be tried carefully with more measurement later.
+>
+> How about concentrating on xchg now?
 
-With mem_cgroup_disabled() now explicit, it becomes clear that the
-zone_reclaim_stat structure actually belongs in lruvec, per-zone
-when memcg is disabled but per-memcg per-zone when it's enabled.
+Okay.  But note you don't need the alignment check; simply allocate the
+array aligned, and a multiple of 16 bytes, in the first place.
 
-We can delete mem_cgroup_get_reclaim_stat(), and change
-update_page_reclaim_stat() to update just the one set of stats,
-the one which get_scan_count() will actually use.
+>
+> The implementation is simple and gives us enough improvement for now.
+> At least, I want to see whether xchg-based implementation works well
+> for one release.
+>
+> 	GET_DIRTY_LOG can be easily tuned to one particular case and
+> 	it is really hard to check whether the implementation works well
+> 	for every important case.  I really want feedback from users
+> 	before adding non-obvious optimization.
+>
+> In addition, we should care about the new API.  It is not decided about
+> what kind of range can be ordered.  I think restricting the range to be
+> long size aligned is natural.  Do you have any plan?
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- include/linux/memcontrol.h |    9 ---------
- include/linux/mmzone.h     |   29 ++++++++++++++---------------
- mm/memcontrol.c            |   27 +++++++--------------------
- mm/page_alloc.c            |    8 ++++----
- mm/swap.c                  |   14 ++++----------
- mm/vmscan.c                |    5 +----
- 6 files changed, 30 insertions(+), 62 deletions(-)
+Not really.  But the current changes are all internal and don't affect
+the user API.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index ddfb52e..e2e1fac 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -124,8 +124,6 @@ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 					int nid, int zid, unsigned int lrumask);
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone);
- struct zone_reclaim_stat*
- mem_cgroup_get_reclaim_stat_from_page(struct page *page);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
-@@ -355,13 +353,6 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
- 	return 0;
- }
- 
--
--static inline struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg, struct zone *zone)
--{
--	return NULL;
--}
--
- static inline struct zone_reclaim_stat*
- mem_cgroup_get_reclaim_stat_from_page(struct page *page)
- {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 7d9d84e..eff4918 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -159,8 +159,22 @@ static inline int is_unevictable_lru(enum lru_list lru)
- 	return (lru == LRU_UNEVICTABLE);
- }
- 
-+struct zone_reclaim_stat {
-+	/*
-+	 * The pageout code in vmscan.c keeps track of how many of the
-+	 * mem/swap backed and file backed pages are refeferenced.
-+	 * The higher the rotated/scanned ratio, the more valuable
-+	 * that cache is.
-+	 *
-+	 * The anon LRU stats live in [0], file LRU stats in [1]
-+	 */
-+	unsigned long		recent_rotated[2];
-+	unsigned long		recent_scanned[2];
-+};
-+
- struct lruvec {
- 	struct list_head lists[NR_LRU_LISTS];
-+	struct zone_reclaim_stat reclaim_stat;
- };
- 
- /* Mask used at gathering information at once (see memcontrol.c) */
-@@ -287,19 +301,6 @@ enum zone_type {
- #error ZONES_SHIFT -- too many zones configured adjust calculation
- #endif
- 
--struct zone_reclaim_stat {
--	/*
--	 * The pageout code in vmscan.c keeps track of how many of the
--	 * mem/swap backed and file backed pages are refeferenced.
--	 * The higher the rotated/scanned ratio, the more valuable
--	 * that cache is.
--	 *
--	 * The anon LRU stats live in [0], file LRU stats in [1]
--	 */
--	unsigned long		recent_rotated[2];
--	unsigned long		recent_scanned[2];
--};
--
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-@@ -374,8 +375,6 @@ struct zone {
- 	spinlock_t		lru_lock;
- 	struct lruvec		lruvec;
- 
--	struct zone_reclaim_stat reclaim_stat;
--
- 	unsigned long		pages_scanned;	   /* since last reclaim */
- 	unsigned long		flags;		   /* zone flags, see below */
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5c9a98a..aeebb9e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -138,7 +138,6 @@ struct mem_cgroup_per_zone {
- 
- 	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
- 
--	struct zone_reclaim_stat reclaim_stat;
- 	struct rb_node		tree_node;	/* RB tree node */
- 	unsigned long long	usage_in_excess;/* Set to the value by which */
- 						/* the soft limit is exceeded*/
-@@ -1210,16 +1209,6 @@ int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
- 	return (active > inactive);
- }
- 
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone)
--{
--	int nid = zone_to_nid(zone);
--	int zid = zone_idx(zone);
--	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
--
--	return &mz->reclaim_stat;
--}
--
- struct zone_reclaim_stat *
- mem_cgroup_get_reclaim_stat_from_page(struct page *page)
- {
-@@ -1235,7 +1224,7 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
- 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
- 	smp_rmb();
- 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
--	return &mz->reclaim_stat;
-+	return &mz->lruvec.reclaim_stat;
- }
- 
- #define mem_cgroup_from_res_counter(counter, member)	\
-@@ -4202,21 +4191,19 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	{
- 		int nid, zid;
- 		struct mem_cgroup_per_zone *mz;
-+		struct zone_reclaim_stat *rstat;
- 		unsigned long recent_rotated[2] = {0, 0};
- 		unsigned long recent_scanned[2] = {0, 0};
- 
- 		for_each_online_node(nid)
- 			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
- 				mz = mem_cgroup_zoneinfo(memcg, nid, zid);
-+				rstat = &mz->lruvec.reclaim_stat;
- 
--				recent_rotated[0] +=
--					mz->reclaim_stat.recent_rotated[0];
--				recent_rotated[1] +=
--					mz->reclaim_stat.recent_rotated[1];
--				recent_scanned[0] +=
--					mz->reclaim_stat.recent_scanned[0];
--				recent_scanned[1] +=
--					mz->reclaim_stat.recent_scanned[1];
-+				recent_rotated[0] += rstat->recent_rotated[0];
-+				recent_rotated[1] += rstat->recent_rotated[1];
-+				recent_scanned[0] += rstat->recent_scanned[0];
-+				recent_scanned[1] += rstat->recent_scanned[1];
- 			}
- 		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
- 		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2b7f07b..ab2d210 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4365,10 +4365,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone_pcp_init(zone);
- 		for_each_lru(lru)
- 			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
--		zone->reclaim_stat.recent_rotated[0] = 0;
--		zone->reclaim_stat.recent_rotated[1] = 0;
--		zone->reclaim_stat.recent_scanned[0] = 0;
--		zone->reclaim_stat.recent_scanned[1] = 0;
-+		zone->lruvec.reclaim_stat.recent_rotated[0] = 0;
-+		zone->lruvec.reclaim_stat.recent_rotated[1] = 0;
-+		zone->lruvec.reclaim_stat.recent_scanned[0] = 0;
-+		zone->lruvec.reclaim_stat.recent_scanned[1] = 0;
- 		zap_zone_vm_stats(zone);
- 		zone->flags = 0;
- 		if (!size)
-diff --git a/mm/swap.c b/mm/swap.c
-index 38b2686..9a6850b 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -279,21 +279,15 @@ void rotate_reclaimable_page(struct page *page)
- static void update_page_reclaim_stat(struct zone *zone, struct page *page,
- 				     int file, int rotated)
- {
--	struct zone_reclaim_stat *reclaim_stat = &zone->reclaim_stat;
--	struct zone_reclaim_stat *memcg_reclaim_stat;
-+	struct zone_reclaim_stat *reclaim_stat;
- 
--	memcg_reclaim_stat = mem_cgroup_get_reclaim_stat_from_page(page);
-+	reclaim_stat = mem_cgroup_get_reclaim_stat_from_page(page);
-+	if (!reclaim_stat)
-+		reclaim_stat = &zone->lruvec.reclaim_stat;
- 
- 	reclaim_stat->recent_scanned[file]++;
- 	if (rotated)
- 		reclaim_stat->recent_rotated[file]++;
--
--	if (!memcg_reclaim_stat)
--		return;
--
--	memcg_reclaim_stat->recent_scanned[file]++;
--	if (rotated)
--		memcg_reclaim_stat->recent_rotated[file]++;
- }
- 
- static void __activate_page(struct page *page, void *arg)
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 082fbc2..af6cfe7 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -173,10 +173,7 @@ static bool global_reclaim(struct scan_control *sc)
- 
- static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- {
--	if (!mem_cgroup_disabled())
--		return mem_cgroup_get_reclaim_stat(mz->mem_cgroup, mz->zone);
--
--	return &mz->zone->reclaim_stat;
-+	return &mem_cgroup_zone_lruvec(mz->zone, mz->mem_cgroup)->reclaim_stat;
- }
- 
- static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
+>
+> > > Another point to note is that we do not use for_each_set_bit() to check
+> > > which ones in each BITS_PER_LONG pages are actually dirty.  Instead we
+> > > simply use __ffs() and __fls() and pass the range in between the two
+> > > positions found by them to kvm_mmu_write_protect_pt_range().
+> > 
+> > This seems artificial.
+>
+> OK, then I want to pass the bits (unsingned long) as a mask.
+>
+> Non-NPT machines may gain some.
+>
+> > > Even though the passed range may include clean pages, it is much faster
+> > > than repeatedly call find_next_bit() due to the locality of dirty pages.
+> > 
+> > Perhaps this is due to the implementation of find_next_bit()?  would
+> > using bsf improve things?
+>
+> I need to explain what I did in the past.
+>
+> Before srcu-less work, I had already noticed the slowness of
+> for_each_set_bit() and replaced it with simple for loop like now: the
+> improvement was significant.
+>
+> Yes, find_next_bit() is for generic use and not at all good when there
+> are many consecutive bits set: it cannot assume anything so needs to check
+> a lot of cases - we have long size aligned bitmap and "bits" is already
+> known to be non-zero after the first check of the for loop.
+>
+> Of course, doing 64 function calls alone should be avoided in our case.
+> I also do not want to call kvm_mmu_* for each bit.
+>
+> So, above, I proposed just passing "bits" to kvm_mmu_*: we can check
+> each bit i in a register before using rmap[i] if needed.
+>
+> __ffs is really fast compared to other APIs.
+
+You could do something like this
+
+    for (i = 0; i < bitmap_size_in_longs; ++i) {
+        mask = bitmap[i];
+        if (!mask)
+               continue;
+        for (j = __ffs(mask); mask; mask &= mask - 1, j = __ffs(mask))
+                handle i * BITS_PER_LONG + j;
+    }
+
+This gives you the speed of __ffs() but without working on zero bits.
+
+>
+> One note is that we will lose in cases like bits = 0xffffffff..
+>
+> 2271171.4    12064.9       138.6      16K     -45
+> 3375866.2    14743.3       103.0      32K     -55
+> 4408395.6    10720.0        67.2      64K     -51
+> 5915336.2    26538.1        45.1     128K     -44
+> 8497356.4    16441.0        32.4     256K     -29
+>
+> So the last one will become worse.  For other 4 patterns I am not sure.
+>
+> I thought that we should tune to the last case for gaining a lot from
+> the locality of WWS.  What do you think about this point?
+>
+> > > -	} else {
+> > > -		r = -EFAULT;
+> > > -		if (clear_user(log->dirty_bitmap, n))
+> > > -			goto out;
+> > > +		kvm_mmu_write_protect_pt_range(kvm, memslot, start, end);
+> > 
+> > If indeed the problem is find_next_bit(), then we could hanve
+> > kvm_mmu_write_protect_slot_masked() which would just take the bitmap as
+> > a parameter.  This would allow covering just this function with the
+> > spinlock, not the xchg loop.
+>
+> We may see partial display updates if we do not hold the mmu_lock during
+> xchg loop: it is possible that pages near the end of the framebuffer alone
+> gets updated sometimes - I noticed this problem when I fixed the TLB flush
+> issue.
+
+I don't understand why this happens.
+
+>
+> Not a big problem but still maybe-noticeable change, so I think we should
+> do it separately with some comments if needed.
+
+Well if it's noticable on the framebuffer it's also noticable with live
+migration.  We could do it later, but we need to really understand it first.
+
+> In addition, we do not want to scan the dirty bitmap twice.  Using the
+> bits value soon after it is read into a register seems to be the fastest.
+
+Probably.
+
+> BTW, I also want to decide the design of the new API at this chance.
+
+Let's wait with that.  We're adding APIs too quickly.  Let's squeeze
+everything we can out of the current APIs.
+
+-- 
+error compiling committee.c: too many arguments to function
 
