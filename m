@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030561Ab2B2AbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 19:31:09 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:34424 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030195Ab2B2AbG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 19:31:06 -0500
-Message-ID: <4F4D71D0.2040904@xenotime.net>
-Date: Tue, 28 Feb 2012 16:31:12 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S965908Ab2B2AdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 19:33:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:11585 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169Ab2B2AdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 19:33:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="112493318"
+Date: Wed, 29 Feb 2012 08:27:43 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] memcg: add dirty page accounting infrastructure
+Message-ID: <20120229002743.GA11583@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144746.971869014@intel.com>
+ <20120228143738.b84d49ff.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>,
-        ecryptfs@vger.kernel.org
-Subject: [PATCH] ecryptfs: fix printk format warning for size_t
-References: <1330462222-25201-1-git-send-email-geert@linux-m68k.org> <4F4D663D.2040100@xenotime.net> <CA+55aFzzfuiu-ScRmRFYWDmrstYC4kvS0QQidBZsmjCpL_tkqw@mail.gmail.com> <4F4D704A.7040508@xenotime.net>
-In-Reply-To: <4F4D704A.7040508@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120228143738.b84d49ff.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Tue, Feb 28, 2012 at 02:37:38PM -0800, Andrew Morton wrote:
+> On Tue, 28 Feb 2012 22:00:24 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > From: Greg Thelen <gthelen@google.com>
+> > 
+> > Add memcg routines to count dirty, writeback, and unstable_NFS pages.
+> > These routines are not yet used by the kernel to count such pages.  A
+> > later change adds kernel calls to these new routines.
+> > 
+> > As inode pages are marked dirty, if the dirtied page's cgroup differs
+> > from the inode's cgroup, then mark the inode shared across several
+> > cgroup.
+> > 
+> > ...
+> >
+> > @@ -1885,6 +1888,44 @@ void mem_cgroup_update_page_stat(struct 
+> >  			ClearPageCgroupFileMapped(pc);
+> >  		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+> >  		break;
+> > +
+> > +	case MEMCG_NR_FILE_DIRTY:
+> > +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+> > +		if (val > 0) {
+> > +			if (TestSetPageCgroupFileDirty(pc))
+> > +				val = 0;
+> > +		} else {
+> > +			if (!TestClearPageCgroupFileDirty(pc))
+> > +				val = 0;
+> > +		}
+> 
+> Made me scratch my head for a while, but I see now that the `val' arg
+> to (the undocumented) mem_cgroup_update_page_stat() can only ever have
+> the values 1 or -1.  I hope.
 
-Fix printk format warning (from Linus's suggestion):
+Yeah, I see it's called this way:
 
-on i386:
-fs/ecryptfs/miscdev.c:433:38: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int'
+   3    151  /c/linux/include/linux/memcontrol.h <<mem_cgroup_inc_page_stat>>
+             mem_cgroup_update_page_stat(page, idx, 1);
 
-and on x86_64:
-fs/ecryptfs/miscdev.c:433:38: warning: format '%u' expects type 'unsigned int', but argument 4 has type 'long unsigned int'
+   4    157  /c/linux/include/linux/memcontrol.h <<mem_cgroup_dec_page_stat>>
+             mem_cgroup_update_page_stat(page, idx, -1);
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	Geert Uytterhoeven <geert@linux-m68k.org>
-Cc:	Tyler Hicks <tyhicks@canonical.com>
-Cc:	Dustin Kirkland <dustin.kirkland@gazzang.com>
-Cc:	ecryptfs@vger.kernel.org
----
-
-In case you didn't already make the change...
-
- fs/ecryptfs/miscdev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- lnx-33-rc5.orig/fs/ecryptfs/miscdev.c
-+++ lnx-33-rc5/fs/ecryptfs/miscdev.c
-@@ -429,7 +429,7 @@ ecryptfs_miscdev_write(struct file *file
- 		goto memdup;
- 	} else if (count < MIN_MSG_PKT_SIZE || count > MAX_MSG_PKT_SIZE) {
- 		printk(KERN_WARNING "%s: Acceptable packet size range is "
--		       "[%d-%lu], but amount of data written is [%zu].",
-+		       "[%d-%zu], but amount of data written is [%zu].",
- 		       __func__, MIN_MSG_PKT_SIZE, MAX_MSG_PKT_SIZE, count);
- 		return -EINVAL;
- 	}
+Thanks,
+Fengguang
