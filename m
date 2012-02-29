@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab2B2I4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 03:56:16 -0500
-Received: from mail.southpole.se ([193.12.106.18]:45919 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092Ab2B2I4O (ORCPT
+	id S1755476Ab2B2I5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 03:57:00 -0500
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:50205 "HELO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750773Ab2B2I47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 03:56:14 -0500
-Message-ID: <1330505774.2964.31.camel@crucifix>
-Subject: Re: [PATCH 2/2] OpenRISC: IRQ: Include module.h
-From: Jonas Bonn <jonas@southpole.se>
-To: Richard Weinberger <richard@nod.at>
-Cc: arnd@arndb.de, linux@openrisc.net, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 09:56:14 +0100
-In-Reply-To: <4F4DE438.6050707@nod.at>
-References: <1330476393-14264-1-git-send-email-richard@nod.at>
-	  <1330476393-14264-2-git-send-email-richard@nod.at>
-	 <1330501749.2964.4.camel@crucifix> <4F4DE438.6050707@nod.at>
-Organization: South Pole AB
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 05773-08444
+	Wed, 29 Feb 2012 03:56:59 -0500
+X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 03:56:58 EST
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mla@apm.com designates 10.68.197.35 as permitted sender) smtp.mail=mla@apm.com
+MIME-Version: 1.0
+From: Mai La <mla@apm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Tirumala R Marri <tmarri@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michael Neuling <mikey@neuling.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: open-source-review@apm.com, Mai La <mla@apm.com>
+Subject: [PATCH 2/2] powerpc/44x: Add PCI MSI node for APM821xx SoC and Bluestone board in DTS
+Date: Wed, 29 Feb 2012 15:47:43 +0700
+Message-Id: <1330505263-3718-1-git-send-email-mla@apm.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Wed, 2012-02-29 at 09:39 +0100, Richard Weinberger wrote:
-> Am 29.02.2012 08:49, schrieb Jonas Bonn:
-> You are right. export.h is better.
-> I forgot commit f501693 (module.h: split out the EXPORT_SYMBOL into export.h).
-> 
-> > Thanks for helping out with build-testing the OpenRISC arch... much
-> > appreciated.
-> 
-> I'm doing more than build-testing.
-> Yesterday my FPGA board booted the very first time Linux on OpenRISC. :-)
-> 
-> Thanks,
-> //richard
-> 
+Signed-off-by: Mai La <mla@apm.com>
+---
+ arch/powerpc/boot/dts/bluestone.dts |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-Ah, awesome!  Glad to hear that.
+diff --git a/arch/powerpc/boot/dts/bluestone.dts b/arch/powerpc/boot/dts/bluestone.dts
+index 2a56a0d..8ea6325 100644
+--- a/arch/powerpc/boot/dts/bluestone.dts
++++ b/arch/powerpc/boot/dts/bluestone.dts
+@@ -250,5 +250,29 @@
+ 			};
+ 		};
+ 
++		MSI: ppc4xx-msi@C10000000 {
++			compatible = "amcc,ppc4xx-msi", "ppc4xx-msi";
++			reg = < 0xC 0x10000000 0x100
++				0xC 0x10000000 0x100>;
++			sdr-base = <0x36C>;
++			msi-data = <0x00004440>;
++			msi-mask = <0x0000ffe0>;
++			interrupts =<0 1 2 3 4 5 6 7>;
++			interrupt-parent = <&MSI>;
++			#interrupt-cells = <1>;
++			#address-cells = <0>;
++			#size-cells = <0>;
++			msi-available-ranges = <0x0 0x100>;
++			interrupt-map = <
++				0 &UIC3 0x18 1
++				1 &UIC3 0x19 1
++				2 &UIC3 0x1A 1
++				3 &UIC3 0x1B 1
++				4 &UIC3 0x1C 1
++				5 &UIC3 0x1D 1
++				6 &UIC3 0x1E 1
++				7 &UIC3 0x1F 1
++			>;
++		};
+ 	};
+ };
+-- 
+1.7.3.4
 
-I'll just let you in on the little catch with the upstream OpenRISC
-kernel, then:  it drops support for deprecated syscalls; unfortunately,
-there is no libc that supports that yet.
-
-For that reason, the kernel at git://openrisc.net/jonas/linux is still
-the one that is most usable... it's carrying a patch to reenable those
-syscalls so that uClibc works.
-
-I've got a patch series that attempts to fix that, but upstream uClibc
-didn't seem particularly enamored by the idea of adding more code to
-libc so that Linux can get smaller... and that's kind of where we got
-stuck.
-
-Probably best to drop linux-kernel from this conversation at this point,
-but feel free to continue it at linux@lists.openrisc.net
-
-/Jonas
+CONFIDENTIALITY NOTICE: This e-mail message, including any attachments, 
+is for the sole use of the intended recipient(s) and contains information 
+that is confidential and proprietary to AppliedMicro Corporation or its subsidiaries. 
+It is to be used solely for the purpose of furthering the parties' business relationship. 
+All unauthorized review, use, disclosure or distribution is prohibited. 
+If you are not the intended recipient, please contact the sender by reply e-mail 
+and destroy all copies of the original message.
 
