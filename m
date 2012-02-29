@@ -1,172 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966246Ab2B2Cgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Feb 2012 21:36:37 -0500
-Received: from mga14.intel.com ([143.182.124.37]:40348 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965501Ab2B2Cgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Feb 2012 21:36:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="112536687"
-Date: Wed, 29 Feb 2012 10:31:27 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120229023127.GB11583@localhost>
-References: <20120228140022.614718843@intel.com>
- <20120228144747.198713792@intel.com>
- <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+	id S966260Ab2B2ChW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Feb 2012 21:37:22 -0500
+Received: from mail-iy0-f194.google.com ([209.85.210.194]:51056 "EHLO
+	mail-iy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965501Ab2B2ChV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Feb 2012 21:37:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of missingsailor@gmail.com designates 10.50.159.234 as permitted sender) smtp.mail=missingsailor@gmail.com; dkim=pass header.i=missingsailor@gmail.com
+Message-ID: <4F4D8F56.9090808@mediatek.com>
+Date: Wed, 29 Feb 2012 10:37:10 +0800
+From: Meng Zhang <meng.zhang@mediatek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mdharm-usb@one-eyed-alien.net, phil@ipom.com, stern@rowland.harvard.edu
+CC: linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 04:04:03PM -0800, Andrew Morton wrote:
-> On Tue, 28 Feb 2012 22:00:27 +0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
-> 
-> > This relays file pageout IOs to the flusher threads.
-> > 
-> > It's much more important now that page reclaim generally does not
-> > writeout filesystem-backed pages.
-> 
-> It doesn't?  We still do writeback in direct reclaim.  This claim
-> should be fleshed out rather a lot, please.
+from: Meng Zhang <meng.zhang@mediatek.com>
 
-That claim is actually from Mel in his review comments :)
+1. Add entrys for mediatek MT6276M in unusual_devs.h
 
-Current upstream kernel avoids writeback in direct reclaim totally
-with commit ee72886d8ed5d ("mm: vmscan: do not writeback filesystem
-pages in direct reclaim").
+2. Add init function for mediatek MT6276M to switch to COM port mode
 
-Now with this patch, as long as the pageout works are queued
-successfully, the pageout() calls from kswapd() will also be
-eliminated.
+3. usb-devices outputs after running with this patch:
+T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=01 Dev#= 48 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=0e8d ProdID=00a1 Rev=02.00
+S:  Manufacturer=MediaTek Inc
+S:  Product=Product
+C:  #Ifs= 3 Cfg#= 1 Atr=80 MxPwr=500mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=01 Driver=option
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=00 Prot=00 Driver=option
 
-> > The ultimate target is to gracefully handle the LRU lists pressured by
-> > dirty/writeback pages. In particular, problems (1-2) are addressed here.
-> > 
-> > 1) I/O efficiency
-> > 
-> > The flusher will piggy back the nearby ~10ms worth of dirty pages for I/O.
-> > 
-> > This takes advantage of the time/spacial locality in most workloads: the
-> > nearby pages of one file are typically populated into the LRU at the same
-> > time, hence will likely be close to each other in the LRU list. Writing
-> > them in one shot helps clean more pages effectively for page reclaim.
-> 
-> Yes, this is often true.  But when adjacent pages from the same file
-> are clustered together on the LRU, direct reclaim's LRU-based walk will
-> also provide good I/O patterns.
+Signed-off-by: Meng Zhang <meng.zhang@mediatek.com>
+---
 
-I'm afraid the I/O elevator is not so smart (and technically possible)
-at merging the pageout() bios. The file pages are typically
-interleaved between DMA32 and NORMAL zones or even among NUMA nodes.
-Page reclaim also walks the nodes/zones interleavely, but in some
-different manner.  So pageout() might at best generate I/O for [1,
-30], [150, 168], [90, 99], ...
+this patch is based on branch:
+	git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
-IOW, the holes and disorderness are effectively killing large I/O. Not
-to mention it hurts interactive performance to block in get_request_wait()
-if we ever submit I/O inside page reclaim.
 
-> > For the common dd style sequential writes that have excellent locality,
-> > up to ~80ms data will be wrote around by the pageout work, which helps
-> > make I/O performance very close to that of the background writeback.
-> > 
-> > 2) writeback work coordinations
-> > 
-> > To avoid memory allocations at page reclaim, a mempool for struct
-> > wb_writeback_work is created.
-> > 
-> > wakeup_flusher_threads() is removed because it can easily delay the
-> > more oriented pageout works and even exhaust the mempool reservations.
-> > It's also found to not I/O efficient by frequently submitting writeback
-> > works with small ->nr_pages.
-> 
-> The last sentence here needs help.
+  drivers/usb/storage/initializers.c |   27 +++++++++++++++++++++++++++
+  drivers/usb/storage/initializers.h |    3 +++
+  drivers/usb/storage/unusual_devs.h |    9 +++++++++
+  3 files changed, 39 insertions(+), 0 deletions(-)
 
-wakeup_flusher_threads() is called with total_scanned. Which could be
-(LRU_size / 4096). Given 1GB LRU_size, the write chunk would be 256KB.
-This is much smaller than the old 4MB and the now preferred write
-chunk size (write_bandwidth/2).
+diff --git a/drivers/usb/storage/initializers.c 
+b/drivers/usb/storage/initializers.c
+index 105d900..3ea233e 100644
+--- a/drivers/usb/storage/initializers.c
++++ b/drivers/usb/storage/initializers.c
+@@ -104,3 +104,30 @@ int usb_stor_huawei_e220_init(struct us_data *us)
+  	US_DEBUGP("Huawei mode set result is %d\n", result);
+  	return 0;
+  }
++
++/* switch MediaTek MT6276M to COM port mode */
++int usb_stor_mediatek_mt6276m_init(struct us_data *us)
++{
++	const unsigned char rezero_msg[] = {
++		0x55, 0x53, 0x42, 0x43, 0x78, 0x56, 0x34, 0x12,
++		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0xf0,
++		0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
++	};
++	char *buffer;
++	int result;
++
++	US_DEBUGP("Initializing mediatek USB device...\n");
++
++	buffer = kzalloc(32, GFP_KERNEL);
++	if (buffer == NULL)
++		return USB_STOR_TRANSPORT_ERROR;
++
++	memcpy(buffer, rezero_msg, sizeof(rezero_msg));
++	result = usb_stor_bulk_transfer_buf(us,
++			us->send_bulk_pipe,
++			buffer, sizeof(rezero_msg), NULL);
++	
++	kfree(buffer);
++	return result;
++}
+diff --git a/drivers/usb/storage/initializers.h 
+b/drivers/usb/storage/initializers.h
+index 529327f..6c9337f 100644
+--- a/drivers/usb/storage/initializers.h
++++ b/drivers/usb/storage/initializers.h
+@@ -48,3 +48,6 @@ int usb_stor_ucr61s2b_init(struct us_data *us);
 
-                writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
-==>             if (total_scanned > writeback_threshold) {
-                        wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
-                                                WB_REASON_TRY_TO_FREE_PAGES);
-                        sc->may_writepage = 1;
-                }
+  /* This places the HUAWEI E220 devices in multi-port mode */
+  int usb_stor_huawei_e220_init(struct us_data *us);
++
++/* switch MediaTek MT6276M to COM port mode */
++int usb_stor_mediatek_mt6276m_init(struct us_data *us);
+diff --git a/drivers/usb/storage/unusual_devs.h 
+b/drivers/usb/storage/unusual_devs.h
+index 856ad92..574c291 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1356,6 +1356,15 @@ UNUSUAL_DEV( 0x0e21, 0x0520, 0x0100, 0x0100,
+  		USB_SC_DEVICE, USB_PR_BULK, NULL,
+  		US_FL_NEED_OVERRIDE ),
 
-Actually I see much more wakeup_flusher_threads() calls than expected.
-The above test condition may be too permissive.
-
-For direct reclaim, sc->nr_to_reclaim=32 and total_scanned starts with
-(LRU_size / 4096), which *always* exceeds writeback_threshold in boxes
-with more than 1GB memory. So the flusher end up constantly be fed with
-small writeout requests.
-
-The test is not really reflecting "dirty pages pressure". And it's
-easy to trigger direct reclaim by starting some concurrent page
-allocators or by using memcg. Which has nothing to do with dirty
-pressure.
-
-> > Background/periodic works will quit automatically, so as to clean the
-> > pages under reclaim ASAP.
-> 
-> I don't know what this means.  How does a work "quit automatically" and
-> why does that initiate I/O?
-
-Typically the flusher will be working on the background/periodic works
-when there are heavy dirtier tasks. And wb_writeback() has this
-
-                /*
-                 * Background writeout and kupdate-style writeback may
-                 * run forever. Stop them if there is other work to do
-                 * so that e.g. sync can proceed. They'll be restarted
-                 * after the other works are all done.
-                 */
-                if ((work->for_background || work->for_kupdate) &&
-                    !list_empty(&wb->bdi->work_list))
-                        break;
-
-to quit the background/periodic work when pageout or other works are
-queued. So the pageout works can typically be pick up and executed
-quickly by the flusher: the background/periodic works are the dominant
-ones and there are rarely other type of works in the way.
-
-> > However for now the sync work can still block
-> > us for long time.
-> 
-> Please define the term "sync work".
-
-That's the works submitted by
-
-        __sync_filesystem()
-          ==> writeback_inodes_sb() for the WB_SYNC_NONE pass
-          ==> sync_inodes_sb()      for the WB_SYNC_ALL pass
-
-with reason WB_REASON_SYNC.
-
-Thanks,
-Fengguang
-
-// break time..
-
-> > Jan Kara: limit the search scope; remove works and unpin inodes on umount.
-> > 
-> > TODO: the pageout works may be starved by the sync work and maybe others.
-> > Need a proper way to guarantee fairness.
++/* Reported by Meng Zhang <meng.zhang@mediatek.com>
++ * switch mediatek USB devices into COM port mode
++ */
++UNUSUAL_DEV(0x0e8d, 0x0002, 0x0000, 0x0300,
++		"MediaTek Inc.",
++		"MT6276M",
++		USB_SC_DEVICE, USB_PR_DEVICE,
++		usb_stor_mediatek_mt6276m_init, 0),
++
+  /* Submitted by Antoine Mairesse <antoine.mairesse@free.fr> */
+  UNUSUAL_DEV( 0x0ed1, 0x6660, 0x0100, 0x0300,
+  		"USB",
