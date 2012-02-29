@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab2B2Xyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 18:54:44 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38236 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965944Ab2B2Xyl (ORCPT
+	id S1030220Ab2B2Xy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 18:54:56 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55284 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757430Ab2B2Xyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 18:54:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.116.195 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
+	Wed, 29 Feb 2012 18:54:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.236.153.230 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -21,9 +21,9 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
         keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v12 04/13] asm/syscall.h: add syscall_get_arch
-Date: Wed, 29 Feb 2012 17:53:31 -0600
-Message-Id: <1330559620-23543-4-git-send-email-wad@chromium.org>
+Subject: [PATCH v12 08/13] signal, x86: add SIGSYS info and make it synchronous.
+Date: Wed, 29 Feb 2012 17:53:35 -0600
+Message-Id: <1330559620-23543-8-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
 References: <1330559620-23543-1-git-send-email-wad@chromium.org>
@@ -31,49 +31,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a stub for a function that will return the AUDIT_ARCH_*
-value appropriate to the supplied task based on the system
-call convention.
+This change enables SIGSYS, defines _sigfields._sigsys, and adds
+x86 (compat) arch support.  _sigsys defines fields which allow
+a signal handler to receive the triggering system call number,
+the relevant AUDIT_ARCH_* value for that number, and the address
+of the callsite.
 
-For audit's use, the value can generally be hard-coded at the
-audit-site.  However, for other functionality not inlined into
-syscall entry/exit, this makes that information available.
-seccomp_filter is the first planned consumer and, as such,
-the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
-is probably an unneeded detail.
+SIGSYS is added to the SYNCHRONOUS_MASK because it is desirable for it
+to have setup_frame() called for it. The goal is to ensure that
+ucontext_t reflects the machine state from the time-of-syscall and not
+from another signal handler.
 
-Suggested-by: Roland McGrath <mcgrathr@chromium.org>
+The first consumer of SIGSYS would be seccomp filter.  In particular,
+a filter program could specify a new return value, SECCOMP_RET_TRAP,
+which would result in the system call being denied and the calling
+thread signaled.  This also means that implementing arch-specific
+support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
+
+v12: - reworded changelog (oleg@redhat.com)
+v11: - fix dropped words in the change description
+     - added fallback copy_siginfo support.
+     - added __ARCH_SIGSYS define to allow stepped arch support.
+v10: - first version based on suggestion
+
+Suggested-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Will Drewry <wad@chromium.org>
-
-v11: fixed improper return type
-v10: introduced
 ---
- include/asm-generic/syscall.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/ia32/ia32_signal.c   |    4 ++++
+ arch/x86/include/asm/ia32.h   |    6 ++++++
+ include/asm-generic/siginfo.h |   22 ++++++++++++++++++++++
+ kernel/signal.c               |    9 ++++++++-
+ 4 files changed, 40 insertions(+), 1 deletions(-)
 
-diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
-index 5c122ae..a2c13dc 100644
---- a/include/asm-generic/syscall.h
-+++ b/include/asm-generic/syscall.h
-@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
- 			   unsigned int i, unsigned int n,
- 			   const unsigned long *args);
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index 942bfbe..7f71cb2 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -66,6 +66,10 @@ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+ 			switch (from->si_code >> 16) {
+ 			case __SI_FAULT >> 16:
+ 				break;
++			case __SI_SYS >> 16:
++				put_user_ex(from->si_syscall, &to->si_syscall);
++				put_user_ex(from->si_arch, &to->si_arch);
++				break;
+ 			case __SI_CHLD >> 16:
+ 				put_user_ex(from->si_utime, &to->si_utime);
+ 				put_user_ex(from->si_stime, &to->si_stime);
+diff --git a/arch/x86/include/asm/ia32.h b/arch/x86/include/asm/ia32.h
+index c6435ab..bcc99e8 100644
+--- a/arch/x86/include/asm/ia32.h
++++ b/arch/x86/include/asm/ia32.h
+@@ -135,6 +135,12 @@ typedef struct compat_siginfo {
+ 			int _band;	/* POLL_IN, POLL_OUT, POLL_MSG */
+ 			int _fd;
+ 		} _sigpoll;
++
++		struct {
++			unsigned int _call_addr; /* calling insn */
++			int _syscall;	/* triggering system call number */
++			unsigned int _arch;	/* AUDIT_ARCH_* of syscall */
++		} _sigsys;
+ 	} _sifields;
+ } compat_siginfo_t;
  
-+/**
-+ * syscall_get_arch - return the AUDIT_ARCH for the current system call
-+ * @task:	task of interest, must be in system call entry tracing
-+ * @regs:	task_pt_regs() of @task
-+ *
-+ * Returns the AUDIT_ARCH_* based on the system call convention in use.
-+ *
-+ * It's only valid to call this when @task is stopped on entry to a system
-+ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
-+ *
-+ * Note, at present this function is only required with
-+ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
+diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+index 0dd4e87..31306f5 100644
+--- a/include/asm-generic/siginfo.h
++++ b/include/asm-generic/siginfo.h
+@@ -90,9 +90,18 @@ typedef struct siginfo {
+ 			__ARCH_SI_BAND_T _band;	/* POLL_IN, POLL_OUT, POLL_MSG */
+ 			int _fd;
+ 		} _sigpoll;
++
++		/* SIGSYS */
++		struct {
++			void __user *_call_addr; /* calling insn */
++			int _syscall;	/* triggering system call number */
++			unsigned int _arch;	/* AUDIT_ARCH_* of syscall */
++		} _sigsys;
+ 	} _sifields;
+ } siginfo_t;
+ 
++/* If the arch shares siginfo, then it has SIGSYS. */
++#define __ARCH_SIGSYS
+ #endif
+ 
+ /*
+@@ -116,6 +125,11 @@ typedef struct siginfo {
+ #define si_addr_lsb	_sifields._sigfault._addr_lsb
+ #define si_band		_sifields._sigpoll._band
+ #define si_fd		_sifields._sigpoll._fd
++#ifdef __ARCH_SIGSYS
++#define si_call_addr	_sifields._sigsys._call_addr
++#define si_syscall	_sifields._sigsys._syscall
++#define si_arch		_sifields._sigsys._arch
++#endif
+ 
+ #ifdef __KERNEL__
+ #define __SI_MASK	0xffff0000u
+@@ -126,6 +140,7 @@ typedef struct siginfo {
+ #define __SI_CHLD	(4 << 16)
+ #define __SI_RT		(5 << 16)
+ #define __SI_MESGQ	(6 << 16)
++#define __SI_SYS	(7 << 16)
+ #define __SI_CODE(T,N)	((T) | ((N) & 0xffff))
+ #else
+ #define __SI_KILL	0
+@@ -135,6 +150,7 @@ typedef struct siginfo {
+ #define __SI_CHLD	0
+ #define __SI_RT		0
+ #define __SI_MESGQ	0
++#define __SI_SYS	0
+ #define __SI_CODE(T,N)	(N)
+ #endif
+ 
+@@ -232,6 +248,12 @@ typedef struct siginfo {
+ #define NSIGPOLL	6
+ 
+ /*
++ * SIGSYS si_codes
 + */
-+int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
- #endif	/* _ASM_SYSCALL_H */
++#define SYS_SECCOMP		(__SI_SYS|1)	/* seccomp triggered */
++#define NSIGSYS	1
++
++/*
+  * sigevent definitions
+  * 
+  * It seems likely that SIGEV_THREAD will have to be handled from 
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 354b104..12b23ff 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -160,7 +160,7 @@ void recalc_sigpending(void)
+ 
+ #define SYNCHRONOUS_MASK \
+ 	(sigmask(SIGSEGV) | sigmask(SIGBUS) | sigmask(SIGILL) | \
+-	 sigmask(SIGTRAP) | sigmask(SIGFPE))
++	 sigmask(SIGTRAP) | sigmask(SIGFPE) | sigmask(SIGSYS))
+ 
+ int next_signal(struct sigpending *pending, sigset_t *mask)
+ {
+@@ -2700,6 +2700,13 @@ int copy_siginfo_to_user(siginfo_t __user *to, siginfo_t *from)
+ 		err |= __put_user(from->si_uid, &to->si_uid);
+ 		err |= __put_user(from->si_ptr, &to->si_ptr);
+ 		break;
++#ifdef __ARCH_SIGSYS
++	case __SI_SYS:
++		err |= __put_user(from->si_call_addr, &to->si_call_addr);
++		err |= __put_user(from->si_syscall, &to->si_syscall);
++		err |= __put_user(from->si_arch, &to->si_arch);
++		break;
++#endif
+ 	default: /* this is just in case for now ... */
+ 		err |= __put_user(from->si_pid, &to->si_pid);
+ 		err |= __put_user(from->si_uid, &to->si_uid);
 -- 
 1.7.5.4
 
