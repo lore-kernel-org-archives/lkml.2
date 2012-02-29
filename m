@@ -1,75 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030918Ab2B2KQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:16:22 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61690 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1030332Ab2B2KQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:16:20 -0500
-Message-ID: <4F4DFB37.8060208@cn.fujitsu.com>
-Date: Wed, 29 Feb 2012 18:17:27 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1030932Ab2B2KQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:16:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58642 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030332Ab2B2KQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:16:26 -0500
+Date: Wed, 29 Feb 2012 02:15:45 -0800
+From: tip-bot for Jason Baron <jbaron@redhat.com>
+Message-ID: <tip-1cfa60dc7d7c7cc774a44eee47ff135a644a1f31@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jbaron@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jbaron@redhat.com, mingo@elte.hu
+In-Reply-To: <52570e566e5f1914f27b67e4eafb5781b8f9f9db.1329851692.git.jbaron@redhat.com>
+References: <52570e566e5f1914f27b67e4eafb5781b8f9f9db.1329851692.git.jbaron@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] static keys: Add docs better explaining the whole 
+ 'struct static_key' mechanism
+Git-Commit-ID: 1cfa60dc7d7c7cc774a44eee47ff135a644a1f31
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com> <4F4DF913.5030809@redhat.com>
-In-Reply-To: <4F4DF913.5030809@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-29 18:14:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-29 18:14:32,
-	Serialize complete at 2012-02-29 18:14:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 29 Feb 2012 02:16:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 02/29/2012 06:08 PM, Avi Kivity Wrote:
-> On 02/29/2012 12:05 PM, Gleb Natapov wrote:
->> On Wed, Feb 29, 2012 at 12:00:41PM +0200, Avi Kivity wrote:
->>> On 02/29/2012 11:55 AM, Gleb Natapov wrote:
->>>>>>
->>>>>
->>>>> How about using a virtio-serial channel for this?  You can transfer any
->>>>> amount of information (including the dump itself).
->>>>>
->>>> Isn't it unreliable after the guest panicked? 
->>>
->>> So is calling hypercalls, or dumping, or writing to the screen.  Of
->>> course calling a hypercall is simpler and so is more reliable.
->>>
->> Yes, crash can be so severe that it is not even detected by a kernel
->> itself, so not OOPS message even printed. But in most cases if kernel is
->> functional enough to print OOPS it is functional enough to call single
->> hypercall instruction.
-> 
-> Why not print the oops to virtio-serial?  Or even just a regular serial
-> port?  That's what bare metal does.
+Commit-ID:  1cfa60dc7d7c7cc774a44eee47ff135a644a1f31
+Gitweb:     http://git.kernel.org/tip/1cfa60dc7d7c7cc774a44eee47ff135a644a1f31
+Author:     Jason Baron <jbaron@redhat.com>
+AuthorDate: Tue, 21 Feb 2012 15:03:30 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 24 Feb 2012 09:12:19 +0100
 
-If virtio-serial's driver has bug or the guest doesn't have such device...
+static keys: Add docs better explaining the whole 'struct static_key' mechanism
 
-> 
->>>> Having special kdump
->>>> kernel that transfers dump to a host via virtio-serial channel though
->>>> sounds interesting. May be that's what you mean.
->>>
->>> Yes.  The "panic, starting dump" signal should be initiated by the
->>> panicking kernel though, in case the dump fails.
->>>
->> Then panic hypercall sounds like a reasonable solution.
-> 
-> It is, but I'm trying to see if we can get away with doing nothing.
-> 
+Add better documentation for static keys.
 
-If we have a reliable way with doing nothing, it is better. But I donot
-find such way.
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Cc: rostedt@goodmis.org
+Cc: mathieu.desnoyers@efficios.com
+Cc: davem@davemloft.net
+Cc: ddaney.cavm@gmail.com
+Cc: a.p.zijlstra@chello.nl
+Link: http://lkml.kernel.org/r/52570e566e5f1914f27b67e4eafb5781b8f9f9db.1329851692.git.jbaron@redhat.com
+[ Added a 'Summary' section and rewrote it to explain static keys ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ Documentation/static-keys.txt |  286 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 286 insertions(+), 0 deletions(-)
 
-Thanks
-Wen Congyang
-
+diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
+new file mode 100644
+index 0000000..d93f3c0
+--- /dev/null
++++ b/Documentation/static-keys.txt
+@@ -0,0 +1,286 @@
++			Static Keys
++			-----------
++
++By: Jason Baron <jbaron@redhat.com>
++
++0) Abstract
++
++Static keys allows the inclusion of seldom used features in
++performance-sensitive fast-path kernel code, via a GCC feature and a code
++patching technique. A quick example:
++
++	struct static_key key = STATIC_KEY_INIT_FALSE;
++
++	...
++
++        if (static_key_false(&key))
++                do unlikely code
++        else
++                do likely code
++
++	...
++	static_key_slow_inc();
++	...
++	static_key_slow_inc();
++	...
++
++The static_key_false() branch will be generated into the code with as little
++impact to the likely code path as possible.
++
++
++1) Motivation
++
++
++Currently, tracepoints are implemented using a conditional branch. The
++conditional check requires checking a global variable for each tracepoint.
++Although the overhead of this check is small, it increases when the memory
++cache comes under pressure (memory cache lines for these global variables may
++be shared with other memory accesses). As we increase the number of tracepoints
++in the kernel this overhead may become more of an issue. In addition,
++tracepoints are often dormant (disabled) and provide no direct kernel
++functionality. Thus, it is highly desirable to reduce their impact as much as
++possible. Although tracepoints are the original motivation for this work, other
++kernel code paths should be able to make use of the static keys facility.
++
++
++2) Solution
++
++
++gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label:
++
++http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
++
++Using the 'asm goto', we can create branches that are either taken or not taken
++by default, without the need to check memory. Then, at run-time, we can patch
++the branch site to change the branch direction.
++
++For example, if we have a simple branch that is disabled by default:
++
++	if (static_key_false(&key))
++		printk("I am the true branch\n");
++
++Thus, by default the 'printk' will not be emitted. And the code generated will
++consist of a single atomic 'no-op' instruction (5 bytes on x86), in the
++straight-line code path. When the branch is 'flipped', we will patch the
++'no-op' in the straight-line codepath with a 'jump' instruction to the
++out-of-line true branch. Thus, changing branch direction is expensive but
++branch selection is basically 'free'. That is the basic tradeoff of this
++optimization.
++
++This lowlevel patching mechanism is called 'jump label patching', and it gives
++the basis for the static keys facility.
++
++3) Static key label API, usage and examples:
++
++
++In order to make use of this optimization you must first define a key:
++
++	struct static_key key;
++
++Which is initialized as:
++
++	struct static_key key = STATIC_KEY_INIT_TRUE;
++
++or:
++
++	struct static_key key = STATIC_KEY_INIT_FALSE;
++
++If the key is not initialized, it is default false. The 'struct static_key',
++must be a 'global'. That is, it can't be allocated on the stack or dynamically
++allocated at run-time.
++
++The key is then used in code as:
++
++        if (static_key_false(&key))
++                do unlikely code
++        else
++                do likely code
++
++Or:
++
++        if (static_key_true(&key))
++                do likely code
++        else
++                do unlikely code
++
++A key that is initialized via 'STATIC_KEY_INIT_FALSE', must be used in a
++'static_key_false()' construct. Likewise, a key initialized via
++'STATIC_KEY_INIT_TRUE' must be used in a 'static_key_true()' construct. A
++single key can be used in many branches, but all the branches must match the
++way that the key has been initialized.
++
++The branch(es) can then be switched via:
++
++	static_key_slow_inc(&key);
++	...
++	static_key_slow_dec(&key);
++
++Thus, 'static_key_slow_inc()' means 'make the branch true', and
++'static_key_slow_dec()' means 'make the the branch false' with appropriate
++reference counting. For example, if the key is initialized true, a
++static_key_slow_dec(), will switch the branch to false. And a subsequent
++static_key_slow_inc(), will change the branch back to true. Likewise, if the
++key is initialized false, a 'static_key_slow_inc()', will change the branch to
++true. And then a 'static_key_slow_dec()', will again make the branch false.
++
++An example usage in the kernel is the implementation of tracepoints:
++
++        static inline void trace_##name(proto)                          \
++        {                                                               \
++                if (static_key_false(&__tracepoint_##name.key))		\
++                        __DO_TRACE(&__tracepoint_##name,                \
++                                TP_PROTO(data_proto),                   \
++                                TP_ARGS(data_args),                     \
++                                TP_CONDITION(cond));                    \
++        }
++
++Tracepoints are disabled by default, and can be placed in performance critical
++pieces of the kernel. Thus, by using a static key, the tracepoints can have
++absolutely minimal impact when not in use.
++
++
++4) Architecture level code patching interface, 'jump labels'
++
++
++There are a few functions and macros that architectures must implement in order
++to take advantage of this optimization. If there is no architecture support, we
++simply fall back to a traditional, load, test, and jump sequence.
++
++* select HAVE_ARCH_JUMP_LABEL, see: arch/x86/Kconfig
++
++* #define JUMP_LABEL_NOP_SIZE, see: arch/x86/include/asm/jump_label.h
++
++* __always_inline bool arch_static_branch(struct static_key *key), see:
++					arch/x86/include/asm/jump_label.h
++
++* void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type),
++					see: arch/x86/kernel/jump_label.c
++
++* __init_or_module void arch_jump_label_transform_static(struct jump_entry *entry, enum jump_label_type type),
++					see: arch/x86/kernel/jump_label.c
++
++
++* struct jump_entry, see: arch/x86/include/asm/jump_label.h
++
++
++5) Static keys / jump label analysis, results (x86_64):
++
++
++As an example, let's add the following branch to 'getppid()', such that the
++system call now looks like:
++
++SYSCALL_DEFINE0(getppid)
++{
++        int pid;
++
+++       if (static_key_false(&key))
+++               printk("I am the true branch\n");
++
++        rcu_read_lock();
++        pid = task_tgid_vnr(rcu_dereference(current->real_parent));
++        rcu_read_unlock();
++
++        return pid;
++}
++
++The resulting instructions with jump labels generated by GCC is:
++
++ffffffff81044290 <sys_getppid>:
++ffffffff81044290:       55                      push   %rbp
++ffffffff81044291:       48 89 e5                mov    %rsp,%rbp
++ffffffff81044294:       e9 00 00 00 00          jmpq   ffffffff81044299 <sys_getppid+0x9>
++ffffffff81044299:       65 48 8b 04 25 c0 b6    mov    %gs:0xb6c0,%rax
++ffffffff810442a0:       00 00
++ffffffff810442a2:       48 8b 80 80 02 00 00    mov    0x280(%rax),%rax
++ffffffff810442a9:       48 8b 80 b0 02 00 00    mov    0x2b0(%rax),%rax
++ffffffff810442b0:       48 8b b8 e8 02 00 00    mov    0x2e8(%rax),%rdi
++ffffffff810442b7:       e8 f4 d9 00 00          callq  ffffffff81051cb0 <pid_vnr>
++ffffffff810442bc:       5d                      pop    %rbp
++ffffffff810442bd:       48 98                   cltq
++ffffffff810442bf:       c3                      retq
++ffffffff810442c0:       48 c7 c7 e3 54 98 81    mov    $0xffffffff819854e3,%rdi
++ffffffff810442c7:       31 c0                   xor    %eax,%eax
++ffffffff810442c9:       e8 71 13 6d 00          callq  ffffffff8171563f <printk>
++ffffffff810442ce:       eb c9                   jmp    ffffffff81044299 <sys_getppid+0x9>
++
++Without the jump label optimization it looks like:
++
++ffffffff810441f0 <sys_getppid>:
++ffffffff810441f0:       8b 05 8a 52 d8 00       mov    0xd8528a(%rip),%eax        # ffffffff81dc9480 <key>
++ffffffff810441f6:       55                      push   %rbp
++ffffffff810441f7:       48 89 e5                mov    %rsp,%rbp
++ffffffff810441fa:       85 c0                   test   %eax,%eax
++ffffffff810441fc:       75 27                   jne    ffffffff81044225 <sys_getppid+0x35>
++ffffffff810441fe:       65 48 8b 04 25 c0 b6    mov    %gs:0xb6c0,%rax
++ffffffff81044205:       00 00
++ffffffff81044207:       48 8b 80 80 02 00 00    mov    0x280(%rax),%rax
++ffffffff8104420e:       48 8b 80 b0 02 00 00    mov    0x2b0(%rax),%rax
++ffffffff81044215:       48 8b b8 e8 02 00 00    mov    0x2e8(%rax),%rdi
++ffffffff8104421c:       e8 2f da 00 00          callq  ffffffff81051c50 <pid_vnr>
++ffffffff81044221:       5d                      pop    %rbp
++ffffffff81044222:       48 98                   cltq
++ffffffff81044224:       c3                      retq
++ffffffff81044225:       48 c7 c7 13 53 98 81    mov    $0xffffffff81985313,%rdi
++ffffffff8104422c:       31 c0                   xor    %eax,%eax
++ffffffff8104422e:       e8 60 0f 6d 00          callq  ffffffff81715193 <printk>
++ffffffff81044233:       eb c9                   jmp    ffffffff810441fe <sys_getppid+0xe>
++ffffffff81044235:       66 66 2e 0f 1f 84 00    data32 nopw %cs:0x0(%rax,%rax,1)
++ffffffff8104423c:       00 00 00 00
++
++Thus, the disable jump label case adds a 'mov', 'test' and 'jne' instruction
++vs. the jump label case just has a 'no-op' or 'jmp 0'. (The jmp 0, is patched
++to a 5 byte atomic no-op instruction at boot-time.) Thus, the disabled jump
++label case adds:
++
++6 (mov) + 2 (test) + 2 (jne) = 10 - 5 (5 byte jump 0) = 5 addition bytes.
++
++If we then include the padding bytes, the jump label code saves, 16 total bytes
++of instruction memory for this small fucntion. In this case the non-jump label
++function is 80 bytes long. Thus, we have have saved 20% of the instruction
++footprint. We can in fact improve this even further, since the 5-byte no-op
++really can be a 2-byte no-op since we can reach the branch with a 2-byte jmp.
++However, we have not yet implemented optimal no-op sizes (they are currently
++hard-coded).
++
++Since there are a number of static key API uses in the scheduler paths,
++'pipe-test' (also known as 'perf bench sched pipe') can be used to show the
++performance improvement. Testing done on 3.3.0-rc2:
++
++jump label disabled:
++
++ Performance counter stats for 'bash -c /tmp/pipe-test' (50 runs):
++
++        855.700314 task-clock                #    0.534 CPUs utilized            ( +-  0.11% )
++           200,003 context-switches          #    0.234 M/sec                    ( +-  0.00% )
++                 0 CPU-migrations            #    0.000 M/sec                    ( +- 39.58% )
++               487 page-faults               #    0.001 M/sec                    ( +-  0.02% )
++     1,474,374,262 cycles                    #    1.723 GHz                      ( +-  0.17% )
++   <not supported> stalled-cycles-frontend
++   <not supported> stalled-cycles-backend
++     1,178,049,567 instructions              #    0.80  insns per cycle          ( +-  0.06% )
++       208,368,926 branches                  #  243.507 M/sec                    ( +-  0.06% )
++         5,569,188 branch-misses             #    2.67% of all branches          ( +-  0.54% )
++
++       1.601607384 seconds time elapsed                                          ( +-  0.07% )
++
++jump label enabled:
++
++ Performance counter stats for 'bash -c /tmp/pipe-test' (50 runs):
++
++        841.043185 task-clock                #    0.533 CPUs utilized            ( +-  0.12% )
++           200,004 context-switches          #    0.238 M/sec                    ( +-  0.00% )
++                 0 CPU-migrations            #    0.000 M/sec                    ( +- 40.87% )
++               487 page-faults               #    0.001 M/sec                    ( +-  0.05% )
++     1,432,559,428 cycles                    #    1.703 GHz                      ( +-  0.18% )
++   <not supported> stalled-cycles-frontend
++   <not supported> stalled-cycles-backend
++     1,175,363,994 instructions              #    0.82  insns per cycle          ( +-  0.04% )
++       206,859,359 branches                  #  245.956 M/sec                    ( +-  0.04% )
++         4,884,119 branch-misses             #    2.36% of all branches          ( +-  0.85% )
++
++       1.579384366 seconds time elapsed
++
++The percentage of saved branches is .7%, and we've saved 12% on
++'branch-misses'. This is where we would expect to get the most savings, since
++this optimization is about reducing the number of branches. In addition, we've
++saved .2% on instructions, and 2.8% on cycles and 1.4% on elapsed time.
