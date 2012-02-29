@@ -1,180 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030543Ab2B2KII (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:08:08 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:41746 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756629Ab2B2KIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:08:06 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <dmitry.torokhov@gmail.com>, <daniel.ritz@gmx.ch>
-Cc: <linux-input@vger.kernel.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
-        <salvatore.dedominicis@st.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2] Input: usbtouchscreen: add support for Data Modul EasyTouch TP 72037
-Date: Wed, 29 Feb 2012 15:37:31 +0530
-Message-ID: <ef63b19a6f667b4ffc22f0bacfda60d9e53fcba1.1330505561.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.8.110.g4cb5d
+	id S1030635Ab2B2KI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:08:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030549Ab2B2KI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 05:08:27 -0500
+Message-ID: <4F4DF913.5030809@redhat.com>
+Date: Wed, 29 Feb 2012 12:08:19 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com>
+In-Reply-To: <20120229100550.GF24600@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Armando Visconti <armando.visconti@st.com>
+On 02/29/2012 12:05 PM, Gleb Natapov wrote:
+> On Wed, Feb 29, 2012 at 12:00:41PM +0200, Avi Kivity wrote:
+> > On 02/29/2012 11:55 AM, Gleb Natapov wrote:
+> > > > >
+> > > > 
+> > > > How about using a virtio-serial channel for this?  You can transfer any
+> > > > amount of information (including the dump itself).
+> > > > 
+> > > Isn't it unreliable after the guest panicked? 
+> > 
+> > So is calling hypercalls, or dumping, or writing to the screen.  Of
+> > course calling a hypercall is simpler and so is more reliable.
+> > 
+> Yes, crash can be so severe that it is not even detected by a kernel
+> itself, so not OOPS message even printed. But in most cases if kernel is
+> functional enough to print OOPS it is functional enough to call single
+> hypercall instruction.
 
-The Data Modul TP 72037 EasyTouch controller is derived from EGALAX
-controller and is capable of detecting dual contacts. Packets can be 5
-bytes or 10 bytes long, depending whether one or two contacts are
-detected. Format is same as EGALAX touch controller, but with x and y
-coordinates inverted.
+Why not print the oops to virtio-serial?  Or even just a regular serial
+port?  That's what bare metal does.
 
-Signed-off-by: Armando Visconti <armando.visconti@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
-Changes since V1:
-- defined MULTI_PACKET if not defined earlier
-- EGALAX replaced with ETOUCH
+> > > Having special kdump
+> > > kernel that transfers dump to a host via virtio-serial channel though
+> > > sounds interesting. May be that's what you mean.
+> > 
+> > Yes.  The "panic, starting dump" signal should be initiated by the
+> > panicking kernel though, in case the dump fails.
+> > 
+> Then panic hypercall sounds like a reasonable solution.
 
- drivers/input/touchscreen/Kconfig          |    9 ++++
- drivers/input/touchscreen/usbtouchscreen.c |   63 ++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+), 0 deletions(-)
+It is, but I'm trying to see if we can get away with doing nothing.
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 2b21a70..2acf16f 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -607,6 +607,7 @@ config TOUCHSCREEN_USB_COMPOSITE
- 	  - JASTEC USB Touch Controller/DigiTech DTR-02U
- 	  - Zytronic controllers
- 	  - Elo TouchSystems 2700 IntelliTouch
-+	  - EasyTouch USB Touch Controller from Data Modul
- 
- 	  Have a look at <http://linux.chapter7.ch/touchkit/> for
- 	  a usage description and the required user-space stuff.
-@@ -711,6 +712,14 @@ config TOUCHSCREEN_USB_NEXIO
- 	bool "NEXIO/iNexio device support" if EXPERT
- 	depends on TOUCHSCREEN_USB_COMPOSITE
- 
-+config TOUCHSCREEN_USB_EASYTOUCH
-+	default y
-+	bool "EasyTouch USB Touch controller device support" if EMBEDDED
-+	depends on TOUCHSCREEN_USB_COMPOSITE
-+	help
-+	  Say Y here if you have a EasyTouch USB Touch controller device support.
-+	  If unsure, say N.
-+
- config TOUCHSCREEN_TOUCHIT213
- 	tristate "Sahara TouchIT-213 touchscreen"
- 	select SERIO
-diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
-index 3a5ebf4..22cd96f 100644
---- a/drivers/input/touchscreen/usbtouchscreen.c
-+++ b/drivers/input/touchscreen/usbtouchscreen.c
-@@ -17,6 +17,7 @@
-  *  - Zytronic capacitive touchscreen
-  *  - NEXIO/iNexio
-  *  - Elo TouchSystems 2700 IntelliTouch
-+ *  - EasyTouch USB Dual/Multi touch controller from Data Modul
-  *
-  * Copyright (C) 2004-2007 by Daniel Ritz <daniel.ritz@gmx.ch>
-  * Copyright (C) by Todd E. Johnson (mtouchusb.c)
-@@ -140,6 +141,7 @@ enum {
- 	DEVTYPE_TC45USB,
- 	DEVTYPE_NEXIO,
- 	DEVTYPE_ELO,
-+	DEVTYPE_ETOUCH,
- };
- 
- #define USB_DEVICE_HID_CLASS(vend, prod) \
-@@ -245,6 +247,10 @@ static const struct usb_device_id usbtouch_devices[] = {
- 	{USB_DEVICE(0x04e7, 0x0020), .driver_info = DEVTYPE_ELO},
- #endif
- 
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+	{USB_DEVICE(0x7374, 0x0001), .driver_info = DEVTYPE_ETOUCH},
-+#endif
-+
- 	{}
- };
- 
-@@ -326,6 +332,51 @@ static int egalax_get_pkt_len(unsigned char *buf, int len)
- }
- #endif
- 
-+/*****************************************************************************
-+ * EasyTouch part
-+ */
-+
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+
-+#ifndef MULTI_PACKET
-+#define MULTI_PACKET
-+#endif
-+
-+#define ETOUCH_PKT_TYPE_MASK		0xFE
-+#define ETOUCH_PKT_TYPE_REPT		0x80
-+#define ETOUCH_PKT_TYPE_REPT2		0xB0
-+#define ETOUCH_PKT_TYPE_DIAG		0x0A
-+
-+static int etouch_read_data(struct usbtouch_usb *dev, unsigned char *pkt)
-+{
-+	if ((pkt[0] & ETOUCH_PKT_TYPE_MASK) != ETOUCH_PKT_TYPE_REPT &&
-+		(pkt[0] & ETOUCH_PKT_TYPE_MASK) != ETOUCH_PKT_TYPE_REPT2)
-+		return 0;
-+
-+	dev->x = ((pkt[1] & 0x1F) << 7) | (pkt[2] & 0x7F);
-+	dev->y = ((pkt[3] & 0x1F) << 7) | (pkt[4] & 0x7F);
-+	dev->touch = pkt[0] & 0x01;
-+
-+	return 1;
-+}
-+
-+static int etouch_get_pkt_len(unsigned char *buf, int len)
-+{
-+	switch (buf[0] & ETOUCH_PKT_TYPE_MASK) {
-+	case ETOUCH_PKT_TYPE_REPT:
-+	case ETOUCH_PKT_TYPE_REPT2:
-+		return 5;
-+
-+	case ETOUCH_PKT_TYPE_DIAG:
-+		if (len < 2)
-+			return -1;
-+
-+		return buf[1] + 2;
-+	}
-+
-+	return 0;
-+}
-+#endif
- 
- /*****************************************************************************
-  * PanJit Part
-@@ -1175,6 +1226,18 @@ static struct usbtouch_device_info usbtouch_dev_info[] = {
- 		.exit		= nexio_exit,
- 	},
- #endif
-+#ifdef CONFIG_TOUCHSCREEN_USB_EASYTOUCH
-+	[DEVTYPE_ETOUCH] = {
-+		.min_xc		= 0x0,
-+		.max_xc		= 0x07ff,
-+		.min_yc		= 0x0,
-+		.max_yc		= 0x07ff,
-+		.rept_size	= 16,
-+		.process_pkt	= usbtouch_process_multi,
-+		.get_pkt_len	= etouch_get_pkt_len,
-+		.read_data	= etouch_read_data,
-+	},
-+#endif
- };
- 
- 
 -- 
-1.7.8.110.g4cb5d
+error compiling committee.c: too many arguments to function
 
