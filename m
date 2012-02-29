@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030711Ab2B2KIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 05:08:31 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42766 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030619Ab2B2KI3 (ORCPT
+	id S1030608Ab2B2KKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 05:10:05 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:39639 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756629Ab2B2KKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 05:08:29 -0500
-Date: Wed, 29 Feb 2012 10:08:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mattias NILSSON <mattias.i.nilsson@stericsson.com>,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: RFC: what do we do with system controllers?
-Message-ID: <20120229100810.GH18045@n2100.arm.linux.org.uk>
-References: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com> <20120228083833.GB18045@n2100.arm.linux.org.uk> <CACRpkdaTJFL0A3caA4mNjxHTuXLC5u87OZ2yR=1ChiCFQL7c2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaTJFL0A3caA4mNjxHTuXLC5u87OZ2yR=1ChiCFQL7c2A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 29 Feb 2012 05:10:02 -0500
+Date: Wed, 29 Feb 2012 19:16:23 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Avi Kivity <avi@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
+Message-Id: <20120229191623.d1edb0aa.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <4F4DEEFA.6000506@redhat.com>
+References: <20120223203300.241510a6.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120223203541.f51c11c9.yoshikawa.takuya@oss.ntt.co.jp>
+	<4F4CBEAA.5030708@redhat.com>
+	<20120229164934.745d08f5.yoshikawa.takuya@oss.ntt.co.jp>
+	<4F4DEEFA.6000506@redhat.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 10:59:23AM +0100, Linus Walleij wrote:
-> On Tue, Feb 28, 2012 at 9:38 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Tue, Feb 28, 2012 at 06:48:12AM +0100, Linus Walleij wrote:
-> >> Mainly addressed to Greg but anyone is welcome to join the
-> >> discussion...
-> >>
-> >> Several ARM platforms have system controllers. In this I
-> >> include all custom terminology such as:
-> >>
-> >> - System Control
-> >> - Chip Controller
-> >> - Core Module control registers
-> >> - Power Reset Control Management Units
-> >> - Multimedia Communications Port
-> >
-> > Why do you include this?  If you include this, you should include things
-> > like SSP/SPI ports, I2C and other such buses.
-> 
-> Mainly because it has these specific MCP controller oddity
-> functions:
-> 
-> mcp_set_telecom_divisor()
-> mcp_set_audio_divisor()
-> 
-> i.e. it has some "strangeness" of system controller type
-> (telecom? que?) But it's quite little and no big deal, drop
-> it off the list.
+Avi Kivity <avi@redhat.com> wrote:
 
-MCP = Multimedia Communication Port.  It is designed to work with the
-UCB1200 and UCB1300 codec devices, which have two parts to them: a
-telecom / pots interface and an audio interface.
+> Okay.  But note you don't need the alignment check; simply allocate the
+> array aligned, and a multiple of 16 bytes, in the first place.
 
-The host side needs to be programmed with the appropriate sample rate -
-it's the host side which controls the sample rate not the codec.
+OKay, then we can do something like:
+
+	for each (x = bitmap[i], y = bitmap[i+1])
+		if (!x && !y)
+			continue
+		else if ...
+			cmpxchg16b or 8b
+		...
+
+I will try later.
+
+> > In addition, we should care about the new API.  It is not decided about
+> > what kind of range can be ordered.  I think restricting the range to be
+> > long size aligned is natural.  Do you have any plan?
+> 
+> Not really.  But the current changes are all internal and don't affect
+> the user API.
+
+Then I will do my best to improve the performance now!
+
+> > __ffs is really fast compared to other APIs.
+> 
+> You could do something like this
+> 
+>     for (i = 0; i < bitmap_size_in_longs; ++i) {
+>         mask = bitmap[i];
+>         if (!mask)
+>                continue;
+>         for (j = __ffs(mask); mask; mask &= mask - 1, j = __ffs(mask))
+>                 handle i * BITS_PER_LONG + j;
+>     }
+> 
+> This gives you the speed of __ffs() but without working on zero bits.
+
+Yes, I will do this in v2.
+
+> > We may see partial display updates if we do not hold the mmu_lock during
+> > xchg loop: it is possible that pages near the end of the framebuffer alone
+> > gets updated sometimes - I noticed this problem when I fixed the TLB flush
+> > issue.
+> 
+> I don't understand why this happens.
+
+Because only mmu_lock protects the bitmap for VGA.
+
+xchg i = 1
+xchg i = 2
+...
+xchg i = N
+
+We cannot get a complete snapshot without mmu_lock; if the guest faults on
+the Nth page during xchg'ing i = 1, 2, ... then the i = N alone will
+become newer.
+
+But others will be updated by the next call, so the problem is restricted:
+maybe not noticeable.
+
+> > Not a big problem but still maybe-noticeable change, so I think we should
+> > do it separately with some comments if needed.
+> 
+> Well if it's noticable on the framebuffer it's also noticable with live
+> migration.  We could do it later, but we need to really understand it first.
+
+About live migration, we do not mind whether the bitmap is a complete snapshot.
+In addition, we cannot do anything because the emulator can access the bitmap
+without mmu_lock.
+
+What we are doing is calling GET_DIRTY_LOG slot by slot: so already the
+result is not a snapshot at all.
+
+In the end, at the last stage, we will stop the guest and get a complete snapshot.
+
+> > In addition, we do not want to scan the dirty bitmap twice.  Using the
+> > bits value soon after it is read into a register seems to be the fastest.
+> 
+> Probably.
+> 
+> > BTW, I also want to decide the design of the new API at this chance.
+> 
+> Let's wait with that.  We're adding APIs too quickly.  Let's squeeze
+> everything we can out of the current APIs.
+
+I agree with you of course.
+
+At the same time, we cannot say anything without actually implementing
+sample userspace programs.
+
+So I want to see how much improvement the proposed API can achieve.
+
+I thought this might be a good GSoC project but ...
+
+
+Takuya
