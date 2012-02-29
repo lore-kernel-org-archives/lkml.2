@@ -1,151 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795Ab2B2LFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 06:05:35 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46961 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757777Ab2B2LFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 06:05:32 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        viro@zeniv.linux.org.uk, hughd@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hugetlbfs: Add new rw_semaphore to fix truncate/read race
-In-Reply-To: <CAJd=RBA05LqrUohAfO43ywZR_xwi4KygpzZP2zun=taKTLCvnQ@mail.gmail.com>
-References: <1330280398-27956-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120227151135.7d4076c6.akpm@linux-foundation.org> <87ipirclhe.fsf@linux.vnet.ibm.com> <CAJd=RBA05LqrUohAfO43ywZR_xwi4KygpzZP2zun=taKTLCvnQ@mail.gmail.com>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 29 Feb 2012 16:34:46 +0530
-Message-ID: <87ty29ew8h.fsf@linux.vnet.ibm.com>
+	id S1757783Ab2B2LIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 06:08:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40606 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755503Ab2B2LIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 06:08:38 -0500
+Date: Wed, 29 Feb 2012 12:08:36 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>
+Subject: Re: [PATCH] vfs: Fix missed wakeup in I_NEW handling
+Message-ID: <20120229110836.GD18846@quack.suse.cz>
+References: <1329759440-27490-1-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12022900-6102-0000-0000-000000F2A0AA
+Content-Disposition: inline
+In-Reply-To: <1329759440-27490-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Feb 2012 20:17:28 +0800, Hillf Danton <dhillf@gmail.com> wrote:
-> On Tue, Feb 28, 2012 at 6:15 PM, Aneesh Kumar K.V
-> <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> >
-> > Will update the patch with these details
-> >
+On Mon 20-02-12 18:37:20, Jan Kara wrote:
+> Commit 250df6ed removed wake_up_inode() (in particular a memory barrier before
+> wake_up_bit()) on the basis that i_state transitions are protected by i_lock.
+> That would be fine if all the readers of i_state were using i_lock as well. But
+> wait_on_inode() doesn't use i_lock and thus the following can happen due to
+> reordering:
 > 
-> A scratch is cooked, based on the -next tree, for accelerating your redelivery,
-> if you like it, in which i_mutex is eliminated directly and page lock is used.
+>    CPU 1				CPU 2
+> unlock_new_inode()
+>   spin_lock(&inode->i_lock);
+>   wake_up_bit(&inode->i_state, __I_NEW);
+> 					wait_on_inode()
+> 					  wait_on_bit(&inode->i_state, __I_NEW);
+>   inode->i_state &= ~I_NEW;
+>   ^^^ this store was reordered
+>   spin_unlock(&inode->i_lock);
 > 
-> -hd
+> And waiter on CPU2 sleeps forever (or for a really long time).
+> 
+> We fix the issue by using i_lock in wait_on_inode() in the spirit of commit
+> 250df6ed.
+  Al, could you please pick up this fix? Thanks!
 
+								Honza
 
-This looks much better than what I had. 
-
+> CC: Dave Chinner <dchinner@redhat.com>
+> Reported-by: Eric Buddington <ebuddington@wesleyan.edu>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/inode.c                |   22 ++++++++++++++++++++++
+>  include/linux/writeback.h |    5 -----
+>  2 files changed, 22 insertions(+), 5 deletions(-)
 > 
-> 
-> --- a/fs/hugetlbfs/inode.c	Tue Feb 28 19:43:32 2012
-> +++ b/fs/hugetlbfs/inode.c	Tue Feb 28 19:56:50 2012
-> @@ -245,17 +245,10 @@ static ssize_t hugetlbfs_read(struct fil
->  	loff_t isize;
->  	ssize_t retval = 0;
-> 
-> -	mutex_lock(&inode->i_mutex);
-> -
->  	/* validate length */
->  	if (len == 0)
->  		goto out;
-> 
-> -	isize = i_size_read(inode);
-> -	if (!isize)
-> -		goto out;
-> -
-> -	end_index = (isize - 1) >> huge_page_shift(h);
->  	for (;;) {
->  		struct page *page;
->  		unsigned long nr, ret;
-> @@ -263,6 +256,8 @@ static ssize_t hugetlbfs_read(struct fil
-> 
->  		/* nr is the maximum number of bytes to copy from this page */
->  		nr = huge_page_size(h);
-> +		isize = i_size_read(inode);
-> +		end_index = isize >> huge_page_shift(h);
-
-
-Should that be (isize - 1) >> huget_page_shift(h) ?
-
-
->  		if (index >= end_index) {
->  			if (index > end_index)
->  				goto out;
-> @@ -274,7 +269,7 @@ static ssize_t hugetlbfs_read(struct fil
->  		nr = nr - offset;
-> 
->  		/* Find the page */
-> -		page = find_get_page(mapping, index);
-> +		page = find_lock_page(mapping, index);
->  		if (unlikely(page == NULL)) {
->  			/*
->  			 * We have a HOLE, zero out the user-buffer for the
-> @@ -286,17 +281,30 @@ static ssize_t hugetlbfs_read(struct fil
->  			else
->  				ra = 0;
->  		} else {
-> +			unlock_page(page);
+> diff --git a/fs/inode.c b/fs/inode.c
+> index fb10d86..e768f9e 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -954,6 +954,28 @@ EXPORT_SYMBOL(lockdep_annotate_inode_mutex_key);
+>  #endif
+>  
+>  /**
+> + * wait_on_inode - wait while inode is in I_NEW state
+> + * @inode:	inode to wait for
+> + *
+> + * This function waits until inode is fully initialized and exits new state
+> + */
+> +static void wait_on_inode(struct inode *inode)
+> +{
+> +	DEFINE_WAIT_BIT(wq, &inode->i_state, __I_NEW);
+> +	wait_queue_head_t *wqh;
 > +
-> +			/* Without i_mutex held, check isize again */
-> +			nr = huge_page_size(h);
-> +			isize = i_size_read(inode);
-> +			end_index = isize >> huge_page_shift(h);
-
-same here (isize - 1) ?
-
-> +			if (index == end_index) {
-> +				nr = isize & ~huge_page_mask(h);
-
-
-Is that correct ?  We calculate nr differently in the earlier part of the function
-
-> +				if (nr <= offset) {
-> +					page_cache_release(page);
-> +					goto out;
-> +				}
-> +			}
-> +			nr -= offset;
->  			/*
->  			 * We have the page, copy it to user space buffer.
->  			 */
->  			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
->  			ret = ra;
-> +			page_cache_release(page);
->  		}
->  		if (ra < 0) {
->  			if (retval == 0)
->  				retval = ra;
-> -			if (page)
-> -				page_cache_release(page);
->  			goto out;
->  		}
+> +	might_sleep();
+> +	wqh = bit_waitqueue(&inode->i_state, __I_NEW);
+> +	spin_lock(&inode->i_lock);
+> +	while (inode->i_state & I_NEW) {
+> +		spin_unlock(&inode->i_lock);
+> +		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
+> +		spin_lock(&inode->i_lock);
+> +	}
+> +	spin_unlock(&inode->i_lock);
+> +}
+> +
+> +/**
+>   * unlock_new_inode - clear the I_NEW state and wake up any waiters
+>   * @inode:	new inode to unlock
+>   *
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index 995b8bf..e2dbc70 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -96,11 +96,6 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
+>  void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
+>  
+>  /* writeback.h requires fs.h; it, too, is not included from here. */
+> -static inline void wait_on_inode(struct inode *inode)
+> -{
+> -	might_sleep();
+> -	wait_on_bit(&inode->i_state, __I_NEW, inode_wait, TASK_UNINTERRUPTIBLE);
+> -}
+>  static inline void inode_sync_wait(struct inode *inode)
+>  {
+>  	might_sleep();
+> -- 
+> 1.7.1
 > 
-> @@ -306,16 +314,12 @@ static ssize_t hugetlbfs_read(struct fil
->  		index += offset >> huge_page_shift(h);
->  		offset &= ~huge_page_mask(h);
-> 
-> -		if (page)
-> -			page_cache_release(page);
-> -
->  		/* short read or no more work */
->  		if ((ret != nr) || (len == 0))
->  			break;
->  	}
->  out:
->  	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
-> -	mutex_unlock(&inode->i_mutex);
->  	return retval;
->  }
-> 
-
-I guess we need to closely look at the patch with respect to end-of-file
-condition. I will also try to get some testing with the patch.
-
--aneesh
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
