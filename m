@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830Ab2B2WFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 17:05:42 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49024 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756206Ab2B2WFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 17:05:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PCIe: Introduce command line option to disable ARI
-Date: Wed, 29 Feb 2012 23:09:41 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+	id S932310Ab2B2WGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 17:06:55 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38467 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2B2WGy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 17:06:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keith.chew@gmail.com designates 10.236.155.6 as permitted sender) smtp.mail=keith.chew@gmail.com; dkim=pass header.i=keith.chew@gmail.com
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202292309.42051.rjw@sisk.pl>
+In-Reply-To: <87obshxt4w.fsf@xmission.com>
+References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
+	<m1ehtd8qez.fsf@fess.ebiederm.org>
+	<CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
+	<87obshxt4w.fsf@xmission.com>
+Date: Thu, 1 Mar 2012 11:06:53 +1300
+Message-ID: <CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
+Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
+From: Keith Chew <keith.chew@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi Eric
 
-There are PCIe devices on the market that report ARI support but
-then fail to initialize correctly when ARI is actually used.  This
-leads to situations in which kernels 2.6.34 and newer fail to handle
-systems where the previous kernels worked without any apparent
-problems.  Unfortunately, it is currently unknown how many such
-devices are there.
+>
+> Historically a lot of issues have had to do with which cpu you are
+> entering the bios from.  So you might try pinning your process
+> to differen cpus and see if you can make the failure more deterministic.
+>
 
-For this reason, introduce a new kernel command line option,
-pci=noari, allowing users to disable PCIe ARI altogether if they
-see problems with PCIe device initialization.
+We are using a Celeron 575 uniprocessor, so we do not have the option
+to pin on another cpu. I have tried compiling the kernel in both UP
+and SMP configuration, but sadly both causes the hang.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/pci/pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> Ugh.  The other possibility is that there is an intermittent failure in
+> the hardware, that prevents the boot/reboot.  Wrong values on pull-up
+> resistors have been known to cause that kind of thing.
+>
 
-Index: linux/drivers/pci/pci.c
-===================================================================
---- linux.orig/drivers/pci/pci.c
-+++ linux/drivers/pci/pci.c
-@@ -94,6 +94,9 @@ u8 pci_cache_line_size;
-  */
- unsigned int pcibios_max_latency = 255;
- 
-+/* If set, the PCIe ARI capability will not be used. */
-+static bool pcie_ari_disabled;
-+
- /**
-  * pci_bus_max_busnr - returns maximum PCI bus number of given bus' children
-  * @bus: pointer to PCI bus structure to search
-@@ -1922,7 +1925,7 @@ void pci_enable_ari(struct pci_dev *dev)
- 	u16 flags, ctrl;
- 	struct pci_dev *bridge;
- 
--	if (!pci_is_pcie(dev) || dev->devfn)
-+	if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
- 		return;
- 
- 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
-@@ -3718,6 +3721,8 @@ static int __init pci_setup(char *str)
- 				pci_realloc();
- 			} else if (!strcmp(str, "nodomains")) {
- 				pci_no_domains();
-+			} else if (!strncmp(str, "noari", 5)) {
-+				pcie_ari_disabled = true;
- 			} else if (!strncmp(str, "cbiosize=", 9)) {
- 				pci_cardbus_io_size = memparse(str + 9, &str);
- 			} else if (!strncmp(str, "cbmemsize=", 10)) {
+Thank you very much for this pointer, will feed that back to the
+manufacturer and see if it will give them some clues. The original
+purpose for this reboot exercise was to ensure the software will
+handle a power failure without any OS/data corruptions. With this new
+discovery of unreliable reboot, the next worry is "If reboot is not
+reliable, is the boot process also susceptible to the same issue?". I
+have not rigged up any hardware to simulate a periodic full shutdown
+and boot up process, but will be planning to set this up next.
+
+Thanks again, if you have any other suggestions for us to try, I am all ears!
+
+Regards
+Keith
