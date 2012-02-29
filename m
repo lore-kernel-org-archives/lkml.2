@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab2B2L1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 06:27:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46630 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab2B2L1x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 06:27:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.42.73.136 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330515018.3545.96.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH resend] checkpatch.pl: be silent when -q and --ignore is
- given
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Feb 2012 13:30:18 +0200
-In-Reply-To: <20120229032530.b948ee51.akpm@linux-foundation.org>
-References: <1330364758-12065-1-git-send-email-dedekind1@gmail.com>
-	 <1330513326.3545.93.camel@sauron.fi.intel.com>
-	 <20120229032530.b948ee51.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-NiZ34KXWiaKYLPhTT8+k"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1757886Ab2B2L2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 06:28:18 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:47661 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757827Ab2B2L2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 06:28:16 -0500
+Message-ID: <4F4E0BC9.4070200@imgtec.com>
+Date: Wed, 29 Feb 2012 11:28:09 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+MIME-Version: 1.0
+To: linux-kernel <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [RESEND 2] [PATCH] rc/ir-raw: fix BUG_ON, using kfifo_rec_ptr_1 instead
+ of kfifo
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Feb 2012 11:28:09.0394 (UTC) FILETIME=[36C04920:01CCF6D5]
+X-SEF-Processed: 7_3_0_01181__2012_02_29_11_28_10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Raw IR events are passed to the raw event thread through a kfifo. The
+size of the event struct is 12 bytes, and space for 512 events is
+reserved in the kfifo (6144 bytes), however this is rounded down to 4096
+bytes (the next power of 2) by __kfifo_alloc().
 
---=-NiZ34KXWiaKYLPhTT8+k
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+4096 bytes is not divisible by 12 therefore if the fifo fills up, a
+third of a record will be written in the end of the kfifo by
+ir_raw_event_store() because the recsize of the fifo is 0 (it doesn't
+have records). When this is read by ir_raw_event_thread() a corrupted or
+partial record will be read, and in the case of a partial record the
+BUG_ON(retval != sizeof(ev)) gets hit too.
 
-On Wed, 2012-02-29 at 03:25 -0800, Andrew Morton wrote:
-> I applied it, but it seems that for some reason the applied-to-mm email
-> didn't get sent out for that one.
+According to samples/kfifo/record-example.c struct kfifo_rec_ptr_1 can
+handle records of a length between 0 and 255 bytes, so change struct
+ir_raw_event_ctrl to use that instead of struct kfifo.
 
-OK, thanks a lot!
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ drivers/media/rc/rc-core-priv.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---=20
-Best Regards,
-Artem Bityutskiy
+diff --git a/drivers/media/rc/rc-core-priv.h b/drivers/media/rc/rc-core-priv.h
+index c6ca870..989ea08 100644
+--- a/drivers/media/rc/rc-core-priv.h
++++ b/drivers/media/rc/rc-core-priv.h
+@@ -35,7 +35,7 @@ struct ir_raw_event_ctrl {
+ 	struct list_head		list;		/* to keep track of raw clients */
+ 	struct task_struct		*thread;
+ 	spinlock_t			lock;
+-	struct kfifo			kfifo;		/* fifo for the pulse/space durations */
++	struct kfifo_rec_ptr_1		kfifo;		/* fifo for the pulse/space durations */
+ 	ktime_t				last_event;	/* when last event occurred */
+ 	enum raw_event_type		last_type;	/* last event type */
+ 	struct rc_dev			*dev;		/* pointer to the parent rc_dev */
+-- 
+1.7.2.3
 
---=-NiZ34KXWiaKYLPhTT8+k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTgxLAAoJECmIfjd9wqK0X1kP+wcVPPQY9WNBargDtA+NzkWZ
-ziOiqzUEzoEMW9lUpcQouf1GHM77MU8+eea9V9sHgyTYp3Mc0COc1dc44/ISroQz
-QQu2xbUyZhPCZKizjO/i4mHS74K2ONfU/OLdTApp0wTdZiuFIp7VS8tjiiMQLjED
-nCopnktz4BVUx9sGgq0Xxq6bXW5RWUwrytUOKtdSnDFOpuLCrjH8U7KkhLPwVIti
-znTy4mpOgFT0tYfgE8FSWYzm0hd26pJIlT3WpntbOfMOSRZuXUI9Fvl+Y6rMZoov
-+pTz1ZAfVzQPSf2N2Umgaj6SUP8Rq+tnP0v2aVnDsrnsbKT00lxqVt9E+ygjiLpx
-CxtrdtCqRkaCHnKwNwURgAOkiLW4JURJ617ZdkSeb0hvwyVApXUTIqtWAfyE1B5T
-XvjLlxgKDtqJs01gNULOzfSjFKN/Rq7e+liNFxJ74dDrvLM9fkZlZGJlkm6P/6LX
-fQfEP9F7gIhB6jGURsHtfrV+G7qQeoVpDNps0wFKLi+FIS0/55k7o7RGIciiyDBQ
-iCjIFvQCG/oYnWspUlkg6iwwNDlCd9ZhaMKcWicS2uTHp4K5F+zlQXRDm1FaX/bK
-BG5nCK9fgwvV1EEX1MYrJ2ltS5XRDTyn7IFwKHdJze83KjNuktwqW35WkZhWpoIy
-o2PB25oIxvM/Z2qZSyhk
-=A5cs
------END PGP SIGNATURE-----
-
---=-NiZ34KXWiaKYLPhTT8+k--
 
