@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2B2UQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:16:54 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46876 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752953Ab2B2UQw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:16:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of amluto@gmail.com designates 10.60.4.106 as permitted sender) smtp.mail=amluto@gmail.com; dkim=pass header.i=amluto@gmail.com
+	id S1755367Ab2B2USw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:18:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:49496 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab2B2USv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 15:18:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Subject: Re: [PATCH 0/3] Replace bmp085 with bmp18x
+Date: Wed, 29 Feb 2012 20:18:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        christoph.mair@gmail.com, stefan.nilsson@unixphere.com,
+        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
+        Jonathan Cameron <jic23@cam.ac.uk>
+References: <1330545489-31169-1-git-send-email-eric.andersson@unixphere.com>
+In-Reply-To: <1330545489-31169-1-git-send-email-eric.andersson@unixphere.com>
 MIME-Version: 1.0
-In-Reply-To: <20120229200636.GA15729@redhat.com>
-References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com>
- <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com>
- <20120224190651.GA22287@redhat.com> <20120224190711.GB22287@redhat.com>
- <4F4E830E.3040307@mit.edu> <20120229200636.GA15729@redhat.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 29 Feb 2012 12:16:32 -0800
-X-Google-Sender-Auth: Ax30l9H15tHZz3uOzt_dm71J8RE
-Message-ID: <CAObL_7GdhNPNsSiTF+GfbJ3_8ud8px6=LBH173uy14y58FMivg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] epoll: introduce POLLFREE to flush ->signalfd_wqh
- before kfree()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
-        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
-        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202292018.45557.arnd@arndb.de>
+X-Provags-ID: V02:K0:8DGutqzox+uf8xj3htjy6VN4MXZ1fYoPKt51VjqI21M
+ 7Uk4XIENT6XPD+I5ZETiow9W0XHJoPZEe/LdzU7voQ53osU39u
+ 8xf+kAVKDSIctrgElnJCwToRpNsx+7qDrbQsmaa5a30IVaqZ1+
+ Z3V5HZnfwVg0usLP1XklE5WuTCAT04W39Oz3bK3iJyk/e91/92
+ VEKT8dr3599fnfPEM8OOXppBH35oaJ7taDp/3XurfpYJ5L/NjR
+ LmCigFJqj/QKHEW7SGUX1BO2xW5SwGW643/K+1DoeJR1qnAzwr
+ 9JOLy0km/4uaSxgY7mkKgqJGJCFNrbg3p76icCAhSwNLdO4x3e
+ fw0OB/5ObdVHK3RYmIhs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 12:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/29, Andy Lutomirski wrote:
->>
->> On 02/24/2012 11:07 AM, Oleg Nesterov wrote:
->> > This patch adds the special event, POLLFREE, currently only for
->> > epoll. It expects that init_poll_funcptr()'ed hook should do the
->> > necessary cleanup. Perhaps it should be defined as EPOLLFREE in
->> > eventpoll.
->>
->> I have a bunch of userspace code that uses signalfd via epoll.  Does
->> this affect the ABI?
->
-> I hope not ;)
->
+On Wednesday 29 February 2012, Eric Andersson wrote:
+> This patch-set replaces the BMP085 driver with a driver for Bosch Sensortec's new
+> generation of pressure sensors called BMP18x. These pressure sensors can be
+> connected on I2C but also on SPI as a variant, so the driver implements both.
+> Register-wise they are fully compatible with the older BMP085, so the driver will
+> support those chips as well.
+> 
+> The driver is based on bmp085.c by Christoph Mair.
 
-Excellent!
+Hmm,  the implementation looks fine, but I don't think we should add support
+for new devices with a one-off interface that we know is getting replaced by
+something generic.
 
-To avoid further confusion, would it make sense to update the comment
-in poll.h to indicate that POLLFREE is only for epoll and is internal
-to the kernel?
+Why is this not using IIO for its user interface?
 
---Andy
+	Arnd
