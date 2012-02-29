@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030851Ab2B2HgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 02:36:17 -0500
-Received: from 017.netroom.de ([194.0.247.217]:48590 "EHLO 017.netroom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755793Ab2B2HgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 02:36:16 -0500
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 02:36:16 EST
-Message-ID: <4F4DD398.6080006@draisberghof.de>
-Date: Wed, 29 Feb 2012 08:28:24 +0100
-From: Josua Dietze <digidietze@draisberghof.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1030848Ab2B2Hhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 02:37:41 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38484 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755793Ab2B2Hhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 02:37:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.112.54.36 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
+Date: Wed, 29 Feb 2012 09:37:23 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Rafael Aquini <aquini@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
+        Josef Bacik <josef@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm: SLAB Out-of-memory diagnostics
+In-Reply-To: <20120229032715.GA23758@t510.redhat.com>
+Message-ID: <alpine.LFD.2.02.1202290934020.4850@tux.localdomain>
+References: <20120229032715.GA23758@t510.redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?UTF-8?B?Ik1lbmcgWmhhbmcgKOW8oOiQjCki?= <Meng.Zhang@mediatek.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Alan Stern <stern@rowland.harvard.edu>, Phil Dibowitz <phil@ipom.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        USB Storage list <usb-storage@lists.one-eyed-alien.net>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: Mass Storage: Add MediaTek MT6276M device entry
-References: <4F4C998D.4000805@mediatek.com> <Pine.LNX.4.44L0.1202281028350.1456-100000@iolanthe.rowland.org> <0D3EFCAF29FAA54FB91286E54DF1085C23048506EF@MTKMBS30.mediatek.inc> <CAA6KcBAy0iu1KU9Nc0TTB77XNth_h+4M-Uqw96nkP-ypX2jAAA@mail.gmail.com> <0D3EFCAF29FAA54FB91286E54DF1085C230485078D@MTKMBS30.mediatek.inc>
-In-Reply-To: <0D3EFCAF29FAA54FB91286E54DF1085C230485078D@MTKMBS30.mediatek.inc>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.02.2012 07:03, schrieb Meng Zhang:
-> Thanks for your comment, I've tested some other products and found
-> their entries in /lib/udev/rules.d/40-usb_modeswitch.rules. So, does
-> usb_modeswitch comes with latest distributions by default?
+On Wed, 29 Feb 2012, Rafael Aquini wrote:
+> Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
+> allocator to help on debugging OOM conditions. This patch also adds a new
+> sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
+> allocation flag and forces the kernel to report every slab allocation failure.
+> 
+> An example print out looks like this:
+> 
+>   <snip page allocator out-of-memory message>
+>   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+>      cache: bio-0, object size: 192, order: 0
+>      node0: slabs: 3/3, objs: 60/60, free: 0
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  Documentation/sysctl/vm.txt |   23 ++++++++++++++++++
+>  include/linux/slab.h        |    2 +
+>  kernel/sysctl.c             |    9 +++++++
+>  mm/slab.c                   |   55 ++++++++++++++++++++++++++++++++++++++++++-
+>  4 files changed, 88 insertions(+), 1 deletions(-)
 
-Yes, it does. In most cases it is a prerequisite of Network Manager AFAIK.
+No SLUB support for this?
 
-The most-used mode switch entry in unusual_devs.h is there for 
-historical reasons, from a time when usb_modeswitch was not included 
-with distributions yet. I'm talking about "usb_stor_huawei_e220_init".
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index 96f0ee8..75bdf91 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -498,6 +498,29 @@ this is causing problems for your system/application.
+>  
+>  ==============================================================
+>  
+> +oom_dump_slabs_forced
+> +
+> +Overrides the effects of __GFP_NOWARN page allocation flag, thus forcing
+> +the system to print warnings about every allocation failure for the
+> +slab allocator, and helping on debugging certain OOM conditions.
+> +The print out is pretty similar, and complements data that is reported by
+> +the page allocator out-of-memory warning:
+> +
+> +<snip page allocator out-of-memory message>
+> +  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+> +     cache: bio-0, object size: 192, order: 0
+> +     node0: slabs: 3/3, objs: 60/60, free: 0
+> +
+> +If this is set to zero, the default behavior is observed and warnings will only
+> +be printed out for allocation requests that didn't set the __GFP_NOWARN flag.
+> +
+> +When set to non-zero, this information is shown whenever the allocator finds
+> +itself failing to grant a request, regardless the __GFP_NOWARN flag status.
+> +
+> +The default value is 0 (disabled).
+> +
+> +==============================================================
+> +
 
-If people want to access the installer drive for some reason, it's not 
-possible if the kernel does the mode switch without giving a choice.
-With usb_modeswitch, it's a matter of a small configuration edit.
+Why do you want to add a sysctl for this? That'd be an ABI that we need to 
+keep around forever.
 
-Josua Dietze
+Is there any reason we shouldn't just enable this unconditionally?
+
+			Pekka
