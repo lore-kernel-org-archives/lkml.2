@@ -1,53 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2B2UBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 15:01:07 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:41320 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754284Ab2B2UBF (ORCPT
+	id S1754716Ab2B2UBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 15:01:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58588 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab2B2UBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 15:01:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of larry.finger@gmail.com designates 10.60.7.70 as permitted sender) smtp.mail=larry.finger@gmail.com; dkim=pass header.i=larry.finger@gmail.com
-Message-ID: <4F4E83FD.3060506@lwfinger.net>
-Date: Wed, 29 Feb 2012 14:01:01 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	Wed, 29 Feb 2012 15:01:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.152.88 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Thu, 1 Mar 2012 00:01:03 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
+Message-ID: <20120229200103.GJ11326@moon>
+References: <20120229151634.GE4796@moon>
+ <20120229192400.GA13194@redhat.com>
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>
-CC: linux-wireless@vger.kernel.org, linville@tuxdriver.com, chunkeey@web.de,
-        m@bues.ch, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not from
- probe routine
-References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net> <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net> <4F4E4B8B.8090508@lwfinger.net> <CAMo8BfK5=YwZYepFoP5SqgDQMPvUeQobqNiBCMM5=eTwUT5e0A@mail.gmail.com>
-In-Reply-To: <CAMo8BfK5=YwZYepFoP5SqgDQMPvUeQobqNiBCMM5=eTwUT5e0A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229192400.GA13194@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 01:54 PM, Max Filippov wrote:
->>> Drivers that load firmware from their probe routine have problems with the
->>> latest versions of udev as they get timeouts while waiting for user
->>> space to start. The problem is fixed by loading the firmware and starting
->>> mac80211 from a delayed_work queue. By using this method, most of the
->>> original code is preserved.
->>>
->>> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
->>> ---
->>> This one is compile-tested only.
->>>
->>> Larry
->>> ---
->>
->>
->> Any testing done here?
->
-> insmod immediately followed by rmmod causes NULL pointer dereference.
-> The same always happens on rmmode when the firmware image is absent:
+On Wed, Feb 29, 2012 at 08:24:00PM +0100, Oleg Nesterov wrote:
+> On 02/29, Cyrill Gorcunov wrote:
+> >
+> > +static int prctl_set_mm_exe_file(struct mm_struct *mm,
+> > +				 const void __user *path,
+> > +				 size_t size)
+> > +{
+> > +	struct file *new_exe_file;
+> > +	char *pathbuf;
+> > +	int ret = 0;
+> > +
+> > +	if (size >= PATH_MAX)
+> > +		return -EINVAL;
+> > +
+> > +	/*
+> > +	 * We allow to change only those exe's which
+> > +	 * are not mapped several times. This one
+> > +	 * is early test while mmap_sem is taken.
+> > +	 */
+> > +	if (mm->num_exe_file_vmas > 1)
+> > +		return -EBUSY;
+> 
+> I don't really understand this check, but it is racy. Another thread
+> can change ->num_exe_file_vmas right after the check.
+> 
+> > +       up_read(&mm->mmap_sem);
+> 
+> up? I do not see down...
 
-Thanks for testing.
+down is taken in calling routine (as pointed in comment on
+prctl_set_mm_exe_file), thus I suppose I miss something since
+the calling functions which increment/decrement num_exe_file_vmas
+(such as mremap) do down_write(mmap_sem) first.
 
-Larry
+> 
+> > +	new_exe_file = open_exec(pathbuf);
+> > +	kfree(pathbuf);
+> > +
+> > +	down_read(&mm->mmap_sem);
+> 
+> probably you meant "up" here. OK, I am ignoring ->mmap_sem, I can't
+> understand what did you really mean ;)
+> 
 
+nop, down instead ;)
 
+> > +	if (IS_ERR(new_exe_file))
+> > +		return PTR_ERR(new_exe_file);
+> > +
+> > +	/*
+> > +	 * We allow to change only those exe's which
+> > +	 * are not mapped several times.
+> > +	 */
+> > +	if (mm->num_exe_file_vmas < 2) {
+> > +		set_mm_exe_file(mm, new_exe_file);
+> > +		ret = 0;
+> > +	} else
+> > +		ret = -EBUSY;
+> > +
+> > +	return ret;
+> 
+> Both success/EBUSY leak new_exe_file. And I agree with Pavel,
+
+yeah, will fix, thanks!
+
+> prctl_set_mm_exe_file() should take fd, not filename.
+> 
+
+yes, i'll switch to this idea
+
+> I simply can't understand why set_mm_exe_file() is safe. What
+> if we race with another thread doing set_mm_exe_file() too?
+> Or it can race with added_exe_file_vma/removed_exe_file_vma.
+
+really, Oleg, I don't see race here since this routine is
+caller under down_read and I've been releasing mmap_sem for
+short time then reacquiring it, and recheck for number of
+num_exe_file_vmas. so I presume I miss something obvious
+here.
+
+> 
+> And. set_mm_exe_file() sets ->num_exe_file_vmas = 0, this is
+> simply wrong? It should match the number of VM_EXECUTABLE
+> vmas.
+> 
+
+yes, it's a nit which sould be fixed. thanks!
+
+> In short, I do not understand the patch at all. It seems, you
+> only need to replace mm->exe_file under down_write(mmap_sem)
+> and nothing else.
+
+I can't just replace it, I wanted to check it the new symlink
+will indeed point to executable (such ceheck btw is done
+in open_exec() helper) and I actually wonted to replace
+only freshly created executables which didn't have any
+remaps on executable VMA (still I might be wrong
+here and it's indeed safe just to replace old exe_file).
+
+That's why I posted it as RFC and really appreciate
+feedback (so, thanks a lot, Oleg!).
+
+	Cyrill
