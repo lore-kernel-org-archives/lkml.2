@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030845Ab2B2RHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:07:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59781 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964977Ab2B2RHI (ORCPT
+	id S1031059Ab2B2RHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:07:47 -0500
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:54859 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab2B2RHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:07:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dedekind1@gmail.com designates 10.50.236.5 as permitted sender) smtp.mail=dedekind1@gmail.com; dkim=pass header.i=dedekind1@gmail.com
-Message-ID: <1330535372.3545.150.camel@sauron.fi.intel.com>
-Subject: Re: [patch] Adding Secure Deletion to UBIFS
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 19:09:32 +0200
-In-Reply-To: <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
-	 <1329152067.22240.214.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1202231558400.13720@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-r471b1j2igp+BgeYigUd"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	Wed, 29 Feb 2012 12:07:45 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.136.97 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: marcel@holtmann.org
+Cc: padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] Bluetooth: Silence static checker warning.
+Date: Wed, 29 Feb 2012 22:36:57 +0530
+Message-Id: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
---=-r471b1j2igp+BgeYigUd
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Silencing Static checker warning.
+1. Endian warning
+2. variable dereferenced before check 'sk' .
 
-On Thu, 2012-02-23 at 15:59 +0100, Joel Reardon wrote:
-> >
-> > Could you make a separate patch which adds new on-flash format and make
-> > sure that new ubifs binaries can mount the old formats and work with
-> > them. And that old ubifs binaries gracefully reject the new format.
-> >
->=20
-> This patch provides a new version of two on-flash data structures for=20
-> UBIFS:
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ net/bluetooth/l2cap_sock.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-Similarly - wrapped patch and git am wont' apply it, sorry.
-
-> ubifs_branch and ubifs_data_node have been grown by 8 bytes to include a=
-=20
-> 64-bit reference
-> to a key position, which is needed by a proposed ubifs secure deletion=
-=20
-> addition. This patch is generated
-> against linux-3.2.1.
-
-Please, use linux-ubifs tree instead:
-git://git.infradead.org/linux-ubifs.git
-
-It has the newest stuff.
-
-> Because both data structures use C99 flexible arrays, it is not possible=
-=20
-> to add the new field as
-> the last member of the structure.
-
->  Thus, it was added one before last, the=20
-> last was renamed, and in a
-> handful of places where it was used, a macro accessor is used to get the=
-=20
-> version-correct position.
-
-Hmm, we can make it to be key[UBIFS_SK_LEN] instead, if it helps.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-r471b1j2igp+BgeYigUd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPTlvMAAoJECmIfjd9wqK0IFAP/Reyc4KEMnejBNMRSIka5/oG
-sJFim5CbwaYX8Zj2YMTTDBW9RMrsg5TbKVlopluqFyL2m0BDZ13qU6CfmhePHcpr
-3X+iDbYT36yQQtQ9FSUg40KSqvHjIlH7gIb7tnNTCRJmAcLQQk9/PV+InLC9AIFR
-0yYhm6Q35A5a0VBb6RjxIXTmCq/SyLGfzjsc7nnpiJ/w78ThXrLHrOskpKQmXbiD
-Yx/SufBnMhV3d/JqlRMDHshAFuyQzzkdB3dq/q9PtP+uBuyMtmS4O6trde6deL9D
-x/ubPKqbsacSu4U0+YyqLe7M54PqjtnCbqRngaB/wyV7MtyVuVYM53UQ/NOTAxmB
-vFLuYxEg7yMWaEvaK4QhF9IgN1ifibBZCvnE8f4vWFxzGSznd5SPYE9bue8DQPPp
-pwApNkVTXgfpCQIZv0NpdFEGd8kVA/pFGco3Cs++sZYweWHc0NyMV6jP/favdUDq
-GLW/Zyg3Taw0QXN4zwi6sU4/FqQmQfYKqhe5Nf8KPgzvbfq+36SEb8DB2atbU+ci
-GjH0nrWPxhcMwP8Uqcs3flWEg5Ya+EZxJCmvFhyLdqc9CqFb4DD+XIHfckmaytyI
-enqBBj3IpMtvpeo4FP7NnGBh/BqlM9bwTvO2e6n4ucwy2rFPflEvh/TITjDI8bER
-/6pVoFdqrj4MSHjnAvK/
-=FdCZ
------END PGP SIGNATURE-----
-
---=-r471b1j2igp+BgeYigUd--
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 401d942..d206321 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
+ 	}
+ 
+ 	if (la.l2_cid)
+-		err = l2cap_add_scid(chan, la.l2_cid);
++		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+ 	else
+ 		err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
+ 
+@@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
+ 	if (la.l2_cid && la.l2_psm)
+ 		return -EINVAL;
+ 
+-	err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
++	err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
++				&la.l2_bdaddr);
+ 	if (err)
+ 		goto done;
+ 
+@@ -795,7 +796,7 @@ static void l2cap_sock_kill(struct sock *sk)
+ static int l2cap_sock_shutdown(struct socket *sock, int how)
+ {
+ 	struct sock *sk = sock->sk;
+-	struct l2cap_chan *chan = l2cap_pi(sk)->chan;
++	struct l2cap_chan *chan;
+ 	int err = 0;
+ 
+ 	BT_DBG("sock %p, sk %p", sock, sk);
+@@ -803,6 +804,8 @@ static int l2cap_sock_shutdown(struct socket *sock, int how)
+ 	if (!sk)
+ 		return 0;
+ 
++	chan = l2cap_pi(sk)->chan;
++
+ 	lock_sock(sk);
+ 	if (!sk->sk_shutdown) {
+ 		if (chan->mode == L2CAP_MODE_ERTM)
+-- 
+1.7.4.4
 
