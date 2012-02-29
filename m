@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030366Ab2B2J6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 04:58:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab2B2J6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 04:58:53 -0500
-Date: Wed, 29 Feb 2012 09:58:42 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-Message-ID: <20120229095842.GF5050@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4F4AF1FB.6000903@cn.fujitsu.com>
- <4F4CB926.6050600@redhat.com>
- <4F4D7F5E.5040202@cn.fujitsu.com>
- <4F4DF4C6.90609@redhat.com>
+	id S1030517Ab2B2J70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 04:59:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40673 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab2B2J7Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 04:59:24 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.41.161 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F4DF4C6.90609@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120228083833.GB18045@n2100.arm.linux.org.uk>
+References: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
+	<20120228083833.GB18045@n2100.arm.linux.org.uk>
+Date: Wed, 29 Feb 2012 10:59:23 +0100
+Message-ID: <CACRpkdaTJFL0A3caA4mNjxHTuXLC5u87OZ2yR=1ChiCFQL7c2A@mail.gmail.com>
+Subject: Re: RFC: what do we do with system controllers?
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mattias NILSSON <mattias.i.nilsson@stericsson.com>,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:49:58AM +0200, Avi Kivity wrote:
-> On 02/29/2012 03:29 AM, Wen Congyang wrote:
-> > At 02/28/2012 07:23 PM, Avi Kivity Wrote:
-> > > On 02/27/2012 05:01 AM, Wen Congyang wrote:
-> > >> We can know the guest is paniced when the guest runs on xen.
-> > >> But we do not have such feature on kvm. This patch implemnts
-> > >> this feature, and the implementation is the same as xen:
-> > >> register panic notifier, and call hypercall when the guest
-> > >> is paniced.
-> > > 
-> > > What's the motivation for this?  "Xen does this" is insufficient.
-> >
-> > Another purpose is: management app(for example: libvirt) can do auto
-> > dump when the guest is crashed. If management app does not do auto
-> > dump, the guest's user can do dump by hand if he sees the guest is
-> > paniced.
-> >
-> > I am thinking about another status: dumping. This status tells
-> > the guest's user that the guest is paniced, and the OS's dump function
-> > is working.
-> >
-> > These two status can tell the guest's user whether the guest is pancied,
-> > and what should he do if the guest is paniced.
-> >
-> 
-> How about using a virtio-serial channel for this?  You can transfer any
-> amount of information (including the dump itself).
+On Tue, Feb 28, 2012 at 9:38 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Feb 28, 2012 at 06:48:12AM +0100, Linus Walleij wrote:
+>> Mainly addressed to Greg but anyone is welcome to join the
+>> discussion...
+>>
+>> Several ARM platforms have system controllers. In this I
+>> include all custom terminology such as:
+>>
+>> - System Control
+>> - Chip Controller
+>> - Core Module control registers
+>> - Power Reset Control Management Units
+>> - Multimedia Communications Port
+>
+> Why do you include this?  If you include this, you should include things
+> like SSP/SPI ports, I2C and other such buses.
 
-When the guest OS has crashed, any dumps will be done from the host
-OS using libvirt's core dump mechanism. The guest OS isn't involved
-and is likely too dead to be of any use anyway. Likewise it is
-quite probably too dead to work a virtio-serial channel or any
-similarly complex device. We're really just after the simplest
-possible notification that the guest kernel has paniced.
+Mainly because it has these specific MCP controller oddity
+functions:
 
-Regards,
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+mcp_set_telecom_divisor()
+mcp_set_audio_divisor()
+
+i.e. it has some "strangeness" of system controller type
+(telecom? que?) But it's quite little and no big deal, drop
+it off the list.
+
+Thanks,
+Linus Walleij
