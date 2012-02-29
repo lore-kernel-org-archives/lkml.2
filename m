@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab2B2RUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:20:37 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:1669 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758184Ab2B2RUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:20:35 -0500
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <1330536026.25281.6.camel@lb-tlvb-dmitry>
-Subject: Re: [PATCH 2/8] bnx2x: adopt bnx2x_validate_addr() to
- .ndo_validate_addr changes
-From: "Dmitry Kravkov" <dmitry@broadcom.com>
-To: "Danny Kukawka" <danny.kukawka@bisect.de>
-cc: "Eilon Greenstein" <eilong@broadcom.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 19:20:26 +0200
-In-Reply-To: <201202291808.30599.danny.kukawka@bisect.de>
-References: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
- <1330530176-24952-3-git-send-email-danny.kukawka@bisect.de>
- <1330532535.25281.2.camel@lb-tlvb-dmitry>
- <201202291808.30599.danny.kukawka@bisect.de>
-X-Mailer: Evolution 3.2.2-
+	id S1758240Ab2B2RVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 12:21:38 -0500
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:37816 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758031Ab2B2RVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 12:21:36 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of surovegin@google.com designates 10.236.115.136 as permitted sender) smtp.mail=surovegin@google.com; dkim=pass header.i=surovegin@google.com
 MIME-Version: 1.0
-X-WSS-ID: 6350BFF850428934538-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+From: Eugene Surovegin <surovegin@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eugene Surovegin <surovegin@google.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        kexec-list <kexec@lists.infradead.org>
+Subject: [PATCH] kdump: force page alignment for per-CPU crash notes.
+Date: Wed, 29 Feb 2012 09:21:23 -0800
+Message-Id: <1330536083-13098-1-git-send-email-surovegin@google.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 18:08 +0100, Danny Kukawka wrote:
-> On Mittwoch, 29. Februar 2012, Dmitry Kravkov wrote:
-> > On Wed, 2012-02-29 at 16:42 +0100, Danny Kukawka wrote:
-> > > Adopted bnx2x_validate_addr() to changes in .ndo_validate_addr,
-> > > handle second parameter to be validated.
-> > >
-> > > Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> > > ---
-> > >  drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   13 ++++++++++---
-> > >  1 files changed, 10 insertions(+), 3 deletions(-)
-> > >
-> > > diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-> > > b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c index b4afef6..d25ef1e
-> > > 100644
-> > > --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-> > > +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-> > > @@ -10532,12 +10532,19 @@ static void poll_bnx2x(struct net_device *dev)
-> > >  }
-> > >  #endif
-> > >
-> > > -static int bnx2x_validate_addr(struct net_device *dev)
-> > > +static int bnx2x_validate_addr(struct net_device *dev, void *addr)
-> > >  {
-> > >  	struct bnx2x *bp = netdev_priv(dev);
-> > > +	struct sockaddr *saddr;
-> > >
-> > > -	if (!bnx2x_is_valid_ether_addr(bp, dev->dev_addr))
-> > > -		return -EADDRNOTAVAIL;
-> > > +	if (addr) {
-> > > +		saddr = addr;
-> > > +		if (!bnx2x_is_valid_ether_addr(bp, saddr->sa_data))
-> > > +			return -EADDRNOTAVAIL;
-> > > +	} else {
-> > > +		if (!bnx2x_is_valid_ether_addr(bp, dev->dev_addr))
-> > > +			return -EADDRNOTAVAIL;
-> > > +	}
-> > >  	return 0;
-> > >  }
-> >
-> > Isn't it preferred to calculate the correct address for test and then
-> > call bnx2x_is_valid_ether_addr() at the end?
-> 
-> Do you mean something like this: 
-BUT:
+Per-CPU allocations are not guaranteed to be physically contiguous.
+However, kdump kernel and user-space code assumes that per-CPU
+memory, used for saving CPU registers on crash, is.
+This can cause corrupted /proc/vmcore in some cases - the main
+symptom being huge ELF note section.
 
-> int eth_validate_addr(struct net_device *dev, void *addr)
-> {
-You still need to extract bp here:
-	struct bnx2x *bp = netdev_priv(dev);
->  u8 *vaddr;
-> 
->  if (addr)
->     vaddr = ((struct sockaddr *) addr)->sa_data;
->  else
->     vaddr = dev->dev_addr;
-> 
->  if (!is_valid_ether_addr(vaddr))
-and call internal function here:
-	if (!bnx2x_is_valid_ether_addr(bp, vaddr))
->     return -EADDRNOTAVAIL;
-> 
->  return 0;
-> }
-> 
+Force page alignment for note_buf_t to ensure that this assumption holds.
 
+Signed-off-by: Eugene Surovegin <surovegin@google.com>
+CC: Eric Biederman <ebiederm@xmission.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: kexec-list <kexec@lists.infradead.org>
+---
+ kernel/kexec.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 7b08867..e641b5c 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1232,8 +1232,13 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+ 
+ static int __init crash_notes_memory_init(void)
+ {
+-	/* Allocate memory for saving cpu registers. */
+-	crash_notes = alloc_percpu(note_buf_t);
++	/* Allocate memory for saving cpu registers.
++	 * Force page alignment to avoid crossing physical page boundary -
++	 * kexec-tools and kernel /proc/vmcore handler assume these per-CPU
++	 * chunks are physically contiguous.
++	 */
++	crash_notes = (note_buf_t __percpu *)__alloc_percpu(sizeof(note_buf_t),
++							    PAGE_SIZE);
+ 	if (!crash_notes) {
+ 		printk("Kexec: Memory allocation for saving cpu register"
+ 		" states failed\n");
+-- 
+1.7.9.1
 
