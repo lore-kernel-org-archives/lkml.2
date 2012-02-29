@@ -1,63 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab2B2MpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 07:45:17 -0500
-Received: from nbd.name ([46.4.11.11]:36894 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024Ab2B2MpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 07:45:15 -0500
-Message-ID: <4F4E1DD7.4050509@openwrt.org>
-Date: Wed, 29 Feb 2012 13:45:11 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S932594Ab2B2MqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 07:46:11 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58619 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430Ab2B2MqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 07:46:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: RFC: what do we do with system controllers?
+Date: Wed, 29 Feb 2012 12:45:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>, linux-arm-kernel@lists.infradead.org,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mattias NILSSON <mattias.i.nilsson@stericsson.com>,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+References: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
+In-Reply-To: <CACRpkdY1W-RGE0JL4Sx5UcPY-EGieu8vo7H0fp9xyXtegpaaKw@mail.gmail.com>
 MIME-Version: 1.0
-To: YIN Wei <yinwei168@gmail.com>
-CC: johannes <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mattias.nissler@gmx.de,
-        stefano.brivio@polimi.it
-Subject: Re: [PATCH] mac80211: improve PID rate control mechanism by avoiding
- rate oscillation problem
-References: <CAFxU49m76xaLGv9CFhKcZBhE-8QgT1KSuhnZRcVwzP2ogrGpbQ@mail.gmail.com>
-In-Reply-To: <CAFxU49m76xaLGv9CFhKcZBhE-8QgT1KSuhnZRcVwzP2ogrGpbQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202291245.54038.arnd@arndb.de>
+X-Provags-ID: V02:K0:i03dkmFzJiW2ergdXmDmMy8lQhDVhPuLziDfLbyhd3O
+ v4+FQ6gbfiUZPQUNImBOkPf4A5ZiWjZvkC5fMGSZoeaINqpkes
+ 5ggWTVvJ7kk0OZgnokk1BFxlPPHcagWYk1gMHPusEiSk2f4XWR
+ z4OI/OAE4mSDYQdsprjDkP4l1ctiHYWlHHIL8RUP1zEmFlL2Mq
+ CZ+wXWaHBrpNLA6wN7QnCySudJAPKm1QCrSPLrHj7UC+8ihZWm
+ vuy0efCR+xe1lqGaj1k4b7zfGGhgkN6VuFBLXvUV1hPmrivKqF
+ tTgFza1eEH4/7FcdC7+RAPGcadSucFLxEL+gllJ9xfaApjloT5
+ KswwhwK2LSCTATniMDNM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-29 1:14 PM, YIN Wei wrote:
-> From: Wei YIN (Wei.Yin@nicta.com.au)
-> 
-> Improve PID rate control mechanism by solving the rate oscillation
-> problem. Current PID mechanism is based on a PID  controller which
-> tries to minimise the difference between the frame loss ratio (FLR)
-> and the target FLR. Therefore it is straight forward that it increases
-> to a higher rate when the FLR is less than the target without
-> considering whether the higher rate can be supported. If the higher
-> rate cannot be supported, significant FLR will occur, which causes the
-> mechanism to decrease the rate sharply. The proposed approach only
-> updates the rate when the proposed rate by the PID controller can
-> achieve better throughput than the old rate. This patch applies to
-> kernel 3.3.0.
-> Signed-off-by: Wei YIN (Wei.Yin@nicta.com.au)
-> ---
-> diff -uprN wireless-testing_orig/net/mac80211/Kconfig
-> wireless-testing/net/mac80211/Kconfig
-> --- wireless-testing_orig/net/mac80211/Kconfig	2012-02-17
-> 13:59:53.495254495 +1000
-> +++ wireless-testing/net/mac80211/Kconfig	2012-02-21 11:35:40.495706869 +1000
-> @@ -21,6 +21,7 @@ config MAC80211_HAS_RC
->  config MAC80211_RC_PID
->  	bool "PID controller based rate control algorithm" if EXPERT
->  	select MAC80211_HAS_RC
-> +	default y
->  	---help---
->  	  This option enables a TX rate control algorithm for
->  	  mac80211 that uses a PID controller to select the TX
-Several issues with this patch: line wrapping, weird encoding in the
-comments: —
-Also, please drop this change that alters the default value of
-MAC80211_RC_PID.
+On Tuesday 28 February 2012, Linus Walleij wrote:
 
-- Felix
+> 
+> * Reset or shut down the system
+> * Reset individual ASIC blocks
+> * Control some core voltage domains
+> * Control system frequency
+> * Select clocking of indvidual ASIC IP blocks:
+> * Provide some versioning numbers for the entire system
+> * Enable and reset external buses such as PCI
+> * (De)protect flash memory
+> * Provide a communication channel to another control unit
+> * Set some clock divisors for misc units
+> * LEDs, GPIO etc communication channel
+> * USB transciever control:
+> * Get OTP (one-time-programmable) bits:
+> * Set up DDR control registers:
+> * Pin control:
+
+Nice list, thanks for putting that together.
+
+> The current way to split this problem is to:
+> 
+> - Push each subfunctionality into a specialized subsystem
+>   PLL and clocks to drivers/clk using the new framework
+>   RealSoonNow for example, pin control we have in place
+>   regulators can handle domain switches...
+> 
+> - Put in place an arbitration hub-like mechanism using MFD
+
+Right.
+
+> This can be done in two ways:
+> 
+> - Permanently map the register range and let subdrivers
+>   poke directly into the registers they're interested in.
+> 
+> - Map the register range in a hub driver (often MFD) and
+>   write accessor functions for all subfunctionality.
+
+Generally, I would always prefer the second of these ways,
+because it allows one to keep the necessary locking local to
+the implementation of the system controller driver.
+
+> As far as the drivers are small and nice the heterogeneous
+> character of these device register ranges are not much
+> of a problem. Some will argue to not fix what ain't broken
+> and not move these out of arch/arm/* at all.
+
+That argument certainly has its merits, after all the way that
+the system controller works is one of the central aspects
+of a platform/subarchitecture.
+
+> What we need to discuss is if this is how we go about
+> taking care of these devices going forward - what shall be
+> the preferred design pattern?
+> 
+> My current assumption is that we need to get these things
+> out of arch/arm/* and into proper subsystems, using
+> drivers/mfd/* as an arbitration point. However I am not
+> sure that everyone really agrees on this. Right now it's
+> more a modus operandi and following what someone else
+> does than a conscious decision to do this.
+> 
+> We have discussed creating drivers/scm/* (system controller
+> modules) but I'm pretty unsure of what the definition of
+> such creatures would be, and the border toward MFD
+> would be pretty blurred.
+
+Agreed.
+
+> x86 have conveniently put some of their equivalents under
+> drivers/platform/x86 but if I understood Arnd correctly
+> creating drivers/platform/arm would break the intentions
+> of that directory.
+
+The problem I have with using drivers/platform for this is that
+it encourages grouping of drivers by their host-side connection
+rather than by their functionality. We're moving away from
+that model in most other places in the kernel, and we should
+try to discourage it for new code. The drivers/platform/x86
+directory contains stuff like rfkill, input, backlight, etc
+drivers, all of which have (or should have) other places for
+them to live in already.
+
+I don't mind having a new location for system controllers
+outside of (or below) drivers/mfd, but I would try to avoid
+naming it "platform" because I fear that leads people to stuff
+all sorts of drivers in there because they happen to be
+implemented as 'platform_driver'.
+
+	Arnd
