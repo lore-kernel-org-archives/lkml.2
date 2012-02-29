@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab2B2R7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 12:59:22 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:45845 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754532Ab2B2R7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 12:59:21 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] pinctrl: make the pinmux-pins more helpful
-Date: Wed, 29 Feb 2012 18:58:52 +0100
-Message-ID: <1330538332-16088-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	id S1757942Ab2B2SBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 13:01:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757469Ab2B2SA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 13:00:59 -0500
+Message-ID: <4F4E67C3.9030000@redhat.com>
+Date: Wed, 29 Feb 2012 15:00:35 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab> <4F4E145E.4040901@redhat.com> <3908561D78D1C84285E8C5FCA982C28F040162@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040162@ORSMSX104.amr.corp.intel.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Em 29-02-2012 14:20, Luck, Tony escreveu:
+>> IMHO, before removing those fields, it would be better to first implement
+>> what is there at the mcelog userspace parser for the Intel machines into
+>> kernelspace (or to look into its source code), and check what registers
+>> aren't used by either AMD 64 MCE decoder or by the Intel MCE decoder.
+>>
+>> Tony,
+>>
+>> Is there anyone at Intel working on porting it to kernelspace?
+> 
+> The mcelog code just looks at model specific fields in MCi_STATUS
+> and MCi_MISC.  We could move it to the kernel - but I don't see
+> much value in doing so. 
 
-The debugfs file pinmux-pins used to tell which function was
-enabled but now states simply which device owns the pin. Being
-owned by the pinctrl driver itself means just that it's hogged
-so be a bit more helpful by printing that.
+I see a few reasons:
 
-ChangeLog v1->v2:
-- Preserve the self-referential owner field, just clarify that
-  when the pin controller states itself as owner this means
-  that it's hogged.
+	- it would be consistent with what's being done at AMD. So, all x86
+	  arch will report errors at the same way;
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinmux.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+	- userspace won't need to run an extra daemon/tool to decode the
+	  errors;
 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 98b89d6..2a40561 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -626,8 +626,8 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
- 
- 	/* The pin number can be retrived from the pin controller descriptor */
- 	for (i = 0; i < pctldev->desc->npins; i++) {
--
- 		struct pin_desc *desc;
-+		bool is_hog = false;
- 
- 		pin = pctldev->desc->pins[i].number;
- 		desc = pin_desc_get(pctldev, pin);
-@@ -635,9 +635,14 @@ static int pinmux_pins_show(struct seq_file *s, void *what)
- 		if (desc == NULL)
- 			continue;
- 
--		seq_printf(s, "pin %d (%s): %s\n", pin,
-+		if (desc->owner &&
-+		    !strcmp(desc->owner, pinctrl_dev_get_name(pctldev)))
-+			is_hog = true;
-+
-+		seq_printf(s, "pin %d (%s): %s%s\n", pin,
- 			   desc->name ? desc->name : "unnamed",
--			   desc->owner ? desc->owner : "UNCLAIMED");
-+			   desc->owner ? desc->owner : "UNCLAIMED",
-+			   is_hog ? " (HOG)" : "");
- 	}
- 
- 	return 0;
--- 
-1.7.8
+	- fatal errors won't be lost (well, in fact, you have there already 
+	  a parser for fatal errors. Not sure if all possible fatal errors
+	  are covered here, nor what else is needed, as you have already 
+	  there part of mcelog decoder);
+
+	- a single place to maintain, when new cpu families are added;
+
+	- it makes easier to centralize the hardware error information,
+	  as there's no need to enrich the error on userspace.
+
+> In this case all the information we need
+> is carried in status/misc - so as long as we keep all of those
+> bits (and the cpu family/model) we can safely decode/analyze later.
+
+Hmm... the mcelog tool opens the /proc/cpuinfo:
+
+$ grep cpuinfo *
+mcelog.c:	f = fopen("/proc/cpuinfo","r");
+mcelog.c:			Eprintf("warning: Cannot parse /proc/cpuinfo\n"); 
+mcelog.c:		Eprintf("warning: Cannot open /proc/cpuinfo\n");
+tsc.c:	asprintf(&fn, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", cpu);
+tsc.c:		/* /sys exists, but no cpufreq -- use value from cpuinfo */
+
+That probably means that the needed cpu family/model info is not (or may not) be
+stored at the MCE structure.
+
+> 
+> -Tony
 
