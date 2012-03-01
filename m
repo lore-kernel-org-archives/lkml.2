@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab2CABJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:09:23 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26243 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab2CABJV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:09:21 -0500
-X-Authority-Analysis: v=2.0 cv=Z7xu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=zcWVZ8tiDacA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=i3fdAOzBKgsh7GKaZNQA:9 a=XoFFEdr3Y8g-Iw5RssMA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330564158.25686.230.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] Trace: initialize variable to clear warning
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Zhengwang Ruan <ruan.zhengwang@gmail.com>, fweisbec@gmail.com,
-        mingo@redhat.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Wed, 29 Feb 2012 20:09:18 -0500
-In-Reply-To: <48875.1330555230@turing-police.cc.vt.edu>
-References: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com>
-	 <1330438591.25686.214.camel@gandalf.stny.rr.com>
-	 <48875.1330555230@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1758012Ab2CABMq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:12:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:36989 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756520Ab2CABMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 20:12:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="72069679"
+Message-ID: <4F4ECCE8.90207@linux.intel.com>
+Date: Wed, 29 Feb 2012 17:12:08 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Alan Cox <alan@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk
+ parameter
+References: <cover.1330539597.git.dvhart@linux.intel.com> <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com> <4F4EC73E.40209@linux.intel.com> <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
+In-Reply-To: <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 17:40 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 28 Feb 2012 09:16:31 EST, Steven Rostedt said:
+
+
+On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
+> 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
+>> how do we force the
+>> 192MHz clock setting BEFORE the pch_phub code runs?
 > 
-> > This is a bug in gcc that's fixed in 4.6 and beyond. I don't want to
-> > remove this warning because it will hide a real bug if page2 really does
-> > become uninitialized. If 4.6 gives a warning here, then I'll fix it.
-> 
-> > > -	void *page2;
-> > > +	void *uninitialized_var(page2);
-> 
-> How would you feel about this?
-> 
-> -	void *page2;
-> +	void *page2; /* gcc 4.5 bug causes incorrect "uninitialized" warning */
-> 
-> or something similar?
+> To realize your requirement,
+> I think that set by BIOS is only way.
 
-/* if you get a warning here, upgrade your gcc to 4.6 */
+Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
+the initial console and once the phub driver is loaded, it can make the
+necessary changes and fix things up in the uart port? This would add a
+binding between the pch_uart and pch_phub code.
 
+Thoughts?
 
--- Steve
-
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
