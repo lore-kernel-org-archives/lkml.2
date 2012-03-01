@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab2CAUzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:55:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40245 "EHLO mail.zytor.com"
+	id S932609Ab2CAU5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:57:49 -0500
+Received: from antcom.de ([188.40.178.216]:40688 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932520Ab2CAUyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:54:39 -0500
-Message-ID: <4F4FE1FA.1040008@zytor.com>
-Date: Thu, 01 Mar 2012 12:54:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1757751Ab2CAU5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 15:57:48 -0500
+Message-ID: <4F4FDF2D.5040508@antcom.de>
+Date: Thu, 01 Mar 2012 21:42:21 +0100
+From: Roland Stigge <stigge@antcom.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-To: "Joshua C." <joshuacov@googlemail.com>
-CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com> <4F4EC19F.4050002@zytor.com> <CAKL7Q7rZyUNNP+jy5ajL2KSbC8S4LEQZWG3vuPVSvSOCd_ZGQg@mail.gmail.com> <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com>
-In-Reply-To: <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnd Bergmann <arnd@arndb.de>
+CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
+        alexander.h.duyck@intel.com, eilong@broadcom.com,
+        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, baruch@tkos.co.il,
+        joe@perches.com
+Subject: Re: [PATCH v3] lpc32xx: Added ethernet driver
+References: <1330364539-23152-1-git-send-email-stigge@antcom.de> <201202271949.03144.arnd@arndb.de>
+In-Reply-To: <201202271949.03144.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2012 11:42 AM, Joshua C. wrote:
-> diff --git a/arch/x86/include/asm/kbdleds.h b/arch/x86/include/asm/kbdleds.h
-> new file mode 100644
-> index 0000000..1446a65
-> --- /dev/null
-> +++ b/arch/x86/include/asm/kbdleds.h
-> @@ -0,0 +1,41 @@
-> +#ifndef _ASM_X86_KBDLEDS_H
-> +#define _ASM_X86_KBDLEDS_H
-> +
-> +/*
-> + * Some laptops take the 789uiojklm,. keys as number pad when NumLock is on.
-> + * This seems a good reason to start with NumLock off. On HIL keyboards
-> + * of PARISC machines however there is no NumLock key and everyone expects
-> + * the keypad to be used for numbers. That's why on X86 we ask the bios for
-> + * the correct state.
-> + */
-> +
-> +#ifdef CONFIG_X86
-> +
-> +#include<asm/setup.h>
-> +
-> +static inline int kbd_defleds(void)
-> +{
-> +	return boot_params.kbd_status&  0x20 ? (1<<  VC_NUMLOCK) : 0;
-> +}
-> +
-> +#elif defined(CONFIG_PARISC)
-                  ^^^^^^^^^^^^^
+On 27/02/12 20:49, Arnd Bergmann wrote:
+> Are you sure that npx is actually the origin of this controller?
+> If they only licensed the IP themselves, it would be better to list
+> it under the name of the actual creator so that the next person
+> who has the same core can find it.
 
-Sorry, you can't put non-x86 code in arch/x86.  There are two way to 
-distribute this kind of stuff into arch directories:
+I have no hint for another origin of this core (see manual). However, as
+soon as we get new info on this, we can move the driver easily.
 
-1. You can define an ARCH_ symbol which indicates that <asm/kbdleds.h> 
-is available; otherwise use the fallback routine;
+Thanks to all of you for your suggestions, I will include all the
+suggested changes an repost an updated driver.
 
-2. You can define it in a .c file as an actual function in the affected 
-architectures (x86 and parisc here) and then define it as a weak symbol 
-(grep for __weak) in the common code.
-
-If you don't want to bite off this distribution I can understand it 
-(although it's not up to me, technically, since I'm not the maintainer 
-of the vt subsystem) but if so leave this as an inline in a common place.
-
-	-hpa
+Roland
