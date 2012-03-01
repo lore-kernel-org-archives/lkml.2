@@ -1,258 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965965Ab2CAJV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:21:59 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60948 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965254Ab2CAJQ7 (ORCPT
+	id S965257Ab2CAJXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:23:05 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36817 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338Ab2CAJQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:16:59 -0500
+	Thu, 1 Mar 2012 04:16:51 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2 3/9] hugetlbfs: Use the generic region API and drop local one
-Date: Thu,  1 Mar 2012 14:46:14 +0530
-Message-Id: <1330593380-1361-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 1/9] mm:  move hugetlbfs region tracking function to common code
+Date: Thu,  1 Mar 2012 14:46:12 +0530
+Message-Id: <1330593380-1361-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022923-1618-0000-0000-000000F6167B
+x-cbid: 12022923-9264-0000-0000-000000F813B7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Use the new region functions added.
+This patch moves the hugetlbfs region tracking function to
+common code. We will be using this in later patches in the
+series.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- mm/hugetlb.c |  160 ++++------------------------------------------------------
- 1 files changed, 10 insertions(+), 150 deletions(-)
+ include/linux/region.h |   28 +++++++++
+ mm/Makefile            |    2 +-
+ mm/region.c            |  158 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 187 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/region.h
+ create mode 100644 mm/region.c
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 5f34bd8..9fd6d38 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -21,6 +21,7 @@
- #include <linux/rmap.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/region.h>
- 
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -66,151 +67,10 @@ static DEFINE_SPINLOCK(hugetlb_lock);
-  * or
-  *	down_read(&mm->mmap_sem);
-  *	mutex_lock(&hugetlb_instantiation_mutex);
-+ * shared mapping regions are tracked in inode->i_mapping and
-+ * private mapping regions in vma_rea_struct
+diff --git a/include/linux/region.h b/include/linux/region.h
+new file mode 100644
+index 0000000..a8a5b46
+--- /dev/null
++++ b/include/linux/region.h
+@@ -0,0 +1,28 @@
++/*
++ * Copyright IBM Corporation, 2012
++ * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 + *
-  */
--struct file_region {
--	struct list_head link;
--	long from;
--	long to;
--};
--
--static long region_add(struct list_head *head, long f, long t)
--{
--	struct file_region *rg, *nrg, *trg;
--
--	/* Locate the region we are either in or before. */
--	list_for_each_entry(rg, head, link)
--		if (f <= rg->to)
--			break;
--
--	/* Round our left edge to the current segment if it encloses us. */
--	if (f > rg->from)
--		f = rg->from;
--
--	/* Check for and consume any regions we now overlap with. */
--	nrg = rg;
--	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
--		if (&rg->link == head)
--			break;
--		if (rg->from > t)
--			break;
--
--		/* If this area reaches higher then extend our area to
--		 * include it completely.  If this is not the first area
--		 * which we intend to reuse, free it. */
--		if (rg->to > t)
--			t = rg->to;
--		if (rg != nrg) {
--			list_del(&rg->link);
--			kfree(rg);
--		}
--	}
--	nrg->from = f;
--	nrg->to = t;
--	return 0;
--}
--
--static long region_chg(struct list_head *head, long f, long t)
--{
--	struct file_region *rg, *nrg;
--	long chg = 0;
--
--	/* Locate the region we are before or in. */
--	list_for_each_entry(rg, head, link)
--		if (f <= rg->to)
--			break;
--
--	/* If we are below the current region then a new region is required.
--	 * Subtle, allocate a new region at the position but make it zero
--	 * size such that we can guarantee to record the reservation. */
--	if (&rg->link == head || t < rg->from) {
--		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
--		if (!nrg)
--			return -ENOMEM;
--		nrg->from = f;
--		nrg->to   = f;
--		INIT_LIST_HEAD(&nrg->link);
--		list_add(&nrg->link, rg->link.prev);
--
--		return t - f;
--	}
--
--	/* Round our left edge to the current segment if it encloses us. */
--	if (f > rg->from)
--		f = rg->from;
--	chg = t - f;
--
--	/* Check for and consume any regions we now overlap with. */
--	list_for_each_entry(rg, rg->link.prev, link) {
--		if (&rg->link == head)
--			break;
--		if (rg->from > t)
--			return chg;
--
--		/* We overlap with this area, if it extends further than
--		 * us then we must extend ourselves.  Account for its
--		 * existing reservation. */
--		if (rg->to > t) {
--			chg += rg->to - t;
--			t = rg->to;
--		}
--		chg -= rg->to - rg->from;
--	}
--	return chg;
--}
--
--static long region_truncate(struct list_head *head, long end)
--{
--	struct file_region *rg, *trg;
--	long chg = 0;
--
--	/* Locate the region we are either in or before. */
--	list_for_each_entry(rg, head, link)
--		if (end <= rg->to)
--			break;
--	if (&rg->link == head)
--		return 0;
--
--	/* If we are in the middle of a region then adjust it. */
--	if (end > rg->from) {
--		chg = rg->to - end;
--		rg->to = end;
--		rg = list_entry(rg->link.next, typeof(*rg), link);
--	}
--
--	/* Drop any remaining regions. */
--	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
--		if (&rg->link == head)
--			break;
--		chg += rg->to - rg->from;
--		list_del(&rg->link);
--		kfree(rg);
--	}
--	return chg;
--}
--
--static long region_count(struct list_head *head, long f, long t)
--{
--	struct file_region *rg;
--	long chg = 0;
--
--	/* Locate each segment we overlap with, and count that overlap. */
--	list_for_each_entry(rg, head, link) {
--		int seg_from;
--		int seg_to;
--
--		if (rg->to <= f)
--			continue;
--		if (rg->from >= t)
--			break;
--
--		seg_from = max(rg->from, f);
--		seg_to = min(rg->to, t);
--
--		chg += seg_to - seg_from;
--	}
--
--	return chg;
--}
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2.1 of the GNU Lesser General Public License
++ * as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it would be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++ *
++ */
++
++#ifndef _LINUX_REGION_H
++#define _LINUX_REGION_H
++
++struct file_region {
++	struct list_head link;
++	long from;
++	long to;
++};
++
++extern long region_add(struct list_head *head, long from, long to);
++extern long region_chg(struct list_head *head, long from, long to);
++extern long region_truncate(struct list_head *head, long end);
++extern long region_count(struct list_head *head, long from, long to);
++#endif
+diff --git a/mm/Makefile b/mm/Makefile
+index 50ec00e..8828a1b 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -14,7 +14,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
+ 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
+ 			   $(mmu-y)
+-obj-y += init-mm.o
++obj-y += init-mm.o region.o
  
- /*
-  * Convert the address within this vma to the page offset within
-@@ -981,7 +841,7 @@ static long vma_needs_reservation(struct hstate *h,
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
- 		return region_chg(&inode->i_mapping->private_list,
--							idx, idx + 1);
-+				  idx, idx + 1, 0);
- 
- 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		return 1;
-@@ -991,7 +851,7 @@ static long vma_needs_reservation(struct hstate *h,
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
- 		struct resv_map *reservations = vma_resv_map(vma);
- 
--		err = region_chg(&reservations->regions, idx, idx + 1);
-+		err = region_chg(&reservations->regions, idx, idx + 1, 0);
- 		if (err < 0)
- 			return err;
- 		return 0;
-@@ -1005,14 +865,14 @@ static void vma_commit_reservation(struct hstate *h,
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		region_add(&inode->i_mapping->private_list, idx, idx + 1);
-+		region_add(&inode->i_mapping->private_list, idx, idx + 1, 0);
- 
- 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
- 		struct resv_map *reservations = vma_resv_map(vma);
- 
- 		/* Mark this page used in the map. */
--		region_add(&reservations->regions, idx, idx + 1);
-+		region_add(&reservations->regions, idx, idx + 1, 0);
- 	}
- }
- 
-@@ -2885,7 +2745,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * called to make the mapping read-write. Assume !vma is a shm mapping
- 	 */
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		chg = region_chg(&inode->i_mapping->private_list, from, to);
-+		chg = region_chg(&inode->i_mapping->private_list, from, to, 0);
- 	else {
- 		struct resv_map *resv_map = resv_map_alloc();
- 		if (!resv_map)
-@@ -2926,7 +2786,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * else has to be done for private mappings here
- 	 */
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		region_add(&inode->i_mapping->private_list, from, to);
-+		region_add(&inode->i_mapping->private_list, from, to, 0);
- 	return 0;
- }
- 
+ ifdef CONFIG_NO_BOOTMEM
+ 	obj-y		+= nobootmem.o
+diff --git a/mm/region.c b/mm/region.c
+new file mode 100644
+index 0000000..ab59fe7
+--- /dev/null
++++ b/mm/region.c
+@@ -0,0 +1,158 @@
++/*
++ * Copyright IBM Corporation, 2012
++ * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2.1 of the GNU Lesser General Public License
++ * as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it would be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++ *
++ */
++
++#include <linux/cgroup.h>
++#include <linux/slab.h>
++#include <linux/hugetlb.h>
++#include <linux/list.h>
++#include <linux/region.h>
++
++long region_add(struct list_head *head, long from, long to)
++{
++	struct file_region *rg, *nrg, *trg;
++
++	/* Locate the region we are either in or before. */
++	list_for_each_entry(rg, head, link)
++		if (from <= rg->to)
++			break;
++
++	/* Round our left edge to the current segment if it encloses us. */
++	if (from > rg->from)
++		from = rg->from;
++
++	/* Check for and consume any regions we now overlap with. */
++	nrg = rg;
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (&rg->link == head)
++			break;
++		if (rg->from > to)
++			break;
++
++		/* If this area reaches higher then extend our area to
++		 * include it completely.  If this is not the first area
++		 * which we intend to reuse, free it. */
++		if (rg->to > to)
++			to = rg->to;
++		if (rg != nrg) {
++			list_del(&rg->link);
++			kfree(rg);
++		}
++	}
++	nrg->from = from;
++	nrg->to = to;
++	return 0;
++}
++
++long region_chg(struct list_head *head, long from, long to)
++{
++	struct file_region *rg, *nrg;
++	long chg = 0;
++
++	/* Locate the region we are before or in. */
++	list_for_each_entry(rg, head, link)
++		if (from <= rg->to)
++			break;
++
++	/* If we are below the current region then a new region is required.
++	 * Subtle, allocate a new region at the position but make it zero
++	 * size such that we can guarantee to record the reservation. */
++	if (&rg->link == head || to < rg->from) {
++		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++		if (!nrg)
++			return -ENOMEM;
++		nrg->from = from;
++		nrg->to   = from;
++		INIT_LIST_HEAD(&nrg->link);
++		list_add(&nrg->link, rg->link.prev);
++
++		return to - from;
++	}
++
++	/* Round our left edge to the current segment if it encloses us. */
++	if (from > rg->from)
++		from = rg->from;
++	chg = to - from;
++
++	/* Check for and consume any regions we now overlap with. */
++	list_for_each_entry(rg, rg->link.prev, link) {
++		if (&rg->link == head)
++			break;
++		if (rg->from > to)
++			return chg;
++
++		/* We overlap with this area, if it extends further than
++		 * us then we must extend ourselves.  Account for its
++		 * existing reservation. */
++		if (rg->to > to) {
++			chg += rg->to - to;
++			to = rg->to;
++		}
++		chg -= rg->to - rg->from;
++	}
++	return chg;
++}
++
++long region_truncate(struct list_head *head, long end)
++{
++	struct file_region *rg, *trg;
++	long chg = 0;
++
++	/* Locate the region we are either in or before. */
++	list_for_each_entry(rg, head, link)
++		if (end <= rg->to)
++			break;
++	if (&rg->link == head)
++		return 0;
++
++	/* If we are in the middle of a region then adjust it. */
++	if (end > rg->from) {
++		chg = rg->to - end;
++		rg->to = end;
++		rg = list_entry(rg->link.next, typeof(*rg), link);
++	}
++
++	/* Drop any remaining regions. */
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (&rg->link == head)
++			break;
++		chg += rg->to - rg->from;
++		list_del(&rg->link);
++		kfree(rg);
++	}
++	return chg;
++}
++
++long region_count(struct list_head *head, long from, long to)
++{
++	struct file_region *rg;
++	long chg = 0;
++
++	/* Locate each segment we overlap with, and count that overlap. */
++	list_for_each_entry(rg, head, link) {
++		int seg_from;
++		int seg_to;
++
++		if (rg->to <= from)
++			continue;
++		if (rg->from >= to)
++			break;
++
++		seg_from = max(rg->from, from);
++		seg_to = min(rg->to, to);
++
++		chg += seg_to - seg_from;
++	}
++
++	return chg;
++}
 -- 
 1.7.9
 
