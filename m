@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149Ab2CABic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:38:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:52690 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756233Ab2CABib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:38:31 -0500
-From: Rusty Russell <rusty@ozlabs.org>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty.russell@linaro.org>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: Re: [PATCH] module: debugging check for runaway kthreads
-In-Reply-To: <1330528873-7738-1-git-send-email-dmitry.antipov@linaro.org>
-References: <1330528873-7738-1-git-send-email-dmitry.antipov@linaro.org>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 01 Mar 2012 12:06:54 +1030
-Message-ID: <87vcmp14qx.fsf@rustcorp.com.au>
+	id S1030516Ab2CABk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:40:27 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:41590 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab2CABk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 20:40:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of surovegin@google.com designates 10.229.76.21 as permitted sender) smtp.mail=surovegin@google.com; dkim=pass header.i=surovegin@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120301013200.GF16483@verge.net.au>
+References: <1330536083-13098-1-git-send-email-surovegin@google.com>
+ <20120301011811.GC16483@verge.net.au> <CANrfoUXd4L2bjBO+L8ZBCkc1dfnZahn39sB25zsrUMqGA5zY5A@mail.gmail.com>
+ <20120301013200.GF16483@verge.net.au>
+From: Eugene Surovegin <surovegin@google.com>
+Date: Wed, 29 Feb 2012 17:39:55 -0800
+Message-ID: <CANrfoUVTSh6jWckz2jt9+X6E6FSPL5OwqWNrcXchbo1BwkCLgw@mail.gmail.com>
+Subject: Re: [PATCH] kdump: force page alignment for per-CPU crash notes.
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-kernel@vger.kernel.org, kexec-list <kexec@lists.infradead.org>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012 19:21:13 +0400, Dmitry Antipov <dmitry.antipov@linaro.org> wrote:
-> Debugging option CONFIG_MODULE_KTHREAD_CHECK provides a way to check
-> whether all kernel threads created by the module and have used module
-> code as a thread worker function are really exited when the module is
-> unloaded. The following pseudo-code contains example of an error which
-> is likely to be catched with this debugging check:
+On Wed, Feb 29, 2012 at 5:32 PM, Simon Horman <horms@verge.net.au> wrote:
+> On Wed, Feb 29, 2012 at 05:23:10PM -0800, Eugene Surovegin wrote:
+>> On Wed, Feb 29, 2012 at 5:18 PM, Simon Horman <horms@verge.net.au> wrote:
+>>
+>> > On Wed, Feb 29, 2012 at 09:21:23AM -0800, Eugene Surovegin wrote:
+>> > > Per-CPU allocations are not guaranteed to be physically contiguous.
+>> > > However, kdump kernel and user-space code assumes that per-CPU
+>> > > memory, used for saving CPU registers on crash, is.
+>> > > This can cause corrupted /proc/vmcore in some cases - the main
+>> > > symptom being huge ELF note section.
+>> > >
+>> > > Force page alignment for note_buf_t to ensure that this assumption holds.
+>> >
+>> > Ouch. I'm surprised there is an allocation on crash, perhaps
+>> > it could at least be done earlier? And am I right in thinking
+>> > that this change increases the likely hood that the allocation
+>> > could fail?
+>> >
+>>
+>> I'm not following. This allocation is done on start-up, not on crash.
+>> If you cannot allocate this much memory on system boot, I'm not sure what
+>> else you can do on this system....
+>
+> Sorry, my eyes deceived me. You are correct and I agree.
+>
+> Is it the case that note_buf_t is never larger than PAGE_SIZE?
+> If so I your patch looks good to me.
 
-Nice idea, but that's 101 lines of code, for very little gain.
+Currently, maximum note size is hardcoded in kexec-tools to 1024
+(MAX_NOTE_BYTES).
+Usually it's way less. IIRC on x86_64 it's 336 bytes.
 
-How about a debug option which unmaps all module pages on removal,
-and ensures they don't get reused?  That might catch a multitude of
-problems.  And yes, I realize it might be a bigger patch...
-
-Thanks,
-Rusty.
+--
+Eugene
