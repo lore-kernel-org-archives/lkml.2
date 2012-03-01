@@ -1,59 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab2CAUkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:40:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64519 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609Ab2CAUka (ORCPT
+	id S932504Ab2CAUlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:41:10 -0500
+Received: from nat.nue.novell.com ([195.135.221.2]:63227 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757602Ab2CAUlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:40:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from driver
-Date: Thu, 1 Mar 2012 20:40:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1330630010-11241-1-git-send-email-alan@signal11.us> <1330630010-11241-9-git-send-email-alan@signal11.us> <CACRpkdZK+9gF7N2akyWw=tvcBS2X2FmSd2-SiNKiuRgUCYXx7w@mail.gmail.com>
-In-Reply-To: <CACRpkdZK+9gF7N2akyWw=tvcBS2X2FmSd2-SiNKiuRgUCYXx7w@mail.gmail.com>
+	Thu, 1 Mar 2012 15:41:08 -0500
+Message-ID: <4F4FDEDD.1000701@suse.com>
+Date: Thu, 01 Mar 2012 12:41:01 -0800
+From: Lee Duncan <lduncan@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Kai Makisara <Kai.Makisara@kolumbus.fi>
+Subject: [PATCH] SCSI st: expand ability to write immediate filemarks
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203012040.18158.arnd@arndb.de>
-X-Provags-ID: V02:K0:BYepvyfsK/lgb2epAWEEXkipjRjw8BZoI4rDWGeNOQR
- XFwXVwt8PGccWtGbePZGXwIEAxitbdLTaalRe955W7OehhPcOz
- L6QLEIjKhDa7+9ZOtZ1G6T4rZJrhBYsNYUFUMsBbPGdCKaxsbE
- rXu0BD+CT734pQ2cnzX8qWxpRqaylpHjd/SYB21eqUFJWP4QYe
- RQV1i+JZwrsm9Tm8rFOiT6Xao/zCyjHDAact498LyhS3xxdfCY
- T7jmfhqUoompV1SIfzxkSQpDGPDL2n3qlHTXtnzfzdLwfgyEIU
- 5MgJpdrpoJYAEY1fefD+GH/4cz2p9NI9ZkVS2QQuhDwnuJfmE4
- c2Xl1On3sbRgDhtXl31E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 March 2012, Linus Walleij wrote:
-> The kernel is full of this kind of stuff (drivers/mfd/twl4030-irq.c):
-> 
-> #ifdef CONFIG_ARM
->         /* ARM requires an extra step to clear IRQ_NOREQUEST, which it
->          * sets on behalf of every irq_chip.  Also sets IRQ_NOPROBE.
->          */
->         set_irq_flags(irq, IRQF_VALID);
-> #else
->         /* same effect on other architectures */
->         irq_set_noprobe(irq);
-> #endif
+The st tape driver recently added the MTWEOFI ioctl, which writes
+a tape filemark (EOF), like the MTWEOF ioctl, except that MTWEOFI
+returns immediately. This makes certain applications, like backup
+software, run much more quickly on buffered tape drives.
 
-That is the implementation of an irq_chip, not a random device driver.
+Since legacy applications do not know about this new MTWEOFI ioctl,
+this patch adds a new ioctl option that tells the st driver to return
+immediately when writing an EOF (i.e. a filemark). This new flag
+is much like the existing flag that tells the st driver to perform
+writes (and certain other IOs) immediately, but this new flag only
+applies to writing EOFs.
 
-	Arnd
+This new feature is controlled via the MTSETDRVBUFFER ioctl, using
+the newly-defined MT_ST_NOWAIT_EOF flag.
+
+Use of this new feature is displayed via the sysfs tape "options"
+attribute.
+
+The st documentation was updated to mention this new flag, as well
+as the problems that can occur from using it.
+
+Signed-off-by: Lee Duncan <lduncan@suse.com>
+---
+ Documentation/scsi/st.txt |    4 ++++
+ drivers/scsi/st.c         |   21 ++++++++++++++++++---
+ drivers/scsi/st.h         |    1 +
+ include/linux/mtio.h      |    1 +
+ 4 files changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/scsi/st.txt b/Documentation/scsi/st.txt
+index 691ca29..14b6e5a 100644
+--- a/Documentation/scsi/st.txt
++++ b/Documentation/scsi/st.txt
+@@ -390,6 +390,10 @@ MTSETDRVBUFFER
+ 	     MT_ST_SYSV sets the SYSV semantics (mode)
+ 	     MT_ST_NOWAIT enables immediate mode (i.e., don't wait for
+ 	        the command to finish) for some commands (e.g., rewind)
++	     MT_ST_NOWAIT_EOF enables immediate filemark mode (i.e. when
++	        writing a filemark, don't wait for it to complete). Please
++		see the BASICS note about MTWEOFI with respect to the
++		possible dangers of writing immediate filemarks.
+ 	     MT_ST_SILI enables setting the SILI bit in SCSI commands when
+ 		reading in variable block mode to enhance performance when
+ 		reading blocks shorter than the byte count; set this only
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 9262cdf..8c663e1 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -1106,6 +1106,12 @@ static int check_tape(struct scsi_tape *STp, struct file *filp)
+                                     STp->drv_buffer));
+ 		}
+ 		STp->drv_write_prot = ((STp->buffer)->b_data[2] & 0x80) != 0;
++		if (!STp->drv_buffer && STp->immediate_filemark) {
++			printk(KERN_WARNING
++			    "%s: non-buffered tape: disabling writing immediate filemarks\n",
++			    name);
++			STp->immediate_filemark = 0;
++		}
+ 	}
+ 	st_release_request(SRpnt);
+ 	SRpnt = NULL;
+@@ -1314,6 +1320,8 @@ static int st_flush(struct file *filp, fl_owner_t id)
+ 
+ 		memset(cmd, 0, MAX_COMMAND_SIZE);
+ 		cmd[0] = WRITE_FILEMARKS;
++		if (STp->immediate_filemark)
++			cmd[1] = 1;
+ 		cmd[4] = 1 + STp->two_fm;
+ 
+ 		SRpnt = st_do_scsi(NULL, STp, cmd, 0, DMA_NONE,
+@@ -2181,8 +2189,9 @@ static void st_log_options(struct scsi_tape * STp, struct st_modedef * STm, char
+ 		       name, STm->defaults_for_writes, STp->omit_blklims, STp->can_partitions,
+ 		       STp->scsi2_logical);
+ 		printk(KERN_INFO
+-		       "%s:    sysv: %d nowait: %d sili: %d\n", name, STm->sysv, STp->immediate,
+-			STp->sili);
++		       "%s:    sysv: %d nowait: %d sili: %d nowait_filemark: %d\n",
++		       name, STm->sysv, STp->immediate, STp->sili,
++		       STp->immediate_filemark);
+ 		printk(KERN_INFO "%s:    debugging: %d\n",
+ 		       name, debugging);
+ 	}
+@@ -2224,6 +2233,7 @@ static int st_set_options(struct scsi_tape *STp, long options)
+ 			STp->can_partitions = (options & MT_ST_CAN_PARTITIONS) != 0;
+ 		STp->scsi2_logical = (options & MT_ST_SCSI2LOGICAL) != 0;
+ 		STp->immediate = (options & MT_ST_NOWAIT) != 0;
++		STp->immediate_filemark = (options & MT_ST_NOWAIT_EOF) != 0;
+ 		STm->sysv = (options & MT_ST_SYSV) != 0;
+ 		STp->sili = (options & MT_ST_SILI) != 0;
+ 		DEB( debugging = (options & MT_ST_DEBUGGING) != 0;
+@@ -2255,6 +2265,8 @@ static int st_set_options(struct scsi_tape *STp, long options)
+ 			STp->scsi2_logical = value;
+ 		if ((options & MT_ST_NOWAIT) != 0)
+ 			STp->immediate = value;
++		if ((options & MT_ST_NOWAIT_EOF) != 0)
++			STp->immediate_filemark = value;
+ 		if ((options & MT_ST_SYSV) != 0)
+ 			STm->sysv = value;
+ 		if ((options & MT_ST_SILI) != 0)
+@@ -2714,7 +2726,8 @@ static int st_int_ioctl(struct scsi_tape *STp, unsigned int cmd_in, unsigned lon
+ 		cmd[0] = WRITE_FILEMARKS;
+ 		if (cmd_in == MTWSM)
+ 			cmd[1] = 2;
+-		if (cmd_in == MTWEOFI)
++		if (cmd_in == MTWEOFI ||
++		    (cmd_in == MTWEOF && STp->immediate_filemark))
+ 			cmd[1] |= 1;
+ 		cmd[2] = (arg >> 16);
+ 		cmd[3] = (arg >> 8);
+@@ -4093,6 +4106,7 @@ static int st_probe(struct device *dev)
+ 	tpnt->scsi2_logical = ST_SCSI2LOGICAL;
+ 	tpnt->sili = ST_SILI;
+ 	tpnt->immediate = ST_NOWAIT;
++	tpnt->immediate_filemark = 0;
+ 	tpnt->default_drvbuffer = 0xff;		/* No forced buffering */
+ 	tpnt->partition = 0;
+ 	tpnt->new_partition = 0;
+@@ -4478,6 +4492,7 @@ st_options_show(struct device *dev, struct device_attribute *attr, char *buf)
+ 	options |= STp->scsi2_logical ? MT_ST_SCSI2LOGICAL : 0;
+ 	options |= STm->sysv ? MT_ST_SYSV : 0;
+ 	options |= STp->immediate ? MT_ST_NOWAIT : 0;
++	options |= STp->immediate_filemark ? MT_ST_NOWAIT_EOF : 0;
+ 	options |= STp->sili ? MT_ST_SILI : 0;
+ 
+ 	l = snprintf(buf, PAGE_SIZE, "0x%08x\n", options);
+diff --git a/drivers/scsi/st.h b/drivers/scsi/st.h
+index f91a67c..ea35632 100644
+--- a/drivers/scsi/st.h
++++ b/drivers/scsi/st.h
+@@ -120,6 +120,7 @@ struct scsi_tape {
+ 	unsigned char c_algo;			/* compression algorithm */
+ 	unsigned char pos_unknown;			/* after reset position unknown */
+ 	unsigned char sili;			/* use SILI when reading in variable b mode */
++	unsigned char immediate_filemark;	/* write filemark immediately */
+ 	int tape_type;
+ 	int long_timeout;	/* timeout for commands known to take long time */
+ 
+diff --git a/include/linux/mtio.h b/include/linux/mtio.h
+index 8f82575..18543e2 100644
+--- a/include/linux/mtio.h
++++ b/include/linux/mtio.h
+@@ -194,6 +194,7 @@ struct	mtpos {
+ #define MT_ST_SYSV              0x1000
+ #define MT_ST_NOWAIT            0x2000
+ #define MT_ST_SILI		0x4000
++#define MT_ST_NOWAIT_EOF	0x8000
+ 
+ /* The mode parameters to be controlled. Parameter chosen with bits 20-28 */
+ #define MT_ST_CLEAR_DEFAULT	0xfffff
+-- 
+1.7.8.3
+
