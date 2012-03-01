@@ -1,146 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab2CAA5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:57:12 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47874 "EHLO
+	id S1030400Ab2CAA6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:58:01 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48254 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2CAA5K (ORCPT
+	with ESMTP id S932463Ab2CAA5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:57:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.115.105 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
+	Wed, 29 Feb 2012 19:57:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.178.65 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v6 0/5] MIPS: Octeon: Use Device Tree.
-Date: Wed, 29 Feb 2012 16:56:57 -0800
-Message-Id: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
+Date: Wed, 29 Feb 2012 16:57:01 -0800
+Message-Id: <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-This code has now had extensive testing, it is running on more
-than 10 different boards and SOC combinations.
+Select IRQ_DOMAIN so the core irq_domain code and supply
+irq_create_of_mapping().
 
-The patches in this set are all in the arch/mips tree and should
-probably be merged by Ralf.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/Kconfig                    |    1 +
+ arch/mips/cavium-octeon/octeon-irq.c |  301 +++++++++++++++++++++++++++-------
+ 2 files changed, 239 insertions(+), 63 deletions(-)
 
-They do depend on this libfdt patch:
-
-http://marc.info/?l=linux-kernel&m=133054335203615
-
-New in v6:
-
-o Device Tree bindings updated based on feedback and more actual use.
-
-o Use of irq_domain support added to recent kernels.
-
-New in v5:
-
-o New irq triggering mode constants.
-
-o Boot protocol to pass flattened device tree from bootloader.  This
-  protocol may change based on attempts to arrive at a common protocol
-  for all MIPS boards.
-
-New in v4:
-
-o Cleanup and error checking suggested by Sergei Shtylyov.
-
-o Use device tree passed by bootloader if present.
-
-New in v3:
-
-o More updates to device tree bindings, and perhaps more importantly
-  descriptions/definitions of the bindings
-
-o Cleanup and style improvements as suggested by Grant Likley.
-
-o Omitted all the driver changes, as they are unchanged from the last
-  set, and at this stage the patches are just an RFC.
-
-New in v2:
-
-o Changed many device tree bindings.  They should be closer to the
-  standard naming scheme now.
-
-o Editing of the template device tree is done in the flattened form
-  using libfdt.
-
-o Standard platform driver functions used in preference to the
-  of_platform variety.
-
-v1:
-
-Background: The Octeon family of SOCs has a variety of on-chip
-controllers for Ethernet, MDIO, I2C, and several other I/O devices.
-These chips are used on boards with a great variety of different
-configurations.  To date, the configuration and bus topology
-information has been hard coded in the drivers and support code.
-
-To facilitate supporting new chips and boards, we are using the Device
-Tree to encode the configuration information.  The migration from the
-legacy approach to the device tree is as follows:
-
-o A device tree template is statically linked into the kernel image.
-  Based on SOC type and board type, legacy configuration probing code
-  is used to prune and patch the device tree template.
-
-o New SOCs and boards will directly use a device tree passed by the
-  bootloader.
-
-
-David Daney (5):
-  MIPS: Octeon: Add device tree source files.
-  MIPS: Don't define early_init_devtree() and device_tree_init() in
-    prom.c for CPU_CAVIUM_OCTEON
-  MIPS: Octeon: Add irq handlers for GPIO interrupts.
-  MIPS: Octeon: Setup irq_domains for interrupts.
-  MIPS: Octeon: Initialize and fixup device tree.
-
- .../bindings/ata/cavium-compact-flash.txt          |   30 +
- .../bindings/gpio/cavium-octeon-gpio.txt           |   48 ++
- .../devicetree/bindings/i2c/cavium-i2c.txt         |   34 ++
- .../devicetree/bindings/mips/cavium/bootbus.txt    |  126 ++++
- .../devicetree/bindings/mips/cavium/ciu.txt        |   26 +
- .../devicetree/bindings/mips/cavium/ciu2.txt       |   27 +
- .../devicetree/bindings/mips/cavium/dma-engine.txt |   21 +
- .../devicetree/bindings/mips/cavium/uctl.txt       |   47 ++
- .../devicetree/bindings/net/cavium-mdio.txt        |   27 +
- .../devicetree/bindings/net/cavium-mix.txt         |   40 ++
- .../devicetree/bindings/net/cavium-pip.txt         |   98 +++
- .../devicetree/bindings/serial/cavium-uart.txt     |   19 +
- arch/mips/Kconfig                                  |    3 +
- arch/mips/cavium-octeon/.gitignore                 |    2 +
- arch/mips/cavium-octeon/Makefile                   |   16 +
- arch/mips/cavium-octeon/octeon-irq.c               |  395 +++++++++++--
- arch/mips/cavium-octeon/octeon-platform.c          |  523 ++++++++++++++++-
- arch/mips/cavium-octeon/octeon_3xxx.dts            |  571 ++++++++++++++++++
- arch/mips/cavium-octeon/octeon_68xx.dts            |  625 ++++++++++++++++++++
- arch/mips/cavium-octeon/setup.c                    |   45 ++
- arch/mips/kernel/prom.c                            |    2 +
- 21 files changed, 2661 insertions(+), 64 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/cavium-octeon-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/i2c/cavium-i2c.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu2.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mdio.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mix.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-pip.txt
- create mode 100644 Documentation/devicetree/bindings/serial/cavium-uart.txt
- create mode 100644 arch/mips/cavium-octeon/.gitignore
- create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
- create mode 100644 arch/mips/cavium-octeon/octeon_68xx.dts
-
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index ce30e2f..01344ae 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -1432,6 +1432,7 @@ config CPU_CAVIUM_OCTEON
+ 	select WEAK_ORDERING
+ 	select CPU_SUPPORTS_HIGHMEM
+ 	select CPU_SUPPORTS_HUGEPAGES
++	select IRQ_DOMAIN
+ 	help
+ 	  The Cavium Octeon processor is a highly integrated chip containing
+ 	  many ethernet hardware widgets for networking tasks. The processor
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index bdcedd3..e9f2f6c 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -3,14 +3,16 @@
+  * License.  See the file "COPYING" in the main directory of this archive
+  * for more details.
+  *
+- * Copyright (C) 2004-2008, 2009, 2010, 2011 Cavium Networks
++ * Copyright (C) 2004-2008, 2009, 2010, 2011, 2012 Cavium Networks
+  */
+ 
+ #include <linux/interrupt.h>
++#include <linux/irqdomain.h>
+ #include <linux/bitops.h>
+ #include <linux/percpu.h>
+ #include <linux/irq.h>
+ #include <linux/smp.h>
++#include <linux/of.h>
+ 
+ #include <asm/octeon/octeon.h>
+ 
+@@ -42,20 +44,27 @@ struct octeon_core_chip_data {
+ 
+ static struct octeon_core_chip_data octeon_irq_core_chip_data[MIPS_CORE_IRQ_LINES];
+ 
+-static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
++static void __init octeon_irq_set_ciu_mapping(unsigned int irq,
++					      unsigned int line,
++					      unsigned int bit,
++					      struct irq_domain *domain,
+ 					      struct irq_chip *chip,
+ 					      irq_flow_handler_t handler)
+ {
++	struct irq_data *irqd;
+ 	union octeon_ciu_chip_data cd;
+ 
+ 	irq_set_chip_and_handler(irq, chip, handler);
+-
+ 	cd.l = 0;
+ 	cd.s.line = line;
+ 	cd.s.bit = bit;
+ 
+ 	irq_set_chip_data(irq, cd.p);
+ 	octeon_irq_ciu_to_irq[line][bit] = irq;
++
++	irqd = irq_get_irq_data(irq);
++	irqd->hwirq = line << 6 | bit;
++	irqd->domain = domain;
+ }
+ 
+ static int octeon_coreid_for_cpu(int cpu)
+@@ -855,6 +864,107 @@ static struct irq_chip octeon_irq_chip_ciu_wd = {
+ 	.irq_mask = octeon_irq_dummy_mask,
+ };
+ 
++static int octeon_irq_gpio_xlat(struct irq_domain *d,
++				struct device_node *node,
++				const u32 *intspec,
++				unsigned int intsize,
++				unsigned long *out_hwirq,
++				unsigned int *out_type)
++{
++	unsigned int irq;
++	unsigned int type;
++	unsigned int ciu = 0, bit = 0;
++	unsigned int pin;
++	unsigned int trigger;
++	bool set_edge_handler = false;
++
++	if (d->of_node != node)
++		return -EINVAL;
++
++	if (intsize < 2)
++		return -EINVAL;
++
++	pin = intspec[0];
++	if (pin >= 16)
++		return -EINVAL;
++
++	trigger = intspec[1];
++
++	switch (trigger) {
++	case 1:
++		type = IRQ_TYPE_EDGE_RISING;
++		set_edge_handler = true;
++		break;
++	case 2:
++		type = IRQ_TYPE_EDGE_FALLING;
++		set_edge_handler = true;
++		break;
++	case 4:
++		type = IRQ_TYPE_LEVEL_HIGH;
++		break;
++	case 8:
++		type = IRQ_TYPE_LEVEL_LOW;
++		break;
++	default:
++		pr_err("Error: (%s) Invalid irq trigger specification: %x\n",
++		       node->name,
++		       trigger);
++		type = IRQ_TYPE_LEVEL_LOW;
++		break;
++	}
++	*out_type = type;
++	*out_hwirq = ((unsigned long)d->host_data) + pin;
++
++	ciu = *out_hwirq >> 6;
++	bit = *out_hwirq & 0x3f;
++
++	irq = octeon_irq_ciu_to_irq[ciu][bit];
++
++	if (set_edge_handler)
++		__irq_set_handler(irq, handle_edge_irq, 0, NULL);
++
++	return 0;
++}
++
++static int octeon_irq_ciu_xlat(struct irq_domain *d,
++			       struct device_node *node,
++			       const u32 *intspec,
++			       unsigned int intsize,
++			       unsigned long *out_hwirq,
++			       unsigned int *out_type)
++{
++	unsigned int ciu, bit;
++
++	ciu = intspec[0];
++	bit = intspec[1];
++
++	if (ciu > 1 || bit > 63)
++		return -EINVAL;
++
++	if (octeon_irq_ciu_to_irq[ciu][bit] == 0)
++		return -EINVAL;
++
++	*out_hwirq = (ciu << 6) | bit;
++	*out_type = 0;
++
++	return 0;
++}
++static int octeon_irq_dummy_map(struct irq_domain *d,
++				unsigned int virq, irq_hw_number_t hw)
++{
++	return 0;
++}
++
++static struct irq_domain_ops octeon_irq_domain_ciu_ops = {
++	.map = octeon_irq_dummy_map,
++	.xlate = octeon_irq_ciu_xlat,
++};
++
++static struct irq_domain_ops octeon_irq_domain_gpio_ops = {
++	.map = octeon_irq_dummy_map,
++	.xlate = octeon_irq_gpio_xlat,
++};
++
+ static void octeon_irq_ip2_v1(void)
+ {
+ 	const unsigned long core_id = cvmx_get_core_num();
+@@ -982,6 +1092,10 @@ static void __init octeon_irq_init_ciu(void)
+ 	struct irq_chip *chip_mbox;
+ 	struct irq_chip *chip_wd;
+ 	struct irq_chip *chip_gpio;
++	struct device_node *gpio_node;
++	struct device_node *ciu_node;
++	struct irq_domain *gpio_domain;
++	struct irq_domain *ciu_domain;
+ 
+ 	octeon_irq_init_ciu_percpu();
+ 	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
+@@ -1011,83 +1125,144 @@ static void __init octeon_irq_init_ciu(void)
+ 	/* Mips internal */
+ 	octeon_irq_init_core();
+ 
++	gpio_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-gpio");
++	ciu_node = of_find_compatible_node(NULL, NULL, "cavium,octeon-3860-ciu");
++	/* gpio domain host_data is the base hwirq number. */
++	gpio_domain = irq_domain_add_linear(gpio_node, 16, &octeon_irq_domain_gpio_ops, (void *)16);
++	ciu_domain = irq_domain_add_tree(ciu_node, &octeon_irq_domain_ciu_ops, NULL);
++
+ 	/* CIU_0 */
+ 	for (i = 0; i < 16; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0,
++					   ciu_domain, chip, handle_level_irq);
++
+ 	for (i = 0; i < 16; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16,
++					   gpio_domain, chip_gpio, handle_level_irq);
+ 
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32,
++				   ciu_domain, chip_mbox, handle_percpu_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33,
++				   ciu_domain, chip_mbox, handle_percpu_irq);
+ 
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART0, 0, 34, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART1, 0, 35, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART0, 0, 34,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART1, 0, 35,
++				   ciu_domain, chip, handle_level_irq);
+ 
+ 	for (i = 0; i < 4; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_INT0, 0, i + 36, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_INT0, 0, i + 36,
++					   ciu_domain, chip, handle_level_irq);
+ 	for (i = 0; i < 4; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_MSI0, 0, i + 40, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_PCI_MSI0, 0, i + 40,
++					   ciu_domain, chip, handle_level_irq);
+ 
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI, 0, 45, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RML, 0, 46, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TRACE0, 0, 47, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI, 0, 45,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RML, 0, 46,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TRACE0, 0, 47,
++				   ciu_domain, chip, handle_level_irq);
+ 
+ 	for (i = 0; i < 2; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GMX_DRP0, 0, i + 48, chip_edge, handle_edge_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GMX_DRP0, 0, i + 48,
++					   ciu_domain, chip_edge, handle_edge_irq);
+ 
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPD_DRP, 0, 50, chip_edge, handle_edge_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_KEY_ZERO, 0, 51, chip_edge, handle_edge_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPD_DRP, 0, 50,
++				   ciu_domain, chip_edge, handle_edge_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_KEY_ZERO, 0, 51,
++				   ciu_domain, chip_edge, handle_edge_irq);
+ 
+ 	for (i = 0; i < 4; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_TIMER0, 0, i + 52, chip_edge, handle_edge_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB0, 0, 56, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PCM, 0, 57, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MPI, 0, 58, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI2, 0, 59, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_POWIQ, 0, 60, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPDPPTHR, 0, 61, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII0, 0, 62, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_BOOTDMA, 0, 63, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_TIMER0, 0, i + 52,
++					   ciu_domain, chip_edge, handle_edge_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB0, 0, 56,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PCM, 0, 57,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MPI, 0, 58,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TWSI2, 0, 59,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_POWIQ, 0, 60,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPDPPTHR, 0, 61,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII0, 0, 62,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_BOOTDMA, 0, 63,
++				   ciu_domain, chip, handle_level_irq);
+ 
+ 	/* CIU_1 */
+ 	for (i = 0; i < 16; i++)
+-		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WDOG0, 1, i + 0, chip_wd, handle_level_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART2, 1, 16, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII1, 1, 18, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_NAND, 1, 19, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MIO, 1, 20, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IOB, 1, 21, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_FPA, 1, 22, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_POW, 1, 23, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_L2C, 1, 24, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPD, 1, 25, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PIP, 1, 26, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PKO, 1, 27, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_ZIP, 1, 28, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TIM, 1, 29, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RAD, 1, 30, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_KEY, 1, 31, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DFA, 1, 32, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USBCTL, 1, 33, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SLI, 1, 34, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DPI, 1, 35, chip, handle_level_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_AGX0, 1, 36, chip, handle_level_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_AGL, 1, 46, chip, handle_level_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PTP, 1, 47, chip_edge, handle_edge_irq);
+-
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PEM0, 1, 48, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PEM1, 1, 49, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SRIO0, 1, 50, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SRIO1, 1, 51, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_LMC0, 1, 52, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DFM, 1, 56, chip, handle_level_irq);
+-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RST, 1, 63, chip, handle_level_irq);
++		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WDOG0, 1, i + 0,
++					   ciu_domain, chip_wd, handle_level_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_UART2, 1, 16,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USB1, 1, 17,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MII1, 1, 18,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_NAND, 1, 19,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MIO, 1, 20,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IOB, 1, 21,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_FPA, 1, 22,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_POW, 1, 23,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_L2C, 1, 24,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_IPD, 1, 25,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PIP, 1, 26,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PKO, 1, 27,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_ZIP, 1, 28,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_TIM, 1, 29,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RAD, 1, 30,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_KEY, 1, 31,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DFA, 1, 32,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_USBCTL, 1, 33,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SLI, 1, 34,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DPI, 1, 35,
++				   ciu_domain, chip, handle_level_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_AGX0, 1, 36,
++				   ciu_domain, chip, handle_level_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_AGL, 1, 46,
++				   ciu_domain, chip, handle_level_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PTP, 1, 47,
++				   ciu_domain, chip_edge, handle_edge_irq);
++
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PEM0, 1, 48,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_PEM1, 1, 49,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SRIO0, 1, 50,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_SRIO1, 1, 51,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_LMC0, 1, 52,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_DFM, 1, 56,
++				   ciu_domain, chip, handle_level_irq);
++	octeon_irq_set_ciu_mapping(OCTEON_IRQ_RST, 1, 63,
++				   ciu_domain, chip, handle_level_irq);
+ 
+ 	/* Enable the CIU lines */
+ 	set_c0_status(STATUSF_IP3 | STATUSF_IP2);
 -- 
 1.7.2.3
 
