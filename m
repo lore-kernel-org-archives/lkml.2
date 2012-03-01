@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031090Ab2CAOGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:06:47 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:26031 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031001Ab2CAOGo (ORCPT
+	id S1759352Ab2CAOMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:12:12 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757616Ab2CAOML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:06:44 -0500
-Message-ID: <4F4F8267.5030408@atmel.com>
-Date: Thu, 01 Mar 2012 15:06:31 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 1 Mar 2012 09:12:11 -0500
+Date: Thu, 1 Mar 2012 14:11:53 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 1/4] x86: add NO_IRQ macro
+Message-ID: <20120301141153.GH7363@n2100.arm.linux.org.uk>
+References: <cover.1330607068.git.rubini@gnudd.com> <6bda7538144dce0bf5780df3d0601147dae753b5.1330607068.git.rubini@gnudd.com> <20120301140753.5c44e27e@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] at91: fixes for DMA registration (3.3-rc)
-References: <4F4F49E1.4020902@atmel.com> <201203011149.42948.arnd@arndb.de> <4F4F7254.9060306@atmel.com> <201203011403.11369.arnd@arndb.de>
-In-Reply-To: <201203011403.11369.arnd@arndb.de>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301140753.5c44e27e@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2012 03:03 PM, Arnd Bergmann :
-> On Thursday 01 March 2012, Nicolas Ferre wrote:
->> As discussed on the mailing-list, we experience an out-of-sync situation
->> between the DMA controller driver and the related code in AT91 devices files.
->>
->> Those two patches already queued for 3.4 are correcting the problem that we found on
->> the current 3.3-rc kernels. I have tested that the DMA driver is registering well
->> with those fixes applied.
->>
->> Can you please pull them in a "fixes" branch and send them to Linus before 3.3-final?
+On Thu, Mar 01, 2012 at 02:07:53PM +0000, Alan Cox wrote:
+> On Thu, 1 Mar 2012 14:28:36 +0100
+> Alessandro Rubini <rubini@gnudd.com> wrote:
 > 
-> Hi Nicolas,
+> > This is needed to compile AMBA drivers. Most architectures define
+> > NO_IRQ as -1, and this does the same for the PC.
 > 
-> I've just sent a pull request for bug fixes yesterday, so I'll wait
-> until Linus has pulled that one and probably a few days before I
-> send another one.
+> NAK
+> 
+> "No IRQ" is 0. There are a few platforms which incorrectly still define it
+> as -1 but they are broken and in fact many drivers won't work with
+> platforms that still incorrectly use -1. Nothing should be using a
+> NO_IRQ define.
+> 
+> Fix the users.
 
-Sure.
+The users in this area are fixed and have been 'fixed' since December, it's
+just going to take a couple of kernel cycles to get rid of it in a sane way
+without causing breakage.  And yes, this has fallen squarely on my shoulders
+to 'fix' because no one else is the least bit interested in the problem.
 
-> I have applied it to the fixes branch now but not updated the
-> tag that I sent him.
-
-Ok, thanks a lot for your quick help.
-
-Best regards,
--- 
-Nicolas Ferre
+So, as I'm about the only one who has done any work towards this, you can
+expect NO_IRQ to take a long time to finally go away.
