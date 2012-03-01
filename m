@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030957Ab2CANMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 08:12:14 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:50693 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758071Ab2CANMM (ORCPT
+	id S1759262Ab2CANTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 08:19:48 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:41971 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758071Ab2CANTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 08:12:12 -0500
-Date: Thu, 1 Mar 2012 16:13:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: santosh nayak <santoshprasadnayak@gmail.com>, bart.de.schuymer@pandora.be,
-        kaber@trash.net, shemminger@vyatta.com, davem@davemloft.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size parametre.
-Message-ID: <20120301131356.GS1003@mwanda>
-References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
- <20120301101809.GA6488@1984>
- <20120301113736.GE22598@mwanda>
- <20120301130637.GB7429@1984>
+	Thu, 1 Mar 2012 08:19:47 -0500
+Message-ID: <4F4F7761.2040607@atmel.com>
+Date: Thu, 01 Mar 2012 14:19:29 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3sseE1tnmEs+TkKq"
-Content-Disposition: inline
-In-Reply-To: <20120301130637.GB7429@1984>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F4F759D.005F,ss=1,re=0.000,fgs=0
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [GIT PULL] at91: irqdomain and device tree for AIC and GPIO
+References: <4F4B8FCF.2050702@atmel.com>
+In-Reply-To: <4F4B8FCF.2050702@atmel.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/27/2012 03:14 PM, Nicolas Ferre :
+> Hi,
 
---3sseE1tnmEs+TkKq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Thu, Mar 01, 2012 at 02:06:37PM +0100, Pablo Neira Ayuso wrote:
-> > Where do we clear "m"?=20
-> >=20
-> > include/linux/netfilter/x_tables.h
-> >    287  struct xt_match {
-> >    288          struct list_head list;
-> >    289 =20
-> >    290          const char name[XT_EXTENSION_MAXNAMELEN];
-> >    291          u_int8_t revision;
-> >    292 =20
-> >=20
-> > There is a 2 byte holes here between "revision" and "match()".  We
-> > copy three bytes past the end of name, so we include revision and
-> > the hole.
-> >=20
-> > But maybe we memset it somewhere?  I'm not sure.
->=20
-> xt_match instances are declared as static for each module so it's
-> allocated in the BSS (already zeroed), is that what you mean?
->=20
+Hold on with this pull request:
+- I can now base the similar one on top of the "cleanup2" branch
+- the irqdomain/next is now considered stable so I can
+  merge it beforehand
+- I can add some more material to it (still related to 
+  AT91 the Device Tree conversion)
 
-Yeah.  I didn't know how that worked.  Thanks.
+Thanks, best regards,
 
-regards,
-dan carpenter
+> This series adds irqdomain and device tree support for both the
+> interrupt and GPIO controllers of AT91 SoC. It has been discussed a lot
+> and I think that I have addressed all comments and advices.
+> 
+> This irqdomain work takes advantage of Grant's patch series that is present
+> in:
+> git://git.secretlab.ca/git/linux-2.6 irqdomain/next
+> And it will not compile without it. So, the inclusion of such work is needed
+> before we can apply this series on mainline.
+> 
+> On the other hand, I have not included Grant's branch in mine on purpose: All
+> this simply goes on top of current AT91 material that is already in arm-soc
+> (merge of all at91/* branches). You can find it in the AT91 git tree with
+> at91-3.4-base2 branch name). I have made merge tests and all seems to integrate
+> without conflicts.
+> 
+> 
+> The following changes since commit 11a25ea7e4f870a37093258f577e11cec703e37e:
+> 
+>   Merge remote-tracking branch 'armsoc/at91/9x5' into at91-3.4-base2 (2012-02-11 14:33:03 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://github.com/at91linux/linux-at91.git at91-3.4-base2+aic_gpio
+> 
+> for you to fetch changes up to 29751864cc12425fe2b3a75658baea9ebe54609e:
+> 
+>   ARM: at91: AIC and GPIO IRQ device tree initialization (2012-02-27 14:38:08 +0100)
+> 
+> ----------------------------------------------------------------
+> Nicolas Ferre (10):
+>       ARM: at91/aic: add irq domain and device tree support
+>       ARM: at91/snapper9260: move gpio_to_irq out of structure initialization
+>       ARM/USB: at91/ohci-at91: remove the use of irq_to_gpio
+>       ARM: at91/gpio: change comments and one variable name
+>       ARM: at91/gpio: add irqdomain and DT support
+>       ARM: at91/gpio: non-DT builds do not have gpio_chip.of_node field
+>       ARM: at91/gpio: add .to_irq gpio_chip handler
+>       ARM: at91/gpio: remove the static specification of gpio_chip.base
+>       ARM: at91/board-dt: remove AIC irq domain from board file
+>       ARM: at91: AIC and GPIO IRQ device tree initialization
+> 
+>  .../devicetree/bindings/arm/atmel-aic.txt          |   38 ++
+>  .../devicetree/bindings/gpio/gpio_atmel.txt        |   20 +
+>  arch/arm/Kconfig                                   |    1 +
+>  arch/arm/boot/dts/at91sam9g20.dtsi                 |   48 ++-
+>  arch/arm/boot/dts/at91sam9g45.dtsi                 |   66 +++-
+>  arch/arm/boot/dts/at91sam9x5.dtsi                  |    4 +
+>  arch/arm/mach-at91/board-dt.c                      |   13 +-
+>  arch/arm/mach-at91/board-snapper9260.c             |   10 +-
+>  arch/arm/mach-at91/generic.h                       |    6 +
+>  arch/arm/mach-at91/gpio.c                          |  363 ++++++++++++++++----
+>  arch/arm/mach-at91/include/mach/gpio.h             |   12 -
+>  arch/arm/mach-at91/irq.c                           |  132 ++++++--
+>  drivers/usb/host/ohci-at91.c                       |    5 +-
+>  13 files changed, 581 insertions(+), 137 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/atmel-aic.txt
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio_atmel.txt
+> 
+> Thanks a lot, best regards,
 
 
---3sseE1tnmEs+TkKq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIbBAEBAgAGBQJPT3YTAAoJEOnZkXI/YHqRwDwP+Pj1ijiRiJvmLrbJL3k6F6GN
-F1wu3t4b3XDV2vz4iObqzcPmo1SbiA3k5eMa/fnvbwJ8OpmTsae25Qj7eXHjuDQM
-pUjRI/38/NUcVyJjjl9VlRjDoTuzqnF2AQaqRyTwLKI/xugTi/RtO365Atz7n5gI
-yrrVfSJVwdpFzuhkmW/PNMCqDs46ncUf2uRbuwcGASdQrfl6659KNo88C/by4qJn
-IBvrFCc1TCIgJvDLSKOgIIKt8StILee18JV8NG712QlOujCqazrN6i3vQ6kVAe6j
-tfeXiyg2AXMZJypFi2Yskxbo7Bjrxb/SA3YJmbKntSXeFohYHw+nwQsydhtzS9FF
-OvwNdnU1+V3fJ/N/kMRiIWDpQn/4epd5CcqSJ98vUJIfKpN0JN6nFiGgUebVhDI2
-nvRnoLkFsmh73yB1cDoDDcZONKoYfUjfbEQmSfGGg9lU8n8neeFA03ly5edzCXuc
-nGABCfYSo6+yo2yrycR9JoLsueVCsPp+dCaZzaxgoqYaB5BjkyPzxEP5Offr/mg8
-8dhjlNkLAVp5kU/lmE7UhQG3l2ukYe6eRvfm4kyt3j9oMR/pKt0ZQUhx5HyqHGIC
-vVe8xI4lwn/xGplwuPrCQ5oW7ylZeDcfgk3Kwhgm5sT/n0PDiZeH3Yblq2aPRm8w
-bQiZwWj8Xxnq8d6Z/ZA=
-=4S6b
------END PGP SIGNATURE-----
-
---3sseE1tnmEs+TkKq--
+-- 
+Nicolas Ferre
