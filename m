@@ -1,231 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2CAO4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:56:21 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17586 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2CAO4T convert rfc822-to-8bit (ORCPT
+	id S1757891Ab2CAO5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:57:54 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34360 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab2CAO5w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:56:19 -0500
-Date: Thu, 01 Mar 2012 15:57:18 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH v9 1/2] ARM: EXYNOS: Change System MMU platform device
- definitions
-In-reply-to: <CAHQjnOO1aADVQWxNt-J3nb0bgJvc2dfk+6qTWKWx7w+-LUVSmw@mail.gmail.com>
-To: "'KyongHo Cho'" <pullip.cho@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
-Message-id: <011401ccf7bb$98d51c30$ca7f5490$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=iso-8859-2
-Content-language: pl
-Content-transfer-encoding: 8BIT
-Thread-index: Acz2eLf5RirVyCBfQGKTmnybhSMZDQBQo70g
-References: <001901ccf5e3$6a363320$3ea29960$%cho@samsung.com>
- <CAH9JG2Uvh=_GWFWyBrE-hfGTvrwvs6n37bmKaHbCovJ++EeJ7g@mail.gmail.com>
- <CAHQjnOO1aADVQWxNt-J3nb0bgJvc2dfk+6qTWKWx7w+-LUVSmw@mail.gmail.com>
+	Thu, 1 Mar 2012 09:57:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120301145155.GY5054@shiny>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
+	<20120229144244.GF5054@shiny>
+	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
+	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
+	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
+	<CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
+	<20120301141823.GV5054@shiny>
+	<CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
+	<20120301145155.GY5054@shiny>
+Date: Thu, 1 Mar 2012 15:57:50 +0100
+Message-ID: <CADDYkjQn-2-XjAZYe6AZeVcNa_A3Jc_qYcOUd3bExBDNWxDMUw@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        lczerner@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2012/3/1 Chris Mason <chris.mason@oracle.com>:
+> On Thu, Mar 01, 2012 at 03:43:41PM +0100, Jacek Luczak wrote:
+>> 2012/3/1 Chris Mason <chris.mason@oracle.com>:
+>> > XFS will probably beat btrfs in this test.  Their directory indexes
+>> > reflect on disk layout very well.
+>>
+>> True, but not that fast on small files.
+>>
+>> Except the question I've raised in first mail there's a point in all
+>> those action. We are maintaining host that are used for building
+>> software: random access, lot of small files and dirs (always a co),
+>> heavy parallel IO. We were testing XFS vs ext4 a year ago and XFS was
+>> around 10% slower on build times. We did not - yet - done same on
+>> btrfs. Now we're looking for replacement for ext4 as we suffer from
+>> those issue - but we were not aware of that until stepped into this
+>> issue.
+>>
+>> If you would like me to do some specific tests around ext4 and btrfs,
+>> let me know.
+>
+> I'm always curious to see comparisons in real world workloads.  You
+> should definitely consider testing XFS again, the big three filesystems
+> are under pretty constant improvement.  For btrfs, please stick to 3.2
+> kernels and higher.
 
-On Wednesday, February 29, 2012 1:26 AM KyongHo Cho wrote:
+That's the plan but I'm waiting for more of the briliant work that
+recently popped up in XFS. For btrfs, the 3.2 introduced changes led
+me to give here a try. I don't have nice pictures and digits in my
+hand now but first tests shown close to 40% of timing improvements
+between 2.6.39.4 and 3.2.7 - keep doing that great work guys (and
+girls if any)!
 
- 
-> On Tue, Feb 28, 2012 at 4:20 PM, Kyungmin Park
-> <kyungmin.park@samsung.com> wrote:
-> > Hi,
-> >
-> > On 2/28/12, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> >> Handling System MMUs with an identifier is not flexible to manage
-> >> System MMU platform devices because of the following reasons:
-> >> 1. A device driver which needs to handle System MMU must know the ID.
-> >> 2. A System MMU may not present in some implementations of Exynos family.
-> >> 3. Handling System MMU with IOMMU API does not require an ID.
-> >>
-> >> This patch is the result of removing ID of System MMUs.
-> >> Instead, a device driver that needs to handle its System MMU must
-> >> use IOMMU API while its descriptor of platform device is given.
-> >>
-> >> This patch also includes the following enhancements:
-> >> - A System MMU device becomes a child if its power domain device.
-> >> - clkdev
-> >>
-> >> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-> >> ---
-> >>  arch/arm/mach-exynos/Kconfig                    |   11 +-
-> >>  arch/arm/mach-exynos/Makefile                   |    2 +-
-> >>  arch/arm/mach-exynos/clock-exynos4.c            |   79 ++--
-> >>  arch/arm/mach-exynos/clock-exynos4.h            |    2 +
-> >>  arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
-> >>  arch/arm/mach-exynos/clock-exynos4212.c         |   28 ++-
-> >>  arch/arm/mach-exynos/clock-exynos5.c            |   90 +++++
-> >>  arch/arm/mach-exynos/dev-sysmmu.c               |  451
-> >> ++++++++++++-----------
-> >>  arch/arm/mach-exynos/include/mach/irqs.h        |  179 +++++-----
-> >>  arch/arm/mach-exynos/include/mach/map.h         |   38 ++
-> >>  arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
-> >>  arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 --
-> >>  arch/arm/mach-exynos/include/mach/sysmmu.h      |   84 +++--
-> >>  arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
-> >>  arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
-> >>  arch/arm/plat-s5p/sysmmu.c                      |   13 +-
-> >>  arch/arm/plat-samsung/include/plat/devs.h       |    1 -
-> >>  17 files changed, 618 insertions(+), 406 deletions(-)
-> > It's too big to cover these changes. Can you make it more small changes.
-> > 1. Remove existing ones since no user at this time.
-> > 2. Add new define and data structures.
-> > 3. Support new system mmu features based on generic iommu.
-> >
-> 
-> Your suggestion sounds good. Thank you.
-> 
-> >>  static int exynos4_clk_hdmiphy_ctrl(struct clk *clk, int enable)
-> >>  {
-> >>       return s5p_gatectrl(S5P_HDMI_PHY_CONTROL, clk, enable);
-> >> @@ -679,61 +684,55 @@ static struct clk exynos4_init_clocks_off[] = {
-> >>               .enable         = exynos4_clk_ip_peril_ctrl,
-> >>               .ctrlbit        = (1 << 14),
-> >>       }, {
-> >> -             .name           = "SYSMMU_MDMA",
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(mfc_l, 0),
-> >> +             .enable         = exynos4_clk_ip_mfc_ctrl,
-> >> +             .ctrlbit        = (1 << 1),
-> >> +     }, {
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(mfc_r, 1),
-> >> +             .enable         = exynos4_clk_ip_mfc_ctrl,
-> >> +             .ctrlbit        = (1 << 2),
-> >> +     }, {
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(tv, 2),
-> >> +             .enable         = exynos4_clk_ip_tv_ctrl,
-> >> +             .ctrlbit        = (1 << 4),
-> >> +     }, {
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(jpeg, 3),
-> >> +             .enable         = exynos4_clk_ip_cam_ctrl,
-> >> +             .ctrlbit        = (1 << 11),
-> >> +     }, {
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(rot, 4),
-> >>               .enable         = exynos4_clk_ip_image_ctrl,
-> >> -             .ctrlbit        = (1 << 5),
-> >> +             .ctrlbit        = (1 << 4),
-> >>       }, {
-> >> -             .name           = "SYSMMU_FIMC0",
-> >> +             .name           = SYSMMU_CLOCK_NAME,
-> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(gsc0, 5),
-> > It's exynos4 series clock and don't have gsc name. I don't know LSI
-> > decides to use gsc instead of fimc for both exynos4 and exynos5. but
-> > there's no name gsc at Spec..
-> 
-> gsc0 is just a name of the platform device of FIMC0 in Exynos4.
-> It is also used for GSclaler0 in Exynos5.
-> I wanted to reduce waste of platform device definitions that do not exist
-> in an application processor.
-> 
-> If it looks confused, I will find another way.
-> >> +#define SYSMMU_RESOURCE_NAME(core, ipname) sysmmures_##core##_##ipname
-> >> +
-> >> +#define SYSMMU_RESOURCE(core, ipname)                                        \
-> >> +     static struct resource SYSMMU_RESOURCE_NAME(core, ipname)[] __initdata =
-> >> +
-> >> +#define DEFINE_SYSMMU_RESOURCE(core, mem, irq)                               \
-> >> +     DEFINE_RES_MEM_NAMED(core##_PA_SYSMMU_##mem, SZ_4K, #mem),      \
-> >> +     DEFINE_RES_IRQ_NAMED(core##_IRQ_SYSMMU_##irq##_0, #mem)
-> >> +
-> >> +#define SYSMMU_RESOURCE_DEFINE(core, ipname, mem, irq)                       \
-> >> +     SYSMMU_RESOURCE(core, ipname) {                                 \
-> >> +             DEFINE_SYSMMU_RESOURCE(core, mem, irq)                  \
-> >> +     }
-> >>
-> >> -struct platform_device exynos4_device_sysmmu = {
-> >> -     .name           = "s5p-sysmmu",
-> >> -     .id             = 32,
-> >> -     .num_resources  = ARRAY_SIZE(exynos4_sysmmu_resource),
-> >> -     .resource       = exynos4_sysmmu_resource,
-> >> +struct sysmmu_resource_map {
-> >> +     struct platform_device *pdev;
-> >> +     struct resource *res;
-> >> +     u32 rnum;
-> >> +     struct device *pdd;
-> >> +     char *clocknames;
-> >>  };
-> >> -EXPORT_SYMBOL(exynos4_device_sysmmu);
-> >>
-> >> -static struct clk *sysmmu_clk[S5P_SYSMMU_TOTAL_IPNUM];
-> >> -void sysmmu_clk_init(struct device *dev, sysmmu_ips ips)
-> >> -{
-> >> -     sysmmu_clk[ips] = clk_get(dev, sysmmu_ips_name[ips]);
-> >> -     if (IS_ERR(sysmmu_clk[ips]))
-> >> -             sysmmu_clk[ips] = NULL;
-> >> -     else
-> >> -             clk_put(sysmmu_clk[ips]);
-> >> +#define SYSMMU_RESOURCE_MAPPING(core, ipname, resname) {             \
-> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
-> >> +     .res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),             \
-> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
-> >> +     .clocknames = SYSMMU_CLOCK_NAME,                                \
-> >>  }
-> >>
-> >> -void sysmmu_clk_enable(sysmmu_ips ips)
-> >> -{
-> >> -     if (sysmmu_clk[ips])
-> >> -             clk_enable(sysmmu_clk[ips]);
-> >> +#define SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata) {   \
-> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
-> >> +     .res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),             \
-> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
-> >> +     .clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,         \
-> >> +}
-> >> +
-> >> +#ifdef CONFIG_EXYNOS_DEV_PD
-> >> +#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd) {              \
-> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
-> >> +     .res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),            \
-> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
-> >> +     .clocknames = SYSMMU_CLOCK_NAME,                                \
-> >> +     .pdd = &exynos##core##_device_pd[pd].dev,                       \
-> >> +}
-> >> +
-> >> +#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata) {\
-> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
-> >> +     .res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),            \
-> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
-> >> +     .clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,         \
-> >> +     .pdd = &exynos##core##_device_pd[pd].dev,                       \
-> >>  }
-> >> +#else
-> >> +#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd)                \
-> >> +             SYSMMU_RESOURCE_MAPPING(core, ipname, resname)
-> >> +#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata)       \
-> >> +             SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata)
-> >> +
-> >> +#endif /* CONFIG_EXYNOS_DEV_PD */
-> >> +
-> >> +#ifdef CONFIG_ARCH_EXYNOS4
-> > Below definitions are almost __initdata. So don't need to use ARCH_EXYNOS4.
-> > and another reason is that it can detect the duplicated entry if it's
-> > used both exynos4 and exynos5.
-
-FIMC devices use s5p-fimc name in the mainline kernel. The driver is already there so
-there, so please don't change it. 4 more lines with proper 'fimc' name will not cause
-any problems.
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+-Jacek
