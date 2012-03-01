@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030755Ab2CAOfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:35:47 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6089 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030519Ab2CAOfp (ORCPT
+	id S1031127Ab2CAOjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:39:07 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:39651 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966059Ab2CAOjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:35:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Mar 2012 06:35:30 -0800
-Date: Thu, 1 Mar 2012 16:35:13 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, "Olof Johansson" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Message-ID: <20120301143513.GR12917@tbergstrom-lnx.Nvidia.com>
-References: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178FACB954@HQMAIL01.nvidia.com>
- <20120229154229.GL12917@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17BDDF21F3@HQMAIL01.nvidia.com>
- <20120301114211.GP12917@tbergstrom-lnx.Nvidia.com>
+	Thu, 1 Mar 2012 09:39:04 -0500
+Date: Thu, 1 Mar 2012 09:38:59 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120301143859.GX5054@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Theodore Tso <tytso@MIT.EDU>,
+	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120301114211.GP12917@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4F4F8A06.0139,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 12:42:11PM +0100, Peter De Schrijver wrote:
-> On Wed, Feb 29, 2012 at 11:38:16PM +0100, Stephen Warren wrote:
-> > Peter De Schrijver wrote at Wednesday, February 29, 2012 8:42 AM:
-> > > On Wed, Feb 15, 2012 at 10:27:43PM +0100, Stephen Warren wrote:
-> > > > Peter De Schrijver wrote at Thursday, February 09, 2012 4:48 PM:
-> > > > > This patchset introduces support for secondary cores on tegra30. It also
-> > > > > introduces some functions for the flowcontroller and adds basic support for
-> > > > > tegra30 powerdomains.
-> > > >
-> > > > The code looks fine to me. I do notice the following when running
-> > > > "shutdown -h now":
-> > > >
-> > > > [   27.762124] SMP: failed to stop secondary CPUs
-> > 
-> > I can't seem to reproduce this at all on next-20120229 anymore. What
-> > kind of repro frequency are you seeing, and does it get fixed if you
-> > update to that baseline?
-> > 
+On Wed, Feb 29, 2012 at 11:44:31PM -0500, Theodore Tso wrote:
+> You might try sorting the entries returned by readdir by inode number before you stat them.    This is a long-standing weakness in ext3/ext4, and it has to do with how we added hashed tree indexes to directories in (a) a backwards compatible way, that (b) was POSIX compliant with respect to adding and removing directory entries concurrently with reading all of the directory entries using readdir.
 > 
-> I see it abount once every 3 reboots. I have a an expect script which
-> automates the test. I haven't tried with next-20120229 yet.
+> You might try compiling spd_readdir from the e2fsprogs source tree (in the contrib directory):
 > 
-> > (I tried 20 times with shutdown, and 15 of them I reverted all the CPU
-> > and cache errata in case they affected the issue at all)
+> http://git.kernel.org/?p=fs/ext2/e2fsprogs.git;a=blob;f=contrib/spd_readdir.c;h=f89832cd7146a6f5313162255f057c5a754a4b84;hb=d9a5d37535794842358e1cfe4faa4a89804ed209
+> 
+> … and then using that as a LD_PRELOAD, and see how that changes things.
+> 
+> The short version is that we can't easily do this in the kernel since it's a problem that primarily shows up with very big directories, and using non-swappable kernel memory to store all of the directory entries and then sort them so they can be returned in inode number just isn't practical.   It is something which can be easily done in userspace, though, and a number of programs (including mutt for its Maildir support) does do, and it helps greatly for workloads where you are calling readdir() followed by something that needs to access the inode (i.e., stat, unlink, etc.)
+> 
 
-Tried it with next-20120229 and it works fine here. I also noticed
-next-20120229 does not have https://lkml.org/lkml/2012/1/31/444
-which was part of the earlier tree I used for testing. So num_online_cpus()
-recalculates the number of online CPUs everytime instead of trying to only
-recalculate it when there is a change.
+For reading the files, the acp program I sent him tries to do something
+similar.  I had forgotten about spd_readdir though, we should consider
+hacking that into cp and tar.
 
-Cheers,
+One interesting note is the page cache used to help here.  Picture two
+tests:
 
-Peter.
+A) time tar cf /dev/zero /home
+
+and
+
+cp -a /home /new_dir_in_new_fs
+unmount / flush caches
+B) time tar cf /dev/zero /new_dir_in_new_fs
+
+On ext, The time for B used to be much faster than the time for A
+because the files would get written back to disk in roughly htree order.
+Based on Jacek's data, that isn't true anymore.
+
+-chris
