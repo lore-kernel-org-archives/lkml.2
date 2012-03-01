@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab2CACmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:42:50 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27604 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758233Ab2CACmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:42:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="116347643"
-Date: Thu, 1 Mar 2012 10:40:28 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user
- uartclk parameter
-Message-ID: <20120301024028.GA6612@feng-i7>
-References: <cover.1330539597.git.dvhart@linux.intel.com>
- <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
- <4F4EC73E.40209@linux.intel.com>
- <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
- <4F4ECCE8.90207@linux.intel.com>
+	id S1758344Ab2CACnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:43:32 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:60920 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab2CACnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 21:43:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.129.162 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Wed, 29 Feb 2012 18:42:57 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH next] memcg: remove PCG_CACHE page_cgroup flag fix2
+In-Reply-To: <alpine.LSU.2.00.1202291718450.11821@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1202291841110.14002@eggly.anvils>
+References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils> <alpine.LSU.2.00.1202282128500.4875@eggly.anvils> <20120229194304.GF1673@cmpxchg.org> <alpine.LSU.2.00.1202291718450.11821@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F4ECCE8.90207@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 05:12:08PM -0800, Darren Hart wrote:
-> 
-> 
-> On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
-> > 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
-> >> how do we force the
-> >> 192MHz clock setting BEFORE the pch_phub code runs?
-> > 
-> > To realize your requirement,
-> > I think that set by BIOS is only way.
-> 
-> Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
-> the initial console and once the phub driver is loaded, it can make the
-> necessary changes and fix things up in the uart port? This would add a
-> binding between the pch_uart and pch_phub code.
-> 
-> Thoughts?
+Add comment to MEM_CGROUP_CHARGE_TYPE_MAPPED case in
+__mem_cgroup_uncharge_common().
 
-To satisfy the early console, one way may be add a x86_init_ops for all
-Tunnel Creek compatible platform like what Moorestown/Medfield have done,
-and insert the uart clk setting work into one of the early init function. 
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+This one incremental to patch already in mm-commits.
 
-Thanks,
-Feng
-> 
-> -- 
-> Darren Hart
-> Intel Open Source Technology Center
-> Yocto Project - Linux Kernel
+ mm/memcontrol.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- mm-commits/mm/memcontrol.c	2012-02-28 20:45:43.488100423 -0800
++++ linux/mm/memcontrol.c	2012-02-29 18:21:49.144702180 -0800
+@@ -2953,6 +2953,11 @@ __mem_cgroup_uncharge_common(struct page
+ 
+ 	switch (ctype) {
+ 	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
++		/*
++		 * Generally PageAnon tells if it's the anon statistics to be
++		 * updated; but sometimes e.g. mem_cgroup_uncharge_page() is
++		 * used before page reached the stage of being marked PageAnon.
++		 */
+ 		anon = true;
+ 		/* fallthrough */
+ 	case MEM_CGROUP_CHARGE_TYPE_DROP:
