@@ -1,208 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab2CACd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:33:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757995Ab2CACd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:33:26 -0500
-Date: Thu, 1 Mar 2012 03:33:14 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] memcg: avoid THP split in task migration
-Message-ID: <20120301023314.GF28383@redhat.com>
-References: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330463552-18473-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758268Ab2CACfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:35:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:44770 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545Ab2CACfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 21:35:20 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 1/3] includecheck: delete any duplicate instances of module.h
+Date: Wed, 29 Feb 2012 21:35:07 -0500
+Message-Id: <1330569309-26190-2-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1330569309-26190-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1330569309-26190-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naoya,
+Different tree maintainers picked up independently generated
+trivial compile fixes based on linux-next testing, resulting
+in some cases where a file would have got more than one addition
+of module.h once everything was all merged together.
 
-On Tue, Feb 28, 2012 at 04:12:32PM -0500, Naoya Horiguchi wrote:
-> Currently we can't do task migration among memory cgroups without THP split,
-> which means processes heavily using THP experience large overhead in task
-> migration. This patch introduce the code for moving charge of THP and makes
-> THP more valuable.
+Delete any duplicates so includecheck isn't complaining about
+anything related to module.h/export.h changes.
 
-Nice.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ arch/blackfin/mach-bf537/boards/pnav10.c  |    1 -
+ drivers/dma/imx-dma.c                     |    1 -
+ drivers/dma/imx-sdma.c                    |    1 -
+ drivers/media/video/adp1653.c             |    1 -
+ drivers/mmc/host/sdhci-tegra.c            |    1 -
+ drivers/power/max8998_charger.c           |    1 -
+ drivers/staging/iio/dac/ad5686.c          |    1 -
+ drivers/staging/iio/gyro/adis16060_core.c |    1 -
+ drivers/staging/sm7xx/smtcfb.c            |    1 -
+ drivers/usb/dwc3/core.c                   |    1 -
+ drivers/usb/dwc3/dwc3-omap.c              |    1 -
+ kernel/params.c                           |    1 -
+ 12 files changed, 0 insertions(+), 12 deletions(-)
 
-> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-> index c83aeb5..e97c041 100644
-> --- linux-next-20120228.orig/mm/memcontrol.c
-> +++ linux-next-20120228/mm/memcontrol.c
-> @@ -5211,6 +5211,42 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +/*
-> + * We don't consider swapping or file mapped pages because THP does not
-> + * support them for now.
-> + */
-> +static int is_target_huge_pmd_for_mc(struct vm_area_struct *vma,
-> +		unsigned long addr, pmd_t pmd, union mc_target *target)
-> +{
-> +	struct page *page = NULL;
-> +	struct page_cgroup *pc;
-> +	int ret = 0;
-> +
-> +	if (pmd_present(pmd))
-> +		page = pmd_page(pmd);
-> +	if (!page)
-> +		return 0;
+diff --git a/arch/blackfin/mach-bf537/boards/pnav10.c b/arch/blackfin/mach-bf537/boards/pnav10.c
+index 6fd8470..7d15a30 100644
+--- a/arch/blackfin/mach-bf537/boards/pnav10.c
++++ b/arch/blackfin/mach-bf537/boards/pnav10.c
+@@ -101,7 +101,6 @@ static struct platform_device smc91x_device = {
+ 
+ #if defined(CONFIG_BFIN_MAC) || defined(CONFIG_BFIN_MAC_MODULE)
+ #include <linux/bfin_mac.h>
+-#include <linux/export.h>
+ static const unsigned short bfin_mac_peripherals[] = P_RMII0;
+ 
+ static struct bfin_phydev_platform_data bfin_phydev_data[] = {
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index e4383ee..38586ba 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -14,7 +14,6 @@
+  * http://www.gnu.org/copyleft/gpl.html
+  */
+ #include <linux/init.h>
+-#include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/mm.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 8bc5acf..63540d3 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -35,7 +35,6 @@
+ #include <linux/dmaengine.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+-#include <linux/module.h>
+ 
+ #include <asm/irq.h>
+ #include <mach/sdma.h>
+diff --git a/drivers/media/video/adp1653.c b/drivers/media/video/adp1653.c
+index 12eedf4..6e7d094 100644
+--- a/drivers/media/video/adp1653.c
++++ b/drivers/media/video/adp1653.c
+@@ -33,7 +33,6 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ #include <linux/i2c.h>
+-#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/version.h>
+ #include <media/adp1653.h>
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index 78a36eb..cb34856 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -23,7 +23,6 @@
+ #include <linux/gpio.h>
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+-#include <linux/module.h>
+ 
+ #include <asm/gpio.h>
+ 
+diff --git a/drivers/power/max8998_charger.c b/drivers/power/max8998_charger.c
+index 9b3f2bf..6dc01c2 100644
+--- a/drivers/power/max8998_charger.c
++++ b/drivers/power/max8998_charger.c
+@@ -19,7 +19,6 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+diff --git a/drivers/staging/iio/dac/ad5686.c b/drivers/staging/iio/dac/ad5686.c
+index ce2d619..2415a6e 100644
+--- a/drivers/staging/iio/dac/ad5686.c
++++ b/drivers/staging/iio/dac/ad5686.c
+@@ -15,7 +15,6 @@
+ #include <linux/slab.h>
+ #include <linux/sysfs.h>
+ #include <linux/regulator/consumer.h>
+-#include <linux/module.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+diff --git a/drivers/staging/iio/gyro/adis16060_core.c b/drivers/staging/iio/gyro/adis16060_core.c
+index c0ca709..02cc234 100644
+--- a/drivers/staging/iio/gyro/adis16060_core.c
++++ b/drivers/staging/iio/gyro/adis16060_core.c
+@@ -14,7 +14,6 @@
+ #include <linux/spi/spi.h>
+ #include <linux/slab.h>
+ #include <linux/sysfs.h>
+-#include <linux/module.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
+index ae0035f..1b3e2d0 100644
+--- a/drivers/staging/sm7xx/smtcfb.c
++++ b/drivers/staging/sm7xx/smtcfb.c
+@@ -41,7 +41,6 @@
+ 
+ #ifdef CONFIG_PM
+ #include <linux/pm.h>
+-#include <linux/module.h>
+ #endif
+ 
+ #include "smtcfb.h"
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 7c9df63..eed4a5b 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -51,7 +51,6 @@
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
+-#include <linux/module.h>
+ 
+ #include "core.h"
+ #include "gadget.h"
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 3274ac8..92cc7b8 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -46,7 +46,6 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/ioport.h>
+ #include <linux/io.h>
+-#include <linux/module.h>
+ 
+ #include "core.h"
+ #include "io.h"
+diff --git a/kernel/params.c b/kernel/params.c
+index 4bc965d..47f5bf1 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -15,7 +15,6 @@
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+-#include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/errno.h>
+-- 
+1.7.9.1
 
-It can't be present and null at the same time.
-
-No need to check pmd_present if you already checked pmd_trans_huge. In
-fact checking pmd_present is a bug. For a little time the pmd won't be
-present if it's set as splitting. (that short clearing of pmd_present
-during pmd splitting is to deal with a vendor CPU errata without
-having to flush the smp TLB twice)
-
-Following Kame's suggestion is correct, an unconditional pmd_page is
-correct here:
-
-    page = pmd_page(pmd);
-
-We might actually decide to change pmd_present to return true if
-pmd_trans_splitting is set to avoid the risk of using an erratic
-pmd_present on a pmd_trans_huge pmd, but it's not really necessary if
-you never check pmd_present when a pmd is (or can be) a
-pmd_trans_huge.
-
-The safe check for pmd is only pmd_none, never pmd_present (as in
-__pte_alloc/pte_alloc_map/...).
-
-> +	VM_BUG_ON(!PageHead(page));
-> +	get_page(page);
-
-Other review mentioned we can do get_page only when it succeeds, but I
-think we can drop the whole get_page and simplify it further see the
-end.
-
-> @@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->  	pte_t *pte;
->  	spinlock_t *ptl;
->  
-> -	split_huge_page_pmd(walk->mm, pmd);
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> +		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
-> +			mc.precharge += HPAGE_PMD_NR;
-
-Your use of HPAGE_PMD_NR looks fine, that path will be eliminated at
-build time if THP is off. This is the nice way to write code that is
-already optimal for THP=off without making special cases or #ifdefs.
-
-Other review suggests changing HPAGE_PMD_NR as BUILD_BUG, that sounds
-good idea too, but in this (correct) usage of HPAGE_PMD_NR it wouldn't
-make a difference because of the whole branch is correctly eliminated
-at build time. In short changing it to BUILD_BUG will simply make sure
-the whole pmd_trans_huge_lock == 1 branch is eliminated at build
-time. It looks good change too but it's orthogonal so I'd leave it for
-a separate patch.
-
-> +		spin_unlock(&walk->mm->page_table_lock);
-
-Agree with other review, vma looks cleaner.
-
-> +		cond_resched();
-> +		return 0;
-> +	}
->  
->  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->  	for (; addr != end; pte++, addr += PAGE_SIZE)
-> @@ -5378,16 +5420,38 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
->  	struct vm_area_struct *vma = walk->private;
->  	pte_t *pte;
->  	spinlock_t *ptl;
-> +	int type;
-> +	union mc_target target;
-> +	struct page *page;
-> +	struct page_cgroup *pc;
-> +
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> +		if (!mc.precharge)
-> +			return 0;
-
-Agree with Hillf.
-
-> +		type = is_target_huge_pmd_for_mc(vma, addr, *pmd, &target);
-> +		if (type == MC_TARGET_PAGE) {
-> +			page = target.page;
-> +			if (!isolate_lru_page(page)) {
-> +				pc = lookup_page_cgroup(page);
-> +				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-> +							     pc, mc.from, mc.to,
-> +							     false)) {
-> +					mc.precharge -= HPAGE_PMD_NR;
-> +					mc.moved_charge += HPAGE_PMD_NR;
-> +				}
-
-Like you mentioned, a race with split_huge_page_refcount (and hence
-mem_cgroup_split_huge_fixup) is not possible because of
-pmd_trans_huge_lock succeeding.
-
-However the mmap_sem checked by pmd_trans_huge_lock is there just
-because we deal with pmds and so pagetables (and we aren't doing a
-lockless lookup like gup_fast). But it's not true that a concurrent
-split_huge_page would _not_ prevented by the mmap_sem. The swapout
-path will still split hugepages under you even if you hold the
-mmap_sem (even in write mode).
-
-The mmap_sem (either read or write) only prevents a concurrent
-collapsing/creation of hugepages (but that's irrelevant here). It
-won't stop split_huge_page.
-
-So - back to our issue - you're safe against split_huge_page not
-running here thanks to the pmd_trans_huge_lock.
-
-There's one tricky locking bit here, that is isolate_lru_page, that
-takes the lru_lock.
-
-So the lock order is the page_table_lock first and the lru_lock
-second, and so there must not be another place that takes the lru_lock
-first and the page_table_lock second. In general it's good idea to
-exercise locking code with lockdep prove locking enabled just in case.
-
-> +				putback_lru_page(page);
-> +			}
-> +			put_page(page);
-
-I wonder if you need a get_page at all in is_target_huge_pmd_for_mc if
-you drop the above put_page instead. How can this page go away from
-under us, if we've been holding the page_table_lock the whole time?
-You can probably drop both get_page above and put_page above.
-
-> +		}
-> +		spin_unlock(&walk->mm->page_table_lock);
-> +		cond_resched();
-> +		return 0;
-> +	}
->  
-> -	split_huge_page_pmd(walk->mm, pmd);
->  retry:
->  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->  	for (; addr != end; addr += PAGE_SIZE) {
->  		pte_t ptent = *(pte++);
-> -		union mc_target target;
-> -		int type;
-> -		struct page *page;
-> -		struct page_cgroup *pc;
->  		swp_entry_t ent;
->  
->  		if (!mc.precharge)
-
-I read the other two great reviews done so far in parallel with the
-code, and I ended up replying here to the code as I was reading it,
-hope it wasn't too confusing.
-
-Thanks!
-Andrea
