@@ -1,160 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030622Ab2CAKXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:23:51 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:34827 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030546Ab2CAKXr (ORCPT
+	id S1030611Ab2CAKZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:25:01 -0500
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:65247 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2CAKY7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:23:47 -0500
-Date: Thu, 1 Mar 2012 19:30:07 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] KVM: srcu-less dirty logging -v2
-Message-Id: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Mar 2012 05:24:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.219.234 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120301102341.GC6488@1984>
+References: <1330593466-19317-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120301102341.GC6488@1984>
+Date: Thu, 1 Mar 2012 15:54:58 +0530
+Message-ID: <CAOD=uF6T-POkOORw6_S7_NtHgLX4GJj_9A8tg4QRCc8=gCvFaA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] netfilter: Remove redundant code.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: changed to protect masked pages
-
-Live migration gets a bit faster than v1.
-
-	Takuya
+Please see last line of my 2nd patch.
+I have added a new label "out" .
 
 
-=== from v1
+regards
+santosh
 
-This patch series is the result of the integration of my dirty logging
-optimization work, including preparation for the new GET_DIRTY_LOG API,
-and the attempt to get rid of controversial synchronize_srcu_expedited().
-
-1 - KVM: MMU: Split the main body of rmap_write_protect() off from others
-2 - KVM: Avoid checking huge page mappings in get_dirty_log()
-3 - KVM: Switch to srcu-less get_dirty_log()
-4 - KVM: Remove unused dirty_bitmap_head and nr_dirty_pages
-
-Although there are still some remaining tasks, the test result obtained
-looks very promising.
-
-
-Remaining tasks:
-
-- Implement set_bit_le() for mark_page_dirty()
-
-  Some drivers are using their own implementation of it and a bit of
-  work is needed to make it generic.  I want to do this separately
-  later because it cannot be done within kvm tree.
-
-- Stop allocating extra dirty bitmap buffer area
-
-  According to Peter, mmu_notifier has become preemptible.  If we can
-  change mmu_lock from spin_lock to mutex_lock, as Avi said before, this
-  would be staightforward because we can use __put_user() right after
-  xchg() with the mmu_lock held.
-
-
-Test results:
-
-1. dirty-log-perf unit test (on Sandy Bridge core-i3 32-bit host)
-
-With some changes added since the previous post, the performance was
-much improved: now even when every page in the slot is dirty, the number
-is reasonably close to the original one.  For others, needless to say,
-we have achieved very nice improvement.
-
-- kvm.git next
-average(ns)    stdev     ns/page    pages
-
- 147018.6    77604.9    147018.6        1
- 158080.2    82211.9     79040.1        2
- 127555.6    80619.8     31888.9        4
- 108865.6    78499.3     13608.2        8
- 114707.8    43508.6      7169.2       16
-  76679.0    37659.8      2396.2       32
-  59159.8    20417.1       924.3       64
-  60418.2    19405.7       472.0      128
-  76267.0    21450.5       297.9      256
- 113182.0    22684.9       221.0      512
- 930344.2   153766.5       908.5       1K
- 939098.2   163800.3       458.5       2K
- 996813.4    77921.0       243.3       4K
-1113232.6   107782.6       135.8       8K
-1241206.4    82282.5        75.7      16K
-1529526.4   116388.2        46.6      32K
-2147538.4   227375.9        32.7      64K
-3309619.4    79356.8        25.2     128K
-6016951.8   549873.4        22.9     256K
-
-- kvm.git next + srcu-less series
-average(ns)    stdev     ns/page    pages    improvement(%)
-
-  14086.0     3532.3     14086.0        1     944
-  13303.6     3317.7      6651.8        2    1088
-  13455.6     3315.2      3363.9        4     848
-  14125.8     3435.4      1765.7        8     671
-  15322.4     3690.1       957.6       16     649
-  17026.6     4037.2       532.0       32     350
-  21258.6     4852.3       332.1       64     178
-  33845.6    14115.8       264.4      128      79
-  37893.0      681.8       148.0      256     101
-  61707.4     1057.6       120.5      512      83
-  88861.4     2131.0        86.7       1K     947
- 151315.6     6490.5        73.8       2K     521
- 290579.6     8523.0        70.9       4K     243
- 518231.0    20412.6        63.2       8K     115
-2271171.4    12064.9       138.6      16K     -45
-3375866.2    14743.3       103.0      32K     -55
-4408395.6    10720.0        67.2      64K     -51
-5915336.2    26538.1        45.1     128K     -44
-8497356.4    16441.0        32.4     256K     -29
-
-Note that when the number of dirty pages was large, we spent less than
-100ns for getting one dirty page information: see ns/page column.
-
-As Avi noted before, this is much faster than the userspace send one
-page to the destination node.
-
-Furthermore, with the already proposed new GET_DIRTY_LOG API, we will
-be able to restrict the area from which we get the log and will not need
-to care about ms order of latency observed for very large number of dirty
-pages.
-
-2. real workloads (on Xeon W3520 64-bit host)
-
-I traced kvm_vm_ioctl_get_dirty_log() during heavy VGA updates and
-during live migration.
-
-2.1. VGA: guest was doing "x11perf -rect1 -rect10 -rect100 -rect500"
-
-As can be guessed from the result of dirty-log-perf, we observed very
-nice improvement.
-
-- kvm.git next
-For heavy updates: 100us to 300us.
-Worst: 300us
-
-- kvm.git next + srcu-less series
-For heavy updates: 3us to 10us.
-Worst: 50us.
-
-2.2. live migration: guest was doing "dd if=/path/to/a/file of=/dev/null"
-
-The improvement was significant again.
-
-- kvm.git next
-For heavy updates: 1ms to 3ms
-
-- kvm.git next + srcu-less series
-For heavy updates: 50us to 300us
-
-Probably we gained a lot from the locality of WWS.
-
-
-	Takuya
-
+On Thu, Mar 1, 2012 at 3:53 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Thu, Mar 01, 2012 at 02:47:46PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> Remove the redundant code.
+>>
+>> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+>> ---
+>>  net/bridge/netfilter/ebtables.c |   18 ++++++------------
+>>  1 files changed, 6 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+>> index 9c0f177..1efc234 100644
+>> --- a/net/bridge/netfilter/ebtables.c
+>> +++ b/net/bridge/netfilter/ebtables.c
+>> @@ -226,10 +226,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
+>>
+>>               if (EBT_MATCH_ITERATE(point, ebt_do_match, skb, &acpar) != 0)
+>>                       goto letscontinue;
+>> -             if (acpar.hotdrop) {
+>> -                     read_unlock_bh(&table->lock);
+>> -                     return NF_DROP;
+>> -             }
+>> +             if (acpar.hotdrop)
+>> +                     goto out;
+>
+> This is really broken! there's no "out" label in ebt_do_table as in
+> the previous patch!
