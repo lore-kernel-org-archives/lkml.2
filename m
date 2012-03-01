@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965536Ab2CAVui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:50:38 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965516Ab2CAVud (ORCPT
+	id S965598Ab2CAVy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:54:29 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40975 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965521Ab2CAVug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.97 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:36 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213926.780198780@linuxfoundation.org>
+Message-Id: <20120301213927.083689176@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:50 -0800
+Date: Thu, 01 Mar 2012 13:39:52 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>,
+        alan@lxorguk.ukuu.org.uk, Heiko Carstens <heiko.carstens@de.ibm.com>,
         Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 28/34] autofs: work around unhappy compat problem on x86-64
+Subject: [ 30/34] compat: fix compile breakage on s390
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,134 +27,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Kent <raven@themaw.net>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit a32744d4abae24572eff7269bc17895c41bd0085 upstream.
+commit 048cd4e51d24ebf7f3552226d03c769d6ad91658 upstream.
 
-When the autofs protocol version 5 packet type was added in commit
-5c0a32fc2cd0 ("autofs4: add new packet type for v5 communications"), it
-obvously tried quite hard to be word-size agnostic, and uses explicitly
-sized fields that are all correctly aligned.
+The new is_compat_task() define for the !COMPAT case in
+include/linux/compat.h conflicts with a similar define in
+arch/s390/include/asm/compat.h.
 
-However, with the final "char name[NAME_MAX+1]" array at the end, the
-actual size of the structure ends up being not very well defined:
-because the struct isn't marked 'packed', doing a "sizeof()" on it will
-align the size of the struct up to the biggest alignment of the members
-it has.
+This is the minimal patch which fixes the build issues.
 
-And despite all the members being the same, the alignment of them is
-different: a "__u64" has 4-byte alignment on x86-32, but native 8-byte
-alignment on x86-64.  And while 'NAME_MAX+1' ends up being a nice round
-number (256), the name[] array starts out a 4-byte aligned.
-
-End result: the "packed" size of the structure is 300 bytes: 4-byte, but
-not 8-byte aligned.
-
-As a result, despite all the fields being in the same place on all
-architectures, sizeof() will round up that size to 304 bytes on
-architectures that have 8-byte alignment for u64.
-
-Note that this is *not* a problem for 32-bit compat mode on POWER, since
-there __u64 is 8-byte aligned even in 32-bit mode.  But on x86, 32-bit
-and 64-bit alignment is different for 64-bit entities, and as a result
-the structure that has exactly the same layout has different sizes.
-
-So on x86-64, but no other architecture, we will just subtract 4 from
-the size of the structure when running in a compat task.  That way we
-will write the properly sized packet that user mode expects.
-
-Not pretty.  Sadly, this very subtle, and unnecessary, size difference
-has been encoded in user space that wants to read packets of *exactly*
-the right size, and will refuse to touch anything else.
-
-Reported-and-tested-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Ian Kent <raven@themaw.net>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/autofs_i.h  |    1 +
- fs/autofs4/dev-ioctl.c |    1 +
- fs/autofs4/inode.c     |    2 ++
- fs/autofs4/waitq.c     |   22 +++++++++++++++++++---
- 4 files changed, 23 insertions(+), 3 deletions(-)
+ arch/s390/include/asm/compat.h  |    7 -------
+ arch/s390/kernel/process.c      |    1 -
+ arch/s390/kernel/ptrace.c       |    2 +-
+ arch/s390/kernel/setup.c        |    2 +-
+ arch/s390/mm/mmap.c             |    2 +-
+ drivers/s390/block/dasd_eckd.c  |    1 +
+ drivers/s390/block/dasd_ioctl.c |    1 +
+ drivers/s390/char/fs3270.c      |    1 +
+ drivers/s390/char/vmcp.c        |    1 +
+ drivers/s390/cio/chsc_sch.c     |    1 +
+ drivers/s390/scsi/zfcp_cfdc.c   |    1 +
+ 11 files changed, 9 insertions(+), 11 deletions(-)
 
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -125,6 +125,7 @@ struct autofs_sb_info {
- 	int sub_version;
- 	int min_proto;
- 	int max_proto;
-+	int compat_daemon;
- 	unsigned long exp_timeout;
- 	unsigned int type;
- 	int reghost_enabled;
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -389,6 +389,7 @@ static int autofs_dev_ioctl_setpipefd(st
- 		sbi->pipefd = pipefd;
- 		sbi->pipe = pipe;
- 		sbi->catatonic = 0;
-+		sbi->compat_daemon = is_compat_task();
- 	}
- out:
- 	mutex_unlock(&sbi->wq_mutex);
---- a/fs/autofs4/inode.c
-+++ b/fs/autofs4/inode.c
-@@ -19,6 +19,7 @@
- #include <linux/parser.h>
- #include <linux/bitops.h>
- #include <linux/magic.h>
-+#include <linux/compat.h>
- #include "autofs_i.h"
- #include <linux/module.h>
- 
-@@ -341,6 +342,7 @@ int autofs4_fill_super(struct super_bloc
- 	set_autofs_type_indirect(&sbi->type);
- 	sbi->min_proto = 0;
- 	sbi->max_proto = 0;
-+	sbi->compat_daemon = is_compat_task();
- 	mutex_init(&sbi->wq_mutex);
- 	spin_lock_init(&sbi->fs_lock);
- 	sbi->queues = NULL;
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -90,7 +90,24 @@ static int autofs4_write(struct file *fi
- 
- 	return (bytes > 0);
+--- a/arch/s390/include/asm/compat.h
++++ b/arch/s390/include/asm/compat.h
+@@ -171,13 +171,6 @@ static inline int is_compat_task(void)
+ 	return test_thread_flag(TIF_31BIT);
  }
--	
-+
-+/*
-+ * The autofs_v5 packet was misdesigned.
-+ *
-+ * The packets are identical on x86-32 and x86-64, but have different
-+ * alignment. Which means that 'sizeof()' will give different results.
-+ * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
-+ */
-+static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
-+{
-+	size_t pktsz = sizeof(struct autofs_v5_packet);
-+#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
-+	if (sbi->compat_daemon > 0)
-+		pktsz -= 4;
-+#endif
-+	return pktsz;
-+}
-+
- static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 				 struct autofs_wait_queue *wq,
- 				 int type)
-@@ -147,8 +164,7 @@ static void autofs4_notify_daemon(struct
- 	{
- 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
  
--		pktsz = sizeof(*packet);
+-#else
 -
-+		pktsz = autofs_v5_packet_size(sbi);
- 		packet->wait_queue_token = wq->wait_queue_token;
- 		packet->len = wq->name.len;
- 		memcpy(packet->name, wq->name.name, wq->name.len);
+-static inline int is_compat_task(void)
+-{
+-	return 0;
+-}
+-
+ #endif
+ 
+ static inline void __user *arch_compat_alloc_user_space(long len)
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -32,7 +32,6 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/syscalls.h>
+ #include <linux/compat.h>
+-#include <asm/compat.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/system.h>
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -36,8 +36,8 @@
+ #include <linux/regset.h>
+ #include <linux/tracehook.h>
+ #include <linux/seccomp.h>
++#include <linux/compat.h>
+ #include <trace/syscall.h>
+-#include <asm/compat.h>
+ #include <asm/segment.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+--- a/arch/s390/kernel/setup.c
++++ b/arch/s390/kernel/setup.c
+@@ -43,6 +43,7 @@
+ #include <linux/reboot.h>
+ #include <linux/topology.h>
+ #include <linux/ftrace.h>
++#include <linux/compat.h>
+ 
+ #include <asm/ipl.h>
+ #include <asm/uaccess.h>
+@@ -56,7 +57,6 @@
+ #include <asm/ptrace.h>
+ #include <asm/sections.h>
+ #include <asm/ebcdic.h>
+-#include <asm/compat.h>
+ #include <asm/kvm_virtio.h>
+ 
+ long psw_kernel_bits	= (PSW_BASE_BITS | PSW_MASK_DAT | PSW_ASC_PRIMARY |
+--- a/arch/s390/mm/mmap.c
++++ b/arch/s390/mm/mmap.c
+@@ -27,8 +27,8 @@
+ #include <linux/personality.h>
+ #include <linux/mm.h>
+ #include <linux/module.h>
++#include <linux/compat.h>
+ #include <asm/pgalloc.h>
+-#include <asm/compat.h>
+ 
+ /*
+  * Top of mmap area (just below the process stack).
+--- a/drivers/s390/block/dasd_eckd.c
++++ b/drivers/s390/block/dasd_eckd.c
+@@ -19,6 +19,7 @@
+ #include <linux/bio.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
++#include <linux/compat.h>
+ 
+ #include <asm/debug.h>
+ #include <asm/idals.h>
+--- a/drivers/s390/block/dasd_ioctl.c
++++ b/drivers/s390/block/dasd_ioctl.c
+@@ -13,6 +13,7 @@
+ #define KMSG_COMPONENT "dasd"
+ 
+ #include <linux/interrupt.h>
++#include <linux/compat.h>
+ #include <linux/major.h>
+ #include <linux/fs.h>
+ #include <linux/blkpg.h>
+--- a/drivers/s390/char/fs3270.c
++++ b/drivers/s390/char/fs3270.c
+@@ -14,6 +14,7 @@
+ #include <linux/list.h>
+ #include <linux/types.h>
+ #include <linux/smp_lock.h>
++#include <linux/compat.h>
+ 
+ #include <asm/ccwdev.h>
+ #include <asm/cio.h>
+--- a/drivers/s390/char/vmcp.c
++++ b/drivers/s390/char/vmcp.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/fs.h>
+ #include <linux/init.h>
++#include <linux/compat.h>
+ #include <linux/kernel.h>
+ #include <linux/miscdevice.h>
+ #include <linux/module.h>
+--- a/drivers/s390/cio/chsc_sch.c
++++ b/drivers/s390/cio/chsc_sch.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
+ #include <linux/miscdevice.h>
++#include <linux/compat.h>
+ 
+ #include <asm/cio.h>
+ #include <asm/chsc.h>
+--- a/drivers/s390/scsi/zfcp_cfdc.c
++++ b/drivers/s390/scsi/zfcp_cfdc.c
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/miscdevice.h>
++#include <linux/compat.h>
+ #include <asm/ccwdev.h>
+ #include "zfcp_def.h"
+ #include "zfcp_ext.h"
 
 
