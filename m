@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab2CALak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:30:40 -0500
-Received: from gate.crashing.org ([63.228.1.57]:50109 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758538Ab2CALah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:30:37 -0500
-Message-ID: <1330601400.11728.48.camel@pasglop>
-Subject: Re: [PATCH 0/2] More i387 state save/restore work
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michael Neuling <mikey@neuling.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        anton@samba.org
-Date: Thu, 01 Mar 2012 22:30:00 +1100
-In-Reply-To: <CA+55aFwc6u6Mr9iCMKM+MexfKso4tN7D2VdWpJpuT2saj0Pgfw@mail.gmail.com>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
-	 <12996.1329699216@neuling.org>
-	 <CA+55aFwHGUB7R6kpNPc7vDYF8dhYCKm4Riso-rpS2Fiqjg8hQg@mail.gmail.com>
-	 <CA+55aFxqK1A0g6qHvZHxzGOTGT0YFAoRJtOeYWLxVchM=e=qww@mail.gmail.com>
-	 <CA+55aFwc6u6Mr9iCMKM+MexfKso4tN7D2VdWpJpuT2saj0Pgfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758904Ab2CALgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:36:03 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49361 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508Ab2CALgA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:36:00 -0500
+Date: Thu, 1 Mar 2012 14:37:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: santosh nayak <santoshprasadnayak@gmail.com>, bart.de.schuymer@pandora.be,
+        kaber@trash.net, shemminger@vyatta.com, davem@davemloft.net,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size parametre.
+Message-ID: <20120301113736.GE22598@mwanda>
+References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
+ <20120301101809.GA6488@1984>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2hMgfIw2X+zgXrFs"
+Content-Disposition: inline
+In-Reply-To: <20120301101809.GA6488@1984>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4F4F5F13.00A4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-19 at 17:11 -0800, Linus Torvalds wrote:
-> Oh, and final comment - looking at the thing you pointed at, it looks
-> much more adventurous than my x86 FP state thing.
 
-Right, that's the main reason why I haven't merged it (yet...). I though
-the added complexity and risk wasn't worth the added complexity and
-risk.
+--2hMgfIw2X+zgXrFs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But going half way there as you are doing definitely looks like a good
-idea. I'll have a look when I'm done whacking the shit out of our
-exception entry path :)
+On Thu, Mar 01, 2012 at 11:18:09AM +0100, Pablo Neira Ayuso wrote:
+> On Thu, Mar 01, 2012 at 02:46:30PM +0530, santosh nayak wrote:
+> > From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> >=20
+> > While copying to userspace, the size of source is 29byte where as
+> > size parametre is 32 byte.  Its leaking extra-information from
+> > kernel space to user space.
+> > Replace EBT_FUNCTION_MAXNAMELEN by XT_EXTENSION_MAXNAMELEN.
+>=20
+> There's no information leak.
+>=20
 
-> I always save things unconditionally, so that I don't have to do the
-> IPI or just in general care about the "oops, now I want things in
-> memory, not in some random CPU FP state". So mine is just a "writeback
-> cache", and only optimizes the reading things back: there is never any
-> dirty state in the CPU except when the process is actively using it.
-> 
-> That obviously does mean that I only optimize away the restore side,
-> not the save side. But it's *way* simpler, and considering that I just
-> spent almost a week trying to figure out FP state save bugs, simple is
-> good.
+Where do we clear "m"?=20
 
-On the other hand, you seem to support FP use from random kernel
-contexts such as softirq, interrupts etc... while we don't (well not
-with the "normal" APIs, obviously you can always turn all IRQs off and
-manually enable & save restore but that's too nasty for words).
+include/linux/netfilter/x_tables.h
+   287  struct xt_match {
+   288          struct list_head list;
+   289 =20
+   290          const char name[XT_EXTENSION_MAXNAMELEN];
+   291          u_int8_t revision;
+   292 =20
 
-Cheers,
-Ben.
+There is a 2 byte holes here between "revision" and "match()".  We
+copy three bytes past the end of name, so we include revision and
+the hole.
+
+But maybe we memset it somewhere?  I'm not sure.
+
+   293          /* Return true or false: return FALSE and set *hotdrop =3D =
+1 to
+   294             force immediate packet drop. */
+   295          /* Arguments changed since 2.6.9, as this must now handle
+   296             non-linear skb, using skb_header_pointer and
+   297             skb_ip_make_writable. */
+   298          bool (*match)(const struct sk_buff *skb,
+   299                        struct xt_action_param *);
+
+regards,
+dan carpenter
 
 
+--2hMgfIw2X+zgXrFs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPT1+AAAoJEOnZkXI/YHqRKx4P/RanpcSe0yquG5PCGH83USUS
+ZQ9KYI5y1ZPBi6wYwtX9MHRssH1/JQeGty/94HUhxrNbwwpppvAcbpZT5xCffV3u
+EHFHWX++wO8oIp3as2pKBZuQ7TYlJz+zLsgmV5+QhvCuD50QaKS1R6zfzRERiFIA
+8Xp5rW5b44viORHWFZaZ7rOqjRABIpTlrfTC9Wkg0Oste/1nq5tRXGqvOZPudNmp
+XlXprGMcC8pvWAu+U8iAIDv/SFwkJazcKCBVA7VN62V0VIRSup8NbvL/La65R8EG
+vnxUhOIkxAYv6y0nByUuCs7cHT/LMq/AQgHVgFrtNF0LZNPD9XivjfzkKOz5I30C
+dNk0GnnfuxmJfNCupSfngh8IUbTM46eNd0O15DiPZSuOhEmvEjji+oS0ZQg3cWFg
+lryoLZh0Oq1EJ9mllfmuixYHu3XeIK4dM7tU9l8qZIv7jjiRWrKOwo6vL9ip862O
+G3072/114Cpr/4kK3k7msObKH//+GgRlqBRnvOaxADTWCWnGpcRdOFvcfBvoJFGI
+6f46TQTNhS7YYtPuARrMMt8CW2pQouKYZ94N8ShocHYYANA247EIiCCYlpbXg8aX
+cC9YtY8bguDyJ/6fC4wJGOpOqbqTJqYw6sFWccydz79LJ39bBDNfBjf9jMzPWWSV
+DkI0tbloqsX3HAP/yN9+
+=RUds
+-----END PGP SIGNATURE-----
+
+--2hMgfIw2X+zgXrFs--
