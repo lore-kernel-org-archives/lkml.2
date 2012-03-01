@@ -1,266 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965707Ab2CAJRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:17:48 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41434 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965669Ab2CAJRo (ORCPT
+	id S965821Ab2CAJSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:18:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46069 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965347Ab2CAJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:17:44 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2 5/9] hugetlbfs: Add memory controller support for shared mapping
-Date: Thu,  1 Mar 2012 14:46:16 +0530
-Message-Id: <1330593380-1361-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022923-1396-0000-0000-000000C16DF2
+	Thu, 1 Mar 2012 04:18:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.132.198 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: bart.de.schuymer@pandora.be
+Cc: pablo@netfilter.org, kaber@trash.net, shemminger@vyatta.com,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH 3/3] netfilter: Remove redundant code.
+Date: Thu,  1 Mar 2012 14:47:46 +0530
+Message-Id: <1330593466-19317-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-For shared mapping we need to track the memory controller along with the range.
-If two task in two different cgroup map the same area only the non-overlapping
-part should be charged to the second task. Hence we need to track the memcg
-along with range.  We always charge during mmap(2) and we do uncharge during
-truncate. The charge list is tracked in the inode->i_mapping->private_list.
+Remove the redundant code.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 ---
- mm/hugetlb.c |  129 ++++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 107 insertions(+), 22 deletions(-)
+ net/bridge/netfilter/ebtables.c |   18 ++++++------------
+ 1 files changed, 6 insertions(+), 12 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 9fd6d38..664c663 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -22,6 +22,7 @@
- #include <linux/swap.h>
- #include <linux/swapops.h>
- #include <linux/region.h>
-+#include <linux/memcontrol.h>
+diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+index 9c0f177..1efc234 100644
+--- a/net/bridge/netfilter/ebtables.c
++++ b/net/bridge/netfilter/ebtables.c
+@@ -226,10 +226,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
  
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -72,6 +73,59 @@ static DEFINE_SPINLOCK(hugetlb_lock);
-  *
-  */
+ 		if (EBT_MATCH_ITERATE(point, ebt_do_match, skb, &acpar) != 0)
+ 			goto letscontinue;
+-		if (acpar.hotdrop) {
+-			read_unlock_bh(&table->lock);
+-			return NF_DROP;
+-		}
++		if (acpar.hotdrop)
++			goto out;
  
-+long hugetlb_page_charge(struct list_head *head,
-+			 struct hstate *h, long from, long to)
-+{
-+#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-+	long chg;
-+	from = from << huge_page_order(h);
-+	to   = to << huge_page_order(h);
-+	chg  = mem_cgroup_try_noreclaim_charge(head, from, to, h - hstates);
-+	if (chg > 0)
-+		return chg >> huge_page_order(h);
-+	return chg;
-+#else
-+	return region_chg(head, from, to, 0);
-+#endif
-+}
-+
-+void hugetlb_page_uncharge(struct list_head *head, int idx, long nr_pages)
-+{
-+#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-+	return mem_cgroup_noreclaim_uncharge(head, idx, nr_pages);
-+#else
-+	return;
-+#endif
-+}
-+
-+void hugetlb_commit_page_charge(struct hstate *h,
-+				struct list_head *head, long from, long to)
-+{
-+#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-+	from = from << huge_page_order(h);
-+	to   = to << huge_page_order(h);
-+	return mem_cgroup_commit_noreclaim_charge(head, from, to);
-+#else
-+	return region_add(head, from, to, 0);
-+#endif
-+}
-+
-+long hugetlb_truncate_cgroup(struct hstate *h,
-+			     struct list_head *head, long from)
-+{
-+#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-+	long chg;
-+	from = from << huge_page_order(h);
-+	chg  = mem_cgroup_truncate_chglist_range(head, from,
-+						 ULONG_MAX, h - hstates);
-+	if (chg > 0)
-+		return chg >> huge_page_order(h);
-+	return chg;
-+#else
-+	return region_truncate(head, from);
-+#endif
-+}
-+
- /*
-  * Convert the address within this vma to the page offset within
-  * the mapping, in pagecache page units; huge pages here.
-@@ -840,9 +894,8 @@ static long vma_needs_reservation(struct hstate *h,
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		return region_chg(&inode->i_mapping->private_list,
--				  idx, idx + 1, 0);
--
-+		return hugetlb_page_charge(&inode->i_mapping->private_list,
-+					   h, idx, idx + 1);
- 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		return 1;
- 
-@@ -857,16 +910,33 @@ static long vma_needs_reservation(struct hstate *h,
- 		return 0;
- 	}
- }
-+
-+static void vma_uncharge_reservation(struct hstate *h,
-+				     struct vm_area_struct *vma,
-+				     unsigned long chg)
-+{
-+	struct address_space *mapping = vma->vm_file->f_mapping;
-+	struct inode *inode = mapping->host;
-+
-+
-+	if (vma->vm_flags & VM_MAYSHARE) {
-+		return hugetlb_page_uncharge(&inode->i_mapping->private_list,
-+					     h - hstates,
-+					     chg << huge_page_order(h));
-+	}
-+}
-+
- static void vma_commit_reservation(struct hstate *h,
- 			struct vm_area_struct *vma, unsigned long addr)
- {
-+
- 	struct address_space *mapping = vma->vm_file->f_mapping;
- 	struct inode *inode = mapping->host;
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		region_add(&inode->i_mapping->private_list, idx, idx + 1, 0);
--
-+		hugetlb_commit_page_charge(h, &inode->i_mapping->private_list,
-+					   idx, idx + 1);
- 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
- 		struct resv_map *reservations = vma_resv_map(vma);
-@@ -895,9 +965,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	chg = vma_needs_reservation(h, vma, addr);
- 	if (chg < 0)
- 		return ERR_PTR(-VM_FAULT_OOM);
--	if (chg)
--		if (hugetlb_get_quota(inode->i_mapping, chg))
-+	if (chg) {
-+		if (hugetlb_get_quota(inode->i_mapping, chg)) {
-+			vma_uncharge_reservation(h, vma, chg);
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
-+		}
-+	}
- 
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
-@@ -906,7 +979,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	if (!page) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
--			hugetlb_put_quota(inode->i_mapping, chg);
-+			if (chg) {
-+				vma_uncharge_reservation(h, vma, chg);
-+				hugetlb_put_quota(inode->i_mapping, chg);
-+			}
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
+ 		/* increase counter */
+ 		(*(counter_base + i)).pcnt++;
+@@ -253,10 +251,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
+ 			read_unlock_bh(&table->lock);
+ 			return NF_ACCEPT;
  		}
- 	}
-@@ -914,7 +990,6 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	set_page_private(page, (unsigned long) mapping);
- 
- 	vma_commit_reservation(h, vma, addr);
--
- 	return page;
- }
- 
-@@ -2744,9 +2819,10 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * to reserve the full area even if read-only as mprotect() may be
- 	 * called to make the mapping read-write. Assume !vma is a shm mapping
- 	 */
--	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		chg = region_chg(&inode->i_mapping->private_list, from, to, 0);
--	else {
-+	if (!vma || vma->vm_flags & VM_MAYSHARE) {
-+		chg = hugetlb_page_charge(&inode->i_mapping->private_list,
-+					  h, from, to);
-+	} else {
- 		struct resv_map *resv_map = resv_map_alloc();
- 		if (!resv_map)
- 			return -ENOMEM;
-@@ -2761,19 +2837,17 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		return chg;
- 
- 	/* There must be enough filesystem quota for the mapping */
--	if (hugetlb_get_quota(inode->i_mapping, chg))
--		return -ENOSPC;
--
-+	if (hugetlb_get_quota(inode->i_mapping, chg)) {
-+		ret = -ENOSPC;
-+		goto err_quota;
-+	}
- 	/*
- 	 * Check enough hugepages are available for the reservation.
- 	 * Hand back the quota if there are not
- 	 */
- 	ret = hugetlb_acct_memory(h, chg);
--	if (ret < 0) {
--		hugetlb_put_quota(inode->i_mapping, chg);
--		return ret;
--	}
--
-+	if (ret < 0)
-+		goto err_acct_mem;
- 	/*
- 	 * Account for the reservations made. Shared mappings record regions
- 	 * that have reservations as they are shared by multiple VMAs.
-@@ -2786,15 +2860,26 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * else has to be done for private mappings here
- 	 */
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		region_add(&inode->i_mapping->private_list, from, to, 0);
-+		hugetlb_commit_page_charge(h, &inode->i_mapping->private_list,
-+					   from, to);
- 	return 0;
-+err_acct_mem:
-+	hugetlb_put_quota(inode->i_mapping, chg);
-+err_quota:
-+	if (!vma || vma->vm_flags & VM_MAYSHARE)
-+		hugetlb_page_uncharge(&inode->i_mapping->private_list,
-+				      h - hstates, chg << huge_page_order(h));
-+	return ret;
-+
- }
- 
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
- {
-+	long chg;
- 	struct hstate *h = hstate_inode(inode);
--	long chg = region_truncate(&inode->i_mapping->private_list, offset);
- 
-+	chg = hugetlb_truncate_cgroup(h, &inode->i_mapping->private_list,
-+				      offset);
- 	spin_lock(&inode->i_lock);
- 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
- 	spin_unlock(&inode->i_lock);
+-		if (verdict == EBT_DROP) {
+-			read_unlock_bh(&table->lock);
+-			return NF_DROP;
+-		}
++		if (verdict == EBT_DROP)
++			goto out;
+ 		if (verdict == EBT_RETURN) {
+ letsreturn:
+ #ifdef CONFIG_NETFILTER_DEBUG
+@@ -281,8 +277,7 @@ letsreturn:
+ #ifdef CONFIG_NETFILTER_DEBUG
+ 		if (verdict < 0) {
+ 			BUGPRINT("bogus standard verdict\n");
+-			read_unlock_bh(&table->lock);
+-			return NF_DROP;
++			goto out;
+ 		}
+ #endif
+ 		/* jump to a udc */
+@@ -294,8 +289,7 @@ letsreturn:
+ #ifdef CONFIG_NETFILTER_DEBUG
+ 		if (chaininfo->distinguisher) {
+ 			BUGPRINT("jump to non-chain\n");
+-			read_unlock_bh(&table->lock);
+-			return NF_DROP;
++			goto out;
+ 		}
+ #endif
+ 		nentries = chaininfo->nentries;
 -- 
-1.7.9
+1.7.4.4
 
