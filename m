@@ -1,133 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab2CASap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:30:45 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:16999
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755028Ab2CASam (ORCPT
+	id S1756065Ab2CASc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 13:32:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54466 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab2CASc0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:30:42 -0500
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2fh668h839h93fh)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4F4FC037.4060201@am.sony.com>
-Date: Thu, 1 Mar 2012 10:30:15 -0800
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Thu, 1 Mar 2012 13:32:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of venki@google.com designates 10.50.203.66 as permitted sender) smtp.mail=venki@google.com; dkim=pass header.i=venki@google.com
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux kernel <linux-kernel@vger.kernel.org>, <tj@kernel.org>
-Subject: Re: Questions about ptrace on a dying process
-References: <4F4E6915.1010209@am.sony.com> <m2mx81pi7x.fsf@firstfloor.org> <4F4E8E6A.2020601@am.sony.com> <201203010812.54769.vda.linux@googlemail.com>
-In-Reply-To: <201203010812.54769.vda.linux@googlemail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+In-Reply-To: <4F4C00D7.2030708@gmail.com>
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
+	<1328055439-9441-1-git-send-email-venki@google.com>
+	<4F4BFBEB.8080800@gmail.com>
+	<20120227140746.61f5fba9.akpm@linux-foundation.org>
+	<4F4C00D7.2030708@gmail.com>
+Date: Thu, 1 Mar 2012 10:32:25 -0800
+Message-ID: <CABeCy1Y_QxbuGfTKE7mBFT_Aq2pPZm+9iA3tiVbb6qA1WwvY_A@mail.gmail.com>
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
+From: Venki Pallipadi <venki@google.com>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 11:12 PM, Denys Vlasenko wrote:
-> On Wednesday 29 February 2012 21:45, Tim Bird wrote:
->> On 02/29/2012 11:12 AM, Andi Kleen wrote:
->>> Tim Bird <tim.bird@am.sony.com> writes:
->>>
->>>> ptrace maintainers (and interested parties)...
->>>>
->>>> I'm working on a crash handler for Linux, which uses ptrace to retrieve information
->>>> about a process during it's coredump.  Specifically, from within a core handler
->>>> program (started within do_coredump() as a user_mode_helper), I would like to make
->>>> ptrace calls against the dying process.
->>>
->>> The standard approach is to define a core pipe handler and parse the
->>> elf memory dump.
+On Mon, Feb 27, 2012 at 2:16 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 02/27/2012 02:07 PM, Andrew Morton wrote:
 >>
->> Yeah - I may be doing something new here.  Android uses ptrace
->> in debuggerd, which is their crash reporting tool, but they wake
->> it up with signals before the dying program goes into coredump.
-> 
-> I think ptrace API does not provide guarantees that it is possible
-> to attach to the process when it coredumps.
-> 
-> It might work in current kernels, but might break in new ones.
+>> On Mon, 27 Feb 2012 13:55:55 -0800
+>> David Daney<ddaney.cavm@gmail.com>  wrote:
+>>
+>>> On 01/31/2012 04:17 PM, Venkatesh Pallipadi wrote:
+>>>>
+>>>> Kernel's notion of possible cpus (from include/linux/cpumask.h)
+>>>>   *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+>>>>
+>>>>   *  The cpu_possible_mask is fixed at boot time, as the set of CPU id's
+>>>>   *  that it is possible might ever be plugged in at anytime during the
+>>>>   *  life of that system boot.
+>>>>
+>>>>   #define num_possible_cpus()     cpumask_weight(cpu_possible_mask)
+>>>>
+>>>> and on x86 cpumask_weight() calls hweight64 and hweight64 (on older
+>>>> kernels
+>>>> and systems with !X86_FEATURE_POPCNT) or a popcnt based alternative.
+>>>>
+>>>> i.e, We needlessly go through this mask based calculation everytime
+>>>> num_possible_cpus() is called.
+>>>>
+>>>> The problem is there with cpu_online_mask() as well, which is fixed
+>>>> value at
+>>>> boot time in !CONFIG_HOTPLUG_CPU case and should not change that often
+>>>> even
+>>>> in HOTPLUG case.
+>>>>
+>>>> Though most of the callers of these two routines are init time (with few
+>>>> exceptions of runtime calls), it is cleaner to use variables
+>>>> and not go through this repeated mask based calculation.
+>>>>
+>>>> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
+>>>> Acked-by: Srivatsa S. Bhat<srivatsa.bhat@linux.vnet.ibm.com>
+>>>> Acked-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>>>
+>>>
+>>> How is it that this patch got merged to linux-next before all the
+>>> cleanup patches for nr_online_cpus?
+>>
+>>
+>> <spends five minutes searching mailing list archives>
+>>
+>> I for one do not have a clue what patches the term "cleanup patches for
+>> nr_online_cpus" refers to.  Patches have names - please use them!
+>>
+>
+> Sorry about that.  I was a little hasty:
+>
+>  From: Venkatesh Pallipadi <venki@google.com>
+>  Subject: [PATCH 0/3] Cleanup raw handling of online/possible map
+>  Date: Tue, 14 Feb 2012 14:49:41 -0800
+>  Message-Id: <1329259784-20592-1-git-send-email-venki@google.com>
+>
+> I don't really know a better way to refer to them.
+>
+> David Daney
+>
+>
+>
+>
+>>>   From the looks of your follow-on patches it would seem that all MIPS,
+>>> hexagon, and um are now broken.
+>>>
+>>> I know for a fact that MIPS doesn't boot because of this.
+>>
+>>
+>> I shall drop
+>> cpumask-avoid-mask-based-num_possible_cpus-and-num_online_cpus.patch.
+>>
+>> That patch was sent as a single standalone patch and the changelog had
+>> no mention of any needed preparatory patches.  If resending, please
+>> send *all* patches in a single sequence-numbered series.  We know how
+>> to do this.
+>
+>
+> It is possible that Venkatesh did not know about the breakage when the
+> original patch was sent
 
-If it's not too much trouble, it would be nice to continue
-this behaviour.   Admittedly, my style of crash handling appears
-to be new, and I don't want to unnecessarily burden the code,
-but so far it works really well, and currently requires very
-minimal change to the existing ptrace code.  One thing that's
-nice about what I'm doing, is that I don't rely on the
-whole signal state machine of the process to interact with it
-(since a dying process can't respond correctly).
+Sorry about all the confusion with this change. The long story goes
+something like this:
 
-So hopefully, continuing to support ptrace for a dying process
-won't interfere or burden the existing (rather complex)
-state processing in the current code.
+Yes. The problems with this patch "Avoid mask based num_possible_cpus
+and num_online_cpus"
+were uncovered after it went into mm. First report was on ia64 here
+https://lkml.org/lkml/2012/2/13/327
 
-Just for reference, below is the patch I settled on for my own kernel.
-I'm planning taking a look at the PTRACE_SEIZE code to see if it
-accomplishes what I need, but haven't done that yet.
+And there were potential problems in other archs as well. Srivatsa and
+I sent out a bunch of cleanups
+https://lkml.org/lkml/2012/2/14/355
+https://lkml.org/lkml/2012/2/14/380
 
-I do have a question, though - how will a tracer know that it can
-use PTRACE_SEIZE?  Is there some introspection API?  My code will
-be running mainly against a patched 3.0 for some time (a few years),
-but if I could make it interoperate with a kernel that supports
-PTRACE_SEIZE (when it is mainlined), that would be great.
+Rusty followed up with a superset of these cleanups
+https://lkml.org/lkml/2012/2/15/4
 
- -- Tim
+I asked Rusty to pick up my original patch as the last patch in his series.
+https://lkml.org/lkml/2012/2/15/516
 
-commit dd54b901759428e60ed57b2d6cb77d25a8db767f
-Author: tbird <tim.bird@am.sony.com>
-Date:   Tue Feb 28 14:13:08 2012 -0800
+That's all the happenings that I remember. I am not sure what the
+status of Rusty's or my cleanup patches is right now. I am looking at
+various trees now trying to find these cleanup patches. I can resubmit
+this particular change once the cleanups have made through.
 
-    Support ptrace_attach with no signal side-effects.
-
-    In the normal case, a ptrace_attach operation will convert
-    a process to TASK_TRACED by sending it a SIGSTOP signal,
-    after setting task->ptrace.  This won't work on a dying
-    process because during do_coredump(), the dying process won't
-    process the STOP signal and change state.
-
-    Modify ptrace_attach() so that the tracee task state is modified
-    directly.  This allows subsequent ptrace_check_attach() calls
-    to work correctly, and avoids having a pending SIGSTOP signal
-    on the tree process (which interferes with waiting for
-    the core pipe handler).
-
-    Note that a more full-featured implementation of this is in the
-    works (as of March, 2012) by Tejun Heo, called PTRACE_SEIZE.
-    Once that gets mainlined, this patch may not be needed, or might
-    need to be reworked.
-
-    Signed-off-by: Tim Bird <tim.bird@am.sony.com>
-
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 26147d1..9c7bf8e 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -223,7 +223,16 @@ static int ptrace_attach(struct task_struct *task)
- 		task->ptrace |= PT_PTRACE_CAP;
-
- 	__ptrace_link(task, current);
--	send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
-+	
-+	/*
-+ 	 * If doing coredump, just convert directly to TASK_TRACED.
-+ 	 * A dying process doesn't process signals normally.
-+ 	 */
-+	if (unlikely(task->mm->core_state)) {
-+		set_task_state(task, TASK_TRACED);
-+	} else {
-+		send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
-+	}
-
- 	spin_lock(&task->sighand->siglock);
-
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+Thanks,
+Venki
