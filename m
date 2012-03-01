@@ -1,255 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965257Ab2CAJXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:23:05 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36817 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338Ab2CAJQv (ORCPT
+	id S965875Ab2CAJYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:24:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49532 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964878Ab2CAJYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:16:51 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2 1/9] mm:  move hugetlbfs region tracking function to common code
-Date: Thu,  1 Mar 2012 14:46:12 +0530
-Message-Id: <1330593380-1361-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022923-9264-0000-0000-000000F813B7
+	Thu, 1 Mar 2012 04:24:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.197.35 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: bart.de.schuymer@pandora.be
+Cc: pablo@netfilter.org, kaber@trash.net, shemminger@vyatta.com,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH 2/3] netfilter: potential null derefence.
+Date: Thu,  1 Mar 2012 14:47:14 +0530
+Message-Id: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-This patch moves the hugetlbfs region tracking function to
-common code. We will be using this in later patches in the
-series.
+I am getting following error.
+" net/bridge/netfilter/ebtables.c:269 ebt_do_table()
+  error: potential null derefence 'cs'"
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+    i = cs[sp].n;  // If cs == Null then this will cause problem.
+
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 ---
- include/linux/region.h |   28 +++++++++
- mm/Makefile            |    2 +-
- mm/region.c            |  158 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 187 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/region.h
- create mode 100644 mm/region.c
+ net/bridge/netfilter/ebtables.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/region.h b/include/linux/region.h
-new file mode 100644
-index 0000000..a8a5b46
---- /dev/null
-+++ b/include/linux/region.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright IBM Corporation, 2012
-+ * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2.1 of the GNU Lesser General Public License
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it would be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-+ *
-+ */
-+
-+#ifndef _LINUX_REGION_H
-+#define _LINUX_REGION_H
-+
-+struct file_region {
-+	struct list_head link;
-+	long from;
-+	long to;
-+};
-+
-+extern long region_add(struct list_head *head, long from, long to);
-+extern long region_chg(struct list_head *head, long from, long to);
-+extern long region_truncate(struct list_head *head, long end);
-+extern long region_count(struct list_head *head, long from, long to);
-+#endif
-diff --git a/mm/Makefile b/mm/Makefile
-index 50ec00e..8828a1b 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -14,7 +14,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
- 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
- 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
- 			   $(mmu-y)
--obj-y += init-mm.o
-+obj-y += init-mm.o region.o
- 
- ifdef CONFIG_NO_BOOTMEM
- 	obj-y		+= nobootmem.o
-diff --git a/mm/region.c b/mm/region.c
-new file mode 100644
-index 0000000..ab59fe7
---- /dev/null
-+++ b/mm/region.c
-@@ -0,0 +1,158 @@
-+/*
-+ * Copyright IBM Corporation, 2012
-+ * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of version 2.1 of the GNU Lesser General Public License
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it would be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-+ *
-+ */
-+
-+#include <linux/cgroup.h>
-+#include <linux/slab.h>
-+#include <linux/hugetlb.h>
-+#include <linux/list.h>
-+#include <linux/region.h>
-+
-+long region_add(struct list_head *head, long from, long to)
-+{
-+	struct file_region *rg, *nrg, *trg;
-+
-+	/* Locate the region we are either in or before. */
-+	list_for_each_entry(rg, head, link)
-+		if (from <= rg->to)
-+			break;
-+
-+	/* Round our left edge to the current segment if it encloses us. */
-+	if (from > rg->from)
-+		from = rg->from;
-+
-+	/* Check for and consume any regions we now overlap with. */
-+	nrg = rg;
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (&rg->link == head)
-+			break;
-+		if (rg->from > to)
-+			break;
-+
-+		/* If this area reaches higher then extend our area to
-+		 * include it completely.  If this is not the first area
-+		 * which we intend to reuse, free it. */
-+		if (rg->to > to)
-+			to = rg->to;
-+		if (rg != nrg) {
-+			list_del(&rg->link);
-+			kfree(rg);
-+		}
+diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+index f3fcbd9..9c0f177 100644
+--- a/net/bridge/netfilter/ebtables.c
++++ b/net/bridge/netfilter/ebtables.c
+@@ -209,8 +209,10 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
+ 	   smp_processor_id());
+ 	if (private->chainstack)
+ 		cs = private->chainstack[smp_processor_id()];
+-	else
++	else {
+ 		cs = NULL;
++		goto out;
 +	}
-+	nrg->from = from;
-+	nrg->to = to;
-+	return 0;
-+}
-+
-+long region_chg(struct list_head *head, long from, long to)
-+{
-+	struct file_region *rg, *nrg;
-+	long chg = 0;
-+
-+	/* Locate the region we are before or in. */
-+	list_for_each_entry(rg, head, link)
-+		if (from <= rg->to)
-+			break;
-+
-+	/* If we are below the current region then a new region is required.
-+	 * Subtle, allocate a new region at the position but make it zero
-+	 * size such that we can guarantee to record the reservation. */
-+	if (&rg->link == head || to < rg->from) {
-+		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+		if (!nrg)
-+			return -ENOMEM;
-+		nrg->from = from;
-+		nrg->to   = from;
-+		INIT_LIST_HEAD(&nrg->link);
-+		list_add(&nrg->link, rg->link.prev);
-+
-+		return to - from;
-+	}
-+
-+	/* Round our left edge to the current segment if it encloses us. */
-+	if (from > rg->from)
-+		from = rg->from;
-+	chg = to - from;
-+
-+	/* Check for and consume any regions we now overlap with. */
-+	list_for_each_entry(rg, rg->link.prev, link) {
-+		if (&rg->link == head)
-+			break;
-+		if (rg->from > to)
-+			return chg;
-+
-+		/* We overlap with this area, if it extends further than
-+		 * us then we must extend ourselves.  Account for its
-+		 * existing reservation. */
-+		if (rg->to > to) {
-+			chg += rg->to - to;
-+			to = rg->to;
-+		}
-+		chg -= rg->to - rg->from;
-+	}
-+	return chg;
-+}
-+
-+long region_truncate(struct list_head *head, long end)
-+{
-+	struct file_region *rg, *trg;
-+	long chg = 0;
-+
-+	/* Locate the region we are either in or before. */
-+	list_for_each_entry(rg, head, link)
-+		if (end <= rg->to)
-+			break;
-+	if (&rg->link == head)
-+		return 0;
-+
-+	/* If we are in the middle of a region then adjust it. */
-+	if (end > rg->from) {
-+		chg = rg->to - end;
-+		rg->to = end;
-+		rg = list_entry(rg->link.next, typeof(*rg), link);
-+	}
-+
-+	/* Drop any remaining regions. */
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (&rg->link == head)
-+			break;
-+		chg += rg->to - rg->from;
-+		list_del(&rg->link);
-+		kfree(rg);
-+	}
-+	return chg;
-+}
-+
-+long region_count(struct list_head *head, long from, long to)
-+{
-+	struct file_region *rg;
-+	long chg = 0;
-+
-+	/* Locate each segment we overlap with, and count that overlap. */
-+	list_for_each_entry(rg, head, link) {
-+		int seg_from;
-+		int seg_to;
-+
-+		if (rg->to <= from)
-+			continue;
-+		if (rg->from >= to)
-+			break;
-+
-+		seg_from = max(rg->from, from);
-+		seg_to = min(rg->to, to);
-+
-+		chg += seg_to - seg_from;
-+	}
-+
-+	return chg;
-+}
+ 	chaininfo = private->hook_entry[hook];
+ 	nentries = private->hook_entry[hook]->nentries;
+ 	point = (struct ebt_entry *)(private->hook_entry[hook]->data);
+@@ -313,6 +315,7 @@ letscontinue:
+ 		read_unlock_bh(&table->lock);
+ 		return NF_ACCEPT;
+ 	}
++out:
+ 	read_unlock_bh(&table->lock);
+ 	return NF_DROP;
+ }
 -- 
-1.7.9
+1.7.4.4
 
