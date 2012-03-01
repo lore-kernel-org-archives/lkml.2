@@ -1,65 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab2CAAnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:43:04 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40966 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932305Ab2CAAm6 (ORCPT
+	id S966181Ab2CAAnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:43:46 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52135 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932535Ab2CAAnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:42:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.152.114.35 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
+	Wed, 29 Feb 2012 19:43:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.212.130 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Wed, 29 Feb 2012 16:43:07 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3.3] memcg: fix deadlock by inverting lrucare nesting
+In-Reply-To: <20120229140458.c53352db.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1202291635000.11821@eggly.anvils>
+References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils> <20120229140458.c53352db.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQW=NXnaEY+fmUS_cyJy_BE-1+pWy8kfAoPA_s=vwDq4Mw@mail.gmail.com>
-References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
- <1330556858-11768-3-git-send-email-yinghai@kernel.org> <CAErSpo62VuJw+3caNUhmg5moh3h4cn5z4kCsqTWZW-XqSzpk4Q@mail.gmail.com>
- <CAE9FiQW=NXnaEY+fmUS_cyJy_BE-1+pWy8kfAoPA_s=vwDq4Mw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 29 Feb 2012 17:42:36 -0700
-Message-ID: <CAErSpo5N72zkfvvgSNg0MsKAZwcR5TOsxH+Y7BkVbOBYWbdaKQ@mail.gmail.com>
-Subject: Re: [PATCH 02/39] x86, PCI: have own version for pcibios_bus_to_resource
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 4:33 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Feb 29, 2012 at 3:20 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Feb 29, 2012 at 4:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> x86 does not need to offset the address. So we can skip that costing offset
->>> searching.
->>
->> I tried to start a discussion about this patch (and others), but I
->> don't think you responded:
->> http://marc.info/?l=linux-pci&m=133036414506921&w=2
->
-> this patch does reduce some not needed ops.
->
-> and it does not affects your effects,
+On Wed, 29 Feb 2012, Andrew Morton wrote:
+> On Tue, 28 Feb 2012 21:25:02 -0800 (PST)
+> Hugh Dickins <hughd@google.com> wrote:
+> 
+> > We have forgotten the rules of lock nesting: the irq-safe ones must be
+> > taken inside the non-irq-safe ones, otherwise we are open to deadlock:
+> 
+> This patch makes rather a mess of "memcg: remove PCG_CACHE page_cgroup
+> flag".
 
-It does affect my efforts in that this patch adds back x86 complexity
-that I don't think is necessary.
+Sorry about that.
 
-And this patch makes it so the pci_add_resource_offset() interface
-exists and appears to work on x86, but if somebody tries to use it, it
-*doesn't* work.  I don't like to write code like that.  I think it's
-poor style.
+> 
+> I did it this way:
 
-> and it just make x86 not get punished.
+Exactly right, thank you.  In my tree I end up with a blank line
+in between the smp_wmb() and the SetPageCgroupUsed(pc), but I
+prefer the way you have grouped it.
 
-What punishment are you worried about?  I really don't think you'll be
-able to measure any performance impact.
+Hugh
 
-I agree that the x86 code you add *is* simpler than the generic
-version.  But I think the *overall* complexity is higher because now
-you have to look at two versions (generic and x86) and convince
-yourself that it's safe to use the x86 version.
-
-Bjorn
+> 
+> static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+> 				       struct page *page,
+> 				       unsigned int nr_pages,
+> 				       struct page_cgroup *pc,
+> 				       enum charge_type ctype,
+> 				       bool lrucare)
+> {
+> 	struct zone *uninitialized_var(zone);
+> 	bool was_on_lru = false;
+> 	bool anon;
+> 
+> 	lock_page_cgroup(pc);
+> 	if (unlikely(PageCgroupUsed(pc))) {
+> 		unlock_page_cgroup(pc);
+> 		__mem_cgroup_cancel_charge(memcg, nr_pages);
+> 		return;
+> 	}
+> 	/*
+> 	 * we don't need page_cgroup_lock about tail pages, becase they are not
+> 	 * accessed by any other context at this point.
+> 	 */
+> 
+> 	/*
+> 	 * In some cases, SwapCache and FUSE(splice_buf->radixtree), the page
+> 	 * may already be on some other mem_cgroup's LRU.  Take care of it.
+> 	 */
+> 	if (lrucare) {
+> 		zone = page_zone(page);
+> 		spin_lock_irq(&zone->lru_lock);
+> 		if (PageLRU(page)) {
+> 			ClearPageLRU(page);
+> 			del_page_from_lru_list(zone, page, page_lru(page));
+> 			was_on_lru = true;
+> 		}
+> 	}
+> 
+> 	pc->mem_cgroup = memcg;
+> 	/*
+> 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+> 	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+> 	 * is accessed after testing USED bit. To make pc->mem_cgroup visible
+> 	 * before USED bit, we need memory barrier here.
+> 	 * See mem_cgroup_add_lru_list(), etc.
+>  	 */
+> 	smp_wmb();
+> 	SetPageCgroupUsed(pc);
+> 
+> 	if (lrucare) {
+> 		if (was_on_lru) {
+> 			VM_BUG_ON(PageLRU(page));
+> 			SetPageLRU(page);
+> 			add_page_to_lru_list(zone, page, page_lru(page));
+> 		}
+> 		spin_unlock_irq(&zone->lru_lock);
+> 	}
+> 
+> 	if (ctype == MEM_CGROUP_CHARGE_TYPE_MAPPED)
+> 		anon = true;
+> 	else
+> 		anon = false;
+> 
+> 	mem_cgroup_charge_statistics(memcg, anon, nr_pages);
+> 	unlock_page_cgroup(pc);
+> 
+> 	/*
+> 	 * "charge_statistics" updated event counter. Then, check it.
+> 	 * Insert ancestor (and ancestor's ancestors), to softlimit RB-tree.
+> 	 * if they exceeds softlimit.
+> 	 */
+> 	memcg_check_events(memcg, page);
+> }
+> 
+> 
