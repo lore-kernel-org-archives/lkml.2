@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab2CAUF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:05:57 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16477 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757385Ab2CAUFy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:05:54 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 01 Mar 2012 12:05:36 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>
-Date: Thu, 1 Mar 2012 12:05:34 -0800
-Subject: RE: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
-Thread-Topic: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
-Thread-Index: Acz34Vn8/MPOfmTYQe25cZFfnIlkDwABPwkA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE86172C@HQMAIL01.nvidia.com>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
- <1330630010-11241-7-git-send-email-alan@signal11.us>
-In-Reply-To: <1330630010-11241-7-git-send-email-alan@signal11.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932443Ab2CAUIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:08:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:37031 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757098Ab2CAUIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 15:08:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="116665152"
+Date: Thu, 1 Mar 2012 12:07:50 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-usb@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] usb, PCI: split quirk for usb host controller to
+ three
+Message-ID: <20120301200750.GB5155@xanatos>
+References: <1330622227-4209-1-git-send-email-yinghai@kernel.org>
+ <20120301172435.GA8505@kroah.com>
+ <20120301190323.GA5155@xanatos>
+ <CAE9FiQXPi2VY+cVOxaQr=MBy_m3Dr0BKG6DRTCP1TrbuDcMCfg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQXPi2VY+cVOxaQr=MBy_m3Dr0BKG6DRTCP1TrbuDcMCfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
-> From: Arnd Bergmann <arnd@arndb.de>
+On Thu, Mar 01, 2012 at 11:19:06AM -0800, Yinghai Lu wrote:
+> On Thu, Mar 1, 2012 at 11:03 AM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> > On Thu, Mar 01, 2012 at 09:24:35AM -0800, Greg Kroah-Hartman wrote:
+> >> On Thu, Mar 01, 2012 at 09:17:07AM -0800, Yinghai Lu wrote:
+> >> > so we avoid checking class again and again in that quirk.
+> >> >
+> >> > need to be applied after pci/linux-next and usb/usb-next
+> >>
+> >> As those are two independant trees, this needs to wait until after
+> >> 3.4-rc1 is out.
+> >>
+> >> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> >
+> >> > ---
+> >> >  drivers/usb/host/pci-quirks.c |   42 ++++++++++++++++++++++++++++--------------
+> >> >  1 file changed, 28 insertions(+), 14 deletions(-)
+> >>
+> >> Is this really helping anything here?  You added code overall :(
+> >
+> > I agree with Greg.  Why change this?  Does it shave off any boot time?
+> > Please show hard numbers for what improvements this makes.  I really
+> > don't want to change PCI init and break people's systems.
 > 
-> The USB_ULPI driver is selected by tegra, but can only be
-> built if at least one of USB or USB_GADGET is enabled.
-> The kernel fails to link if both are off.
+> but your code make pci init change to call disable/enable for non-xhci
+> for fixing xhci problem.
 
-> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-...
-> @@ -10,6 +10,7 @@ config ARCH_TEGRA_2x_SOC
-...
-> +	select USB_GADGET if USB_SUPPORT && !USB
+We discussed this, and agreed it was safe to do so for all USB host
+controllers.  It's possible some other BIOS will disable the PCI host
+controller before handing it off to the OS, so we have to handle that
+case.  So it's fine that we enable/disable the device for all USB host
+controllers.  I tried to make sure we weren't enabling/disabling for
+non-USB PCI devices.
 
-I don't believe the Tegra USB driver supports gadget mode at present.
-Would the above be better written as:
-
-    select USB if USB_SUPPORT
-
-And I wonder if the Tegra EHCI driver shouldn't be doing some of these
-selects, not the ARCH_TEGRA_* option.
-
-And this is probably required for Tegra30 too not just Tegra20.
-
--- 
-nvpublic
-
+Sarah Sharp
