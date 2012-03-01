@@ -1,123 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866Ab2CAOxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:53:52 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:19493 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab2CAOxu (ORCPT
+	id S1754826Ab2CAO4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:56:21 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:17586 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab2CAO4T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:53:50 -0500
-Message-ID: <4F4F8D66.7040205@atmel.com>
-Date: Thu, 01 Mar 2012 15:53:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL v2] at91: irqdomain and device tree for 3.4
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Mar 2012 09:56:19 -0500
+Date: Thu, 01 Mar 2012 15:57:18 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v9 1/2] ARM: EXYNOS: Change System MMU platform device
+ definitions
+In-reply-to: <CAHQjnOO1aADVQWxNt-J3nb0bgJvc2dfk+6qTWKWx7w+-LUVSmw@mail.gmail.com>
+To: "'KyongHo Cho'" <pullip.cho@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
+Message-id: <011401ccf7bb$98d51c30$ca7f5490$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=iso-8859-2
+Content-language: pl
+Content-transfer-encoding: 8BIT
+Thread-index: Acz2eLf5RirVyCBfQGKTmnybhSMZDQBQo70g
+References: <001901ccf5e3$6a363320$3ea29960$%cho@samsung.com>
+ <CAH9JG2Uvh=_GWFWyBrE-hfGTvrwvs6n37bmKaHbCovJ++EeJ7g@mail.gmail.com>
+ <CAHQjnOO1aADVQWxNt-J3nb0bgJvc2dfk+6qTWKWx7w+-LUVSmw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Olof,
+Hello,
 
-This pull request supersedes the previous:
-"[GIT PULL] at91: irqdomain and device tree for AIC and GPIO"
+On Wednesday, February 29, 2012 1:26 AM KyongHo Cho wrote:
 
-This series adds irqdomain and device tree support for both the
-interrupt and GPIO controllers of AT91 SoC. It has been discussed a lot
-and I think that I have addressed all comments and advices.
+ 
+> On Tue, Feb 28, 2012 at 4:20 PM, Kyungmin Park
+> <kyungmin.park@samsung.com> wrote:
+> > Hi,
+> >
+> > On 2/28/12, KyongHo Cho <pullip.cho@samsung.com> wrote:
+> >> Handling System MMUs with an identifier is not flexible to manage
+> >> System MMU platform devices because of the following reasons:
+> >> 1. A device driver which needs to handle System MMU must know the ID.
+> >> 2. A System MMU may not present in some implementations of Exynos family.
+> >> 3. Handling System MMU with IOMMU API does not require an ID.
+> >>
+> >> This patch is the result of removing ID of System MMUs.
+> >> Instead, a device driver that needs to handle its System MMU must
+> >> use IOMMU API while its descriptor of platform device is given.
+> >>
+> >> This patch also includes the following enhancements:
+> >> - A System MMU device becomes a child if its power domain device.
+> >> - clkdev
+> >>
+> >> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+> >> ---
+> >>  arch/arm/mach-exynos/Kconfig                    |   11 +-
+> >>  arch/arm/mach-exynos/Makefile                   |    2 +-
+> >>  arch/arm/mach-exynos/clock-exynos4.c            |   79 ++--
+> >>  arch/arm/mach-exynos/clock-exynos4.h            |    2 +
+> >>  arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
+> >>  arch/arm/mach-exynos/clock-exynos4212.c         |   28 ++-
+> >>  arch/arm/mach-exynos/clock-exynos5.c            |   90 +++++
+> >>  arch/arm/mach-exynos/dev-sysmmu.c               |  451
+> >> ++++++++++++-----------
+> >>  arch/arm/mach-exynos/include/mach/irqs.h        |  179 +++++-----
+> >>  arch/arm/mach-exynos/include/mach/map.h         |   38 ++
+> >>  arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
+> >>  arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 --
+> >>  arch/arm/mach-exynos/include/mach/sysmmu.h      |   84 +++--
+> >>  arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
+> >>  arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
+> >>  arch/arm/plat-s5p/sysmmu.c                      |   13 +-
+> >>  arch/arm/plat-samsung/include/plat/devs.h       |    1 -
+> >>  17 files changed, 618 insertions(+), 406 deletions(-)
+> > It's too big to cover these changes. Can you make it more small changes.
+> > 1. Remove existing ones since no user at this time.
+> > 2. Add new define and data structures.
+> > 3. Support new system mmu features based on generic iommu.
+> >
+> 
+> Your suggestion sounds good. Thank you.
+> 
+> >>  static int exynos4_clk_hdmiphy_ctrl(struct clk *clk, int enable)
+> >>  {
+> >>       return s5p_gatectrl(S5P_HDMI_PHY_CONTROL, clk, enable);
+> >> @@ -679,61 +684,55 @@ static struct clk exynos4_init_clocks_off[] = {
+> >>               .enable         = exynos4_clk_ip_peril_ctrl,
+> >>               .ctrlbit        = (1 << 14),
+> >>       }, {
+> >> -             .name           = "SYSMMU_MDMA",
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(mfc_l, 0),
+> >> +             .enable         = exynos4_clk_ip_mfc_ctrl,
+> >> +             .ctrlbit        = (1 << 1),
+> >> +     }, {
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(mfc_r, 1),
+> >> +             .enable         = exynos4_clk_ip_mfc_ctrl,
+> >> +             .ctrlbit        = (1 << 2),
+> >> +     }, {
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(tv, 2),
+> >> +             .enable         = exynos4_clk_ip_tv_ctrl,
+> >> +             .ctrlbit        = (1 << 4),
+> >> +     }, {
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(jpeg, 3),
+> >> +             .enable         = exynos4_clk_ip_cam_ctrl,
+> >> +             .ctrlbit        = (1 << 11),
+> >> +     }, {
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(rot, 4),
+> >>               .enable         = exynos4_clk_ip_image_ctrl,
+> >> -             .ctrlbit        = (1 << 5),
+> >> +             .ctrlbit        = (1 << 4),
+> >>       }, {
+> >> -             .name           = "SYSMMU_FIMC0",
+> >> +             .name           = SYSMMU_CLOCK_NAME,
+> >> +             .devname        = SYSMMU_CLOCK_DEVNAME(gsc0, 5),
+> > It's exynos4 series clock and don't have gsc name. I don't know LSI
+> > decides to use gsc instead of fimc for both exynos4 and exynos5. but
+> > there's no name gsc at Spec..
+> 
+> gsc0 is just a name of the platform device of FIMC0 in Exynos4.
+> It is also used for GSclaler0 in Exynos5.
+> I wanted to reduce waste of platform device definitions that do not exist
+> in an application processor.
+> 
+> If it looks confused, I will find another way.
+> >> +#define SYSMMU_RESOURCE_NAME(core, ipname) sysmmures_##core##_##ipname
+> >> +
+> >> +#define SYSMMU_RESOURCE(core, ipname)                                        \
+> >> +     static struct resource SYSMMU_RESOURCE_NAME(core, ipname)[] __initdata =
+> >> +
+> >> +#define DEFINE_SYSMMU_RESOURCE(core, mem, irq)                               \
+> >> +     DEFINE_RES_MEM_NAMED(core##_PA_SYSMMU_##mem, SZ_4K, #mem),      \
+> >> +     DEFINE_RES_IRQ_NAMED(core##_IRQ_SYSMMU_##irq##_0, #mem)
+> >> +
+> >> +#define SYSMMU_RESOURCE_DEFINE(core, ipname, mem, irq)                       \
+> >> +     SYSMMU_RESOURCE(core, ipname) {                                 \
+> >> +             DEFINE_SYSMMU_RESOURCE(core, mem, irq)                  \
+> >> +     }
+> >>
+> >> -struct platform_device exynos4_device_sysmmu = {
+> >> -     .name           = "s5p-sysmmu",
+> >> -     .id             = 32,
+> >> -     .num_resources  = ARRAY_SIZE(exynos4_sysmmu_resource),
+> >> -     .resource       = exynos4_sysmmu_resource,
+> >> +struct sysmmu_resource_map {
+> >> +     struct platform_device *pdev;
+> >> +     struct resource *res;
+> >> +     u32 rnum;
+> >> +     struct device *pdd;
+> >> +     char *clocknames;
+> >>  };
+> >> -EXPORT_SYMBOL(exynos4_device_sysmmu);
+> >>
+> >> -static struct clk *sysmmu_clk[S5P_SYSMMU_TOTAL_IPNUM];
+> >> -void sysmmu_clk_init(struct device *dev, sysmmu_ips ips)
+> >> -{
+> >> -     sysmmu_clk[ips] = clk_get(dev, sysmmu_ips_name[ips]);
+> >> -     if (IS_ERR(sysmmu_clk[ips]))
+> >> -             sysmmu_clk[ips] = NULL;
+> >> -     else
+> >> -             clk_put(sysmmu_clk[ips]);
+> >> +#define SYSMMU_RESOURCE_MAPPING(core, ipname, resname) {             \
+> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
+> >> +     .res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),             \
+> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+> >> +     .clocknames = SYSMMU_CLOCK_NAME,                                \
+> >>  }
+> >>
+> >> -void sysmmu_clk_enable(sysmmu_ips ips)
+> >> -{
+> >> -     if (sysmmu_clk[ips])
+> >> -             clk_enable(sysmmu_clk[ips]);
+> >> +#define SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata) {   \
+> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
+> >> +     .res = SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),             \
+> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+> >> +     .clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,         \
+> >> +}
+> >> +
+> >> +#ifdef CONFIG_EXYNOS_DEV_PD
+> >> +#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd) {              \
+> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
+> >> +     .res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),            \
+> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+> >> +     .clocknames = SYSMMU_CLOCK_NAME,                                \
+> >> +     .pdd = &exynos##core##_device_pd[pd].dev,                       \
+> >> +}
+> >> +
+> >> +#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata) {\
+> >> +     .pdev = &SYSMMU_PLATDEV(ipname),                                \
+> >> +     .res = &SYSMMU_RESOURCE_NAME(EXYNOS##core, resname),            \
+> >> +     .rnum = ARRAY_SIZE(SYSMMU_RESOURCE_NAME(EXYNOS##core, resname)),\
+> >> +     .clocknames = SYSMMU_CLOCK_NAME "," SYSMMU_CLOCK_NAME2,         \
+> >> +     .pdd = &exynos##core##_device_pd[pd].dev,                       \
+> >>  }
+> >> +#else
+> >> +#define SYSMMU_RESOURCE_MAPPING_PD(core, ipname, resname, pd)                \
+> >> +             SYSMMU_RESOURCE_MAPPING(core, ipname, resname)
+> >> +#define SYSMMU_RESOURCE_MAPPING_MCPD(core, ipname, resname, pd, pdata)       \
+> >> +             SYSMMU_RESOURCE_MAPPING_MC(core, ipname, resname, pdata)
+> >> +
+> >> +#endif /* CONFIG_EXYNOS_DEV_PD */
+> >> +
+> >> +#ifdef CONFIG_ARCH_EXYNOS4
+> > Below definitions are almost __initdata. So don't need to use ARCH_EXYNOS4.
+> > and another reason is that it can detect the duplicated entry if it's
+> > used both exynos4 and exynos5.
 
-To the AIC, GPIO device tree work, it also adds the the conversion of the 
-PIT and TC timers, the PIO3 support and some basic LED and gpio-keys entries.
+FIMC devices use s5p-fimc name in the mainline kernel. The driver is already there so
+there, so please don't change it. 4 more lines with proper 'fimc' name will not cause
+any problems.
 
-The irqdomain work takes advantage of Grant's patch series that is present
-in:
-git://git.secretlab.ca/git/linux-2.6 irqdomain/next
-This branch is merged into this tree, on top of at91/base2+cleanup (aka cleanup2)
-and before the application of new AT91 material.
-
-
-The following changes since commit 89d4a1753b6632327f18d6c8e0842b366b736621:
-
-  Merge branch 'irqdomain/next' of git://git.secretlab.ca/git/linux-2.6 (2012-03-01 13:26:51 +0100)
-
-are available in the git repository at:
-
-
-  git://github.com/at91linux/linux-at91.git at91-3.4-cleanup2+DT
-
-
-for you to fetch changes up to f75622f4679479d352d2fa83e0d84c6c13cfcb5f:
-
-  ARM: at91: at91sam9x5cm/dt: add leds support (2012-03-01 22:34:22 +0800)
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (6):
-      ARM: at91: pit add DT support
-      ARM: at91: usb_a9g20/dt: add leds support
-      ARM: at91: at91sam9m10g45ek/dt: add gpio-keys support
-      ARM: at91: usb_a9g20/dt: add gpio-keys support
-      ARM: at91: at91sam9x5cm/dt: add leds support
-
-Nicolas Ferre (16):
-      ARM: at91/aic: add irq domain and device tree support
-      ARM: at91/snapper9260: move gpio_to_irq out of structure initialization
-      ARM/USB: at91/ohci-at91: remove the use of irq_to_gpio
-      ARM: at91/gpio: change comments and one variable name
-      ARM: at91/gpio: add irqdomain and DT support
-      ARM: at91/gpio: non-DT builds do not have gpio_chip.of_node field
-      ARM: at91/gpio: add .to_irq gpio_chip handler
-      ARM: at91/gpio: remove the static specification of gpio_chip.base
-      ARM: at91/board-dt: remove AIC irq domain from board file
-      ARM: at91: AIC and GPIO IRQ device tree initialization
-      ARM: at91/pit: add traces in case of error  
-      ARM: at91/tclib: take iomem size from resource
-      ARM: at91/tc: add device tree support to atmel_tclib
-      ARM: at91/tc/clocksource: Add 32 bit variant to Timer Counter
-      ARM: at91: add sam9_smc.o to at91sam9x5 build
-      ARM: at91/pio: add new PIO3 features
-
- .../devicetree/bindings/arm/atmel-aic.txt          |   38 ++
- .../devicetree/bindings/arm/atmel-at91.txt         |   32 +
- .../devicetree/bindings/gpio/gpio_atmel.txt        |   20 +
- arch/arm/Kconfig                                   |    1 +
- arch/arm/boot/dts/at91sam9g20.dtsi                 |   68 ++-
- arch/arm/boot/dts/at91sam9g45.dtsi                 |   87 +++-
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   72 +++
- arch/arm/boot/dts/at91sam9x5.dtsi                  |   12 +-
- arch/arm/boot/dts/at91sam9x5cm.dtsi                |   15 +
- arch/arm/boot/dts/usb_a9g20.dts                    |   23 +
- arch/arm/mach-at91/Makefile                        |    2 +-
- arch/arm/mach-at91/at91sam9260.c                   |    7 +
- arch/arm/mach-at91/at91sam9260_devices.c           |   21 +-
- arch/arm/mach-at91/at91sam926x_time.c              |   68 ++-
- arch/arm/mach-at91/at91sam9g45.c                   |    3 +
- arch/arm/mach-at91/at91sam9g45_devices.c           |   21 +-
- arch/arm/mach-at91/at91sam9x5.c                    |    2 -
- arch/arm/mach-at91/board-dt.c                      |   14 +-
- arch/arm/mach-at91/board-snapper9260.c             |   10 +-
- arch/arm/mach-at91/generic.h                       |    6 +
- arch/arm/mach-at91/gpio.c                          |  625 +++++++++++++++++---
- arch/arm/mach-at91/include/mach/at91_pio.h         |   25 +
- arch/arm/mach-at91/include/mach/gpio.h             |   17 +-
- arch/arm/mach-at91/irq.c                           |  132 ++++-
- drivers/clocksource/tcb_clksrc.c                   |   90 ++-
- drivers/misc/atmel_tclib.c                         |   64 ++-
- drivers/usb/host/ohci-at91.c                       |    5 +-
- include/linux/atmel_tc.h                           |   10 +
- 28 files changed, 1286 insertions(+), 204 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/atmel-aic.txt
- create mode 100644 Documentation/devicetree/bindings/arm/atmel-at91.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio_atmel.txt
-
-Thanks, best regards,
+Best regards
 -- 
-Nicolas Ferre
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
