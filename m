@@ -1,58 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab2CADI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:08:57 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32235 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2CADCJ (ORCPT
+	id S932876Ab2CADJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:09:17 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40828 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932627Ab2CADJK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:02:09 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 21/36] PCI: add default res for pci_scan_bus
-Date: Wed, 29 Feb 2012 19:00:22 -0800
-Message-Id: <1330570837-26638-22-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4F4EE67E.00B9,ss=1,re=0.000,fgs=0
+	Wed, 29 Feb 2012 22:09:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of thomas.abraham@linaro.org designates 10.52.96.70 as permitted sender) smtp.mail=thomas.abraham@linaro.org
+MIME-Version: 1.0
+In-Reply-To: <1330527107-21222-2-git-send-email-k.lewandowsk@samsung.com>
+References: <1330527107-21222-1-git-send-email-k.lewandowsk@samsung.com>
+	<1330527107-21222-2-git-send-email-k.lewandowsk@samsung.com>
+Date: Thu, 1 Mar 2012 08:39:08 +0530
+Message-ID: <CAJuYYwRSgHLyWSaAyxAWwdSzUHXRmGTirgi_Wvcsfd89kWDx0g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] [media] s5p-tv: Add initial DT-support for sii9234
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: t.stanislaws@samsung.com, m.szyprowski@samsung.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Hi Karol,
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 1149109..1c07aba 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1784,6 +1784,7 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- 
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
-+	pci_add_resource(&resources, &busn_resource);
- 	b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
- 	if (b)
- 		b->subordinate = pci_scan_child_bus(b);
-@@ -1801,6 +1802,7 @@ struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *ops,
- 
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
-+	pci_add_resource(&resources, &busn_resource);
- 	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
- 	if (b) {
- 		b->subordinate = pci_scan_child_bus(b);
--- 
-1.7.7
+On 29 February 2012 20:21, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
+> Make it possible to instantiate sii9234, HDMI's MHL, from regular
+> device tree description.
+>
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/i2c/sii9234.txt |   14 ++++++++++++++
+>  drivers/media/video/s5p-tv/sii9234_drv.c          |   20 +++++++++++++++++++-
+>  2 files changed, 33 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/sii9234.txt
+>
+> diff --git a/Documentation/devicetree/bindings/i2c/sii9234.txt b/Documentation/devicetree/bindings/i2c/sii9234.txt
+> new file mode 100644
+> index 0000000..7bb7636
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/sii9234.txt
+> @@ -0,0 +1,14 @@
+> +* SII 9234
+> +
 
+A minimal description about this device would be helpful here.
+
+> +Required properties :
+> + - compatible : "sii,9234"
+
+To be more informative, can this be changed to "sil,mhl-9234".
+
+> + - reg        : i2c device address
+> + - gpio-reset : gpio line used to reset IC
+> +
+> +Example:
+> +
+> +       mhl@39 {
+> +               compatible = "sii,9234";
+> +               reg = <0x39>;
+> +               gpio-reset = <&gpf3 4 0 0 0>;
+> +       };
+> diff --git a/drivers/media/video/s5p-tv/sii9234_drv.c b/drivers/media/video/s5p-tv/sii9234_drv.c
+> index 0f31ecc..0a1511a 100644
+> --- a/drivers/media/video/s5p-tv/sii9234_drv.c
+> +++ b/drivers/media/video/s5p-tv/sii9234_drv.c
+> @@ -22,6 +22,8 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/regulator/machine.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/of_gpio.h>
+>
+>  #include <mach/gpio.h>
+>  #include <plat/gpio-cfg.h>
+> @@ -338,7 +340,15 @@ static int __devinit sii9234_probe(struct i2c_client *client,
+>                goto fail_ctx;
+>        }
+>
+> -       ctx->gpio_n_reset = pdata->gpio_n_reset;
+> +       if (dev->of_node) {
+> +               ctx->gpio_n_reset = of_get_named_gpio(dev->of_node, "gpio-reset", 0);
+> +               if (ctx->gpio_n_reset < 0) {
+
+if (gpio_is_valid(ctx->gpio_n_reset)) can be used here.
+
+> +                       ret = -ENODEV;
+> +                       goto fail_power;
+> +               }
+> +       } else
+> +               ctx->gpio_n_reset = pdata->gpio_n_reset;
+
+linux coding style suggests to have braces for 'else' branch when
+braces are used for the 'if' branch.
+
+> +
+>        ret = gpio_request(ctx->gpio_n_reset, "MHL_RST");
+>        if (ret) {
+>                dev_err(dev, "failed to acquire MHL_RST gpio\n");
+> @@ -401,6 +411,13 @@ static int __devexit sii9234_remove(struct i2c_client *client)
+>        return 0;
+>  }
+>
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id sii9234_dt_match[] = {
+> +       { .compatible = "sii,9234" },
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(of, sii9234_dt_match);
+> +#endif
+>
+>  static const struct i2c_device_id sii9234_id[] = {
+>        { "SII9234", 0 },
+> @@ -413,6 +430,7 @@ static struct i2c_driver sii9234_driver = {
+>                .name   = "sii9234",
+>                .owner  = THIS_MODULE,
+>                .pm = &sii9234_pm_ops,
+> +               .of_match_table = of_match_ptr(sii9234_dt_match),
+>        },
+>        .probe          = sii9234_probe,
+>        .remove         = __devexit_p(sii9234_remove),
+> --
+> 1.7.8.3
+>
+
+Thanks,
+Thomas.
