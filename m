@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030265Ab2CAKFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:05:39 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:61275 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758617Ab2CAKFh (ORCPT
+	id S1758839Ab2CAKLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:11:17 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58234 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2CAKLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:05:37 -0500
-Message-ID: <4F4F49E1.4020902@atmel.com>
-Date: Thu, 01 Mar 2012 11:05:21 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 1 Mar 2012 05:11:15 -0500
+Date: Thu, 1 Mar 2012 10:10:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall
+	number to the hypervisor
+Message-ID: <20120301101029.GB7363@n2100.arm.linux.org.uk>
+References: <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com> <1330360043.8557.302.camel@zakaz.uk.xensource.com> <20120227180355.GB2023@linaro.org> <1330371219.10008.34.camel@dagon.hellion.org.uk> <20120228102040.GB2063@linaro.org> <1330426133.31269.70.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1202281149210.23091@kaball-desktop> <20120229093436.GA2077@linaro.org> <1330509362.4270.20.camel@zakaz.uk.xensource.com> <20120229125826.GC2077@linaro.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: at91: Error while registering DMA controller in 3.3-rc
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229125826.GC2077@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+On Wed, Feb 29, 2012 at 12:58:26PM +0000, Dave Martin wrote:
+> On Wed, Feb 29, 2012 at 09:56:02AM +0000, Ian Campbell wrote:
+> > On Wed, 2012-02-29 at 09:34 +0000, Dave Martin wrote:
+> > > On Tue, Feb 28, 2012 at 12:28:29PM +0000, Stefano Stabellini wrote:
+> > 
+> > > > I don't have a very strong opinion on which register we should use, but
+> > > > I would like to avoid r7 if it is already actively used by gcc.
+> > > 
+> > > But there is no framepointer for Thumb-2 code (?)
+> > 
+> > Peter Maydell suggested there was:
+> > > r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
+> > > makes it worth avoiding in this context.
+> > 
+> > Sounds like it might be a gcc-ism, possibly a non-default option?
+> > 
+> > Anyway, I think r12 will be fine for our purposes so the point is rather
+> > moot.
+> 
+> Just had a chat with some tools guys -- apparently, when passing register
+> arguments to gcc inline asms there really isn't a guarantee that those
+> variables will be in the expected registers on entry to the inline asm.
 
-We currently have a regression on 3.3-rc kernels about the DMA
-controller registration.
+The best you can do is:
 
-http://article.gmane.org/gmane.linux.kernel.mmc/13014
+	register unsigned int foo asm("r7") = value;
 
-This is due to the DMA driver having seen an update during the 3.3 merge
-window  but the AT91 device files not having the corresponding
-modifications.
+	asm("blah %0" : : "r" (foo));
 
-Maybe you remember, those modifications where part of the famous AT91
-board/device series that was postponed to 3.4 due to a flood of issues...
+and ensure that your assembly checks that %0 _is_ r7 and produces a build
+error if not.  See the __asmeq() macro in asm/system.h to find out how to
+do that.
 
-So now, I would like to know if it is possible to resolve this problem
-by queuing the DMA related patches that we have already in
-at91/device-board branch to mainline before 3.3-final?
+This feature has been missing from ARM GCC for quite a long time - it's
+used extensively on x86 GCC, where they have one register class per
+register, so they can do stuff like:
 
-The patches that I am talking about are:
+	asm("blah %0" : : "a" (value));
 
-bdad0b9 ARM: at91/dma: remove platform data from DMA controller
-and
-2756bf5 ARM: at91/dma: DMA controller registering with DT support
+and be guaranteed that %0 will be eax.
 
-I do think it is pretty silly to try to resolve this issue by not taking
-those two little patches and modifying source code to workaround this
-issue. If we do this, we will get conflicts and need to rework the
-already queued 3.4 material.
+> If you need a specific register, this means that you must set up that
+> register explicitly inside the asm if you want a guarantee that the
+> code will work:
+> 
+> 	asm volatile (
+> 		"movw	r12, %[hvc_num]\n\t"
+> 		...
+> 		"hvc	#0"
+> 		:: [hvc_num] "i" (NUMBER) : "r12"
+> 	);
+> 
+> Of course, if you need to set up more than about 5 or 6 registers in
+> this way, the doubled register footprint means that the compiler will
+> have to start spilling stuff to the stack.
 
-Do you want me to prepare a new at91-fixes branch with those two patches
-or you can take them yourself?
+No it won't - it will barf instead - think about it.  If you're clobbering
+r0 - r5, but need to pass in six values in registers, gcc can't use r0-r5
+for that, so it must use the remaining registers.  It gets rather unhappy
+with that, and starts erroring out (iirc 'too many reloads' or some similar
+error.)  I've been there.
 
-Thanks for your help, best regards,
--- 
-Nicolas Ferre
+If you want to do it that way, your only option is to store them to memory
+and pass the address of the block into the assembly, and reload them there.
+Which is extremely sucky and inefficient.
+
+Practically, the register variable plus asm() does seem to work, and seems
+to work for virtually all gcc versions out there (there have been the odd
+buggy version, but those bugs appear to get fixed.)
+
