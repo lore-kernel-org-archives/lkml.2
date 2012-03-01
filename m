@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab2CAWEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:04:20 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:46949 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755592Ab2CAWER (ORCPT
+	id S1757812Ab2CAWJC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:09:02 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:47647 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab2CAWJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:04:17 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/rRNZVCknrSD/Ig1lVL1NmcHt6byln6tETJDA/aF
-	d7vnCiGzc3bc6S
-Message-ID: <1330639448.7414.97.camel@marge.simpson.net>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Mike Galbraith <efault@gmx.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Michal Schmidt <mschmidt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Date: Thu, 01 Mar 2012 23:04:08 +0100
-In-Reply-To: <20120301210213.GF13533@redhat.com>
-References: <20120221211938.GE12236@google.com>
-	 <20120222163858.GB4128@redhat.com> <20120222165714.GC4128@redhat.com>
-	 <1329990094.24994.64.camel@twins> <1330006399.11248.20.camel@twins>
-	 <4F4FAF89.3090706@redhat.com> <1330633603.7414.49.camel@marge.simpson.net>
-	 <20120301210213.GF13533@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Mar 2012 17:09:00 -0500
+Date: Thu, 01 Mar 2012 17:08:48 -0500 (EST)
+Message-Id: <20120301.170848.432407217191581288.davem@davemloft.net>
+To: luiz.dentz@gmail.com
+Cc: eric.dumazet@gmail.com, javier.martinez@collabora.co.uk,
+        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
+References: <1330604802.2465.43.camel@edumazet-laptop>
+	<20120301.154415.1692328508436381200.davem@davemloft.net>
+	<CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Mar 2012 14:08:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 16:02 -0500, Vivek Goyal wrote: 
-> On Thu, Mar 01, 2012 at 09:26:43PM +0100, Mike Galbraith wrote:
+From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+Date: Fri, 2 Mar 2012 00:01:40 +0200
 
-> > Q: you say systemd requires CONFIG_CGROUPS=y.  Why is that?  It's taking
-> > over sysvinits job afaiui, what does that have to do with cgroups?
-> 
-> I think they were using it to track all the children forked by a service
-> and cleanup all of them if need be. So they just need it for logical
-> grouping functionality and don't require any controllers as such.
+> I don't think you understood the problem, we want something that scale
+> for less powerful devices, why do you think Android have all the
+> trouble to create binder?
 
-Hm.  Controllers are perhaps not required, but cpu controller was
-configured and used without consent.  I didn't receive an offer.
+So our protocol stack is so cpu hungry compared to AF_UNIX that it's
+unusable on low power devices?
 
--Mike
+I can't take you seriously if you say this after showing us the
+thousands of lines of code you guys think we should add to the AF_UNIX
+socket layer.
 
+> Besides what is really the point in having AF_UNIX if you can't use
+> for what it is for?
+
+Because it doesn't have the handful of extra features you absolutely
+require of it.
+
+AF_UNIX is a complicated socket layer which is already extremely hard
+to maintain.  We're still finding bugs in it even after all these
+years, and that's without adding major new functionality.
