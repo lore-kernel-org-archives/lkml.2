@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab2CAHoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 02:44:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16949 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab2CAHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 02:44:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="131489397"
-Date: Thu, 1 Mar 2012 09:43:56 +0200
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
-Message-ID: <20120301074354.GA25627@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	santosh prasad nayak <santoshprasadnayak@gmail.com>,
-	marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
- <CAMXE1-oXtheVHDuU3w52mXqmuY8AK4kk+tuvJpVRDq2=+qEnsQ@mail.gmail.com>
- <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
+	id S1758582Ab2CAHrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 02:47:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40756 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab2CAHrT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 02:47:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.205.133.208 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
+References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
+Date: Thu, 1 Mar 2012 16:47:18 +0900
+Message-ID: <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
+Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: merez@codeaurora.org
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Santosh,
+Hi. merez.
 
-On Thu, Mar 01, 2012 at 11:07:14AM +0530, santosh prasad nayak wrote:
-> @Dan,
->            In future patches I will take care of it. Is it ok ? If
-> required I can resend the patch with required changes on subject line.
-> 
-> @Andrei
-> 
-> In my local clone your changes are  not visible.
-> 
-> What is the schedule of linux-next ?
-> Is it updated every week or bi-weekly or monthly ?
+Would you share random read speed with us ?
 
-We use Johan's tree so far:
-git://git.kernel.org/pub/scm/linux/kernel/git/jh/bluetooth-next.git
+And Write speed also..
 
-I think the tree we use shall be published on bluez.org website.
+Thanks.
 
-The change seems to be included to:
-"pull request: bluetooth-next 2012-02-24"
-
-http://www.spinics.net/lists/linux-wireless/msg85442.html
-
-Best regards 
-Andrei Emeltchenko 
-
-
+2012/3/1  <merez@codeaurora.org>:
+>> This patch supports packed command of eMMC4.5 device.
+>> Several reads(or writes) can be grouped in packed command
+>> and all data of the individual commands can be sent in a
+>> single transfer on the bus.
+>>
+>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>> ---
+>>  drivers/mmc/card/block.c   |  496
+>> +++++++++++++++++++++++++++++++++++++++++--
+>>  drivers/mmc/card/queue.c   |   48 ++++-
+>>  drivers/mmc/card/queue.h   |   13 ++
+>>  drivers/mmc/core/mmc_ops.c |    1 +
+>>  include/linux/mmc/core.h   |    4 +
+>>  5 files changed, 535 insertions(+), 27 deletions(-)
+>>
+> Hi,
+>
+> We ran performance tests on the packed commands patch. We found out that
+> enabling the read packing didn't improve the performance in any of the
+> scenarios we ran (see the detailed results below).
+> Therefore, we suggest to move the read packing code to a different patch
+> and approve only the write packing code for now. The read packing adds
+> complexity to the code and we don't see a point in adding it while the
+> intention is to disable it.
+>
+> Test results:
+>
+> Long read operation:
+> ----------------------
+> no-packing: 39.5 MB/s
+> packed commands patch (both READ and WRITE packing are enabled): 39.5 MB/s
+> packed commands patch + enabling only READ packing: 39.5 MB/s
+>
+> Several parallel read operations (sum of all the read throughputs):
+> ---------------------------
+> no-packing: 42.6 MB/s
+> packed commands patch(both READ and WRITE packing are enabled): 38 MB/s
+> packed commands patch + enabling only READ packing: 38.2 MB/s
+>
+> Parallel long read and long write operations (read throughput):
+> -----------------------------------------------------------------
+> no-packing: 23.8 MB/s
+> packed commands patch (both READ and WRITE packing are enabled): 12.6 MB/s
+> packed commands patch + enabling only READ packing: 12.5 MB/s
+>
+> Parallel short read and long write operations (read throughput):
+> -----------------------------------------------------------------
+> no-packing: 22.9 MB/s
+> packed commands patch (both READ and WRITE packing are enabled): 8.4 MB/s
+> packed commands patch + enabling only READ packing: 8.6 MB/s
+>
+> Several Parallel short read and short write operations (sum of all the
+> read throughputs):
+> --------------------------------------------------------------------------
+> no-packing: 41.6 MB/s
+> packed commands patch (both READ and WRITE packing are enabled): 35 MB/s
+> packed commands patch + enabling only READ packing: 36 MB/s
+>
+> Thanks,
+> Maya Erez
+> Consultant for Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+>
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
