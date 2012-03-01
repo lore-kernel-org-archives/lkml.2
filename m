@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab2CAHNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 02:13:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51772 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758145Ab2CAHM7 (ORCPT
+	id S1758452Ab2CAHNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 02:13:10 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21380 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758145Ab2CAHNG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 02:12:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of vda.linux@googlemail.com designates 10.213.105.195 as permitted sender) smtp.mail=vda.linux@googlemail.com; dkim=pass header.i=vda.linux@googlemail.com
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Subject: Re: Questions about ptrace on a dying process
-Date: Thu, 1 Mar 2012 08:12:54 +0100
-User-Agent: KMail/1.8.2
-Cc: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-References: <4F4E6915.1010209@am.sony.com> <m2mx81pi7x.fsf@firstfloor.org> <4F4E8E6A.2020601@am.sony.com>
-In-Reply-To: <4F4E8E6A.2020601@am.sony.com>
+	Thu, 1 Mar 2012 02:13:06 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6635"; a="167923349"
+X-IronPort-AV: E=Sophos;i="4.73,507,1325491200"; 
+   d="scan'208";a="207294414"
+From: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
+To: "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>
+Subject: RE: [PATCH 2/3] atl1c: change author
+Thread-Topic: [PATCH 2/3] atl1c: change author
+Thread-Index: AQHM923yUHdhR4y1BEy3YqqejNViSJZVBny8
+Date: Thu, 1 Mar 2012 07:13:04 +0000
+Message-ID: <7A9ADFFA56024346AAE90B6BABC3BD15D2F8A8@nasanexd02b.na.qualcomm.com>
+References: <1330580469-23348-1-git-send-email-cjren@qca.qualcomm.com>,<1330580469-23348-3-git-send-email-cjren@qca.qualcomm.com>
+In-Reply-To: <1330580469-23348-3-git-send-email-cjren@qca.qualcomm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [199.106.114.130]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201203010812.54769.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 February 2012 21:45, Tim Bird wrote:
-> On 02/29/2012 11:12 AM, Andi Kleen wrote:
-> > Tim Bird <tim.bird@am.sony.com> writes:
-> > 
-> >> ptrace maintainers (and interested parties)...
-> >>
-> >> I'm working on a crash handler for Linux, which uses ptrace to retrieve information
-> >> about a process during it's coredump.  Specifically, from within a core handler
-> >> program (started within do_coredump() as a user_mode_helper), I would like to make
-> >> ptrace calls against the dying process.
-> > 
-> > The standard approach is to define a core pipe handler and parse the
-> > elf memory dump.
-> 
-> Yeah - I may be doing something new here.  Android uses ptrace
-> in debuggerd, which is their crash reporting tool, but they wake
-> it up with signals before the dying program goes into coredump.
 
-I think ptrace API does not provide guarantees that it is possible
-to attach to the process when it coredumps.
+Um, actually, for now can you please use QCA or Qualcomm Atheros, Inc. QCA != Qualcomm.
 
-It might work in current kernels, but might break in new ones.
+  Luis
+________________________________________
+From: Ren, Cloud
+Sent: Wednesday, February 29, 2012 9:41 PM
+To: davem@davemloft.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Cc: qca-linux-team; nic-devel; Ren, Cloud
+Subject: [PATCH 2/3] atl1c: change author
 
-> I'm taking a different approach and trying to do initiated
-> by the coredump feature in Linux.  This makes it so that
-> a process does not need to be persistently running to capture
-> these events.
-> 
-> This is on embedded systems, where the dump is not saved.  The dump
-> is available via stdin to the core pipe handler, but it would be
-> kind of a pain to wrapper that for random access, which is needed
-> for stuff like stack unwinding.
+The author, jie yang, has left. please use nic-devel@qualcomm.com report bugs to
+us.
 
-Stack unwinding only requires the stack data and knowledge
-of the mapped binary and library files. You can parse coredump's ELF header,
-and skip all sizable data segments which you won't need anyway.
+Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I estimate that usually you will need to save only ~150k of data
-in order to produce a stacktrace, and even then,
-only because Linux pre-allocates ridiculously large
-stack for every new process - 132k. It can easily be reduced
-to something saner with one-line patch.
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 6bf387b..815f683 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -52,7 +52,7 @@ static DEFINE_PCI_DEVICE_TABLE(atl1c_pci_tbl) = {
+ };
+ MODULE_DEVICE_TABLE(pci, atl1c_pci_tbl);
 
--- 
-vda
+-MODULE_AUTHOR("Jie Yang <jie.yang@atheros.com>");
++MODULE_AUTHOR("Qualcomm Corporation, <nic-devel@qualcomm.com>");
+ MODULE_DESCRIPTION("Atheros 1000M Ethernet Network Driver");
+ MODULE_LICENSE("GPL");
+
+--
+1.7.7
+
