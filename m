@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab2CAFhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 00:37:17 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49117 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2CAFhO convert rfc822-to-8bit (ORCPT
+	id S1754166Ab2CAFkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 00:40:18 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47954 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab2CAFkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 00:37:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.197.165 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAMXE1-oXtheVHDuU3w52mXqmuY8AK4kk+tuvJpVRDq2=+qEnsQ@mail.gmail.com>
-References: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
-	<CAMXE1-oXtheVHDuU3w52mXqmuY8AK4kk+tuvJpVRDq2=+qEnsQ@mail.gmail.com>
-Date: Thu, 1 Mar 2012 11:07:14 +0530
-Message-ID: <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
-Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 00:40:16 -0500
+Date: Thu, 1 Mar 2012 16:40:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: linux-next: manual merge of the arm-soc tree with the gpio tree
+Message-Id: <20120301164001.77a063ceed2deaf37cf68e3c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Mar_2012_16_40_01_+1100__NlsNF0lVyww3oiO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@Dan,
-           In future patches I will take care of it. Is it ok ? If
-required I can resend the patch with required changes on subject line.
+--Signature=_Thu__1_Mar_2012_16_40_01_+1100__NlsNF0lVyww3oiO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-@Andrei
+Hi all,
 
-In my local clone your changes are  not visible.
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/mach-omap1/gpio16xx.c between commit ab985f0f7c2c ("gpio/omap:
+cleanup omap_gpio_mod_init function") from the gpio tree and commit
+63325ff235de ("ARM: OMAP1: Move 16xx GPIO system clock to platform init
+code") from the arm-soc tree.
 
-What is the schedule of linux-next ?
-Is it updated every week or bi-weekly or monthly ?
+OK, I can't decide which is correct here - the former adds this code
+inside the loop (even though it seems to not depend on anything in the
+loop) and the latter adds it before.  I have used the former (but am
+happy to be corrected).  And both commits remove the code in
+drivers/gpio/gpio-omap.c.
 
-Regards
-Santosh
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-On Thu, Mar 1, 2012 at 2:15 AM, Andrei Emeltchenko
-<andrei.emeltchenko.news@gmail.com> wrote:
-> Hi Santosh,
->
-> On Wed, Feb 29, 2012 at 7:06 PM, santosh nayak
-> <santoshprasadnayak@gmail.com> wrote:
->> From: Santosh Nayak <santoshprasadnayak@gmail.com>
->>
->> Silencing Static checker warning.
->> 1. Endian warning
->> 2. variable dereferenced before check 'sk' .
->>
->> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
->> ---
->>  net/bluetooth/l2cap_sock.c |    9 ++++++---
->>  1 files changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
->> index 401d942..d206321 100644
->> --- a/net/bluetooth/l2cap_sock.c
->> +++ b/net/bluetooth/l2cap_sock.c
->> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
->>        }
->>
->>        if (la.l2_cid)
->> -               err = l2cap_add_scid(chan, la.l2_cid);
->> +               err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
->>        else
->>                err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
->>
->> @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
->>        if (la.l2_cid && la.l2_psm)
->>                return -EINVAL;
->>
->> -       err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
->> +       err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
->> +                               &la.l2_bdaddr);
->>        if (err)
->>                goto done;
->>
->> @@ -795,7 +796,7 @@ static void l2cap_sock_kill(struct sock *sk)
->>  static int l2cap_sock_shutdown(struct socket *sock, int how)
->>  {
->>        struct sock *sk = sock->sk;
->> -       struct l2cap_chan *chan = l2cap_pi(sk)->chan;
->> +       struct l2cap_chan *chan;
->>        int err = 0;
->>
->>        BT_DBG("sock %p, sk %p", sock, sk);
->> @@ -803,6 +804,8 @@ static int l2cap_sock_shutdown(struct socket *sock, int how)
->>        if (!sk)
->>                return 0;
->>
->> +       chan = l2cap_pi(sk)->chan;
->> +
->
-> Didn't I fix this bug already?
->
-> http://permalink.gmane.org/gmane.linux.bluez.kernel/21537
->
-> Regards,
-> Andrei
+--Signature=_Thu__1_Mar_2012_16_40_01_+1100__NlsNF0lVyww3oiO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTwuxAAoJEECxmPOUX5FEjGsP/2J72evCuAZQ4xO3CAgBtG6j
+Q+06bVPyE7nLPK0Hndsza2b3q61tl2WihLyPywrIwh5VoASkp2JOag12o41ISQFJ
+CQddKsag18vjAsC8dfo1w5aZSps836d988jUQssqeXpVWfxc/dVnbqcT1r+9/RTL
+B8xzorhfx7tnnEjKuuIp57K+0OY3XXA+baNLPMvXT4sx+SysFFkbxZ8EUugKaC/I
+psv9Gq1WjwX9yHQipgTlqd9hbHnyVVwR67nyWePstl5Y/KPBQz7pa9P2mprNl3iN
+hQmHUlgkmuAH+wN5/JaI4URSM8/4cvTFi0GrctKdmMRZs/3QS1iWnnIPbYCA4tWo
+ueLmu6OO8gi/JytYJsMRpLpXm/ykVDYjLS1v+KTEoPeHUPWfqKYfdu5K51mNjoxR
+No7pvG7cDri0cY+FGHdEqx5GHr7+9mWel/avQahPuIIaAL+4Bm0vOC12Q8Q92QFn
+CSQ1j78FVCZbwDGi7Ru7AVET+EROFQissSFlfAhZ/u/41OxTlB9ovlgrJ0FqiOlL
+LEnhulIAbW6lUBBtF2dEQypcP79dMz2zK67C0mcKxqjouADyj7ZDC8PohXVcBtpL
+NSB1kwMh+Q3kF7iH8gwMTSkrn4n38rWBaaUF4HAwxa/ocgzZP9zDGuaiCpY/MHRc
+z5xJGIbjXwNuePMQRVxR
+=vxJ+
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Mar_2012_16_40_01_+1100__NlsNF0lVyww3oiO--
