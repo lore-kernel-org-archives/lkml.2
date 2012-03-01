@@ -1,161 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab2CAB0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:26:10 -0500
-Received: from mga03.intel.com ([143.182.124.21]:61100 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755762Ab2CAB0I convert rfc822-to-8bit (ORCPT
+	id S1030486Ab2CAB0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:26:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43881 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030457Ab2CAB0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:26:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="113067617"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Kay, Allen M" <allen.m.kay@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Subject: RE: [PATCH V2] Quirk for IVB graphics FLR errata
-Thread-Topic: [PATCH V2] Quirk for IVB graphics FLR errata
-Thread-Index: AQHM9xBuRsLp8TWP7UGz+O5bnyrOrZZUoEJQ
-Date: Thu, 1 Mar 2012 01:25:32 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCDB21A@SHSMSX102.ccr.corp.intel.com>
-References: <403610A45A2B5242BD291EDAE8B37D300FCDA04B@SHSMSX102.ccr.corp.intel.com>
- <20120229103152.59dcedd6@jbarnes-x220>
-In-Reply-To: <20120229103152.59dcedd6@jbarnes-x220>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 29 Feb 2012 20:26:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.130.72 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330565187.5373.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: Kill max8997_get_rid function
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 01 Mar 2012 09:26:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jesse Barnes [mailto:jbarnes@virtuousgeek.org]
-> Sent: Thursday, March 01, 2012 2:32 AM
-> To: Hao, Xudong
-> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
-> kvm@vger.kernel.org; Kay, Allen M; Zhang, Xiantao
-> Subject: Re: [PATCH V2] Quirk for IVB graphics FLR errata
-> 
-> On Wed, 29 Feb 2012 03:11:24 +0000
-> "Hao, Xudong" <xudong.hao@intel.com> wrote:
-> 
-> > For IvyBridge Mobile platform, a system hang may occur if a
-> > FLR(Function Level Reset) is asserted to internal graphics.
-> >
-> > This quirk patch is workaround for the IVB FLR errata issue.
-> > We are disabling the FLR reset handshake between the PCH and CPU
-> > display, then manually powering down the panel power sequencing and
-> > resetting the PCH display.
-> >
-> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> > Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
-> > ---
-> >  drivers/pci/quirks.c |   49
-> > +++++++++++++++++++++++++++++++++++++++++++++++++ 1 files changed,
-> 49
-> > insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
-> > 6476547..5223b80 100644 --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -29,6 +29,11 @@
-> >  #include <asm/dma.h>	/* isa_dma_bridge_buggy */
-> >  #include "pci.h"
-> >
-> > +#include "../gpu/drm/i915/i915_reg.h"
-> 
-> Ugg... this is ugly.  Should probably go near the definition of the quirk at any
-> rate.
-> 
+Use rdev_get_id() directly.
 
-OK, I'll move it just above the reset_ivb_igd function.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8997.c |   29 ++++++++++++-----------------
+ 1 files changed, 12 insertions(+), 17 deletions(-)
 
-> > +#include <asm/tsc.h>
-> > +/* 10 seconds */
-> > +#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
-> > +
-> 
-> Same here, the asm/tsc.h can go at the top, but the timeout definition should
-> go near the reset function.
-> 
-> May as well make it a static const cycles_t as well.
-> 
-Will modify it.
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index bb7cd9d..9657929 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -130,15 +130,10 @@ static const struct voltage_map_desc *reg_voltage_map[] = {
+ 	[MAX8997_CHARGER_TOPOFF] = &topoff_current_map_desc,
+ };
  
-> > +#define MSG_CTL	0x45010
-> > +
-> > +static int reset_ivb_igd(struct pci_dev *dev, int probe) {
-> > +	u8 *mmio_base;
-> > +	u32 val;
-> > +
-> > +	if (probe)
-> > +		return 0;
-> > +
-> > +	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
-> > +				 pci_resource_len(dev, 0));
-> > +	if (!mmio_base)
-> > +		return -ENOMEM;
-> > +
-> > +	/* Work Around */
-> > +	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
-> > +	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
-> > +	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
-> > +	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
-> 
-> These clobber existing values.  Since we're doing a reset, clobbering
-> PCH_PP_CONTROL should be ok, but clobbering SOUTH_CHICKEN2 is only ok if
-> the next driver that loads sets the right bits (if i915 was previously using the
-> device, it would have set a couple of bits).
-> 
-> But again since it's it a reset that's probably ok, but you should put a comment
-> indicating as much.
-> 
+-static inline int max8997_get_rid(struct regulator_dev *rdev)
+-{
+-	return rdev_get_id(rdev);
+-}
+-
+ static int max8997_list_voltage_safeout(struct regulator_dev *rdev,
+ 		unsigned int selector)
+ {
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 
+ 	if (rid == MAX8997_ESAFEOUT1 || rid == MAX8997_ESAFEOUT2) {
+ 		switch (selector) {
+@@ -161,7 +156,7 @@ static int max8997_list_voltage_safeout(struct regulator_dev *rdev,
+ static int max8997_list_voltage_charger_cv(struct regulator_dev *rdev,
+ 		unsigned int selector)
+ {
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 
+ 	if (rid != MAX8997_CHARGER_CV)
+ 		goto err;
+@@ -184,7 +179,7 @@ static int max8997_list_voltage(struct regulator_dev *rdev,
+ 		unsigned int selector)
+ {
+ 	const struct voltage_map_desc *desc;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	int val;
+ 
+ 	if (rid >= ARRAY_SIZE(reg_voltage_map) ||
+@@ -205,7 +200,7 @@ static int max8997_list_voltage(struct regulator_dev *rdev,
+ static int max8997_get_enable_register(struct regulator_dev *rdev,
+ 		int *reg, int *mask, int *pattern)
+ {
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 
+ 	switch (rid) {
+ 	case MAX8997_LDO1 ... MAX8997_LDO21:
+@@ -325,7 +320,7 @@ static int max8997_reg_disable(struct regulator_dev *rdev)
+ static int max8997_get_voltage_register(struct regulator_dev *rdev,
+ 		int *_reg, int *_shift, int *_mask)
+ {
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask = 0x3f;
+ 
+ 	switch (rid) {
+@@ -386,7 +381,7 @@ static int max8997_get_voltage(struct regulator_dev *rdev)
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+ 	int reg, shift, mask, ret;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	u8 val;
+ 
+ 	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
+@@ -446,7 +441,7 @@ static int max8997_set_voltage_charger_cv(struct regulator_dev *rdev,
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	int lb, ub;
+ 	int reg, shift = 0, mask, ret = 0;
+ 	u8 val = 0x0;
+@@ -503,7 +498,7 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+ 	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 	const struct voltage_map_desc *desc;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask, ret;
+ 	int i;
+ 	u8 org;
+@@ -564,7 +559,7 @@ static int max8997_assess_side_effect(struct regulator_dev *rdev,
+ 		u8 new_val, int *best)
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	u8 *buckx_val[3];
+ 	bool buckx_gpiodvs[3];
+ 	int side_effect[8];
+@@ -641,7 +636,7 @@ static int max8997_set_voltage_buck(struct regulator_dev *rdev,
+ 		int min_uV, int max_uV, unsigned *selector)
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	const struct voltage_map_desc *desc;
+ 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
+ 	bool gpio_dvs_mode = false;
+@@ -724,7 +719,7 @@ static int max8997_set_voltage_safeout(struct regulator_dev *rdev,
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask, ret;
+ 	int i = 0;
+ 	u8 val;
+@@ -766,7 +761,7 @@ static int max8997_reg_disable_suspend(struct regulator_dev *rdev)
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+ 	int ret, reg, mask, pattern;
+-	int rid = max8997_get_rid(rdev);
++	int rid = rdev_get_id(rdev);
+ 
+ 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
+ 	if (ret)
+-- 
+1.7.5.4
 
-I'll add comment here, thanks Jesse.
 
-> > +	do {
-> > +		cycles_t start_time = get_cycles();
-> > +		while (1) {
-> > +			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
-> > +			if (((val & 0x80000000) == 0)
-> > +				&& ((val & 0x30000000) == 0))
-> > +				break;
-> > +			if (IGD_OPERATION_TIMEOUT < (get_cycles() -
-> > start_time))
-> > +				break;
-> > +			cpu_relax();
-> > +		}
-> > +	} while (0);
-> > +	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
-> > +
-> > +	iounmap(pci_resource_start(dev, 0));
-> > +	return 0;
-> > +}
-> > +
-> >  #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
-> > +#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
-> > +#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
-> >
-> >  static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
-> >  	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
-> >  		 reset_intel_82599_sfp_virtfn },
-> > +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
-> > +		reset_ivb_igd },
-> > +	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
-> > +		reset_ivb_igd },
-> >  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
-> >  		reset_intel_generic_dev },
-> >  	{ 0 }
-> 
-> Looks ok otherwise, thanks.
-> 
-> Jesse
+
