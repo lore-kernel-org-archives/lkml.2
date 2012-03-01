@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab2CALlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:41:52 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	id S932510Ab2CALmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:42:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35335 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab2CALlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:41:50 -0500
-Message-ID: <4F4F6076.5050903@nod.at>
-Date: Thu, 01 Mar 2012 12:41:42 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org
-Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-3-git-send-email-richard@nod.at> <20120301112732.GA6806@1984>
-In-Reply-To: <20120301112732.GA6806@1984>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig895AD0FC53FA46E1B9B5B8ED"
+	id S966097Ab2CALl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:41:56 -0500
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        dchinner@redhat.com, Jan Kara <jack@suse.cz>
+Subject: [PATCH 9/9] mm: Update file times from fault path only if .page_mkwrite is not set
+Date: Thu,  1 Mar 2012 12:41:43 +0100
+Message-Id: <1330602103-8851-10-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330602103-8851-1-git-send-email-jack@suse.cz>
+References: <1330602103-8851-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig895AD0FC53FA46E1B9B5B8ED
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Filesystems wanting to properly support freezing need to have control
+when file_update_time() is called. After pushing file_update_time()
+to all relevant .page_mkwrite implementations we can just stop calling
+file_update_time() when filesystem implements .page_mkwrite.
 
-Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
-> On Sun, Feb 05, 2012 at 01:14:48AM +0100, Richard Weinberger wrote:
->> ipt_LOG and ip6_LOG have a lot of common code, merge them
->> to reduce duplicate code.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->=20
-> While testing this in my master branch I noticed one problem:
->=20
-> IN=3Dwlan0 OUT=3D MAC=3Dxx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
-> SRC=3D213.150.61.61 DST=3D192.168.1.133 LEN=3D40 TOS=3D0x00 PREC=3D0x00=
- TTL=3D117
-> ID=3D10539 DF PROTO=3DTCP SPT=3D80 DPT=3D49013 WINDOW=3D0 RES=3D0x00 AC=
-K RST
-> URGP=3D0 PROTO=3DUDPLITE SPT=3D80 DPT=3D49013 LEN=3D45843 PROTO=3DICMP =
-TYPE=3D0
-> CODE=3D80 ID=3D45843 SEQ=3D48576
->=20
-> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
-> corrupts the log line. Note the extra PROTO=3D, I don't have any UDPLIT=
-E
-> traffic here.
->=20
-> Looks like a missing break in one switch.
->=20
-> Would you send me a patch to fix this?
->=20
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ mm/memory.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-Sure. Do I have 48h to fix this?
-I'm currently very busy.
+diff --git a/mm/memory.c b/mm/memory.c
+index fa2f04e..1dfe9a1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2621,6 +2621,9 @@ reuse:
+ 		if (!page_mkwrite) {
+ 			wait_on_page_locked(dirty_page);
+ 			set_page_dirty_balance(dirty_page, page_mkwrite);
++			/* file_update_time outside page_lock */
++			if (vma->vm_file)
++				file_update_time(vma->vm_file);
+ 		}
+ 		put_page(dirty_page);
+ 		if (page_mkwrite) {
+@@ -2638,10 +2641,6 @@ reuse:
+ 			}
+ 		}
+ 
+-		/* file_update_time outside page_lock */
+-		if (vma->vm_file)
+-			file_update_time(vma->vm_file);
+-
+ 		return ret;
+ 	}
+ 
+@@ -3310,12 +3309,13 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	if (dirty_page) {
+ 		struct address_space *mapping = page->mapping;
++		int dirtied = 0;
+ 
+ 		if (set_page_dirty(dirty_page))
+-			page_mkwrite = 1;
++			dirtied = 1;
+ 		unlock_page(dirty_page);
+ 		put_page(dirty_page);
+-		if (page_mkwrite && mapping) {
++		if ((dirtied || page_mkwrite) && mapping) {
+ 			/*
+ 			 * Some device drivers do not set page.mapping but still
+ 			 * dirty their pages
+@@ -3324,7 +3324,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 
+ 		/* file_update_time outside page_lock */
+-		if (vma->vm_file)
++		if (vma->vm_file && !page_mkwrite)
+ 			file_update_time(vma->vm_file);
+ 	} else {
+ 		unlock_page(vmf.page);
+-- 
+1.7.1
 
-Thanks,
-//richard
-
-
---------------enig895AD0FC53FA46E1B9B5B8ED
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPT2B6AAoJEN9758yqZn9esF0H/iBZcy3Bs0JroQxUxSl5JNjU
-L/jj9/1Y1+8Madw8nVRoCkNXflwZrqUnLW8hIZeanon8U1a6rx+UK+5UkkfaNXxL
-9A3HifXg+GeG5VYb0LgIPmyyR8ZD/rZHNhwP8Xp1kVfQywhoBqOSFPnLQHhlvoQq
-8m3wNU+C+BIor9Ksa8DXXqlv/GVg1rTIULfyBTp6lECxEtsUzIUIZ8Ljg1hq5d9p
-ziDZ1xulBCtuRD+ODlxzEV5aeestO9ke7dwz+49pI2VA3wDwbJclYeSFFxesU9/r
-YO/6mSULkbRNGB4BvOirI6hxTrBwnUgOaYk3OEYgca8tNcUo4xbcXYAbcEVeoXM=
-=Penx
------END PGP SIGNATURE-----
-
---------------enig895AD0FC53FA46E1B9B5B8ED--
