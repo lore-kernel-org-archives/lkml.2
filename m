@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965059Ab2CALLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:11:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57031 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755714Ab2CALLF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:11:05 -0500
-Date: Thu, 1 Mar 2012 11:10:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 1/2] regulator: Kill max8997_get_rid function
-Message-ID: <20120301111056.GB3124@opensource.wolfsonmicro.com>
-References: <1330565187.5373.1.camel@phoenix>
+	id S1757709Ab2CALQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:16:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34003 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757429Ab2CALQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:16:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="131591834"
+Date: Thu, 1 Mar 2012 12:23:29 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH v5 2/3] arm:davinci: move emif driver to mfd framework
+Message-ID: <20120301112329.GI9008@sortiz-mobl>
+References: <y>
+ <1330005504-25321-3-git-send-email-prakash.pm@ti.com>
+ <20120227142638.GN27687@sortiz-mobl>
+ <A73F36158E33644199EB82C5EC81C7BC3176D103@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="24zk1gE8NUlDmwG9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330565187.5373.1.camel@phoenix>
-X-Cookie: You may be recognized soon.  Hide.
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3176D103@DBDE01.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Prakash,
 
---24zk1gE8NUlDmwG9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Feb 28, 2012 at 05:44:39AM +0000, Manjunathappa, Prakash wrote:
+> Hi Samuel,
+> 
+> On Mon, Feb 27, 2012 at 19:56:38, Samuel Ortiz wrote:
+> [snip]
+> > So it seems you're passing a platform devices array through your mfd aemif
+> > platform data pointer. And from what I can see, it's mostly a 1 entry array
+> > (for the NAND case) or a 2 entries array (for the NAND and NOR case).
+> > In that case, adding an MFD driver in the middle brings basically nothing but
+> > confusion and overhead (and 200+ lines of code).
+> > So unless someone explains to me how this is doing any good to the kernel in
+> > general, I'm not going to take this patchset.
+> > 
+> > Cheers,
+> > Samuel.
+> >
+> 
+> In this way we trying to isolate future modification of aemif driver not to depict
+> as platform code change, the need for this is based on discussion in below thread
+> http://davinci-linux-open-source.1494791.n2.nabble.com/PATCH-arm-davinci-configure-davinci-aemif-chipselects-through-OF-tt7059739.html#none
+> 
+I fail to see how you're going to achieve that with adding an MFD platform
+device registration in the middle.
 
-On Thu, Mar 01, 2012 at 09:26:27AM +0800, Axel Lin wrote:
-> Use rdev_get_id() directly.
 
-Applied both, thanks.
+> Earlier also concern was expressed to move aemif driver out of arch/arm to drivers folder.
+> Here is the link for the same: http://lists.infradead.org/pipermail/linux-mtd/2011-August/037308.html
+> Since aemif driver supports NAND/NOR devices, we feel MFD is the place holder.
+I would disagree with that. And it certainly makes sense to move many drivers
+out of arch/arm into a more appropriate place but I'd like to keep mfd as
+something else than yet another misc.
 
---24zk1gE8NUlDmwG9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
+Samuel.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPT1jTAAoJEBus8iNuMP3dfk8P/jt7JL3+xUU1Giz6sUBOkWGP
-iT2TZzRZbpR2l0wZPTdMFkzCo5p5e1Mm+7KdchYjLW5Kh9OngZ4AkGc8NOeYeIYM
-W+W1udqroAo6BsFYPkrbGqNQmEAqS5VoEsY+nNyIFmxSQnzO/5XwRXT0nUKy7uRN
-I8EKgjwVGNNBxIloR4zGgwKAZNZ3Q2zea74/lMoh2zocZdxrefw+SQfNmeHson9X
-7QuA+Diwf0k/JJr02Wg4FkQKJsT5K2qq4M2GHd0G435e+rkcuO/4kAin4fJDrexE
-P7UxQ52Z/Zzwvi76Q+D3kOnfutKJYqUs1WImSa1MYPsxRrqT8YUg1hssqwNP9rix
-cCD9aPQV8w/pRfnwBqI5EuZGdr4RjjUtuT4vgQb0Mcy32bM7ZLcO2XorWdaXtksb
-g1/dvvJHRwH+MyG8E7OLLftTa8kKgpYgx+fuYw5JVymaU5Ja8f57HVnfgam1EHTn
-TjP0jswiV781vy2pjLOv1mSD3LMN8cEJxaUbMDyjyW+6GarkBI1zprStVz4FWhTp
-Ni0MmlF4nmRguGQc4PqKtRn3ZCVTlEX/L8aj3bXTMhiBuKbpUs1ePU+ZYWPuM+As
-/WoLwmjCc6mZy42KowUma6CsZcduJtJ43bTjr9t2bHtZoogRhMLIshOt2m70w8Nk
-O3kWKdEzhglJogQot1Wy
-=WZq0
------END PGP SIGNATURE-----
-
---24zk1gE8NUlDmwG9--
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
