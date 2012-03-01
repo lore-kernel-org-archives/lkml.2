@@ -1,67 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab2CACYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:24:08 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43438 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758161Ab2CACYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:24:05 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4F4EDD9A.4050900@jp.fujitsu.com>
-Date: Thu, 01 Mar 2012 11:23:22 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S932293Ab2CAC0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:26:46 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61667 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757197Ab2CAC0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 21:26:45 -0500
+Message-ID: <4F4EDF7A.6060607@cn.fujitsu.com>
+Date: Thu, 01 Mar 2012 10:31:22 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab> <4F4E145E.4040901@redhat.com> <20120229121914.GD21224@aftab> <4F4E22B1.6020505@redhat.com> <20120229133741.GF21224@aftab>
-In-Reply-To: <20120229133741.GF21224@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH 2/2 RFC] srcu: implement Peter's checking algorithm
+References: <4F435966.9020106@cn.fujitsu.com> <20120221172442.GG2375@linux.vnet.ibm.com> <4F44B580.6040003@cn.fujitsu.com> <4F4744E9.1060109@cn.fujitsu.com> <20120224200109.GH2399@linux.vnet.ibm.com> <4F4B3840.6000504@cn.fujitsu.com> <20120227183035.GE2463@linux.vnet.ibm.com> <4F4C331A.7090007@cn.fujitsu.com> <20120228134718.GF2465@linux.vnet.ibm.com> <4F4DF8E4.1070100@cn.fujitsu.com> <20120229135508.GB2385@linux.vnet.ibm.com>
+In-Reply-To: <20120229135508.GB2385@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 10:24:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 10:24:54,
+	Serialize complete at 2012-03-01 10:24:54
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/29 22:37), Borislav Petkov wrote:
-> On Wed, Feb 29, 2012 at 10:05:53AM -0300, Mauro Carvalho Chehab wrote:
->> Em 29-02-2012 09:19, Borislav Petkov escreveu:
->> - on SB, the MCE status register only has the error message. In order to get
->>   the DIMM location, the driver needs to parse the registers that describe
->>   how the DIMM's are organized (this is spread on dozens of PCI devices, and
->>   200+ registers), and how they're interlaced, in order to convert the error 
->>   address reported by the MCA into a DIMM location.
+On 02/29/2012 09:55 PM, Paul E. McKenney wrote:
+> On Wed, Feb 29, 2012 at 06:07:32PM +0800, Lai Jiangshan wrote:
+>> On 02/28/2012 09:47 PM, Paul E. McKenney wrote:
+>>> On Tue, Feb 28, 2012 at 09:51:22AM +0800, Lai Jiangshan wrote:
+>>>> On 02/28/2012 02:30 AM, Paul E. McKenney wrote:
+>>>>> On Mon, Feb 27, 2012 at 04:01:04PM +0800, Lai Jiangshan wrote:
+>>>>>> >From 40724998e2d121c2b5a5bd75114625cfd9d4f9a9 Mon Sep 17 00:00:00 2001
+>>>>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>>>>> Date: Mon, 27 Feb 2012 14:22:47 +0800
+>>>>>> Subject: [PATCH 2/2] srcu: implement Peter's checking algorithm
+>>>>>>
+>>>>>> This patch implement the algorithm as Peter's:
+>>>>>> https://lkml.org/lkml/2012/2/1/119
+>>>>>>
+>>>>>> o	Make the checking lock-free and we can perform parallel checking,
+>>>>>> 	Although almost parallel checking makes no sense, but we need it
+>>>>>> 	when 1) the original checking task is preempted for long, 2)
+>>>>>> 	sychronize_srcu_expedited(), 3) avoid lock(see next)
+>>>>>>
+>>>>>> o	Since it is lock-free, we save a mutex in state machine for
+>>>>>> 	call_srcu().
+>>>>>>
+>>>>>> o	Remove the SRCU_REF_MASK and remove the coupling with the flipping.
+>>>>>> 	(so we can remove the preempt_disable() in future, but use
+>>>>>> 	 __this_cpu_inc() instead.)
+>>>>>>
+>>>>>> o	reduce a smp_mb(), simplify the comments and make the smp_mb() pairs
+>>>>>> 	more intuitive.
+>>>>>
+>>>>> Hello, Lai,
+>>>>>
+>>>>> Interesting approach!
+>>>>>
+>>>>> What happens given the following sequence of events?
+>>>>>
+>>>>> o	CPU 0 in srcu_readers_active_idx_check() invokes
+>>>>> 	srcu_readers_seq_idx(), getting some number back.
+>>>>>
+>>>>> o	CPU 0 invokes srcu_readers_active_idx(), summing the
+>>>>> 	->c[] array up through CPU 3.
+>>>>>
+>>>>> o	CPU 1 invokes __srcu_read_lock(), and increments its counter
+>>>>> 	but not yet its ->seq[] element.
+>>>>
+>>>>
+>>>> Any __srcu_read_lock() whose increment of active counter is not seen
+>>>> by srcu_readers_active_idx() is considerred as
+>>>> "reader-started-after-this-srcu_readers_active_idx_check()",
+>>>> We don't need to wait.
+>>>>
+>>>> As you said, this srcu C.S 's increment seq is not seen by above
+>>>> srcu_readers_seq_idx().
+>>>>
+>>>>>
+>>>>> o	CPU 0 completes its summing of the ->c[] array, incorrectly
+>>>>> 	obtaining zero.
+>>>>>
+>>>>> o	CPU 0 invokes srcu_readers_seq_idx(), getting the same
+>>>>> 	number back that it got last time.
+>>>>
+>>>> If it incorrectly get zero, it means __srcu_read_unlock() is seen
+>>>> in srcu_readers_active_idx(), and it means the increment of
+>>>> seq is seen in this srcu_readers_seq_idx(), it is different
+>>>> from the above seq that it got last time.
+>>>>
+>>>> increment of seq is not seen by above srcu_readers_seq_idx(),
+>>>> but is seen by later one, so the two returned seq is different,
+>>>> this is the core of Peter's algorithm, and this was written
+>>>> in the comments(Sorry for my bad English). Or maybe I miss
+>>>> your means in this mail.
+>>>
+>>> OK, good, this analysis agrees with what I was thinking.
+>>>
+>>> So my next question is about the lock freedom.  This lock freedom has to
+>>> be limited in nature and carefully implemented.  The reasons for this are:
+>>>
+>>> 1.	Readers can block in any case, which can of course block both
+>>> 	synchronize_srcu_expedited() and synchronize_srcu().
+>>>
+>>> 2.	Because only one CPU at a time can be incrementing ->completed,
+>>> 	some sort of lock with preemption disabling will of course be
+>>> 	needed.  Alternatively, an rt_mutex could be used for its
+>>> 	priority-inheritance properties.
+>>>
+>>> 3.	Once some CPU has incremented ->completed, all CPUs that might
+>>> 	still be summing up the old indexes must stop.  If they don't,
+>>> 	they might incorrectly call a too-short grace period in case of
+>>> 	->seq[]-sum overflow on 32-bit systems.
+>>>
+>>> Or did you have something else in mind?
+>>
+>> When flip happens when check_zero, this check_zero will no be
+>> committed even it is success.
 > 
-> As I already said, amd64_edac does a similar thing does already so I
-> don't see any difference in the solutions there: decode to the DIMM and
-> pass the info through 'msg'.
+> But if the CPU in check_zero isn't blocking the grace period, then
+> ->completed could overflow while that CPU was preempted.  Then how
+> would this CPU know that the flip had happened?
 
-My concern is; on Sandy Bridge, is it safe to gather info about the DIMM
-location in/from machine check context in a reasonable time span?
-I know that for corrected errors which is handled in normal context it is
-safe to refer the vast PCI configuration space...
+as you said, check the ->completed.
+but disable the overflow for ->completed.
 
-Or is it really possible to determine the erroneous DIMM location from OS?
-It looks like that how to get the location is highly depending on the
-hardware, processor's vendor/family/model and firmware configuration etc..
-Even if OS tells me "please replace memory seated on slot#3 at node#5" or
-so, I'm not sure whether these numbers are consistent over reboot if
-there are some hot-plugged node and/or memory.  Order of numbering can
-be changed by how firmware enumerate ACPI namespace or so...
-Actually in these days we usually use firmware's system event log to
-determine which module should be replaced, assuming that firmware knows
-hardware better than OSes running on that machine.
+there is a spinlock for srcu_struct(including locking for flipping)
 
-Getting back to the "msg" I think it is not necessary if it does not
-contain any new data which is not available in the mce_record today.
-If you just want to add field about physical memory location, I think
-string "msg" is not only way to do so.
+1) assume we need to wait on widx
+2) use srcu_read_lock() to hold a reference of the 1-widx active counter
+3) release the spinlock
+4) do_check_zero
+5) gain the spinlock
+6) srcu_read_unlock()
+7) if ->completed is not changed, and there is no other later check_zero which
+   is committed earlier than us, we will commit our check_zero if we success.
 
+too complicated.
 
 Thanks,
-H.Seto
+Lai
 
+> 
+>> I play too much with lock-free for call_srcu(), the code becomes complicated,
+>> I just give up lock-free for call_srcu(), the main aim of call_srcu() is simple.
+> 
+> Makes sense to me!
+> 
+>> (But I still like Peter's approach, it has some other good thing
+>> besides lock-free-checking, if you don't like it, I will send
+>> another patch to fix srcu_readers_active())
+> 
+> Try them both and check their performance &c.  If within espilon of
+> each other, pick whichever one you prefer.
+> 
+> 							Thanx, Paul
