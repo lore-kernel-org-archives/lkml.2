@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab2CAA17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:27:59 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1757892Ab2CAA2K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:28:10 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:48595 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757141Ab2CAA15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:27:57 -0500
-Message-ID: <4F4EC286.5030800@nod.at>
-Date: Thu, 01 Mar 2012 01:27:50 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joe Perches <joe@perches.com>, Ian.Campbell@citrix.com,
-        florian@mickler.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: Add support for moderated lists
-References: <1330544962-995-1-git-send-email-richard@nod.at> <1330545526.22465.5.camel@joe2Laptop> <4F4E8555.5040002@nod.at> <20120229160254.eda62e01.akpm@linux-foundation.org>
-In-Reply-To: <20120229160254.eda62e01.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC8427CEBA108E9A758D1AEDB"
+	id S1757836Ab2CAA2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 19:28:06 -0500
+Date: Thu, 1 Mar 2012 01:27:55 +0100
+From: David Sterba <dave@jikos.cz>
+To: Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chris.mason@oracle.com, kamalesh@linux.vnet.ibm.com
+Subject: Re: [BUG] Kernel Bug at fs/btrfs/volumes.c:3638
+Message-ID: <20120301002755.GV1046@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Nageswara R Sastry <rnsastry@linux.vnet.ibm.com>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+	chris.mason@oracle.com, kamalesh@linux.vnet.ibm.com
+References: <4F476959.2010400@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F476959.2010400@linux.vnet.ibm.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC8427CEBA108E9A758D1AEDB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+I just noticed that there's a bugreport from opensuse user tripping over
+the same BUG() during log replay (and his problem was solved by
+btrfs-zero-log), probably after some crash. The kernel version was 3.1
+ie. without the corruption fixes, so while it happened during normal use
+(and not via a crafted fs image), I'm not sure if this is still the case
+with recent kernels.
 
-Am 01.03.2012 01:02, schrieb Andrew Morton:
- > Problem is, I don't think the string "moderated" explains the situatio=
-n
-> very well for the uninitiated :(
+Turning the BUG in __btrfs_map_block to return needs checking the value
+in not-so-few callers and from various callpaths, it's not
+straightforward to do eg. a quick return during mount, as in your case.
 
-At least it does not lie by claiming it's open. ;-)
-
-Thanks,
-//richard
-
+Good that Jeff Mahoney's error handling series reduce the number of
+callers to update.
 
 
---------------enigC8427CEBA108E9A758D1AEDB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+david
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+------------[ cut here ]------------
+WARNING: at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.1.0/linux-3.1/fs/btrfs/tree-log.c:1729 walk_down_log_tree+0x
+15a/0x3e0 [btrfs]()
+Pid: 8978, comm: mount Not tainted 3.1.0-1.2-desktop #1
+Call Trace:
+ [<ffffffff810043fa>] dump_trace+0xaa/0x2b0
+ [<ffffffff81582a4a>] dump_stack+0x69/0x6f
+ [<ffffffff8105386b>] warn_slowpath_common+0x7b/0xc0
+ [<ffffffffa0573cba>] walk_down_log_tree+0x15a/0x3e0 [btrfs]
+ [<ffffffffa0574267>] walk_log_tree+0xc7/0x1f0 [btrfs]
+ [<ffffffffa057803c>] btrfs_recover_log_trees+0x1ec/0x2d0 [btrfs]
+ [<ffffffffa0544303>] open_ctree+0x13c3/0x1740 [btrfs]
+ [<ffffffffa0522733>] btrfs_fill_super.isra.36+0x73/0x150 [btrfs]
+ [<ffffffffa0523b29>] btrfs_mount+0x359/0x3e0 [btrfs]
+ [<ffffffff81156465>] mount_fs+0x45/0x1d0
+ [<ffffffff8116fdb6>] vfs_kern_mount+0x66/0xd0
+ [<ffffffff81171383>] do_kern_mount+0x53/0x120
+ [<ffffffff81172e35>] do_mount+0x1a5/0x260
+ [<ffffffff811732da>] sys_mount+0x9a/0xf0
+ [<ffffffff815a3292>] system_call_fastpath+0x16/0x1b
+ [<00007fc524137daa>] 0x7fc524137da9
+---[ end trace 2bf4520d35da960f ]---
+unable to find logical 5493736079360 len 4096
+------------[ cut here ]------------
 
-iQEcBAEBAgAGBQJPTsKHAAoJEN9758yqZn9eO+MH/1Oo92Eb0Hy1fIDD0DTjwSZu
-sYfclvg9qJJhEBpuA7fj4nous5YfcTwxqmlJip6lM3QBCsxjZp0PauiIXXpvlnhR
-q1KKRuX1iVQUswAQVMKCkAA4MOnSGmkOJ3vRRVYETzIH9hfcQaRZb6tk/L8QvPOx
-Op4Pd1nNInNT6HZ//XZaeKhNUMR8th8z4e9pBfgvQmhSGdKq23hHKz2rIi2wD31i
-IozUnc2UsQVe4fWzKGRGANoAgMi5F0vKMb44fmFhfx3IhrGVlc73ysKJdZrZHQLS
-vsBoLeWuQIbPSdt0kbytfERO7BiOst1nekeLkrEuxvE11NogrU3tBKGRpOCvkEk=
-=4QF2
------END PGP SIGNATURE-----
+1728                 if (btrfs_header_level(cur) != *level)
+1729                         WARN_ON(1);
 
---------------enigC8427CEBA108E9A758D1AEDB--
+
+kernel BUG at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.1.0/linux-3.1/fs/btrfs/volumes.c:2891!
+invalid opcode: 0000 [#1] PREEMPT SMP
+CPU 1
+
+Pid: 8978, comm: mount Tainted: G        W   3.1.0-1.2-desktop #1
+RIP: 0010:[<ffffffffa0568e28>]  [<ffffffffa0568e28>] __btrfs_map_block+0x7c8/0x890 [btrfs]
+RSP: 0018:ffff8801b7507798  EFLAGS: 00010296
+RAX: 0000000000000043 RBX: 000004ff1c300000 RCX: 0000000000002a82
+RDX: 000000000000723a RSI: 0000000000000046 RDI: 0000000000000202
+RBP: ffff8801b7507860 R08: 000000000000000a R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000001 R12: ffff8801dcd10cc0
+R13: 0000000000000001 R14: 0000000000000000 R15: 0000000000000001
+FS:  00007fc524c587e0(0000) GS:ffff88021fd00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007faea5cb8000 CR3: 00000001b74f4000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mount (pid: 8978, threadinfo ffff8801b7506000, task ffff8801b0d9c740)
+Call Trace:
+ [<ffffffffa056baa7>] btrfs_map_bio+0x57/0x210 [btrfs]
+ [<ffffffffa05600d4>] submit_one_bio+0x64/0xa0 [btrfs]
+ [<ffffffffa05653c7>] read_extent_buffer_pages+0x367/0x4a0 [btrfs]
+ [<ffffffffa053fd10>] btree_read_extent_buffer_pages.isra.63+0x80/0xc0 [btrfs]
+ [<ffffffffa0542b3a>] btrfs_read_buffer+0x2a/0x40 [btrfs]
+ [<ffffffffa0576d56>] replay_one_buffer+0x46/0x360 [btrfs]
+ [<ffffffffa0573d6d>] walk_down_log_tree+0x20d/0x3e0 [btrfs]
+ [<ffffffffa0574267>] walk_log_tree+0xc7/0x1f0 [btrfs]
+ [<ffffffffa057803c>] btrfs_recover_log_trees+0x1ec/0x2d0 [btrfs]
+ [<ffffffffa0544303>] open_ctree+0x13c3/0x1740 [btrfs]
+ [<ffffffffa0522733>] btrfs_fill_super.isra.36+0x73/0x150 [btrfs]
+ [<ffffffffa0523b29>] btrfs_mount+0x359/0x3e0 [btrfs]
+ [<ffffffff81156465>] mount_fs+0x45/0x1d0
+ [<ffffffff8116fdb6>] vfs_kern_mount+0x66/0xd0
+ [<ffffffff81171383>] do_kern_mount+0x53/0x120
+ [<ffffffff81172e35>] do_mount+0x1a5/0x260
+ [<ffffffff811732da>] sys_mount+0x9a/0xf0
+ [<ffffffff815a3292>] system_call_fastpath+0x16/0x1b
+ [<00007fc524137daa>] 0x7fc524137da9
+
