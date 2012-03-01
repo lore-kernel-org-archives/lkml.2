@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab2CAAYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:24:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34514 "EHLO mail.zytor.com"
+	id S1757823Ab2CAA17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:27:59 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab2CAAYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:24:09 -0500
-Message-ID: <4F4EC19F.4050002@zytor.com>
-Date: Wed, 29 Feb 2012 16:23:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1757141Ab2CAA15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 19:27:57 -0500
+Message-ID: <4F4EC286.5030800@nod.at>
+Date: Thu, 01 Mar 2012 01:27:50 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: "Joshua C." <joshuacov@googlemail.com>
-CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com>
-In-Reply-To: <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Joe Perches <joe@perches.com>, Ian.Campbell@citrix.com,
+        florian@mickler.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: Add support for moderated lists
+References: <1330544962-995-1-git-send-email-richard@nod.at> <1330545526.22465.5.camel@joe2Laptop> <4F4E8555.5040002@nod.at> <20120229160254.eda62e01.akpm@linux-foundation.org>
+In-Reply-To: <20120229160254.eda62e01.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigC8427CEBA108E9A758D1AEDB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 04:21 PM, Joshua C. wrote:
->
-> Thanks for the help. You can better figure out where this code should
-> go into. Can you prepare the patch for merging in the mainline kernel?
->
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigC8427CEBA108E9A758D1AEDB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, although "when" would be a very open question.
+Am 01.03.2012 01:02, schrieb Andrew Morton:
+ > Problem is, I don't think the string "moderated" explains the situatio=
+n
+> very well for the uninitiated :(
 
-I realize it is frustrating to do these kinds of things for the first 
-time and getting what feels like a lot of very picky feedback.  The hope 
-is that the learning experience makes the second, and third, and fourth 
-time a lot less painful.
+At least it does not lie by claiming it's open. ;-)
 
-	-hpa
+Thanks,
+//richard
+
+
+
+--------------enigC8427CEBA108E9A758D1AEDB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPTsKHAAoJEN9758yqZn9eO+MH/1Oo92Eb0Hy1fIDD0DTjwSZu
+sYfclvg9qJJhEBpuA7fj4nous5YfcTwxqmlJip6lM3QBCsxjZp0PauiIXXpvlnhR
+q1KKRuX1iVQUswAQVMKCkAA4MOnSGmkOJ3vRRVYETzIH9hfcQaRZb6tk/L8QvPOx
+Op4Pd1nNInNT6HZ//XZaeKhNUMR8th8z4e9pBfgvQmhSGdKq23hHKz2rIi2wD31i
+IozUnc2UsQVe4fWzKGRGANoAgMi5F0vKMb44fmFhfx3IhrGVlc73ysKJdZrZHQLS
+vsBoLeWuQIbPSdt0kbytfERO7BiOst1nekeLkrEuxvE11NogrU3tBKGRpOCvkEk=
+=4QF2
+-----END PGP SIGNATURE-----
+
+--------------enigC8427CEBA108E9A758D1AEDB--
