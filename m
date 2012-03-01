@@ -1,160 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031290Ab2CAPLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 10:11:21 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20155 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031255Ab2CAPLT (ORCPT
+	id S1758452Ab2CAPPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 10:15:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41483 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756844Ab2CAPPv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 10:11:19 -0500
-Date: Thu, 01 Mar 2012 16:11:16 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 1/3] [media] s5p-tv: Add initial DT-support for sii9234
-In-reply-to: <CAJuYYwRSgHLyWSaAyxAWwdSzUHXRmGTirgi_Wvcsfd89kWDx0g@mail.gmail.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: t.stanislaws@samsung.com, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <4F4F9194.5010705@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1330527107-21222-1-git-send-email-k.lewandowsk@samsung.com>
- <1330527107-21222-2-git-send-email-k.lewandowsk@samsung.com>
- <CAJuYYwRSgHLyWSaAyxAWwdSzUHXRmGTirgi_Wvcsfd89kWDx0g@mail.gmail.com>
+	Thu, 1 Mar 2012 10:15:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.205.130.1 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120301145328.GA27955@ubuntu-macmini>
+References: <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
+	<CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
+	<20120229175327.GA20565@ubuntu-macmini>
+	<CACxGe6uc+LZjuMLS5DZELzAsHsnhObL6mdPzdMnNVbfriTfNwg@mail.gmail.com>
+	<20120229195042.GB20565@ubuntu-macmini>
+	<CACxGe6tK85FgYAT-1JQbLxEhRS34v2MPsx8urXADi6v2FnQ2gw@mail.gmail.com>
+	<20120229220809.GC20565@ubuntu-macmini>
+	<CACxGe6tLCYhuiAH1Q1PoWTzFLmZ0watw==0g76J1hS-Qurzyrw@mail.gmail.com>
+	<20120229225650.GD20565@ubuntu-macmini>
+	<CAHR064ikTm5dD-R6JE84XUTzNH5fRz9Xi4uKaK9cMn=MkrxCHg@mail.gmail.com>
+	<20120301145328.GA27955@ubuntu-macmini>
+Date: Thu, 1 Mar 2012 16:15:49 +0100
+Message-ID: <CAHR064iiLVQquZsKBc0T7UzfZ7n7pc=eLBz2UdsAZmWj4yHtEQ@mail.gmail.com>
+Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Corentin Chary <corentin.chary@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux acpi <linux-acpi@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.03.2012 04:09, Thomas Abraham wrote:
-
-> Hi Karol,
-
-
-Hi!
-
-
-> On 29 February 2012 20:21, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
->> Make it possible to instantiate sii9234, HDMI's MHL, from regular
->> device tree description.
+On Thu, Mar 1, 2012 at 3:53 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> On Thu, Mar 01, 2012 at 10:19:58AM +0100, Corentin Chary wrote:
+>> On Wed, Feb 29, 2012 at 11:56 PM, Seth Forshee
+>> <seth.forshee@canonical.com> wrote:
+>> > On Wed, Feb 29, 2012 at 04:32:28PM -0600, Grant Likely wrote:
+>> >> On Wed, Feb 29, 2012 at 4:08 PM, Seth Forshee
+>> >> <seth.forshee@canonical.com> wrote:
+>> >> > On Wed, Feb 29, 2012 at 03:23:20PM -0600, Grant Likely wrote:
+>> >> >> On Wed, Feb 29, 2012 at 1:50 PM, Seth Forshee
+>> >> >> <seth.forshee@canonical.com> wrote:
+>> >> >> > On Wed, Feb 29, 2012 at 12:43:23PM -0600, Grant Likely wrote:
+>> >> >> >> On Wed, Feb 29, 2012 at 11:53 AM, Seth Forshee
+>> >> >> >> <seth.forshee@canonical.com> wrote:
+>> >> >> >> > On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
+>> >> >> >> >> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
+>> >> >> >> >> <seth.forshee@canonical.com> wrote:
+>> >> >> >> >> > Apple laptops with hybrid graphics have a device named gmux that
+>> >> >> >> >> > controls the muxing of the LVDS panel between the GPUs as well as screen
+>> >> >> >> >> > brightness. This driver adds support for the gmux device. Only backlight
+>> >> >> >> >> > control is supported initially.
+>> >> >> >> >> >
+>> >> >> >> >> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>> >> >> >> >>
+>> >> >> >> >> Works for me.
+>> >> >> >> >>
+>> >> >> >> >> Tested-by: Grant Likely <grant.likely@secretlab.ca>
+>> >> >> >> >>
+>> >> >> >> >> Now I just need to figure out how to get the desktop backlight widget
+>> >> >> >> >> to use gmux_backlight instead of acpi_video0...
+>> >> >> >> >
+>> >> >> >> > The easy way is to pass acpi_backlight=vendor to the kernel, then you
+>> >> >> >> > won't have acpi_vidoe0.
+>> >> >> >>
+>> >> >> >> That did it, thanks.  I'm assume something is in the works to set it
+>> >> >> >> up automatically?
+>> >> >> >
+>> >> >> > Not that I'm aware of. A number machines have this problem, that the
+>> >> >> > standard ACPI backlight interfaces are implemented but don't work. This
+>> >> >> > generally isn't detectable in software; with the Apples at least
+>> >> >> > everything looks like it's working except that the brightness doesn't
+>> >> >> > change (but not all Apple laptops are affected, so qurking based on
+>> >> >> > manufacturer wouldn't work). All we're left with is DMI quirking, which
+>> >> >> > isn't practical. Maybe we could add something so a platform driver can
+>> >> >> > tell acpi_video that it knows the ACPI backlight doesn't work, but I
+>> >> >> > think on some platforms that still is going to be based off of DMI
+>> >> >> > information.
+>> >> >>
+>> >> >> blacklisting based on specific product name (ie. MacBookPro8,*) or
+>> >> >> machine model is probably the best.  It wouldn't be the first
+>> >> >> blacklist in the linux kernel.
+>> >> >
+>> >> > I think the blacklist would have to be against specific product names.
+>> >> > For example, the MacBook Pro 8,1 has a working acpi_video backlight and
+>> >> > no gmux_backlight, the 8,2 has both but only gmux_backlight works, and I
+>> >> > suspect the 8,3 is the same as the 8,2.
+>> >>
+>> >> I have the 8,3, and my testing confirms that.
+>> >>
+>> >> > We'd probably end up with an
+>> >> > entry in the blacklist for every single model whose acpi_video backlight
+>> >> > doesn't work, adding entries for each new generation of MacBooks.
+>> >> >
+>> >> > And if we start blacklisting Macs we'd have start doing it for other
+>> >> > machines too, I guess. From what I've seen, open-ended blacklists like
+>> >> > this get nacked pretty consistently nowadays.
+>> >>
+>> >> An alternative would be to blacklist or disable acpi0_backlight when
+>> >> the apple-gmux driver loads.  I don't know how acceptable that is, but
+>> >> I also don't have much sympathy for nacking blacklists if there isn't
+>> >> a viable alternative.
+>> >
+>> > Yes, that's one idea I was thinking about. For all the machines I've
+>> > been able to get tested, if the gmux is present then it can control the
+>> > backlight and acpi_video cannot, so that approach is reasonable for
+>> > Macs.
+>> >
+>> > There are quite a few machines in this situation though, and whatever
+>> > solution is arrived at should be flexible enough to work beyond just
+>> > Macs. I'll try to find some time soon to explore this further and see if
+>> > I can come up with something.
 >>
->> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  Documentation/devicetree/bindings/i2c/sii9234.txt |   14 ++++++++++++++
->>  drivers/media/video/s5p-tv/sii9234_drv.c          |   20 +++++++++++++++++++-
->>  2 files changed, 33 insertions(+), 1 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/i2c/sii9234.txt
->>
->> diff --git a/Documentation/devicetree/bindings/i2c/sii9234.txt b/Documentation/devicetree/bindings/i2c/sii9234.txt
->> new file mode 100644
->> index 0000000..7bb7636
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/i2c/sii9234.txt
->> @@ -0,0 +1,14 @@
->> +* SII 9234
->> +
-> 
-> A minimal description about this device would be helpful here.
-> 
->> +Required properties :
->> + - compatible : "sii,9234"
-> 
-> To be more informative, can this be changed to "sil,mhl-9234".
+>> Old Samsung laptops have the same issue, and I ended up patching
+>> drivers/acpi/video_detect.c (check "[PATCH] ACPI / Video: blacklist
+>> some samsung laptops").
+>> Doing it in the vendor module is complicated, since, it will be loaded
+>> after the acpi video module most of the time, and that means addding
+>> acpi_backlight, then removing it, which will probably confuse
+>> usespace.
+>> Patching drivers/acpi/video_detect.c seems safer.
+>
+> I certainly agree that it's the easiest solution, so maybe it is worth
+> trying first and seeing what the response is. But last I saw the patch
+> you're referring to hadn't been merged or even commented on yet.
 
+I'm still waiting for comments, but Matthew seems to be very busy
+currently, so I'll probably repost it directly to linux-acpi in some
+days.
+Ccing Len and linux-acpi.
 
-Thanks for pointing this out - I'll fix compat string and add description.
+> And I can't help but note that you included as justification for the patch
+> that the acpi_video backlight works on newer Samsungs so the list
+> wouldn't grow ;)
+>
+> Beyond Samsung and Apple I know that there are also Toshibas that suffer
+> from this, and judging by the list from older versions of g-s-d [1] I'd
+> say there may well be others.
+>
+> Seth
+>
+> [1] http://git.gnome.org/browse/gnome-settings-daemon/tree/plugins/power/gsd-backlight-helper.c?id=GNOME_SETTINGS_DAEMON_3_2_2#n50
+>
 
-> 
->> + - reg        : i2c device address
->> + - gpio-reset : gpio line used to reset IC
->> +
->> +Example:
->> +
->> +       mhl@39 {
->> +               compatible = "sii,9234";
->> +               reg = <0x39>;
->> +               gpio-reset = <&gpf3 4 0 0 0>;
->> +       };
->> diff --git a/drivers/media/video/s5p-tv/sii9234_drv.c b/drivers/media/video/s5p-tv/sii9234_drv.c
->> index 0f31ecc..0a1511a 100644
->> --- a/drivers/media/video/s5p-tv/sii9234_drv.c
->> +++ b/drivers/media/video/s5p-tv/sii9234_drv.c
->> @@ -22,6 +22,8 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/regulator/machine.h>
->>  #include <linux/slab.h>
->> +#include <linux/of.h>
->> +#include <linux/of_gpio.h>
->>
->>  #include <mach/gpio.h>
->>  #include <plat/gpio-cfg.h>
->> @@ -338,7 +340,15 @@ static int __devinit sii9234_probe(struct i2c_client *client,
->>                goto fail_ctx;
->>        }
->>
->> -       ctx->gpio_n_reset = pdata->gpio_n_reset;
->> +       if (dev->of_node) {
->> +               ctx->gpio_n_reset = of_get_named_gpio(dev->of_node, "gpio-reset", 0);
->> +               if (ctx->gpio_n_reset < 0) {
-> 
-> if (gpio_is_valid(ctx->gpio_n_reset)) can be used here.
+Anyway, like said before, there are already ton of blacklist in the
+kernel, so why not ?
 
-
-Will fix, I wasn't aware of this either.
-
-> 
->> +                       ret = -ENODEV;
->> +                       goto fail_power;
->> +               }
->> +       } else
->> +               ctx->gpio_n_reset = pdata->gpio_n_reset;
-> 
-> linux coding style suggests to have braces for 'else' branch when
-> braces are used for the 'if' branch.
-
-
-Ok.
-
-> 
->> +
->>        ret = gpio_request(ctx->gpio_n_reset, "MHL_RST");
->>        if (ret) {
->>                dev_err(dev, "failed to acquire MHL_RST gpio\n");
->> @@ -401,6 +411,13 @@ static int __devexit sii9234_remove(struct i2c_client *client)
->>        return 0;
->>  }
->>
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id sii9234_dt_match[] = {
->> +       { .compatible = "sii,9234" },
->> +       { },
->> +};
->> +MODULE_DEVICE_TABLE(of, sii9234_dt_match);
->> +#endif
->>
->>  static const struct i2c_device_id sii9234_id[] = {
->>        { "SII9234", 0 },
->> @@ -413,6 +430,7 @@ static struct i2c_driver sii9234_driver = {
->>                .name   = "sii9234",
->>                .owner  = THIS_MODULE,
->>                .pm = &sii9234_pm_ops,
->> +               .of_match_table = of_match_ptr(sii9234_dt_match),
->>        },
->>        .probe          = sii9234_probe,
->>        .remove         = __devexit_p(sii9234_remove),
->> --
->> 1.7.8.3
->>
-> 
-> Thanks,
-> Thomas.
-
-
-Thanks for reviewing this!
-
-Regards,
 -- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+Corentin Chary
+http://xf.iksaif.net
