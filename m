@@ -1,64 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2CAPDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 10:03:20 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:25336 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757757Ab2CAPDT (ORCPT
+	id S1031269Ab2CAPJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 10:09:43 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:52340
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1031193Ab2CAPJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 10:03:19 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qfbIvocVM1nhlhctFjmmsmfRY66orQqscVqpQjPlntzAgB6
- 8Vzo5jNaAakpstifslJ7m7FeZhweMwEvvMjQeOSybC.sGxYy78Tla.d3pX.B
- BJzx1Zpsrz00IFZqZFzrdNvuDddAD1K_flkppe5ZHyUThQuH4LE0lDozRPWY
- AeP4uNhku1Hn.yE_P2.Wh5EEYMTdsDZN.IsDEhlYt5JAu90Di69H45nfhDr.
- hAMZHNrWIaE6WBUB8rDMpULNzU1l_6XkTWpDi3.5lqUfqRtLwXyMEwbca9G4
- SapjOqs0_MXMLACXyGv6Y6_jyqoLTB6vDXR_kkcvygDRRbc_lp5PS_sqGmvL
- x1YXIa6qzk50xNpNqzi2p0gdmm8lOJUcPgLmg4lqdtsh8piKlGHuRU_yNNrV
- mp5wSAX8grPjr99GzXEvCVXawnUkoxbmo9fko48iUvQdQJJWN.4Ygltk86g-
- -
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 1 Mar 2012 09:03:16 -0600 (CST)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Namhyung Kim <namhyung@gmail.com>
-cc: Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
-In-Reply-To: <1330587031.1762.46.camel@leonhard>
-Message-ID: <alpine.DEB.2.00.1203010901020.5004@router.home>
-References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>  <alpine.DEB.2.00.1202290922210.32268@router.home> <1330587031.1762.46.camel@leonhard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Mar 2012 10:09:41 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M07ORV-01-60S-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH] iommu/amd: Split amd_iommu_init function
+Date: Thu, 1 Mar 2012 16:09:28 +0100
+Message-ID: <1330614568-23924-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012, Namhyung Kim wrote:
+The hardware-initializtion part of the AMD IOMMU driver is
+split out into a seperate function. This function can now be
+called either from amd_iommu_init() itself or any other
+place if the hardware needs to be ready earlier. This will
+be used to implement interrupt remapping for AMD.
 
-> > You cannot free a tail page of a compound higher order page independently.
-> > You must free the whole compound.
-> >
->
-> I meant freeing a *slab object* resides in a compound page using buddy
-> system API (e.g. free_pages). I know it's definitely a programming
-> error. However there's no safety net to protect and/or warn such a
-> misbehavior AFAICS - except for head page which has PG_slab set - when
-> it happened by any chance.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/amd_iommu_init.c |  123 +++++++++++++++++++++++++--------------
+ include/linux/amd-iommu.h      |    2 +-
+ 2 files changed, 80 insertions(+), 45 deletions(-)
 
-?? One generally passed a struct page pointer to the page allocator. Slab
-allocator takes pointers to object. The calls that take a pointer to an
-object must have a page aligned value.
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index bdea288..75653da 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1424,10 +1424,40 @@ static struct syscore_ops amd_iommu_syscore_ops = {
+ 	.resume = amd_iommu_resume,
+ };
+ 
++static void __init free_on_init_error(void)
++{
++	amd_iommu_uninit_devices();
++
++	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
++		   get_order(MAX_DOMAIN_ID/8));
++
++	free_pages((unsigned long)amd_iommu_rlookup_table,
++		   get_order(rlookup_table_size));
++
++	free_pages((unsigned long)amd_iommu_alias_table,
++		   get_order(alias_table_size));
++
++	free_pages((unsigned long)amd_iommu_dev_table,
++		   get_order(dev_table_size));
++
++	free_iommu_all();
++
++	free_unity_maps();
++
++#ifdef CONFIG_GART_IOMMU
++	/*
++	 * We failed to initialize the AMD IOMMU - try fallback to GART
++	 * if possible.
++	 */
++	gart_iommu_init();
++
++#endif
++}
++
+ /*
+- * This is the core init function for AMD IOMMU hardware in the system.
+- * This function is called from the generic x86 DMA layer initialization
+- * code.
++ * This is the hardware init function for AMD IOMMU in the system.
++ * This function is called either from amd_iommu_init or from the interrupt
++ * remapping setup code.
+  *
+  * This function basically parses the ACPI table for AMD IOMMU (IVRS)
+  * three times:
+@@ -1446,16 +1476,21 @@ static struct syscore_ops amd_iommu_syscore_ops = {
+  *		remapping requirements parsed out of the ACPI table in
+  *		this last pass.
+  *
+- * After that the hardware is initialized and ready to go. In the last
+- * step we do some Linux specific things like registering the driver in
+- * the dma_ops interface and initializing the suspend/resume support
+- * functions. Finally it prints some information about AMD IOMMUs and
+- * the driver state and enables the hardware.
++ * After everything is set up the IOMMUs are enabled and the necessary
++ * hotplug and suspend notifiers are registered.
+  */
+-static int __init amd_iommu_init(void)
++int __init amd_iommu_init_hardware(void)
+ {
+ 	int i, ret = 0;
+ 
++	if (!amd_iommu_detected)
++		return -ENODEV;
++
++	if (amd_iommu_dev_table != NULL) {
++		/* Hardware already initialized */
++		return 0;
++	}
++
+ 	/*
+ 	 * First parse ACPI tables to find the largest Bus/Dev/Func
+ 	 * we need to handle. Upon this information the shared data
+@@ -1472,9 +1507,8 @@ static int __init amd_iommu_init(void)
+ 	alias_table_size   = tbl_size(ALIAS_TABLE_ENTRY_SIZE);
+ 	rlookup_table_size = tbl_size(RLOOKUP_TABLE_ENTRY_SIZE);
+ 
+-	ret = -ENOMEM;
+-
+ 	/* Device table - directly used by all IOMMUs */
++	ret = -ENOMEM;
+ 	amd_iommu_dev_table = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO,
+ 				      get_order(dev_table_size));
+ 	if (amd_iommu_dev_table == NULL)
+@@ -1546,20 +1580,46 @@ static int __init amd_iommu_init(void)
+ 
+ 	enable_iommus();
+ 
++	amd_iommu_init_notifier();
++
++	register_syscore_ops(&amd_iommu_syscore_ops);
++
++out:
++	return ret;
++
++free:
++	free_on_init_error();
++
++	return ret;
++}
++
++/*
++ * This is the core init function for AMD IOMMU hardware in the system.
++ * This function is called from the generic x86 DMA layer initialization
++ * code.
++ *
++ * The function calls amd_iommu_init_hardware() to setup and enable the
++ * IOMMU hardware if this has not happened yet. After that the driver
++ * registers for the DMA-API and for the IOMMU-API as necessary.
++ */
++static int __init amd_iommu_init(void)
++{
++	int ret = 0;
++
++	ret = amd_iommu_init_hardware();
++	if (ret)
++		goto out;
++
+ 	if (iommu_pass_through)
+ 		ret = amd_iommu_init_passthrough();
+ 	else
+ 		ret = amd_iommu_init_dma_ops();
+ 
+ 	if (ret)
+-		goto free_disable;
++		goto free;
+ 
+ 	amd_iommu_init_api();
+ 
+-	amd_iommu_init_notifier();
+-
+-	register_syscore_ops(&amd_iommu_syscore_ops);
+-
+ 	if (iommu_pass_through)
+ 		goto out;
+ 
+@@ -1569,39 +1629,14 @@ static int __init amd_iommu_init(void)
+ 		printk(KERN_INFO "AMD-Vi: Lazy IO/TLB flushing enabled\n");
+ 
+ 	x86_platform.iommu_shutdown = disable_iommus;
++
+ out:
+ 	return ret;
+ 
+-free_disable:
+-	disable_iommus();
+-
+ free:
+-	amd_iommu_uninit_devices();
+-
+-	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
+-		   get_order(MAX_DOMAIN_ID/8));
+-
+-	free_pages((unsigned long)amd_iommu_rlookup_table,
+-		   get_order(rlookup_table_size));
+-
+-	free_pages((unsigned long)amd_iommu_alias_table,
+-		   get_order(alias_table_size));
+-
+-	free_pages((unsigned long)amd_iommu_dev_table,
+-		   get_order(dev_table_size));
+-
+-	free_iommu_all();
+-
+-	free_unity_maps();
+-
+-#ifdef CONFIG_GART_IOMMU
+-	/*
+-	 * We failed to initialize the AMD IOMMU - try fallback to GART
+-	 * if possible.
+-	 */
+-	gart_iommu_init();
++	disable_iommus();
+ 
+-#endif
++	free_on_init_error();
+ 
+ 	goto out;
+ }
+diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
+index ef00610..15f6b9e 100644
+--- a/include/linux/amd-iommu.h
++++ b/include/linux/amd-iommu.h
+@@ -28,7 +28,7 @@ struct task_struct;
+ struct pci_dev;
+ 
+ extern int amd_iommu_detect(void);
+-
++extern int amd_iommu_init_hardware(void);
+ 
+ /**
+  * amd_iommu_enable_device_erratum() - Enable erratum workaround for device
+-- 
+1.7.5.4
 
-> Without it, it might be possible to free part of tail pages silently,
-> and cause unexpected not-so-funny results some time later. It should be
-> hard to find out.
-
-Ok then fix the page allocator to BUG() on tail pages. That is an issue
-with the page allocator not the slab allocator.
-
-Adding PG_tail to the flags checked on free should do the trick (at least
-for 64 bit).
 
