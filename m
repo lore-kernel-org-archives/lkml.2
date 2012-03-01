@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab2CABR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:17:29 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:37517 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752184Ab2CABR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:17:28 -0500
-Message-ID: <1330564646.23314.23.camel@joe2Laptop>
-Subject: Re: [PATCH] get_maintainer.pl: Add support for moderated lists
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, Ian.Campbell@citrix.com,
-        florian@mickler.org, linux-kernel@vger.kernel.org
-Date: Wed, 29 Feb 2012 17:17:26 -0800
-In-Reply-To: <20120229160254.eda62e01.akpm@linux-foundation.org>
-References: <1330544962-995-1-git-send-email-richard@nod.at>
-	 <1330545526.22465.5.camel@joe2Laptop> <4F4E8555.5040002@nod.at>
-	 <20120229160254.eda62e01.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1030412Ab2CABSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:18:15 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:50647 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab2CABSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 20:18:14 -0500
+Date: Thu, 1 Mar 2012 10:18:11 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Eugene Surovegin <surovegin@google.com>
+Cc: linux-kernel@vger.kernel.org, kexec-list <kexec@lists.infradead.org>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] kdump: force page alignment for per-CPU crash notes.
+Message-ID: <20120301011811.GC16483@verge.net.au>
+References: <1330536083-13098-1-git-send-email-surovegin@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330536083-13098-1-git-send-email-surovegin@google.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-29 at 16:02 -0800, Andrew Morton wrote:
-> On Wed, 29 Feb 2012 21:06:45 +0100
-> Richard Weinberger <richard@nod.at> wrote:
+On Wed, Feb 29, 2012 at 09:21:23AM -0800, Eugene Surovegin wrote:
+> Per-CPU allocations are not guaranteed to be physically contiguous.
+> However, kdump kernel and user-space code assumes that per-CPU
+> memory, used for saving CPU registers on crash, is.
+> This can cause corrupted /proc/vmcore in some cases - the main
+> symptom being huge ELF note section.
 > 
-> > Am 29.02.2012 20:58, schrieb Joe Perches:
-> > > <shrug>  From my perspective, it's correct and simple.
-> > > 
-> > > Moderated lists just means your email may get delayed
-> > > and you may get a "delayed due to moderation" email.
-> > 
-> > Most moderated lists are "moderated" by nobody and the patch
-> > goes to /dev/null.
-> 
-> That's a big problem - we don't want people to send their fixes and bug
-> reports into black holes.
-> 
-> So yes, I think that teaching get_maintainer to emit black hole
-> warnings is a good idea.
-> 
-> Problem is, I don't think the string "moderated" explains the situation
-> very well for the uninitiated :(
+> Force page alignment for note_buf_t to ensure that this assumption holds.
 
-It's also false.  Most moderated lists in MAINTAINERS
-(and I've probably send patches to most of them) are
-in fact moderated.
+Ouch. I'm surprised there is an allocation on crash, perhaps
+it could at least be done earlier? And am I right in thinking
+that this change increases the likely hood that the allocation
+could fail?
 
-My patches generally show up in their list archives.
-
+> 
+> Signed-off-by: Eugene Surovegin <surovegin@google.com>
+> CC: Eric Biederman <ebiederm@xmission.com>
+> CC: Vivek Goyal <vgoyal@redhat.com>
+> CC: kexec-list <kexec@lists.infradead.org>
+> ---
+>  kernel/kexec.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 7b08867..e641b5c 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1232,8 +1232,13 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+>  
+>  static int __init crash_notes_memory_init(void)
+>  {
+> -	/* Allocate memory for saving cpu registers. */
+> -	crash_notes = alloc_percpu(note_buf_t);
+> +	/* Allocate memory for saving cpu registers.
+> +	 * Force page alignment to avoid crossing physical page boundary -
+> +	 * kexec-tools and kernel /proc/vmcore handler assume these per-CPU
+> +	 * chunks are physically contiguous.
+> +	 */
+> +	crash_notes = (note_buf_t __percpu *)__alloc_percpu(sizeof(note_buf_t),
+> +							    PAGE_SIZE);
+>  	if (!crash_notes) {
+>  		printk("Kexec: Memory allocation for saving cpu register"
+>  		" states failed\n");
+> -- 
+> 1.7.9.1
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
