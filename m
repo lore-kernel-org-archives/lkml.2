@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab2CADBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:01:02 -0500
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:50038 "HELO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932442Ab2CADBA (ORCPT
+	id S932700Ab2CADBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:01:16 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31640 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab2CADBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:01:00 -0500
-X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Feb 2012 22:01:00 EST
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of vhtnguyen@apm.com designates 10.112.84.170 as permitted sender) smtp.mail=vhtnguyen@apm.com
-From: Vinh Huu Tuong Nguyen <vhtnguyen@apm.com>
-References: <1324385014-30725-1-git-send-email-vhtnguyen@apm.com> <CA+5PVA5SZmeEdBF0XvNmvCwroCKs1EwdWNbd_nwyEDCoZGHo2Q@mail.gmail.com>
-In-Reply-To: <CA+5PVA5SZmeEdBF0XvNmvCwroCKs1EwdWNbd_nwyEDCoZGHo2Q@mail.gmail.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acz26ahmFLHP7k5QT8ipW85Zuhe2tQAbAlPw
-Date: Thu, 1 Mar 2012 09:53:27 +0700
-Message-ID: <e2fe6a6317e1ea6e04c34281b74b2277@mail.gmail.com>
-Subject: RE: [PATCH 1/3] powerpc/44x: The bug fixed support for APM821xx SoC
- and Bluestone board
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Feb 2012 22:01:11 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 03/36] PCI: rename pci_host_bridge() to find_pci_root_bridge()
+Date: Wed, 29 Feb 2012 19:00:04 -0800
+Message-Id: <1330570837-26638-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
+References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090209.4F4EE66F.0083,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Josh Boyer [mailto:jwboyer@gmail.com]
-> Sent: Wednesday, February 29, 2012 8:54 PM
-> To: Vinh Nguyen Huu Tuong
-> Cc: Benjamin Herrenschmidt; Paul Mackerras; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/3] powerpc/44x: The bug fixed support for
-> APM821xx SoC and Bluestone board
->
-> On Tue, Dec 20, 2011 at 7:43 AM, Vinh Nguyen Huu Tuong
-> <vhtnguyen@apm.com> wrote:
-> > This patch consists of:
-> > - Fix the pvr mask for checking pvr in cputable.c
-> > - Fix the cpu name as consistent with cpu name is describled in dts
-> file
-> >
-> > Signed-off-by: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-> > ---
->
-> I was waiting to see if you would submit a new series with patch 3/3
-> fixed for
-> the comments I made.  Seems you haven't yet or I missed it entirely.
-> For now,
-> I'll take this patch as it's stand-alone.  The DTS and PCI driver
-> patches will
-> need to be submitted together again.
+Separate find_pci_root_bus out.
 
-I'm sorry for my lateness, I've been ready to submit new update 2 weeks
-ago, but when I synced up with master branch again, the version of Linux
-is changed (changed to 3.2) with some updates from Marri that made my
-update didn't work. I have to update and test again. I'll submit the new
-update within this week as your recommendation.
+-v2: according to Bjorn, remove extra null checking.
 
-Best regards,
-Vinh Nguyen.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/host-bridge.c |   18 +++++++++++++-----
+ 1 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 5ca4220..78adcc0 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -16,15 +16,22 @@ void add_to_pci_host_bridges(struct pci_host_bridge *bridge)
+ 	list_add_tail(&bridge->list, &pci_host_bridges);
+ }
+ 
+-static struct pci_host_bridge *pci_host_bridge(struct pci_dev *dev)
++static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
+ {
+ 	struct pci_bus *bus;
+-	struct pci_host_bridge *bridge;
+ 
+ 	bus = dev->bus;
+ 	while (bus->parent)
+ 		bus = bus->parent;
+ 
++	return bus;
++}
++
++static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
++{
++	struct pci_bus *bus = find_pci_root_bus(dev);
++	struct pci_host_bridge *bridge;
++
+ 	list_for_each_entry(bridge, &pci_host_bridges, list) {
+ 		if (bridge->bus == bus)
+ 			return bridge;
+@@ -41,7 +48,7 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
+ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+ 			     struct resource *res)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+ 	resource_size_t offset = 0;
+ 
+@@ -69,12 +76,13 @@ static bool region_contains(struct pci_bus_region *region1,
+ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 			     struct pci_bus_region *region)
+ {
+-	struct pci_host_bridge *bridge = pci_host_bridge(dev);
++	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
+ 	struct pci_host_bridge_window *window;
+-	struct pci_bus_region bus_region;
+ 	resource_size_t offset = 0;
+ 
+ 	list_for_each_entry(window, &bridge->windows, list) {
++		struct pci_bus_region bus_region;
++
+ 		if (resource_type(res) != resource_type(window->res))
+ 			continue;
+ 
+-- 
+1.7.7
+
