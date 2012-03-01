@@ -1,125 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030196Ab2CAJUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:20:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62892 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965582Ab2CAJUA convert rfc822-to-8bit (ORCPT
+	id S965889Ab2CAJTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:19:25 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53082 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965476Ab2CAJRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:20:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.204.133.216 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120229225650.GD20565@ubuntu-macmini>
-References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
-	<1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
-	<CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
-	<20120229175327.GA20565@ubuntu-macmini>
-	<CACxGe6uc+LZjuMLS5DZELzAsHsnhObL6mdPzdMnNVbfriTfNwg@mail.gmail.com>
-	<20120229195042.GB20565@ubuntu-macmini>
-	<CACxGe6tK85FgYAT-1JQbLxEhRS34v2MPsx8urXADi6v2FnQ2gw@mail.gmail.com>
-	<20120229220809.GC20565@ubuntu-macmini>
-	<CACxGe6tLCYhuiAH1Q1PoWTzFLmZ0watw==0g76J1hS-Qurzyrw@mail.gmail.com>
-	<20120229225650.GD20565@ubuntu-macmini>
-Date: Thu, 1 Mar 2012 10:19:58 +0100
-Message-ID: <CAHR064ikTm5dD-R6JE84XUTzNH5fRz9Xi4uKaK9cMn=MkrxCHg@mail.gmail.com>
-Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 04:17:17 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to memcg
+Date: Thu,  1 Mar 2012 14:46:15 +0530
+Message-Id: <1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12022923-0260-0000-0000-000000A17CFA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:56 PM, Seth Forshee
-<seth.forshee@canonical.com> wrote:
-> On Wed, Feb 29, 2012 at 04:32:28PM -0600, Grant Likely wrote:
->> On Wed, Feb 29, 2012 at 4:08 PM, Seth Forshee
->> <seth.forshee@canonical.com> wrote:
->> > On Wed, Feb 29, 2012 at 03:23:20PM -0600, Grant Likely wrote:
->> >> On Wed, Feb 29, 2012 at 1:50 PM, Seth Forshee
->> >> <seth.forshee@canonical.com> wrote:
->> >> > On Wed, Feb 29, 2012 at 12:43:23PM -0600, Grant Likely wrote:
->> >> >> On Wed, Feb 29, 2012 at 11:53 AM, Seth Forshee
->> >> >> <seth.forshee@canonical.com> wrote:
->> >> >> > On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
->> >> >> >> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
->> >> >> >> <seth.forshee@canonical.com> wrote:
->> >> >> >> > Apple laptops with hybrid graphics have a device named gmux that
->> >> >> >> > controls the muxing of the LVDS panel between the GPUs as well as screen
->> >> >> >> > brightness. This driver adds support for the gmux device. Only backlight
->> >> >> >> > control is supported initially.
->> >> >> >> >
->> >> >> >> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
->> >> >> >>
->> >> >> >> Works for me.
->> >> >> >>
->> >> >> >> Tested-by: Grant Likely <grant.likely@secretlab.ca>
->> >> >> >>
->> >> >> >> Now I just need to figure out how to get the desktop backlight widget
->> >> >> >> to use gmux_backlight instead of acpi_video0...
->> >> >> >
->> >> >> > The easy way is to pass acpi_backlight=vendor to the kernel, then you
->> >> >> > won't have acpi_vidoe0.
->> >> >>
->> >> >> That did it, thanks.  I'm assume something is in the works to set it
->> >> >> up automatically?
->> >> >
->> >> > Not that I'm aware of. A number machines have this problem, that the
->> >> > standard ACPI backlight interfaces are implemented but don't work. This
->> >> > generally isn't detectable in software; with the Apples at least
->> >> > everything looks like it's working except that the brightness doesn't
->> >> > change (but not all Apple laptops are affected, so qurking based on
->> >> > manufacturer wouldn't work). All we're left with is DMI quirking, which
->> >> > isn't practical. Maybe we could add something so a platform driver can
->> >> > tell acpi_video that it knows the ACPI backlight doesn't work, but I
->> >> > think on some platforms that still is going to be based off of DMI
->> >> > information.
->> >>
->> >> blacklisting based on specific product name (ie. MacBookPro8,*) or
->> >> machine model is probably the best.  It wouldn't be the first
->> >> blacklist in the linux kernel.
->> >
->> > I think the blacklist would have to be against specific product names.
->> > For example, the MacBook Pro 8,1 has a working acpi_video backlight and
->> > no gmux_backlight, the 8,2 has both but only gmux_backlight works, and I
->> > suspect the 8,3 is the same as the 8,2.
->>
->> I have the 8,3, and my testing confirms that.
->>
->> > We'd probably end up with an
->> > entry in the blacklist for every single model whose acpi_video backlight
->> > doesn't work, adding entries for each new generation of MacBooks.
->> >
->> > And if we start blacklisting Macs we'd have start doing it for other
->> > machines too, I guess. From what I've seen, open-ended blacklists like
->> > this get nacked pretty consistently nowadays.
->>
->> An alternative would be to blacklist or disable acpi0_backlight when
->> the apple-gmux driver loads.  I don't know how acceptable that is, but
->> I also don't have much sympathy for nacking blacklists if there isn't
->> a viable alternative.
->
-> Yes, that's one idea I was thinking about. For all the machines I've
-> been able to get tested, if the gmux is present then it can control the
-> backlight and acpi_video cannot, so that approach is reasonable for
-> Macs.
->
-> There are quite a few machines in this situation though, and whatever
-> solution is arrived at should be flexible enough to work beyond just
-> Macs. I'll try to find some time soon to explore this further and see if
-> I can come up with something.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Old Samsung laptops have the same issue, and I ended up patching
-drivers/acpi/video_detect.c (check "[PATCH] ACPI / Video: blacklist
-some samsung laptops").
-Doing it in the vendor module is complicated, since, it will be loaded
-after the acpi video module most of the time, and that means addding
-acpi_backlight, then removing it, which will probably confuse
-usespace.
-Patching drivers/acpi/video_detect.c seems safer.
+Non reclaim resources include hugetlb pages or ramfs pages.
+Both these file systems are memory based and they don't support
+page reclaim. So enforcing memory controller limit during actual
+page allocation doesn't make sense for them. Instead we would
+enforce the limit during mmap and keep track of the mmap range
+along with memcg information in charge list.
 
+We could have multiple non reclaim resources which we want to track
+indepedently, like huge pages with different huge page size.
+
+Current code don't allow removal of memcg if they have any non
+reclaim resource charge.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/memcontrol.h |   11 +++
+ init/Kconfig               |   11 +++
+ mm/memcontrol.c            |  198 +++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 219 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4d34356..59d93ee 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -171,6 +171,17 @@ void mem_cgroup_split_huge_fixup(struct page *head);
+ bool mem_cgroup_bad_page_check(struct page *page);
+ void mem_cgroup_print_bad_page(struct page *page);
+ #endif
++extern long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
++					    unsigned long from,
++					    unsigned long to, int idx);
++extern void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
++					  int idx, unsigned long nr_pages);
++extern void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
++					       unsigned long from,
++					       unsigned long to);
++extern long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
++					      unsigned long from,
++					      unsigned long to, int idx);
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct mem_cgroup;
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..c4306f7 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -673,6 +673,17 @@ config CGROUP_MEM_RES_CTLR
+ 	  This config option also selects MM_OWNER config option, which
+ 	  could in turn add some fork/exit overhead.
+ 
++config MEM_RES_CTLR_NORECLAIM
++	bool "Memory Resource Controller non reclaim Extension"
++	depends on CGROUP_MEM_RES_CTLR
++	help
++	  Add non reclaim resource management to memory resource controller.
++	  Currently only HugeTLB pages will be managed using this extension.
++	  The controller limit is enforced during mmap(2), so that
++	  application can fall back to allocations using smaller page size
++	  if the memory controller limit prevented them from allocating HugeTLB
++	  pages.
++
+ config CGROUP_MEM_RES_CTLR_SWAP
+ 	bool "Memory Resource Controller Swap Extension"
+ 	depends on CGROUP_MEM_RES_CTLR && SWAP
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6728a7a..b00d028 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -49,6 +49,7 @@
+ #include <linux/page_cgroup.h>
+ #include <linux/cpu.h>
+ #include <linux/oom.h>
++#include <linux/region.h>
+ #include "internal.h"
+ #include <net/sock.h>
+ #include <net/tcp_memcontrol.h>
+@@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
+ 
+ /*
++ * Currently only hugetlbfs pages are tracked using no reclaim
++ * resource count. So we need only MAX_HSTATE res counter
++ */
++#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
++/*
+  * The memory controller data structure. The memory controller controls both
+  * page cache and RSS per cgroup. We would eventually like to provide
+  * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+@@ -235,6 +241,11 @@ struct mem_cgroup {
+ 	 */
+ 	struct res_counter memsw;
+ 	/*
++	 * the counter to account for non reclaim resources
++	 * like hugetlb pages
++	 */
++	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
++	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+@@ -4887,6 +4898,7 @@ err_cleanup:
+ static struct cgroup_subsys_state * __ref
+ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ {
++	int idx;
+ 	struct mem_cgroup *memcg, *parent;
+ 	long error = -ENOMEM;
+ 	int node;
+@@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	if (parent && parent->use_hierarchy) {
+ 		res_counter_init(&memcg->res, &parent->res);
+ 		res_counter_init(&memcg->memsw, &parent->memsw);
++		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
++			res_counter_init(&memcg->no_rcl_res[idx],
++					 &parent->no_rcl_res[idx]);
++		}
+ 		/*
+ 		 * We increment refcnt of the parent to ensure that we can
+ 		 * safely access it on res_counter_charge/uncharge.
+@@ -4932,6 +4948,8 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	} else {
+ 		res_counter_init(&memcg->res, NULL);
+ 		res_counter_init(&memcg->memsw, NULL);
++		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++)
++			res_counter_init(&memcg->no_rcl_res[idx], NULL);
+ 	}
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
+@@ -4950,8 +4968,22 @@ free_out:
+ static int mem_cgroup_pre_destroy(struct cgroup_subsys *ss,
+ 					struct cgroup *cont)
+ {
++	int idx;
++	u64 val;
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-
++	/*
++	 * We don't allow a cgroup deletion if it have some
++	 * non reclaim resource charged against it. We can
++	 * update the charge list to point to parent cgroup
++	 * and allow this cgroup deletion here. But that
++	 * involve tracking all the chg list which have this
++	 * cgroup reference.
++	 */
++	for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
++		val = res_counter_read_u64(&memcg->no_rcl_res[idx], RES_USAGE);
++		if (val)
++			return -EBUSY;
++	}
+ 	return mem_cgroup_force_empty(memcg, false);
+ }
+ 
+@@ -5489,6 +5521,170 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+ }
+ #endif
+ 
++#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
++/*
++ * For supporting resource control on non reclaim pages like hugetlbfs
++ * and ramfs, we enforce limit during mmap time. We also maintain
++ * a chg list for these resource, which track the range alog with
++ * memcg information. We need to have seperate chg_list for shared
++ * and private mapping. Shared mapping are mostly maintained in
++ * file inode and private mapping in vm_area_struct.
++ */
++long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
++				     unsigned long from, unsigned long to,
++				     int idx)
++{
++	long chg;
++	int ret = 0;
++	unsigned long csize;
++	struct mem_cgroup *memcg;
++	struct res_counter *fail_res;
++
++	/*
++	 * Get the task cgroup within rcu_readlock and also
++	 * get cgroup reference to make sure cgroup destroy won't
++	 * race with page_charge. We don't allow a cgroup destroy
++	 * when the cgroup have some charge against it
++	 */
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
++	css_get(&memcg->css);
++	rcu_read_unlock();
++
++	chg = region_chg(chg_list, from, to, (unsigned long)memcg);
++	if (chg < 0)
++		goto err_out;
++
++	if (mem_cgroup_is_root(memcg))
++		goto err_out;
++
++	csize = chg * PAGE_SIZE;
++	ret = res_counter_charge(&memcg->no_rcl_res[idx], csize, &fail_res);
++
++err_out:
++	/* Now that we have charged we can drop cgroup reference */
++	css_put(&memcg->css);
++	if (!ret)
++		return chg;
++
++	/* We don't worry about region_uncharge */
++	return ret;
++}
++
++void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
++				   int idx, unsigned long nr_pages)
++{
++	struct mem_cgroup *memcg;
++	unsigned long csize = nr_pages * PAGE_SIZE;
++
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
++
++	if (!mem_cgroup_is_root(memcg))
++		res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
++	rcu_read_unlock();
++	/*
++	 * We could ideally remove zero size regions from
++	 * resv map hcg_regions here
++	 */
++	return;
++}
++
++void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
++					unsigned long from, unsigned long to)
++{
++	struct mem_cgroup *memcg;
++
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
++	region_add(chg_list, from, to, (unsigned long)memcg);
++	rcu_read_unlock();
++	return;
++}
++
++long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
++				       unsigned long from, unsigned long to,
++				       int idx)
++{
++	long chg = 0, csize;
++	struct mem_cgroup *memcg;
++	struct file_region *rg, *trg;
++
++	/* Locate the region we are either in or before. */
++	list_for_each_entry(rg, chg_list, link)
++		if (from <= rg->to)
++			break;
++	if (&rg->link == chg_list)
++		return 0;
++
++	/* If we are in the middle of a region then adjust it. */
++	if (from > rg->from) {
++		if (to < rg->to) {
++			struct file_region *nrg;
++			/* rg->from from to rg->to */
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			/*
++			 * If we fail to allocate we return the
++			 * with the 0 charge . Later a complete
++			 * truncate will reclaim the left over space
++			 */
++			if (!nrg)
++				return 0;
++			nrg->from = to;
++			nrg->to = rg->to;
++			nrg->data = rg->data;
++			INIT_LIST_HEAD(&nrg->link);
++			list_add(&nrg->link, &rg->link);
++
++			/* Adjust the rg entry */
++			rg->to = from;
++			chg = to - from;
++			memcg = (struct mem_cgroup *)rg->data;
++			if (!mem_cgroup_is_root(memcg)) {
++				csize = chg * PAGE_SIZE;
++				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
++			}
++			return chg;
++		}
++		chg = rg->to - from;
++		rg->to = from;
++		memcg = (struct mem_cgroup *)rg->data;
++		if (!mem_cgroup_is_root(memcg)) {
++			csize = chg * PAGE_SIZE;
++			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
++		}
++		rg = list_entry(rg->link.next, typeof(*rg), link);
++	}
++	/* Drop any remaining regions till to */
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (rg->from >= to)
++			break;
++		if (&rg->link == chg_list)
++			break;
++		if (rg->to > to) {
++			/* rg->from to rg->to */
++			chg += to - rg->from;
++			rg->from = to;
++			memcg = (struct mem_cgroup *)rg->data;
++			if (!mem_cgroup_is_root(memcg)) {
++				csize = (to - rg->from) * PAGE_SIZE;
++				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
++			}
++			return chg;
++		}
++		chg += rg->to - rg->from;
++		memcg = (struct mem_cgroup *)rg->data;
++		if (!mem_cgroup_is_root(memcg)) {
++			csize = (rg->to - rg->from) * PAGE_SIZE;
++			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
++		}
++		list_del(&rg->link);
++		kfree(rg);
++	}
++	return chg;
++}
++#endif
++
+ struct cgroup_subsys mem_cgroup_subsys = {
+ 	.name = "memory",
+ 	.subsys_id = mem_cgroup_subsys_id,
 -- 
-Corentin Chary
-http://xf.iksaif.net
+1.7.9
+
