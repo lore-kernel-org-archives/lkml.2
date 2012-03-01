@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452Ab2CAHNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 02:13:10 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21380 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758145Ab2CAHNG convert rfc822-to-8bit (ORCPT
+	id S1755745Ab2CAHak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 02:30:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51407 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367Ab2CAHaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 02:13:06 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6635"; a="167923349"
-X-IronPort-AV: E=Sophos;i="4.73,507,1325491200"; 
-   d="scan'208";a="207294414"
-From: "Rodriguez, Luis" <rodrigue@qca.qualcomm.com>
-To: "Ren, Cloud" <cjren@qca.qualcomm.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: qca-linux-team <qca-linux-team@qualcomm.com>,
-        nic-devel <nic-devel@qualcomm.com>
-Subject: RE: [PATCH 2/3] atl1c: change author
-Thread-Topic: [PATCH 2/3] atl1c: change author
-Thread-Index: AQHM923yUHdhR4y1BEy3YqqejNViSJZVBny8
-Date: Thu, 1 Mar 2012 07:13:04 +0000
-Message-ID: <7A9ADFFA56024346AAE90B6BABC3BD15D2F8A8@nasanexd02b.na.qualcomm.com>
-References: <1330580469-23348-1-git-send-email-cjren@qca.qualcomm.com>,<1330580469-23348-3-git-send-email-cjren@qca.qualcomm.com>
-In-Reply-To: <1330580469-23348-3-git-send-email-cjren@qca.qualcomm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [199.106.114.130]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 1 Mar 2012 02:30:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of namhyung@gmail.com designates 10.68.138.130 as permitted sender) smtp.mail=namhyung@gmail.com; dkim=pass header.i=namhyung@gmail.com
+Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
+From: Namhyung Kim <namhyung@gmail.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1202290922210.32268@router.home>
+References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>
+	 <alpine.DEB.2.00.1202290922210.32268@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Mar 2012 16:30:31 +0900
+Message-ID: <1330587031.1762.46.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Um, actually, for now can you please use QCA or Qualcomm Atheros, Inc. QCA != Qualcomm.
+2012-02-29, 09:24 -0600, Christoph Lameter wrote:
+> On Wed, 29 Feb 2012, Namhyung Kim wrote:
+> 
+> > Unlike SLAB, SLUB doesn't set PG_slab on tail pages, so if a user would
+> > call free_pages() incorrectly on a object in a tail page, she will get
+> > confused with the undefined result. Setting the flag would help her by
+> > emitting a warning on bad_page() in such a case.
+> 
+> NAK
+> 
+> You cannot free a tail page of a compound higher order page independently.
+> You must free the whole compound.
+> 
 
-  Luis
-________________________________________
-From: Ren, Cloud
-Sent: Wednesday, February 29, 2012 9:41 PM
-To: davem@davemloft.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Cc: qca-linux-team; nic-devel; Ren, Cloud
-Subject: [PATCH 2/3] atl1c: change author
+I meant freeing a *slab object* resides in a compound page using buddy
+system API (e.g. free_pages). I know it's definitely a programming
+error. However there's no safety net to protect and/or warn such a
+misbehavior AFAICS - except for head page which has PG_slab set - when
+it happened by any chance.
 
-The author, jie yang, has left. please use nic-devel@qualcomm.com report bugs to
-us.
+Without it, it might be possible to free part of tail pages silently,
+and cause unexpected not-so-funny results some time later. It should be
+hard to find out.
 
-Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
----
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+When I ran such a bad code using SLAB, I was able to be notified
+immediately. That's why I'd like to add this patch to SLUB too. In
+addition, it will give more correct value for slab pages when
+using /proc/kpageflags IMHO.
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 6bf387b..815f683 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -52,7 +52,7 @@ static DEFINE_PCI_DEVICE_TABLE(atl1c_pci_tbl) = {
- };
- MODULE_DEVICE_TABLE(pci, atl1c_pci_tbl);
 
--MODULE_AUTHOR("Jie Yang <jie.yang@atheros.com>");
-+MODULE_AUTHOR("Qualcomm Corporation, <nic-devel@qualcomm.com>");
- MODULE_DESCRIPTION("Atheros 1000M Ethernet Network Driver");
- MODULE_LICENSE("GPL");
+-- 
+Regards,
+Namhyung Kim
 
---
-1.7.7
 
