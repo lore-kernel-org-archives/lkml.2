@@ -1,88 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965821Ab2CAJSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:18:38 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46069 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965347Ab2CAJSd (ORCPT
+	id S965939Ab2CAJT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:19:27 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52783 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965483Ab2CAJRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:18:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.132.198 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: bart.de.schuymer@pandora.be
-Cc: pablo@netfilter.org, kaber@trash.net, shemminger@vyatta.com,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH 3/3] netfilter: Remove redundant code.
-Date: Thu,  1 Mar 2012 14:47:46 +0530
-Message-Id: <1330593466-19317-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 1 Mar 2012 04:17:17 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 8/9] hugetlbfs: Add memcg control files for hugetlbfs
+Date: Thu,  1 Mar 2012 14:46:19 +0530
+Message-Id: <1330593380-1361-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12022923-6102-0000-0000-000000F5987C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Remove the redundant code.
+This add control files for hugetlbfs in memcg
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- net/bridge/netfilter/ebtables.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
+ include/linux/hugetlb.h |    5 ++++
+ mm/hugetlb.c            |   39 ++++++++++++++++++++++++++++++++++++-
+ mm/memcontrol.c         |   49 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 92 insertions(+), 1 deletions(-)
 
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index 9c0f177..1efc234 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -226,10 +226,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d9d6c86..8498fa8 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -4,6 +4,7 @@
+ #include <linux/mm_types.h>
+ #include <linux/fs.h>
+ #include <linux/hugetlb_inline.h>
++#include <linux/cgroup.h>
  
- 		if (EBT_MATCH_ITERATE(point, ebt_do_match, skb, &acpar) != 0)
- 			goto letscontinue;
--		if (acpar.hotdrop) {
--			read_unlock_bh(&table->lock);
--			return NF_DROP;
--		}
-+		if (acpar.hotdrop)
-+			goto out;
+ struct ctl_table;
+ struct user_struct;
+@@ -220,6 +221,10 @@ struct hstate {
+ 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+ 	unsigned int free_huge_pages_node[MAX_NUMNODES];
+ 	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
++	/* cgroup control files */
++	struct cftype cgroup_limit_file;
++	struct cftype cgroup_usage_file;
++	struct cftype cgroup_max_usage_file;
+ 	char name[HSTATE_NAME_LEN];
+ };
  
- 		/* increase counter */
- 		(*(counter_base + i)).pcnt++;
-@@ -253,10 +251,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
- 			read_unlock_bh(&table->lock);
- 			return NF_ACCEPT;
- 		}
--		if (verdict == EBT_DROP) {
--			read_unlock_bh(&table->lock);
--			return NF_DROP;
--		}
-+		if (verdict == EBT_DROP)
-+			goto out;
- 		if (verdict == EBT_RETURN) {
- letsreturn:
- #ifdef CONFIG_NETFILTER_DEBUG
-@@ -281,8 +277,7 @@ letsreturn:
- #ifdef CONFIG_NETFILTER_DEBUG
- 		if (verdict < 0) {
- 			BUGPRINT("bogus standard verdict\n");
--			read_unlock_bh(&table->lock);
--			return NF_DROP;
-+			goto out;
- 		}
- #endif
- 		/* jump to a udc */
-@@ -294,8 +289,7 @@ letsreturn:
- #ifdef CONFIG_NETFILTER_DEBUG
- 		if (chaininfo->distinguisher) {
- 			BUGPRINT("jump to non-chain\n");
--			read_unlock_bh(&table->lock);
--			return NF_DROP;
-+			goto out;
- 		}
- #endif
- 		nentries = chaininfo->nentries;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 2d99d0a..9229715 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -23,6 +23,7 @@
+ #include <linux/swapops.h>
+ #include <linux/region.h>
+ #include <linux/memcontrol.h>
++#include <linux/res_counter.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -1761,6 +1762,42 @@ static int __init hugetlb_init(void)
+ }
+ module_init(hugetlb_init);
+ 
++#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
++int register_hugetlb_memcg_files(struct cgroup *cgroup,
++				 struct cgroup_subsys *ss)
++{
++	int ret = 0;
++	struct hstate *h;
++
++	for_each_hstate(h) {
++		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
++		if (ret)
++			return ret;
++		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
++		if (ret)
++			return ret;
++		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
++		if (ret)
++			return ret;
++
++	}
++	return ret;
++}
++/* mm/memcontrol.c because mem_cgroup is not availabel outside */
++int hugetlb_memcg_file_init(struct hstate *h, int idx);
++#else
++int register_hugetlb_memcg_files(struct cgroup *cgroup,
++				  struct cgroup_subsys *ss)
++{
++	return 0;
++}
++
++static int hugetlb_memcg_file_init(struct hstate *h, int idx)
++{
++	return 0;
++}
++#endif
++
+ /* Should be called on processing a hugepagesz=... option */
+ void __init hugetlb_add_hstate(unsigned order)
+ {
+@@ -1784,7 +1821,7 @@ void __init hugetlb_add_hstate(unsigned order)
+ 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+ 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+ 					huge_page_size(h)/1024);
+-
++	hugetlb_memcg_file_init(h, max_hstate - 1);
+ 	parsed_hstate = h;
+ }
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 25bc5f7..410d53d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5012,6 +5012,52 @@ static void mem_cgroup_destroy(struct cgroup_subsys *ss,
+ 	mem_cgroup_put(memcg);
+ }
+ 
++#if defined(CONFIG_MEM_RES_CTLR_NORECLAIM) && defined(CONFIG_HUGETLBFS)
++static char *mem_fmt(char *buf, unsigned long n)
++{
++	if (n >= (1UL << 30))
++		sprintf(buf, "%luGB", n >> 30);
++	else if (n >= (1UL << 20))
++		sprintf(buf, "%luMB", n >> 20);
++	else
++		sprintf(buf, "%luKB", n >> 10);
++	return buf;
++}
++
++int hugetlb_memcg_file_init(struct hstate *h, int idx)
++{
++	char buf[32];
++	struct cftype *cft;
++
++	/* format the size */
++	mem_fmt(buf, huge_page_size(h));
++
++	/* Add the limit file */
++	cft = &h->cgroup_limit_file;
++	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.limit_in_bytes", buf);
++	cft->private = __MEMFILE_PRIVATE(idx, _MEMNORCL, RES_LIMIT);
++	cft->read_u64 = mem_cgroup_read;
++	cft->write_string = mem_cgroup_write;
++
++	/* Add the usage file */
++	cft = &h->cgroup_usage_file;
++	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.usage_in_bytes", buf);
++	cft->private  = __MEMFILE_PRIVATE(idx, _MEMNORCL, RES_USAGE);
++	cft->read_u64 = mem_cgroup_read;
++
++	/* Add the MAX usage file */
++	cft = &h->cgroup_max_usage_file;
++	snprintf(cft->name, MAX_CFTYPE_NAME, "hugetlb.%s.max_usage_in_bytes", buf);
++	cft->private  = __MEMFILE_PRIVATE(idx, _MEMNORCL, RES_MAX_USAGE);
++	cft->trigger  = mem_cgroup_reset;
++	cft->read_u64 = mem_cgroup_read;
++
++	return 0;
++}
++#endif
++
++int register_hugetlb_memcg_files(struct cgroup *cgroup,
++				  struct cgroup_subsys *ss);
+ static int mem_cgroup_populate(struct cgroup_subsys *ss,
+ 				struct cgroup *cont)
+ {
+@@ -5026,6 +5072,9 @@ static int mem_cgroup_populate(struct cgroup_subsys *ss,
+ 	if (!ret)
+ 		ret = register_kmem_files(cont, ss);
+ 
++	if (!ret)
++		ret = register_hugetlb_memcg_files(cont, ss);
++
+ 	return ret;
+ }
+ 
 -- 
-1.7.4.4
+1.7.9
 
