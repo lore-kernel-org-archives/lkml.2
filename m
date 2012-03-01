@@ -1,68 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031127Ab2CAOjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:39:07 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:39651 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966059Ab2CAOjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:39:04 -0500
-Date: Thu, 1 Mar 2012 09:38:59 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120301143859.GX5054@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Theodore Tso <tytso@MIT.EDU>,
-	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+	id S1031170Ab2CAOja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:39:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030596Ab2CAOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 09:39:26 -0500
+Date: Thu, 1 Mar 2012 09:39:22 -0500
+From: Dave Jones <davej@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless@vger.kernel.org, ilw@linux.intel.com
+Subject: firmware error.
+Message-ID: <20120301143922.GA31369@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+	ilw@linux.intel.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F4F8A06.0139,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:44:31PM -0500, Theodore Tso wrote:
-> You might try sorting the entries returned by readdir by inode number before you stat them.    This is a long-standing weakness in ext3/ext4, and it has to do with how we added hashed tree indexes to directories in (a) a backwards compatible way, that (b) was POSIX compliant with respect to adding and removing directory entries concurrently with reading all of the directory entries using readdir.
-> 
-> You might try compiling spd_readdir from the e2fsprogs source tree (in the contrib directory):
-> 
-> http://git.kernel.org/?p=fs/ext2/e2fsprogs.git;a=blob;f=contrib/spd_readdir.c;h=f89832cd7146a6f5313162255f057c5a754a4b84;hb=d9a5d37535794842358e1cfe4faa4a89804ed209
-> 
-> … and then using that as a LD_PRELOAD, and see how that changes things.
-> 
-> The short version is that we can't easily do this in the kernel since it's a problem that primarily shows up with very big directories, and using non-swappable kernel memory to store all of the directory entries and then sort them so they can be returned in inode number just isn't practical.   It is something which can be easily done in userspace, though, and a number of programs (including mutt for its Maildir support) does do, and it helps greatly for workloads where you are calling readdir() followed by something that needs to access the inode (i.e., stat, unlink, etc.)
-> 
+Still seeing this occasionally in v3.3-rc5-101-g88ebdda
 
-For reading the files, the acp program I sent him tries to do something
-similar.  I had forgotten about spd_readdir though, we should consider
-hacking that into cp and tar.
+iwlwifi 0000:04:00.0: Received BA when not expected
+iwlwifi 0000:04:00.0: Microcode SW error detected.  Restarting 0x2000000.
+iwlwifi 0000:04:00.0: Loaded firmware version: 8.83.5.1 build 33692
+iwlwifi 0000:04:00.0: Start IWL Error Log Dump:
+iwlwifi 0000:04:00.0: Status: 0x000412E4, count: 5
+iwlwifi 0000:04:00.0: 0x0000001C | ADVANCED_SYSASSERT          
+iwlwifi 0000:04:00.0: 0x000006E4 | uPc
+iwlwifi 0000:04:00.0: 0x000005AA | branchlink1
+iwlwifi 0000:04:00.0: 0x00000820 | branchlink2
+iwlwifi 0000:04:00.0: 0x00000916 | interruptlink1
+iwlwifi 0000:04:00.0: 0x0000E52E | interruptlink2
+iwlwifi 0000:04:00.0: 0x00000002 | data1
+iwlwifi 0000:04:00.0: 0x02630000 | data2
+iwlwifi 0000:04:00.0: 0x00000236 | line
+iwlwifi 0000:04:00.0: 0x00C04D1D | beacon time
+iwlwifi 0000:04:00.0: 0xFDF602E3 | tsf low
+iwlwifi 0000:04:00.0: 0x000000DD | tsf hi
+iwlwifi 0000:04:00.0: 0x00000000 | time gp1
+iwlwifi 0000:04:00.0: 0x57F562C0 | time gp2
+iwlwifi 0000:04:00.0: 0x00000000 | time gp3
+iwlwifi 0000:04:00.0: 0x00010853 | uCode version
+iwlwifi 0000:04:00.0: 0x00000024 | hw version
+iwlwifi 0000:04:00.0: 0x00480302 | board version
+iwlwifi 0000:04:00.0: 0x0B59001C | hcmd
+iwlwifi 0000:04:00.0: 0x2F873802 | isr0
+iwlwifi 0000:04:00.0: 0x014BF800 | isr1
+iwlwifi 0000:04:00.0: 0x0000011A | isr2
+iwlwifi 0000:04:00.0: 0x1443FCC3 | isr3
+iwlwifi 0000:04:00.0: 0x00804110 | isr4
+iwlwifi 0000:04:00.0: 0x00000236 | isr_pref
+iwlwifi 0000:04:00.0: 0x000000D4 | wait_event
+iwlwifi 0000:04:00.0: 0x00000004 | l2p_control
+iwlwifi 0000:04:00.0: 0x00000007 | l2p_duration
+iwlwifi 0000:04:00.0: 0x00101042 | l2p_mhvalid
+iwlwifi 0000:04:00.0: 0x00000015 | l2p_addr_match
+iwlwifi 0000:04:00.0: 0x02121704 | lmpm_pmg_sel
+iwlwifi 0000:04:00.0: 0x14B498A0 | timestamp
+iwlwifi 0000:04:00.0: 0x00000100 | flow_handler
+iwlwifi 0000:04:00.0: CSR values:
+iwlwifi 0000:04:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
+iwlwifi 0000:04:00.0:        CSR_HW_IF_CONFIG_REG: 0X00480302
+iwlwifi 0000:04:00.0:          CSR_INT_COALESCING: 0X00000040
+iwlwifi 0000:04:00.0:                     CSR_INT: 0X00000000
+iwlwifi 0000:04:00.0:                CSR_INT_MASK: 0X00000000
+iwlwifi 0000:04:00.0:           CSR_FH_INT_STATUS: 0X00000000
+iwlwifi 0000:04:00.0:                 CSR_GPIO_IN: 0X00000000
+iwlwifi 0000:04:00.0:                   CSR_RESET: 0X00000000
+iwlwifi 0000:04:00.0:                CSR_GP_CNTRL: 0X080403c5
+iwlwifi 0000:04:00.0:                  CSR_HW_REV: 0X00000024
+iwlwifi 0000:04:00.0:              CSR_EEPROM_REG: 0X00000000
+iwlwifi 0000:04:00.0:               CSR_EEPROM_GP: 0X90000004
+iwlwifi 0000:04:00.0:              CSR_OTP_GP_REG: 0X00060000
+iwlwifi 0000:04:00.0:                 CSR_GIO_REG: 0X00080042
+iwlwifi 0000:04:00.0:            CSR_GP_UCODE_REG: 0X00003001
+iwlwifi 0000:04:00.0:           CSR_GP_DRIVER_REG: 0X00000000
+iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
+iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
+iwlwifi 0000:04:00.0:                 CSR_LED_REG: 0X00000058
+iwlwifi 0000:04:00.0:        CSR_DRAM_INT_TBL_REG: 0X8811137b
+iwlwifi 0000:04:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
+iwlwifi 0000:04:00.0:             CSR_ANA_PLL_CFG: 0X00880300
+iwlwifi 0000:04:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
+iwlwifi 0000:04:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0000
+iwlwifi 0000:04:00.0: FH register values:
+iwlwifi 0000:04:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X11672c00
+iwlwifi 0000:04:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X011672b0
+iwlwifi 0000:04:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000098
+iwlwifi 0000:04:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X00819104
+iwlwifi 0000:04:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
+iwlwifi 0000:04:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X02630000
+iwlwifi 0000:04:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
+iwlwifi 0000:04:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
+iwlwifi 0000:04:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
+iwlwifi 0000:04:00.0: Start IWL Event Log Dump: display last 20 entries
+iwlwifi 0000:04:00.0: EVT_LOGT:1475497643:0x00000000:0210
+iwlwifi 0000:04:00.0: EVT_LOGT:1475497653:0x00000000:0207
+iwlwifi 0000:04:00.0: EVT_LOGT:1475497655:0x01002111:0211
+iwlwifi 0000:04:00.0: EVT_LOGT:1475497660:0x00000000:0212
+iwlwifi 0000:04:00.0: EVT_LOGT:1475498758:0x00000000:0215
+iwlwifi 0000:04:00.0: EVT_LOGT:1475498760:0x00000008:0220
+iwlwifi 0000:04:00.0: EVT_LOGT:1475498779:0x00000000:0301
+iwlwifi 0000:04:00.0: EVT_LOGT:1475498967:0x00000000:0355
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499319:0x00001359:0217
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499323:0x0b58001c:0218
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499401:0x0b59001c:0206
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499402:0x00000001:0204
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499405:0x01102100:0209
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499430:0x00000000:0210
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499446:0x00000000:0207
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499449:0x2b110000:0227
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499449:0xc3f02b50:0228
+iwlwifi 0000:04:00.0: EVT_LOGT:1475499454:0x57f255be:1586
+iwlwifi 0000:04:00.0: EVT_LOGT:1475699376:0x000000d7:0123
+iwlwifi 0000:04:00.0: EVT_LOGT:1475699415:0x00000000:0125
+ieee80211 phy0: Hardware restart was requested
+iwlwifi 0000:04:00.0: L1 Enabled; Disabling L0S
+iwlwifi 0000:04:00.0: Radio type=0x0-0x2-0x0
 
-One interesting note is the page cache used to help here.  Picture two
-tests:
 
-A) time tar cf /dev/zero /home
+04:00.0 Network controller: Intel Corporation Ultimate N WiFi Link 5300
 
-and
+	Dave
 
-cp -a /home /new_dir_in_new_fs
-unmount / flush caches
-B) time tar cf /dev/zero /new_dir_in_new_fs
-
-On ext, The time for B used to be much faster than the time for A
-because the files would get written back to disk in roughly htree order.
-Based on Jacek's data, that isn't true anymore.
-
--chris
