@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab2CAC1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:27:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34267 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757731Ab2CAC1V (ORCPT
+	id S932528Ab2CACeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:34:08 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36567 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757995Ab2CACdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:27:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.50.212.39 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F4ED9F8.3010706@linux.intel.com>
-References: <cover.1330539597.git.dvhart@linux.intel.com>
-	<CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
-	<4F4EC73E.40209@linux.intel.com>
-	<CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
-	<4F4ECCE8.90207@linux.intel.com>
-	<CANKRQni2OpCrRys5aYqBpvDEN7dRw2xcknMQRbokLxxZ_n1EAg@mail.gmail.com>
-	<4F4ED9F8.3010706@linux.intel.com>
-Date: Thu, 1 Mar 2012 11:27:20 +0900
-Message-ID: <CANKRQnjZKJijkwX_P3UsY4kxwQG5qDSMiLJLrGBw6aU1NRFcNg@mail.gmail.com>
-Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk parameter
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 21:33:50 -0500
+Date: Thu, 1 Mar 2012 13:33:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120301133333.b8297fbd964c1d7aaf8c9f0b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Mar_2012_13_33_33_+1100_9mP1ssM3ygJLVmta"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012年3月1日11:07 Darren Hart <dvhart@linux.intel.com>:
-> Just that currently I can build pch_uart without the pch_phub driver. It
-> seems if we were to attempt the above, the pch_uart code would then
-> require the pch_phub driver and the pch_phub driver would need to know
-> how to trigger the pch_uart code to setup the uart port again with the
-> new clock setting.
-Looks good If pch_phub can notify pch_uart to change clock setting.
+--Signature=_Thu__1_Mar_2012_13_33_33_+1100_9mP1ssM3ygJLVmta
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks.
--- 
-ROHM Co., Ltd.
-tomoya
+Hi all,
+
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/broadcom/tg3.c between commit 65ec698d1368 ("tg3:
+Fix tg3_get_stats64 for 5700 / 5701 devs") from the net tree and various
+commits from the net-next tree.
+
+I just used the version from the net-next tree for today (assuming that
+this conflict will be fixed shortly).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__1_Mar_2012_13_33_33_+1100_9mP1ssM3ygJLVmta
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPTt/9AAoJEECxmPOUX5FEmUsP/2wPRxWkNxQUXgLO6IkgUpdE
+fufy6y2jE7LOGltbPtIXQMzHpWtI+swsO3dsXE7lnAwU1GnP+Plf3l6y9+uKwXYZ
+zDjL5FgMLuUzMV5i0tafQsOSpgtpqKy9VCYRFyAQtu2kEOdgrqmauSaKwowcI8En
+eDLZnL0NHKDYNyp5h/wGq4k/AxMd2xbN8KjN0gUW+a+kzKFZ2VVwtpUZl0qEjFwJ
+1t/kzQVrUAr7NoICHFSrUUHOOpOFfywCWoKUbwevo20Zz9w9f6cwf6qo3PmKk5uN
+H78ljwrPsfJ2+/2G0PfLk7Np4KtUux9ZZqiOJIbMaRSlmdeuYvL0wnD7t5hwWMF3
+qUe/2sFA7ryQQqWRxwn+XVeDN9+pPRSJnkDOEjWMjofFgryrgL1n36DjVBBmcdKW
+fH9Yp+OINuGF9OQyLxB2NEgemb1Z4Ku/1cnvsYCulWaW0qQvSX7i5GNIFOkPKV4T
+LGueq3nMtqAbaSxfzfHNIfPcTlebXRbLYMMVK/IAVLCU4ICM59dOor/PQaKwqtWH
+81wRH760xoA7n8PpU1eSMB4adSMmNvAk9gHHDDF6HIa+KgEiAaiZJS4q6wMvcm5t
+XL4juQ8igEXemDGfyIJ8TQ6f8sPirlfnpbPzB89uofz4mE+6FyHcLNJhikQEakKH
+UhZKt380aXnVufRO+StJ
+=H2L+
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_Mar_2012_13_33_33_+1100_9mP1ssM3ygJLVmta--
