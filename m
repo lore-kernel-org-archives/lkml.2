@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259Ab2CAWoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:44:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51312 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758178Ab2CAWop (ORCPT
+	id S1758326Ab2CAWpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:45:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50522 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758291Ab2CAWpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:44:45 -0500
-Date: Thu, 1 Mar 2012 14:44:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        viro@zeniv.linux.org.uk, hughd@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V2] hugetlbfs: Drop taking inode i_mutex lock from
- hugetlbfs_read
-Message-Id: <20120301144443.7b4fe22a.akpm@linux-foundation.org>
-In-Reply-To: <CA+5PVA4AcTWHsUskGqxdka2G7JMsDpjtdhw23vSHafgAGg4opQ@mail.gmail.com>
-References: <1330593530-2022-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20120301141007.274ad458.akpm@linux-foundation.org>
-	<CA+5PVA4AcTWHsUskGqxdka2G7JMsDpjtdhw23vSHafgAGg4opQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 1 Mar 2012 17:45:53 -0500
+Date: Fri, 2 Mar 2012 09:45:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Jones <davej@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error fetching the cpufreq-current tree
+Message-Id: <20120302094542.270f421effd7a241d10a3852@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Mar_2012_09_45_42_+1100_SGYycCfyT3BQD0UL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__2_Mar_2012_09_45_42_+1100_SGYycCfyT3BQD0UL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 1 Mar 2012 17:40:41 -0500
-Josh Boyer <jwboyer@gmail.com> wrote:
+Hi Dave,
 
-> We've gotten a few lockdep reports about it in Fedora on various kernels.
-> A CC to stable might be nice.
-> 
+Fetching the cpufreq-current tree produces this warning:
 
-On Thu, 1 Mar 2012 17:40:14 -0500
-Dave Jones <davej@redhat.com> wrote:
+fatal: Couldn't find remote ref refs/heads/fixes
 
-> My testing hits this every day. It's not a real problem, but it's annoying
-> to see the lockdep spew constantly.  We've had a couple Fedora users
-> report it too in regular day-to-day use as opposed to the hostile
-> workloads I use to provoke it.
-> 
-> FWIW, I'll probably throw it in the Fedora kernels, so if it ends up
-> in stable, it'll be one less patch to carry.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-OK, thanks guys.  Cc:stable is added.
+--Signature=_Fri__2_Mar_2012_09_45_42_+1100_SGYycCfyT3BQD0UL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPT/wWAAoJEECxmPOUX5FEtYYP/0AYkZ1OZzkF7avWyojsGkAQ
+axu/S9IRDYzr1qgdF/2vvdbWezWzPr4WeuWmNe7f0uAMsdHQp+Ojp5XKhxgSNeHw
+glVqZGroMr5BfiHnjOJbneTbfABUSyMqpOcztMmDiDMZZ2/Sre/oWXx97W1oevYQ
+f+7dWrWOa4a8Uwya1jhjEWgS/8fkVVV6IQGRTjLGNFVbHbF3dKE9SAkTiDBN3msN
+J7+0g7IpwNgkqEOjCRb5pGt9cyeJIyG/61NEYx7bhtr0y+PfIM6DUcoyS5eEsGef
+D6uc9U51FvPYBadNTP1dDrBB3Gbo6+iYL45h6znEVNLScUqeu6KwEP8fEHcEYnQA
+m8faUDf4QygfBZQBRlqEqtbP6SLYiTqTrRLgiFE07H9gOphlOLEHwbHnCxEQc8ss
+78glIHPZgv8CQWqKZslEza9kQDsE44YxoFlW0Mqu3cSFPC7+oCRult4kK0oKDE9i
+qbKZ28MQbdNCN4yY9RTPrF1j26qM/0fPrSN2+T89+lEXL54cBNHS0QC/rjxtgsq8
+BlT4iTIIB78B5ZiTwjaWV3gJphmxXg8f1xDTlQrPiOoISDvcfPLA/bYzEjBLe9fQ
++wZNqEAgfhoDf551Ob1Dp2iijesbHaRq6/VfZ04qT2Vdw83DEO/jEMKHQ64fi4kq
+Kge3Kx3YsqYQOeIeN+bp
+=W0A6
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__2_Mar_2012_09_45_42_+1100_SGYycCfyT3BQD0UL--
