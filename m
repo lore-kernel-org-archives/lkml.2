@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab2CAUbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:31:16 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44749 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab2CAUbO (ORCPT
+	id S1757653Ab2CAUdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:33:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42713 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab2CAUdD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:31:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.14.200.129 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
-Message-ID: <4F4FDC8F.2010300@suse.cz>
-Date: Thu, 01 Mar 2012 21:31:11 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120222 Thunderbird/11.0
+	Thu, 1 Mar 2012 15:33:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.43.51.135 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH 2/6] vt: push down the tty lock so we can see what is
- left to tackle
-References: <20120301194831.11322.38295.stgit@bob.linux.org.uk> <20120301195005.11322.78572.stgit@bob.linux.org.uk>
-In-Reply-To: <20120301195005.11322.78572.stgit@bob.linux.org.uk>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1330630010-11241-9-git-send-email-alan@signal11.us>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+	<1330630010-11241-9-git-send-email-alan@signal11.us>
+Date: Thu, 1 Mar 2012 21:33:03 +0100
+Message-ID: <CACRpkdZK+9gF7N2akyWw=tvcBS2X2FmSd2-SiNKiuRgUCYXx7w@mail.gmail.com>
+Subject: Re: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alan Ott <alan@signal11.us>
+Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2012 08:50 PM, Alan Cox wrote:
-> --- a/drivers/tty/vt/vt_ioctl.c
-> +++ b/drivers/tty/vt/vt_ioctl.c
-> @@ -281,7 +281,6 @@ int vt_ioctl(struct tty_struct *tty,
->  
->  	console = vc->vc_num;
->  
-> -	tty_lock();
+On Thu, Mar 1, 2012 at 8:26 PM, Alan Ott <alan@signal11.us> wrote:
 
-Note that this breaks bisection. Further in vt_ioctl, there is a call to
-vt_event_wait_ioctl which calls vt_event_wait and that calls
-wait_event_interruptible_tty which unlocks BTM.
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+> The driver should not call set_irq_flags itself, and
+> cannot do this from a loadable module.
+>
+> Remove the call for now, which might break the driver
+> but at least lets the kernel link again.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/usb/host/ehci-tegra.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index dbc7fe8..ab91f26 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -729,7 +729,6 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+>                err = -ENODEV;
+>                goto fail;
+>        }
+> -       set_irq_flags(irq, IRQF_VALID);
 
-You change wait_event_interruptible_tty to wait_event_interruptible even
-in 4/6.
+The kernel is full of this kind of stuff (drivers/mfd/twl4030-irq.c):
 
-The VT_WAITEVENT case should have tty_lock until 4/6 (and not longer).
+#ifdef CONFIG_ARM
+        /* ARM requires an extra step to clear IRQ_NOREQUEST, which it
+         * sets on behalf of every irq_chip.  Also sets IRQ_NOPROBE.
+         */
+        set_irq_flags(irq, IRQF_VALID);
+#else
+        /* same effect on other architectures */
+        irq_set_noprobe(irq);
+#endif
 
-thanks,
--- 
-js
-suse labs
+Can't we try to fix this for real instead of breaking the universe,
+hehe :-)
+
+Yours,
+Linus Walleij
