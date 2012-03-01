@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab2CAAMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:12:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39332 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839Ab2CAAMR (ORCPT
+	id S1757667Ab2CAAMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:12:40 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61471 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755876Ab2CAAMj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:12:17 -0500
-Date: Wed, 29 Feb 2012 16:12:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Muthu Kumar <muthu.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Jens Axboe <axboe@kernel.dk>, martin.petersen@oracle.com
-Subject: Re: [PATCH] Fix setting bio flags in drivers (sd_dif/floppy).
-Message-Id: <20120229161215.81505738.akpm@linux-foundation.org>
-In-Reply-To: <CAFR8uef08sDCR=FM_v4EV0CLX9f4UuJezSTPFX6V7T-4b7xBVQ@mail.gmail.com>
-References: <CAFR8uef08sDCR=FM_v4EV0CLX9f4UuJezSTPFX6V7T-4b7xBVQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Feb 2012 19:12:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keith.chew@gmail.com designates 10.101.133.11 as permitted sender) smtp.mail=keith.chew@gmail.com; dkim=pass header.i=keith.chew@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <87zkc1w6wp.fsf@xmission.com>
+References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
+	<m1ehtd8qez.fsf@fess.ebiederm.org>
+	<CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
+	<87obshxt4w.fsf@xmission.com>
+	<CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
+	<87zkc1w6wp.fsf@xmission.com>
+Date: Thu, 1 Mar 2012 13:12:38 +1300
+Message-ID: <CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com>
+Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
+From: Keith Chew <keith.chew@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012 18:22:14 -0500
-Muthu Kumar <muthu.lkml@gmail.com> wrote:
+Hi Eric
 
-> Fix setting bio flags in drivers (sd_dif/floppy).
-> 
-> ...
-> 
-> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index 9baf11e..744f078 100644
-> --- a/drivers/block/floppy.c
-> +++ b/drivers/block/floppy.c
-> @@ -3832,7 +3832,7 @@ static int __floppy_read_block_0(struct
-> block_device *bdev)
->  	bio.bi_size = size;
->  	bio.bi_bdev = bdev;
->  	bio.bi_sector = 0;
-> -	bio.bi_flags = BIO_QUIET;
-> +	bio.bi_flags = (1 << BIO_QUIET);
->  	init_completion(&complete);
->  	bio.bi_private = &complete;
->  	bio.bi_end_io = floppy_rb0_complete;
-> diff --git a/drivers/scsi/sd_dif.c b/drivers/scsi/sd_dif.c
-> index 0cb39ff..f8fb2d6 100644
-> --- a/drivers/scsi/sd_dif.c
-> +++ b/drivers/scsi/sd_dif.c
-> @@ -408,7 +408,7 @@ int sd_dif_prepare(struct request *rq, sector_t
-> hw_sector, unsigned int sector_s
->  			kunmap_atomic(sdt, KM_USER0);
->  		}
-> 
-> -		bio->bi_flags |= BIO_MAPPED_INTEGRITY;
-> +		bio->bi_flags |= (1 << BIO_MAPPED_INTEGRITY);
->  	}
-> 
->  	return 0;
+> I would check with your BIOS folks and perhaps play with the kernel
+> option.  The most reliable way to peform a reset is to trigger a board
+> reset by writing to 0xcf9 or a similar register.  I expect your BIOS
+> does that and you can probably get the kernel to do that.  I would
+> definitely test to see if you can write to the mostly standard
+> 0xcf9 register directly from the kernel and trigger a reset directly.
+>
+> Once past a reset and with a single cpu all of the failures will be
+> happening in the boot path.  So the only possible points of failure
+> are in devices that are different between a soft reset and a power on
+> reset.
+>
+> I would check to see if your board perhaps supports post codes or any
+> other debugging that will let you see where you are hanging.
+>
+> It sounds like there is some very rare failure, that is going to be
+> a challenge to track down.  I would definitely test more than one
+> motherboard to ensure that you can reproduce the problem on more
+> than one piece of hardware.  Sometimes hardware is just broken.
+>
 
-urgh.  This isn't the first time.
+These are really helpful suggestions, I will try to get to the bottom
+on it. Yes, have tried 3 different boards with different RAM, HDD and
+CPU. The hang can be reproduced consistently (just not
+deterministically at this stage).
 
-It's too easy for people to make this mistake.  I'm not sure what a
-good fix would be - I don't think sparse can save us with __bitwise or
-similar.
+Thank you very much again, will update the progress in due course.
 
-The approach we took in buffer_head.h with BH_Foo and BUFFER_FNS
-accessors worked pretty well.
-
+Regards
+Keith
