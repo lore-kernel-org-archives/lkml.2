@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab2CAT7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:59:24 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45867 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab2CAT7W (ORCPT
+	id S1757322Ab2CAUAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:00:32 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55951 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab2CAUAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:59:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of olof@lixom.net designates 10.236.182.232 as permitted sender) smtp.mail=olof@lixom.net
+	Thu, 1 Mar 2012 15:00:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.205.132.138 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Fri, 2 Mar 2012 00:00:26 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
+Message-ID: <20120301200026.GG9930@moon>
+References: <20120229151634.GE4796@moon>
+ <20120229192400.GA13194@redhat.com>
+ <20120229200103.GJ11326@moon>
+ <20120301180616.GA7652@redhat.com>
+ <20120301191714.GF9930@moon>
+ <20120301194120.GA11400@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [172.22.162.26]
-In-Reply-To: <1330630010-11241-2-git-send-email-alan@signal11.us>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
-	<1330630010-11241-2-git-send-email-alan@signal11.us>
-Date: Thu, 1 Mar 2012 11:59:21 -0800
-Message-ID: <CAOesGMhom2ybsKKgezPKkrhH9NniZu+FMprQhibHwEX92MNtEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/8] ARM: tegra: export tegra_gpio_{en,dis}able
-From: Olof Johansson <olof@lixom.net>
-To: Alan Ott <alan@signal11.us>
-Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301194120.GA11400@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Mar 01, 2012 at 08:41:20PM +0100, Oleg Nesterov wrote:
+...
+> 
+> Still can't understand. I think you need:
+> 
+> 	file = fget(fd);
+> 	if (!file)
+> 		return -EBADF;
+> 
+> 	down_write(&mm->mmap_sem);
+> 	if (mm->num_exe_file_vmas) {
+> 		fput(mm->exe_file);
+> 		mm->exe_file = file;
+> 		file = NULL;
+> 	}
+> 	up_write(&mm->mmap_sem);
+> 
+> 	if (!file)
+> 		return 0;
+> 
+> 	fput(file);
+> 	return -ESOMETHING;
+> 
+> and that is all.
 
-On Thu, Mar 1, 2012 at 11:26 AM, Alan Ott <alan@signal11.us> wrote:
-> From: Arnd Bergmann <arnd@arndb.de>
->
-> These two functions are used in drivers that can be
-> modules, so they need to be exported.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+This breaks overall logic of num_exe_file_vmas.
+What the point to have it at all then? I mean,
+if there several executable sections in elf file,
+once loader finish its work we will have
+num_exe_file_vmas more than 1.
 
-With some of the pinmux changes going in this will no longer be
-needed, but it is for now so:
+Then the process calls for prctl and replaces
+own exe_file (I'm talking about possible scenario
+since for our own tool we know that there will be
+only one .text section and we're more-less safe
+in replacing own exe_file, but this interface
+will be available for everyone who has c/r config
+entry turned on, so I'm trying to find which
+negative impact this feature might have, call me
+paranoid), so once process has replaced own exe_file
+to something else the code which depends on
+num_exe_file_vmas become broken.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+May not we have a scenario when removed_exe_file_vma
+is be called somewhere else later, once this prctl
+finished its work? That's what I fear of.
+
+	Cyrill
