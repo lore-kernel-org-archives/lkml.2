@@ -1,214 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab2CAEYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 23:24:07 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:52100 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754186Ab2CAEYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 23:24:05 -0500
-Message-ID: <1330575843.23314.52.camel@joe2Laptop>
-Subject: [PATCH v3] checkpatch: Add some --strict coding style checks
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>, Andy Whitcroft <apw@shadowen.org>,
-        David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>, Ilan Elias <ilane@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        "Bruce W. Allen" <bruce.w.allan@intel.com>,
-        Bing Zhao <bzhao@marvell.com>
-Date: Wed, 29 Feb 2012 20:24:03 -0800
-In-Reply-To: <477F20668A386D41ADCC57781B1F70430836762D6C@SC-VEXCH1.marvell.com>
-References: <20120229173421.GA13733@tuxdriver.com>
-	 <477F20668A386D41ADCC57781B1F70430836762D55@SC-VEXCH1.marvell.com>
-	 <1330542811.21491.7.camel@joe2Laptop>
-	 <477F20668A386D41ADCC57781B1F70430836762D6C@SC-VEXCH1.marvell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757682Ab2CAEcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 23:32:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44047 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756596Ab2CAEcF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 23:32:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="113295368"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: [PATCH V3] Quirk for IVB graphics FLR errata
+Thread-Topic: [PATCH V3] Quirk for IVB graphics FLR errata
+Thread-Index: Acz3Yq+wFHElWRMhS/2HPomqvE1K0w==
+Date: Thu, 1 Mar 2012 04:30:52 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCDB487@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argument alignment across multiple lines should
-match the open parenthesis.
+For IvyBridge Mobile platform, a system hang may occur if a FLR(Function Level Reset) is asserted to internal graphics.
 
-Logical continuations should be at the end of
-the previous line, not the start of a new line.
+This quirk patch is workaround for the IVB FLR errata issue.
+We are disabling the FLR reset handshake between the PCH and CPU display, then manually powering down the panel power sequencing and resetting the PCH display.
 
-These are not required by CodingStyle so make the
-tests active only when using --strict.
-
-Improved_by_examples_from: "Bruce W. Allen" <bruce.w.allan@intel.com>
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
+Reviewed-by: Xiantao Zhang <xiantao.zhang@intel.com>
 ---
-V3: Use perl 5.10 features
-    Use a runtime check of perl version so $balanced_parens
-    is not used in perl versions that don't support it.
-    Update memset and min_t checks for newer $balanced_parens
-    test.
-    Improve alignment position test.
-    Add message suggesting perl upgrade.
-V2: Scan the entire line for balanced parentheses,
-    use the position of the last non-balanced open parenthesis.
-    Allow all space indentation too, checkpatch will complain
-    in a different message about that if it's too long.
+ drivers/pci/quirks.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 53 insertions(+), 0 deletions(-)
 
- scripts/checkpatch.pl |   94 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 84 insertions(+), 10 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 89d24b3..308e401 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -330,10 +330,15 @@ sub build_types {
- }
- build_types();
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index 6476547..c687218 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -27,6 +27,7 @@
+ #include <linux/pci-aspm.h>
+ #include <linux/ioport.h>
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
++#include <asm/tsc.h>
+ #include "pci.h"
  
--our $match_balanced_parentheses = qr/(\((?:[^\(\)]+|(-1))*\))/;
- 
- our $Typecast	= qr{\s*(\(\s*$NonptrType\s*\)){0,1}\s*};
--our $LvalOrFunc	= qr{($Lval)\s*($match_balanced_parentheses{0,1})\s*};
-+
-+# Using $balanced_parens, $LvalOrFunc, or $FuncArg
-+# requires at least perl version v5.10.0
-+# Any use must be runtime checked with $^V
-+
-+our $balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
-+our $LvalOrFunc	= qr{($Lval)\s*($balanced_parens{0,1})\s*};
- our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
- 
- sub deparenthesize {
-@@ -1330,6 +1335,36 @@ sub check_absolute_file {
- 	}
+ /*
+@@ -3069,11 +3070,63 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
+ 	return 0;
  }
  
-+sub pos_last_openparen {
-+	my ($line) = @_;
++#include "../gpu/drm/i915/i915_reg.h"
++#define MSG_CTL	0x45010
++static const int op_timeout = 10;	/* set timeout 10 seconds */
 +
-+	my $pos = 0;
++static int reset_ivb_igd(struct pci_dev *dev, int probe) {
++	u8 *mmio_base;
++	u32 val;
++	cycles_t cyc_op_timeout = tsc_khz*op_timeout*1000;
 +
-+	my $opens = $line =~ tr/\(/\(/;
-+	my $closes = $line =~ tr/\)/\)/;
++	if (probe)
++		return 0;
 +
-+	my $last_openparen = 0;
++	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
++				 pci_resource_len(dev, 0));
++	if (!mmio_base)
++		return -ENOMEM;
 +
-+	if (($opens == 0) || ($closes >= $opens)) {
-+		return -1;
-+	}
-+
-+	my $len = length($line);
-+
-+	for ($pos = 0; $pos < $len; $pos++) {
-+		my $string = substr($line, $pos);
-+		if ($string =~ /^($FuncArg|$balanced_parens)/) {
-+			$pos += length($1) - 1;
-+		} elsif (substr($line, $pos, 1) eq '(') {
-+			$last_openparen = $pos;
-+		} elsif (index($string, '(') == -1) {
-+			last;
++	/* Work Around */
++	*((u32 *)(mmio_base + MSG_CTL)) = 0x00000002;
++	/* Clobbering SOUTH_CHICKEN2 register is fine only if the next
++	 * driver loaded sets the right bits. However, this's a reset and
++	 * the bits have been set by i915 previously, so we clobber
++	 * SOUTH_CHICKEN2 register directly here.
++	 */
++	*((u32 *)(mmio_base + SOUTH_CHICKEN2)) = 0x00000005;
++	val = *((u32 *)(mmio_base + PCH_PP_CONTROL)) & 0xfffffffe;
++	*((u32 *)(mmio_base + PCH_PP_CONTROL)) = val;
++	do {
++		cycles_t start_time = get_cycles();
++		while (1) {
++			val = *((u32 *)(mmio_base + PCH_PP_STATUS));
++			if (((val & 0x80000000) == 0)
++				&& ((val & 0x30000000) == 0))
++				break;
++			if (cyc_op_timeout < (get_cycles() - start_time))
++				break;
++			cpu_relax();
 +		}
-+	}
++	} while (0);
++	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
 +
-+	return $last_openparen + 1;
++	iounmap(pci_resource_start(dev, 0));
++	return 0;
 +}
 +
- sub process {
- 	my $filename = shift;
+ #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
++#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
++#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
  
-@@ -1783,6 +1818,37 @@ sub process {
- 			     "please, no space before tabs\n" . $herevet);
- 		}
- 
-+# check for && or || at the start of a line
-+		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
-+			CHK("LOGICAL_CONTINUATIONS",
-+			    "Logical continuations should be on the previous line\n" . $hereprev);
-+		}
-+
-+# check multi-line statement indentation matches previous line
-+		if ($^V && $^V ge 5.10.0 &&
-+		    $prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
-+			$prevline =~ /^\+(\t*)(.*)$/;
-+			my $oldindent = $1;
-+			my $rest = $2;
-+
-+			my $pos = pos_last_openparen($rest);
-+			if ($pos >= 0) {
-+				$line =~ /^\+([ \t]*)/;
-+				my $newindent = $1;
-+
-+				my $goodtabindent = $oldindent .
-+					"\t" x ($pos / 8) .
-+					" "  x ($pos % 8);
-+				my $goodspaceindent = $oldindent . " "  x $pos;
-+
-+				if ($newindent ne $goodtabindent &&
-+				    $newindent ne $goodspaceindent) {
-+					CHK("PARENTHESIS_ALIGNMENT",
-+					    "Alignment should match open parenthesis\n" . $hereprev);
-+				}
-+			}
-+		}
-+
- # check for spaces at the beginning of a line.
- # Exceptions:
- #  1) within comments
-@@ -3142,12 +3208,13 @@ sub process {
- 		}
- 
- # Check for misused memsets
--		if (defined $stat &&
-+		if ($^V && $^V ge 5.10.0 &&
-+		    defined $stat &&
- 		    $stat =~ /^\+(?:.*?)\bmemset\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*$FuncArg\s*\)/s) {
- 
- 			my $ms_addr = $2;
--			my $ms_val = $8;
--			my $ms_size = $14;
-+			my $ms_val = $7;
-+			my $ms_size = $12;
- 
- 			if ($ms_size =~ /^(0x|)0$/i) {
- 				ERROR("MEMSET",
-@@ -3159,17 +3226,18 @@ sub process {
- 		}
- 
- # typecasts on min/max could be min_t/max_t
--		if (defined $stat &&
-+		if ($^V && $^V ge 5.10.0 &&
-+		    defined $stat &&
- 		    $stat =~ /^\+(?:.*?)\b(min|max)\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\)/) {
--			if (defined $2 || defined $8) {
-+			if (defined $2 || defined $7) {
- 				my $call = $1;
- 				my $cast1 = deparenthesize($2);
- 				my $arg1 = $3;
--				my $cast2 = deparenthesize($8);
--				my $arg2 = $9;
-+				my $cast2 = deparenthesize($7);
-+				my $arg2 = $8;
- 				my $cast;
- 
--				if ($cast1 ne "" && $cast2 ne "") {
-+				if ($cast1 ne "" && $cast2 ne "" && $cast1 ne $cast2) {
- 					$cast = "$cast1 or $cast2";
- 				} elsif ($cast1 ne "") {
- 					$cast = $cast1;
-@@ -3391,6 +3459,12 @@ sub process {
- 	}
- 
- 	if ($quiet == 0) {
-+
-+		if ($^V lt 5.10.0) {
-+			print("NOTE: perl $^V is not modern enough to detect all possible issues.\n");
-+			print("An upgrade to at least perl v5.10.0 is suggested.\n\n");
-+		}
-+
- 		# If there were whitespace errors which cleanpatch can fix
- 		# then suggest that.
- 		if ($rpt_cleaners) {
+ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+ 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
+ 		 reset_intel_82599_sfp_virtfn },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
++		reset_ivb_igd },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
++		reset_ivb_igd },
+ 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
+ 		reset_intel_generic_dev },
+ 	{ 0 }
+--
+1.6.0.rc1
 
 
