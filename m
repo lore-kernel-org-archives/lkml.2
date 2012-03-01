@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2CAL4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:56:34 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53242 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2CAL4c (ORCPT
+	id S1756298Ab2CAMFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:05:30 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:36135 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab2CAMF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:56:32 -0500
-Message-ID: <4F4F641E.7000501@collabora.co.uk>
-Date: Thu, 01 Mar 2012 12:57:18 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 1 Mar 2012 07:05:28 -0500
+X-IronPort-AV: E=Sophos;i="4.73,509,1325462400"; 
+   d="scan'208";a="11032715"
+Date: Thu, 1 Mar 2012 12:12:25 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Dave Martin <dave.martin@linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+In-Reply-To: <20120301103520.GD7363@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1203011209580.923@kaball-desktop>
+References: <20120227180355.GB2023@linaro.org> <1330371219.10008.34.camel@dagon.hellion.org.uk> <20120228102040.GB2063@linaro.org> <1330426133.31269.70.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1202281149210.23091@kaball-desktop> <20120229093436.GA2077@linaro.org>
+ <1330509362.4270.20.camel@zakaz.uk.xensource.com> <20120229125826.GC2077@linaro.org> <20120301101029.GB7363@n2100.arm.linux.org.uk> <20120301102702.GD2034@linaro.org> <20120301103520.GD7363@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
-        eric.dumazet@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-References: <4F4B8C66.5060206@collabora.co.uk> <20120227.140535.1623396420455657443.davem@davemloft.net> <1330426059.2139.21.camel@megeve> <20120228.140558.1132853996225815681.davem@davemloft.net>
-In-Reply-To: <20120228.140558.1132853996225815681.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 08:05 PM, David Miller wrote:
-> From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
-> Date: Tue, 28 Feb 2012 11:47:39 +0100
+On Thu, 1 Mar 2012, Russell King - ARM Linux wrote:
+> On Thu, Mar 01, 2012 at 10:27:02AM +0000, Dave Martin wrote:
+> > So, where there's a compelling reason to inline these things, we can use
+> > the existing techniques if we're alert to the risks.  But in cases where
+> > there isn't a compelling reason, aren't we just inviting fragility
+> > unnecessarily?
 > 
->> Because of all of this, UDP/IP multicast wasn't even considered as an
->> option. We might be wrong in some/all of those, so could you please
->> comment on them to check if that's so?
+> The practical experience from the kernel suggests that there isn't a
+> problem - that's not to say that future versions of gcc won't become
+> a problem, and that the compiler guys may refuse to fix it.
 > 
-> You guys seem to want something that isn't AF_UNIX, ordering guarentees
-> and whatnot, it really has no place in these protocols.
+> I think it's a feature that we should be pressing gcc guys for - it's
+> fairly fundamental to any programming which requires interfaces that
+> require certain args in certain registers, or receive results in
+> certain registers.
 > 
-> You've designed a userlevel subsystem with requirements that no existing
-> socket layer can give, and you just figured you'd work that out later.
+> The options over this are basically:
+> 1. refusing to upgrade to any version of gcc which does not allow
+>    registers-in-asm
+> 2. doing the store-to-memory reload-in-asm thing
+> 3. hand-coding veneers for every call to marshall the registers
 > 
-> I think you rather should have reconsidered these premises and designed
-> something that could handle reality which is AF_UNIX can't do multicast
-> and nobody guarentees those strange ordering requirements you seem to
-> have.
+> Each of those has its down sides, but I suspect with (1), it may be
+> possible to have enough people applying pressure to the compiler guys
+> that they finally see sense on this matter.
 
-Yes, you are right it doesn't follow AF_UNIX semantics so Unix sockets
-is not the best place to add our multicast implementation.
-
-So, now we are trying a different approach. To create a new address
-family AF_MCAST. That way we can have more control over the semantics of
-the socket interface for that family.
-
-We expect to have some patches in a few days and we will resend.
-
-Does this makes more sense to you?
-
-Best regards,
-Javier
+I tend to have a very practical approach about this sort of issues, so I
+am tempted to go with 1) if you agree.
