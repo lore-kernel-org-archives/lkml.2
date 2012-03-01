@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759262Ab2CANTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 08:19:48 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:41971 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758071Ab2CANTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 08:19:47 -0500
-Message-ID: <4F4F7761.2040607@atmel.com>
-Date: Thu, 01 Mar 2012 14:19:29 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S966262Ab2CANUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 08:20:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966222Ab2CANUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 08:20:03 -0500
+Message-ID: <4F4F776B.90609@redhat.com>
+Date: Thu, 01 Mar 2012 10:19:39 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [GIT PULL] at91: irqdomain and device tree for AIC and GPIO
-References: <4F4B8FCF.2050702@atmel.com>
-In-Reply-To: <4F4B8FCF.2050702@atmel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4E1F91.9080705@redhat.com> <20120229134556.GG21224@aftab> <4F4E3059.7040004@redhat.com> <20120229144054.GH21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com> <20120229171626.GJ21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040193@ORSMSX104.amr.corp.intel.com> <20120301112949.GA32410@aftab>
+In-Reply-To: <20120301112949.GA32410@aftab>
 X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,82 +25,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2012 03:14 PM, Nicolas Ferre :
-> Hi,
+Em 01-03-2012 08:29, Borislav Petkov escreveu:
+> On Wed, Feb 29, 2012 at 05:33:51PM +0000, Luck, Tony wrote:
+>>> IOW, we want to assume that cores 0, 1, 2 ... k-1 are on node 0; k, k+1
+>>> ... 2k-1 belong to node 1, etc., where k is the number of cores on a
+>>> socket and thus we have a regular core enumeration on the box.
+>>
+>> Sounds dubious:
+>>
+>> Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+>> Booting Node   1, Processors  #8 #9 #10 #11 #12 #13 #14 #15 Ok.
+>> Booting Node   0, Processors  #16 #17 #18 #19 #20 #21 #22 #23 Ok.
+>> Booting Node   1, Processors  #24 #25 #26 #27 #28 #29 #30 #31
+>> Brought up 32 CPUs
+>>
+>> Now those are logical cpu numbers, and we brought up the first HT
+>> thread on each core first, and then came around for a 2nd pass
+>> bringing up the other HT thread.  This order is determined by
+>> how the BIOS lists the cpus (and in this case it seems to be
+>> doing so according to recommendations) - so here our core numbers
+>> will match what you said. But the BIOS could do something
+>> strange and list logical cpus alternating between sockets. In
+>> which case cores 0, 2, 4, 6 ... would be on node 0, and cores
+>> 1, 3, 5, 7, ... on node 1.
+> 
+> Ok, the example above actually confirms my fear that you won't be always
+> able to map back to a physical socket from the CPU number. So, we'll
+> need the ->socketid field which is the physical processor ID we get from
+> CPUID leafs.
+> 
+> Then, mapping back the socketid to the silkscreen labels on the boards
+> should be easy because on the boxes I have here, they go like this: P0,
+> P1, ..., where P0 is the socket containing the BSP, P1 is the second
+> socket etc. I'm guessing this is similar on Intel boards...?
 
-Hi,
+The mapping from socket id to silkscreen label is motherboard-dependent.
+I did some tests with a few different machines:
 
-Hold on with this pull request:
-- I can now base the similar one on top of the "cleanup2" branch
-- the irqdomain/next is now considered stable so I can
-  merge it beforehand
-- I can add some more material to it (still related to 
-  AT91 the Device Tree conversion)
+[root@dell-pe1950-05 ~]# dmidecode | grep -i "Processor Information" -A10
+Processor Information
+	Socket Designation: CPU1
+	Type: Central Processor
+	Family: Xeon
+	Manufacturer: Intel
+	ID: F6 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 6
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: CPU2
+	Type: Central Processor
+	Family: Xeon
+	Manufacturer: Intel
+	ID: F6 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 6
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
 
-Thanks, best regards,
+[root@hp-dl580g5-01 ~]# dmidecode | grep -i "Processor Information" -A10
+Processor Information
+	Socket Designation: Proc 1
+	Type: Central Processor
+	Family: Xeon MP
+	Manufacturer: Intel
+	ID: FB 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 11
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: Proc 2
+	Type: Central Processor
+	Family: Xeon MP
+	Manufacturer: Intel
+	ID: FB 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 11
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: Proc 3
+	Type: Central Processor
+	Family: Xeon MP
+	Manufacturer: Intel
+	ID: FB 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 11
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: Proc 4
+	Type: Central Processor
+	Family: Xeon MP
+	Manufacturer: Intel
+	ID: FB 06 00 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 15, Stepping 11
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
 
-> This series adds irqdomain and device tree support for both the
-> interrupt and GPIO controllers of AT91 SoC. It has been discussed a lot
-> and I think that I have addressed all comments and advices.
-> 
-> This irqdomain work takes advantage of Grant's patch series that is present
-> in:
-> git://git.secretlab.ca/git/linux-2.6 irqdomain/next
-> And it will not compile without it. So, the inclusion of such work is needed
-> before we can apply this series on mainline.
-> 
-> On the other hand, I have not included Grant's branch in mine on purpose: All
-> this simply goes on top of current AT91 material that is already in arm-soc
-> (merge of all at91/* branches). You can find it in the AT91 git tree with
-> at91-3.4-base2 branch name). I have made merge tests and all seems to integrate
-> without conflicts.
-> 
-> 
-> The following changes since commit 11a25ea7e4f870a37093258f577e11cec703e37e:
-> 
->   Merge remote-tracking branch 'armsoc/at91/9x5' into at91-3.4-base2 (2012-02-11 14:33:03 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://github.com/at91linux/linux-at91.git at91-3.4-base2+aic_gpio
-> 
-> for you to fetch changes up to 29751864cc12425fe2b3a75658baea9ebe54609e:
-> 
->   ARM: at91: AIC and GPIO IRQ device tree initialization (2012-02-27 14:38:08 +0100)
-> 
-> ----------------------------------------------------------------
-> Nicolas Ferre (10):
->       ARM: at91/aic: add irq domain and device tree support
->       ARM: at91/snapper9260: move gpio_to_irq out of structure initialization
->       ARM/USB: at91/ohci-at91: remove the use of irq_to_gpio
->       ARM: at91/gpio: change comments and one variable name
->       ARM: at91/gpio: add irqdomain and DT support
->       ARM: at91/gpio: non-DT builds do not have gpio_chip.of_node field
->       ARM: at91/gpio: add .to_irq gpio_chip handler
->       ARM: at91/gpio: remove the static specification of gpio_chip.base
->       ARM: at91/board-dt: remove AIC irq domain from board file
->       ARM: at91: AIC and GPIO IRQ device tree initialization
-> 
->  .../devicetree/bindings/arm/atmel-aic.txt          |   38 ++
->  .../devicetree/bindings/gpio/gpio_atmel.txt        |   20 +
->  arch/arm/Kconfig                                   |    1 +
->  arch/arm/boot/dts/at91sam9g20.dtsi                 |   48 ++-
->  arch/arm/boot/dts/at91sam9g45.dtsi                 |   66 +++-
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |    4 +
->  arch/arm/mach-at91/board-dt.c                      |   13 +-
->  arch/arm/mach-at91/board-snapper9260.c             |   10 +-
->  arch/arm/mach-at91/generic.h                       |    6 +
->  arch/arm/mach-at91/gpio.c                          |  363 ++++++++++++++++----
->  arch/arm/mach-at91/include/mach/gpio.h             |   12 -
->  arch/arm/mach-at91/irq.c                           |  132 ++++++--
->  drivers/usb/host/ohci-at91.c                       |    5 +-
->  13 files changed, 581 insertions(+), 137 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/atmel-aic.txt
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio_atmel.txt
-> 
-> Thanks a lot, best regards,
+dmidecode | grep -i "Processor Information" -A10
+Processor Information
+	Socket Designation: CPU 1
+	Type: Central Processor
+	Family: Pentium M
+	Manufacturer: Intel            
+	ID: A4 06 01 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 26, Stepping 4
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: CPU 2
+	Type: Central Processor
+	Family: Pentium M
+	Manufacturer: Intel            
+	ID: A4 06 01 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 26, Stepping 4
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+
+[root@hp-bl260cg5-01 ~]# dmidecode | grep "Processor Information" -A10
+Processor Information
+	Socket Designation: Proc 1
+	Type: Central Processor
+	Family: Xeon
+	Manufacturer: Intel
+	ID: 76 06 01 00 FF FB EB BF
+	Signature: Type 0, Family 6, Model 23, Stepping 6
+	Flags:
+		FPU (Floating-point unit on-chip)
+		VME (Virtual mode extension)
+		DE (Debugging extension)
+--
+Processor Information
+	Socket Designation: Proc 2
+	Type: Central Processor
+	Family: Xeon
+	Manufacturer: Intel
+	ID: 00 00 00 00 00 00 00 00
+	Signature: Type 0, Family 0, Model 0, Stepping 0
+	Flags: None
+	Version: Not Specified
+	Voltage: 1.1 V
+	External Clock: 200 MHz
+
+On all the above, the socket label starts on 1, but I bet we'll find cases
+where it start from 0.
 
 
--- 
-Nicolas Ferre
+Regards,
+Mauro
