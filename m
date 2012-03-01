@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886Ab2CATGp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:06:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5167 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756345Ab2CATDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:03:47 -0500
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=MX5G4bevUTUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_onQlfRAjIk4wGMfO5sA:9 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120301190345.165160680@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Thu, 01 Mar 2012 13:55:29 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: [PATCH RT 2/9][RFC] [PATCH 2/9] futex/rt: Fix possible lockup when taking pi_lock in proxy handler
-References: <20120301185527.064629423@goodmis.org>
-Content-Disposition: inline; filename=0002-futex-rt-Fix-possible-lockup-when-taking-pi_lock-in-.patch
+	id S932307Ab2CATKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:10:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932107Ab2CATKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:10:21 -0500
+Date: Thu, 1 Mar 2012 20:03:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Chan <benchan@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] exec: abort core dump piping only due to a fatal signal
+Message-ID: <20120301190322.GA9638@redhat.com>
+References: <1330626227-32257-1-git-send-email-benchan@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330626227-32257-1-git-send-email-benchan@chromium.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When taking the pi_lock, we must disable interrupts because the
-pi_lock can also be taken in an interrupt handler.
+On 03/01, Ben Chan wrote:
+>
+> This patch makes wait_for_dump_helpers() not to abort piping the core
+> dump data when the crashing process has received any but a fatal signal
+> (SIGKILL). The rationale is that a crashing process may still receive
+> uninteresting signals such as SIGCHLD when its core dump data is being
+> redirected to a helper application. While it's necessary to allow
+> terminating the core dump piping via SIGKILL,
 
-Use raw_spin_lock_irq() instead of raw_spin_lock().
+Noe that SIGKILL doesn't really work. IOW, there are more problems.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rtmutex.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> it's practically more
+> useful for the purpose of debugging and crash reporting if the core dump
+> piping is not aborted due to other non-fatal signals.
 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 9850dc0..b525158 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -1373,14 +1373,14 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 	 * PI_REQUEUE_INPROGRESS, so that if the task is waking up
- 	 * it will know that we are in the process of requeuing it.
- 	 */
--	raw_spin_lock(&task->pi_lock);
-+	raw_spin_lock_irq(&task->pi_lock);
- 	if (task->pi_blocked_on) {
--		raw_spin_unlock(&task->pi_lock);
-+		raw_spin_unlock_irq(&task->pi_lock);
- 		raw_spin_unlock(&lock->wait_lock);
- 		return -EAGAIN;
- 	}
- 	task->pi_blocked_on = PI_REQUEUE_INPROGRESS;
--	raw_spin_unlock(&task->pi_lock);
-+	raw_spin_unlock_irq(&task->pi_lock);
- #endif
- 
- 	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
--- 
-1.7.3.4
+Yes.
 
+> Addresses http://code.google.com/p/chromium-os/issues/detail?id=21559
+
+Heh. please look at https://bugzilla.redhat.com/show_bug.cgi?id=759213
+
+> @@ -2031,7 +2031,7 @@ static void wait_for_dump_helpers(struct file *file)
+>  	pipe->readers++;
+>  	pipe->writers--;
+>
+> -	while ((pipe->readers > 1) && (!signal_pending(current))) {
+> +	while ((pipe->readers > 1) && (!fatal_signal_pending(current))) {
+
+No, it is not that simple. This can't fix all problems and in fact
+this check should be simply removed (but not right now).
+
+Oh. I'll try to send the fix, well, soon. The problem is that I
+already promised this before ;)
+
+See also http://marc.info/?l=linux-kernel&m=131989970411759
+
+Oleg.
 
