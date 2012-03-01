@@ -1,136 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965751Ab2CAVvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:51:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35253 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965709Ab2CAVvF (ORCPT
+	id S965786Ab2CAVvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:51:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55843 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757888Ab2CAVvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:51:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.194.65 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:51:32 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 2/6] vt: push down the tty lock so we can see what is left to tackle
+Date: Thu, 1 Mar 2012 21:51:20 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+References: <20120301194831.11322.38295.stgit@bob.linux.org.uk> <20120301195005.11322.78572.stgit@bob.linux.org.uk>
+In-Reply-To: <20120301195005.11322.78572.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
-Message-Id: <20120301213923.874807837@linuxfoundation.org>
-User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 10/34] crypto: sha512 - Avoid stack bloat on i386
-In-Reply-To: <20120301214654.GA13231@kroah.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203012151.20940.arnd@arndb.de>
+X-Provags-ID: V02:K0:9AUVk1foDNy1D5QUn86GoUJRplTOKiOMCOJIXN3aT6K
+ 5hQCAeZhUcJlGZLHbBrLc1puLpKxi3+I935/7oojoAMWrBZBFX
+ 4KsuDM0aU5M5EW9nS265YSZ6OATY/uKdDsqOO6JTIk7eE40EdF
+ lsjQIIksmtyw1hQu+1+ENWrepFJFq7Wd+1JXKJNpo+U/0siQz0
+ VW4O2uzH0JHfkVifvw26ULwHkOcLrbTmIS/uEg+iq/thOxCZL1
+ FtlrJcdEg7T/qLCSp/2YyG8snkpeze0eNJw3ZZcA75KItRICFw
+ +kRecKgDkMm+RPTEQYnlOIj2hfvBDSBACXDbBOK+T+MMAA792T
+ GZSm8ldeEsvO1FudjT2Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Thursday 01 March 2012, Alan Cox wrote:
+> @@ -1407,6 +1425,7 @@ int vt_move_to_console(unsigned int vt, int alloc)
+>                 return -EIO;
+>         }
+>         console_unlock();
+> +       /* Review: I don't see why we need tty_lock here FIXME */
+>         tty_lock();
+>         if (vt_waitactive(vt + 1)) {
+>                 pr_debug("Suspend: Can't switch VCs.");
 
-------------------
+I'm pretty sure I only added this in be1bc288 "tty: introduce
+wait_event_interruptible_tty" so I could release the mutex again in
+vt_event_wait.
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+All other callers of that function hold it, so it needs to be released
+in vt_event_wait and that can only be done if it's known to be held first.
 
-commit 3a92d687c8015860a19213e3c102cad6b722f83c upstream.
-
-Unfortunately in reducing W from 80 to 16 we ended up unrolling
-the loop twice.  As gcc has issues dealing with 64-bit ops on
-i386 this means that we end up using even more stack space (>1K).
-
-This patch solves the W reduction by moving LOAD_OP/BLEND_OP
-into the loop itself, thus avoiding the need to duplicate it.
-
-While the stack space still isn't great (>0.5K) it is at least
-in the same ball park as the amount of stack used for our C sha1
-implementation.
-
-Note that this patch basically reverts to the original code so
-the diff looks bigger than it really is.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/sha512_generic.c |   68 ++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 36 deletions(-)
-
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -89,46 +89,42 @@ sha512_transform(u64 *state, const u8 *i
- 	int i;
- 	u64 W[16];
- 
--	/* load the input */
--        for (i = 0; i < 16; i++)
--                LOAD_OP(i, W, input);
--
- 	/* load the state into our registers */
- 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
- 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
- 
--#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
--	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--	for (i = 0; i < 16; i += 8) {
--		SHA512_0_15(i, a, b, c, d, e, f, g, h);
--		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
--	}
--	for (i = 16; i < 80; i += 8) {
--		SHA512_16_79(i, a, b, c, d, e, f, g, h);
--		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
-+	/* now iterate */
-+	for (i=0; i<80; i+=8) {
-+		if (!(i & 8)) {
-+			int j;
-+
-+			if (i < 16) {
-+				/* load the input */
-+				for (j = 0; j < 16; j++)
-+					LOAD_OP(i + j, W, input);
-+			} else {
-+				for (j = 0; j < 16; j++) {
-+					BLEND_OP(i + j, W);
-+				}
-+			}
-+		}
-+
-+		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
-+		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
-+		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
-+		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
-+		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
-+		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
-+		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
-+		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
-+		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
- 	}
- 
- 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-
-
+	Arnd
