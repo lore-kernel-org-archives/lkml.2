@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab2CATbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:31:16 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52568 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab2CATbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:31:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.213.32.205 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
-        fuse-devel@lists.sourceforge.net
-Subject: Re: [PATCH 6/9] fuse: Push file_update_time() into fuse_page_mkwrite()
-References: <1330602103-8851-1-git-send-email-jack@suse.cz>
-	<1330602103-8851-7-git-send-email-jack@suse.cz>
-Date: Thu, 01 Mar 2012 20:31:17 +0100
-In-Reply-To: <1330602103-8851-7-git-send-email-jack@suse.cz> (Jan Kara's
-	message of "Thu, 1 Mar 2012 12:41:40 +0100")
-Message-ID: <87obsgce4a.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755511Ab2CATds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:33:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069Ab2CATdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:33:46 -0500
+Date: Thu, 1 Mar 2012 20:26:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
+        Jason Baron <jbaron@redhat.com>, Roland McGrath <roland@hack.frob.com>,
+        Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] epoll: introduce POLLFREE to flush
+	->signalfd_wqh before kfree()
+Message-ID: <20120301192636.GA10709@redhat.com>
+References: <20120222173326.GA7139@redhat.com> <20120222173505.GD7147@redhat.com> <20120223154438.GA4354@redhat.com> <CA+55aFyaPY9xsDGDx0QqRR2gV_z541w_xXeQbh5Uknd26cvXCw@mail.gmail.com> <20120224190651.GA22287@redhat.com> <20120224190711.GB22287@redhat.com> <4F4E830E.3040307@mit.edu> <20120229200636.GA15729@redhat.com> <CAObL_7GdhNPNsSiTF+GfbJ3_8ud8px6=LBH173uy14y58FMivg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAObL_7GdhNPNsSiTF+GfbJ3_8ud8px6=LBH173uy14y58FMivg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara <jack@suse.cz> writes:
-
-> CC: Miklos Szeredi <miklos@szeredi.hu>
-> CC: fuse-devel@lists.sourceforge.net
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/fuse/file.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On 02/29, Andrew Lutomirski wrote:
 >
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 4a199fd..eade72e 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -1323,6 +1323,7 @@ static int fuse_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	 */
->  	struct inode *inode = vma->vm_file->f_mapping->host;
->  
-> +	file_update_time(vma->vm_file);
+> On Wed, Feb 29, 2012 at 12:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/29, Andy Lutomirski wrote:
+> >>
+> >> On 02/24/2012 11:07 AM, Oleg Nesterov wrote:
+> >> > This patch adds the special event, POLLFREE, currently only for
+> >> > epoll. It expects that init_poll_funcptr()'ed hook should do the
+> >> > necessary cleanup. Perhaps it should be defined as EPOLLFREE in
+> >> > eventpoll.
+> >>
+> >> I have a bunch of userspace code that uses signalfd via epoll.  Does
+> >> this affect the ABI?
+> >
+> > I hope not ;)
+> >
+>
+> Excellent!
+>
+> To avoid further confusion, would it make sense to update the comment
+> in poll.h to indicate that POLLFREE is only for epoll and is internal
+> to the kernel?
 
-Fuse sets S_CMTIME in inode flags, so this is a no-op.  IOW the patch is
-not needed.
+Agreed. Or perhaps we can simply use POLLREMOVE instead...
 
-Thanks,
-Miklos
+But note that nobody (including me) likes this fix, just I was asked
+to make something simple/backportable. Probably it will be reverted
+later.
+
+If not, then perhaps it makes sense to do a couple of simple changes
+on top to cleanup the usage of POLLFREE and to ensure that POLLHUP
+is actually delivered (the latter will be user-visible).
+
+Oleg.
+
