@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab2CAMHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:07:21 -0500
-Received: from trinity.fluff.org ([89.16.178.74]:39630 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754946Ab2CAMHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:07:20 -0500
-X-Greylist: delayed 2394 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Mar 2012 07:07:20 EST
-Date: Thu, 1 Mar 2012 11:27:24 +0000
-From: Ben Dooks <ben-i2c@fluff.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Zhao Chenhui <chenhui.zhao@freescale.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Yang <leoli@freescale.com>
-Subject: Re: [PATCH] i2c-mpc: avoid I2C abnormal after resuming from deep
-	sleep
-Message-ID: <20120301112724.GE8441@trinity.fluff.org>
-References: <1330511961-22498-1-git-send-email-chenhui.zhao@freescale.com> <20120229183436.GA30545@pengutronix.de>
+	id S1757824Ab2CAMRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:17:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37477 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab2CAMRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 07:17:04 -0500
+Date: Thu, 1 Mar 2012 04:15:49 -0800
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-nuj34q52p6ro7szapuz84i0v@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/rt:
+  Keep period timer ticking when rt throttling is active
+Git-Commit-ID: 42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120229183436.GA30545@pengutronix.de>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Mar 2012 04:16:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 07:45:23PM +0100, Wolfram Sang wrote:
-> Hi,
-> 
-> On Wed, Feb 29, 2012 at 06:39:21PM +0800, Zhao Chenhui wrote:
-> > When entering deep sleep, the value in the registers I2CFDR and
-> > I2CDFSRR are lost. This causes I2C access to fail after resuming.
-> > 
-> > Add suspend/resume routines to save/restore the registers
-> > I2CFDR and I2CDFSRR.
-> > 
-> > Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> > Signed-off-by: Li Yang <leoli@freescale.com>
-> > ---
-> >  drivers/i2c/busses/i2c-mpc.c |   34 +++++++++++++++++++++++++++++++++-
-> >  1 files changed, 33 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-> > index a8ebb84..f95a647 100644
-> > --- a/drivers/i2c/busses/i2c-mpc.c
-> > +++ b/drivers/i2c/busses/i2c-mpc.c
-> > @@ -1,7 +1,9 @@
-> >  /*
-> >   * (C) Copyright 2003-2004
-> >   * Humboldt Solutions Ltd, adrian@humboldt.co.uk.
-> > -
-> > + *
-> > + * Copyright 2012 Freescale Semiconductor, Inc.
-> > + *
-> 
-> I'd think the change is too trivial to claim copyright on the file.
+Commit-ID:  42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
+Gitweb:     http://git.kernel.org/tip/42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 18 Oct 2011 22:03:48 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 1 Mar 2012 10:28:01 +0100
 
-I agree with that.
+sched/rt: Keep period timer ticking when rt throttling is active
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+When a runqueue is throttled we cannot disable the period timer
+because that timer is the only way to undo the throttling.
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+We got stale throttling entries when a rq was throttled and then the
+global sysctl was disabled, which stopped the timer.
 
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+[ Added changelog ]
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-nuj34q52p6ro7szapuz84i0v@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/rt.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index f70206c..6d1eb0b 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -778,12 +778,9 @@ static inline int balance_runtime(struct rt_rq *rt_rq)
+ 
+ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
+ {
+-	int i, idle = 1;
++	int i, idle = 1, throttled = 0;
+ 	const struct cpumask *span;
+ 
+-	if (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF)
+-		return 1;
+-
+ 	span = sched_rt_period_mask();
+ 	for_each_cpu(i, span) {
+ 		int enqueue = 0;
+@@ -818,12 +815,17 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
+ 			if (!rt_rq_throttled(rt_rq))
+ 				enqueue = 1;
+ 		}
++		if (rt_rq->rt_throttled)
++			throttled = 1;
+ 
+ 		if (enqueue)
+ 			sched_rt_rq_enqueue(rt_rq);
+ 		raw_spin_unlock(&rq->lock);
+ 	}
+ 
++	if (!throttled && (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF))
++		return 1;
++
+ 	return idle;
+ }
+ 
+@@ -884,7 +886,8 @@ static void update_curr_rt(struct rq *rq)
+ 	if (unlikely((s64)delta_exec < 0))
+ 		delta_exec = 0;
+ 
+-	schedstat_set(curr->se.statistics.exec_max, max(curr->se.statistics.exec_max, delta_exec));
++	schedstat_set(curr->se.statistics.exec_max,
++		      max(curr->se.statistics.exec_max, delta_exec));
+ 
+ 	curr->se.sum_exec_runtime += delta_exec;
+ 	account_group_exec_runtime(curr, delta_exec);
