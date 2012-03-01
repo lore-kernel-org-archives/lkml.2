@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031036Ab2CAOFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:05:00 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45770 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030988Ab2CAOE7 convert rfc822-to-8bit (ORCPT
+	id S1031049Ab2CAOGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:06:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58447 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031001Ab2CAOGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:04:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.225.194 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+	Thu, 1 Mar 2012 09:06:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for DMA registration (3.3-rc)
+Date: Thu, 1 Mar 2012 14:03:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+References: <4F4F49E1.4020902@atmel.com> <201203011149.42948.arnd@arndb.de> <4F4F7254.9060306@atmel.com>
+In-Reply-To: <4F4F7254.9060306@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <20120301123540.GE25627@aemeltch-MOBL1>
-References: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120301123540.GE25627@aemeltch-MOBL1>
-Date: Thu, 1 Mar 2012 19:34:58 +0530
-Message-ID: <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
-Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-        santosh nayak <santoshprasadnayak@gmail.com>, marcel@holtmann.org,
-        padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203011403.11369.arnd@arndb.de>
+X-Provags-ID: V02:K0:9AM+qY+r/PLTGpmMkCUxoihJYgLTdEoU/vswergtORt
+ Hr50tKwYmj/JfZOk0pKDaOelMIArIwkT2kQ/c/XqCa1Vw4jCsX
+ kMwWFmI+kmikVs4H0ZHF866b+dYnq16mM343Qomugh1SIK0Ciw
+ gFetruyO6cz1CRCK+eSNZHaqItF865bSo1OUxasR8BLcvwFHcj
+ nDahz+FOvid4ZfGtkJ1+G/U3uvX89f5j4izdsZ655+9kCkRjTn
+ 7DC8gLuwhJjpz8CmWSTr/6DzhHuIpe94h3bXXTa99pxZGyuvuA
+ S7fNjYY1kBwnLsI1fsHI+7h5dXBs4osrtzmTfVr5/TxVFgHTwQ
+ 3c+gxeQ4LpI/avJzi0rc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrei,
+On Thursday 01 March 2012, Nicolas Ferre wrote:
+> As discussed on the mailing-list, we experience an out-of-sync situation
+> between the DMA controller driver and the related code in AT91 devices files.
+> 
+> Those two patches already queued for 3.4 are correcting the problem that we found on
+> the current 3.3-rc kernels. I have tested that the DMA driver is registering well
+> with those fixes applied.
+> 
+> Can you please pull them in a "fixes" branch and send them to Linus before 3.3-final?
 
-I could not get you.
+Hi Nicolas,
 
-Do you want me to resend the patch with subject,
-  "[PATCH] Bluetooth: Fix network to host endian conversion for L2CAP
-chan id."  ?
+I've just sent a pull request for bug fixes yesterday, so I'll wait
+until Linus has pulled that one and probably a few days before I
+send another one.
 
+I have applied it to the fixes branch now but not updated the
+tag that I sent him.
 
-
-regards
-santosh
-
-
-
-
-On Thu, Mar 1, 2012 at 6:05 PM, Andrei Emeltchenko
-<andrei.emeltchenko.news@gmail.com> wrote:
-> Hi Santosh,
->
-> On Thu, Mar 01, 2012 at 04:29:21PM +0530, santosh nayak wrote:
->> From: Santosh Nayak <santoshprasadnayak@gmail.com>
->>
->> Fix for endian bug.
->>
->> Fix for null dereferenced removed as it is already
->> submitted by Andrei.
->>
->> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
->> ---
->>  net/bluetooth/l2cap_sock.c |    5 +++--
->>  1 files changed, 3 insertions(+), 2 deletions(-)
->
-> We prefer following commit log (this is the example)
->
-> <------8<----------------------------------------------------------
-> |  From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> |
-> |  Fix network to host endian conversion for L2CAP chan id.
-> |
-> |  Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> |
-> |  ---
-> |          * v2 Fix for null dereferenced removed as it is already
-> |          submitted by Andrei.
-> |
-> |    net/bluetooth/l2cap_sock.c |    5 +++--
-> |    1 files changed, 3 insertions(+), 2 deletions(-)
-> |
-> <------8<----------------------------------------------------------
->
->
->>
->> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
->> index 401d942..86d5067 100644
->> --- a/net/bluetooth/l2cap_sock.c
->> +++ b/net/bluetooth/l2cap_sock.c
->> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
->>       }
->>
->>       if (la.l2_cid)
->> -             err = l2cap_add_scid(chan, la.l2_cid);
->> +             err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
->>       else
->>               err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
->>
->> @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
->>       if (la.l2_cid && la.l2_psm)
->>               return -EINVAL;
->>
->> -     err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
->> +     err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
->> +                             &la.l2_bdaddr);
->
-> I live this to Marcel to decide should we reindent our code otherwise this
-> one looks odd.
->
-> Best regards
-> Andrei Emeltchenko
->
+	Arnd
