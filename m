@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab2CAK2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:28:21 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54431 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755036Ab2CAK2U convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:28:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.112.101.130 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
-MIME-Version: 1.0
-In-Reply-To: <20120301101904.GA3852@pengutronix.de>
-References: <1330445298-3522-1-git-send-email-javier.martin@vista-silicon.com>
-	<1330445298-3522-3-git-send-email-javier.martin@vista-silicon.com>
-	<20120301101904.GA3852@pengutronix.de>
-Date: Thu, 1 Mar 2012 11:28:18 +0100
-Message-ID: <CACKLOr2bFgSUW+oXgFReHt6ZS+t7atMJ6nzDgF4-e9cRyOYX4w@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] dmaengine: Add support for multiple descriptors
- for imx-dma.
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758911Ab2CAK22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:28:28 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:35047 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab2CAK2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 05:28:25 -0500
+Date: Thu, 1 Mar 2012 19:34:45 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] KVM: Remove unused dirty_bitmap_head and nr_dirty_pages
+Message-Id: <20120301193445.5789b8a6.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Now that we do neither double buffering nor heuristic selection of the
+write protection method these are not needed anymore.
 
-On 1 March 2012 11:19, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Tue, Feb 28, 2012 at 05:08:18PM +0100, Javier Martin wrote:
->> dmaengine specifies the possibility that several descriptors
->> can be queued for transfer. It also indicates that tasklets
->> must be used for DMA callbacks.
->>
->> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
->
-> Have you tested this patch with audio?
+Note: some drivers have their own implementation of set_bit_le() and
+making it generic needs a bit of work; so we use test_and_set_bit_le()
+and will later replace it with generic set_bit_le().
 
-Yes,
-I have a test battery which tests audio, mmc, runs dmatest module and
-a custom mem2mem video device I'm developing.
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+---
+ include/linux/kvm_host.h |    2 --
+ virt/kvm/kvm_main.c      |   14 +++++---------
+ 2 files changed, 5 insertions(+), 11 deletions(-)
 
->
->> +static int imxdma_xfer_desc(struct imxdma_desc *d)
->> +{
->> +     struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
->> +     int ret;
->> +
->> +     /* Configure and enable */
->> +     switch (d->type) {
->> +     case IMXDMA_DESC_MEMCPY:
->> +             ret = imx_dma_config_channel(imxdmac->imxdma_channel,
->> +                                       d->config_port, d->config_mem, 0, 0);
->> +             if (ret < 0)
->> +                     return ret;
->> +             ret = imx_dma_setup_single(imxdmac->imxdma_channel, d->src,
->> +                                        d->len, d->dest, d->dmamode);
->> +             if (ret < 0)
->> +                     return ret;
->> +             break;
->> +     case IMXDMA_DESC_CYCLIC:
->> +             ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
->> +                                                     imxdma_progression);
->> +             if (ret < 0)
->> +                     return ret;
->
-> You fall through here. Is this intended? If yes, a comment would be good
-> here.
-
-Yes it is. cyclic is the same as slave_sg with the add-on of the
-progression handler and a specific configuration of the sglist which
-is done in 'imxdma_prep_dma_cyclic'.
-Do you want me to send a new version with a comment on the matter?
-
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 355e445..73c7d76 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -177,8 +177,6 @@ struct kvm_memory_slot {
+ 	unsigned long flags;
+ 	unsigned long *rmap;
+ 	unsigned long *dirty_bitmap;
+-	unsigned long *dirty_bitmap_head;
+-	unsigned long nr_dirty_pages;
+ 	struct kvm_arch_memory_slot arch;
+ 	unsigned long userspace_addr;
+ 	int user_alloc;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index e4431ad..27a1083 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -522,12 +522,11 @@ static void kvm_destroy_dirty_bitmap(struct kvm_memory_slot *memslot)
+ 		return;
+ 
+ 	if (2 * kvm_dirty_bitmap_bytes(memslot) > PAGE_SIZE)
+-		vfree(memslot->dirty_bitmap_head);
++		vfree(memslot->dirty_bitmap);
+ 	else
+-		kfree(memslot->dirty_bitmap_head);
++		kfree(memslot->dirty_bitmap);
+ 
+ 	memslot->dirty_bitmap = NULL;
+-	memslot->dirty_bitmap_head = NULL;
+ }
+ 
+ /*
+@@ -611,8 +610,7 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
+ 
+ /*
+  * Allocation size is twice as large as the actual dirty bitmap size.
+- * This makes it possible to do double buffering: see x86's
+- * kvm_vm_ioctl_get_dirty_log().
++ * See x86's kvm_vm_ioctl_get_dirty_log() why this is needed.
+  */
+ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ {
+@@ -627,8 +625,6 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ 	if (!memslot->dirty_bitmap)
+ 		return -ENOMEM;
+ 
+-	memslot->dirty_bitmap_head = memslot->dirty_bitmap;
+-	memslot->nr_dirty_pages = 0;
+ #endif /* !CONFIG_S390 */
+ 	return 0;
+ }
+@@ -1476,8 +1472,8 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
+ 	if (memslot && memslot->dirty_bitmap) {
+ 		unsigned long rel_gfn = gfn - memslot->base_gfn;
+ 
+-		if (!test_and_set_bit_le(rel_gfn, memslot->dirty_bitmap))
+-			memslot->nr_dirty_pages++;
++		/* TODO: introduce set_bit_le() and use it */
++		test_and_set_bit_le(rel_gfn, memslot->dirty_bitmap);
+ 	}
+ }
+ 
 -- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+1.7.5.4
+
