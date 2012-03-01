@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab2CAClZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:41:25 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:32869 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758192Ab2CAClY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:41:24 -0500
-From: Zhengwang Ruan <ruan.zhengwang@gmail.com>
-To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
-Subject: [PATCH v2] Trace: Add comment to notify a warning caused by a gcc bug
-Date: Thu, 1 Mar 2012 10:41:17 +0800
-Message-ID: <1330569677-11984-1-git-send-email-ruan.zhengwang@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+	id S1758314Ab2CACmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:42:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27604 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758233Ab2CACmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 21:42:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="116347643"
+Date: Thu, 1 Mar 2012 10:40:28 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user
+ uartclk parameter
+Message-ID: <20120301024028.GA6612@feng-i7>
+References: <cover.1330539597.git.dvhart@linux.intel.com>
+ <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
+ <4F4EC73E.40209@linux.intel.com>
+ <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
+ <4F4ECCE8.90207@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F4ECCE8.90207@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC (version < 4.6) warns 'page2' is uninitialized, but this is helpful
-to track a real potential bug, simply add comment to note this.
+On Wed, Feb 29, 2012 at 05:12:08PM -0800, Darren Hart wrote:
+> 
+> 
+> On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
+> > 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
+> >> how do we force the
+> >> 192MHz clock setting BEFORE the pch_phub code runs?
+> > 
+> > To realize your requirement,
+> > I think that set by BIOS is only way.
+> 
+> Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
+> the initial console and once the phub driver is loaded, it can make the
+> necessary changes and fix things up in the uart port? This would add a
+> binding between the pch_uart and pch_phub code.
+> 
+> Thoughts?
 
-Signed-off-by: Zhengwang Ruan <ruan.zhengwang@gmail.com>
----
-v2: Change fix to add a comment.
----
- kernel/trace/trace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+To satisfy the early console, one way may be add a x86_init_ops for all
+Tunnel Creek compatible platform like what Moorestown/Medfield have done,
+and insert the uart clk setting work into one of the early init function. 
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index a3f1bc5..ef332e6 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3694,7 +3694,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 	int nr_pages = 1;
- 	ssize_t written;
- 	void *page1;
--	void *page2;
-+	void *page2;	/* if you get a warning here, upgrade your gcc to 4.6 */
- 	int offset;
- 	int size;
- 	int len;
--- 
-1.6.0.4
-
+Thanks,
+Feng
+> 
+> -- 
+> Darren Hart
+> Intel Open Source Technology Center
+> Yocto Project - Linux Kernel
