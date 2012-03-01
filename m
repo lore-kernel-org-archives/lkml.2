@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab2CAMRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:17:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37477 "EHLO
+	id S1758111Ab2CAMRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:17:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37484 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab2CAMRE (ORCPT
+	with ESMTP id S1753896Ab2CAMRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:17:04 -0500
-Date: Thu, 1 Mar 2012 04:15:49 -0800
+	Thu, 1 Mar 2012 07:17:30 -0500
+Date: Thu, 1 Mar 2012 04:16:40 -0800
 From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-nuj34q52p6ro7szapuz84i0v@git.kernel.org>
+Message-ID: <tip-7x70cypsotjb4jvcor3edctk@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt:
-  Keep period timer ticking when rt throttling is active
-Git-Commit-ID: 42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
+Subject: [tip:sched/core] sched/rt: Do not throttle when PI boosting
+Git-Commit-ID: 7abc63b1bd412f7655b62ef3e35c3c11c5134636
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,78 +27,63 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Mar 2012 04:16:22 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Mar 2012 04:17:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
-Gitweb:     http://git.kernel.org/tip/42c62a589f1ccbf38a02cb732231f9c2fccc5ab0
+Commit-ID:  7abc63b1bd412f7655b62ef3e35c3c11c5134636
+Gitweb:     http://git.kernel.org/tip/7abc63b1bd412f7655b62ef3e35c3c11c5134636
 Author:     Peter Zijlstra <peterz@infradead.org>
 AuthorDate: Tue, 18 Oct 2011 22:03:48 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 1 Mar 2012 10:28:01 +0100
+CommitDate: Thu, 1 Mar 2012 10:28:02 +0100
 
-sched/rt: Keep period timer ticking when rt throttling is active
+sched/rt: Do not throttle when PI boosting
 
-When a runqueue is throttled we cannot disable the period timer
-because that timer is the only way to undo the throttling.
+When a runqueue has rt_runtime_us = 0 then the only way it can
+accumulate rt_time is via PI boosting. That causes the runqueue
+to be throttled and replenishing does not change anything due to
+rt_runtime_us = 0. So avoid that situation by clearing rt_time and
+skip the throttling alltogether.
 
-We got stale throttling entries when a rq was throttled and then the
-global sysctl was disabled, which stopped the timer.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-[ Added changelog ]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+[ Changelog ]
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-nuj34q52p6ro7szapuz84i0v@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-7x70cypsotjb4jvcor3edctk@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/rt.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ kernel/sched/rt.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index f70206c..6d1eb0b 100644
+index 6d1eb0b..7f7e7cd 100644
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
-@@ -778,12 +778,9 @@ static inline int balance_runtime(struct rt_rq *rt_rq)
+@@ -857,8 +857,24 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+ 		return 0;
  
- static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- {
--	int i, idle = 1;
-+	int i, idle = 1, throttled = 0;
- 	const struct cpumask *span;
- 
--	if (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF)
--		return 1;
--
- 	span = sched_rt_period_mask();
- 	for_each_cpu(i, span) {
- 		int enqueue = 0;
-@@ -818,12 +815,17 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- 			if (!rt_rq_throttled(rt_rq))
- 				enqueue = 1;
- 		}
-+		if (rt_rq->rt_throttled)
-+			throttled = 1;
- 
- 		if (enqueue)
- 			sched_rt_rq_enqueue(rt_rq);
- 		raw_spin_unlock(&rq->lock);
- 	}
- 
-+	if (!throttled && (!rt_bandwidth_enabled() || rt_b->rt_runtime == RUNTIME_INF))
-+		return 1;
+ 	if (rt_rq->rt_time > runtime) {
+-		rt_rq->rt_throttled = 1;
+-		printk_once(KERN_WARNING "sched: RT throttling activated\n");
++		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
 +
- 	return idle;
- }
- 
-@@ -884,7 +886,8 @@ static void update_curr_rt(struct rq *rq)
- 	if (unlikely((s64)delta_exec < 0))
- 		delta_exec = 0;
- 
--	schedstat_set(curr->se.statistics.exec_max, max(curr->se.statistics.exec_max, delta_exec));
-+	schedstat_set(curr->se.statistics.exec_max,
-+		      max(curr->se.statistics.exec_max, delta_exec));
- 
- 	curr->se.sum_exec_runtime += delta_exec;
- 	account_group_exec_runtime(curr, delta_exec);
++		/*
++		 * Don't actually throttle groups that have no runtime assigned
++		 * but accrue some time due to boosting.
++		 */
++		if (likely(rt_b->rt_runtime)) {
++			rt_rq->rt_throttled = 1;
++			printk_once(KERN_WARNING "sched: RT throttling activated\n");
++		} else {
++			/*
++			 * In case we did anyway, make it go away,
++			 * replenishment is a joke, since it will replenish us
++			 * with exactly 0 ns.
++			 */
++			rt_rq->rt_time = 0;
++		}
++
+ 		if (rt_rq_throttled(rt_rq)) {
+ 			sched_rt_rq_dequeue(rt_rq);
+ 			return 1;
