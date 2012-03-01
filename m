@@ -1,55 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2CAS3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:29:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34562 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754964Ab2CAS3L convert rfc822-to-8bit (ORCPT
+	id S1756042Ab2CASap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 13:30:45 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:16999
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755028Ab2CASam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:29:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="131833752"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Topic: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Index: AQHM9jOzRSobI8iWIk6i7fpsFGO9fZZTmLGAgACV04CAAB/YAIAABAsAgAANCYCAAAjigIAA1e4AgACboYD//+qe4A==
-Date: Thu, 1 Mar 2012 18:28:47 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com>
-References: <1330445487-15020-1-git-send-email-bp@amd64.org>
- <1330445487-15020-2-git-send-email-bp@amd64.org>
- <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab>
- <4F4E145E.4040901@redhat.com> <20120229121914.GD21224@aftab>
- <4F4E22B1.6020505@redhat.com> <20120229133741.GF21224@aftab>
- <4F4EDD9A.4050900@jp.fujitsu.com> <20120301114023.GB32410@aftab>
-In-Reply-To: <20120301114023.GB32410@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 13:30:42 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2fh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F4FC037.4060201@am.sony.com>
+Date: Thu, 1 Mar 2012 10:30:15 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux kernel <linux-kernel@vger.kernel.org>, <tj@kernel.org>
+Subject: Re: Questions about ptrace on a dying process
+References: <4F4E6915.1010209@am.sony.com> <m2mx81pi7x.fsf@firstfloor.org> <4F4E8E6A.2020601@am.sony.com> <201203010812.54769.vda.linux@googlemail.com>
+In-Reply-To: <201203010812.54769.vda.linux@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > My concern is; on Sandy Bridge, is it safe to gather info about the DIMM
-> > location in/from machine check context in a reasonable time span?
->
-> Well, what amd64_edac does is "buffer" the required lookup info so
-> whenever you get an error, you simply lookup the channel and chip select
-> - all ops which can be done in atomic context.
+On 02/29/2012 11:12 PM, Denys Vlasenko wrote:
+> On Wednesday 29 February 2012 21:45, Tim Bird wrote:
+>> On 02/29/2012 11:12 AM, Andi Kleen wrote:
+>>> Tim Bird <tim.bird@am.sony.com> writes:
+>>>
+>>>> ptrace maintainers (and interested parties)...
+>>>>
+>>>> I'm working on a crash handler for Linux, which uses ptrace to retrieve information
+>>>> about a process during it's coredump.  Specifically, from within a core handler
+>>>> program (started within do_coredump() as a user_mode_helper), I would like to make
+>>>> ptrace calls against the dying process.
+>>>
+>>> The standard approach is to define a core pipe handler and parse the
+>>> elf memory dump.
+>>
+>> Yeah - I may be doing something new here.  Android uses ptrace
+>> in debuggerd, which is their crash reporting tool, but they wake
+>> it up with signals before the dying program goes into coredump.
+> 
+> I think ptrace API does not provide guarantees that it is possible
+> to attach to the process when it coredumps.
+> 
+> It might work in current kernels, but might break in new ones.
 
-Yes - we could pre-read all the config space registers ahead of time and
-save them in memory (none of the values should change - except if the platform
-supports hot-plug for memory). Total is only a few Kbytes. Then decode in
-machine check context is both safe, and fast.
+If it's not too much trouble, it would be nice to continue
+this behaviour.   Admittedly, my style of crash handling appears
+to be new, and I don't want to unnecessarily burden the code,
+but so far it works really well, and currently requires very
+minimal change to the existing ptrace code.  One thing that's
+nice about what I'm doing, is that I don't rely on the
+whole signal state machine of the process to interact with it
+(since a dying process can't respond correctly).
 
--Tony
+So hopefully, continuing to support ptrace for a dying process
+won't interfere or burden the existing (rather complex)
+state processing in the current code.
+
+Just for reference, below is the patch I settled on for my own kernel.
+I'm planning taking a look at the PTRACE_SEIZE code to see if it
+accomplishes what I need, but haven't done that yet.
+
+I do have a question, though - how will a tracer know that it can
+use PTRACE_SEIZE?  Is there some introspection API?  My code will
+be running mainly against a patched 3.0 for some time (a few years),
+but if I could make it interoperate with a kernel that supports
+PTRACE_SEIZE (when it is mainlined), that would be great.
+
+ -- Tim
+
+commit dd54b901759428e60ed57b2d6cb77d25a8db767f
+Author: tbird <tim.bird@am.sony.com>
+Date:   Tue Feb 28 14:13:08 2012 -0800
+
+    Support ptrace_attach with no signal side-effects.
+
+    In the normal case, a ptrace_attach operation will convert
+    a process to TASK_TRACED by sending it a SIGSTOP signal,
+    after setting task->ptrace.  This won't work on a dying
+    process because during do_coredump(), the dying process won't
+    process the STOP signal and change state.
+
+    Modify ptrace_attach() so that the tracee task state is modified
+    directly.  This allows subsequent ptrace_check_attach() calls
+    to work correctly, and avoids having a pending SIGSTOP signal
+    on the tree process (which interferes with waiting for
+    the core pipe handler).
+
+    Note that a more full-featured implementation of this is in the
+    works (as of March, 2012) by Tejun Heo, called PTRACE_SEIZE.
+    Once that gets mainlined, this patch may not be needed, or might
+    need to be reworked.
+
+    Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 26147d1..9c7bf8e 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -223,7 +223,16 @@ static int ptrace_attach(struct task_struct *task)
+ 		task->ptrace |= PT_PTRACE_CAP;
+
+ 	__ptrace_link(task, current);
+-	send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
++	
++	/*
++ 	 * If doing coredump, just convert directly to TASK_TRACED.
++ 	 * A dying process doesn't process signals normally.
++ 	 */
++	if (unlikely(task->mm->core_state)) {
++		set_task_state(task, TASK_TRACED);
++	} else {
++		send_sig_info(SIGSTOP, SEND_SIG_FORCED, task);
++	}
+
+ 	spin_lock(&task->sighand->siglock);
+
+
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
