@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab2CADGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:06:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33194 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab2CADCL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755564Ab2CADCL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 Feb 2012 22:02:11 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32163 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2CADCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 22:02:05 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,62 +16,59 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 30/36] PCI: Strict checking of valid range for bridge
-Date: Wed, 29 Feb 2012 19:00:31 -0800
-Message-Id: <1330570837-26638-31-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 08/36] x86, PCI: embed name acpi version pci_root_info struct
+Date: Wed, 29 Feb 2012 19:00:09 -0800
+Message-Id: <1330570837-26638-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
 References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F4EE6A5.0083,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090209.4F4EE67D.0030,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-children bridges busn range should be able to be allocated from parent bus range.
+Now We allocate info, and keep that in during whole life of hostbridge.
 
-to avoid overlapping between sibling bridges on same bus.
+So don't allocate info->name seperately, just put name into struct.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+ arch/x86/pci/acpi.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index c540022..5c031f0 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -801,6 +801,30 @@ reduce_needed_size:
- 	return ret;
- }
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index c7a230f..11c3ae7 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -9,7 +9,7 @@
  
-+static int __devinit pci_bridge_check_busn_broken(struct pci_bus *bus,
-+				struct pci_dev *dev,
-+				int secondary, int subordinate)
-+{
-+	int broken = 0;
-+
-+	struct resource busn_res;
-+	int ret;
-+
-+	memset(&busn_res, 0, sizeof(struct resource));
-+	dev_printk(KERN_DEBUG, &dev->dev,
-+		 "check if busn %02x-%02x is in busn_res: %pR\n",
-+		 secondary, subordinate, &bus->busn_res);
-+	ret = allocate_resource(&bus->busn_res, &busn_res,
-+			 (subordinate - secondary + 1),
-+			 secondary, subordinate,
-+			 1, NULL, NULL);
-+	if (ret)
-+		broken = 1;
-+	else
-+		release_resource(&busn_res);
-+
-+	return broken;
-+}
- /*
-  * If it's a bridge, configure it and scan the bus behind it.
-  * For CardBus bridges, we don't scan behind as the devices will
+ struct pci_root_info {
+ 	struct acpi_device *bridge;
+-	char *name;
++	char name[16];
+ 	unsigned int res_num;
+ 	struct resource *res;
+ 	int busnum;
+@@ -307,7 +307,6 @@ static void add_resources(struct pci_root_info *info,
+ 
+ static void free_pci_root_info_res(struct pci_root_info *info)
+ {
+-	kfree(info->name);
+ 	kfree(info->res);
+ 	info->res = NULL;
+ 	info->res_num = 0;
+@@ -360,9 +359,7 @@ probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
+ 	if (!info->res)
+ 		return;
+ 
+-	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+-	if (!info->name)
+-		return;
++	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
+ 
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+ 				info);
 -- 
 1.7.7
 
