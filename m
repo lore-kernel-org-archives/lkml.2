@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab2CAWpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:45:52 -0500
-Received: from mail-qy0-f179.google.com ([209.85.216.179]:37696 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758198Ab2CAWpv convert rfc822-to-8bit (ORCPT
+	id S1758313Ab2CAWyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:54:41 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:44365 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756954Ab2CAWyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:45:51 -0500
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Mar 2012 17:45:51 EST
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of anthony@xtfx.me designates 10.224.208.1 as permitted sender) smtp.mail=anthony@xtfx.me; dkim=pass header.i=anthony@xtfx.me
+	Thu, 1 Mar 2012 17:54:39 -0500
+Message-ID: <4F4FFDE4.8050908@free.fr>
+Date: Thu, 01 Mar 2012 23:53:24 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-X-Originating-IP: [24.106.62.130]
-In-Reply-To: <1330639448.7414.97.camel@marge.simpson.net>
-References: <20120221211938.GE12236@google.com> <20120222163858.GB4128@redhat.com>
- <20120222165714.GC4128@redhat.com> <1329990094.24994.64.camel@twins>
- <1330006399.11248.20.camel@twins> <4F4FAF89.3090706@redhat.com>
- <1330633603.7414.49.camel@marge.simpson.net> <20120301210213.GF13533@redhat.com>
- <1330639448.7414.97.camel@marge.simpson.net>
-From: C Anthony Risinger <anthony@xtfx.me>
-Date: Thu, 1 Mar 2012 16:38:37 -0600
-Message-ID: <CAGAVQTE8JSPNimS_HU9-p8dCz2jw40YUEDwkU0BSn_ZZg_PhRA@mail.gmail.com>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-To: Mike Galbraith <efault@gmx.de>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        containers@lists.linux-foundation.org,
-        Michal Schmidt <mschmidt@redhat.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Lennart Poettering <lennart@poettering.net>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Aditya Kali <adityakali@google.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Max Kellermann <mk@cm4all.com>, Tim Hockin <thockin@hockin.org>,
+        Glauber Costa <glommer@gmail.com>, Paul Menage <paul@paulmenage.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        =?ISO-8859-1?Q?Papp_Tam=E1s?= <tompos@martos.bme.hu>,
+        Ulli Horlacher <framstag@rus.uni-stuttgart.de>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com> <20120201163126.GA19837@google.com> <20120201184959.GH6731@somewhere.redhat.com> <20120201115107.93e11471.akpm@linux-foundation.org> <20120202145000.GC9071@somewhere.redhat.com>
+In-Reply-To: <20120202145000.GC9071@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 4:04 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Thu, 2012-03-01 at 16:02 -0500, Vivek Goyal wrote:
->> On Thu, Mar 01, 2012 at 09:26:43PM +0100, Mike Galbraith wrote:
->
->> > Q: you say systemd requires CONFIG_CGROUPS=y.  Why is that?  It's taking
->> > over sysvinits job afaiui, what does that have to do with cgroups?
+On 02/02/2012 03:50 PM, Frederic Weisbecker wrote:
+> On Wed, Feb 01, 2012 at 11:51:07AM -0800, Andrew Morton wrote:
+>> On Wed, 1 Feb 2012 19:50:01 +0100
+>> Frederic Weisbecker<fweisbec@gmail.com>  wrote:
 >>
->> I think they were using it to track all the children forked by a service
->> and cleanup all of them if need be. So they just need it for logical
->> grouping functionality and don't require any controllers as such.
+>>> On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
+>>>> On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
+>>>>> Changes In this version:
+>>>>>
+>>>>> - Split 32/64 bits version of res_counter_write_u64() [1/10]
+>>>>>    Courtesy of Kirill A. Shutemov
+>>>>>
+>>>>> - Added Kirill's ack [8/10]
+>>>>>
+>>>>> - Added selftests [9/10], [10/10]
+>>>>>
+>>>>> Please consider for merging. At least two users want this feature:
+>>>> Has there been further discussion about this approach?  IIRC, we
+>>>> weren't sure whether this should be merged.
+>>> The doubts I have noticed were:
+>>>
+>>> Q: Can't we rather focus on a global solution to fight forkbombs?
+>>>
+>>> If we can find a reliable solution that works in any case and that
+>>> prevent from any forkbomb to impact the rest of the system then it
+>>> may be an acceptable solution. But I'm not aware of such feature.
+>>>
+>>> Besides, another point in having this task counter is that we
+>>> have a per container limit. Assuming all containers are running under
+>>> the same user, we can protect against a container starving all others
+>>> with a massive amount of processes close to the NR_PROC rlimit.
+>>>
+>>> Q: Can/should we implement a limitation on the number of "fork" as well?
+>>>     (as in https://lkml.org/lkml/2011/11/3/233 )
+>>>
+>>> I'm still not sure about why such a thing is needed. Is it really something we
+>>> want? Why can't the task counter be used instead?
+>>>
+>>> I need more details from the author of this patch. But I doubt we can merge
+>>> both subsystems, they have pretty different semantics.
+>> What I struggle with is "is this feature useful enough to warrant
+>> merging it"?
+> The reason why I've been working on it is because we need this feature
+> (at least) for LXC.
+
+This feature is a recurrent request from the users of LXC. Recently, a 
+container administrator complained an user was able to crash the entire 
+host from a container.
+
+http://sourceforge.net/mailarchive/message.php?msg_id=28915923
+
+This feature is really useful to make the containers secure.
+
+   -- Daniel
+
 >
-> Hm.  Controllers are perhaps not required, but cpu controller was
-> configured and used without consent.  I didn't receive an offer.
+> Two people from our teams have jumped onto the discussion to express
+> that they want this feature and why:
+>
+> https://lkml.org/lkml/2011/12/13/309
+> https://lkml.org/lkml/2011/12/13/364
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
+>
 
-AFAIK it does in fact only require `name` cgroup for it's own
-monitoring purposes.  i believe the systemd folks also tried (and are
-trying? see TODO) to get PR_SET_ANCHOR merged upstream:
-
-https://lkml.org/lkml/2010/2/2/165
-
-... which is a sort of recursive/persistent parenting flag; without
-that or cgroups, there is no way to reliably supervise processes under
-Linux.
-
-the other problem is there is no way for a process to enumerate the
-available cgroups -- IIRC a list had to be hard-coded in systemd
-sources -- and mounting the cgroupfs without specifying a specific
-subsystem simply mounts everything in one whack.
-
-you should be able to tell systemd to ignore that specific controller,
-or tell it to use existing mounts.  i for one have been using it
-*exclusively* on my personal machines/home servers [archlinux] and am
-very pleased ... it's very flexible and gives you an unprecedented
-level of control and introspection into the system (man systemd.*) ...
-i can create new services in about 3-5 lines.
-
-... obviously this thread is not about systemd, but since it makes
-such extensive use of cgroup facilities it only proves to highlight
-it's deficiencies.  i think the notes and practices systemd has
-established should be viewed as a good reference for what's clumsy, at
-the very least, and should not be attributed to systemd, but to
-cgroups.
-
--- 
-
-C Anthony
