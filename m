@@ -1,239 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031269Ab2CAPJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 10:09:43 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:52340
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1031193Ab2CAPJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 10:09:41 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M07ORV-01-60S-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] iommu/amd: Split amd_iommu_init function
-Date: Thu, 1 Mar 2012 16:09:28 +0100
-Message-ID: <1330614568-23924-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1031286Ab2CAPKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 10:10:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031193Ab2CAPKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 10:10:04 -0500
+Date: Thu, 1 Mar 2012 10:09:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Eugene Surovegin <surovegin@google.com>
+Cc: linux-kernel@vger.kernel.org, Eric Biederman <ebiederm@xmission.com>,
+        kexec-list <kexec@lists.infradead.org>
+Subject: Re: [PATCH] kdump: force page alignment for per-CPU crash notes.
+Message-ID: <20120301150957.GA13533@redhat.com>
+References: <1330536083-13098-1-git-send-email-surovegin@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330536083-13098-1-git-send-email-surovegin@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hardware-initializtion part of the AMD IOMMU driver is
-split out into a seperate function. This function can now be
-called either from amd_iommu_init() itself or any other
-place if the hardware needs to be ready earlier. This will
-be used to implement interrupt remapping for AMD.
+On Wed, Feb 29, 2012 at 09:21:23AM -0800, Eugene Surovegin wrote:
+> Per-CPU allocations are not guaranteed to be physically contiguous.
+> However, kdump kernel and user-space code assumes that per-CPU
+> memory, used for saving CPU registers on crash, is.
+> This can cause corrupted /proc/vmcore in some cases - the main
+> symptom being huge ELF note section.
+> 
+> Force page alignment for note_buf_t to ensure that this assumption holds.
+> 
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu_init.c |  123 +++++++++++++++++++++++++--------------
- include/linux/amd-iommu.h      |    2 +-
- 2 files changed, 80 insertions(+), 45 deletions(-)
+Hi Eugene,
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index bdea288..75653da 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1424,10 +1424,40 @@ static struct syscore_ops amd_iommu_syscore_ops = {
- 	.resume = amd_iommu_resume,
- };
- 
-+static void __init free_on_init_error(void)
-+{
-+	amd_iommu_uninit_devices();
-+
-+	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
-+		   get_order(MAX_DOMAIN_ID/8));
-+
-+	free_pages((unsigned long)amd_iommu_rlookup_table,
-+		   get_order(rlookup_table_size));
-+
-+	free_pages((unsigned long)amd_iommu_alias_table,
-+		   get_order(alias_table_size));
-+
-+	free_pages((unsigned long)amd_iommu_dev_table,
-+		   get_order(dev_table_size));
-+
-+	free_iommu_all();
-+
-+	free_unity_maps();
-+
-+#ifdef CONFIG_GART_IOMMU
-+	/*
-+	 * We failed to initialize the AMD IOMMU - try fallback to GART
-+	 * if possible.
-+	 */
-+	gart_iommu_init();
-+
-+#endif
-+}
-+
- /*
-- * This is the core init function for AMD IOMMU hardware in the system.
-- * This function is called from the generic x86 DMA layer initialization
-- * code.
-+ * This is the hardware init function for AMD IOMMU in the system.
-+ * This function is called either from amd_iommu_init or from the interrupt
-+ * remapping setup code.
-  *
-  * This function basically parses the ACPI table for AMD IOMMU (IVRS)
-  * three times:
-@@ -1446,16 +1476,21 @@ static struct syscore_ops amd_iommu_syscore_ops = {
-  *		remapping requirements parsed out of the ACPI table in
-  *		this last pass.
-  *
-- * After that the hardware is initialized and ready to go. In the last
-- * step we do some Linux specific things like registering the driver in
-- * the dma_ops interface and initializing the suspend/resume support
-- * functions. Finally it prints some information about AMD IOMMUs and
-- * the driver state and enables the hardware.
-+ * After everything is set up the IOMMUs are enabled and the necessary
-+ * hotplug and suspend notifiers are registered.
-  */
--static int __init amd_iommu_init(void)
-+int __init amd_iommu_init_hardware(void)
- {
- 	int i, ret = 0;
- 
-+	if (!amd_iommu_detected)
-+		return -ENODEV;
-+
-+	if (amd_iommu_dev_table != NULL) {
-+		/* Hardware already initialized */
-+		return 0;
-+	}
-+
- 	/*
- 	 * First parse ACPI tables to find the largest Bus/Dev/Func
- 	 * we need to handle. Upon this information the shared data
-@@ -1472,9 +1507,8 @@ static int __init amd_iommu_init(void)
- 	alias_table_size   = tbl_size(ALIAS_TABLE_ENTRY_SIZE);
- 	rlookup_table_size = tbl_size(RLOOKUP_TABLE_ENTRY_SIZE);
- 
--	ret = -ENOMEM;
--
- 	/* Device table - directly used by all IOMMUs */
-+	ret = -ENOMEM;
- 	amd_iommu_dev_table = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO,
- 				      get_order(dev_table_size));
- 	if (amd_iommu_dev_table == NULL)
-@@ -1546,20 +1580,46 @@ static int __init amd_iommu_init(void)
- 
- 	enable_iommus();
- 
-+	amd_iommu_init_notifier();
-+
-+	register_syscore_ops(&amd_iommu_syscore_ops);
-+
-+out:
-+	return ret;
-+
-+free:
-+	free_on_init_error();
-+
-+	return ret;
-+}
-+
-+/*
-+ * This is the core init function for AMD IOMMU hardware in the system.
-+ * This function is called from the generic x86 DMA layer initialization
-+ * code.
-+ *
-+ * The function calls amd_iommu_init_hardware() to setup and enable the
-+ * IOMMU hardware if this has not happened yet. After that the driver
-+ * registers for the DMA-API and for the IOMMU-API as necessary.
-+ */
-+static int __init amd_iommu_init(void)
-+{
-+	int ret = 0;
-+
-+	ret = amd_iommu_init_hardware();
-+	if (ret)
-+		goto out;
-+
- 	if (iommu_pass_through)
- 		ret = amd_iommu_init_passthrough();
- 	else
- 		ret = amd_iommu_init_dma_ops();
- 
- 	if (ret)
--		goto free_disable;
-+		goto free;
- 
- 	amd_iommu_init_api();
- 
--	amd_iommu_init_notifier();
--
--	register_syscore_ops(&amd_iommu_syscore_ops);
--
- 	if (iommu_pass_through)
- 		goto out;
- 
-@@ -1569,39 +1629,14 @@ static int __init amd_iommu_init(void)
- 		printk(KERN_INFO "AMD-Vi: Lazy IO/TLB flushing enabled\n");
- 
- 	x86_platform.iommu_shutdown = disable_iommus;
-+
- out:
- 	return ret;
- 
--free_disable:
--	disable_iommus();
--
- free:
--	amd_iommu_uninit_devices();
--
--	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
--		   get_order(MAX_DOMAIN_ID/8));
--
--	free_pages((unsigned long)amd_iommu_rlookup_table,
--		   get_order(rlookup_table_size));
--
--	free_pages((unsigned long)amd_iommu_alias_table,
--		   get_order(alias_table_size));
--
--	free_pages((unsigned long)amd_iommu_dev_table,
--		   get_order(dev_table_size));
--
--	free_iommu_all();
--
--	free_unity_maps();
--
--#ifdef CONFIG_GART_IOMMU
--	/*
--	 * We failed to initialize the AMD IOMMU - try fallback to GART
--	 * if possible.
--	 */
--	gart_iommu_init();
-+	disable_iommus();
- 
--#endif
-+	free_on_init_error();
- 
- 	goto out;
- }
-diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
-index ef00610..15f6b9e 100644
---- a/include/linux/amd-iommu.h
-+++ b/include/linux/amd-iommu.h
-@@ -28,7 +28,7 @@ struct task_struct;
- struct pci_dev;
- 
- extern int amd_iommu_detect(void);
--
-+extern int amd_iommu_init_hardware(void);
- 
- /**
-  * amd_iommu_enable_device_erratum() - Enable erratum workaround for device
--- 
-1.7.5.4
+Where do we make assumption that crash_notes address is page aligned?
+
+In first kernel we save notes using virtual addresses as returned by
+per_cpu_ptr(). So first kernel should be fine (crash_save_cpu()).
+
+In second kernel, fs/proc/vmcore.c code does not seem to be assuming 
+that notes are stored as page aligned address.
+
+merge_note_headers_elf64()
+  read_from_oldmem()
+       offset = (unsigned long)(*ppos % PAGE_SIZE);
+        pfn = (unsigned long)(*ppos / PAGE_SIZE);
+
+We see to calculate pfn and offset inside the page. Map the pfn and then
+access offset.
+
+So as long as whole of the note section is stored on a single physical
+page it is not a problem.
+
+Are you referring to the fact that note could be stored on two different
+physical pages and then kexec-tools does not know about the physical
+address of second page, hence second kernel does not know about it
+and we never read that data. That sounds like a problem.
+
+So it make sense to force the page size alignment and if notes ever
+grow beyond 1 page, we need to come up with more complex ways of
+communicating more than 1 physical address to second kernel.
+
+Thanks
+Vivek
 
 
+> Signed-off-by: Eugene Surovegin <surovegin@google.com>
+> CC: Eric Biederman <ebiederm@xmission.com>
+> CC: Vivek Goyal <vgoyal@redhat.com>
+> CC: kexec-list <kexec@lists.infradead.org>
+> ---
+>  kernel/kexec.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 7b08867..e641b5c 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1232,8 +1232,13 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+>  
+>  static int __init crash_notes_memory_init(void)
+>  {
+> -	/* Allocate memory for saving cpu registers. */
+> -	crash_notes = alloc_percpu(note_buf_t);
+> +	/* Allocate memory for saving cpu registers.
+> +	 * Force page alignment to avoid crossing physical page boundary -
+> +	 * kexec-tools and kernel /proc/vmcore handler assume these per-CPU
+> +	 * chunks are physically contiguous.
+> +	 */
+> +	crash_notes = (note_buf_t __percpu *)__alloc_percpu(sizeof(note_buf_t),
+> +							    PAGE_SIZE);
+>  	if (!crash_notes) {
+>  		printk("Kexec: Memory allocation for saving cpu register"
+>  		" states failed\n");
+> -- 
+> 1.7.9.1
