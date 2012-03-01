@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965003Ab2CAT20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:28:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43743 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964994Ab2CAT1d (ORCPT
+	id S1756574Ab2CAT2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:28:25 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:53221 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2CAT2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:27:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.181.233 as permitted sender) smtp.mail=alan@signal11.us
+	Thu, 1 Mar 2012 14:28:20 -0500
+Message-ID: <4F4FCE00.6060302@collabora.co.uk>
+Date: Thu, 01 Mar 2012 20:29:04 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-From: Alan Ott <alan@signal11.us>
-To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 7/8] ARM: tegra: export usb phy symbols
-Date: Thu,  1 Mar 2012 14:26:49 -0500
-Message-Id: <1330630010-11241-8-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1330630010-11241-1-git-send-email-alan@signal11.us>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
+        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
+        David Laight <David.Laight@aculab.com>,
+        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com> <1330606237.27405.5.camel@megeve> <1330606775.2465.56.camel@edumazet-laptop> <4F4F7FFB.6010608@collabora.co.uk> <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com> <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com> <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
+In-Reply-To: <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On 03/01/2012 08:02 PM, Javier Martinez Canillas wrote:
+> On Thu, Mar 1, 2012 at 6:59 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le 1 mars 2012 08:02, Luiz Augusto von Dentz <luiz.dentz@gmail.com> a écrit :
+>>>
+>>> Contrary to someones believes I don't think AF_INET is that fast (e.g.
+>>> http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
+>>>
+>>
+>> Oh you mention a recent zork it seems ;)
+>>
+>> Are we speaking of performance problems, apart from scheduler problems
+>> for D-Bus (each message wakeing all receivers, all receivers read and
+>> drop message but the target) ?
+>>
+> 
+> Hi Eric,
+> 
+> The only performance problem we are talking about is the scheduling
+> for D-bus (context switch to the daemon for each message). With today
+> implementation the receivers only gets messages that were sent to it
+> but the D-bus daemon has to be wake it up for every message to he can
+> do the routing. For multicast messages (i.e: D-bus signals) this is
+> even worse since the daemon has to do a send() for each receiver.
+> 
+>> I am actually one of the few people working to improve performance on
+>> both AF_INET and AF_UNIX parts. Just take a look at recent commits.
+>>
+>> Right now you can send/receive millions of udp messages per second on
+>> your linux machine, if you figured out how to avoid process scheduler
+>> costs. If D-Bus wants more, I highly suggest using shared memory
+>> instead of passing messages.
+>> --
+> 
+> Yes, I also thought that AF_UNIX would be more efficient than AF_INET
+> but I was wrong. Yesterday I wrote some tests using our multicast unix
+> socket, UDP multicast over IP on a single machine and even multicast
+> using AF_NETLINK sockets and got very similar performance results.
+> 
+> The only problem is the ordering and control flow requirements for D-bus.
+> 
 
-The ehci driver can be a module, so the functions provided
-by the tegra platform code used by ehci-tegra need to
-be exported.
+And the fd passing for out-ouf-band communication used for some D-bus
+application such as oFono and BlueZ.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/mach-tegra/usb_phy.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/usb_phy.c b/arch/arm/mach-tegra/usb_phy.c
-index 37576a7..3c45264 100644
---- a/arch/arm/mach-tegra/usb_phy.c
-+++ b/arch/arm/mach-tegra/usb_phy.c
-@@ -730,6 +730,7 @@ err0:
- 	kfree(phy);
- 	return ERR_PTR(err);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_open);
- 
- int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
- {
-@@ -738,6 +739,7 @@ int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
- 	else
- 		return utmi_phy_power_on(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_power_on);
- 
- void tegra_usb_phy_power_off(struct tegra_usb_phy *phy)
- {
-@@ -746,18 +748,21 @@ void tegra_usb_phy_power_off(struct tegra_usb_phy *phy)
- 	else
- 		utmi_phy_power_off(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_power_off);
- 
- void tegra_usb_phy_preresume(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_preresume(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_preresume);
- 
- void tegra_usb_phy_postresume(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_postresume(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_postresume);
- 
- void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
- 				 enum tegra_usb_phy_port_speed port_speed)
-@@ -765,24 +770,28 @@ void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_restore_start(phy, port_speed);
- }
-+EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_start);
- 
- void tegra_ehci_phy_restore_end(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_restore_end(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_end);
- 
- void tegra_usb_phy_clk_disable(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_clk_disable(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_disable);
- 
- void tegra_usb_phy_clk_enable(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_clk_enable(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_enable);
- 
- void tegra_usb_phy_close(struct tegra_usb_phy *phy)
- {
-@@ -794,3 +803,4 @@ void tegra_usb_phy_close(struct tegra_usb_phy *phy)
- 	clk_put(phy->pll_u);
- 	kfree(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_close);
--- 
-1.7.0.4
-
+Regards,
+Javier
