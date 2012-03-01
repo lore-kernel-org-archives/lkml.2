@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965030Ab2CAAgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:36:39 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14941 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab2CAAgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:36:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="72058862"
-Date: Thu, 1 Mar 2012 01:43:51 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonicro.com
-Subject: Re: [PATCH 3.3] mfd: Correct readability of WM8994 DC servo 4E
- register
-Message-ID: <20120301004351.GC9008@sortiz-mobl>
-References: <1330529879-5345-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S965422Ab2CAAio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:38:44 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44316 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab2CAAim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 19:38:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.68.190.8 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330529879-5345-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1330539597.git.dvhart@linux.intel.com>
+References: <cover.1330539597.git.dvhart@linux.intel.com>
+Date: Thu, 1 Mar 2012 09:38:42 +0900
+Message-ID: <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk parameter
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Darren Hart <dvhart@linux.intel.com>, Alan Cox <alan@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hi
 
-On Wed, Feb 29, 2012 at 03:37:59PM +0000, Mark Brown wrote:
-> It should be marked as readable but wasn't, breaking DC servo operation.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> This needs to go in for 3.3, it's a substantial regression.
-I applied it to my for-linus branch, thanks.
+Darren's patch series, I think OK.
+However, need to proceed next step.
 
-Cheers,
-Samuel.
+As I said before,
+internal clock(USB_48MHz) should be used than external clock(UART_CLK)
+as default setting.
+--Reasons
+  - Users don't always use 1.8432MHz as UART_CLK.
+    So,  In case of using except 1.8432MHz,
+    the user needs to change both pch_phub and pch_uart setting (It's
+bother things).
+  - High baud rate can't be used more than 115Kbps
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I think there is no merit to use UART_CLK.
+
+---Merit to use 192MHz
+  - Users don't have to care both pch_phub and pch_uart clock setting.
+  - High baud rate can be supported
+
+thanks,
+
+ROHM Co., Ltd.
+tomoya
