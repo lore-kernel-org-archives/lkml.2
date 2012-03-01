@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab2CALag (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:30:36 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39830 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab2CALae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:30:34 -0500
-Date: Thu, 1 Mar 2012 11:30:32 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v5 1/2] mfd: Add anatop mfd driver
-Message-ID: <20120301113031.GD3124@opensource.wolfsonmicro.com>
-References: <1330593052-15184-1-git-send-email-paul.liu@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OaZoDhBhXzo6bW1J"
-Content-Disposition: inline
-In-Reply-To: <1330593052-15184-1-git-send-email-paul.liu@linaro.org>
-X-Cookie: You may be recognized soon.  Hide.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758928Ab2CALak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:30:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:50109 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758538Ab2CALah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:30:37 -0500
+Message-ID: <1330601400.11728.48.camel@pasglop>
+Subject: Re: [PATCH 0/2] More i387 state save/restore work
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michael Neuling <mikey@neuling.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        anton@samba.org
+Date: Thu, 01 Mar 2012 22:30:00 +1100
+In-Reply-To: <CA+55aFwc6u6Mr9iCMKM+MexfKso4tN7D2VdWpJpuT2saj0Pgfw@mail.gmail.com>
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+	 <12996.1329699216@neuling.org>
+	 <CA+55aFwHGUB7R6kpNPc7vDYF8dhYCKm4Riso-rpS2Fiqjg8hQg@mail.gmail.com>
+	 <CA+55aFxqK1A0g6qHvZHxzGOTGT0YFAoRJtOeYWLxVchM=e=qww@mail.gmail.com>
+	 <CA+55aFwc6u6Mr9iCMKM+MexfKso4tN7D2VdWpJpuT2saj0Pgfw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-02-19 at 17:11 -0800, Linus Torvalds wrote:
+> Oh, and final comment - looking at the thing you pointed at, it looks
+> much more adventurous than my x86 FP state thing.
 
---OaZoDhBhXzo6bW1J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, that's the main reason why I haven't merged it (yet...). I though
+the added complexity and risk wasn't worth the added complexity and
+risk.
 
-On Thu, Mar 01, 2012 at 05:10:51PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+But going half way there as you are doing definitely looks like a good
+idea. I'll have a look when I'm done whacking the shit out of our
+exception entry path :)
 
-> +	spin_lock(&adata->reglock);
-> +	val = readl(adata->ioreg + addr);
-> +	spin_unlock(&adata->reglock);
+> I always save things unconditionally, so that I don't have to do the
+> IPI or just in general care about the "oops, now I want things in
+> memory, not in some random CPU FP state". So mine is just a "writeback
+> cache", and only optimizes the reading things back: there is never any
+> dirty state in the CPU except when the process is actively using it.
+> 
+> That obviously does mean that I only optimize away the restore side,
+> not the save side. But it's *way* simpler, and considering that I just
+> spent almost a week trying to figure out FP state save bugs, simple is
+> good.
 
-Do you really need to take a lock for a single read operation from a
-memory mapped register?  I'd expect this to be atomic in itself.  You
-need to lock on read/modify/write cycles to make sure that you don't get
-a read/read/modify/modify/write/write and misplace one of the modifies
-but that's not an issue for an isolated read.
+On the other hand, you seem to support FP use from random kernel
+contexts such as softirq, interrupts etc... while we don't (well not
+with the "normal" APIs, obviously you can always turn all IRQs off and
+manually enable & save restore but that's too nasty for words).
 
---OaZoDhBhXzo6bW1J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
+Ben.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPT1voAAoJEBus8iNuMP3dWSkP/i2qSXLpNISFEJqiBxtEhiTg
-AMOdDZo10K9LnAuAoeVjORqNqe2nL+U4vSNCytieK5LNbO8e69abIuwI1pDgR3vw
-d9HTDnCwBlEXhwmbpdS94PGJPs9bRK9HXLBwH06jkrndq1qarcJ4WkXF6ttfYema
-fA1ZvthzP7zB4xsZJPIR3Du2S/dZH9L7rJXSab4GJfUsx8b9n6hb+JLaeZRI/b38
-vqirUFwrY9BY84dKTKi09T7mUgpkqNJbexTtPEx93oefQRlAZJA1ccy2X6qnwcAN
-D3qQLZJMf3miGuOpt1fYxRrPZ+iOY/GbhTppFhEn6hbg7QMxogkcihb93zB6vB6S
-LVH7vLllNk2GQXD+yHW6P1MAfzOQZqT0w0YKisNF05G9/O1ZnWydv41ylYNwl85F
-iveiZlrtOiqljeE/s9d/9pR4pKewl88BNrt+jU9NQ1OC7sRmTKhuCXQe/blcLLDQ
-Me9tGHzJ9X7k9as5cDSr6ezvVYuALKheM4R29j2hkkScjV0b2x+W8n0XUbZXLQYg
-fU5jJMCpA6NiaDgTIbVRrJ3qY++aFJARBItpcKjXp8HxAkfhhVgPuqbwtXcpZPRU
-r5EmEcXbK3AWoycIcC29gnRZi0802KZ8FpF364ihAInuX9uBoPD94CZuktJSH5Q5
-Wb6JK/mBOXrp/zsQXqFB
-=30p8
------END PGP SIGNATURE-----
-
---OaZoDhBhXzo6bW1J--
