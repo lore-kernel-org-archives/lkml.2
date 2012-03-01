@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2CASeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:34:10 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39756 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756006Ab2CASeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:34:08 -0500
-Date: Thu, 1 Mar 2012 13:34:03 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: .. anybody know of any filesystems that depend on the exact VFS
- 'namehash' implementation?
-Message-ID: <20120301183403.GF5054@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
- <20120301165726.GF23916@ZenIV.linux.org.uk>
- <CA+55aFzxWifxyFSpQfuztmOiyBQpYfiM560DWXoooZ8j8p3fYw@mail.gmail.com>
+	id S1756177Ab2CASmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 13:42:54 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:60269 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754162Ab2CASmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 13:42:52 -0500
+Date: Thu, 1 Mar 2012 13:42:48 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        lczerner@redhat.com
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120301184248.GC32588@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+	lczerner@redhat.com
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+ <CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
+ <20120229144244.GF5054@shiny>
+ <CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
+ <CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
+ <CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
+ <CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
+ <20120301141823.GV5054@shiny>
+ <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzxWifxyFSpQfuztmOiyBQpYfiM560DWXoooZ8j8p3fYw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090203.4F4FC11E.0093,ss=1,re=0.000,fgs=0
+In-Reply-To: <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 09:14:13AM -0800, Linus Torvalds wrote:
-> On Thu, Mar 1, 2012 at 8:57 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > As long as full_name_hash() is still around, any such filesystem is welcome
-> > to use it for ->d_hash() and STFU.
+On Thu, Mar 01, 2012 at 03:43:41PM +0100, Jacek Luczak wrote:
 > 
-> Well, I'd make full_name_hash() match the new hash model, so no, they
-> couldn't use that. They'd have to actually implement the old hash, and
-> make it "their hash".
+> Yep, ext4 is close to my wife's closet.
 > 
-> Also note that the hash model would have to become dependent on config
-> options: doing things a word at a time really only works well on
-> architectures that have fast unaligned accesses, and even on those
-> archtiectures it really doesn't work if you enable
-> CONFIG_DEBUG_PAGE_ALLOC.
-> 
-> > Note that there are places like this one (in btrfs_real_readdir())
-> >                        q.name = name_ptr;
-> >                        q.len = name_len;
-> >                        q.hash = full_name_hash(q.name, q.len);
-> >                        tmp = d_lookup(filp->f_dentry, &q);
-> > and they _will_ need to be updated if we switch the default.
-> 
-> I don't agree that it will need to be updated - I was planning on just
-> updating full_name_hash() to always match. That part is easy and
-> obvious.
 
-Just to clarify, btrfs isn't putting the dcache hashes on disk.  The
-code above is part of our optimization to preload some information we
-find during readdir to reduce IO when the file is later opened.
+Were all of the file systems freshly laid down, or was this an aged
+ext4 file system?
 
-On disk we're crc32c only.
+Also you should beware that if you have a workload which is heavy
+parallel I/O, with lots of random, read/write accesses to small files,
+a benchmark using tar might not be representative of what you will see
+in production --- different file systems have different strengths and
+weaknesses --- and the fact that ext3/ext4's readdir() returns inodes
+in a non-optimal order for stat(2) or unlink(2) or file copy in the
+cold cache case may not matter as much as you think in a build server.
+(i.e., the directories that do need to be searched will probably be
+serviced out of the dentry cache, etc.)
 
--chris
+Regards,
+
+						- Ted
