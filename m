@@ -1,163 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab2CAUqA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:46:00 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38142 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932484Ab2CAUp7 (ORCPT
+	id S932578Ab2CAUqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:46:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:64167 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467Ab2CAUqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:45:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of balbi@ti.com designates 10.152.114.133 as permitted sender) smtp.mail=balbi@ti.com
-Date: Thu, 1 Mar 2012 22:45:54 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
- regulators
-Message-ID: <20120301204553.GA21841@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1330006564-13290-1-git-send-email-mporter@ti.com>
- <87wr74gis6.fsf@ti.com>
+	Thu, 1 Mar 2012 15:46:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 5/8] ARM: tegra: work around tegra THUMB2_KERNEL bug
+Date: Thu, 1 Mar 2012 20:46:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Warren <swarren@nvidia.com>, Alan Ott <alan@signal11.us>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE861726@HQMAIL01.nvidia.com> <20120301204203.GA19274@n2100.arm.linux.org.uk>
+In-Reply-To: <20120301204203.GA19274@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <87wr74gis6.fsf@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203012046.17768.arnd@arndb.de>
+X-Provags-ID: V02:K0:vddfHrc+YhLbmgPrsRhfp4J10+zuhZ9BcFsFmctW1y1
+ IsG6DdVVENqjuh/oTpDhGETsPHb0Qov7i6gwYo8LrkSIzoKPmM
+ ljFHER9L3KqU5GYlA153HxcUvZQzrEBigi/hL63rd3S2Ri8GdC
+ kbJn4M8FE1vzUco7NTdWlstZl9VvGLL1E+2TgkVm2gDALABgVM
+ /ZL+Xn+eAs32Y06o3HaiFi+A3kCLFI5nwO9FOdP1NT8v+Zpd6H
+ U0TYjMJGIsqRyQFxYxV4gKCKYbVdGWH6JEtVMf5RI6CvKk3jY/
+ 08dcUftSH+AoWcnkJ9vUDoMZcDx+GR6aUzdq5NS29L/HdBPB2X
+ mCeI4WbiHFRrYyLIHok0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 01 March 2012, Russell King - ARM Linux wrote:
+> On Thu, Mar 01, 2012 at 12:02:42PM -0800, Stephen Warren wrote:
+> > Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
+> > > From: Arnd Bergmann <arnd@arndb.de>
+> > > 
+> > > The tegra smp code cannot currently be built for t2, so
+> > > disable that combination for now, as a workaround.
+> > > 
+> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > At least in next-20120229 with the .config I'm using, everything appears
+> > to compile fine. The link step does fail, but the error messages I get
+> > don't appear to be Tegra specific:
+> > 
+> > xxx/kernel/sched/clock.c:334: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `sched_clock' defined in .text section in arch/arm/kernel/built-in.o
+> > kernel/built-in.o: In function `post_relocation':
+> > xxx/kernel/module.c:2860: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `module_finalize' defined in .text section in arch/arm/kernel/built-in.o
+> > kernel/built-in.o: In function `show_interrupts':
+> > xxx/kernel/irq/proc.c:431: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `arch_show_interrupts' defined in .text section in arch/arm/kernel/built-in.o
+> > drivers/built-in.o: In function `pci_set_master':
+> > xxx/drivers/pci/pci.c:2674: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `pcibios_set_master' defined in .text section in arch/arm/kernel/built-in.o
+> 
+> At a guess, it suggests your kernel image is too big for the relocations
+> contained within the code.  That's something for Thumb people to look
+> into and solve.
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+IIRC, that was not the issue I was trying to fix when I originally made the
+patch. It's quite likely that the original bug was fixed already, so I'd suggest
+we drop the patch for now and see if the problem comes back when all other
+randconfig problems have been resolved on Tegra.
 
-Hi,
-
-On Thu, Mar 01, 2012 at 12:36:57PM -0800, Kevin Hilman wrote:
-> Matt Porter <mporter@ti.com> writes:
->=20
-> > This fixes smsc911x support on platforms using gpmc_smsc911x_init().
-> >
-> > Commit c7e963f6888816 (net/smsc911x: Add regulator support) added
-> > the requirement that platforms provide vdd33a and vddvario supplies.
-> >
-> > Signed-off-by: Matt Porter <mporter@ti.com>
->=20
-> [...]
->=20
-> >  /*
-> >   * Initialize smsc911x device connected to the GPMC. Note that we
-> >   * assume that pin multiplexing is done in the board-*.c file,
-> > @@ -55,6 +101,12 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x=
-_platform_data *board_data)
-> > =20
-> >  	gpmc_cfg =3D board_data;
-> > =20
-> > +	ret =3D platform_device_register(&gpmc_smsc911x_regulator);
-> > +	if (ret < 0) {
-> > +		pr_err("Unable to register smsc911x regulators: %d\n", ret);
-> > +		return;
-> > +	}
-> > +
->=20
-> Boards that have more than one instance of the smsc911x (OMAP3/Overo)
-> barf here because of trying to register the same device twice.
->=20
-> We need something like the patch below to make Overo boot again.
->=20
-> Kevin
->=20
->=20
->=20
-> From 4114dea2fb897ab75d05eaa943d29454034fc025 Mon Sep 17 00:00:00 2001
-> From: Kevin Hilman <khilman@ti.com>
-> Date: Thu, 1 Mar 2012 12:30:42 -0800
-> Subject: [PATCH] ARM: OMAP2+: gpmc-smsc911x: only register regulators once
->=20
-> commit e4b0b2cbbb (ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
-> regulators) added regulators which are registered during
-> gpmc_smsc911x_init().  However, some platforms (OMAP3/Overo) have more
-> than one instance of the SMSC911x and result in attempting to register
-> the same regulator more than once which causes a panic().  Fix this by
-> tracking the regulator registration ensuring only a single device is
-> registered.
->=20
-> Cc: Matt Porter <mporter@ti.com>
-> Signed-off-by: Kevin Hilman <khilman@ti.com>
-> ---
->  arch/arm/mach-omap2/gpmc-smsc911x.c |   14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
->=20
-> diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gp=
-mc-smsc911x.c
-> index bbb870c..95e6c7d 100644
-> --- a/arch/arm/mach-omap2/gpmc-smsc911x.c
-> +++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
-> @@ -88,6 +88,8 @@ static struct platform_device gpmc_smsc911x_regulator =
-=3D {
->  	},
->  };
-> =20
-> +static bool regulator_registered;
-> +
->  /*
->   * Initialize smsc911x device connected to the GPMC. Note that we
->   * assume that pin multiplexing is done in the board-*.c file,
-> @@ -101,10 +103,14 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x=
-_platform_data *board_data)
-> =20
->  	gpmc_cfg =3D board_data;
-> =20
-> -	ret =3D platform_device_register(&gpmc_smsc911x_regulator);
-> -	if (ret < 0) {
-> -		pr_err("Unable to register smsc911x regulators: %d\n", ret);
-> -		return;
-> +	if (!regulator_registered) {
-> +		ret =3D platform_device_register(&gpmc_smsc911x_regulator);
-> +		if (ret < 0) {
-> +			pr_err("Unable to register smsc911x regulators: %d\n",
-> +			       ret);
-> +			return;
-> +		}
-> +		regulator_registered =3D true;
-
-Wow, this is quite a hack. Is the regulator part of the SMSC911x device
-or is it outside ? If it's outside the SMSC91xx (which I believe it is)
-there should be a regulator driver instead of this hack. For boards
-which don't provide such a regulator (and tie the supply pin to some
-constant voltage source) there should be a constant regulator supplying
-the pin. But this patch is quite hacky.
-
---=20
-balbi
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPT+ABAAoJEIaOsuA1yqREO38P/RSh3ehjJLVrXX8b30KzkIs2
-VGI0JYogM2KuuOoj4NcPZ2nqrNZo3yMIa0USzQPEOm+DgzT2FpUNAeRq3+txIPDy
-MDV6jH2x++BZjizxrus6OpfkprO3P9t51glA9wQk8oG11rjwQzPNled5by7eXqZi
-9gPacKc2oLlmxImvhuBNLniYpsESsN2WLIPJfQ+c9kbkHDKqt+edAZKg5WJN5BES
-l0Fueo4WlkDvt5faf0tiXxLrrpi7+Hi9100FcFn/ko6sJDzUZAu/lXLfN0PJRH1i
-MKFjiAXiE3E3s+hLI1V7lVBWSrQVXq23aVnH29HBlSslJA8Evc5gQcClHjpis2tJ
-7zTL2W5K6n4JZ/24LbJOK88tKGhfd8nwb3GRuq7dAl/wmNRG5uz83ztoIb5nX1mw
-HYfZWDszB0102lsn60V9TpvTtoDGLl4/9+fMKd7RuX6OYuKsc434OJ7JvN2qPhFl
-1UR2pmHonwUKiQyLjTrN+37hvvmHUOdUsSUOyD3y1OcbSd8vuuU+k7adOEY/oSBL
-2wLrUy0pRKJuQ96JINmDYP9PMQcDqfXyDDZLTOO0ECYnfqeRcsnQtpsVvn1wLrk/
-ucE+c7Q3kZdX+8hNl5vhiy+LRG4lOGbo3yazZdhpDP22gn033huLIhq3zsClAcaG
-kKGmR8KfxkcNDy0L9X/R
-=ucXR
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+	Arnd
