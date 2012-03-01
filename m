@@ -1,249 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab2CADMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:12:06 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31662 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649Ab2CADBM (ORCPT
+	id S1754768Ab2CADRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:17:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:64219 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303Ab2CADRw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:01:12 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/36] PCI: add generic device into pci_host_bridge struct
-Date: Wed, 29 Feb 2012 19:00:05 -0800
-Message-Id: <1330570837-26638-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F4EE670.00BE,ss=1,re=0.000,fgs=0
+	Wed, 29 Feb 2012 22:17:52 -0500
+Message-ID: <4F4EEB0F.2000504@cn.fujitsu.com>
+Date: Thu, 01 Mar 2012 11:20:47 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH v2] cgroups: Run subsystem fork callback from cgroup_post_fork()
+References: <1330057410-9375-1-git-send-email-fweisbec@gmail.com> <1330362171-30697-1-git-send-email-fweisbec@gmail.com> <20120229155500.GU3090@google.com> <20120229162148.GA8375@somewhere.redhat.com>
+In-Reply-To: <20120229162148.GA8375@somewhere.redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 11:15:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 11:16:00
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use that device for pci_root_bus bridge pointer.
+于 2012年03月01日 00:21, Frederic Weisbecker 写道:
+> On Wed, Feb 29, 2012 at 07:55:00AM -0800, Mandeep Singh Baines wrote:
+>> Frederic Weisbecker (fweisbec@gmail.com) wrote:
+>>> When a user freezes a cgroup, the freezer sets the subsystem state
+>>> to CGROUP_FREEZING and then iterates over the tasks in the cgroup links.
+>>>
+>>> But there is a possible race here, although unlikely, if a task
+>>> forks and the parent is preempted between write_unlock(tasklist_lock)
+>>> and cgroup_post_fork(). If we freeze the cgroup while the parent
+>>
+>> So what if you moved cgroup_post_forks() a few lines up to be
+>> inside the tasklist_lock?
+> 
+> It won't work. Consider this scenario:
+> 
+> CPU 0                                     CPU 1
+> 
+>                                        cgroup_fork_callbacks()
+>                                        write_lock(tasklist_lock)
+> try_to_freeze_cgroup() {               add child to task list etc...
+> 	cgroup_iter_start()
+>         freeze tasks                        
+>         cgroup_iter_end()
+> }                                      cgroup_post_fork()
+>                                        write_unlock(tasklist_lock)
+> 
+> If this is not the first time we call cgroup_iter_start(), we won't go
+> through the whole tasklist, we simply iterate through the css set task links.
+> 
+> Plus we try to avoid anything under tasklist_lock when possible.
+> 
 
-With that make code more simple.
+Your patch won't close the race I'm afraid.
 
-Also we can use pci_release_bus_bridge_dev() to release allocated
-pci_host_bridge during removing path.
+// state will be set to FREEZING
+echo FROZEN > /cgroup/sub/freezer.state
+                                          write_lock(tasklist_lock)
+                                          add child to task list ...
+					  write_unlock(tasklist_lock)
+// state will be updated to FROZEN
+cat /cgroup/sub/freezer.state
+					  cgroup_post_fork()
+					  ->freezer_fork()
 
-At last, we can use root bus bridge pointer to get host bridge pointer instead
-of going over host bridge list, so could kill that host bridge list.
+freezer_fork() will freeze the task only if the cgroup is in FREEZING
+state, and will BUG if the state is FROZEN.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/host-bridge.c |   15 +---------
- drivers/pci/pci.h         |    2 -
- drivers/pci/probe.c       |   65 +++++++++++++++++++++++---------------------
- include/linux/pci.h       |    4 ++-
- 4 files changed, 38 insertions(+), 48 deletions(-)
+We can fix freezer_fork(), but seems that requires we hold cgroup_mutex
+in that function(), which we don't like at all. Not to say your
+task_counter stuff..
 
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index 78adcc0..a55c3f8 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -9,13 +9,6 @@
+At this moment I don't see a solution without tasklist_lock involved,
+any better idea?
+
+(I just realized be patch below introduces a tasklist_lock <-> freezer->lock
+ABBA deadlock, so it's bad to screw up with tasklist lock)
+
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index fc0646b..74527ac 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -278,6 +278,12 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ 	struct task_struct *task;
+ 	unsigned int num_cant_freeze_now = 0;
  
- #include "pci.h"
- 
--static LIST_HEAD(pci_host_bridges);
--
--void add_to_pci_host_bridges(struct pci_host_bridge *bridge)
--{
--	list_add_tail(&bridge->list, &pci_host_bridges);
--}
--
- static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
- {
- 	struct pci_bus *bus;
-@@ -30,14 +23,8 @@ static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
- static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
- {
- 	struct pci_bus *bus = find_pci_root_bus(dev);
--	struct pci_host_bridge *bridge;
--
--	list_for_each_entry(bridge, &pci_host_bridges, list) {
--		if (bridge->bus == bus)
--			return bridge;
--	}
- 
--	return NULL;
-+	return to_pci_host_bridge(bus->bridge);
- }
- 
- static bool resource_contains(struct resource *res1, struct resource *res2)
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index c695a92..e494347 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -231,8 +231,6 @@ static inline int pci_ari_enabled(struct pci_bus *bus)
- void pci_reassigndev_resource_alignment(struct pci_dev *dev);
- extern void pci_disable_bridge_window(struct pci_dev *dev);
- 
--void add_to_pci_host_bridges(struct pci_host_bridge *bridge);
--
- /* Single Root I/O Virtualization */
- struct pci_sriov {
- 	int pos;		/* capability position */
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 89a82a3..fb3dd4b 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -421,6 +421,19 @@ static struct pci_bus * pci_alloc_bus(void)
- 	return b;
- }
- 
-+static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-+{
-+	struct pci_host_bridge *bridge;
++	/*
++	 * With this lock held and the check in freezer_fork(), a
++	 * half-forked task has no chance to escape from freezing.
++	 */
++	read_lock(&tasklist_lock);
 +
-+	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
-+	if (bridge) {
-+		INIT_LIST_HEAD(&bridge->windows);
-+		bridge->bus = b;
-+	}
-+
-+	return bridge;
-+}
-+
- static unsigned char pcix_bus_speed[] = {
- 	PCI_SPEED_UNKNOWN,		/* 0 */
- 	PCI_SPEED_66MHz_PCIX,		/* 1 */
-@@ -1121,7 +1134,13 @@ int pci_cfg_space_size(struct pci_dev *dev)
- 
- static void pci_release_bus_bridge_dev(struct device *dev)
- {
--	kfree(dev);
-+	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
-+
-+	/* TODO: need to free window->res */
-+
-+	pci_free_resource_list(&bridge->windows);
-+
-+	kfree(bridge);
- }
- 
- struct pci_dev *alloc_pci_dev(void)
-@@ -1570,28 +1589,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	int error;
- 	struct pci_host_bridge *bridge;
- 	struct pci_bus *b, *b2;
--	struct device *dev;
- 	struct pci_host_bridge_window *window, *n;
- 	struct resource *res;
- 	resource_size_t offset;
- 	char bus_addr[64];
- 	char *fmt;
- 
--	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
--	if (!bridge)
--		return NULL;
- 
- 	b = pci_alloc_bus();
- 	if (!b)
--		goto err_bus;
--
--	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
--	if (!dev)
--		goto err_dev;
-+		return NULL;
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
--
- 	b2 = pci_find_bus(pci_domain_nr(b), bus);
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
-@@ -1599,13 +1609,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 		goto err_out;
+ 	cgroup_iter_start(cgroup, &it);
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		if (!freeze_task(task))
+@@ -289,6 +295,8 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
  	}
+ 	cgroup_iter_end(cgroup, &it);
  
--	dev->parent = parent;
--	dev->release = pci_release_bus_bridge_dev;
--	dev_set_name(dev, "pci%04x:%02x", pci_domain_nr(b), bus);
--	error = device_register(dev);
-+	bridge = pci_alloc_host_bridge(b);
-+	if (!bridge)
-+		goto err_out;
++	read_unlock(&tasklist_lock);
 +
-+	bridge->dev.parent = parent;
-+	bridge->dev.release = pci_release_bus_bridge_dev;
-+	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-+	error = device_register(&bridge->dev);
- 	if (error)
--		goto dev_reg_err;
--	b->bridge = get_device(dev);
-+		goto bridge_dev_reg_err;
-+	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
- 	pci_set_bus_of_node(b);
- 
-@@ -1624,9 +1638,6 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 
- 	b->number = b->secondary = bus;
- 
--	bridge->bus = b;
--	INIT_LIST_HEAD(&bridge->windows);
--
- 	if (parent)
- 		dev_info(parent, "PCI host bridge to bus %s\n", dev_name(&b->dev));
- 	else
-@@ -1652,25 +1663,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	}
- 
- 	down_write(&pci_bus_sem);
--	add_to_pci_host_bridges(bridge);
- 	list_add_tail(&b->node, &pci_root_buses);
- 	up_write(&pci_bus_sem);
- 
- 	return b;
- 
- class_dev_reg_err:
--	device_unregister(dev);
--dev_reg_err:
--	down_write(&pci_bus_sem);
--	list_del(&bridge->list);
--	list_del(&b->node);
--	up_write(&pci_bus_sem);
-+	device_unregister(&bridge->dev);
-+bridge_dev_reg_err:
-+	kfree(bridge);
- err_out:
--	kfree(dev);
--err_dev:
- 	kfree(b);
--err_bus:
--	kfree(bridge);
- 	return NULL;
+ 	return num_cant_freeze_now ? -EBUSY : 0;
  }
  
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5584aac..310610e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -375,11 +375,13 @@ struct pci_host_bridge_window {
- };
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e2cd3e2..2450720 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1328,15 +1328,15 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->group_leader = p;
+ 	INIT_LIST_HEAD(&p->thread_group);
  
- struct pci_host_bridge {
--	struct list_head list;
-+	struct device dev;
- 	struct pci_bus *bus;		/* root bus */
- 	struct list_head windows;	/* pci_host_bridge_windows */
- };
- 
-+#define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
++	/* Need tasklist lock for parent etc handling! */
++	write_lock_irq(&tasklist_lock);
 +
- /*
-  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
-  * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
--- 
-1.7.7
+ 	/* Now that the task is set up, run cgroup callbacks if
+ 	 * necessary. We need to run them before the task is visible
+ 	 * on the tasklist. */
+ 	cgroup_fork_callbacks(p);
+ 	cgroup_callbacks_done = 1;
+ 
+-	/* Need tasklist lock for parent etc handling! */
+-	write_lock_irq(&tasklist_lock);
+-
+ 	/* CLONE_PARENT re-uses the old parent */
+ 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+ 		p->real_parent = current->real_parent;
+@@ -1393,9 +1393,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	cgroup_post_fork(p);
+ 	write_unlock_irq(&tasklist_lock);
+ 	proc_fork_connector(p);
+-	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
+ 		threadgroup_change_end(current);
+ 	perf_event_fork(p);
 
