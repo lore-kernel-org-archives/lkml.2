@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab2CADVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:21:05 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59076 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab2CADVA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:21:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of thomas.abraham@linaro.org designates 10.52.174.162 as permitted sender) smtp.mail=thomas.abraham@linaro.org
+	id S1758065Ab2CADdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:33:33 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:59966 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607Ab2CADdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 22:33:32 -0500
+Message-ID: <4F4EEE55.4040506@cn.fujitsu.com>
+Date: Thu, 01 Mar 2012 11:34:45 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1330523672-16453-1-git-send-email-k.lewandowsk@samsung.com>
-References: <1330523672-16453-1-git-send-email-k.lewandowsk@samsung.com>
-Date: Thu, 1 Mar 2012 08:50:59 +0530
-Message-ID: <CAJuYYwQ54idFZGvyujimrhhedSveK9ob8j+686D6ABdavAA_SA@mail.gmail.com>
-Subject: Re: [PATCH] [media] s5p-g2d: Make it possible to instantiate driver
- from DT
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: k.debski@samsung.com, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] kvm: notify host when guest paniced
+References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com> <4F4DF913.5030809@redhat.com> <4F4DFB37.8060208@cn.fujitsu.com> <4F4E0061.1050508@redhat.com>
+In-Reply-To: <4F4E0061.1050508@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 11:31:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-01 11:31:41,
+	Serialize complete at 2012-03-01 11:31:41
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 February 2012 19:24, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
-> This driver requires standard properties only (address and irq)
-> which are automatically marshalled into plain old resources by OF core.
->
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/media/video/s5p-g2d/g2d.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/media/video/s5p-g2d/g2d.c b/drivers/media/video/s5p-g2d/g2d.c
-> index febaa67..e7c0020 100644
-> --- a/drivers/media/video/s5p-g2d/g2d.c
-> +++ b/drivers/media/video/s5p-g2d/g2d.c
-> @@ -20,6 +20,7 @@
->  #include <linux/interrupt.h>
->
->  #include <linux/platform_device.h>
-> +#include <linux/of.h>
->  #include <media/v4l2-mem2mem.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-ioctl.h>
-> @@ -795,12 +796,20 @@ static int g2d_remove(struct platform_device *pdev)
->        return 0;
->  }
->
-> +#ifdef CONFIG_OF
-> +static struct of_device_id g2d_dt_match[] = {
-> +       { .compatible = "samsung,exynos4210-g2d" },
+At 02/29/2012 06:39 PM, Avi Kivity Wrote:
+> On 02/29/2012 12:17 PM, Wen Congyang wrote:
+>>>>>
+>>>> Yes, crash can be so severe that it is not even detected by a kernel
+>>>> itself, so not OOPS message even printed. But in most cases if kernel is
+>>>> functional enough to print OOPS it is functional enough to call single
+>>>> hypercall instruction.
+>>>
+>>> Why not print the oops to virtio-serial?  Or even just a regular serial
+>>> port?  That's what bare metal does.
+>>
+>> If virtio-serial's driver has bug or the guest doesn't have such device...
+> 
+> We have the same issue with the hypercall; and virtio-serial is
+> available on many deployed versions.
 
-The comment about the base version in the previous patch applies here too.
+How to know whether a guest has virtio-serial?
 
-> +       {},
-> +};
-> +#endif
-> +
->  static struct platform_driver g2d_pdrv = {
->        .probe          = g2d_probe,
->        .remove         = g2d_remove,
->        .driver         = {
->                .name = G2D_NAME,
->                .owner = THIS_MODULE,
-> +               .of_match_table = of_match_ptr(g2d_dt_match),
->        },
->  };
->
-> --
-> 1.7.8.3
+Thanks
+Wen Congyang
 
-Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
+> 
+>>>
+>>>>>> Having special kdump
+>>>>>> kernel that transfers dump to a host via virtio-serial channel though
+>>>>>> sounds interesting. May be that's what you mean.
+>>>>>
+>>>>> Yes.  The "panic, starting dump" signal should be initiated by the
+>>>>> panicking kernel though, in case the dump fails.
+>>>>>
+>>>> Then panic hypercall sounds like a reasonable solution.
+>>>
+>>> It is, but I'm trying to see if we can get away with doing nothing.
+>>>
+>>
+>> If we have a reliable way with doing nothing, it is better. But I donot
+>> find such way.
+> 
+> We won't have a 100% reliable way.  But I think a variant of the driver
+> that doesn't use interrupts, or just using the ordinary serial driver,
+> should be reliable enough.
+> 
+
