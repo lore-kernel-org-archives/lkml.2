@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab2CAXaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 18:30:21 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:58863 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111Ab2CAXaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 18:30:17 -0500
-Date: Thu, 1 Mar 2012 18:29:42 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
-        Jaya Kumar <jayalk@intworks.biz>, Sage Weil <sage@newdream.net>,
-        ceph-devel@vger.kernel.org, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 00/11 v2] Push file_update_time() into .page_mkwrite
-Message-ID: <20120301232942.GH32588@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-	dchinner@redhat.com, Jaya Kumar <jayalk@intworks.biz>,
-	Sage Weil <sage@newdream.net>, ceph-devel@vger.kernel.org,
-	Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-	Eric Van Hensbergen <ericvh@gmail.com>,
-	Ron Minnich <rminnich@sandia.gov>,
-	Latchesar Ionkov <lucho@ionkov.net>,
-	v9fs-developer@lists.sourceforge.net,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	fuse-devel@lists.sourceforge.net,
-	Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1330602103-8851-1-git-send-email-jack@suse.cz>
+	id S1753652Ab2CAXiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 18:38:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:55666 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752645Ab2CAXiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 18:38:07 -0500
+Date: Thu, 1 Mar 2012 15:37:12 -0800
+From: Kees Cook <keescook@chromium.org>
+To: akpm@linux-foundation.org, sfr@canb.auug.org.au
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
+ load_pointer
+Message-ID: <20120301233712.GS3990@outflux.net>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330602103-8851-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
+Organization: ChromeOS
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 12:41:34PM +0100, Jan Kara wrote:
-> 
-> To fix the issue, this patch set changes page fault code to call
-> file_update_time() only when ->page_mkwrite() callback is not provided. If the
-> callback is provided, it is the responsibility of the filesystem to perform
-> update of i_mtime / i_ctime if needed. We also push file_update_time() call
-> to all existing ->page_mkwrite() implementations if the time update does not
-> obviously happen by other means. If you know your filesystem does not need
-> update of modification times in ->page_mkwrite() handler, please speak up and
-> I'll drop the patch for your filesystem.
+Hi,
 
-I don't know if this introductory text is going to be saved anywhere
-permanent, such as the merge commit (since git now has the ability to
-have much more informative merge descriptions).  But if it is going to
-be preserved, it might be worth mentioning that if the filesystem uses
-block_page_mkpage(), it will handled automatically for them since the
-patch series does push the call to file_update_time(0 into
-__block_page_mkpage().
+So far, it looks like everyone who spoke up is satisfied with this patch
+series. Or their MUAs got caught up on a leap-year bug and missed the
+posting. ;)
 
-					- Ted
+Is it time to pull this into -next so more people can feel it? I brought
+Andy Lutomirski's patches forward (needed to bump the prctl values), and
+updated my git tree. If we're ready, here it is in all its request-pull
+format glory:
+
+The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
+  Stephen Rothwell (1):
+        Add linux-next specific files for 20120301
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp
+
+Andy Lutomirski (1):
+      Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from granting privs
+
+John Johansen (1):
+      Fix apparmor for PR_{GET,SET}_NO_NEW_PRIVS
+
+Kees Cook (1):
+      seccomp: remove duplicated failure logging
+
+Will Drewry (12):
+      sk_run_filter: add support for custom load_pointer
+      net/compat.c,linux/filter.h: share compat_sock_fprog
+      seccomp: kill the seccomp_t typedef
+      asm/syscall.h: add syscall_get_arch
+      arch/x86: add syscall_get_arch to syscall.h
+      seccomp: add system call filtering using BPF
+      seccomp: add SECCOMP_RET_ERRNO
+      signal, x86: add SIGSYS info and make it synchronous.
+      seccomp: Add SECCOMP_RET_TRAP
+      ptrace,seccomp: Add PTRACE_SECCOMP support
+      x86: Enable HAVE_ARCH_SECCOMP_FILTER
+      Documentation: prctl/seccomp_filter
+
+ Documentation/prctl/seccomp_filter.txt |  156 +++++++++++++
+ arch/Kconfig                           |   24 ++
+ arch/x86/Kconfig                       |    1 +
+ arch/x86/ia32/ia32_signal.c            |    4 +
+ arch/x86/include/asm/ia32.h            |    6 +
+ arch/x86/include/asm/syscall.h         |   23 ++
+ arch/x86/kernel/ptrace.c               |    7 +-
+ fs/exec.c                              |   10 +-
+ include/asm-generic/siginfo.h          |   22 ++
+ include/asm-generic/syscall.h          |   14 ++
+ include/linux/Kbuild                   |    1 +
+ include/linux/audit.h                  |    8 +-
+ include/linux/filter.h                 |   57 +++++
+ include/linux/prctl.h                  |   15 ++
+ include/linux/ptrace.h                 |    5 +-
+ include/linux/sched.h                  |    4 +-
+ include/linux/seccomp.h                |   99 +++++++-
+ include/linux/security.h               |    1 +
+ kernel/auditsc.c                       |    9 +-
+ kernel/fork.c                          |    3 +
+ kernel/seccomp.c                       |  378 ++++++++++++++++++++++++++++++--
+ kernel/signal.c                        |    9 +-
+ kernel/sys.c                           |   12 +-
+ net/compat.c                           |    8 -
+ net/core/filter.c                      |  117 ++++++++++-
+ samples/Makefile                       |    2 +-
+ samples/seccomp/Makefile               |   38 ++++
+ samples/seccomp/bpf-direct.c           |  176 +++++++++++++++
+ samples/seccomp/bpf-fancy.c            |  102 +++++++++
+ samples/seccomp/bpf-helper.c           |   89 ++++++++
+ samples/seccomp/bpf-helper.h           |  238 ++++++++++++++++++++
+ samples/seccomp/dropper.c              |   68 ++++++
+ security/apparmor/domain.c             |   35 +++
+ security/commoncap.c                   |    7 +-
+ security/selinux/hooks.c               |   10 +-
+ 35 files changed, 1695 insertions(+), 63 deletions(-)
+ create mode 100644 Documentation/prctl/seccomp_filter.txt
+ create mode 100644 samples/seccomp/Makefile
+ create mode 100644 samples/seccomp/bpf-direct.c
+ create mode 100644 samples/seccomp/bpf-fancy.c
+ create mode 100644 samples/seccomp/bpf-helper.c
+ create mode 100644 samples/seccomp/bpf-helper.h
+ create mode 100644 samples/seccomp/dropper.c
+
+
+-- 
+Kees Cook
+ChromeOS Security
