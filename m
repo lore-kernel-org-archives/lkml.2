@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965757Ab2CAVxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:53:43 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
+	id S965686Ab2CAVx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:53:57 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35281 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965566Ab2CAVuk (ORCPT
+	with ESMTP id S965544Ab2CAVui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.239.229 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.204.129 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213927.258700108@linuxfoundation.org>
+Message-Id: <20120301213922.703908387@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:53 -0800
+Date: Thu, 01 Mar 2012 13:39:25 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, rjw@sisk.pl, valdis.kletnieks@vt.edu,
-        cloos@hjcloos.com, riesebie@lxtec.de,
-        penguin-kernel@i-love.sakura.ne.jp, srivatsa.bhat@linux.vnet.ibm.com
-Subject: [ 31/34] PM: Print a warning if firmware is requested when tasks are frozen
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ilya Tumaykin <librarian_rus@yahoo.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [ 03/34] lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,79 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+commit 3310225dfc71a35a2cc9340c15c0e08b14b3c754 upstream.
 
-[ Upstream commit a144c6a6c924aa1da04dd77fb84b89927354fdff ]
+PROP_MAX_SHIFT should be set to <=32 on 64-bit box. This fixes two bugs
+in the below lines of bdi_dirty_limit():
 
-Some drivers erroneously use request_firmware() from their ->resume()
-(or ->thaw(), or ->restore()) callbacks, which is not going to work
-unless the firmware has been built in.  This causes system resume to
-stall until the firmware-loading timeout expires, which makes users
-think that the resume has failed and reboot their machines
-unnecessarily.  For this reason, make _request_firmware() print a
-warning and return immediately with error code if it has been called
-when tasks are frozen and it's impossible to start any new usermode
-helpers.
+	bdi_dirty *= numerator;
+	do_div(bdi_dirty, denominator);
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+1) divide error: do_div() only uses the lower 32 bit of the denominator,
+   which may trimmed to be 0 when PROP_MAX_SHIFT > 32.
+
+2) overflow: (bdi_dirty * numerator) could easily overflow if numerator
+   used up to 48 bits, leaving only 16 bits to bdi_dirty
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reported-by: Ilya Tumaykin <librarian_rus@yahoo.com>
+Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ include/linux/proportions.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
- drivers/base/firmware_class.c |    5 +++++
- include/linux/kmod.h          |    5 +++++
- kernel/kmod.c                 |    9 +++++++++
- 3 files changed, 19 insertions(+)
-
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -489,6 +489,11 @@ _request_firmware(const struct firmware
- 	if (!firmware_p)
- 		return -EINVAL;
- 
-+	if (WARN_ON(usermodehelper_is_disabled())) {
-+		dev_err(device, "firmware: %s will not be loaded\n", name);
-+		return -EBUSY;
-+	}
-+
- 	*firmware_p = firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
- 	if (!firmware) {
- 		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
---- a/include/linux/kmod.h
-+++ b/include/linux/kmod.h
-@@ -104,7 +104,12 @@ struct file;
- extern int call_usermodehelper_pipe(char *path, char *argv[], char *envp[],
- 				    struct file **filp);
- 
-+#ifdef CONFIG_PM_SLEEP
- extern int usermodehelper_disable(void);
- extern void usermodehelper_enable(void);
-+extern bool usermodehelper_is_disabled(void);
+--- a/include/linux/proportions.h
++++ b/include/linux/proportions.h
+@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
+  * Limit the time part in order to ensure there are some bits left for the
+  * cycle counter and fraction multiply.
+  */
++#if BITS_PER_LONG == 32
+ #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
 +#else
-+static inline bool usermodehelper_is_disabled(void) { return false; }
++#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
 +#endif
  
- #endif /* __LINUX_KMOD_H__ */
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -337,6 +337,15 @@ void usermodehelper_enable(void)
- 	usermodehelper_disabled = 0;
- }
- 
-+/**
-+ * usermodehelper_is_disabled - check if new helpers are allowed to be started
-+ */
-+bool usermodehelper_is_disabled(void)
-+{
-+	return usermodehelper_disabled;
-+}
-+EXPORT_SYMBOL_GPL(usermodehelper_is_disabled);
-+
- static void helper_lock(void)
- {
- 	atomic_inc(&running_helpers);
+ #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
+ #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
 
 
