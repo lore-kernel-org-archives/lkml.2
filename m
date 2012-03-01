@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2CASTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:19:00 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42446 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab2CASS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:18:58 -0500
-Date: Thu, 1 Mar 2012 19:18:46 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] dmaengine: Add support for multiple descriptors
- for imx-dma.
-Message-ID: <20120301181846.GB3852@pengutronix.de>
-References: <1330445298-3522-1-git-send-email-javier.martin@vista-silicon.com>
- <1330445298-3522-3-git-send-email-javier.martin@vista-silicon.com>
- <20120301101904.GA3852@pengutronix.de>
- <CACKLOr2bFgSUW+oXgFReHt6ZS+t7atMJ6nzDgF4-e9cRyOYX4w@mail.gmail.com>
+	id S1755484Ab2CASUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 13:20:37 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56827 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120Ab2CASUe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 13:20:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.112.29.166 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACKLOr2bFgSUW+oXgFReHt6ZS+t7atMJ6nzDgF4-e9cRyOYX4w@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:17:18 up 110 days,  2:04, 27 users,  load average: 0.92, 0.41,
- 0.19
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAE9FiQXTJArPua7RbAVZBRp5CrdtXbHXziU+3L4ygAkn2VqTFQ@mail.gmail.com>
+References: <1330622227-4209-1-git-send-email-yinghai@kernel.org>
+ <20120301172435.GA8505@kroah.com> <CAE9FiQXTJArPua7RbAVZBRp5CrdtXbHXziU+3L4ygAkn2VqTFQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 1 Mar 2012 11:20:12 -0700
+Message-ID: <CAErSpo4fp9fOR-N9RBnGW3m_SjnL_85fuhjQNNLrPygSPX0SYQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] usb, PCI: split quirk for usb host controller to three
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-usb@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 11:28:18AM +0100, javier Martin wrote:
-> Hi Sascha,
-> 
-> On 1 March 2012 11:19, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > On Tue, Feb 28, 2012 at 05:08:18PM +0100, Javier Martin wrote:
-> >> dmaengine specifies the possibility that several descriptors
-> >> can be queued for transfer. It also indicates that tasklets
-> >> must be used for DMA callbacks.
-> >>
-> >> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
-> >
-> > Have you tested this patch with audio?
-> 
-> Yes,
-> I have a test battery which tests audio, mmc, runs dmatest module and
-> a custom mem2mem video device I'm developing.
+On Thu, Mar 1, 2012 at 10:45 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Mar 1, 2012 at 9:24 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> On Thu, Mar 01, 2012 at 09:17:07AM -0800, Yinghai Lu wrote:
+>>> so we avoid checking class again and again in that quirk.
+>>>
+>>> need to be applied after pci/linux-next and usb/usb-next
+>>
+>> As those are two independant trees, this needs to wait until after
+>> 3.4-rc1 is out.
+>
+> ok.
+>
+>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>>
+>>> ---
+>>>  drivers/usb/host/pci-quirks.c |   42 ++++++++++++++++++++++++++++--------------
+>>>  1 file changed, 28 insertions(+), 14 deletions(-)
+>>
+>> Is this really helping anything here?  You added code overall :(
+>
+> just make the code looks simple by removing
+>
+>        if (pdev->class != PCI_CLASS_SERIAL_USB_UHCI &&
+>                        pdev->class != PCI_CLASS_SERIAL_USB_OHCI &&
+>                        pdev->class != PCI_CLASS_SERIAL_USB_EHCI &&
+>                        pdev->class != PCI_CLASS_SERIAL_USB_XHCI)
+>                return;
+> ...
+>        if (pdev->class == PCI_CLASS_SERIAL_USB_UHCI)
+>   ...
+>        else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
+>   ...
+>        else if (pdev->class == PCI_CLASS_SERIAL_USB_EHCI)
+>    ...
+>        else if (pdev->class == PCI_CLASS_SERIAL_USB_XHCI)
+>    ...
+>
+>
+> also skip disable/enable device on non xhci controller.
 
-Cool.
+Hmm...  From the description, I thought this patch only took advantage
+of DECLARE_PCI_FIXUP_CLASS_FINAL to remove the "if (pdev->class ==
+XXX)" tests.
 
-> 
-> >
-> >> +static int imxdma_xfer_desc(struct imxdma_desc *d)
-> >> +{
-> >> +     struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
-> >> +     int ret;
-> >> +
-> >> +     /* Configure and enable */
-> >> +     switch (d->type) {
-> >> +     case IMXDMA_DESC_MEMCPY:
-> >> +             ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-> >> +                                       d->config_port, d->config_mem, 0, 0);
-> >> +             if (ret < 0)
-> >> +                     return ret;
-> >> +             ret = imx_dma_setup_single(imxdmac->imxdma_channel, d->src,
-> >> +                                        d->len, d->dest, d->dmamode);
-> >> +             if (ret < 0)
-> >> +                     return ret;
-> >> +             break;
-> >> +     case IMXDMA_DESC_CYCLIC:
-> >> +             ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
-> >> +                                                     imxdma_progression);
-> >> +             if (ret < 0)
-> >> +                     return ret;
-> >
-> > You fall through here. Is this intended? If yes, a comment would be good
-> > here.
-> 
-> Yes it is. cyclic is the same as slave_sg with the add-on of the
-> progression handler and a specific configuration of the sglist which
-> is done in 'imxdma_prep_dma_cyclic'.
-> Do you want me to send a new version with a comment on the matter?
+If it *also* skips a disable/enable sequence on non-xhci controllers,
+please make that a separate patch so it's clear what's happening.
 
-Yes, it's better to have a comment there. People looking at this code
-will ask themselves the same question otherwise.
+It's very important to be clear about these things for people who are
+deciding whether to backport patches into distros.  All the zillions
+of PCI changes we're doing make their lives hard enough without having
+subtle behavior changes hidden in patches that seem to be "code
+restructure only, no behavior change."
 
-With this you can add my:
-
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Bjorn
