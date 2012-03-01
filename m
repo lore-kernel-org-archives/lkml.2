@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab2CAMsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:48:24 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41588 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759162Ab2CAMsW (ORCPT
+	id S1759253Ab2CAMuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:50:37 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:53327 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759161Ab2CAMug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:48:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.23.199 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F4F148F.6040808@cn.fujitsu.com>
-References: <4F4F1459.4080300@cn.fujitsu.com>
-	<4F4F148F.6040808@cn.fujitsu.com>
-Date: Thu, 1 Mar 2012 20:48:21 +0800
-Message-ID: <CAJd=RBAh-GzsfMiViGzKMeDV+G01K_OHZQHJ=amnp0trVhMABQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] cgroup: revise how we re-populate root directory
-From: Hillf Danton <dhillf@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 1 Mar 2012 07:50:36 -0500
+Message-ID: <1330606237.27405.5.camel@megeve>
+Subject: RE: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 Mar 2012 13:50:37 +0100
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q21CmUNR009993
 
-On Thu, Mar 1, 2012 at 2:17 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->
-> -static void cgroup_clear_directory(struct dentry *dentry)
-> +static void cgroup_clear_directory(struct dentry *dentry, bool remove_all,
-> +                                  unsigned long removed_bits)
->  {
-> -       struct list_head *node;
-> +       LIST_HEAD(head);
-> +       struct dentry *d, *node;
->
->        BUG_ON(!mutex_is_locked(&dentry->d_inode->i_mutex));
-> +
->        spin_lock(&dentry->d_lock);
-> -       node = dentry->d_subdirs.next;
-> -       while (node != &dentry->d_subdirs) {
-> -               struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
-> +       list_for_each_entry_safe(d, node, &dentry->d_subdirs, d_u.d_child) {
-> +               struct cftype *cft = d->d_fsdata;
-> +
-> +               if (!remove_all && cft->subsys &&
-> +                   !test_bit(cft->subsys->subsys_id, &removed_bits))
-> +                       continue;
->
->                spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
-> -               list_del_init(node);
-> +               list_move(&d->d_u.d_child, &head);
->                if (d->d_inode) {
->                        /* This should never be called on a cgroup
->                         * directory with child cgroups */
->                        BUG_ON(d->d_inode->i_mode & S_IFDIR);
->                        dget_dlock(d);
-> -                       spin_unlock(&d->d_lock);
-> -                       spin_unlock(&dentry->d_lock);
-> +               }
-> +               spin_unlock(&d->d_lock);
-> +       }
-> +       spin_unlock(&dentry->d_lock);
-> +
+On Thu, 2012-03-01 at 12:33 +0000, David Laight wrote:
+> > > So, now we are trying a different approach. To create a new address
+> > > family AF_MCAST. That way we can have more control over the
+> semantics of
+> > > the socket interface for that family.
+> > > 
+> > > We expect to have some patches in a few days and we will resend.
+> > > 
+> > > Does this makes more sense to you?
+> > > 
+> > 
+> > Why adding an obscure set of IPC mechanism in network tree, and not
+> > using (maybe extending) traditional IPC (Messages queues, semaphores,
+> > Shared memory, pipes, futexes, ...).
+> 
+> If it isn't a totally silly suggestion, why not write a simple
+> device driver that just does what you want?
+> Which (I think) is named pipes with multiple readers.
+> 
+the main problem in D-Bus we are trying to solve is the context
+switches, since right now, there is a daemon, which listens on a UNIX
+socket, and all traffic in the bus goes through it, and then the daemon
+has to route the messages it gets on that socket to the corresponding
+place(s). So, every time someone sends a message to D-Bus, since all
+traffic goes through the daemon, dbus-daemon gets waked-up, which is one
+of the biggest bottlenecks we are trying to fix.
 
-Safe to process isolated entries without dentry->d_lock held?
+That's why we are thinking about using multicast with socket filters, so
+that the daemon only gets traffic it cares about and thus is not waked
+up and context switches don't happen when not needed.
 
--hd
+Using message queues, AFAICS, we would have the same problem, as the
+daemon would create the message queue and would get all traffic, right?
 
-> +       list_for_each_entry_safe(d, node, &head, d_u.d_child) {
-> +               spin_lock(&d->d_lock);
-> +               list_del_init(&d->d_u.d_child);
-> +               spin_unlock(&d->d_lock);
-> +               if (d->d_inode) {
->                        d_delete(d);
->                        simple_unlink(dentry->d_inode, d);
->                        dput(d);
-> -                       spin_lock(&dentry->d_lock);
-> -               } else
-> -                       spin_unlock(&d->d_lock);
-> -               node = dentry->d_subdirs.next;
-> +               }
->        }
-> -       spin_unlock(&dentry->d_lock);
->  }
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+cheers
+
