@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965686Ab2CAVx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:53:57 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35281 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965544Ab2CAVui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965536Ab2CAVui (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 1 Mar 2012 16:50:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.204.129 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965516Ab2CAVud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 16:50:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.97 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213922.703908387@linuxfoundation.org>
+Message-Id: <20120301213926.780198780@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:25 -0800
+Date: Thu, 01 Mar 2012 13:39:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ilya Tumaykin <librarian_rus@yahoo.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [ 03/34] lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
+        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 28/34] autofs: work around unhappy compat problem on x86-64
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Ian Kent <raven@themaw.net>
 
-commit 3310225dfc71a35a2cc9340c15c0e08b14b3c754 upstream.
+commit a32744d4abae24572eff7269bc17895c41bd0085 upstream.
 
-PROP_MAX_SHIFT should be set to <=32 on 64-bit box. This fixes two bugs
-in the below lines of bdi_dirty_limit():
+When the autofs protocol version 5 packet type was added in commit
+5c0a32fc2cd0 ("autofs4: add new packet type for v5 communications"), it
+obvously tried quite hard to be word-size agnostic, and uses explicitly
+sized fields that are all correctly aligned.
 
-	bdi_dirty *= numerator;
-	do_div(bdi_dirty, denominator);
+However, with the final "char name[NAME_MAX+1]" array at the end, the
+actual size of the structure ends up being not very well defined:
+because the struct isn't marked 'packed', doing a "sizeof()" on it will
+align the size of the struct up to the biggest alignment of the members
+it has.
 
-1) divide error: do_div() only uses the lower 32 bit of the denominator,
-   which may trimmed to be 0 when PROP_MAX_SHIFT > 32.
+And despite all the members being the same, the alignment of them is
+different: a "__u64" has 4-byte alignment on x86-32, but native 8-byte
+alignment on x86-64.  And while 'NAME_MAX+1' ends up being a nice round
+number (256), the name[] array starts out a 4-byte aligned.
 
-2) overflow: (bdi_dirty * numerator) could easily overflow if numerator
-   used up to 48 bits, leaving only 16 bits to bdi_dirty
+End result: the "packed" size of the structure is 300 bytes: 4-byte, but
+not 8-byte aligned.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reported-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+As a result, despite all the fields being in the same place on all
+architectures, sizeof() will round up that size to 304 bytes on
+architectures that have 8-byte alignment for u64.
+
+Note that this is *not* a problem for 32-bit compat mode on POWER, since
+there __u64 is 8-byte aligned even in 32-bit mode.  But on x86, 32-bit
+and 64-bit alignment is different for 64-bit entities, and as a result
+the structure that has exactly the same layout has different sizes.
+
+So on x86-64, but no other architecture, we will just subtract 4 from
+the size of the structure when running in a compat task.  That way we
+will write the properly sized packet that user mode expects.
+
+Not pretty.  Sadly, this very subtle, and unnecessary, size difference
+has been encoded in user space that wants to read packets of *exactly*
+the right size, and will refuse to touch anything else.
+
+Reported-and-tested-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Ian Kent <raven@themaw.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/proportions.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/autofs4/autofs_i.h  |    1 +
+ fs/autofs4/dev-ioctl.c |    1 +
+ fs/autofs4/inode.c     |    2 ++
+ fs/autofs4/waitq.c     |   22 +++++++++++++++++++---
+ 4 files changed, 23 insertions(+), 3 deletions(-)
 
---- a/include/linux/proportions.h
-+++ b/include/linux/proportions.h
-@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
-  * Limit the time part in order to ensure there are some bits left for the
-  * cycle counter and fraction multiply.
-  */
-+#if BITS_PER_LONG == 32
- #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
-+#else
-+#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
-+#endif
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -125,6 +125,7 @@ struct autofs_sb_info {
+ 	int sub_version;
+ 	int min_proto;
+ 	int max_proto;
++	int compat_daemon;
+ 	unsigned long exp_timeout;
+ 	unsigned int type;
+ 	int reghost_enabled;
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -389,6 +389,7 @@ static int autofs_dev_ioctl_setpipefd(st
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
++		sbi->compat_daemon = is_compat_task();
+ 	}
+ out:
+ 	mutex_unlock(&sbi->wq_mutex);
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -19,6 +19,7 @@
+ #include <linux/parser.h>
+ #include <linux/bitops.h>
+ #include <linux/magic.h>
++#include <linux/compat.h>
+ #include "autofs_i.h"
+ #include <linux/module.h>
  
- #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
- #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
+@@ -341,6 +342,7 @@ int autofs4_fill_super(struct super_bloc
+ 	set_autofs_type_indirect(&sbi->type);
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
++	sbi->compat_daemon = is_compat_task();
+ 	mutex_init(&sbi->wq_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
+ 	sbi->queues = NULL;
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -90,7 +90,24 @@ static int autofs4_write(struct file *fi
+ 
+ 	return (bytes > 0);
+ }
+-	
++
++/*
++ * The autofs_v5 packet was misdesigned.
++ *
++ * The packets are identical on x86-32 and x86-64, but have different
++ * alignment. Which means that 'sizeof()' will give different results.
++ * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
++ */
++static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
++{
++	size_t pktsz = sizeof(struct autofs_v5_packet);
++#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
++	if (sbi->compat_daemon > 0)
++		pktsz -= 4;
++#endif
++	return pktsz;
++}
++
+ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 				 struct autofs_wait_queue *wq,
+ 				 int type)
+@@ -147,8 +164,7 @@ static void autofs4_notify_daemon(struct
+ 	{
+ 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
+ 
+-		pktsz = sizeof(*packet);
+-
++		pktsz = autofs_v5_packet_size(sbi);
+ 		packet->wait_queue_token = wq->wait_queue_token;
+ 		packet->len = wq->name.len;
+ 		memcpy(packet->name, wq->name.name, wq->name.len);
 
 
