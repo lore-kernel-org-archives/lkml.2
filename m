@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab2CAGOM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 01:14:12 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62956 "EHLO song.cn.fujitsu.com"
+	id S1758087Ab2CAGOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 01:14:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61055 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754653Ab2CAGOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 01:14:09 -0500
-Message-ID: <4F4F1459.4080300@cn.fujitsu.com>
-Date: Thu, 01 Mar 2012 14:16:57 +0800
+	id S1756590Ab2CAGOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 01:14:38 -0500
+Message-ID: <4F4F147B.7090803@cn.fujitsu.com>
+Date: Thu, 01 Mar 2012 14:17:31 +0800
 From: Li Zefan <lizf@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -17,23 +17,23 @@ CC: Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Hugh Dickins <hughd@google.com>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         Eric Paris <eparis@redhat.com>
-Subject: [PATCH v2 0/3] cgroup: add xattr support
+Subject: [PATCH v2 3/3] cgroup: add xattr support
+References: <4F4F1459.4080300@cn.fujitsu.com>
+In-Reply-To: <4F4F1459.4080300@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-01 14:12:09,
+ 2012-03-01 14:12:43,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-01 14:12:15,
-	Serialize complete at 2012-03-01 14:12:15
+ 2012-03-01 14:12:47,
+	Serialize complete at 2012-03-01 14:12:47
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This can be used to attach metadata to a cgroup, which is required
-by systemd.
+This is one of the items in the plumber's wish list.
 
-As lazy as I am, here just quoted from Lennart for the detailed use
-cases:
+For use cases:
 
 >> What would the use case be for this?
 >
@@ -61,22 +61,211 @@ cases:
 >
 > Lennart
 
-Changelog v1->v2:
-- add kmem_xattr APIs
-- use these new APIs in both tmpfs and cgroup
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ include/linux/cgroup.h |    7 ++++
+ init/Kconfig           |   12 ++++++
+ kernel/cgroup.c        |   92 +++++++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 102 insertions(+), 9 deletions(-)
 
-Early discussions can be found in this thread:
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 9b93c9a..141c3ad 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -16,6 +16,7 @@
+ #include <linux/prio_heap.h>
+ #include <linux/rwsem.h>
+ #include <linux/idr.h>
++#include <linux/xattr.h>
+ 
+ #ifdef CONFIG_CGROUPS
+ 
+@@ -211,6 +212,9 @@ struct cgroup {
+ 	/* List of events which userspace want to receive */
+ 	struct list_head event_list;
+ 	spinlock_t event_list_lock;
++
++	/* directory xattrs */
++	struct kmem_xattrs xattrs;
+ };
+ 
+ /*
+@@ -298,6 +302,9 @@ struct cftype {
+ 	/* The subsystem this cgroup file belongs to */
+ 	struct cgroup_subsys *subsys;
+ 
++	/* file xattrs */
++	struct kmem_xattrs xattrs;
++
+ 	int (*open)(struct inode *inode, struct file *file);
+ 	ssize_t (*read)(struct cgroup *cgrp, struct cftype *cft,
+ 			struct file *file,
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..ba9a9dc 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -601,6 +601,18 @@ menuconfig CGROUPS
+ 
+ if CGROUPS
+ 
++config CGROUP_XATTR
++	bool "Cgroup extended attributes"
++	default n
++	help
++	  Extended attributes are name:value pairs associated with inodes by
++	  the kernel or by users (see the attr(5) manual page, or visit
++	  <http://acl.bestbits.at/> for details).
++
++	  Currently the system.* namespace is not supported.
++
++	  If unsure, say N.
++
+ config CGROUP_DEBUG
+ 	bool "Example debug cgroup subsystem"
+ 	default n
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 5ec9048..57f3b79 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -865,7 +865,12 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 		 */
+ 		BUG_ON(!list_empty(&cgrp->pidlists));
+ 
++		kmem_xattrs_free(&cgrp->xattrs);
++
+ 		kfree_rcu(cgrp, rcu_head);
++	} else {
++		struct cftype *cft = dentry->d_fsdata;
++		kmem_xattrs_free(&cft->xattrs);
+ 	}
+ 	iput(inode);
+ }
+@@ -1355,6 +1360,7 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	mutex_init(&cgrp->pidlist_mutex);
+ 	INIT_LIST_HEAD(&cgrp->event_list);
+ 	spin_lock_init(&cgrp->event_list_lock);
++	kmem_xattrs_init(&cgrp->xattrs);
+ }
+ 
+ static void init_cgroup_root(struct cgroupfs_root *root)
+@@ -1700,6 +1706,8 @@ static void cgroup_kill_sb(struct super_block *sb) {
+ 	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 
++	kmem_xattrs_free(&cgrp->xattrs);
++
+ 	kill_litter_super(sb);
+ 	cgroup_drop_root(root);
+ }
+@@ -2504,19 +2512,83 @@ static int cgroup_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
+ }
+ 
++#ifdef CONFIG_CGROUP_XATTR
++
++static struct kmem_xattrs *__d_xattrs(struct dentry *dentry)
++{
++	if (S_ISDIR(dentry->d_inode->i_mode))
++		return &__d_cgrp(dentry)->xattrs;
++	else
++		return &__d_cft(dentry)->xattrs;
++}
++
++static bool is_valid_xattr(const char *name)
++{
++	if (!strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) ||
++	    !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) ||
++	    !strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN))
++		return true;
++	return false;
++}
++
++static int cgroup_setxattr(struct dentry *dentry, const char *name,
++			   const void *val, size_t size, int flags)
++{
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return kmem_xattr_set(__d_xattrs(dentry), name, val, size, flags);
++}
++
++static int cgroup_removexattr(struct dentry *dentry, const char *name)
++{
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return kmem_xattr_remove(__d_xattrs(dentry), name);
++}
++
++static ssize_t cgroup_getxattr(struct dentry *dentry, const char *name,
++			       void *buf, size_t size)
++{
++	if (!is_valid_xattr(name))
++		return -EINVAL;
++	return kmem_xattr_get(__d_xattrs(dentry), name, buf, size);
++}
++
++static ssize_t cgroup_listxattr(struct dentry *dentry, char *buf, size_t size)
++{
++	return kmem_xattr_list(__d_xattrs(dentry), buf, size);
++}
++
++#endif /* CONFIG_CGROUP_XATTR */
++
+ static const struct file_operations cgroup_file_operations = {
+-	.read = cgroup_file_read,
+-	.write = cgroup_file_write,
+-	.llseek = generic_file_llseek,
+-	.open = cgroup_file_open,
+-	.release = cgroup_file_release,
++	.read		= cgroup_file_read,
++	.write		= cgroup_file_write,
++	.llseek		= generic_file_llseek,
++	.open		= cgroup_file_open,
++	.release	= cgroup_file_release,
++};
++
++static const struct inode_operations cgroup_file_inode_operations = {
++#ifdef CONFIG_CGROUP_XATTR
++	.setxattr	= cgroup_setxattr,
++	.getxattr	= cgroup_getxattr,
++	.listxattr	= cgroup_listxattr,
++	.removexattr	= cgroup_removexattr,
++#endif
+ };
+ 
+ static const struct inode_operations cgroup_dir_inode_operations = {
+-	.lookup = cgroup_lookup,
+-	.mkdir = cgroup_mkdir,
+-	.rmdir = cgroup_rmdir,
+-	.rename = cgroup_rename,
++	.lookup		= cgroup_lookup,
++	.mkdir		= cgroup_mkdir,
++	.rmdir		= cgroup_rmdir,
++	.rename		= cgroup_rename,
++#ifdef CONFIG_CGROUP_XATTR
++	.setxattr	= cgroup_setxattr,
++	.getxattr	= cgroup_getxattr,
++	.listxattr	= cgroup_listxattr,
++	.removexattr	= cgroup_removexattr,
++#endif
+ };
+ 
+ static struct dentry *cgroup_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
+@@ -2564,6 +2636,7 @@ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
+ 	} else if (S_ISREG(mode)) {
+ 		inode->i_size = 0;
+ 		inode->i_fop = &cgroup_file_operations;
++		inode->i_op = &cgroup_file_inode_operations;
+ 	}
+ 	d_instantiate(dentry, inode);
+ 	dget(dentry);	/* Extra count - pin the dentry in core */
+@@ -2633,6 +2706,7 @@ int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+ 
+ 	cft->subsys = subsys;
++	kmem_xattrs_init(&cft->xattrs);
+ 
+ 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+ 		strcpy(name, subsys->name);
+-- 
+1.7.3.1
 
-https://lkml.org/lkml/2012/1/16/51
-
-Note: this patchset is based on Tejun's cgroup.git/for-next
-
---
- fs/xattr.c               |  167 +++++++++++++++++++++++++++++++++++++++++
- include/linux/cgroup.h   |   18 +++-
- include/linux/shmem_fs.h |    3 +-
- include/linux/xattr.h    |   23 ++++++
- init/Kconfig             |   12 +++
- kernel/cgroup.c          |  184 ++++++++++++++++++++++++++++++++++++----------
- mm/shmem.c               |  151 +++-----------------------------------
- 7 files changed, 371 insertions(+), 187 deletions(-)
