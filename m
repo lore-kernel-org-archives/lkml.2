@@ -1,326 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965311Ab2CAJRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:17:00 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52708 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758631Ab2CAJQy (ORCPT
+	id S1030215Ab2CAJWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:22:01 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27703 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965265Ab2CAJQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:16:54 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2 2/9] mm: Update region function to take new data arg
-Date: Thu,  1 Mar 2012 14:46:13 +0530
-Message-Id: <1330593380-1361-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022923-6102-0000-0000-000000F59854
+	Thu, 1 Mar 2012 04:16:59 -0500
+Date: Thu, 1 Mar 2012 09:25:56 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+Cc: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+        marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
+Message-ID: <20120301062556.GC22598@mwanda>
+References: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
+ <CAMXE1-oXtheVHDuU3w52mXqmuY8AK4kk+tuvJpVRDq2=+qEnsQ@mail.gmail.com>
+ <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oTHb8nViIGeoXxdp"
+Content-Disposition: inline
+In-Reply-To: <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4F4F3E85.00A3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This patch adds a new data arg to region tracking functions.
-region_chg function will merge regions only if data arg match
-otherwise it will create a new region to map the range.
+--oTHb8nViIGeoXxdp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- include/linux/region.h |   20 ++++--
- mm/region.c            |  177 ++++++++++++++++++++++++++++++++----------------
- 2 files changed, 132 insertions(+), 65 deletions(-)
+On Thu, Mar 01, 2012 at 11:07:14AM +0530, santosh prasad nayak wrote:
+> @Dan,
+>            In future patches I will take care of it. Is it ok ? If
+> required I can resend the patch with required changes on subject line.
+>=20
 
-diff --git a/include/linux/region.h b/include/linux/region.h
-index a8a5b46..609e24c 100644
---- a/include/linux/region.h
-+++ b/include/linux/region.h
-@@ -16,13 +16,21 @@
- #define _LINUX_REGION_H
- 
- struct file_region {
-+	unsigned long from, to;
-+	unsigned long data;
- 	struct list_head link;
--	long from;
--	long to;
- };
- 
--extern long region_add(struct list_head *head, long from, long to);
--extern long region_chg(struct list_head *head, long from, long to);
--extern long region_truncate(struct list_head *head, long end);
--extern long region_count(struct list_head *head, long from, long to);
-+extern long region_chg(struct list_head *head, unsigned long from,
-+		       unsigned long to, unsigned long data);
-+extern void region_add(struct list_head *head, unsigned long from,
-+		       unsigned long to, unsigned long data);
-+extern long region_truncate_range(struct list_head *head, unsigned long from,
-+				  unsigned long end);
-+static inline long region_truncate(struct list_head *head, unsigned long from)
-+{
-+	return region_truncate_range(head, from, ULONG_MAX);
-+}
-+extern long region_count(struct list_head *head, unsigned long from,
-+			 unsigned long to);
- #endif
-diff --git a/mm/region.c b/mm/region.c
-index ab59fe7..e547631 100644
---- a/mm/region.c
-+++ b/mm/region.c
-@@ -18,66 +18,46 @@
- #include <linux/list.h>
- #include <linux/region.h>
- 
--long region_add(struct list_head *head, long from, long to)
-+long region_chg(struct list_head *head, unsigned long from,
-+		unsigned long to, unsigned long data)
- {
--	struct file_region *rg, *nrg, *trg;
--
--	/* Locate the region we are either in or before. */
--	list_for_each_entry(rg, head, link)
--		if (from <= rg->to)
--			break;
--
--	/* Round our left edge to the current segment if it encloses us. */
--	if (from > rg->from)
--		from = rg->from;
--
--	/* Check for and consume any regions we now overlap with. */
--	nrg = rg;
--	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
--		if (&rg->link == head)
--			break;
--		if (rg->from > to)
--			break;
--
--		/* If this area reaches higher then extend our area to
--		 * include it completely.  If this is not the first area
--		 * which we intend to reuse, free it. */
--		if (rg->to > to)
--			to = rg->to;
--		if (rg != nrg) {
--			list_del(&rg->link);
--			kfree(rg);
--		}
--	}
--	nrg->from = from;
--	nrg->to = to;
--	return 0;
--}
--
--long region_chg(struct list_head *head, long from, long to)
--{
--	struct file_region *rg, *nrg;
- 	long chg = 0;
-+	struct file_region *rg, *nrg, *trg;
- 
- 	/* Locate the region we are before or in. */
- 	list_for_each_entry(rg, head, link)
- 		if (from <= rg->to)
- 			break;
--
--	/* If we are below the current region then a new region is required.
-+	/*
-+	 * If we are below the current region then a new region is required.
- 	 * Subtle, allocate a new region at the position but make it zero
--	 * size such that we can guarantee to record the reservation. */
-+	 * size such that we can guarantee to record the reservation.
-+	 */
- 	if (&rg->link == head || to < rg->from) {
- 		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
- 		if (!nrg)
- 			return -ENOMEM;
- 		nrg->from = from;
--		nrg->to   = from;
-+		nrg->to = from;
-+		nrg->data = data;
- 		INIT_LIST_HEAD(&nrg->link);
- 		list_add(&nrg->link, rg->link.prev);
--
- 		return to - from;
- 	}
-+	/*
-+	 * from rg->from to rg->to
-+	 */
-+	if (from < rg->from && data != rg->data) {
-+		/* we need to allocate a new region */
-+		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+		if (!nrg)
-+			return -ENOMEM;
-+		nrg->from = from;
-+		nrg->to = from;
-+		nrg->data = data;
-+		INIT_LIST_HEAD(&nrg->link);
-+		list_add(&nrg->link, rg->link.prev);
-+	}
- 
- 	/* Round our left edge to the current segment if it encloses us. */
- 	if (from > rg->from)
-@@ -85,15 +65,28 @@ long region_chg(struct list_head *head, long from, long to)
- 	chg = to - from;
- 
- 	/* Check for and consume any regions we now overlap with. */
--	list_for_each_entry(rg, rg->link.prev, link) {
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
- 		if (&rg->link == head)
- 			break;
- 		if (rg->from > to)
- 			return chg;
--
--		/* We overlap with this area, if it extends further than
--		 * us then we must extend ourselves.  Account for its
--		 * existing reservation. */
-+		/*
-+		 * rg->from from rg->to to
-+		 */
-+		if (to > rg->to && data != rg->data) {
-+			/* we need to allocate a new region */
-+			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+			if (!nrg)
-+				return -ENOMEM;
-+			nrg->from = rg->to;
-+			nrg->to  = rg->to;
-+			nrg->data = data;
-+			INIT_LIST_HEAD(&nrg->link);
-+			list_add(&nrg->link, &rg->link);
-+		}
-+		/*
-+		 * update charge
-+		 */
- 		if (rg->to > to) {
- 			chg += rg->to - to;
- 			to = rg->to;
-@@ -103,29 +96,96 @@ long region_chg(struct list_head *head, long from, long to)
- 	return chg;
- }
- 
--long region_truncate(struct list_head *head, long end)
-+void region_add(struct list_head *head, unsigned long from,
-+		unsigned long to, unsigned long data)
-+{
-+	struct file_region *rg, *nrg, *trg;
-+
-+	/* Locate the region we are before or in. */
-+	list_for_each_entry(rg, head, link)
-+		if (from <= rg->to)
-+			break;
-+
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+
-+		if (rg->from > to)
-+			return;
-+		if (&rg->link == head)
-+			return;
-+
-+		/*FIXME!! this can possibly delete few regions */
-+		/* We need to worry only if we match data */
-+		if (rg->data == data) {
-+			if (from < rg->from)
-+				rg->from = from;
-+			if (to > rg->to) {
-+				/* if we are the last entry */
-+				if (rg->link.next == head) {
-+					rg->to = to;
-+					break;
-+				} else {
-+					nrg = list_entry(rg->link.next,
-+							 typeof(*nrg), link);
-+					rg->to = nrg->from;
-+				}
-+			}
-+		}
-+		from = rg->to;
-+	}
-+}
-+
-+long region_truncate_range(struct list_head *head, unsigned long from,
-+			   unsigned long to)
- {
--	struct file_region *rg, *trg;
- 	long chg = 0;
-+	struct file_region *rg, *trg;
- 
- 	/* Locate the region we are either in or before. */
- 	list_for_each_entry(rg, head, link)
--		if (end <= rg->to)
-+		if (from <= rg->to)
- 			break;
- 	if (&rg->link == head)
- 		return 0;
- 
- 	/* If we are in the middle of a region then adjust it. */
--	if (end > rg->from) {
--		chg = rg->to - end;
--		rg->to = end;
-+	if (from > rg->from) {
-+		if (to < rg->to) {
-+			struct file_region *nrg;
-+			/* rf->from from to rg->to */
-+			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+			/*
-+			 * If we fail to allocate we return the
-+			 * with the 0 charge . Later a complete
-+			 * truncate will reclaim the left over space
-+			 */
-+			if (!nrg)
-+				return 0;
-+			nrg->from = to;
-+			nrg->to = rg->to;
-+			nrg->data = rg->data;
-+			INIT_LIST_HEAD(&nrg->link);
-+			list_add(&nrg->link, &rg->link);
-+
-+			/* Adjust the rg entry */
-+			rg->to = from;
-+			chg = to - from;
-+			return chg;
-+		}
-+		chg = rg->to - from;
-+		rg->to = from;
- 		rg = list_entry(rg->link.next, typeof(*rg), link);
- 	}
--
--	/* Drop any remaining regions. */
-+	/* Drop any remaining regions till to */
- 	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (rg->from >= to)
-+			break;
- 		if (&rg->link == head)
- 			break;
-+		if (rg->to > to) {
-+			chg += to - rg->from;
-+			rg->from = to;
-+			return chg;
-+		}
- 		chg += rg->to - rg->from;
- 		list_del(&rg->link);
- 		kfree(rg);
-@@ -133,10 +193,10 @@ long region_truncate(struct list_head *head, long end)
- 	return chg;
- }
- 
--long region_count(struct list_head *head, long from, long to)
-+long region_count(struct list_head *head, unsigned long from, unsigned long to)
- {
--	struct file_region *rg;
- 	long chg = 0;
-+	struct file_region *rg;
- 
- 	/* Locate each segment we overlap with, and count that overlap. */
- 	list_for_each_entry(rg, head, link) {
-@@ -153,6 +213,5 @@ long region_count(struct list_head *head, long from, long to)
- 
- 		chg += seg_to - seg_from;
- 	}
--
- 	return chg;
- }
--- 
-1.7.9
+Nope.  Andrei's patch is already in linux-next so you'll have to
+redo this.
 
+> @Andrei
+>=20
+> In my local clone your changes are  not visible.
+>=20
+> What is the schedule of linux-next ?
+> Is it updated every week or bi-weekly or monthly ?
+>=20
+
+It's updated every day.  http://linux.f-seidel.de/linux-next/pmwiki/
+
+regards,
+dan carpenter
+
+
+--oTHb8nViIGeoXxdp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPTxZ0AAoJEOnZkXI/YHqRsPkP/2SaIlMRfItCbXWhE4pYJunX
+oehGJxK5ODbQH/QBuRz1nLPhnx1yGPonRpA3IeiGsoV9MOTqaSGeFT1GG0Y6p7fL
+Tz8dS0pnUPepzlIdnPJK6DT5Ll+t2curEO1Yk5uWXVocNcuGA10+5zVqqY6QIlKx
+aYtUxUaUJ8NJT9ogJfI2zdQG1KsA+Zk5zYSGqTKbyw6OVPtRnW0fqxcWhFGVUNj6
+i4S/CtxIV+qvovf5E/F2xuVZTfclJkeqUA5Ztm6kuTcS+ZUmKrweNQobe75XLNqW
+pVY4u35l8TYNncIVLoQa+fKnRPHY0RDbO+jUhMcsxfLGEu3uQQMRpHzzAfxtkRqk
+jl79ncEPh1R5RuckVzOFDtGzG088ZWpx4n4ySskXAsz9558M3s+DM4RrSCL5/Jp5
+aa7JjdNNg41W5/FS3H2djzf8S4ijZjSLKJsghFI6scSjHKQY9y3xVL33tT3blPMW
+UHZ9Auk9J00MD6pvYkQD54ZgriuBQ8VZV9nu6lEwJ7dMFgdP4/YwHQhU9aJO5QLM
+aH6DPs173Zd8FCM55/LF5qHAR2kExLE5dQdVzV0sKWDzn1PFjW/O1JeP3/MY4HkW
+I4+hIsSA6WO3U956s08vpytXqziPR0Pnu3Gv8Nd83zpCHlwWuYoFGM3I4A69Gh6n
+2v/hYMzVJdRNoJrW6cHr
+=UTfK
+-----END PGP SIGNATURE-----
+
+--oTHb8nViIGeoXxdp--
