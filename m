@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2CAT2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:28:25 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53221 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab2CAT2U (ORCPT
+	id S1756881Ab2CAT3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:29:07 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38913 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964943Ab2CAT13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:28:20 -0500
-Message-ID: <4F4FCE00.6060302@collabora.co.uk>
-Date: Thu, 01 Mar 2012 20:29:04 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 1 Mar 2012 14:27:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.181.233 as permitted sender) smtp.mail=alan@signal11.us
 MIME-Version: 1.0
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
-        David Laight <David.Laight@aculab.com>,
-        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com> <1330606237.27405.5.camel@megeve> <1330606775.2465.56.camel@edumazet-laptop> <4F4F7FFB.6010608@collabora.co.uk> <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com> <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com> <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
-In-Reply-To: <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+From: Alan Ott <alan@signal11.us>
+To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 4/8] ARM: tegra: build localtimer support only when needed
+Date: Thu,  1 Mar 2012 14:26:46 -0500
+Message-Id: <1330630010-11241-5-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1330630010-11241-1-git-send-email-alan@signal11.us>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2012 08:02 PM, Javier Martinez Canillas wrote:
-> On Thu, Mar 1, 2012 at 6:59 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> Le 1 mars 2012 08:02, Luiz Augusto von Dentz <luiz.dentz@gmail.com> a écrit :
->>>
->>> Contrary to someones believes I don't think AF_INET is that fast (e.g.
->>> http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
->>>
->>
->> Oh you mention a recent zork it seems ;)
->>
->> Are we speaking of performance problems, apart from scheduler problems
->> for D-Bus (each message wakeing all receivers, all receivers read and
->> drop message but the target) ?
->>
-> 
-> Hi Eric,
-> 
-> The only performance problem we are talking about is the scheduling
-> for D-bus (context switch to the daemon for each message). With today
-> implementation the receivers only gets messages that were sent to it
-> but the D-bus daemon has to be wake it up for every message to he can
-> do the routing. For multicast messages (i.e: D-bus signals) this is
-> even worse since the daemon has to do a send() for each receiver.
-> 
->> I am actually one of the few people working to improve performance on
->> both AF_INET and AF_UNIX parts. Just take a look at recent commits.
->>
->> Right now you can send/receive millions of udp messages per second on
->> your linux machine, if you figured out how to avoid process scheduler
->> costs. If D-Bus wants more, I highly suggest using shared memory
->> instead of passing messages.
->> --
-> 
-> Yes, I also thought that AF_UNIX would be more efficient than AF_INET
-> but I was wrong. Yesterday I wrote some tests using our multicast unix
-> socket, UDP multicast over IP on a single machine and even multicast
-> using AF_NETLINK sockets and got very similar performance results.
-> 
-> The only problem is the ordering and control flow requirements for D-bus.
-> 
+From: Arnd Bergmann <arnd@arndb.de>
 
-And the fd passing for out-ouf-band communication used for some D-bus
-application such as oFono and BlueZ.
+It is possible to build a tegra kernel without localtimer
+support, so the tegra specific parts should only be built
+when that is indeed enabled.
 
-Regards,
-Javier
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/mach-tegra/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index e120ff5..a956df8 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -13,7 +13,8 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= pinmux-tegra20-tables.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= pinmux-tegra30-tables.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
+-obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
++obj-$(CONFIG_SMP)                       += platsmp.o headsmp.o
++obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
+ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
+ obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+= dma.o
+ obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
+-- 
+1.7.0.4
+
