@@ -1,106 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582Ab2CAHrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 02:47:21 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40756 "EHLO
+	id S1755043Ab2CAIGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 03:06:52 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40176 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756583Ab2CAHrT convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751028Ab2CAIGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 02:47:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.205.133.208 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
+	Thu, 1 Mar 2012 03:06:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.145.70 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F4F2E16.5080703@openvz.org>
+Date: Thu, 01 Mar 2012 12:06:46 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-In-Reply-To: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
-References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
-Date: Thu, 1 Mar 2012 16:47:18 +0900
-Message-ID: <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: merez@codeaurora.org
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH resend] mm: drain percpu lru add/rotate page-vectors on
+ cpu hot-unplug
+References: <20120228193620.32063.83425.stgit@zurg> <20120229123818.61a61e9d.akpm@linux-foundation.org>
+In-Reply-To: <20120229123818.61a61e9d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. merez.
+Andrew Morton wrote:
+> On Tue, 28 Feb 2012 23:40:45 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> This cpu hotplug hook was accidentally removed in commit v2.6.30-rc4-18-g00a62ce
+>> ("mm: fix Committed_AS underflow on large NR_CPUS environment")
+>
+> That was a long time ago - maybe we should leave it removed ;) I mean,
+> did this bug(?) have any visible effect?  If so, what was that effect?
 
-Would you share random read speed with us ?
+It's because cpu hotplug/unplug isn't widely used feature.
+Visible effect -- some pages are borrowed in per-cpu page-vectors.
+Truncate can deal with it, but these pages cannot be reused while this cpu is offline.
+So this is like temporary memory leak.
 
-And Write speed also..
+>
+> IOW, the changelog didn't give anyone any reason to apply the patch to
+> anything!
 
-Thanks.
-
-2012/3/1  <merez@codeaurora.org>:
->> This patch supports packed command of eMMC4.5 device.
->> Several reads(or writes) can be grouped in packed command
->> and all data of the individual commands can be sent in a
->> single transfer on the bus.
->>
->> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->> ---
->>  drivers/mmc/card/block.c   |  496
->> +++++++++++++++++++++++++++++++++++++++++--
->>  drivers/mmc/card/queue.c   |   48 ++++-
->>  drivers/mmc/card/queue.h   |   13 ++
->>  drivers/mmc/core/mmc_ops.c |    1 +
->>  include/linux/mmc/core.h   |    4 +
->>  5 files changed, 535 insertions(+), 27 deletions(-)
->>
-> Hi,
->
-> We ran performance tests on the packed commands patch. We found out that
-> enabling the read packing didn't improve the performance in any of the
-> scenarios we ran (see the detailed results below).
-> Therefore, we suggest to move the read packing code to a different patch
-> and approve only the write packing code for now. The read packing adds
-> complexity to the code and we don't see a point in adding it while the
-> intention is to disable it.
->
-> Test results:
->
-> Long read operation:
-> ----------------------
-> no-packing: 39.5 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 39.5 MB/s
-> packed commands patch + enabling only READ packing: 39.5 MB/s
->
-> Several parallel read operations (sum of all the read throughputs):
-> ---------------------------
-> no-packing: 42.6 MB/s
-> packed commands patch(both READ and WRITE packing are enabled): 38 MB/s
-> packed commands patch + enabling only READ packing: 38.2 MB/s
->
-> Parallel long read and long write operations (read throughput):
-> -----------------------------------------------------------------
-> no-packing: 23.8 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 12.6 MB/s
-> packed commands patch + enabling only READ packing: 12.5 MB/s
->
-> Parallel short read and long write operations (read throughput):
-> -----------------------------------------------------------------
-> no-packing: 22.9 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 8.4 MB/s
-> packed commands patch + enabling only READ packing: 8.6 MB/s
->
-> Several Parallel short read and short write operations (sum of all the
-> read throughputs):
-> --------------------------------------------------------------------------
-> no-packing: 41.6 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 35 MB/s
-> packed commands patch + enabling only READ packing: 36 MB/s
->
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Sorry, I'm just stuck in pile of patches. It seems I should stop and send them one by one.
+This one isn't critical, so there no reasons for pushing it into stable branches.
