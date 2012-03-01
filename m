@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030915Ab2CANGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 08:06:41 -0500
-Received: from mail.us.es ([193.147.175.20]:37732 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757725Ab2CANGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 08:06:40 -0500
-Date: Thu, 1 Mar 2012 14:06:37 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: santosh nayak <santoshprasadnayak@gmail.com>, bart.de.schuymer@pandora.be,
-        kaber@trash.net, shemminger@vyatta.com, davem@davemloft.net,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size
- parametre.
-Message-ID: <20120301130637.GB7429@1984>
-References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
- <20120301101809.GA6488@1984>
- <20120301113736.GE22598@mwanda>
+	id S1030964Ab2CANG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 08:06:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56782 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030944Ab2CANG4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 08:06:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.204.143.151 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301113736.GE22598@mwanda>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <ad7809d2-4c66-4d55-929b-2c1ae76f1420@email.android.com>
+References: <1330041476-719-1-git-send-email-kjwinchester@gmail.com>
+	<20120227115905.GB9943@elte.hu>
+	<CAELBVzDQx-geNELEvHYheSL0hKbaXfUAvjperNcPELThT9bqWg@mail.gmail.com>
+	<4F4C4D5C.70908@zytor.com>
+	<20120228082422.GG21106@elte.hu>
+	<ad7809d2-4c66-4d55-929b-2c1ae76f1420@email.android.com>
+Date: Thu, 1 Mar 2012 09:06:55 -0400
+Message-ID: <CAELBVzAPHfnZWRTU82V3yHuW9iY8SfAgDNmro1q4dpOvKTwnBg@mail.gmail.com>
+Subject: Re: [PATCH v4 0/5] x86: Cleanup and simplify cpu-specific data
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 02:37:36PM +0300, Dan Carpenter wrote:
-> On Thu, Mar 01, 2012 at 11:18:09AM +0100, Pablo Neira Ayuso wrote:
-> > On Thu, Mar 01, 2012 at 02:46:30PM +0530, santosh nayak wrote:
-> > > From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> > > 
-> > > While copying to userspace, the size of source is 29byte where as
-> > > size parametre is 32 byte.  Its leaking extra-information from
-> > > kernel space to user space.
-> > > Replace EBT_FUNCTION_MAXNAMELEN by XT_EXTENSION_MAXNAMELEN.
-> > 
-> > There's no information leak.
-> > 
-> 
-> Where do we clear "m"? 
-> 
-> include/linux/netfilter/x_tables.h
->    287  struct xt_match {
->    288          struct list_head list;
->    289  
->    290          const char name[XT_EXTENSION_MAXNAMELEN];
->    291          u_int8_t revision;
->    292  
-> 
-> There is a 2 byte holes here between "revision" and "match()".  We
-> copy three bytes past the end of name, so we include revision and
-> the hole.
-> 
-> But maybe we memset it somewhere?  I'm not sure.
+On 28 February 2012 04:31, H. Peter Anvin <hpa@zytor.com> wrote:
+> Better yet, fix the problem...
+>
 
-xt_match instances are declared as static for each module so it's
-allocated in the BSS (already zeroed), is that what you mean?
+It appears that some attempts have been made at fixing this problem already:
 
->    293          /* Return true or false: return FALSE and set *hotdrop = 1 to
->    294             force immediate packet drop. */
->    295          /* Arguments changed since 2.6.9, as this must now handle
->    296             non-linear skb, using skb_header_pointer and
->    297             skb_ip_make_writable. */
->    298          bool (*match)(const struct sk_buff *skb,
->    299                        struct xt_action_param *);
-> 
-> regards,
-> dan carpenter
-> 
+https://lkml.org/lkml/2011/7/6/6
+https://lkml.org/lkml/2011/7/7/480
+
+So perhaps I can just turn off that config setting for now.  I'm going
+away for a few days, but I'll try to fix up the patch series next
+week.
 
 
+> Ingo Molnar <mingo@elte.hu> wrote:
+>
+>>
+>>* H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>>> >In function ‘copy_from_user’,
+>>> >     inlined from ‘pktgen_if_write’ at net/core/pktgen.c:877:20:
+>>>
+>>>/home/kevin/linux/linux-2.6/arch/x86/include/asm/uaccess_32.h:211:26:
+>>> >error: call to ‘copy_from_user_overflow’ declared with attribute
+>>> >error: copy_from_user() buffer size is not provably correct
+>>> >make[2]: *** [net/core/pktgen.o] Error 1
+>>> >
+>>> >On:
+>>> >
+>>> >gcc (GCC) 4.6.2 20120120 (prerelease)
+>>> >
+>>> >Is that my fault, or something else?
+>>> >
+>>> >Kevin
+>>> >
+>>>
+>>> That comes from compiling with warnings as errors.  Not that someone
+>>> shouldn't look at that kind of problem.
+>>
+>>Can probably be worked around by disabling:
+>>
+>>CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+>>
