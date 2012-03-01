@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965165Ab2CAVre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:47:34 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42848 "EHLO
+	id S965180Ab2CAVty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:49:54 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35281 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964855Ab2CAVrd (ORCPT
+	with ESMTP id S965064Ab2CAVtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:47:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.130.6 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Thu, 1 Mar 2012 13:46:54 -0800
+	Thu, 1 Mar 2012 16:49:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.135.71 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+MIME-Version: 1.0
+Message-Id: <20120301213924.051028223@linuxfoundation.org>
+User-Agent: quilt/0.51-17.1
+Date: Thu, 01 Mar 2012 13:39:33 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/34] 2.6.32.58-longterm review
-Message-ID: <20120301214654.GA13231@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "Adrian C." <anrxc@sysphere.org>
+Subject: [ 11/34] eCryptfs: Remove mmap from directory operations
+In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOTE:
-	I have NOT tested this rc release.  I now no longer own any
-	machines that can run the 2.6.32 kernel.  Because of this, this
-	will be the last 2.6.32-longterm kernel that I will release.  I
-	will be passing on the .32 kernel to someone else after this
-	release.  Please, if you care about the .32 kernel, test this
-	release, I have _only_ build tested it, and have no idea if I
-	got something wrong or not.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+
+------------------
 
 
-This is the start of the longterm review cycle for the 2.6.32.58 release.
-There are 34 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-Responses should be made by Sat Mar  3 21:39:21 UTC 2012.
-Anything received after that time might be too late.
+backported from 38e3eaeedcac75360af8a92e7b66956ec4f334e5
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.58-rc1.gz
-and the diffstat can be found below.
+Adrian reported that mkfontscale didn't work inside of eCryptfs mounts.
+Strace revealed the following:
 
-thanks,
+open("./", O_RDONLY|O_NONBLOCK|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC) = 3
+fcntl64(3, F_GETFD) = 0x1 (flags FD_CLOEXEC)
+open("./fonts.scale", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 4
+getdents(3, /* 80 entries */, 32768) = 2304
+open("./.", O_RDONLY) = 5
+fcntl64(5, F_SETFD, FD_CLOEXEC) = 0
+fstat64(5, {st_mode=S_IFDIR|0755, st_size=16384, ...}) = 0
+mmap2(NULL, 16384, PROT_READ, MAP_PRIVATE, 5, 0) = 0xb7fcf000
+close(5) = 0
+ --- SIGBUS (Bus error) @ 0 (0) ---
+ +++ killed by SIGBUS +++
 
-greg k-h
+The mmap2() on a directory was successful, resulting in a SIGBUS
+signal later.  This patch removes mmap() from the list of possible
+ecryptfs_dir_fops so that mmap() isn't possible on eCryptfs directory
+files.
 
--------------
- Makefile                                |    2 +-
- arch/arm/include/asm/assembler.h        |    5 ++
- arch/arm/mm/cache-v7.S                  |    6 ++
- arch/s390/include/asm/compat.h          |    7 --
- arch/s390/kernel/process.c              |    1 -
- arch/s390/kernel/ptrace.c               |    2 +-
- arch/s390/kernel/setup.c                |    2 +-
- arch/s390/mm/mmap.c                     |    2 +-
- crypto/sha512_generic.c                 |   83 +++++++++++--------------
- drivers/base/firmware_class.c           |   12 +++-
- drivers/cdrom/cdrom.c                   |    8 +--
- drivers/gpu/drm/i915/intel_lvds.c       |    8 +++
- drivers/gpu/drm/radeon/r100.c           |    4 +-
- drivers/gpu/drm/radeon/rs600.c          |    4 +-
- drivers/hwmon/f75375s.c                 |    4 +-
- drivers/media/video/hdpvr/hdpvr-video.c |    3 +-
- drivers/s390/block/dasd_eckd.c          |    1 +
- drivers/s390/block/dasd_ioctl.c         |    1 +
- drivers/s390/char/fs3270.c              |    1 +
- drivers/s390/char/vmcp.c                |    1 +
- drivers/s390/cio/chsc_sch.c             |    1 +
- drivers/s390/scsi/zfcp_cfdc.c           |    1 +
- drivers/scsi/3w-9xxx.c                  |   11 ++-
- drivers/usb/host/pci-quirks.c           |   11 +++
- drivers/usb/host/xhci-mem.c             |   32 +++++++---
- drivers/usb/serial/cp210x.c             |    2 +
- fs/autofs4/autofs_i.h                   |    1 +
- fs/autofs4/dev-ioctl.c                  |    1 +
- fs/autofs4/inode.c                      |    2 +
- fs/autofs4/waitq.c                      |   22 ++++++-
- fs/ecryptfs/file.c                      |    2 +-
- fs/ecryptfs/inode.c                     |  103 +++++++++++++++++++++----------
- fs/ecryptfs/main.c                      |   38 ++++++++++--
- include/linux/bitops.h                  |   20 ++++++
- include/linux/compat.h                  |    4 +
- include/linux/kernel.h                  |   15 ++---
- include/linux/kmod.h                    |    9 +++
- include/linux/proportions.h             |    4 +
- kernel/kmod.c                           |   33 ++++++++++-
- kernel/relay.c                          |   10 +++-
- net/mac80211/rx.c                       |    2 +-
- 41 files changed, 338 insertions(+), 143 deletions(-)
+http://bugs.launchpad.net/bugs/400443
+
+Reported-by: Adrian C. <anrxc@sysphere.org>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/ecryptfs/file.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -327,7 +327,6 @@ const struct file_operations ecryptfs_di
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = ecryptfs_compat_ioctl,
+ #endif
+-	.mmap = generic_file_mmap,
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+ 	.release = ecryptfs_release,
+
 
