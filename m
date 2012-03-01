@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965623Ab2CAVuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:50:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63550 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965609Ab2CAVuv (ORCPT
+	id S965738Ab2CAVw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:52:56 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757724Ab2CAVux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.228 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.228.103 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213927.752750494@linuxfoundation.org>
+Message-Id: <20120301213922.870774296@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:56 -0800
+Date: Thu, 01 Mar 2012 13:39:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, rjw@sisk.pl, valdis.kletnieks@vt.edu,
-        cloos@hjcloos.com, riesebie@lxtec.de,
-        penguin-kernel@i-love.sakura.ne.jp, srivatsa.bhat@linux.vnet.ibm.com,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: [ 34/34] PM / Sleep: Fix read_unlock_usermodehelper() call.
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 04/34] relay: prevent integer overflow in relay_open()
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,37 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+commit f6302f1bcd75a042df69866d98b8d775a668f8f1 upstream.
 
-[ Upstream commit e4c89a508f4385a0cd8681c2749a2cd2fa476e40 ]
+"subbuf_size" and "n_subbufs" come from the user and they need to be
+capped to prevent an integer overflow.
 
-Commit b298d289
- "PM / Sleep: Fix freezer failures due to racy usermodehelper_is_disabled()"
-added read_unlock_usermodehelper() but read_unlock_usermodehelper() is called
-without read_lock_usermodehelper() when kmalloc() failed.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ kernel/relay.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
- drivers/base/firmware_class.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -493,8 +493,7 @@ _request_firmware(const struct firmware
- 	if (!firmware) {
- 		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
- 			__func__);
--		retval = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
- 	}
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -171,10 +171,14 @@ depopulate:
+  */
+ static struct rchan_buf *relay_create_buf(struct rchan *chan)
+ {
+-	struct rchan_buf *buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
+-	if (!buf)
++	struct rchan_buf *buf;
++
++	if (chan->n_subbufs > UINT_MAX / sizeof(size_t *))
+ 		return NULL;
  
- 	for (builtin = __start_builtin_fw; builtin != __end_builtin_fw;
++	buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
++	if (!buf)
++		return NULL;
+ 	buf->padding = kmalloc(chan->n_subbufs * sizeof(size_t *), GFP_KERNEL);
+ 	if (!buf->padding)
+ 		goto free_buf;
+@@ -581,6 +585,8 @@ struct rchan *relay_open(const char *bas
+ 
+ 	if (!(subbuf_size && n_subbufs))
+ 		return NULL;
++	if (subbuf_size > UINT_MAX / n_subbufs)
++		return NULL;
+ 
+ 	chan = kzalloc(sizeof(struct rchan), GFP_KERNEL);
+ 	if (!chan)
 
 
