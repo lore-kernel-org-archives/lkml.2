@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab2CAUZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:25:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab2CAUZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:25:32 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>
-Subject: Re: [RFC PATCH 01/22] iov_iter: move into its own file
-References: <1330377576-3659-1-git-send-email-dave.kleikamp@oracle.com>
-	<1330377576-3659-2-git-send-email-dave.kleikamp@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 01 Mar 2012 15:25:28 -0500
-In-Reply-To: <1330377576-3659-2-git-send-email-dave.kleikamp@oracle.com> (Dave
-	Kleikamp's message of "Mon, 27 Feb 2012 15:19:15 -0600")
-Message-ID: <x49sjhsax1j.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757544Ab2CAUZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:25:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35337 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab2CAUZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 15:25:40 -0500
+Message-ID: <4F4FDB3E.7000405@kernel.dk>
+Date: Thu, 01 Mar 2012 21:25:34 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Muthu Kumar <muthu.lkml@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, martin.petersen@oracle.com
+Subject: Re: [PATCH] Fix setting bio flags in drivers (sd_dif/floppy).
+References: <CAFR8uef08sDCR=FM_v4EV0CLX9f4UuJezSTPFX6V7T-4b7xBVQ@mail.gmail.com> <20120229161215.81505738.akpm@linux-foundation.org> <CAFR8uedyn_dmE1NPk_H8_vb_ohYcScaG2whEa9=aOcSRWDvcxg@mail.gmail.com>
+In-Reply-To: <CAFR8uedyn_dmE1NPk_H8_vb_ohYcScaG2whEa9=aOcSRWDvcxg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Kleikamp <dave.kleikamp@oracle.com> writes:
+On 2012-03-01 21:23, Muthu Kumar wrote:
+>>>                       kunmap_atomic(sdt, KM_USER0);
+>>>               }
+>>>
+>>> -             bio->bi_flags |= BIO_MAPPED_INTEGRITY;
+>>> +             bio->bi_flags |= (1 << BIO_MAPPED_INTEGRITY);
+>>>       }
+>>>
+>>>       return 0;
+>>
+>> urgh.  This isn't the first time.
+>>
+>> It's too easy for people to make this mistake.  I'm not sure what a
+>> good fix would be - I don't think sparse can save us with __bitwise or
+>> similar.
+>>
+>> The approach we took in buffer_head.h with BH_Foo and BUFFER_FNS
+>> accessors worked pretty well.
+>>
+> 
+> Does this look good? BTW, I used the non-atomic variants __set/__clear
+> to match the behavior of current usage.
+> If this looks good, I can send the proper patch as attachment (so no
+> line wraps :)
 
-> From: Zach Brown <zab@zabbo.net>
->
-> This moves the iov_iter functions in to their own file.  We're going to
-> be working on them in upcoming patches.  They become sufficiently large,
-> and remain self-contained, to justify seperating them from the rest of
-> the huge mm/filemap.c.
->
-> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-> Cc: Zach Brown <zab@zabbo.net>
+Lets not wrap this in macros, it just makes the code harder to read.
+Making the BIO_ flags a bit shift value was a mistake in hindsight, too
+easy to get wrong.
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+If we're going to be changing everything anyway, it'd be better to have
+__ variants if we really need the bit shifts, and the non __ variants be
+the value. Similar to what is done for request flags.
+
+-- 
+Jens Axboe
+
