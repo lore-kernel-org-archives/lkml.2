@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab2CAOno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:43:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39505 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab2CAOnm convert rfc822-to-8bit (ORCPT
+	id S932522Ab2CAOrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:47:14 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:47851 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932069Ab2CAOrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:43:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	Thu, 1 Mar 2012 09:47:13 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArwBAKU/KE8Y9geI/2dsb2JhbAAMgVOCPaQnl02GTIErg2eBBwSGUJhU
+X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
+   d="scan'208";a="165364451"
+Message-ID: <4F4F8BEE.3040806@teksavvy.com>
+Date: Thu, 01 Mar 2012 09:47:10 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120301141823.GV5054@shiny>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-	<20120229144244.GF5054@shiny>
-	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
-	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
-	<CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
-	<20120301141823.GV5054@shiny>
-Date: Thu, 1 Mar 2012 15:43:41 +0100
-Message-ID: <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        lczerner@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.3-rc5
+References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com> <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/1 Chris Mason <chris.mason@oracle.com>:
-> On Thu, Mar 01, 2012 at 03:03:53PM +0100, Jacek Luczak wrote:
->> 2012/3/1 Hillf Danton <dhillf@gmail.com>:
->> > On Thu, Mar 1, 2012 at 9:35 PM, Jacek Luczak <difrost.kernel@gmail.com> wrote:
->> >>
->> >> While I was about to grab acp I've noticed seekwatcher with made my day :)
->> >>
->> >> seekwatcher run of tar cf to eliminate writes (all done on 3.2.7):
->> >> 1) btrfs: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs.png
->> >> 2) ext4: http://dozzie.jarowit.net/~dozzie/luczajac/tar_ext4.png
->> >> 3) both merged: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs_ext4.png
->
-> Whoa, seekwatcher makes it pretty clear.
-
-Yep, ext4 is close to my wife's closet.
-
->> >>
->> >> I will send acp results soon.
->> >>
->> > Would you please take reiserfs into account?
+On 12-02-28 01:30 PM, Linus Torvalds wrote:
+> On Mon, Feb 27, 2012 at 7:23 AM, Mark Lord <kernel@teksavvy.com> wrote:
 >>
->> As of now not (lack of time) but I'm pretty close to consider XFS in
->> the game. Whenever I will have more time and there won't be a pressure
->> on giving host back to production I will redo same tests for reiserfs.
->>
->> Now I'm focused on the userspace sorting results.
+>> The i8k driver is still b0rked for COMPAT use in linux-3.2.xx,
+>> and I don't think my patch got picked up by anyone for 3.3 yet:
 >
-> reiserfs should have results very similar to ext4.  The directory
-> hashing used by reiserfs is going to result in a very random read
-> pattern.
+> I really don't like your patch.
+..
+
+Heh, I think we agree on that point.  I hate it.  :)
+
+> Quite frankly, I think the right solution is to fix the kernel
+> interface to the right type (int) that is the same. But because we
+> don't want to change the user interface, let's make the kernel
+> *accept* the 8-byte entity and just change it into a 4-byte size, and
+> leave the user-space visible ioctl numbers the same broken crap - it's
+> not like the other ioctl numbers had the right size *either*...
 >
-> XFS will probably beat btrfs in this test.  Their directory indexes
-> reflect on disk layout very well.
+> IOW, have something like the attached in the ioctl handler (and then
+> we need to also add the compat handler, as in your patch).
+>
+> Does this (with your compat_ioctl wrapper addition) also work for you?
 
-True, but not that fast on small files.
 
-Except the question I've raised in first mail there's a point in all
-those action. We are maintaining host that are used for building
-software: random access, lot of small files and dirs (always a co),
-heavy parallel IO. We were testing XFS vs ext4 a year ago and XFS was
-around 10% slower on build times. We did not - yet - done same on
-btrfs. Now we're looking for replacement for ext4 as we suffer from
-those issue - but we were not aware of that until stepped into this
-issue.
+It's close (after adding a missing left-paren), but not 100% working yet.
+In particular, this command fails to get valid data:  i8kctl bios
 
-If you would like me to do some specific tests around ext4 and btrfs,
-let me know.
+    ioctl(3, I8K_BIOS_VERSION, 0xbfc543c8)  = -1 EINVAL (Invalid argument)
 
--Jacek
+That's the original issue I first noticed which prompted me to try
+and get things to roughly behave again.
+
+I think all (or at least most) of the other ioctls appear to be working though.
