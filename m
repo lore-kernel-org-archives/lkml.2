@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2CAVAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:00:54 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51674 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932534Ab2CAVAx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:00:53 -0500
-Date: Thu, 1 Mar 2012 21:00:20 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@nvidia.com>, Alan Ott <alan@signal11.us>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from
-	driver
-Message-ID: <20120301210020.GC19274@n2100.arm.linux.org.uk>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us> <1330630010-11241-9-git-send-email-alan@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE86173C@HQMAIL01.nvidia.com> <201203012038.28062.arnd@arndb.de>
+	id S932675Ab2CAVCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:02:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932534Ab2CAVCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 16:02:32 -0500
+Date: Thu, 1 Mar 2012 16:02:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Michal Schmidt <mschmidt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120301210213.GF13533@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120222163858.GB4128@redhat.com>
+ <20120222165714.GC4128@redhat.com>
+ <1329990094.24994.64.camel@twins>
+ <1330006399.11248.20.camel@twins>
+ <4F4FAF89.3090706@redhat.com>
+ <1330633603.7414.49.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201203012038.28062.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1330633603.7414.49.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 08:38:27PM +0000, Arnd Bergmann wrote:
-> On Thursday 01 March 2012, Stephen Warren wrote:
+On Thu, Mar 01, 2012 at 09:26:43PM +0100, Mike Galbraith wrote:
+> On Thu, 2012-03-01 at 18:19 +0100, Michal Schmidt wrote: 
+> > Dne 23.2.2012 15:13, Peter Zijlstra napsal:
+> > > My utter disregard for cgroups comes from having to actually implement a
+> > > controller for them, its a frigging nightmare. The systemd retards
+> > > mandating all this nonsense for booting a machine is completely bonghit
+> > > inspired and hasn't made me feel any better about it.
 > > 
-> > Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
-> > > From: Arnd Bergmann <arnd@arndb.de>
-> > > 
-> > > The driver should not call set_irq_flags itself, and
+> > systemd requires only CONFIG_CGROUPS=y. It does not need any controllers.
 > > 
-> > Probably true in this case.
-> > 
-> > > cannot do this from a loadable module.
-> > 
-> > I hope that's not true; grep'ing the entire of drivers/ shows a bunch
-> > of drivers calling this function, and many look like they'd be reasonable
-> > as module.
+> > The insults are entirely unnecessary.
 > 
-> The drivers that I can see using it are for the most part implementing
-> irq controllers by themselves, which is different from merely using an
-> interrupt.
+> At the risk of insulting any systemd person, I recently upgraded my box,
+> and had my very first encounter with systemd.  It didn't go well at all,
+> to say the very least.  In fact, it quickly became a violent removal.
 > 
-> There are three exceptions today:
+> After the fact, when I queried, I was told straight out that I should
+> live in harmony with the cgroups configuration systemd set up for me and
+> be happy.  For the nonce, you can remove it, and here's how (thanks for
+> that guys), but that removal option is _going_ to go away.  No, you
+> can't simply turn our cgroup setup off and control your box as if you
+> actually _own_ the thing, because cgroups is an integral part of the
+> systemd concept.
 > 
-> arnd@klappe2:~/linux-arm$ git grep -l set_irq_flags  drivers/ | xargs grep -L irq_chip
-> drivers/tty/serial/serial_ks8695.c
-
-Setting NOAUTOEN should be done elsewhere (in platform code.)  Better
-still, fixing genirq to allow request_irq() to permit the interrupt
-to be requested *without enabling it* would be a step forwards.  I
-thought my original ARM IRQ code did that.
-
-> drivers/tty/serial/sirfsoc_uart.c
-
-Same issue, so same comments.
-
-> drivers/usb/host/ehci-tegra.c
-
-This one should not be there.  Having drivers mark IRQs as being
-requestable when the whole point of the flag is to stop request_irq()
-being used on non-initialized interrupts is just plain stupid.
-
-> > From what little I understand of this, any irq_chip is going to call
-> > that function after setting up any child/cascaded IRQs, and I assume
-> > that irq_chips can be in modules.
+> Really.  I hope that was idiotic fanboy tripe, because that flat ain't
+> gonna happen here, ever.
 > 
-> But the function is not exported. I guess if we want to allow
-> irq_chips in loadable modules, we could export it, but I don't see
-> how it could ever have worked so far.
+> Q: you say systemd requires CONFIG_CGROUPS=y.  Why is that?  It's taking
+> over sysvinits job afaiui, what does that have to do with cgroups?
 
-genirq does not permit flow handlers in modules - I suspect that's
-because it's pretty hard to remove them safely from the system without
-a lot of effort.  Certainly, a whole bunch of genirq functions which
-are required to implement external flow handlers etc aren't exported.
+I think they were using it to track all the children forked by a service
+and cleanup all of them if need be. So they just need it for logical
+grouping functionality and don't require any controllers as such.
+
+Thanks
+Vivek
