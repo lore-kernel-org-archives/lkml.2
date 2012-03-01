@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390Ab2CADCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:02:20 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32232 "EHLO
+	id S1758406Ab2CADFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:05:12 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32339 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab2CADCJ (ORCPT
+	with ESMTP id S1756035Ab2CADCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:02:09 -0500
+	Wed, 29 Feb 2012 22:02:20 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -15,81 +15,129 @@ To: Jesse Barnes <jbarnes@virtuousgeek.org>,
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 05/36] PCI: add host bridge release support
-Date: Wed, 29 Feb 2012 19:00:06 -0800
-Message-Id: <1330570837-26638-6-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-pcmcia@lists.infradead.org
+Subject: [PATCH 34/36] pcmcia: remove workaround for fixing pci parent bus subordinate
+Date: Wed, 29 Feb 2012 19:00:35 -0800
+Message-Id: <1330570837-26638-35-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
 References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090209.4F4EE67A.0171,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4F4EE68C.006C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need one hook to release host bridge resource that are created for host
-bridge.
+Now pci busn allocation code is there, and it will preallocate bus number and it
+will make sure parent buses subordinate is right.
+
+So remove workaround here.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Tested-by: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-pcmcia@lists.infradead.org
 ---
- drivers/pci/host-bridge.c |    8 ++++++++
- drivers/pci/probe.c       |    3 ++-
- include/linux/pci.h       |    5 +++++
- 3 files changed, 15 insertions(+), 1 deletions(-)
+ drivers/pcmcia/yenta_socket.c |   75 -----------------------------------------
+ 1 files changed, 0 insertions(+), 75 deletions(-)
 
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index a55c3f8..3b2cb40 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -27,6 +27,14 @@ static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
- 	return to_pci_host_bridge(bus->bridge);
+diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
+index 849c0c1..5757cae 100644
+--- a/drivers/pcmcia/yenta_socket.c
++++ b/drivers/pcmcia/yenta_socket.c
+@@ -1064,79 +1064,6 @@ static void yenta_config_init(struct yenta_socket *socket)
+ 	config_writew(socket, CB_BRIDGE_CONTROL, bridge);
  }
  
-+void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-+				 void (*release_fn)(struct pci_host_bridge *),
-+				 void *release_data)
-+{
-+	bridge->release_fn = release_fn;
-+	bridge->release_data = release_data;
-+}
-+
- static bool resource_contains(struct resource *res1, struct resource *res2)
- {
- 	return res1->start <= res2->start && res1->end >= res2->end;
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index fb3dd4b..675d7ed 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1136,7 +1136,8 @@ static void pci_release_bus_bridge_dev(struct device *dev)
- {
- 	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
- 
--	/* TODO: need to free window->res */
-+	if (bridge->release_fn)
-+		bridge->release_fn(bridge);
- 
- 	pci_free_resource_list(&bridge->windows);
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 310610e..d93d3ae 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -378,9 +378,14 @@ struct pci_host_bridge {
- 	struct device dev;
- 	struct pci_bus *bus;		/* root bus */
- 	struct list_head windows;	/* pci_host_bridge_windows */
-+	void (*release_fn)(struct pci_host_bridge *);
-+	void *release_data;
- };
- 
- #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
-+void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-+		     void (*release_fn)(struct pci_host_bridge *),
-+		     void *release_data);
- 
+-/**
+- * yenta_fixup_parent_bridge - Fix subordinate bus# of the parent bridge
+- * @cardbus_bridge: The PCI bus which the CardBus bridge bridges to
+- *
+- * Checks if devices on the bus which the CardBus bridge bridges to would be
+- * invisible during PCI scans because of a misconfigured subordinate number
+- * of the parent brige - some BIOSes seem to be too lazy to set it right.
+- * Does the fixup carefully by checking how far it can go without conflicts.
+- * See http://bugzilla.kernel.org/show_bug.cgi?id=2944 for more information.
+- */
+-static void yenta_fixup_parent_bridge(struct pci_bus *cardbus_bridge)
+-{
+-	struct list_head *tmp;
+-	unsigned char upper_limit;
+-	/*
+-	 * We only check and fix the parent bridge: All systems which need
+-	 * this fixup that have been reviewed are laptops and the only bridge
+-	 * which needed fixing was the parent bridge of the CardBus bridge:
+-	 */
+-	struct pci_bus *bridge_to_fix = cardbus_bridge->parent;
+-
+-	/* Check bus numbers are already set up correctly: */
+-	if (bridge_to_fix->subordinate >= cardbus_bridge->subordinate)
+-		return; /* The subordinate number is ok, nothing to do */
+-
+-	if (!bridge_to_fix->parent)
+-		return; /* Root bridges are ok */
+-
+-	/* stay within the limits of the bus range of the parent: */
+-	upper_limit = bridge_to_fix->parent->subordinate;
+-
+-	/* check the bus ranges of all silbling bridges to prevent overlap */
+-	list_for_each(tmp, &bridge_to_fix->parent->children) {
+-		struct pci_bus *silbling = pci_bus_b(tmp);
+-		/*
+-		 * If the silbling has a higher secondary bus number
+-		 * and it's secondary is equal or smaller than our
+-		 * current upper limit, set the new upper limit to
+-		 * the bus number below the silbling's range:
+-		 */
+-		if (silbling->secondary > bridge_to_fix->subordinate
+-		    && silbling->secondary <= upper_limit)
+-			upper_limit = silbling->secondary - 1;
+-	}
+-
+-	/* Show that the wanted subordinate number is not possible: */
+-	if (cardbus_bridge->subordinate > upper_limit)
+-		dev_printk(KERN_WARNING, &cardbus_bridge->dev,
+-			   "Upper limit for fixing this "
+-			   "bridge's parent bridge: #%02x\n", upper_limit);
+-
+-	/* If we have room to increase the bridge's subordinate number, */
+-	if (bridge_to_fix->subordinate < upper_limit) {
+-
+-		/* use the highest number of the hidden bus, within limits */
+-		unsigned char subordinate_to_assign =
+-			min(cardbus_bridge->subordinate, upper_limit);
+-
+-		dev_printk(KERN_INFO, &bridge_to_fix->dev,
+-			   "Raising subordinate bus# of parent "
+-			   "bus (#%02x) from #%02x to #%02x\n",
+-			   bridge_to_fix->number,
+-			   bridge_to_fix->subordinate, subordinate_to_assign);
+-
+-		/* Save the new subordinate in the bus struct of the bridge */
+-		bridge_to_fix->subordinate = subordinate_to_assign;
+-
+-		/* and update the PCI config space with the new subordinate */
+-		pci_write_config_byte(bridge_to_fix->self,
+-			PCI_SUBORDINATE_BUS, bridge_to_fix->subordinate);
+-	}
+-}
+-
  /*
-  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+  * Initialize a cardbus controller. Make sure we have a usable
+  * interrupt, and that we can map the cardbus area. Fill in the
+@@ -1257,8 +1184,6 @@ static int __devinit yenta_probe(struct pci_dev *dev, const struct pci_device_id
+ 	dev_printk(KERN_INFO, &dev->dev,
+ 		   "Socket status: %08x\n", cb_readl(socket, CB_SOCKET_STATE));
+ 
+-	yenta_fixup_parent_bridge(dev->subordinate);
+-
+ 	/* Register it with the pcmcia layer.. */
+ 	ret = pcmcia_register_socket(&socket->socket);
+ 	if (ret == 0) {
 -- 
 1.7.7
 
