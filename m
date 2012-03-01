@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab2CAQXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 11:23:17 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59439 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2CAQXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 11:23:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.85.35 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	id S1757007Ab2CAQbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 11:31:01 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:55746 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756163Ab2CAQbA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 11:31:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of x0155534@ti.com designates 10.180.24.66 as permitted sender) smtp.mail=x0155534@ti.com
 MIME-Version: 1.0
-In-Reply-To: <4F4F8BEE.3040806@teksavvy.com>
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
- <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
- <4F4F8BEE.3040806@teksavvy.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Mar 2012 08:22:54 -0800
-X-Google-Sender-Auth: Npn0IjgDRbM0mzbl_53OGbngjMc
-Message-ID: <CA+55aFyij_ORw+BE-Sbkt9Y9qcUQSmW_4e-r7p3t0DNA4Sg9pA@mail.gmail.com>
-Subject: Re: Linux 3.3-rc5
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=f46d041824f67ee32d04ba30e046
+In-Reply-To: <CABoJqzyRwBPf4LAhjK7+GpoN_5q06QhJ1XZzmRi=TJ3MGCZeLQ@mail.gmail.com>
+References: <CANk4QSnOwTK6rDNVX381A-e+osyvGWJW99zQmpTvHndDUOYF7w@mail.gmail.com>
+ <CABoJqzyRwBPf4LAhjK7+GpoN_5q06QhJ1XZzmRi=TJ3MGCZeLQ@mail.gmail.com>
+From: "Shlyakhovoy, Kostyantyn" <x0155534@ti.com>
+Date: Thu, 1 Mar 2012 18:30:36 +0200
+Message-ID: <CABoJqzySAVcraWOB_ebj2bOcm0M3MfiACzspcXpQyOEUmU8KhQ@mail.gmail.com>
+Subject: Fwd: [PATCH] PM / Driver core: leave runtime PM enabled during system shutdown
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d041824f67ee32d04ba30e046
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Mar 1, 2012 at 6:47 AM, Mark Lord <kernel@teksavvy.com> wrote:
+> From fe6b91f47080eb17d21cbf2a39311877d57f6938 Mon Sep 17 00:00:00 2001
+> From: Alan Stern <stern@rowland.harvard.edu>
+> Date: Tue, 6 Dec 2011 23:24:52 +0100
+> Subject: [PATCH] PM / Driver core: leave runtime PM enabled during system
+>  shutdown
 >
-> It's close (after adding a missing left-paren), but not 100% working yet.
-> In particular, this command fails to get valid data: =A0i8kctl bios
+> Disabling all runtime PM during system shutdown turns out not to be a
+> good idea, because some devices may need to be woken up from a
+> low-power state at that time.
 >
-> =A0 =A0ioctl(3, I8K_BIOS_VERSION, 0xbfc543c8) =A0=3D -1 EINVAL (Invalid a=
-rgument)
+> The whole point of disabling runtime PM for system shutdown was to
+> prevent untimely runtime-suspend method calls.  This patch (as1504)
+> accomplishes the same result by incrementing the usage count for each
+> device and waiting for ongoing runtime-PM callbacks to finish.  This
+> is what we already do during system suspend and hibernation, which
+> makes sense since the shutdown method is pretty much a legacy analog
+> of the pm->poweroff method.
+>
+> This fixes a recent regression on some OMAP systems introduced by
+> commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9 (PM / driver core:
+> disable device's runtime PM during shutdown).
+>
+> Reported-and-tested-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/core.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index d8b3d89..919daa7 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1743,8 +1743,10 @@ void device_shutdown(void)
+>                 */
+>                list_del_init(&dev->kobj.entry);
+>                spin_unlock(&devices_kset->list_lock);
+> -               /* Disable all device's runtime power management */
+> -               pm_runtime_disable(dev);
+> +
+> +               /* Don't allow any more runtime suspends */
+> +               pm_runtime_get_noresume(dev);
+> +               pm_runtime_barrier(dev);
+>
+>                if (dev->bus && dev->bus->shutdown) {
+>                        dev_dbg(dev, "shutdown\n");
+> --
+> 1.7.6.5
 
-Hmm. That makes no sense.
+Hi Greg,
 
-I8K_BIOS_VERSION is 0x80046980 - and it already matches on both x86-64
-and x86-32. I just checked by compiling to asm. And the size is '4',
-so it wouldn't trigger any changes by the sizemask thing either.
+This patch exists in linux-3.2.y branch and fixes a regression
+introduced by commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9 - PM /
+driver core: disable device's runtime PM during shutdown. However the
+regression was introduced in linux-3.0.y and linux-3.1.y also.
+Could you, please, merge this fix to linux-3.0.y and linux-3.1.y as well?
 
-Ugh. But my patch was crap. It fixed up "arg", but it *should* have
-fixed up "cmd".
-
-Stupid.
-
-So try *this* one instead. I also fixed up the missing parenthesis,
-but didn't add the actual .compat function etc.
-
-Does *this* work? And if not, can you do an strace, but use the "-e
-raw=3Dioctl" option to make it show the ioctl numbers as raw hex to
-verify..
-
-                     Linus
-
-                        Linus
-
---f46d041824f67ee32d04ba30e046
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gza01iyc0
-
-IGRyaXZlcnMvY2hhci9pOGsuYyAgfCAgICA0ICsrKysKIGluY2x1ZGUvbGludXgvaThrLmggfCAg
-IDIyICsrKysrKysrKysrKysrKystLS0tLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjAgaW5zZXJ0aW9u
-cygrKSwgNiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2NoYXIvaThrLmMgYi9k
-cml2ZXJzL2NoYXIvaThrLmMKaW5kZXggNDBjYzBjZjJkZWQ2Li4yYmFhOTIxYWZkODQgMTAwNjQ0
-Ci0tLSBhL2RyaXZlcnMvY2hhci9pOGsuYworKysgYi9kcml2ZXJzL2NoYXIvaThrLmMKQEAgLTMy
-Niw2ICszMjYsMTAgQEAgaThrX2lvY3RsX3VubG9ja2VkKHN0cnVjdCBmaWxlICpmcCwgdW5zaWdu
-ZWQgaW50IGNtZCwgdW5zaWduZWQgbG9uZyBhcmcpCiAJaWYgKCFhcmdwKQogCQlyZXR1cm4gLUVJ
-TlZBTDsKIAorCS8qIFdlIGhhZCBzb21lIGJhZCA2NC1iaXQgY29uZnVzaW9uICovCisJaWYgKCgo
-Y21kID4+IF9JT0NfU0laRVNISUZUKSAmIF9JT0NfU0laRU1BU0spID09IDgpCisJCWNtZCAtPSA0
-IDw8IF9JT0NfU0laRVNISUZUOworCiAJc3dpdGNoIChjbWQpIHsKIAljYXNlIEk4S19CSU9TX1ZF
-UlNJT046CiAJCXZhbCA9IGk4a19nZXRfYmlvc192ZXJzaW9uKCk7CmRpZmYgLS1naXQgYS9pbmNs
-dWRlL2xpbnV4L2k4ay5oIGIvaW5jbHVkZS9saW51eC9pOGsuaAppbmRleCAxYzQ1YmE1MDUxMTUu
-LjY1MGY0MDE1Yzg5YyAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9pOGsuaAorKysgYi9pbmNs
-dWRlL2xpbnV4L2k4ay5oCkBAIC0yMCwxNCArMjAsMjQgQEAKICNkZWZpbmUgSThLX1BST0MJCSIv
-cHJvYy9pOGsiCiAjZGVmaW5lIEk4S19QUk9DX0ZNVAkJIjEuMCIKIAorLyoKKyAqIEZvciBoeXN0
-ZXJpY2FsIHJhaXNpbnMgd2UgZXhwb3NlIHRoZSB3cm9uZyBzaXplIHRvIHVzZXIgc3BhY2UKKyAq
-IGluIHRoZSBpb2N0bCBudW1iZXJpbmcuIFRoZSBhY3R1YWwgcmVhbCBkYXRhIHNpemUgaXMgImlu
-dCIuCisgKi8KKyNpZmRlZiBfX0tFUk5FTF9fCisjZGVmaW5lIGJvcmtlZF9pOGtfYXJnIGludAor
-I2Vsc2UKKyNkZWZpbmUgYm9ya2VkX2k4a19hcmcgc2l6ZV90CisjZW5kaWYKKwogI2RlZmluZSBJ
-OEtfQklPU19WRVJTSU9OCV9JT1IgKCdpJywgMHg4MCwgaW50KQkvKiBicm9rZW46IG1lYW50IDQg
-Ynl0ZXMgKi8KICNkZWZpbmUgSThLX01BQ0hJTkVfSUQJCV9JT1IgKCdpJywgMHg4MSwgaW50KQkv
-KiBicm9rZW46IG1lYW50IDE2IGJ5dGVzICovCi0jZGVmaW5lIEk4S19QT1dFUl9TVEFUVVMJX0lP
-UiAoJ2knLCAweDgyLCBzaXplX3QpCi0jZGVmaW5lIEk4S19GTl9TVEFUVVMJCV9JT1IgKCdpJywg
-MHg4Mywgc2l6ZV90KQotI2RlZmluZSBJOEtfR0VUX1RFTVAJCV9JT1IgKCdpJywgMHg4NCwgc2l6
-ZV90KQotI2RlZmluZSBJOEtfR0VUX1NQRUVECQlfSU9XUignaScsIDB4ODUsIHNpemVfdCkKLSNk
-ZWZpbmUgSThLX0dFVF9GQU4JCV9JT1dSKCdpJywgMHg4Niwgc2l6ZV90KQotI2RlZmluZSBJOEtf
-U0VUX0ZBTgkJX0lPV1IoJ2knLCAweDg3LCBzaXplX3QpCisjZGVmaW5lIEk4S19QT1dFUl9TVEFU
-VVMJX0lPUiAoJ2knLCAweDgyLCBib3JrZWRfaThrX2FyZykKKyNkZWZpbmUgSThLX0ZOX1NUQVRV
-UwkJX0lPUiAoJ2knLCAweDgzLCBib3JrZWRfaThrX2FyZykKKyNkZWZpbmUgSThLX0dFVF9URU1Q
-CQlfSU9SICgnaScsIDB4ODQsIGJvcmtlZF9pOGtfYXJnKQorI2RlZmluZSBJOEtfR0VUX1NQRUVE
-CQlfSU9XUignaScsIDB4ODUsIGJvcmtlZF9pOGtfYXJnKQorI2RlZmluZSBJOEtfR0VUX0ZBTgkJ
-X0lPV1IoJ2knLCAweDg2LCBib3JrZWRfaThrX2FyZykKKyNkZWZpbmUgSThLX1NFVF9GQU4JCV9J
-T1dSKCdpJywgMHg4NywgYm9ya2VkX2k4a19hcmcpCiAKICNkZWZpbmUgSThLX0ZBTl9MRUZUCQkx
-CiAjZGVmaW5lIEk4S19GQU5fUklHSFQJCTAK
---f46d041824f67ee32d04ba30e046--
+Regards,
+Konstantin
