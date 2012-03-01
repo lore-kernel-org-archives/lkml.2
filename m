@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759128Ab2CAMeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:34:05 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:42371 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759112Ab2CAMeD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:34:03 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1759171Ab2CAMgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:36:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34755 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229Ab2CAMgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 07:36:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="113443733"
+Date: Thu, 1 Mar 2012 14:35:42 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
+Message-ID: <20120301123540.GE25627@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	santosh nayak <santoshprasadnayak@gmail.com>, marcel@holtmann.org,
+	padovan@profusion.mobi, davem@davemloft.net,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-Date: Thu, 1 Mar 2012 12:33:14 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
-In-Reply-To: <1330604802.2465.43.camel@edumazet-laptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-Thread-Index: Acz3pruiey8oJ/8WQ061ZRrQWTBZEAAAFkGA
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>
-Cc: "David Miller" <davem@davemloft.net>, <rodrigo.moya@collabora.co.uk>,
-        <javier@collabora.co.uk>, <lennart@poettering.net>,
-        <kay.sievers@vrfy.org>, <alban.crequy@collabora.co.uk>,
-        <bart.cerneels@collabora.co.uk>, <sjoerd.simons@collabora.co.uk>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 01 Mar 2012 12:33:14.0509 (UTC) FILETIME=[78CB4BD0:01CCF7A7]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> > So, now we are trying a different approach. To create a new address
-> > family AF_MCAST. That way we can have more control over the
-semantics of
-> > the socket interface for that family.
-> > 
-> > We expect to have some patches in a few days and we will resend.
-> > 
-> > Does this makes more sense to you?
-> > 
+Hi Santosh,
+
+On Thu, Mar 01, 2012 at 04:29:21PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
 > 
-> Why adding an obscure set of IPC mechanism in network tree, and not
-> using (maybe extending) traditional IPC (Messages queues, semaphores,
-> Shared memory, pipes, futexes, ...).
+> Fix for endian bug.
+> 
+> Fix for null dereferenced removed as it is already
+> submitted by Andrei.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  net/bluetooth/l2cap_sock.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 
-If it isn't a totally silly suggestion, why not write a simple
-device driver that just does what you want?
-Which (I think) is named pipes with multiple readers.
+We prefer following commit log (this is the example)
 
-	David
+<------8<----------------------------------------------------------
+|  From: Santosh Nayak <santoshprasadnayak@gmail.com>
+|
+|  Fix network to host endian conversion for L2CAP chan id.
+|
+|  Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+|
+|  ---
+|          * v2 Fix for null dereferenced removed as it is already
+|          submitted by Andrei.
+|
+|    net/bluetooth/l2cap_sock.c |    5 +++--
+|    1 files changed, 3 insertions(+), 2 deletions(-)
+|
+<------8<----------------------------------------------------------
 
+
+> 
+> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+> index 401d942..86d5067 100644
+> --- a/net/bluetooth/l2cap_sock.c
+> +++ b/net/bluetooth/l2cap_sock.c
+> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
+>  	}
+>  
+>  	if (la.l2_cid)
+> -		err = l2cap_add_scid(chan, la.l2_cid);
+> +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+>  	else
+>  		err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
+>  
+> @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
+>  	if (la.l2_cid && la.l2_psm)
+>  		return -EINVAL;
+>  
+> -	err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
+> +	err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
+> +				&la.l2_bdaddr);
+
+I live this to Marcel to decide should we reindent our code otherwise this
+one looks odd.
+
+Best regards 
+Andrei Emeltchenko 
 
