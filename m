@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965116Ab2CAVj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:39:29 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965066Ab2CAVj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:39:27 -0500
-Message-ID: <4F4FEC83.6090504@nod.at>
-Date: Thu, 01 Mar 2012 22:39:15 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S965165Ab2CAVre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:47:34 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42848 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964855Ab2CAVrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 16:47:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.130.6 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Thu, 1 Mar 2012 13:46:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/34] 2.6.32.58-longterm review
+Message-ID: <20120301214654.GA13231@kroah.com>
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org
-Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-3-git-send-email-richard@nod.at> <20120301112732.GA6806@1984>
-In-Reply-To: <20120301112732.GA6806@1984>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig071856318EA3679E1D7573C8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig071856318EA3679E1D7573C8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
-> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
-> corrupts the log line. Note the extra PROTO=3D, I don't have any UDPLIT=
-E
-> traffic here.
->=20
-> Looks like a missing break in one switch.
-
-I got confused by my own logic. :-\
-Does the attached patch fix the issue?
-It's based on "Netfilter: xt_LOG: Add timestamp support".
-
-Thanks,
-//richard
-
-diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-index 4e392cf..019fb64 100644
---- a/net/netfilter/xt_LOG.c
-+++ b/net/netfilter/xt_LOG.c
-@@ -269,12 +269,14 @@ static void dump_ipv4_packet(struct sbuff *m,
- 				    ntohs(ih->frag_off) & IP_OFFSET,
- 				    iphoff+ih->ihl*4, logflags))
- 			return;
-+		break;
- 	case IPPROTO_UDP:
- 	case IPPROTO_UDPLITE:
- 		if (dump_udp_header(m, skb, ih->protocol,
- 				    ntohs(ih->frag_off) & IP_OFFSET,
- 				    iphoff+ih->ihl*4))
- 			return;
-+		break;
- 	case IPPROTO_ICMP: {
- 		struct icmphdr _icmph;
- 		const struct icmphdr *ich;
-@@ -723,10 +725,12 @@ static void dump_ipv6_packet(struct sbuff *m,
- 		if (dump_tcp_header(m, skb, currenthdr, fragment, ptr,
- 		    logflags))
- 			return;
-+		break;
- 	case IPPROTO_UDP:
- 	case IPPROTO_UDPLITE:
- 		if (dump_udp_header(m, skb, currenthdr, fragment, ptr))
- 			return;
-+		break;
- 	case IPPROTO_ICMPV6: {
- 		struct icmp6hdr _icmp6h;
- 		const struct icmp6hdr *ic;
+NOTE:
+	I have NOT tested this rc release.  I now no longer own any
+	machines that can run the 2.6.32 kernel.  Because of this, this
+	will be the last 2.6.32-longterm kernel that I will release.  I
+	will be passing on the .32 kernel to someone else after this
+	release.  Please, if you care about the .32 kernel, test this
+	release, I have _only_ build tested it, and have no idea if I
+	got something wrong or not.
 
 
---------------enig071856318EA3679E1D7573C8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+This is the start of the longterm review cycle for the 2.6.32.58 release.
+There are 34 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Responses should be made by Sat Mar  3 21:39:21 UTC 2012.
+Anything received after that time might be too late.
 
-iQEcBAEBAgAGBQJPT+yKAAoJEN9758yqZn9euysH/2G19o/m9i58iOu/hE+UzpQs
-JmvR5mqX5uNqB/uuEkpgF6mZiVtZkHvGi37psT0QGbtSW8s69S+bbmeXnWEhsRhx
-ly+Z7uNqaOuE4FAj+nGzaOGaYyFars/VT/m+MRZLUgx7W1kF8fEv2XCTb9D4vp6e
-RG91/m1dyKIu4gQaJAMecieE7U8NlofC1cV+5I+uJ93ZbnaLva1rlRwlu7i7VHDM
-nes4N9f902PUdc9Li/06v4bYzecUQVBa547iyCd7J6XjYxJYRkEayE/FGvaKTOUV
-FaP5ZHdPw92PfksnHFpEfeDlAhnfw9idXW8psdzAP0/Fh3Fupok6AgInA9Qyv+g=
-=dIu+
------END PGP SIGNATURE-----
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.58-rc1.gz
+and the diffstat can be found below.
 
---------------enig071856318EA3679E1D7573C8--
+thanks,
+
+greg k-h
+
+-------------
+ Makefile                                |    2 +-
+ arch/arm/include/asm/assembler.h        |    5 ++
+ arch/arm/mm/cache-v7.S                  |    6 ++
+ arch/s390/include/asm/compat.h          |    7 --
+ arch/s390/kernel/process.c              |    1 -
+ arch/s390/kernel/ptrace.c               |    2 +-
+ arch/s390/kernel/setup.c                |    2 +-
+ arch/s390/mm/mmap.c                     |    2 +-
+ crypto/sha512_generic.c                 |   83 +++++++++++--------------
+ drivers/base/firmware_class.c           |   12 +++-
+ drivers/cdrom/cdrom.c                   |    8 +--
+ drivers/gpu/drm/i915/intel_lvds.c       |    8 +++
+ drivers/gpu/drm/radeon/r100.c           |    4 +-
+ drivers/gpu/drm/radeon/rs600.c          |    4 +-
+ drivers/hwmon/f75375s.c                 |    4 +-
+ drivers/media/video/hdpvr/hdpvr-video.c |    3 +-
+ drivers/s390/block/dasd_eckd.c          |    1 +
+ drivers/s390/block/dasd_ioctl.c         |    1 +
+ drivers/s390/char/fs3270.c              |    1 +
+ drivers/s390/char/vmcp.c                |    1 +
+ drivers/s390/cio/chsc_sch.c             |    1 +
+ drivers/s390/scsi/zfcp_cfdc.c           |    1 +
+ drivers/scsi/3w-9xxx.c                  |   11 ++-
+ drivers/usb/host/pci-quirks.c           |   11 +++
+ drivers/usb/host/xhci-mem.c             |   32 +++++++---
+ drivers/usb/serial/cp210x.c             |    2 +
+ fs/autofs4/autofs_i.h                   |    1 +
+ fs/autofs4/dev-ioctl.c                  |    1 +
+ fs/autofs4/inode.c                      |    2 +
+ fs/autofs4/waitq.c                      |   22 ++++++-
+ fs/ecryptfs/file.c                      |    2 +-
+ fs/ecryptfs/inode.c                     |  103 +++++++++++++++++++++----------
+ fs/ecryptfs/main.c                      |   38 ++++++++++--
+ include/linux/bitops.h                  |   20 ++++++
+ include/linux/compat.h                  |    4 +
+ include/linux/kernel.h                  |   15 ++---
+ include/linux/kmod.h                    |    9 +++
+ include/linux/proportions.h             |    4 +
+ kernel/kmod.c                           |   33 ++++++++++-
+ kernel/relay.c                          |   10 +++-
+ net/mac80211/rx.c                       |    2 +-
+ 41 files changed, 338 insertions(+), 143 deletions(-)
+
