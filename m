@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab2CAMRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:17:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37484 "EHLO
+	id S1758089Ab2CAMSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:18:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37496 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab2CAMRa (ORCPT
+	with ESMTP id S1753896Ab2CAMSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:17:30 -0500
-Date: Thu, 1 Mar 2012 04:16:40 -0800
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-7x70cypsotjb4jvcor3edctk@git.kernel.org>
+	Thu, 1 Mar 2012 07:18:13 -0500
+Date: Thu, 1 Mar 2012 04:17:29 -0800
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-wxx7btox7coby6ifv5vzhzgp@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Do not throttle when PI boosting
-Git-Commit-ID: 7abc63b1bd412f7655b62ef3e35c3c11c5134636
+Subject: [tip:sched/core] sched/rt: Add schedule_preempt_disabled()
+Git-Commit-ID: c5491ea779793f977d282754db478157cc409d82
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,63 +25,69 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Mar 2012 04:17:09 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Mar 2012 04:17:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7abc63b1bd412f7655b62ef3e35c3c11c5134636
-Gitweb:     http://git.kernel.org/tip/7abc63b1bd412f7655b62ef3e35c3c11c5134636
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 18 Oct 2011 22:03:48 +0200
+Commit-ID:  c5491ea779793f977d282754db478157cc409d82
+Gitweb:     http://git.kernel.org/tip/c5491ea779793f977d282754db478157cc409d82
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Mon, 21 Mar 2011 12:09:35 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 1 Mar 2012 10:28:02 +0100
+CommitDate: Thu, 1 Mar 2012 10:28:03 +0100
 
-sched/rt: Do not throttle when PI boosting
+sched/rt: Add schedule_preempt_disabled()
 
-When a runqueue has rt_runtime_us = 0 then the only way it can
-accumulate rt_time is via PI boosting. That causes the runqueue
-to be throttled and replenishing does not change anything due to
-rt_runtime_us = 0. So avoid that situation by clearing rt_time and
-skip the throttling alltogether.
+Add helper to get rid of the ever repeating:
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-[ Changelog ]
+    preempt_enable_no_resched();
+    schedule();
+    preempt_disable();
+
+patterns.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-7x70cypsotjb4jvcor3edctk@git.kernel.org
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-wxx7btox7coby6ifv5vzhzgp@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/rt.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 6d1eb0b..7f7e7cd 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -857,8 +857,24 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
- 		return 0;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1a63984..03dd224 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -361,6 +361,7 @@ extern signed long schedule_timeout_interruptible(signed long timeout);
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
++extern void schedule_preempt_disabled(void);
+ extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
  
- 	if (rt_rq->rt_time > runtime) {
--		rt_rq->rt_throttled = 1;
--		printk_once(KERN_WARNING "sched: RT throttling activated\n");
-+		struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+ struct nsproxy;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 91fe6a0..7302239 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3246,6 +3246,18 @@ asmlinkage void __sched schedule(void)
+ }
+ EXPORT_SYMBOL(schedule);
+ 
++/**
++ * schedule_preempt_disabled - called with preemption disabled
++ *
++ * Returns with preemption disabled. Note: preempt_count must be 1
++ */
++void __sched schedule_preempt_disabled(void)
++{
++	preempt_enable_no_resched();
++	schedule();
++	preempt_disable();
++}
 +
-+		/*
-+		 * Don't actually throttle groups that have no runtime assigned
-+		 * but accrue some time due to boosting.
-+		 */
-+		if (likely(rt_b->rt_runtime)) {
-+			rt_rq->rt_throttled = 1;
-+			printk_once(KERN_WARNING "sched: RT throttling activated\n");
-+		} else {
-+			/*
-+			 * In case we did anyway, make it go away,
-+			 * replenishment is a joke, since it will replenish us
-+			 * with exactly 0 ns.
-+			 */
-+			rt_rq->rt_time = 0;
-+		}
-+
- 		if (rt_rq_throttled(rt_rq)) {
- 			sched_rt_rq_dequeue(rt_rq);
- 			return 1;
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ 
+ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
