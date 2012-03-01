@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965427Ab2CAVuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:50:23 -0500
+	id S965687Ab2CAV4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:56:07 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965266Ab2CAVuT (ORCPT
+	with ESMTP id S965393Ab2CAVuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.130.7 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.203.135 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213925.657021504@linuxfoundation.org>
+Message-Id: <20120301213925.831175177@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:43 -0800
+Date: Thu, 01 Mar 2012 13:39:44 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Oliver Neukum <oneukum@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 21/34] USB: Fix handoff when BIOS disables host PCI device.
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Andiry Xu <andiry.xu@amd.com>
+Subject: [ 22/34] xhci: Fix encoding for HS bulk/control NAK rate.
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,65 +30,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit cab928ee1f221c9cc48d6615070fefe2e444384a upstream.
+commit 340a3504fd39dad753ba908fb6f894ee81fc3ae2 upstream.
 
-On some systems with an Intel Panther Point xHCI host controller, the
-BIOS disables the xHCI PCI device during boot, and switches the xHCI
-ports over to EHCI.  This allows the BIOS to access USB devices without
-having xHCI support.
+The xHCI 0.96 spec says that HS bulk and control endpoint NAK rate must
+be encoded as an exponent of two number of microframes.  The endpoint
+descriptor has the NAK rate encoded in number of microframes.  We were
+just copying the value from the endpoint descriptor into the endpoint
+context interval field, which was not correct.  This lead to the VIA
+host rejecting the add of a bulk OUT endpoint from any USB 2.0 mass
+storage device.
 
-The downside is that the xHCI BIOS handoff mechanism will fail because
-memory mapped I/O is not enabled for the disabled PCI device.
-Jesse Barnes says this is expected behavior.  The PCI core will enable
-BARs before quirks run, but it will leave it in an undefined state, and
-it may not have memory mapped I/O enabled.
+The fix is to use the correct encoding.  Refactor the code to convert
+number of frames to an exponential number of microframes, and make sure
+we convert the number of microframes in HS bulk and control endpoints to
+an exponent.
 
-Make the generic USB quirk handler call pci_enable_device() to re-enable
-MMIO, and call pci_disable_device() once the host-specific BIOS handoff
-is finished.  This will balance the ref counts in the PCI core.  When
-the PCI probe function is called, usb_hcd_pci_probe() will call
-pci_enable_device() again.
-
-This should be back ported to kernels as old as 2.6.31.  That was the
-first kernel with xHCI support, and no one has complained about BIOS
-handoffs failing due to memory mapped I/O being disabled on other hosts
-(EHCI, UHCI, or OHCI).
+This should be back ported to kernels as old as 2.6.31, that contain the
+commit dfa49c4ad120a784ef1ff0717168aa79f55a483a "USB: xhci - fix math
+in xhci_get_endpoint_interval"
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Acked-by: Oliver Neukum <oneukum@suse.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Felipe Contreras <felipe.contreras@gmail.com>
+Suggested-by: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/host/xhci-mem.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -503,7 +503,17 @@ static void __devinit quirk_usb_early_ha
- 	 */
- 	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
- 		return;
-+	if (pdev->class != PCI_CLASS_SERIAL_USB_UHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_OHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_EHCI &&
-+			pdev->class != PCI_CLASS_SERIAL_USB_XHCI)
-+		return;
- 
-+	if (pci_enable_device(pdev) < 0) {
-+		dev_warn(&pdev->dev, "Can't enable PCI device, "
-+				"BIOS handoff failed.\n");
-+		return;
-+	}
- 	if (pdev->class == PCI_CLASS_SERIAL_USB_UHCI)
- 		quirk_usb_handoff_uhci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
-@@ -512,5 +522,6 @@ static void __devinit quirk_usb_early_ha
- 		quirk_usb_disable_ehci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_XHCI)
- 		quirk_usb_handoff_xhci(pdev);
-+	pci_disable_device(pdev);
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -472,26 +472,42 @@ static unsigned int xhci_parse_exponent_
  }
- DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_usb_early_handoff);
+ 
+ /*
+- * Convert bInterval expressed in frames (in 1-255 range) to exponent of
++ * Convert bInterval expressed in microframes (in 1-255 range) to exponent of
+  * microframes, rounded down to nearest power of 2.
+  */
+-static unsigned int xhci_parse_frame_interval(struct usb_device *udev,
+-		struct usb_host_endpoint *ep)
++static unsigned int xhci_microframes_to_exponent(struct usb_device *udev,
++		struct usb_host_endpoint *ep, unsigned int desc_interval,
++		unsigned int min_exponent, unsigned int max_exponent)
+ {
+ 	unsigned int interval;
+ 
+-	interval = fls(8 * ep->desc.bInterval) - 1;
+-	interval = clamp_val(interval, 3, 10);
+-	if ((1 << interval) != 8 * ep->desc.bInterval)
++	interval = fls(desc_interval) - 1;
++	interval = clamp_val(interval, min_exponent, max_exponent);
++	if ((1 << interval) != desc_interval)
+ 		dev_warn(&udev->dev,
+ 			 "ep %#x - rounding interval to %d microframes, ep desc says %d microframes\n",
+ 			 ep->desc.bEndpointAddress,
+ 			 1 << interval,
+-			 8 * ep->desc.bInterval);
++			 desc_interval);
+ 
+ 	return interval;
+ }
+ 
++static unsigned int xhci_parse_microframe_interval(struct usb_device *udev,
++		struct usb_host_endpoint *ep)
++{
++	return xhci_microframes_to_exponent(udev, ep,
++			ep->desc.bInterval, 0, 15);
++}
++
++
++static unsigned int xhci_parse_frame_interval(struct usb_device *udev,
++		struct usb_host_endpoint *ep)
++{
++	return xhci_microframes_to_exponent(udev, ep,
++			ep->desc.bInterval * 8, 3, 10);
++}
++
+ /* Return the polling or NAK interval.
+  *
+  * The polling interval is expressed in "microframes".  If xHCI's Interval field
+@@ -510,7 +526,7 @@ static inline unsigned int xhci_get_endp
+ 		/* Max NAK rate */
+ 		if (usb_endpoint_xfer_control(&ep->desc) ||
+ 		    usb_endpoint_xfer_bulk(&ep->desc)) {
+-			interval = ep->desc.bInterval;
++			interval = xhci_parse_microframe_interval(udev, ep);
+ 			break;
+ 		}
+ 		/* Fall through - SS and HS isoc/int have same decoding */
 
 
