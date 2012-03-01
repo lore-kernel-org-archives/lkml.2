@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab2CAAtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:49:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14866 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab2CAAte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:49:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="113251415"
-Message-ID: <4F4EC73E.40209@linux.intel.com>
-Date: Wed, 29 Feb 2012 16:47:58 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>,
+	id S1030240Ab2CAAxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 19:53:21 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63303 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757797Ab2CAAxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 19:53:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.230.134 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Wed, 29 Feb 2012 16:53:03 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Alan Cox <alan@linux.intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk
- parameter
-References: <cover.1330539597.git.dvhart@linux.intel.com> <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
-In-Reply-To: <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Feng Tang <feng.tang@intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user
+ uartclk parameter
+Message-ID: <20120301005303.GA5070@kroah.com>
+References: <cover.1330539597.git.dvhart@linux.intel.com>
+ <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
+ <4F4EC73E.40209@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4EC73E.40209@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 02/29/2012 04:38 PM, Tomoya MORINAGA wrote:
-> Hi
+On Wed, Feb 29, 2012 at 04:47:58PM -0800, Darren Hart wrote:
 > 
-> Darren's patch series, I think OK.
-> However, need to proceed next step.
-
-Great, Greg are you happy with these as they are?
-
 > 
-> As I said before,
-> internal clock(USB_48MHz) should be used than external clock(UART_CLK)
-> as default setting.
-> --Reasons
->   - Users don't always use 1.8432MHz as UART_CLK.
->     So,  In case of using except 1.8432MHz,
->     the user needs to change both pch_phub and pch_uart setting (It's
-> bother things).
->   - High baud rate can't be used more than 115Kbps
+> On 02/29/2012 04:38 PM, Tomoya MORINAGA wrote:
+> > Hi
+> > 
+> > Darren's patch series, I think OK.
+> > However, need to proceed next step.
 > 
-> I think there is no merit to use UART_CLK.
-> 
-> ---Merit to use 192MHz
->   - Users don't have to care both pch_phub and pch_uart clock setting.
->   - High baud rate can be supported
+> Great, Greg are you happy with these as they are?
 
-I have no objection to this provided the early serial console can work
-without additional patches. So the question now is, how do we force the
-192MHz clock setting BEFORE the pch_phub code runs?
+I'll look them over in the next few days and let you know.
 
+thanks,
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+greg k-h
