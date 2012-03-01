@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab2CAKPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:15:21 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55506 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758835Ab2CAKPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:15:20 -0500
-Date: Thu, 1 Mar 2012 11:15:02 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Feng Tang <feng.tang@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to
- reduce wait time
-Message-ID: <20120301101502.GB2535@pengutronix.de>
-References: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
- <20120224121753.GE2479@pengutronix.de>
- <CANKRQngWB8kUO68UdbDeWey5eGRF0nGCE341j8jyCMogvYUYKA@mail.gmail.com>
+	id S1758881Ab2CAKSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:18:17 -0500
+Received: from mail.us.es ([193.147.175.20]:33222 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758853Ab2CAKSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 05:18:15 -0500
+Date: Thu, 1 Mar 2012 11:18:09 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size
+ parametre.
+Message-ID: <20120301101809.GA6488@1984>
+References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R3G7APHDIzY6R/pk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANKRQngWB8kUO68UdbDeWey5eGRF0nGCE341j8jyCMogvYUYKA@mail.gmail.com>
+In-Reply-To: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 01, 2012 at 02:46:30PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> While copying to userspace, the size of source is 29byte where as
+> size parametre is 32 byte.  Its leaking extra-information from
+> kernel space to user space.
+> Replace EBT_FUNCTION_MAXNAMELEN by XT_EXTENSION_MAXNAMELEN.
 
---R3G7APHDIzY6R/pk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's no information leak.
 
+Let me clarify this. Have a look at /linux/netfilter/x_tables.h, then
+you find:
 
-> Our team moved to ROHM Co., Ltd.
-> So, previous email address already disappeared.
-> Current my mail address is "tomoya.rohm@gmail.com".
+#define XT_FUNCTION_MAXNAMELEN 30
+#define XT_EXTENSION_MAXNAMELEN 29
+#define XT_TABLE_MAXNAMELEN 32
 
-Ah, thanks for the update! Are you fine with the patch in question now?
+For iptables, everything has been 30 bytes, but we stole one
+byte to store the revision field for matches/targets.
 
-Thanks,
+For ebtables, there's no revision field and the length of the
+table name is different.
 
-   Wolfram
+But linux/netfilter/in ebtables.h, you'll find:
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+#define EBT_TABLE_MAXNAMELEN 32
+#define EBT_CHAIN_MAXNAMELEN EBT_TABLE_MAXNAMELEN
+#define EBT_FUNCTION_MAXNAMELEN EBT_TABLE_MAXNAMELEN
 
---R3G7APHDIzY6R/pk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Note that someone decided to use 32 bytes for the ebtables
+tables/match/target name instead of 30 bytes in iptables.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Yes, it sucks a bit we have to live with these interfaces until
+we have some netlink interface for all these things.
 
-iEYEARECAAYFAk9PTCYACgkQD27XaX1/VRv46wCfcmM3LnEq3iH6m/OeckgAhsqb
-SFYAn2fvJ5vN05J1Hgxye8oeT98vqfQ0
-=83qE
------END PGP SIGNATURE-----
-
---R3G7APHDIzY6R/pk--
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  net/bridge/netfilter/ebtables.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+> index 5864cc4..f3fcbd9 100644
+> --- a/net/bridge/netfilter/ebtables.c
+> +++ b/net/bridge/netfilter/ebtables.c
+> @@ -1335,7 +1335,7 @@ static inline int ebt_make_matchname(const struct ebt_entry_match *m,
+>      const char *base, char __user *ubase)
+>  {
+>  	char __user *hlp = ubase + ((char *)m - base);
+> -	if (copy_to_user(hlp, m->u.match->name, EBT_FUNCTION_MAXNAMELEN))
+> +	if (copy_to_user(hlp, m->u.match->name, XT_EXTENSION_MAXNAMELEN))
+>  		return -EFAULT;
+>  	return 0;
+>  }
+> @@ -1344,7 +1344,7 @@ static inline int ebt_make_watchername(const struct ebt_entry_watcher *w,
+>      const char *base, char __user *ubase)
+>  {
+>  	char __user *hlp = ubase + ((char *)w - base);
+> -	if (copy_to_user(hlp , w->u.watcher->name, EBT_FUNCTION_MAXNAMELEN))
+> +	if (copy_to_user(hlp , w->u.watcher->name, XT_EXTENSION_MAXNAMELEN))
+>  		return -EFAULT;
+>  	return 0;
+>  }
+> @@ -1368,7 +1368,7 @@ ebt_make_names(struct ebt_entry *e, const char *base, char __user *ubase)
+>  	ret = EBT_WATCHER_ITERATE(e, ebt_make_watchername, base, ubase);
+>  	if (ret != 0)
+>  		return ret;
+> -	if (copy_to_user(hlp, t->u.target->name, EBT_FUNCTION_MAXNAMELEN))
+> +	if (copy_to_user(hlp, t->u.target->name, XT_EXTENSION_MAXNAMELEN))
+>  		return -EFAULT;
+>  	return 0;
+>  }
+> -- 
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
