@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab2CADIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:08:24 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32249 "EHLO
+	id S932860Ab2CADIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:08:41 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32231 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab2CADCK (ORCPT
+	with ESMTP id S1754438Ab2CADCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:02:10 -0500
+	Wed, 29 Feb 2012 22:02:09 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -15,55 +15,75 @@ To: Jesse Barnes <jbarnes@virtuousgeek.org>,
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        sparclinux@vger.kernel.org
-Subject: [PATCH 25/36] PCI, sparc: Register busn_res for root buses
-Date: Wed, 29 Feb 2012 19:00:26 -0800
-Message-Id: <1330570837-26638-26-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 28/36] PCI: Add pci_bus_extend/shrink_top()
+Date: Wed, 29 Feb 2012 19:00:29 -0800
+Message-Id: <1330570837-26638-29-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
 References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F4EE68D.002B,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090209.4F4EE68E.00C0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
----
- arch/sparc/kernel/pci.c      |    4 ++++
- arch/sparc/kernel/pci_impl.h |    1 +
- 2 files changed, 5 insertions(+), 0 deletions(-)
+extend or shrink bus and parent buses top (subordinate)
 
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 253e8ac..1687fed 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -695,6 +695,10 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_pbm_info *pbm,
- 				pbm->io_space.start);
- 	pci_add_resource_offset(&resources, &pbm->mem_space,
- 				pbm->mem_space.start);
-+	pbm->busn.start = pbm->pci_first_busno;
-+	pbm->busn.end	= pbm->pci_last_busn;
-+	pbm->busn.flags	= IORESOURCE_BUS;
-+	pci_add_resource(&resources, &pbm->busn);
- 	bus = pci_create_root_bus(parent, pbm->pci_first_busno, pbm->pci_ops,
- 				  pbm, &resources);
- 	if (!bus) {
-diff --git a/arch/sparc/kernel/pci_impl.h b/arch/sparc/kernel/pci_impl.h
-index 6beb60d..918a203 100644
---- a/arch/sparc/kernel/pci_impl.h
-+++ b/arch/sparc/kernel/pci_impl.h
-@@ -97,6 +97,7 @@ struct pci_pbm_info {
- 	/* PBM I/O and Memory space resources. */
- 	struct resource			io_space;
- 	struct resource			mem_space;
-+	struct resource			busn;
+extended range is verified safe range, and stop at recorded parent_res.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 1c07aba..96259f8 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -655,6 +655,42 @@ static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
+ 	}
+ }
  
- 	/* Base of PCI Config space, can be per-PBM or shared. */
- 	unsigned long			config_space;
++static void __devinit pci_bus_update_top(struct pci_bus *parent,
++		 long size, struct resource *parent_res)
++{
++	struct resource *res;
++
++	if (!size)
++		return;
++
++	while (parent) {
++		res = &parent->busn_res;
++		if (res == parent_res)
++			break;
++		res->end += size;
++		parent->subordinate += size;
++		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS,
++					 parent->subordinate);
++		dev_printk(KERN_DEBUG, &parent->dev,
++				"busn_res: %s %02lx to %pR\n",
++				(size > 0) ? "extended" : "shrunk",
++				abs(size), res);
++		parent = parent->parent;
++	}
++}
++
++static void __devinit pci_bus_extend_top(struct pci_bus *parent,
++		 long size, struct resource *parent_res)
++{
++	pci_bus_update_top(parent, size, parent_res);
++}
++
++static void __devinit pci_bus_shrink_top(struct pci_bus *parent,
++		 long size, struct resource *parent_res)
++{
++	pci_bus_update_top(parent, -size, parent_res);
++}
++
+ /*
+  * If it's a bridge, configure it and scan the bus behind it.
+  * For CardBus bridges, we don't scan behind as the devices will
 -- 
 1.7.7
 
