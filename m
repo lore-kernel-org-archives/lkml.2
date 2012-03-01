@@ -1,144 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2CAOxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:53:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51482 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab2CAOxc (ORCPT
+	id S964866Ab2CAOxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:53:52 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:19493 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab2CAOxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:53:32 -0500
-Date: Thu, 1 Mar 2012 08:53:28 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
-Message-ID: <20120301145328.GA27955@ubuntu-macmini>
-Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
- <CACxGe6sAcubJvc6LaVRxt+XzBz0jKpxSAPLdOvXkQz=NkXG5vQ@mail.gmail.com>
- <20120229175327.GA20565@ubuntu-macmini>
- <CACxGe6uc+LZjuMLS5DZELzAsHsnhObL6mdPzdMnNVbfriTfNwg@mail.gmail.com>
- <20120229195042.GB20565@ubuntu-macmini>
- <CACxGe6tK85FgYAT-1JQbLxEhRS34v2MPsx8urXADi6v2FnQ2gw@mail.gmail.com>
- <20120229220809.GC20565@ubuntu-macmini>
- <CACxGe6tLCYhuiAH1Q1PoWTzFLmZ0watw==0g76J1hS-Qurzyrw@mail.gmail.com>
- <20120229225650.GD20565@ubuntu-macmini>
- <CAHR064ikTm5dD-R6JE84XUTzNH5fRz9Xi4uKaK9cMn=MkrxCHg@mail.gmail.com>
+	Thu, 1 Mar 2012 09:53:50 -0500
+Message-ID: <4F4F8D66.7040205@atmel.com>
+Date: Thu, 01 Mar 2012 15:53:26 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAHR064ikTm5dD-R6JE84XUTzNH5fRz9Xi4uKaK9cMn=MkrxCHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL v2] at91: irqdomain and device tree for 3.4
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 10:19:58AM +0100, Corentin Chary wrote:
-> On Wed, Feb 29, 2012 at 11:56 PM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > On Wed, Feb 29, 2012 at 04:32:28PM -0600, Grant Likely wrote:
-> >> On Wed, Feb 29, 2012 at 4:08 PM, Seth Forshee
-> >> <seth.forshee@canonical.com> wrote:
-> >> > On Wed, Feb 29, 2012 at 03:23:20PM -0600, Grant Likely wrote:
-> >> >> On Wed, Feb 29, 2012 at 1:50 PM, Seth Forshee
-> >> >> <seth.forshee@canonical.com> wrote:
-> >> >> > On Wed, Feb 29, 2012 at 12:43:23PM -0600, Grant Likely wrote:
-> >> >> >> On Wed, Feb 29, 2012 at 11:53 AM, Seth Forshee
-> >> >> >> <seth.forshee@canonical.com> wrote:
-> >> >> >> > On Wed, Feb 29, 2012 at 11:46:39AM -0600, Grant Likely wrote:
-> >> >> >> >> On Wed, Feb 22, 2012 at 8:37 AM, Seth Forshee
-> >> >> >> >> <seth.forshee@canonical.com> wrote:
-> >> >> >> >> > Apple laptops with hybrid graphics have a device named gmux that
-> >> >> >> >> > controls the muxing of the LVDS panel between the GPUs as well as screen
-> >> >> >> >> > brightness. This driver adds support for the gmux device. Only backlight
-> >> >> >> >> > control is supported initially.
-> >> >> >> >> >
-> >> >> >> >> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> >> >> >> >>
-> >> >> >> >> Works for me.
-> >> >> >> >>
-> >> >> >> >> Tested-by: Grant Likely <grant.likely@secretlab.ca>
-> >> >> >> >>
-> >> >> >> >> Now I just need to figure out how to get the desktop backlight widget
-> >> >> >> >> to use gmux_backlight instead of acpi_video0...
-> >> >> >> >
-> >> >> >> > The easy way is to pass acpi_backlight=vendor to the kernel, then you
-> >> >> >> > won't have acpi_vidoe0.
-> >> >> >>
-> >> >> >> That did it, thanks.  I'm assume something is in the works to set it
-> >> >> >> up automatically?
-> >> >> >
-> >> >> > Not that I'm aware of. A number machines have this problem, that the
-> >> >> > standard ACPI backlight interfaces are implemented but don't work. This
-> >> >> > generally isn't detectable in software; with the Apples at least
-> >> >> > everything looks like it's working except that the brightness doesn't
-> >> >> > change (but not all Apple laptops are affected, so qurking based on
-> >> >> > manufacturer wouldn't work). All we're left with is DMI quirking, which
-> >> >> > isn't practical. Maybe we could add something so a platform driver can
-> >> >> > tell acpi_video that it knows the ACPI backlight doesn't work, but I
-> >> >> > think on some platforms that still is going to be based off of DMI
-> >> >> > information.
-> >> >>
-> >> >> blacklisting based on specific product name (ie. MacBookPro8,*) or
-> >> >> machine model is probably the best.  It wouldn't be the first
-> >> >> blacklist in the linux kernel.
-> >> >
-> >> > I think the blacklist would have to be against specific product names.
-> >> > For example, the MacBook Pro 8,1 has a working acpi_video backlight and
-> >> > no gmux_backlight, the 8,2 has both but only gmux_backlight works, and I
-> >> > suspect the 8,3 is the same as the 8,2.
-> >>
-> >> I have the 8,3, and my testing confirms that.
-> >>
-> >> > We'd probably end up with an
-> >> > entry in the blacklist for every single model whose acpi_video backlight
-> >> > doesn't work, adding entries for each new generation of MacBooks.
-> >> >
-> >> > And if we start blacklisting Macs we'd have start doing it for other
-> >> > machines too, I guess. From what I've seen, open-ended blacklists like
-> >> > this get nacked pretty consistently nowadays.
-> >>
-> >> An alternative would be to blacklist or disable acpi0_backlight when
-> >> the apple-gmux driver loads.  I don't know how acceptable that is, but
-> >> I also don't have much sympathy for nacking blacklists if there isn't
-> >> a viable alternative.
-> >
-> > Yes, that's one idea I was thinking about. For all the machines I've
-> > been able to get tested, if the gmux is present then it can control the
-> > backlight and acpi_video cannot, so that approach is reasonable for
-> > Macs.
-> >
-> > There are quite a few machines in this situation though, and whatever
-> > solution is arrived at should be flexible enough to work beyond just
-> > Macs. I'll try to find some time soon to explore this further and see if
-> > I can come up with something.
-> 
-> Old Samsung laptops have the same issue, and I ended up patching
-> drivers/acpi/video_detect.c (check "[PATCH] ACPI / Video: blacklist
-> some samsung laptops").
-> Doing it in the vendor module is complicated, since, it will be loaded
-> after the acpi video module most of the time, and that means addding
-> acpi_backlight, then removing it, which will probably confuse
-> usespace.
-> Patching drivers/acpi/video_detect.c seems safer.
+Hi Arnd and Olof,
 
-I certainly agree that it's the easiest solution, so maybe it is worth
-trying first and seeing what the response is. But last I saw the patch
-you're referring to hadn't been merged or even commented on yet. And I
-can't help but note that you included as justification for the patch
-that the acpi_video backlight works on newer Samsungs so the list
-wouldn't grow ;)
+This pull request supersedes the previous:
+"[GIT PULL] at91: irqdomain and device tree for AIC and GPIO"
 
-Beyond Samsung and Apple I know that there are also Toshibas that suffer
-from this, and judging by the list from older versions of g-s-d [1] I'd
-say there may well be others.
+This series adds irqdomain and device tree support for both the
+interrupt and GPIO controllers of AT91 SoC. It has been discussed a lot
+and I think that I have addressed all comments and advices.
 
-Seth
+To the AIC, GPIO device tree work, it also adds the the conversion of the 
+PIT and TC timers, the PIO3 support and some basic LED and gpio-keys entries.
 
-[1] http://git.gnome.org/browse/gnome-settings-daemon/tree/plugins/power/gsd-backlight-helper.c?id=GNOME_SETTINGS_DAEMON_3_2_2#n50
+The irqdomain work takes advantage of Grant's patch series that is present
+in:
+git://git.secretlab.ca/git/linux-2.6 irqdomain/next
+This branch is merged into this tree, on top of at91/base2+cleanup (aka cleanup2)
+and before the application of new AT91 material.
 
+
+The following changes since commit 89d4a1753b6632327f18d6c8e0842b366b736621:
+
+  Merge branch 'irqdomain/next' of git://git.secretlab.ca/git/linux-2.6 (2012-03-01 13:26:51 +0100)
+
+are available in the git repository at:
+
+
+  git://github.com/at91linux/linux-at91.git at91-3.4-cleanup2+DT
+
+
+for you to fetch changes up to f75622f4679479d352d2fa83e0d84c6c13cfcb5f:
+
+  ARM: at91: at91sam9x5cm/dt: add leds support (2012-03-01 22:34:22 +0800)
+
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (6):
+      ARM: at91: pit add DT support
+      ARM: at91: usb_a9g20/dt: add leds support
+      ARM: at91: at91sam9m10g45ek/dt: add gpio-keys support
+      ARM: at91: usb_a9g20/dt: add gpio-keys support
+      ARM: at91: at91sam9x5cm/dt: add leds support
+
+Nicolas Ferre (16):
+      ARM: at91/aic: add irq domain and device tree support
+      ARM: at91/snapper9260: move gpio_to_irq out of structure initialization
+      ARM/USB: at91/ohci-at91: remove the use of irq_to_gpio
+      ARM: at91/gpio: change comments and one variable name
+      ARM: at91/gpio: add irqdomain and DT support
+      ARM: at91/gpio: non-DT builds do not have gpio_chip.of_node field
+      ARM: at91/gpio: add .to_irq gpio_chip handler
+      ARM: at91/gpio: remove the static specification of gpio_chip.base
+      ARM: at91/board-dt: remove AIC irq domain from board file
+      ARM: at91: AIC and GPIO IRQ device tree initialization
+      ARM: at91/pit: add traces in case of error  
+      ARM: at91/tclib: take iomem size from resource
+      ARM: at91/tc: add device tree support to atmel_tclib
+      ARM: at91/tc/clocksource: Add 32 bit variant to Timer Counter
+      ARM: at91: add sam9_smc.o to at91sam9x5 build
+      ARM: at91/pio: add new PIO3 features
+
+ .../devicetree/bindings/arm/atmel-aic.txt          |   38 ++
+ .../devicetree/bindings/arm/atmel-at91.txt         |   32 +
+ .../devicetree/bindings/gpio/gpio_atmel.txt        |   20 +
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/at91sam9g20.dtsi                 |   68 ++-
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |   87 +++-
+ arch/arm/boot/dts/at91sam9m10g45ek.dts             |   72 +++
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |   12 +-
+ arch/arm/boot/dts/at91sam9x5cm.dtsi                |   15 +
+ arch/arm/boot/dts/usb_a9g20.dts                    |   23 +
+ arch/arm/mach-at91/Makefile                        |    2 +-
+ arch/arm/mach-at91/at91sam9260.c                   |    7 +
+ arch/arm/mach-at91/at91sam9260_devices.c           |   21 +-
+ arch/arm/mach-at91/at91sam926x_time.c              |   68 ++-
+ arch/arm/mach-at91/at91sam9g45.c                   |    3 +
+ arch/arm/mach-at91/at91sam9g45_devices.c           |   21 +-
+ arch/arm/mach-at91/at91sam9x5.c                    |    2 -
+ arch/arm/mach-at91/board-dt.c                      |   14 +-
+ arch/arm/mach-at91/board-snapper9260.c             |   10 +-
+ arch/arm/mach-at91/generic.h                       |    6 +
+ arch/arm/mach-at91/gpio.c                          |  625 +++++++++++++++++---
+ arch/arm/mach-at91/include/mach/at91_pio.h         |   25 +
+ arch/arm/mach-at91/include/mach/gpio.h             |   17 +-
+ arch/arm/mach-at91/irq.c                           |  132 ++++-
+ drivers/clocksource/tcb_clksrc.c                   |   90 ++-
+ drivers/misc/atmel_tclib.c                         |   64 ++-
+ drivers/usb/host/ohci-at91.c                       |    5 +-
+ include/linux/atmel_tc.h                           |   10 +
+ 28 files changed, 1286 insertions(+), 204 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/atmel-aic.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/atmel-at91.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_atmel.txt
+
+Thanks, best regards,
+-- 
+Nicolas Ferre
