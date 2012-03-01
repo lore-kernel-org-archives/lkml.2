@@ -1,117 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2CATP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:15:27 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:57619 "EHLO e3.ny.us.ibm.com"
+	id S1756827Ab2CATPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:15:46 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57921 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756701Ab2CATPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:15:24 -0500
+	id S1756737Ab2CATPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:15:44 -0500
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org,
         David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: [PATCH v2 00/11] ima: appraisal extension
-Date: Thu,  1 Mar 2012 14:10:37 -0500
-Message-Id: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 11/11] ima: digital signature verification support
+Date: Thu,  1 Mar 2012 14:10:48 -0500
+Message-Id: <1330629048-5933-12-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030119-8974-0000-0000-000006DE0FDB
+x-cbid: 12030119-8974-0000-0000-000006DE1025
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMA currently maintains an integrity measurement list used to assert the
-integrity of the running system to a third party.  The IMA-appraisal
-extension adds local integrity validation and enforcement of the
-measurement against a "good" value stored as an extended attribute
-'security.ima'.  The initial methods for validating 'security.ima' are
-hashed based, which provides file data integrity, and digital signature
-based, which in addition to providing file data integrity, provides
-authenticity.
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
 
-New hooks:
-ima_inode_setxattr(), ima_inode_removexattr(), ima_inode_post_setattr(),
-and ima_delay_fput()
+This patch adds support for digital signature based integrity appraisal.
+With this patch, 'security.ima' contains either the file data hash or
+a digital signature of the file data hash. The file data hash provides
+the security attribute of file integrity. In addition to file integrity,
+a digital signature provides the security attribute of authenticity.
 
-IMA-appraisal extends the measurement policy ABI with two new keywords:
-appraise/dont_appraise and extends the ima_tcb policy to appraise all
-files owned by root.  Like the ima_tcb measurement policy, the ima_tcb
-appraisal policy does not appraise pseudo filesystem files (eg. debugfs,
-tmpfs, securityfs, selinuxfs or ramfs.)
+Unlike EVM, when the file metadata changes, the digital signature is
+replaced with an HMAC, modification of the file data does not cause the
+'security.ima' digital signature to be replaced with a hash. As a
+result, after any modification, subsequent file integrity appraisals
+would fail.
 
-Additional rules can be added to the default IMA measurement/appraisal
-policy, which take advantage of the SELinux labels, for a more fine
-grained policy.
+Although digitally signed files can be modified, but by not updating
+'security.ima' to reflect these modifications, in essence digitally
+signed files could be considered 'immutable'.
 
-Locking changes:
+IMA uses a different keyring than EVM. While the EVM keyring should not
+be updated after initialization and locked, the IMA keyring should allow
+updating or adding new keys when upgrading or installing packages.
 
-The ima-appraisal extension maintains the file integrity measurement as
-an extended attribute 'security.ima'.  ima_file_free(), called on __fput(),
-updates 'security.ima' to reflect any changes made to the file.  In fix
-mode, process_measurement() writes 'security.ima' to reflect the current
-file hash.  Writing extended attributes and other file metadata (eg. chmod),
-requires taking the i_mutex.  Both ima_file_free() and process_measurement()
-took the iint->mutex and then the i_mutex, while chmod() took the locks in
-reverse order.  To resolve the potential lock inversion deadlock, the
-redundant iint->mutex was eliminated.
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
+ security/integrity/ima/ima_appraise.c |   69 ++++++++++++++++++++++++---------
+ security/integrity/integrity.h        |    1 +
+ 2 files changed, 51 insertions(+), 19 deletions(-)
 
-Prereqs:
-   vfs: fix IMA lockdep circular locking dependency
-   vfs: iversion truncate bug fix
-
-Changelog v2:
-- Split the "ima: allocating iint improvements" patch, making the
-  spinlock to rwlock/read_lock change into a separate patch.
-- Removed the "vfs: Correctly set the dir i_mutex lockdep class" dependency.
-- New: "ima: delay calling __fput()"
-- Minor changes listed in individual patch descriptions
-
-Changelog v1:
-- Initial posting of the IMA-appraisal patches, separately from EVM.
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 253a0c2..6c919bc 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -63,7 +63,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ {
+ 	struct dentry *dentry = file->f_dentry;
+ 	struct inode *inode = dentry->d_inode;
+-	struct evm_ima_xattr_data xattr_value;
++	struct evm_ima_xattr_data *xattr_value = NULL;
+ 	enum integrity_status status = INTEGRITY_UNKNOWN;
+ 	const char *op = "appraise_data";
+ 	char *cause = "unknown";
+@@ -74,8 +74,8 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 	if (iint->flags & IMA_APPRAISED)
+ 		return iint->ima_status;
  
-Mimi
-
-Dmitry Kasatkin (2):
-  ima: allocating iint improvements
-  ima: digital signature verification support
-
-Mimi Zohar (9):
-  vfs: extend vfs_removexattr locking
-  vfs: move ima_file_free before releasing the file
-  ima: integrity appraisal extension
-  ima: add appraise action keywords and default rules
-  ima: replace iint spinlock with rwlock/read_lock
-  ima: add inode_post_setattr call
-  ima: add ima_inode_setxattr/removexattr function and calls
-  ima: delay calling __fput()
-  ima: add support for different security.ima data types
-
- Documentation/ABI/testing/ima_policy  |   25 +++-
- Documentation/kernel-parameters.txt   |    4 +
- fs/attr.c                             |    2 +
- fs/file_table.c                       |    2 +-
- fs/xattr.c                            |    6 +-
- include/linux/ima.h                   |   32 ++++
- include/linux/integrity.h             |    7 +-
- include/linux/xattr.h                 |    3 +
- mm/mmap.c                             |    1 +
- security/integrity/evm/evm_main.c     |    3 +
- security/integrity/iint.c             |   64 +++----
- security/integrity/ima/Kconfig        |   15 ++
- security/integrity/ima/Makefile       |    2 +
- security/integrity/ima/ima.h          |   37 ++++-
- security/integrity/ima/ima_api.c      |   56 ++++--
- security/integrity/ima/ima_appraise.c |  319 +++++++++++++++++++++++++++++++++
- security/integrity/ima/ima_crypto.c   |    8 +-
- security/integrity/ima/ima_main.c     |   89 ++++++----
- security/integrity/ima/ima_policy.c   |   88 ++++++++--
- security/integrity/integrity.h        |   11 +-
- security/security.c                   |    6 +
- 21 files changed, 667 insertions(+), 113 deletions(-)
- create mode 100644 security/integrity/ima/ima_appraise.c
-
+-	rc = inode->i_op->getxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
+-				   sizeof xattr_value);
++	rc = vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, (char **)&xattr_value,
++				0, GFP_NOFS);
+ 	if (rc <= 0) {
+ 		if (rc && rc != -ENODATA)
+ 			goto out;
+@@ -86,8 +86,7 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 		goto out;
+ 	}
+ 
+-	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, (u8 *)&xattr_value,
+-				 rc, iint);
++	status = evm_verifyxattr(dentry, XATTR_NAME_IMA, xattr_value, rc, iint);
+ 	if ((status != INTEGRITY_PASS) && (status != INTEGRITY_UNKNOWN)) {
+ 		if ((status == INTEGRITY_NOLABEL)
+ 		    || (status == INTEGRITY_NOXATTRS))
+@@ -97,30 +96,57 @@ int ima_appraise_measurement(struct integrity_iint_cache *iint,
+ 		goto out;
+ 	}
+ 
+-	rc = memcmp(xattr_value.digest, iint->ima_xattr.digest,
+-		    IMA_DIGEST_SIZE);
+-	if (rc) {
+-		status = INTEGRITY_FAIL;
+-		cause = "invalid-hash";
+-		print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
+-				     &xattr_value, sizeof xattr_value);
+-		print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
+-				     (u8 *)&iint->ima_xattr,
+-				     sizeof iint->ima_xattr);
+-		goto out;
++	switch (xattr_value->type) {
++	case IMA_XATTR_DIGEST:
++		rc = memcmp(xattr_value->digest, iint->ima_xattr.digest,
++			    IMA_DIGEST_SIZE);
++		if (rc) {
++			cause = "invalid-hash";
++			status = INTEGRITY_FAIL;
++			print_hex_dump_bytes("security.ima: ", DUMP_PREFIX_NONE,
++					     xattr_value, sizeof(*xattr_value));
++			print_hex_dump_bytes("collected: ", DUMP_PREFIX_NONE,
++					     (u8 *)&iint->ima_xattr,
++					     sizeof iint->ima_xattr);
++			break;
++		}
++		status = INTEGRITY_PASS;
++		break;
++	case EVM_IMA_XATTR_DIGSIG:
++		iint->flags |= IMA_DIGSIG;
++		rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
++					     xattr_value->digest, rc - 1,
++					     iint->ima_xattr.digest,
++					     IMA_DIGEST_SIZE);
++		if (rc == -EOPNOTSUPP) {
++			status = INTEGRITY_UNKNOWN;
++		} else if (rc) {
++			cause = "invalid-signature";
++			status = INTEGRITY_FAIL;
++		} else {
++			status = INTEGRITY_PASS;
++		}
++		break;
++	default:
++		status = INTEGRITY_UNKNOWN;
++		cause = "unknown-ima-data";
++		break;
+ 	}
+-	status = INTEGRITY_PASS;
+-	iint->flags |= IMA_APPRAISED;
++
+ out:
+ 	if (status != INTEGRITY_PASS) {
+-		if (ima_appraise & IMA_APPRAISE_FIX) {
++		if ((ima_appraise & IMA_APPRAISE_FIX) &&
++		    (xattr_value->type != EVM_IMA_XATTR_DIGSIG)) {
+ 			ima_fix_xattr(dentry, iint);
+ 			status = INTEGRITY_PASS;
+ 		}
+ 		integrity_audit_msg(AUDIT_INTEGRITY_DATA, inode, filename,
+ 				    op, cause, rc, 0);
++	} else {
++		iint->flags |= IMA_APPRAISED;
+ 	}
+ 	iint->ima_status = status;
++	kfree(xattr_value);
+ 	return status;
+ }
+ 
+@@ -132,9 +158,14 @@ void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file)
+ 	struct dentry *dentry = file->f_dentry;
+ 	int rc = 0;
+ 
++	/* do not collect and update hash for digital signatures */
++	if (iint->flags & IMA_DIGSIG)
++		return;
++
+ 	rc = ima_collect_measurement(iint, file);
+ 	if (rc < 0)
+ 		return;
++
+ 	ima_fix_xattr(dentry, iint);
+ }
+ 
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index c145331..0594a57 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -21,6 +21,7 @@
+ #define IMA_APPRAISE		4
+ #define IMA_APPRAISED		8
+ #define IMA_COLLECTED		16
++#define IMA_DIGSIG		32
+ 
+ enum evm_ima_xattr_type {
+ 	IMA_XATTR_DIGEST = 0x01,
 -- 
 1.7.6.5
 
