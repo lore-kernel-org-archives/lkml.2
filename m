@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab2CATC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:02:27 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61405 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab2CATCZ convert rfc822-to-8bit (ORCPT
+	id S1756429Ab2CATCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:02:55 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64631 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab2CATCy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:02:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of martinez.javier@gmail.com designates 10.236.184.8 as permitted sender) smtp.mail=martinez.javier@gmail.com; dkim=pass header.i=martinez.javier@gmail.com
+	Thu, 1 Mar 2012 14:02:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of vda.linux@googlemail.com designates 10.180.95.34 as permitted sender) smtp.mail=vda.linux@googlemail.com; dkim=pass header.i=vda.linux@googlemail.com
 MIME-Version: 1.0
-In-Reply-To: <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
- <1330606237.27405.5.camel@megeve> <1330606775.2465.56.camel@edumazet-laptop>
- <4F4F7FFB.6010608@collabora.co.uk> <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com>
- <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Thu, 1 Mar 2012 20:02:04 +0100
-Message-ID: <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
-        David Laight <David.Laight@aculab.com>,
-        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4F4FC037.4060201@am.sony.com>
+References: <4F4E6915.1010209@am.sony.com> <m2mx81pi7x.fsf@firstfloor.org>
+ <4F4E8E6A.2020601@am.sony.com> <201203010812.54769.vda.linux@googlemail.com> <4F4FC037.4060201@am.sony.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Thu, 1 Mar 2012 20:02:33 +0100
+Message-ID: <CAK1hOcOdqvSDkR18FQzvP27jsFjH3Hu9ftQDM26Vo-sFkTjhFQ@mail.gmail.com>
+Subject: Re: Questions about ptrace on a dying process
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux kernel <linux-kernel@vger.kernel.org>, tj@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 6:59 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le 1 mars 2012 08:02, Luiz Augusto von Dentz <luiz.dentz@gmail.com> a Ã©crit :
+On Thu, Mar 1, 2012 at 7:30 PM, Tim Bird <tim.bird@am.sony.com> wrote:
+>>> Yeah - I may be doing something new here.  Android uses ptrace
+>>> in debuggerd, which is their crash reporting tool, but they wake
+>>> it up with signals before the dying program goes into coredump.
 >>
->> Contrary to someones believes I don't think AF_INET is that fast (e.g.
->> http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
+>> I think ptrace API does not provide guarantees that it is possible
+>> to attach to the process when it coredumps.
 >>
+>> It might work in current kernels, but might break in new ones.
 >
-> Oh you mention a recent zork it seems ;)
+> If it's not too much trouble, it would be nice to continue
+> this behaviour.   Admittedly, my style of crash handling appears
+> to be new, and I don't want to unnecessarily burden the code,
+> but so far it works really well, and currently requires very
+> minimal change to the existing ptrace code.  One thing that's
+> nice about what I'm doing, is that I don't rely on the
+> whole signal state machine of the process to interact with it
+> (since a dying process can't respond correctly).
 >
-> Are we speaking of performance problems, apart from scheduler problems
-> for D-Bus (each message wakeing all receivers, all receivers read and
-> drop message but the target) ?
+> So hopefully, continuing to support ptrace for a dying process
+> won't interfere or burden the existing (rather complex)
+> state processing in the current code.
 >
+> Just for reference, below is the patch I settled on for my own kernel.
 
-Hi Eric,
+You added yet another quirk to ptrace API - and this API
+already has no shortage of quirks.
+Of course you can maintain it for your kernel, but
+adding it in mainline is a bizarre proposition.
 
-The only performance problem we are talking about is the scheduling
-for D-bus (context switch to the daemon for each message). With today
-implementation the receivers only gets messages that were sent to it
-but the D-bus daemon has to be wake it up for every message to he can
-do the routing. For multicast messages (i.e: D-bus signals) this is
-even worse since the daemon has to do a send() for each receiver.
+I'm not even sure that _if_ PTRACE_SEIZE with PTRACE_O_TRACEEXIT
+option works on semi-dead core-dumping process today without
+patching, it is guaranteed to do so in the future.
 
-> I am actually one of the few people working to improve performance on
-> both AF_INET and AF_UNIX parts. Just take a look at recent commits.
+
+> I'm planning taking a look at the PTRACE_SEIZE code to see if it
+> accomplishes what I need, but haven't done that yet.
 >
-> Right now you can send/receive millions of udp messages per second on
-> your linux machine, if you figured out how to avoid process scheduler
-> costs. If D-Bus wants more, I highly suggest using shared memory
-> instead of passing messages.
-> --
+> I do have a question, though - how will a tracer know that it can
+> use PTRACE_SEIZE?
 
-Yes, I also thought that AF_UNIX would be more efficient than AF_INET
-but I was wrong. Yesterday I wrote some tests using our multicast unix
-socket, UDP multicast over IP on a single machine and even multicast
-using AF_NETLINK sockets and got very similar performance results.
+By looking at kernel version.
 
-The only problem is the ordering and control flow requirements for D-bus.
-
-Best regards,
-Javier
+-- 
+vda
