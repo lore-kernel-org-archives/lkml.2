@@ -1,179 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab2CATRX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:17:23 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41156 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654Ab2CATRV (ORCPT
+	id S1756625Ab2CATRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:17:20 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53507 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317Ab2CATRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:17:21 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v2 05/11] ima: allocating iint improvements
-Date: Thu,  1 Mar 2012 14:10:42 -0500
-Message-Id: <1330629048-5933-6-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030119-2398-0000-0000-000004B31DA2
+	Thu, 1 Mar 2012 14:17:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.133.210 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Thu, 1 Mar 2012 23:17:14 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
+Message-ID: <20120301191714.GF9930@moon>
+References: <20120229151634.GE4796@moon>
+ <20120229192400.GA13194@redhat.com>
+ <20120229200103.GJ11326@moon>
+ <20120301180616.GA7652@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301180616.GA7652@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+On Thu, Mar 01, 2012 at 07:06:16PM +0100, Oleg Nesterov wrote:
+...
+> 
+> OK, now that I understand the locking, we can't race with
+> added_exe_file_vma/removed_exe_file_vma. But I still think we
+> can race with set_mm_exe_file().
+> 
+> And yes, I think you missed something obvious ;) Suppose that
+> 2 threads call prctl_set_mm(PR_SET_MM_EXE_FILE) at the same
+> time. Both threads can take ->mmap_sem for reading and do
+> set_mm_exe_file() at the same time.
+> 
 
-With IMA-appraisal's removal of the iint mutex and taking the i_mutex
-instead, allocating the iint becomes a lot simplier, as we don't need
-to be concerned with two processes racing to allocate the iint. This
-patch cleans up and improves performance for allocating the iint.
+Hi Oleg, thanks a lot for comments! Today I started remakeing
+the patch and found one obvious problem -- the mmap_sem should
+be taken for write not read, since otherwise someone might get
+wrong reference when we're chenging this symlink. So sure, this
+was incorrect in first place ;)
 
-- removed redundant double i_mutex locking
-- combined iint allocation with tree search
+> > > And. set_mm_exe_file() sets ->num_exe_file_vmas = 0, this is
+> > > simply wrong? It should match the number of VM_EXECUTABLE
+> > > vmas.
+> > >
+> >
+> > yes, it's a nit which sould be fixed. thanks!
+> 
+> OK, but then you do not need to check ->num_exe_file_vmas at all?
+> 
+> Except, of course, I think we should fail if this counter is zero.
+> 
+> The changelog says:
+> 
+> 	Note, if mm_struct::exe_file already mapped more than once
+> 	we refuse to change anything (which prevents kernel from
+> 	potential problems).
+> 
+> why? which problems?
+> 
 
-Changelog v2:
-- removed the rwlock/read_lock changes from this patch
+I've some gut feeling that if I have num_exe_file_vmas more than
+one I might broke something if I replace exe_file (actually I'm
+checking this, was interrupted with other duties).
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
----
- include/linux/integrity.h         |    7 +++--
- security/integrity/iint.c         |   45 +++++++++++++++---------------------
- security/integrity/ima/ima_main.c |   13 +++-------
- 3 files changed, 27 insertions(+), 38 deletions(-)
+> > > In short, I do not understand the patch at all. It seems, you
+> > > only need to replace mm->exe_file under down_write(mmap_sem)
+> > > and nothing else.
+> >
+> > I can't just replace it, I wanted to check it the new symlink
+> > will indeed point to executable
+> 
+> I meant I see no reason to play with num_exe_file_vmas, you only
+> need to replace ->exe_file.
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index a0c4125..66c5fe9 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -22,13 +22,14 @@ enum integrity_status {
- 
- /* List of EVM protected security xattrs */
- #ifdef CONFIG_INTEGRITY
--extern int integrity_inode_alloc(struct inode *inode);
-+extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
- extern void integrity_inode_free(struct inode *inode);
- 
- #else
--static inline int integrity_inode_alloc(struct inode *inode)
-+static inline struct integrity_iint_cache *
-+				integrity_inode_get(struct inode *inode)
- {
--	return 0;
-+	return NULL;
- }
- 
- static inline void integrity_inode_free(struct inode *inode)
-diff --git a/security/integrity/iint.c b/security/integrity/iint.c
-index e600986..c91a436 100644
---- a/security/integrity/iint.c
-+++ b/security/integrity/iint.c
-@@ -80,24 +80,26 @@ static void iint_free(struct integrity_iint_cache *iint)
- }
- 
- /**
-- * integrity_inode_alloc - allocate an iint associated with an inode
-+ * integrity_inode_get - find or allocate an iint associated with an inode
-  * @inode: pointer to the inode
-+ * @return: allocated iint
-+ *
-+ * Caller must lock i_mutex
-  */
--int integrity_inode_alloc(struct inode *inode)
-+struct integrity_iint_cache *integrity_inode_get(struct inode *inode)
- {
- 	struct rb_node **p;
--	struct rb_node *new_node, *parent = NULL;
--	struct integrity_iint_cache *new_iint, *test_iint;
--	int rc;
-+	struct rb_node *node, *parent = NULL;
-+	struct integrity_iint_cache *iint, *test_iint;
- 
--	new_iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
--	if (!new_iint)
--		return -ENOMEM;
-+	iint = integrity_iint_find(inode);
-+	if (iint)
-+		return iint;
- 
--	new_iint->inode = inode;
--	new_node = &new_iint->rb_node;
-+	iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
-+	if (!iint)
-+		return NULL;
- 
--	mutex_lock(&inode->i_mutex);	/* i_flags */
- 	spin_lock(&integrity_iint_lock);
- 
- 	p = &integrity_iint_tree.rb_node;
-@@ -105,29 +107,20 @@ int integrity_inode_alloc(struct inode *inode)
- 		parent = *p;
- 		test_iint = rb_entry(parent, struct integrity_iint_cache,
- 				     rb_node);
--		rc = -EEXIST;
- 		if (inode < test_iint->inode)
- 			p = &(*p)->rb_left;
--		else if (inode > test_iint->inode)
--			p = &(*p)->rb_right;
- 		else
--			goto out_err;
-+			p = &(*p)->rb_right;
- 	}
- 
-+	iint->inode = inode;
-+	node = &iint->rb_node;
- 	inode->i_flags |= S_IMA;
--	rb_link_node(new_node, parent, p);
--	rb_insert_color(new_node, &integrity_iint_tree);
-+	rb_link_node(node, parent, p);
-+	rb_insert_color(node, &integrity_iint_tree);
- 
- 	spin_unlock(&integrity_iint_lock);
--	mutex_unlock(&inode->i_mutex);	/* i_flags */
--
--	return 0;
--out_err:
--	spin_unlock(&integrity_iint_lock);
--	mutex_unlock(&inode->i_mutex);	/* i_flags */
--	iint_free(new_iint);
--
--	return rc;
-+	return iint;
- }
- 
- /**
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index fba2f7b..9fe0597 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -145,19 +145,14 @@ static int process_measurement(struct file *file, const unsigned char *filename,
- 	if (!action)
- 		return 0;
- 
--retry:
--	iint = integrity_iint_find(inode);
--	if (!iint) {
--		rc = integrity_inode_alloc(inode);
--		if (!rc || rc == -EEXIST)
--			goto retry;
--		return rc;
--	}
--
- 	must_appraise = action & IMA_APPRAISE;
- 
- 	mutex_lock(&inode->i_mutex);
- 
-+	iint = integrity_inode_get(inode);
-+	if (!iint)
-+		goto out;
-+
- 	/* Determine if already appraised/measured based on bitmask
- 	 * (IMA_MEASURE, IMA_MEASURED, IMA_APPRAISE, IMA_APPRAISED) */
- 	iint->flags |= action;
--- 
-1.7.6.5
+Yes, I tend to think the same (but as I mentioned, I'm checking
+if this really wont break anything).
 
+So, Oleg, basically the new version will use opened fd in form
+like (note, I'll recheck for refs and locks more so this is
+a draft version to point idea)
+
+static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+{
+	struct files_struct *files;
+	struct file *file;
+	int ret;
+
+	/*
+	 * Make sure if someone is trying to obtain
+	 * the existing exe_file it will not get
+	 * results until we've finished.
+	 */
+	down_write(&mm->mmap_sem);
+
+	files = get_files_struct(current);
+	if (!files)
+		return -EINVAL;
+
+	spin_lock(&files->file_lock);
+
+	file = fcheck_files(files, fd);
+	if (!file) {
+		ret = -EBADFD;
+		goto out_unlock;
+	}
+	get_file(file);
+	spin_unlock(&files->file_lock);
+
+	if (mm->num_exe_file_vmas)
+		removed_exe_file_vma(mm);
+
+-> This are two lines I'm doubt about
+->	set_mm_exe_file(mm, file);
+->	added_exe_file_vma(mm);
+
+out_unlock:
+	put_files_struct(files);
+out:
+	up_write(&mm->mmap_sem);
+	return ret;
+}
+
+	Cyrill
