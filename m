@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab2CAP7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 10:59:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48648 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab2CAP7e convert rfc822-to-8bit (ORCPT
+	id S1754269Ab2CAQAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 11:00:51 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55096 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab2CAQAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 10:59:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1330596839.2704.15.camel@menhir>
-References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
- <1330596839.2704.15.camel@menhir>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Mar 2012 07:59:13 -0800
-X-Google-Sender-Auth: ieFY0KWhFeUAXG1DFFlhKKjs26Q
-Message-ID: <CA+55aFz1g3RsiEoWm0vDgb4VE-EbJpdx_6nACJzm57DP1rRnKw@mail.gmail.com>
-Subject: Re: .. anybody know of any filesystems that depend on the exact VFS
- 'namehash' implementation?
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 11:00:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of eric.dumazet@gmail.com designates 10.180.95.105 as permitted sender) smtp.mail=eric.dumazet@gmail.com; dkim=pass header.i=eric.dumazet@gmail.com
+Message-ID: <1330617640.2465.78.camel@edumazet-laptop>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
+        David Laight <David.Laight@ACULAB.COM>,
+        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 Mar 2012 08:00:40 -0800
+In-Reply-To: <4F4F7FFB.6010608@collabora.co.uk>
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
+	  <1330606237.27405.5.camel@megeve>
+	 <1330606775.2465.56.camel@edumazet-laptop>
+	 <4F4F7FFB.6010608@collabora.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 2:13 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
->
-> GFS2 is guilty as charged, m'lud! (but see below...)
->
-> from fs/gfs2/dentry.c:
->
-> static int gfs2_dhash(const struct dentry *dentry, const struct inode *inode,
->                struct qstr *str)
-> {
->        str->hash = gfs2_disk_hash(str->name, str->len);
->        return 0;
-> }
+Le jeudi 01 mars 2012 Ã  14:56 +0100, Javier Martinez Canillas a Ã©crit :
 
-Ok, that's fine. As long as you also use your own well-defined
-hash-function rather than just depend on the default VFS one, I don't
-care. It's only the default one I'd be optimizing.
+> We could use AF_INET multicast on a local machine but we need some
+> ordering and control flow requirements that are not guaranteed on UDP
+> multicast over IP. That's why we thought to add a new address family
+> AF_MCAST.
+> 
 
-You'd obviously not get the performance advantage either, but since I
-don't even know whether it's really worth it in the first place, not a
-big worry (those kernel routines can be about 5% of CPU time each
-under loads that are very pathname-intensive, and it looks like I
-could shave maybe 10-20% off them for the best case, so we're talking
-*maybe* a percentage point on some specific loads).
+It seems application logic and complexity pushed into kernel, for a very
+single user (even if used in a lot of products) : D-Bus
 
-And yeah, if some filesystem actually depends on the current default
-VFS hash we can always work around it by filesystems just making the
-current hash function explicit like you already do in gfs2.
+> To make it a general local multicast solution and not being too specific
+> we added some flags to control its behavior like
+> MCAST_MREQ_DROP_WHEN_FULL to decide to either block the sender or drop
+> the packet when one receiver has its queue full.
 
-                       Linus
+I am only wondering how many lines this is going to add in kernel for a
+complete implementation, given your performance expectations, flow
+control, reliability, not counting all security issues (ancillary
+messages and so on)
+
+In case of IP_MULTICAST_LOOP, we could allow the sender to sleep if
+receiver queue is full, with a bit of tweaking in stack (current
+implementation uses loopback re-inject, so requires softirq handling).
+
+In fact, we could use a new IP_MULTICAST_LOCAL option, so that sender
+processing doesnt trigger a softirq handler at all and is allowed to
+sleep if needed. For example skb allocations could use GFP_KERNEL
+instead of current GFP_ATOMIC ones in udp mcast .
+
+I dont know, maybe it would be a smaller patch.
+
+
+
