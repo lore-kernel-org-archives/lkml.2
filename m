@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab2CAUhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:37:52 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1843 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab2CAUhu convert rfc822-to-8bit (ORCPT
+	id S932497Ab2CAUif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:38:35 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:49354 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757505Ab2CAUid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:37:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 01 Mar 2012 12:36:59 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+	Thu, 1 Mar 2012 15:38:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from driver
+Date: Thu, 1 Mar 2012 20:38:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
         Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Date: Thu, 1 Mar 2012 12:36:58 -0800
-Subject: RE: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
-Thread-Topic: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
-Thread-Index: Acz36Yr5Tfp6VFgcTjylnPB6aFxCFgAASssg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861741@HQMAIL01.nvidia.com>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
- <1330630010-11241-7-git-send-email-alan@signal11.us>
- <74CDBE0F657A3D45AFBB94109FB122FF17BE86172C@HQMAIL01.nvidia.com>
- <201203012025.53560.arnd@arndb.de>
-In-Reply-To: <201203012025.53560.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+References: <1330630010-11241-1-git-send-email-alan@signal11.us> <1330630010-11241-9-git-send-email-alan@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE86173C@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE86173C@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203012038.28062.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ix79wlxnicNIYHHKCf78/ghucEIXQ7V+UnmoFBq8gGN
+ lLGdgRVnpKI6oVJiLcCcS0fLsHkF+LBbD0POn8KLAfO6kaiFVb
+ 37TYXXHqfaX8gTshhfFDEqrDyy1lCPm9PT43GYYKtWB9r7ujr6
+ j+J2sjCqnJ4LK0HkUNeSmhGhcFJt2cqjDdiclBPJHiamYVXvwt
+ ENs4OpiLyMrcR6MtmCxj5zPkHkfDuaVv0JMZgzEe747+vnICX+
+ YB+MPZXAGOiiog08ucFC8SL9sH3bEOuO1/uIW85SwROE0UWfAD
+ oGt1yupn8y6lESxXMvchbcUEM95l2R6Uyy8BK3YadfH/mflmOG
+ em604KYfy9Qduw4romeg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote at Thursday, March 01, 2012 1:26 PM:
-> On Thursday 01 March 2012, Stephen Warren wrote:
-> > Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
-> > > From: Arnd Bergmann <arnd@arndb.de>
-> > >
-> > > The USB_ULPI driver is selected by tegra, but can only be
-> > > built if at least one of USB or USB_GADGET is enabled.
-> > > The kernel fails to link if both are off.
-> >
-> > > diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-> > ...
-> > > @@ -10,6 +10,7 @@ config ARCH_TEGRA_2x_SOC
-> > ...
-> > > +	select USB_GADGET if USB_SUPPORT && !USB
-> >
-> > I don't believe the Tegra USB driver supports gadget mode at present.
+On Thursday 01 March 2012, Stephen Warren wrote:
 > 
-> ok.
+> Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
+> > From: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > The driver should not call set_irq_flags itself, and
 > 
-> > Would the above be better written as:
-> >
-> >     select USB if USB_SUPPORT
+> Probably true in this case.
 > 
-> That does not look correct either. There is no reason why USB
-> can't be disabled with USB_SUPPORT enabled on other platforms.
+> > cannot do this from a loadable module.
 > 
-> Maybe it's better to change the 'select USB_ULPI if USB_SUPPORT'
-> into 'select USB_ULPI if USB' instead?
+> I hope that's not true; grep'ing the entire of drivers/ shows a bunch
+> of drivers calling this function, and many look like they'd be reasonable
+> as module.
 
-That sounds reasonable.
+The drivers that I can see using it are for the most part implementing
+irq controllers by themselves, which is different from merely using an
+interrupt.
 
-> Or maybe just don't select
-> USB_ULPI to start with and put it into the defconfig instead.
+There are three exceptions today:
 
-Perhaps USB_EHCI_TEGRA should depend on USB, and select USB_EHCI?
+arnd@klappe2:~/linux-arm$ git grep -l set_irq_flags  drivers/ | xargs grep -L irq_chip
+drivers/tty/serial/serial_ks8695.c
+drivers/tty/serial/sirfsoc_uart.c
+drivers/usb/host/ehci-tegra.c
 
--- 
-nvpublic
+> From what little I understand of this, any irq_chip is going to call
+> that function after setting up any child/cascaded IRQs, and I assume
+> that irq_chips can be in modules.
 
+But the function is not exported. I guess if we want to allow
+irq_chips in loadable modules, we could export it, but I don't see
+how it could ever have worked so far.
+ 
+> > Remove the call for now, which might break the driver
+> > but at least lets the kernel link again.
+> 
+> The driver appears to work fine with this removed. At least, on Tegra20
+> Harmony, I was able to modprobe ehci-hcd and then use the USB Ethernet
+> controller for DHCP and SSH.
+
+Ok, maybe it was the right fix after all then and it just needs a proper
+change description ;-)
+
+	Arnd
