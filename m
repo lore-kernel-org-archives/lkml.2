@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030412Ab2CABSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:18:15 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:50647 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746Ab2CABSO (ORCPT
+	id S1030436Ab2CABSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:18:40 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:44219 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030290Ab2CABSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:18:14 -0500
-Date: Thu, 1 Mar 2012 10:18:11 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Eugene Surovegin <surovegin@google.com>
-Cc: linux-kernel@vger.kernel.org, kexec-list <kexec@lists.infradead.org>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] kdump: force page alignment for per-CPU crash notes.
-Message-ID: <20120301011811.GC16483@verge.net.au>
-References: <1330536083-13098-1-git-send-email-surovegin@google.com>
+	Wed, 29 Feb 2012 20:18:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.195.99 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Wed, 29 Feb 2012 17:18:09 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH next] memcg: fix deadlock by avoiding stat lock when
+ anon
+In-Reply-To: <20120229193517.GD1673@cmpxchg.org>
+Message-ID: <alpine.LSU.2.00.1202291648340.11821@eggly.anvils>
+References: <alpine.LSU.2.00.1202282121160.4875@eggly.anvils> <alpine.LSU.2.00.1202282125240.4875@eggly.anvils> <20120229193517.GD1673@cmpxchg.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330536083-13098-1-git-send-email-surovegin@google.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 09:21:23AM -0800, Eugene Surovegin wrote:
-> Per-CPU allocations are not guaranteed to be physically contiguous.
-> However, kdump kernel and user-space code assumes that per-CPU
-> memory, used for saving CPU registers on crash, is.
-> This can cause corrupted /proc/vmcore in some cases - the main
-> symptom being huge ELF note section.
+On Wed, 29 Feb 2012, Johannes Weiner wrote:
 > 
-> Force page alignment for note_buf_t to ensure that this assumption holds.
+> Saving the begin/end_update_page_stat() calls for the anon case where
+> we know in advance we don't need them is one thing, but this also
+> hides a dependencies that even eludes lockdep behind what looks like a
+> minor optimization of the anon case.
 
-Ouch. I'm surprised there is an allocation on crash, perhaps
-it could at least be done earlier? And am I right in thinking
-that this change increases the likely hood that the allocation
-could fail?
+Sounds like you'd appreciate a comment there: akpm has not put
+this version in yet, so I'll send an updated version shortly.
 
 > 
-> Signed-off-by: Eugene Surovegin <surovegin@google.com>
-> CC: Eric Biederman <ebiederm@xmission.com>
-> CC: Vivek Goyal <vgoyal@redhat.com>
-> CC: kexec-list <kexec@lists.infradead.org>
-> ---
->  kernel/kexec.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 7b08867..e641b5c 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1232,8 +1232,13 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
->  
->  static int __init crash_notes_memory_init(void)
->  {
-> -	/* Allocate memory for saving cpu registers. */
-> -	crash_notes = alloc_percpu(note_buf_t);
-> +	/* Allocate memory for saving cpu registers.
-> +	 * Force page alignment to avoid crossing physical page boundary -
-> +	 * kexec-tools and kernel /proc/vmcore handler assume these per-CPU
-> +	 * chunks are physically contiguous.
-> +	 */
-> +	crash_notes = (note_buf_t __percpu *)__alloc_percpu(sizeof(note_buf_t),
-> +							    PAGE_SIZE);
->  	if (!crash_notes) {
->  		printk("Kexec: Memory allocation for saving cpu register"
->  		" states failed\n");
-> -- 
-> 1.7.9.1
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+> Wouldn't this be more robust if we turned the ordering inside out in
+> move_account instead?
+
+I think we need more than the one user of this infrastructure before
+that can be decided.
+
+But I didn't actually consider that at all: perhaps prejudiced by the
+way I had solved the race Konstantin pointed out in my patchset of 10
+last week, by using the lruvec lock for move_lock_mem_cgroup too,
+which fits with it being inside the page_cgroup lock.
+
+Hmm, I notice move_lock_mem_cgroup is likewise spin_lock_irqsave:
+if it needs to be (and I guess the idea is that it doesn't need to be
+today, but for generality later on had better be), then it has to be
+inside page_cgroup lock.
+
+(If FILE_MAPPED were to be the only user of the infrastructure, I'd
+actually prefer to remove the begin/end, and make move_account raise
+the file page's mapcount temporarily, doing its own page_remove_rmap
+after, to solve these races.  There's probably one or two VM_BUG_ONs
+elsewhere that would need deleting to make that completely safe.
+But I understand there may be more users to come - and mapcount
+games might not fit your desire for robustness.)
+
+Hugh
