@@ -1,228 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030665Ab2CAK05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:26:57 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:34981 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758876Ab2CAK04 (ORCPT
+	id S1030707Ab2CAK1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:27:14 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57045 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030671Ab2CAK1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:26:56 -0500
-Date: Thu, 1 Mar 2012 19:33:16 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] KVM: Switch to srcu-less get_dirty_log()
-Message-Id: <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Mar 2012 05:27:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.10.72 as permitted sender) smtp.mail=dave.martin@linaro.org
+Date: Thu, 1 Mar 2012 10:27:02 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+Message-ID: <20120301102702.GD2034@linaro.org>
+References: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
+ <20120227180355.GB2023@linaro.org>
+ <1330371219.10008.34.camel@dagon.hellion.org.uk>
+ <20120228102040.GB2063@linaro.org>
+ <1330426133.31269.70.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.00.1202281149210.23091@kaball-desktop>
+ <20120229093436.GA2077@linaro.org>
+ <1330509362.4270.20.camel@zakaz.uk.xensource.com>
+ <20120229125826.GC2077@linaro.org>
+ <20120301101029.GB7363@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301101029.GB7363@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have seen some problems of the current implementation of
-get_dirty_log() which uses synchronize_srcu_expedited() for updating
-dirty bitmaps; e.g. it is noticeable that this sometimes gives us ms
-order of latency when we use VGA displays.
+On Thu, Mar 01, 2012 at 10:10:29AM +0000, Russell King - ARM Linux wrote:
+> On Wed, Feb 29, 2012 at 12:58:26PM +0000, Dave Martin wrote:
+> > On Wed, Feb 29, 2012 at 09:56:02AM +0000, Ian Campbell wrote:
+> > > On Wed, 2012-02-29 at 09:34 +0000, Dave Martin wrote:
+> > > > On Tue, Feb 28, 2012 at 12:28:29PM +0000, Stefano Stabellini wrote:
+> > > 
+> > > > > I don't have a very strong opinion on which register we should use, but
+> > > > > I would like to avoid r7 if it is already actively used by gcc.
+> > > > 
+> > > > But there is no framepointer for Thumb-2 code (?)
+> > > 
+> > > Peter Maydell suggested there was:
+> > > > r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
+> > > > makes it worth avoiding in this context.
+> > > 
+> > > Sounds like it might be a gcc-ism, possibly a non-default option?
+> > > 
+> > > Anyway, I think r12 will be fine for our purposes so the point is rather
+> > > moot.
+> > 
+> > Just had a chat with some tools guys -- apparently, when passing register
+> > arguments to gcc inline asms there really isn't a guarantee that those
+> > variables will be in the expected registers on entry to the inline asm.
+> 
+> The best you can do is:
+> 
+> 	register unsigned int foo asm("r7") = value;
+> 
+> 	asm("blah %0" : : "r" (foo));
+> 
+> and ensure that your assembly checks that %0 _is_ r7 and produces a build
+> error if not.  See the __asmeq() macro in asm/system.h to find out how to
+> do that.
+> 
+> This feature has been missing from ARM GCC for quite a long time - it's
+> used extensively on x86 GCC, where they have one register class per
+> register, so they can do stuff like:
+> 
+> 	asm("blah %0" : : "a" (value));
+> 
+> and be guaranteed that %0 will be eax.
+> 
+> > If you need a specific register, this means that you must set up that
+> > register explicitly inside the asm if you want a guarantee that the
+> > code will work:
+> > 
+> > 	asm volatile (
+> > 		"movw	r12, %[hvc_num]\n\t"
+> > 		...
+> > 		"hvc	#0"
+> > 		:: [hvc_num] "i" (NUMBER) : "r12"
+> > 	);
+> > 
+> > Of course, if you need to set up more than about 5 or 6 registers in
+> > this way, the doubled register footprint means that the compiler will
+> > have to start spilling stuff to the stack.
+> 
+> No it won't - it will barf instead - think about it.  If you're clobbering
+> r0 - r5, but need to pass in six values in registers, gcc can't use r0-r5
+> for that, so it must use the remaining registers.  It gets rather unhappy
+> with that, and starts erroring out (iirc 'too many reloads' or some similar
+> error.)  I've been there.
 
-Furthermore the recent discussion on the following thread
-    "srcu: Implement call_srcu()"
-    http://lkml.org/lkml/2012/1/31/211
-also motivated us to implement get_dirty_log() without SRCU.
+You're right about that -- I didn't pursue my line of thought to the end,
+there.  I have see the behaviour you describe.
 
-This patch achieves this goal without sacrificing the performance of
-both VGA and live migration: in practice the new code is much faster
-than the old one unless we have too many dirty pages.
+> If you want to do it that way, your only option is to store them to memory
+> and pass the address of the block into the assembly, and reload them there.
+> Which is extremely sucky and inefficient.
+> 
+> Practically, the register variable plus asm() does seem to work, and seems
+> to work for virtually all gcc versions out there (there have been the odd
+> buggy version, but those bugs appear to get fixed.)
 
-Implementation:
+That is inconvenient for us, but it's a not a bug.  The ability for asm
+contraints to be able to gcc to put things in specific registers (as with
+the gcc "abcd" constraints for i386) would be nice, but as you point out,
+this capability is simply not supported by gcc right now for ARM -- the
+compiler guys seem to be pretty opposed to it, so I can't say I anticiapte
+this being supported in the near future.
 
-The key part of the implementation is the use of xchg() operation for
-clearing dirty bits atomically.  Since this allows us to update only
-BITS_PER_LONG pages at once, we need to iterate over the dirty bitmap
-until every dirty bit is cleared again for the next call.
+So, where there's a compelling reason to inline these things, we can use
+the existing techniques if we're alert to the risks.  But in cases where
+there isn't a compelling reason, aren't we just inviting fragility
+unnecessarily?
 
-Although some people may worry about the problem of using the atomic
-memory instruction many times to the concurrently accessible bitmap,
-it is usually accessed with mmu_lock held and we rarely see concurrent
-accesses: so what we need to care about is the pure xchg() overheads.
-
-Another point to note is that we do not use for_each_set_bit() to check
-which ones in each BITS_PER_LONG pages are actually dirty.  Instead we
-simply use __ffs() in a loop.  This is much faster than repeatedly call
-find_next_bit().
-
-Performance:
-
-The dirty-log-perf unit test showed nice improvements, some times faster
-than before, when the number of dirty pages was below 8K.  For other
-cases we saw a bit of regression but still enough fast compared to the
-processing of these dirty pages in the userspace.
-
-For real workloads, both VGA and live migration, we have observed pure
-improvements: when the guest was reading a file, we originally saw a few
-ms of latency, but with the new method the latency was less than 200us.
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- arch/x86/kvm/x86.c |  116 +++++++++++++++++++--------------------------------
- 1 files changed, 43 insertions(+), 73 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 3bc1922..0748bab 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3041,55 +3041,32 @@ static int kvm_vm_ioctl_reinject(struct kvm *kvm,
- }
- 
- /**
-- * write_protect_slot - write protect a slot for dirty logging
-- * @kvm: the kvm instance
-- * @memslot: the slot we protect
-- * @dirty_bitmap: the bitmap indicating which pages are dirty
-- * @nr_dirty_pages: the number of dirty pages
-+ * kvm_vm_ioctl_get_dirty_log - get and clear the log of dirty pages in a slot
-+ * @kvm: kvm instance
-+ * @log: slot id and address to which we copy the log
-  *
-- * We have two ways to find all sptes to protect:
-- * 1. Use kvm_mmu_slot_remove_write_access() which walks all shadow pages and
-- *    checks ones that have a spte mapping a page in the slot.
-- * 2. Use kvm_mmu_rmap_write_protect() for each gfn found in the bitmap.
-+ * We need to keep it in mind that VCPU threads can write to the bitmap
-+ * concurrently.  So, to avoid losing data, we keep the following order for
-+ * each bit:
-  *
-- * Generally speaking, if there are not so many dirty pages compared to the
-- * number of shadow pages, we should use the latter.
-+ *   1. Take a snapshot of the bit and clear it if needed.
-+ *   2. Write protect the corresponding page.
-+ *   3. Flush TLB's if needed.
-+ *   4. Copy the snapshot to the userspace.
-  *
-- * Note that letting others write into a page marked dirty in the old bitmap
-- * by using the remaining tlb entry is not a problem.  That page will become
-- * write protected again when we flush the tlb and then be reported dirty to
-- * the user space by copying the old bitmap.
-+ * Between 2 and 3, the guest may write to the page using the remaining TLB
-+ * entry.  This is not a problem because the page will be reported dirty at
-+ * step 4 using the snapshot taken before and step 3 ensures that successive
-+ * writes will be logged for the next call.
-  */
--static void write_protect_slot(struct kvm *kvm,
--			       struct kvm_memory_slot *memslot,
--			       unsigned long *dirty_bitmap,
--			       unsigned long nr_dirty_pages)
--{
--	spin_lock(&kvm->mmu_lock);
--
--	/* Not many dirty pages compared to # of shadow pages. */
--	if (nr_dirty_pages < kvm->arch.n_used_mmu_pages) {
--		gfn_t offset;
--
--		for_each_set_bit(offset, dirty_bitmap, memslot->npages)
--			kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, 1);
--
--		kvm_flush_remote_tlbs(kvm);
--	} else
--		kvm_mmu_slot_remove_write_access(kvm, memslot->id);
--
--	spin_unlock(&kvm->mmu_lock);
--}
--
--/*
-- * Get (and clear) the dirty memory log for a memory slot.
-- */
--int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
--				      struct kvm_dirty_log *log)
-+int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
- {
- 	int r;
- 	struct kvm_memory_slot *memslot;
--	unsigned long n, nr_dirty_pages;
-+	unsigned long n, i;
-+	unsigned long *dirty_bitmap;
-+	unsigned long *dirty_bitmap_buffer;
-+	bool is_dirty = false;
- 
- 	mutex_lock(&kvm->slots_lock);
- 
-@@ -3098,49 +3075,42 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 		goto out;
- 
- 	memslot = id_to_memslot(kvm->memslots, log->slot);
-+
-+	dirty_bitmap = memslot->dirty_bitmap;
- 	r = -ENOENT;
--	if (!memslot->dirty_bitmap)
-+	if (!dirty_bitmap)
- 		goto out;
- 
- 	n = kvm_dirty_bitmap_bytes(memslot);
--	nr_dirty_pages = memslot->nr_dirty_pages;
- 
--	/* If nothing is dirty, don't bother messing with page tables. */
--	if (nr_dirty_pages) {
--		struct kvm_memslots *slots, *old_slots;
--		unsigned long *dirty_bitmap, *dirty_bitmap_head;
-+	dirty_bitmap_buffer = dirty_bitmap + n / sizeof(long);
-+	memset(dirty_bitmap_buffer, 0, n);
- 
--		dirty_bitmap = memslot->dirty_bitmap;
--		dirty_bitmap_head = memslot->dirty_bitmap_head;
--		if (dirty_bitmap == dirty_bitmap_head)
--			dirty_bitmap_head += n / sizeof(long);
--		memset(dirty_bitmap_head, 0, n);
-+	spin_lock(&kvm->mmu_lock);
- 
--		r = -ENOMEM;
--		slots = kmemdup(kvm->memslots, sizeof(*kvm->memslots), GFP_KERNEL);
--		if (!slots)
--			goto out;
-+	for (i = 0; i < n / sizeof(long); i++) {
-+		unsigned long mask;
-+		gfn_t offset;
- 
--		memslot = id_to_memslot(slots, log->slot);
--		memslot->nr_dirty_pages = 0;
--		memslot->dirty_bitmap = dirty_bitmap_head;
--		update_memslots(slots, NULL);
-+		if (!dirty_bitmap[i])
-+			continue;
- 
--		old_slots = kvm->memslots;
--		rcu_assign_pointer(kvm->memslots, slots);
--		synchronize_srcu_expedited(&kvm->srcu);
--		kfree(old_slots);
-+		is_dirty = true;
- 
--		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
-+		mask = xchg(&dirty_bitmap[i], 0);
-+		dirty_bitmap_buffer[i] = mask;
- 
--		r = -EFAULT;
--		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n))
--			goto out;
--	} else {
--		r = -EFAULT;
--		if (clear_user(log->dirty_bitmap, n))
--			goto out;
-+		offset = i * BITS_PER_LONG;
-+		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
- 	}
-+	if (is_dirty)
-+		kvm_flush_remote_tlbs(kvm);
-+
-+	spin_unlock(&kvm->mmu_lock);
-+
-+	r = -EFAULT;
-+	if (copy_to_user(log->dirty_bitmap, dirty_bitmap_buffer, n))
-+		goto out;
- 
- 	r = 0;
- out:
--- 
-1.7.5.4
-
+Cheers
+---Dave
