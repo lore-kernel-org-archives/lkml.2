@@ -1,103 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab2CAK22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:28:28 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:35047 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab2CAK2Z (ORCPT
+	id S1758877Ab2CAKde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:33:34 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33101 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab2CAKdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:28:25 -0500
-Date: Thu, 1 Mar 2012 19:34:45 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] KVM: Remove unused dirty_bitmap_head and nr_dirty_pages
-Message-Id: <20120301193445.5789b8a6.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Mar 2012 05:33:33 -0500
+Date: Thu, 1 Mar 2012 11:33:32 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Message-ID: <20120301103332.GA30156@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we do neither double buffering nor heuristic selection of the
-write protection method these are not needed anymore.
+The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
 
-Note: some drivers have their own implementation of set_bit_le() and
-making it generic needs a bit of work; so we use test_and_set_bit_le()
-and will later replace it with generic set_bit_le().
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
 
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- include/linux/kvm_host.h |    2 --
- virt/kvm/kvm_main.c      |   14 +++++---------
- 2 files changed, 5 insertions(+), 11 deletions(-)
+are available in the git repository at:
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 355e445..73c7d76 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -177,8 +177,6 @@ struct kvm_memory_slot {
- 	unsigned long flags;
- 	unsigned long *rmap;
- 	unsigned long *dirty_bitmap;
--	unsigned long *dirty_bitmap_head;
--	unsigned long nr_dirty_pages;
- 	struct kvm_arch_memory_slot arch;
- 	unsigned long userspace_addr;
- 	int user_alloc;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index e4431ad..27a1083 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -522,12 +522,11 @@ static void kvm_destroy_dirty_bitmap(struct kvm_memory_slot *memslot)
- 		return;
- 
- 	if (2 * kvm_dirty_bitmap_bytes(memslot) > PAGE_SIZE)
--		vfree(memslot->dirty_bitmap_head);
-+		vfree(memslot->dirty_bitmap);
- 	else
--		kfree(memslot->dirty_bitmap_head);
-+		kfree(memslot->dirty_bitmap);
- 
- 	memslot->dirty_bitmap = NULL;
--	memslot->dirty_bitmap_head = NULL;
- }
- 
- /*
-@@ -611,8 +610,7 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
- 
- /*
-  * Allocation size is twice as large as the actual dirty bitmap size.
-- * This makes it possible to do double buffering: see x86's
-- * kvm_vm_ioctl_get_dirty_log().
-+ * See x86's kvm_vm_ioctl_get_dirty_log() why this is needed.
-  */
- static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
- {
-@@ -627,8 +625,6 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
- 	if (!memslot->dirty_bitmap)
- 		return -ENOMEM;
- 
--	memslot->dirty_bitmap_head = memslot->dirty_bitmap;
--	memslot->nr_dirty_pages = 0;
- #endif /* !CONFIG_S390 */
- 	return 0;
- }
-@@ -1476,8 +1472,8 @@ void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
- 
--		if (!test_and_set_bit_le(rel_gfn, memslot->dirty_bitmap))
--			memslot->nr_dirty_pages++;
-+		/* TODO: introduce set_bit_le() and use it */
-+		test_and_set_bit_le(rel_gfn, memslot->dirty_bitmap);
- 	}
- }
- 
--- 
-1.7.5.4
+  git://git.pengutronix.de/git/wsa/linux-2.6.git i2c-embedded/for-3.3
 
+for you to fetch changes up to 844990daa2e69a4258049ba9c2bae1180657dac3:
+
+  i2c: mxs: only flag completion when queue is completely done (2012-02-24 22:28:27 +0100)
+
+----------------------------------------------------------------
+Wolfram Sang (1):
+      i2c: mxs: only flag completion when queue is completely done
+
+ drivers/i2c/busses/i2c-mxs.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
