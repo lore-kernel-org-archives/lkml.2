@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab2CATsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:48:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6818 "EHLO mx1.redhat.com"
+	id S1757253Ab2CATzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:55:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757180Ab2CATsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:48:23 -0500
-Date: Thu, 1 Mar 2012 20:41:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
-Message-ID: <20120301194120.GA11400@redhat.com>
-References: <20120229151634.GE4796@moon> <20120229192400.GA13194@redhat.com> <20120229200103.GJ11326@moon> <20120301180616.GA7652@redhat.com> <20120301191714.GF9930@moon>
+	id S1753561Ab2CATzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:55:19 -0500
+Message-ID: <4F4FD412.1040902@redhat.com>
+Date: Thu, 01 Mar 2012 16:54:58 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301191714.GF9930@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <4F4E1F91.9080705@redhat.com> <20120229134556.GG21224@aftab> <4F4E3059.7040004@redhat.com> <20120229144054.GH21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com> <20120229171626.GJ21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040193@ORSMSX104.amr.corp.intel.com> <20120301112949.GA32410@aftab> <4F4F776B.90609@redhat.com> <3908561D78D1C84285E8C5FCA982C28F040AB7@ORSMSX104.amr.corp.intel.com> <20120301184544.GA3391@aftab> <3908561D78D1C84285E8C5FCA982C28F040B18@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040B18@ORSMSX104.amr.corp.intel.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01, Cyrill Gorcunov wrote:
->
-> So, Oleg, basically the new version will use opened fd in form
-> like (note, I'll recheck for refs and locks more so this is
-> a draft version to point idea)
->
-> static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
-> {
-> 	struct files_struct *files;
-> 	struct file *file;
-> 	int ret;
->
-> 	/*
-> 	 * Make sure if someone is trying to obtain
-> 	 * the existing exe_file it will not get
-> 	 * results until we've finished.
-> 	 */
-> 	down_write(&mm->mmap_sem);
->
-> 	files = get_files_struct(current);
-> 	if (!files)
-> 		return -EINVAL;
->
-> 	spin_lock(&files->file_lock);
->
-> 	file = fcheck_files(files, fd);
-> 	if (!file) {
-> 		ret = -EBADFD;
-> 		goto out_unlock;
-> 	}
-> 	get_file(file);
-> 	spin_unlock(&files->file_lock);
->
-> 	if (mm->num_exe_file_vmas)
-> 		removed_exe_file_vma(mm);
+Em 01-03-2012 15:58, Luck, Tony escreveu:
+>> Query from where? (And pls don't tell me DMI tables. :-))
+> 
+> Sorry - but DMI is all we've got.  We need to start using it, and have
+> people report bugs when it is wrong. Then it might get better. Linux
+> has had some success in shaming BIOS writers with:
+> 
+>  printk("Your BIOS is buggy ...")
+> 
+> Our biggest problem here is the life-cycle ... by the time Linux
+> users start seeing these problems, the BIOS people have already
+> moved on to the next generation system.
+> 
+> BUT - if Linux wants to play in RAS space - we need this to be
+> right - and to do that we need SMBIOS (DMI) bugs to be regarded as
+> priority #1.
 
-Still can't understand. I think you need:
+This approach may work, if we put enough pressure on BIOS bugs. It is
+a way better for us than the way EDAC took: adding a sysfs node for some
+util to write the labels there. Yet, they did that because a lot of DMI 
+tables were wrong.
 
-	file = fget(fd);
-	if (!file)
-		return -EBADF;
+Well, we can always have a buggy-BIOS quirk file shaming the BIOS writers,
+while providing the right values to the end users, as we got bugs reporting
+issues with certain motherboards and/or manufacturers.
 
-	down_write(&mm->mmap_sem);
-	if (mm->num_exe_file_vmas) {
-		fput(mm->exe_file);
-		mm->exe_file = file;
-		file = NULL;
-	}
-	up_write(&mm->mmap_sem);
-
-	if (!file)
-		return 0;
-
-	fput(file);
-	return -ESOMETHING;
-
-and that is all.
-
-Oleg.
-
+Regards,
+Mauro.
