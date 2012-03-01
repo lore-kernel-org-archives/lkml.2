@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031007Ab2CAOD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:03:57 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40284 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966290Ab2CAODz (ORCPT
+	id S1031036Ab2CAOFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:05:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45770 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030988Ab2CAOE7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:03:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.213.19.194 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	Thu, 1 Mar 2012 09:04:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.225.194 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-	<20120229144244.GF5054@shiny>
-	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
-	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
-Date: Thu, 1 Mar 2012 15:03:53 +0100
-Message-ID: <CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        lczerner@redhat.com
+In-Reply-To: <20120301123540.GE25627@aemeltch-MOBL1>
+References: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120301123540.GE25627@aemeltch-MOBL1>
+Date: Thu, 1 Mar 2012 19:34:58 +0530
+Message-ID: <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
+Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+        santosh nayak <santoshprasadnayak@gmail.com>, marcel@holtmann.org,
+        padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/1 Hillf Danton <dhillf@gmail.com>:
-> On Thu, Mar 1, 2012 at 9:35 PM, Jacek Luczak <difrost.kernel@gmail.com> wrote:
->>
->> While I was about to grab acp I've noticed seekwatcher with made my day :)
->>
->> seekwatcher run of tar cf to eliminate writes (all done on 3.2.7):
->> 1) btrfs: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs.png
->> 2) ext4: http://dozzie.jarowit.net/~dozzie/luczajac/tar_ext4.png
->> 3) both merged: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs_ext4.png
->>
->> I will send acp results soon.
->>
-> Would you please take reiserfs into account?
+Andrei,
 
-As of now not (lack of time) but I'm pretty close to consider XFS in
-the game. Whenever I will have more time and there won't be a pressure
-on giving host back to production I will redo same tests for reiserfs.
+I could not get you.
 
-Now I'm focused on the userspace sorting results.
+Do you want me to resend the patch with subject,
+  "[PATCH] Bluetooth: Fix network to host endian conversion for L2CAP
+chan id."  ?
 
--Jacek
+
+
+regards
+santosh
+
+
+
+
+On Thu, Mar 1, 2012 at 6:05 PM, Andrei Emeltchenko
+<andrei.emeltchenko.news@gmail.com> wrote:
+> Hi Santosh,
+>
+> On Thu, Mar 01, 2012 at 04:29:21PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> Fix for endian bug.
+>>
+>> Fix for null dereferenced removed as it is already
+>> submitted by Andrei.
+>>
+>> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+>> ---
+>>  net/bluetooth/l2cap_sock.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>
+> We prefer following commit log (this is the example)
+>
+> <------8<----------------------------------------------------------
+> |  From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> |
+> |  Fix network to host endian conversion for L2CAP chan id.
+> |
+> |  Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> |
+> |  ---
+> |          * v2 Fix for null dereferenced removed as it is already
+> |          submitted by Andrei.
+> |
+> |    net/bluetooth/l2cap_sock.c |    5 +++--
+> |    1 files changed, 3 insertions(+), 2 deletions(-)
+> |
+> <------8<----------------------------------------------------------
+>
+>
+>>
+>> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+>> index 401d942..86d5067 100644
+>> --- a/net/bluetooth/l2cap_sock.c
+>> +++ b/net/bluetooth/l2cap_sock.c
+>> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
+>>       }
+>>
+>>       if (la.l2_cid)
+>> -             err = l2cap_add_scid(chan, la.l2_cid);
+>> +             err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+>>       else
+>>               err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
+>>
+>> @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
+>>       if (la.l2_cid && la.l2_psm)
+>>               return -EINVAL;
+>>
+>> -     err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
+>> +     err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
+>> +                             &la.l2_bdaddr);
+>
+> I live this to Marcel to decide should we reindent our code otherwise this
+> one looks odd.
+>
+> Best regards
+> Andrei Emeltchenko
+>
