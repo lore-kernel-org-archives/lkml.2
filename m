@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965762Ab2CALl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:41:29 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62079 "EHLO mga11.intel.com"
+	id S1030421Ab2CALlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:41:52 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754889Ab2CALl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:41:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="131601127"
-Date: Thu, 1 Mar 2012 12:48:59 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: Improve performance of later WM1811 revisions
-Message-ID: <20120301114859.GK9008@sortiz-mobl>
-References: <1330511958-5796-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S932327Ab2CALlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:41:50 -0500
+Message-ID: <4F4F6076.5050903@nod.at>
+Date: Thu, 01 Mar 2012 12:41:42 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330511958-5796-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org
+Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-3-git-send-email-richard@nod.at> <20120301112732.GA6806@1984>
+In-Reply-To: <20120301112732.GA6806@1984>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig895AD0FC53FA46E1B9B5B8ED"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig895AD0FC53FA46E1B9B5B8ED
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Feb 29, 2012 at 10:39:18AM +0000, Mark Brown wrote:
-> Apply tunings from earlier silicon revisions to revisions up to D and also
-> tweak an additional setting for improved DC servo performance.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> 
-> As this applies on top of things queued in regmap (the patches stuff)
-> and seems fairly obvious from a framework point of view I've just gone
-> ahead and applied it.
-Good, thanks. Just in case you want it:
+Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
+> On Sun, Feb 05, 2012 at 01:14:48AM +0100, Richard Weinberger wrote:
+>> ipt_LOG and ip6_LOG have a lot of common code, merge them
+>> to reduce duplicate code.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>=20
+> While testing this in my master branch I noticed one problem:
+>=20
+> IN=3Dwlan0 OUT=3D MAC=3Dxx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
+> SRC=3D213.150.61.61 DST=3D192.168.1.133 LEN=3D40 TOS=3D0x00 PREC=3D0x00=
+ TTL=3D117
+> ID=3D10539 DF PROTO=3DTCP SPT=3D80 DPT=3D49013 WINDOW=3D0 RES=3D0x00 AC=
+K RST
+> URGP=3D0 PROTO=3DUDPLITE SPT=3D80 DPT=3D49013 LEN=3D45843 PROTO=3DICMP =
+TYPE=3D0
+> CODE=3D80 ID=3D45843 SEQ=3D48576
+>=20
+> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
+> corrupts the log line. Note the extra PROTO=3D, I don't have any UDPLIT=
+E
+> traffic here.
+>=20
+> Looks like a missing break in one switch.
+>=20
+> Would you send me a patch to fix this?
+>=20
 
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Sure. Do I have 48h to fix this?
+I'm currently very busy.
 
-Cheers,
-Samuel.
+Thanks,
+//richard
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+--------------enig895AD0FC53FA46E1B9B5B8ED
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPT2B6AAoJEN9758yqZn9esF0H/iBZcy3Bs0JroQxUxSl5JNjU
+L/jj9/1Y1+8Madw8nVRoCkNXflwZrqUnLW8hIZeanon8U1a6rx+UK+5UkkfaNXxL
+9A3HifXg+GeG5VYb0LgIPmyyR8ZD/rZHNhwP8Xp1kVfQywhoBqOSFPnLQHhlvoQq
+8m3wNU+C+BIor9Ksa8DXXqlv/GVg1rTIULfyBTp6lECxEtsUzIUIZ8Ljg1hq5d9p
+ziDZ1xulBCtuRD+ODlxzEV5aeestO9ke7dwz+49pI2VA3wDwbJclYeSFFxesU9/r
+YO/6mSULkbRNGB4BvOirI6hxTrBwnUgOaYk3OEYgca8tNcUo4xbcXYAbcEVeoXM=
+=Penx
+-----END PGP SIGNATURE-----
+
+--------------enig895AD0FC53FA46E1B9B5B8ED--
