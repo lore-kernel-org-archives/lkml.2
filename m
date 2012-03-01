@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab2CATqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:46:19 -0500
-Received: from bluegiga.fi ([194.100.31.45]:33828 "EHLO darkblue.bluegiga.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757139Ab2CATqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:46:18 -0500
-From: Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH] mm: module_alloc: check if size is 0
-Date: Thu,  1 Mar 2012 21:45:19 +0200
-Message-Id: <1330631119-10059-1-git-send-email-veli-pekka.peltola@bluegiga.com>
-X-Mailer: git-send-email 1.7.5.4
-X-OriginalArrivalTime: 01 Mar 2012 19:46:13.0597 (UTC) FILETIME=[F58988D0:01CCF7E3]
+	id S932410Ab2CATqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:46:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49539 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757139Ab2CATqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:46:36 -0500
+Date: Thu, 1 Mar 2012 11:46:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-Id: <20120301114634.957da8d2.akpm@linux-foundation.org>
+In-Reply-To: <20120301114151.GA19049@localhost>
+References: <20120228140022.614718843@intel.com>
+	<20120228144747.198713792@intel.com>
+	<20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+	<20120301110404.GC4385@quack.suse.cz>
+	<20120301114151.GA19049@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit de7d2b567d040e3b67fe7121945982f14343213d (mm/vmalloc.c: report
-more vmalloc failures) users will get a warning if vmalloc_node_range() is
-called with size 0. This happens if module's init size equals to 0. This
-patch changes ARM, MIPS and x86 module_alloc() to return NULL before calling
-vmalloc_node_range() that would also return NULL and print a warning.
+On Thu, 1 Mar 2012 19:41:51 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-Signed-off-by: Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
----
-I found this with ARM but after checking out various implementations of
-module_alloc() I thought it would be better to fix all at once.
+> >   I think using get_page() might be a good way to go. Naive implementation:
+> > If we need to write a page from kswapd, we do get_page(), attach page to
+> > wb_writeback_work and push it to flusher thread to deal with it.
+> > Flusher thread sees the work, takes a page lock, verifies the page is still
+> > attached to some inode & dirty (it could have been truncated / cleaned by
+> > someone else) and if yes, it submits page for IO (possibly with some
+> > writearound). This scheme won't have problems with iput() and won't have
+> > problems with umount. Also we guarantee some progress - either flusher
+> > thread does it, or some else must have done the work before flusher thread
+> > got to it.
+> 
+> I like this idea.
+> 
+> get_page() looks the perfect solution to verify if the struct inode
+> pointer (w/o igrab) is still live and valid.
+> 
+> [...upon rethinking...] Oh but still we need to lock some page to pin
+> the inode during the writeout. Then there is the dilemma: if the page
+> is locked, we effectively keep it from being written out...
 
-One way to replicate the warning:
-compile kernel with CONFIG_KALLSYMS=n
-insmod module without init, I used usb-common.ko
+No, all you need to do is to structure the code so that after the page
+gets unlocked, the kernel thread does not touch the address_space.  So
+the processing within the kthread is along the lines of
 
- arch/arm/kernel/module.c  |    4 ++--
- arch/mips/kernel/module.c |    4 ++--
- arch/x86/kernel/module.c  |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index 1e9be5d..d44d212 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -39,8 +39,8 @@
- #ifdef CONFIG_MMU
- void *module_alloc(unsigned long size)
- {
--	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
--				GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+	return size == 0 ? NULL : __vmalloc_node_range(size, 1, MODULES_VADDR,
-+				MODULES_END, GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
-index a5066b1..cd768e9 100644
---- a/arch/mips/kernel/module.c
-+++ b/arch/mips/kernel/module.c
-@@ -47,8 +47,8 @@ static DEFINE_SPINLOCK(dbe_lock);
- #ifdef MODULE_START
- void *module_alloc(unsigned long size)
- {
--	return __vmalloc_node_range(size, 1, MODULE_START, MODULE_END,
--				GFP_KERNEL, PAGE_KERNEL, -1,
-+	return size == 0 ? NULL : __vmalloc_node_range(size, 1, MODULE_START,
-+				MODULE_END, GFP_KERNEL, PAGE_KERNEL, -1,
- 				__builtin_return_address(0));
- }
- #endif
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index 925179f..bff6118 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -38,7 +38,7 @@
- 
- void *module_alloc(unsigned long size)
- {
--	if (PAGE_ALIGN(size) > MODULES_LEN)
-+	if (size == 0 || PAGE_ALIGN(size) > MODULES_LEN)
- 		return NULL;
- 	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
- 				GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL_EXEC,
--- 
-1.7.5.4
+writearound(locked_page)
+{
+	write some pages preceding locked_page;	/* touches address_space */
+	write locked_page;
+	write pages following locked_page;	/* touches address_space */
+	unlock_page(locked_page);
+}
 
