@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2CAQCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 11:02:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50004 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab2CAQCO (ORCPT
+	id S1755587Ab2CAQCZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 11:02:25 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:39452 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755236Ab2CAQCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 11:02:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of luiz.dentz@gmail.com designates 10.236.161.201 as permitted sender) smtp.mail=luiz.dentz@gmail.com; dkim=pass header.i=luiz.dentz@gmail.com
+	Thu, 1 Mar 2012 11:02:21 -0500
+Date: Thu, 1 Mar 2012 11:02:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Aaron Lu <aaron.lu@amd.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 8/8] [SCSI] sr: check and enable Zero-power ODD
+ support
+In-Reply-To: <1330592577-16546-9-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1203011059230.9392-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <4F4F7FFB.6010608@collabora.co.uk>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
-	<1330606237.27405.5.camel@megeve>
-	<1330606775.2465.56.camel@edumazet-laptop>
-	<4F4F7FFB.6010608@collabora.co.uk>
-Date: Thu, 1 Mar 2012 18:02:14 +0200
-Message-ID: <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com>
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
-        David Laight <David.Laight@aculab.com>,
-        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
+On Thu, 1 Mar 2012, Lin Ming wrote:
 
-On Thu, Mar 1, 2012 at 3:56 PM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
->>
->> Anyway, if you think multicast sockets is the way to go, then you could
->> setup a virtual network just to be able to use AF_INET multicast.
->>
->> Thats probably doable without kernel patching.
->>
->
-> We could use AF_INET multicast on a local machine but we need some
-> ordering and control flow requirements that are not guaranteed on UDP
-> multicast over IP. That's why we thought to add a new address family
-> AF_MCAST.
+> ZPODD(Zero Power Optical Disk Drive) is a new feature in
+> SATA 3.1 specification. It provides a way to power off unused ODD.
+> 
+> ZPODD support is checked in in sr_probe().
+> can_power_off flag is set during suspend if ZPODD is supported.
+> 
+> ATA port's runtime suspend callback will actually power off the ODD
+> and its runtime resume callback will actually power on the ODD.
+> 
+> When ODD is powered off(D3Cold state), inserting disk will trigger a
+> wakeup event(GPE). GPE AML handler notifies the associated device. Then
+> ODD is resumed in the notify handler.
 
-I don't want to sound like a broken record, but Im afraid I have to,
-what about Ancillary Messages, how you are going to support passing
-fd? Actually the whole virtual network sounds like a bad idea, are we
-going to give ips to each and every application connected to the bus,
-actually it is necessary to have one virtual network for each bus.
+I have one stylistic comment on this patch...
 
-Contrary to someones believes I don't think AF_INET is that fast (e.g.
-http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
+> diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+> index 37c8f6b..39b3d8c 100644
+> --- a/drivers/scsi/sr.h
+> +++ b/drivers/scsi/sr.h
+> @@ -42,6 +42,9 @@ typedef struct scsi_cd {
+>  	unsigned readcd_cdda:1;	/* reading audio data using READ_CD */
+>  	unsigned media_present:1;	/* media is present */
+>  
+> +	unsigned zpodd:1;	/* is ZPODD supported */
+> +	unsigned zpodd_event:1;
+> +
 
+You should not expect your readers to understand what "ZPODD" means.  
+drivers/scsi/sr.h is used by lots of different people, many of whom 
+will have no idea what it refers to, especially since it is part of 
+the SATA spec and not the SCSI spec.  You should provide a brief 
+explanation.
 
--- 
-Luiz Augusto von Dentz
+Alan Stern
+
