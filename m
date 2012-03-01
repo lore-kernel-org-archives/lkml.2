@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2CAXlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 18:41:51 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:35824 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751205Ab2CAXlt (ORCPT
+	id S1754717Ab2CAXs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 18:48:28 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:10359 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab2CAXs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 18:41:49 -0500
-Date: Thu, 1 Mar 2012 15:41:48 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrei Warkentin <andreiw@vmware.com>,
-        kgdb-bugreport@lists.sourceforge.net, Matt Mackall <mpm@selenic.com>,
-        Andrei Warkentin <andrey.warkentin@gmail.com>
-Message-ID: <1659130373.1834747.1330645308581.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4F4FF712.2030400@windriver.com>
-Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+	Thu, 1 Mar 2012 18:48:27 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6636"; a="168339888"
+Date: Thu, 1 Mar 2012 17:48:24 -0600
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Blanchard <anton@samba.org>, benh@kernel.crashing.org,
+        paulus@samba.org, asharma@fb.com, vapier@gentoo.org,
+        eric.dumazet@gmail.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: Re: [PATCH 1/2] atomic: Allow atomic_inc_not_zero to be overridden
+Message-ID: <20120301234824.GC2644@codeaurora.org>
+References: <20120301180953.0f61576f@kryten>
+ <20120301150256.9a7d0b06.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - FF3.0 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301150256.9a7d0b06.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
------ Original Message -----
-> From: "Jason Wessel" <jason.wessel@windriver.com>
-> To: "Andrei Warkentin" <awarkentin@vmware.com>
-> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
-> kgdb-bugreport@lists.sourceforge.net, "Matt Mackall" <mpm@selenic.com>, "Andrei Warkentin"
-> <andrey.warkentin@gmail.com>
-> Sent: Thursday, March 1, 2012 5:24:18 PM
-> Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
-
-> > I did have a question, because it seems you were using qemu / kvm.
->   I have a number of test cases that use kvm, but the netkkgdb does
-> not seem to work with the nc.  My question is how am I supposed to
-> actually use the netkgdb?
+On Thu, Mar 01, 2012 at 03:02:56PM -0800, Andrew Morton wrote:
+> Please merge this via the ppc tree?
 > 
-> Here is what I observe on the target system:
 > 
-> insmod netkgdb.ko netkgdb=@/,@10.0.2.2/
-> echo g > /proc/sysrq-trigger
-> 
-> On my host system:
-> nc.traditional -l -u -p 7777
-> 
-> I will type help, and then the netkgdb is toast.  It doesn't seem to
-> respond anymore.
-> 
+> And let's ask the hexagon maintainers to take a look at the definition
+> in arch/hexagon/include/asm/atomic.h.  I assume that it can be removed,
+> but that might cause problems with files which include asm/atomic.h
+> directly.  I have found two such files in non-arch code and have queued
+> fixes.  There are no such files in arch/hexagon code, so I think it's
+> safe to zap the hexagon definition of atomic_inc_not_zero().
 
-Strange. I've just repeated your steps (I didn't build as a ko before, but now I did)
-and I don't see this problem. Can you tell me your qemu/kvm command line?
+Just tested it; it's safe to zap the Hexagon definition of
+atomic_inc_not_zero()...  I'm fine with this going in through some
+other tree (still getting mine set up).
 
-With qemu I've see odd behavior with ne2k_pci, which is the default
-(qemu would wedge) occasionally. If you are using ne2000, can you try rtl8139?
-Note: I just tried ne2k_pci, and other than having to specify a local 
-IP address (something I don't need to for rtl8139). I've also realized
-that if you insert netkgdb as a module without any parameters, it
-doesn't bind to existing netdevs - that's a bug.
 
-Anything I should know about your network topology?
+Thanks,
+Richard Kuo
 
-Can you also apply the multi-I/O-backend patch and boot with kgdboc=kbd, and
-see if the VM is toast after you type "help".
 
-A
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
