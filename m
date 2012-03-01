@@ -1,92 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab2CAKoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:44:21 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52931 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757839Ab2CAKoT (ORCPT
+	id S1758270Ab2CAKpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:45:09 -0500
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:35134 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755798Ab2CAKpG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:44:19 -0500
-Date: Thu, 1 Mar 2012 11:44:18 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: [GIT PULL] i2c-embedded bugfixes for 3.3
-Message-ID: <20120301104418.GC2535@pengutronix.de>
-References: <20120301103332.GA30156@pengutronix.de>
+	Thu, 1 Mar 2012 05:45:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.231.228 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
-Content-Disposition: inline
-In-Reply-To: <20120301103332.GA30156@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120301101809.GA6488@1984>
+References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120301101809.GA6488@1984>
+Date: Thu, 1 Mar 2012 16:15:05 +0530
+Message-ID: <CAOD=uF6yqCETUG8jMCmjYDM+L1DsM91OiRveONJkNxMf=skTSg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size parametre.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Pablo.
 
---JWEK1jqKZ6MHAcjA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+copy_to_user( dest, source, length)
 
-Linus,
+Normally,  'length'  is equal to  'sizeof (source) '.
 
-On Thu, Mar 01, 2012 at 11:33:32AM +0100, Wolfram Sang wrote:
-> The following changes since commit b01543dfe67bb1d191998e90d20534dc354de0=
-59:
->=20
->   Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
->=20
-> are available in the git repository at:
->=20
->   git://git.pengutronix.de/git/wsa/linux-2.6.git i2c-embedded/for-3.3
->=20
-> for you to fetch changes up to 844990daa2e69a4258049ba9c2bae1180657dac3:
->=20
->   i2c: mxs: only flag completion when queue is completely done (2012-02-2=
-4 22:28:27 +0100)
->=20
-> ----------------------------------------------------------------
-> Wolfram Sang (1):
->       i2c: mxs: only flag completion when queue is completely done
->=20
->  drivers/i2c/busses/i2c-mxs.c |   13 ++++++++++---
->  1 files changed, 10 insertions(+), 3 deletions(-)
+In this case "length"   =   32
+       "sizeof(source)"  =   29.
 
-Oops, the message generation should have been a dry-run, that is why
-this pull request message is missing a bit of context. I am sorry about
-that.
+Is it intentional ?
+Won't it copy extra 3 bytes of kernel data to userspace ?
 
-This patch fixes a wrong assumption in the mxs-i2c-driver about a
-command queue being done. Without it, we have seen races when the bus
-was under load.
 
-Please consider pulling.
 
-Thanks,
+regards
+santosh
 
-   Wolfram
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---JWEK1jqKZ6MHAcjA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk9PUwIACgkQD27XaX1/VRszUwCdH949MHRoRFuK9nSfYd95nsmC
-ucUAn2g97C5fFM6JSGoEKtmsdkMPPPbA
-=m3Nj
------END PGP SIGNATURE-----
-
---JWEK1jqKZ6MHAcjA--
+On Thu, Mar 1, 2012 at 3:48 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
+> On Thu, Mar 01, 2012 at 02:46:30PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> While copying to userspace, the size of source is 29byte where as
+>> size parametre is 32 byte.  Its leaking extra-information from
+>> kernel space to user space.
+>> Replace EBT_FUNCTION_MAXNAMELEN by XT_EXTENSION_MAXNAMELEN.
+>
+> There's no information leak.
+>
+> Let me clarify this. Have a look at /linux/netfilter/x_tables.h, then
+> you find:
+>
+> #define XT_FUNCTION_MAXNAMELEN 30
+> #define XT_EXTENSION_MAXNAMELEN 29
+> #define XT_TABLE_MAXNAMELEN 32
+>
+> For iptables, everything has been 30 bytes, but we stole one
+> byte to store the revision field for matches/targets.
+>
+> For ebtables, there's no revision field and the length of the
+> table name is different.
+>
+> But linux/netfilter/in ebtables.h, you'll find:
+>
+> #define EBT_TABLE_MAXNAMELEN 32
+> #define EBT_CHAIN_MAXNAMELEN EBT_TABLE_MAXNAMELEN
+> #define EBT_FUNCTION_MAXNAMELEN EBT_TABLE_MAXNAMELEN
+>
+> Note that someone decided to use 32 bytes for the ebtables
+> tables/match/target name instead of 30 bytes in iptables.
+>
+> Yes, it sucks a bit we have to live with these interfaces until
+> we have some netlink interface for all these things.
+>
+>> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+>> ---
+>>  net/bridge/netfilter/ebtables.c |    6 +++---
+>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+>> index 5864cc4..f3fcbd9 100644
+>> --- a/net/bridge/netfilter/ebtables.c
+>> +++ b/net/bridge/netfilter/ebtables.c
+>> @@ -1335,7 +1335,7 @@ static inline int ebt_make_matchname(const struct ebt_entry_match *m,
+>>      const char *base, char __user *ubase)
+>>  {
+>>       char __user *hlp = ubase + ((char *)m - base);
+>> -     if (copy_to_user(hlp, m->u.match->name, EBT_FUNCTION_MAXNAMELEN))
+>> +     if (copy_to_user(hlp, m->u.match->name, XT_EXTENSION_MAXNAMELEN))
+>>               return -EFAULT;
+>>       return 0;
+>>  }
+>> @@ -1344,7 +1344,7 @@ static inline int ebt_make_watchername(const struct ebt_entry_watcher *w,
+>>      const char *base, char __user *ubase)
+>>  {
+>>       char __user *hlp = ubase + ((char *)w - base);
+>> -     if (copy_to_user(hlp , w->u.watcher->name, EBT_FUNCTION_MAXNAMELEN))
+>> +     if (copy_to_user(hlp , w->u.watcher->name, XT_EXTENSION_MAXNAMELEN))
+>>               return -EFAULT;
+>>       return 0;
+>>  }
+>> @@ -1368,7 +1368,7 @@ ebt_make_names(struct ebt_entry *e, const char *base, char __user *ubase)
+>>       ret = EBT_WATCHER_ITERATE(e, ebt_make_watchername, base, ubase);
+>>       if (ret != 0)
+>>               return ret;
+>> -     if (copy_to_user(hlp, t->u.target->name, EBT_FUNCTION_MAXNAMELEN))
+>> +     if (copy_to_user(hlp, t->u.target->name, XT_EXTENSION_MAXNAMELEN))
+>>               return -EFAULT;
+>>       return 0;
+>>  }
+>> --
+>> 1.7.4.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
