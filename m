@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300Ab2CACf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:35:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:44780 "EHLO
+	id S1758334Ab2CACfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:35:44 -0500
+Received: from mail.windriver.com ([147.11.1.11]:44776 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab2CACfY (ORCPT
+	with ESMTP id S1758093Ab2CACfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:35:24 -0500
+	Wed, 29 Feb 2012 21:35:22 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: linux-kernel@vger.kernel.org
 Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 3/3] lib: reduce the use of module.h wherever possible
-Date: Wed, 29 Feb 2012 21:35:09 -0500
-Message-Id: <1330569309-26190-4-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 2/3] fs: reduce the use of module.h wherever possible
+Date: Wed, 29 Feb 2012 21:35:08 -0500
+Message-Id: <1330569309-26190-3-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1330569309-26190-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1330569309-26190-1-git-send-email-paul.gortmaker@windriver.com>
@@ -29,881 +29,446 @@ the way.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- lib/argv_split.c       |    2 +-
- lib/atomic64.c         |    2 +-
- lib/average.c          |    3 ++-
- lib/bcd.c              |    2 +-
- lib/bitmap.c           |    2 +-
- lib/bsearch.c          |    2 +-
- lib/check_signature.c  |    2 +-
- lib/checksum.c         |    2 +-
- lib/cmdline.c          |    2 +-
- lib/cpu_rmap.c         |    2 +-
- lib/cpumask.c          |    2 +-
- lib/ctype.c            |    3 ++-
- lib/debug_locks.c      |    2 +-
- lib/dec_and_lock.c     |    2 +-
- lib/devres.c           |    2 +-
- lib/div64.c            |    3 ++-
- lib/dump_stack.c       |    2 +-
- lib/fault-inject.c     |    2 +-
- lib/find_last_bit.c    |    2 +-
- lib/find_next_bit.c    |    2 +-
- lib/flex_array.c       |    2 +-
- lib/gcd.c              |    2 +-
- lib/genalloc.c         |    2 +-
- lib/halfmd4.c          |    2 +-
- lib/hexdump.c          |    2 +-
- lib/hweight.c          |    2 +-
- lib/idr.c              |    2 +-
- lib/int_sqrt.c         |    2 +-
- lib/iomap.c            |    2 +-
- lib/iomap_copy.c       |    2 +-
- lib/iommu-helper.c     |    2 +-
- lib/ioremap.c          |    2 +-
- lib/irq_regs.c         |    3 ++-
- lib/kasprintf.c        |    2 +-
- lib/klist.c            |    2 +-
- lib/kobject.c          |    2 +-
- lib/kobject_uevent.c   |    3 ++-
- lib/kstrtox.c          |    2 +-
- lib/lcm.c              |    2 +-
- lib/list_debug.c       |    3 ++-
- lib/llist.c            |    2 +-
- lib/locking-selftest.c |    1 -
- lib/md5.c              |    2 +-
- lib/nlattr.c           |    2 +-
- lib/parser.c           |    3 ++-
- lib/radix-tree.c       |    2 +-
- lib/random32.c         |    2 +-
- lib/ratelimit.c        |    2 +-
- lib/rational.c         |    3 ++-
- lib/rbtree.c           |    2 +-
- lib/rwsem-spinlock.c   |    2 +-
- lib/rwsem.c            |    2 +-
- lib/scatterlist.c      |    2 +-
- lib/sha1.c             |    2 +-
- lib/smp_processor_id.c |    2 +-
- lib/spinlock_debug.c   |    2 +-
- lib/string.c           |    4 +++-
- lib/string_helpers.c   |    2 +-
- lib/swiotlb.c          |    2 +-
- lib/syscall.c          |    2 +-
- lib/timerqueue.c       |    2 +-
- lib/uuid.c             |    2 +-
- lib/vsprintf.c         |    2 +-
- 63 files changed, 72 insertions(+), 63 deletions(-)
+ fs/aio.c          |    2 +-
+ fs/attr.c         |    2 +-
+ fs/bad_inode.c    |    2 +-
+ fs/binfmt_flat.c  |    2 +-
+ fs/bio.c          |    2 +-
+ fs/buffer.c       |    2 +-
+ fs/compat.c       |    1 -
+ fs/compat_ioctl.c |    1 -
+ fs/dcache.c       |    2 +-
+ fs/dcookies.c     |    2 +-
+ fs/eventfd.c      |    2 +-
+ fs/file.c         |    2 +-
+ fs/fs-writeback.c |    2 +-
+ fs/fs_struct.c    |    2 +-
+ fs/inode.c        |    2 +-
+ fs/ioctl.c        |    2 +-
+ fs/libfs.c        |    2 +-
+ fs/mpage.c        |    2 +-
+ fs/namei.c        |    2 +-
+ fs/posix_acl.c    |    2 +-
+ fs/read_write.c   |    2 +-
+ fs/readdir.c      |    2 +-
+ fs/select.c       |    2 +-
+ fs/seq_file.c     |    2 +-
+ fs/splice.c       |    2 +-
+ fs/stack.c        |    2 +-
+ fs/stat.c         |    2 +-
+ fs/statfs.c       |    2 +-
+ fs/super.c        |    2 +-
+ fs/sync.c         |    2 +-
+ fs/xattr.c        |    2 +-
+ fs/xattr_acl.c    |    2 +-
+ 32 files changed, 30 insertions(+), 32 deletions(-)
 
-diff --git a/lib/argv_split.c b/lib/argv_split.c
-index 4b1b083..1e9a6cb 100644
---- a/lib/argv_split.c
-+++ b/lib/argv_split.c
-@@ -6,7 +6,7 @@
- #include <linux/ctype.h>
- #include <linux/string.h>
- #include <linux/slab.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- static const char *skip_arg(const char *cp)
- {
-diff --git a/lib/atomic64.c b/lib/atomic64.c
-index 3975470..9785378 100644
---- a/lib/atomic64.c
-+++ b/lib/atomic64.c
+diff --git a/fs/aio.c b/fs/aio.c
+index 969beb0..4b5e063 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
 @@ -13,7 +13,7 @@
- #include <linux/cache.h>
- #include <linux/spinlock.h>
- #include <linux/init.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/atomic.h>
- 
- /*
-diff --git a/lib/average.c b/lib/average.c
-index 5576c28..61deb8e 100644
---- a/lib/average.c
-+++ b/lib/average.c
-@@ -5,7 +5,8 @@
-  * Version 2.  See the file COPYING for more details.
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kernel.h>
- #include <linux/average.h>
- #include <linux/bug.h>
- #include <linux/log2.h>
-diff --git a/lib/bcd.c b/lib/bcd.c
-index d74257f..55efaf7 100644
---- a/lib/bcd.c
-+++ b/lib/bcd.c
-@@ -1,5 +1,5 @@
- #include <linux/bcd.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- unsigned bcd2bin(unsigned char val)
- {
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 0d4a127..e3bc083 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -5,7 +5,7 @@
-  * This source code is licensed under the GNU General Public License,
-  * Version 2.  See the file COPYING for more details.
-  */
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/ctype.h>
  #include <linux/errno.h>
- #include <linux/bitmap.h>
-diff --git a/lib/bsearch.c b/lib/bsearch.c
-index 5b54758..e33c179 100644
---- a/lib/bsearch.c
-+++ b/lib/bsearch.c
-@@ -9,7 +9,7 @@
-  * published by the Free Software Foundation; version 2.
-  */
- 
+ #include <linux/time.h>
+ #include <linux/aio_abi.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/bsearch.h>
- 
- /*
-diff --git a/lib/check_signature.c b/lib/check_signature.c
-index fd6af19..6b49797 100644
---- a/lib/check_signature.c
-+++ b/lib/check_signature.c
-@@ -1,5 +1,5 @@
- #include <linux/io.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /**
-  *	check_signature		-	find BIOS signatures
-diff --git a/lib/checksum.c b/lib/checksum.c
-index 8df2f91..12dceb2 100644
---- a/lib/checksum.c
-+++ b/lib/checksum.c
-@@ -32,7 +32,7 @@
- /* Revised by Kenneth Albanowski for m68knommu. Basic problem: unaligned access
-  kills, so most of the assembly has to go. */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <net/checksum.h>
- 
- #include <asm/byteorder.h>
-diff --git a/lib/cmdline.c b/lib/cmdline.c
-index f5f3ad8..eb67911 100644
---- a/lib/cmdline.c
-+++ b/lib/cmdline.c
-@@ -12,7 +12,7 @@
-  *
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/kernel.h>
- #include <linux/string.h>
- 
-diff --git a/lib/cpu_rmap.c b/lib/cpu_rmap.c
-index 987acfa..145dec5 100644
---- a/lib/cpu_rmap.c
-+++ b/lib/cpu_rmap.c
-@@ -11,7 +11,7 @@
- #ifdef CONFIG_GENERIC_HARDIRQS
- #include <linux/interrupt.h>
- #endif
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /*
-  * These functions maintain a mapping from CPUs to some ordered set of
-diff --git a/lib/cpumask.c b/lib/cpumask.c
-index af3e5817..0b66011 100644
---- a/lib/cpumask.c
-+++ b/lib/cpumask.c
-@@ -2,7 +2,7 @@
- #include <linux/kernel.h>
- #include <linux/bitops.h>
- #include <linux/cpumask.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/bootmem.h>
- 
- int __first_cpu(const cpumask_t *srcp)
-diff --git a/lib/ctype.c b/lib/ctype.c
-index 26baa62..c646df9 100644
---- a/lib/ctype.c
-+++ b/lib/ctype.c
-@@ -5,7 +5,8 @@
-  */
- 
- #include <linux/ctype.h>
--#include <linux/module.h>
-+#include <linux/compiler.h>
-+#include <linux/export.h>
- 
- const unsigned char _ctype[] = {
- _C,_C,_C,_C,_C,_C,_C,_C,				/* 0-7 */
-diff --git a/lib/debug_locks.c b/lib/debug_locks.c
-index b1c1773..f2fa60c 100644
---- a/lib/debug_locks.c
-+++ b/lib/debug_locks.c
-@@ -10,7 +10,7 @@
-  */
- #include <linux/rwsem.h>
- #include <linux/mutex.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/debug_locks.h>
- 
-diff --git a/lib/dec_and_lock.c b/lib/dec_and_lock.c
-index b525772..e262785 100644
---- a/lib/dec_and_lock.c
-+++ b/lib/dec_and_lock.c
-@@ -1,4 +1,4 @@
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/atomic.h>
- 
-diff --git a/lib/devres.c b/lib/devres.c
-index 9676617..80b9c76 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -1,7 +1,7 @@
- #include <linux/pci.h>
- #include <linux/io.h>
- #include <linux/gfp.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- void devm_ioremap_release(struct device *dev, void *res)
- {
-diff --git a/lib/div64.c b/lib/div64.c
-index 5b49191..3ea2490 100644
---- a/lib/div64.c
-+++ b/lib/div64.c
-@@ -16,7 +16,8 @@
-  * assembly versions such as arch/ppc/lib/div64.S and arch/sh/lib/div64.S.
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kernel.h>
- #include <linux/math64.h>
- 
- /* Not needed on 64bit architectures */
-diff --git a/lib/dump_stack.c b/lib/dump_stack.c
-index 53bff4c..42f4f55 100644
---- a/lib/dump_stack.c
-+++ b/lib/dump_stack.c
-@@ -4,7 +4,7 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- void dump_stack(void)
- {
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index b4801f5..6805453 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
+ #include <linux/syscalls.h>
+ #include <linux/backing-dev.h>
+ #include <linux/uio.h>
+diff --git a/fs/attr.c b/fs/attr.c
+index 95053ad..73f69a6 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
 @@ -5,7 +5,7 @@
- #include <linux/stat.h>
- #include <linux/types.h>
+  *  changes by Thomas Schoebel-Theuer
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/time.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>
+diff --git a/fs/bad_inode.c b/fs/bad_inode.c
+index 22e9a78..37268c5 100644
+--- a/fs/bad_inode.c
++++ b/fs/bad_inode.c
+@@ -9,7 +9,7 @@
+  */
+ 
  #include <linux/fs.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/interrupt.h>
- #include <linux/stacktrace.h>
- #include <linux/fault-inject.h>
-diff --git a/lib/find_last_bit.c b/lib/find_last_bit.c
-index d903959..91ca09f 100644
---- a/lib/find_last_bit.c
-+++ b/lib/find_last_bit.c
-@@ -11,7 +11,7 @@
+ #include <linux/stat.h>
+ #include <linux/time.h>
+ #include <linux/namei.h>
+diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
+index 1bffbe0..3e27232 100644
+--- a/fs/binfmt_flat.c
++++ b/fs/binfmt_flat.c
+@@ -15,7 +15,7 @@
+  *	JAN/99 -- coded full program relocation (gerg@snapgear.com)
   */
  
- #include <linux/bitops.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <asm/types.h>
- #include <asm/byteorder.h>
- 
-diff --git a/lib/find_next_bit.c b/lib/find_next_bit.c
-index 4bd75a7..0cbfc0b 100644
---- a/lib/find_next_bit.c
-+++ b/lib/find_next_bit.c
-@@ -10,7 +10,7 @@
-  */
- 
- #include <linux/bitops.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <asm/types.h>
- #include <asm/byteorder.h>
- 
-diff --git a/lib/flex_array.c b/lib/flex_array.c
-index 9b8b894..6948a66 100644
---- a/lib/flex_array.c
-+++ b/lib/flex_array.c
-@@ -23,7 +23,7 @@
- #include <linux/flex_array.h>
- #include <linux/slab.h>
- #include <linux/stddef.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/reciprocal_div.h>
- 
- struct flex_array_part {
-diff --git a/lib/gcd.c b/lib/gcd.c
-index f879033..cce4f3c 100644
---- a/lib/gcd.c
-+++ b/lib/gcd.c
-@@ -1,6 +1,6 @@
  #include <linux/kernel.h>
- #include <linux/gcd.h>
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+diff --git a/fs/bio.c b/fs/bio.c
+index b980ecd..e453924 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -22,7 +22,7 @@
+ #include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- 
- /* Greatest common divisor */
- unsigned long gcd(unsigned long a, unsigned long b)
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index f352cc4..6bc04aa 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
+ #include <linux/mempool.h>
+ #include <linux/workqueue.h>
+ #include <scsi/sg.h>		/* for struct sg_iovec */
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 1a30db7..70e2017 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
 @@ -29,7 +29,7 @@
+ #include <linux/file.h>
+ #include <linux/quotaops.h>
+ #include <linux/highmem.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/writeback.h>
+ #include <linux/hash.h>
+ #include <linux/suspend.h>
+diff --git a/fs/compat.c b/fs/compat.c
+index 07880ba..14483a7 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -33,7 +33,6 @@
+ #include <linux/nfs4_mount.h>
+ #include <linux/syscalls.h>
+ #include <linux/ctype.h>
+-#include <linux/module.h>
+ #include <linux/dirent.h>
+ #include <linux/fsnotify.h>
+ #include <linux/highuid.h>
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index a26bea1..4d3eec7 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -49,7 +49,6 @@
+ #include <linux/elevator.h>
+ #include <linux/rtc.h>
+ #include <linux/pci.h>
+-#include <linux/module.h>
+ #include <linux/serial.h>
+ #include <linux/if_tun.h>
+ #include <linux/ctype.h>
+diff --git a/fs/dcache.c b/fs/dcache.c
+index fe19ac1..303ebd9 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -23,7 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/hash.h>
+ #include <linux/cache.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/mount.h>
+ #include <linux/file.h>
+ #include <asm/uaccess.h>
+diff --git a/fs/dcookies.c b/fs/dcookies.c
+index dda0dc7..17c7799 100644
+--- a/fs/dcookies.c
++++ b/fs/dcookies.c
+@@ -13,7 +13,7 @@
   */
  
+ #include <linux/syscalls.h>
+-#include <linux/module.h>
++#include <linux/export.h>
  #include <linux/slab.h>
+ #include <linux/list.h>
+ #include <linux/mount.h>
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index d9a5917..dba15fe 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -16,7 +16,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/syscalls.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/bitmap.h>
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
-diff --git a/lib/halfmd4.c b/lib/halfmd4.c
-index e11db26..66d0ee8 100644
---- a/lib/halfmd4.c
-+++ b/lib/halfmd4.c
-@@ -1,5 +1,5 @@
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
+ 
+diff --git a/fs/file.c b/fs/file.c
+index 4c6992d..3c426de 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -6,7 +6,7 @@
+  *  Manage the dynamic fd arrays in the process files_struct.
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ #include <linux/mmzone.h>
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 5b4a936..92fcb19 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -14,7 +14,7 @@
+  */
+ 
  #include <linux/kernel.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/cryptohash.h>
- 
- /* F, G and H are basic MD4 functions: selection, majority, parity */
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index 51d5ae2..6540d65 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -10,7 +10,7 @@
- #include <linux/types.h>
- #include <linux/ctype.h>
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- const char hex_asc[] = "0123456789abcdef";
- EXPORT_SYMBOL(hex_asc);
-diff --git a/lib/hweight.c b/lib/hweight.c
-index 3c79d50..b7d81ba 100644
---- a/lib/hweight.c
-+++ b/lib/hweight.c
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index 78b519c..a2d1db2 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
 @@ -1,4 +1,4 @@
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/bitops.h>
- #include <asm/types.h>
- 
-diff --git a/lib/idr.c b/lib/idr.c
-index ed055b2..4a3b776 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -29,7 +29,7 @@
- #ifndef TEST                        // to test in user space...
- #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/fs.h>
+ #include <linux/path.h>
+diff --git a/fs/inode.c b/fs/inode.c
+index d3ebdbe..cd8cffc 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -8,7 +8,7 @@
  #include <linux/init.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #endif
- #include <linux/err.h>
- #include <linux/string.h>
-diff --git a/lib/int_sqrt.c b/lib/int_sqrt.c
-index fd355a9..fc2eeb7 100644
---- a/lib/int_sqrt.c
-+++ b/lib/int_sqrt.c
-@@ -1,6 +1,6 @@
- 
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /**
-  * int_sqrt - rough approximation to sqrt
-diff --git a/lib/iomap.c b/lib/iomap.c
-index ada922a..2c08f36 100644
---- a/lib/iomap.c
-+++ b/lib/iomap.c
-@@ -6,7 +6,7 @@
- #include <linux/pci.h>
- #include <linux/io.h>
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /*
-  * Read/write from/to an (offsettable) iomem cookie. It might be a PIO
-diff --git a/lib/iomap_copy.c b/lib/iomap_copy.c
-index 864fc5e..4527e75 100644
---- a/lib/iomap_copy.c
-+++ b/lib/iomap_copy.c
-@@ -15,7 +15,7 @@
-  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/io.h>
- 
- /**
-diff --git a/lib/iommu-helper.c b/lib/iommu-helper.c
-index da05331..ae7d50b 100644
---- a/lib/iommu-helper.c
-+++ b/lib/iommu-helper.c
-@@ -2,7 +2,7 @@
-  * IOMMU helper functions for the free area management
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/bitmap.h>
- 
- int iommu_is_span_boundary(unsigned int index, unsigned int nr,
-diff --git a/lib/ioremap.c b/lib/ioremap.c
-index da4e2ad..0c9216c 100644
---- a/lib/ioremap.c
-+++ b/lib/ioremap.c
-@@ -9,7 +9,7 @@
- #include <linux/mm.h>
- #include <linux/sched.h>
- #include <linux/io.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <asm/cacheflush.h>
- #include <asm/pgtable.h>
- 
-diff --git a/lib/irq_regs.c b/lib/irq_regs.c
-index 753880a..9c0a1d7 100644
---- a/lib/irq_regs.c
-+++ b/lib/irq_regs.c
-@@ -8,7 +8,8 @@
-  * as published by the Free Software Foundation; either version
-  * 2 of the License, or (at your option) any later version.
-  */
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/percpu.h>
- #include <asm/irq_regs.h>
- 
- #ifndef ARCH_HAS_OWN_IRQ_REGS
-diff --git a/lib/kasprintf.c b/lib/kasprintf.c
-index 9c4233b..ae0de80 100644
---- a/lib/kasprintf.c
-+++ b/lib/kasprintf.c
-@@ -5,7 +5,7 @@
-  */
- 
- #include <stdarg.h>
--#include <linux/module.h>
-+#include <linux/export.h>
  #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/string.h>
-diff --git a/lib/klist.c b/lib/klist.c
-index 573d606..0874e41 100644
---- a/lib/klist.c
-+++ b/lib/klist.c
-@@ -35,7 +35,7 @@
-  */
- 
- #include <linux/klist.h>
+ #include <linux/writeback.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/sched.h>
- 
- /*
-diff --git a/lib/kobject.c b/lib/kobject.c
-index c33d7a1..21dee7c 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -14,7 +14,7 @@
- 
- #include <linux/kobject.h>
- #include <linux/string.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/stat.h>
- #include <linux/slab.h>
- 
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index e66e9b6..6baabeb 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -17,7 +17,8 @@
- #include <linux/spinlock.h>
- #include <linux/string.h>
- #include <linux/kobject.h>
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kmod.h>
- #include <linux/slab.h>
- #include <linux/user_namespace.h>
- #include <linux/socket.h>
-diff --git a/lib/kstrtox.c b/lib/kstrtox.c
-index b1dd3e7..c3615ea 100644
---- a/lib/kstrtox.c
-+++ b/lib/kstrtox.c
-@@ -15,7 +15,7 @@
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/math64.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/types.h>
- #include <asm/uaccess.h>
- #include "kstrtox.h"
-diff --git a/lib/lcm.c b/lib/lcm.c
-index 10b5cfc..b9c8de4 100644
---- a/lib/lcm.c
-+++ b/lib/lcm.c
-@@ -1,6 +1,6 @@
- #include <linux/kernel.h>
- #include <linux/gcd.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/lcm.h>
- 
- /* Lowest common multiple */
-diff --git a/lib/list_debug.c b/lib/list_debug.c
-index b8029a5..be10ec9 100644
---- a/lib/list_debug.c
-+++ b/lib/list_debug.c
-@@ -6,7 +6,8 @@
-  * DEBUG_LIST.
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/kernel.h>
- #include <linux/list.h>
- 
- /*
-diff --git a/lib/llist.c b/lib/llist.c
-index 700cff7..8221b3d 100644
---- a/lib/llist.c
-+++ b/lib/llist.c
-@@ -23,7 +23,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/interrupt.h>
- #include <linux/llist.h>
- 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 507a22f..7aae0f2 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -14,7 +14,6 @@
- #include <linux/mutex.h>
- #include <linux/sched.h>
- #include <linux/delay.h>
--#include <linux/module.h>
- #include <linux/lockdep.h>
- #include <linux/spinlock.h>
- #include <linux/kallsyms.h>
-diff --git a/lib/md5.c b/lib/md5.c
-index c777180..958a3c1 100644
---- a/lib/md5.c
-+++ b/lib/md5.c
-@@ -1,5 +1,5 @@
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/cryptohash.h>
- 
- #define F1(x, y, z)	(z ^ (x & (y ^ z)))
-diff --git a/lib/nlattr.c b/lib/nlattr.c
-index a8408b6..4226dfe 100644
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -5,7 +5,7 @@
-  * 				Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-  */
- 
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/jiffies.h>
-diff --git a/lib/parser.c b/lib/parser.c
-index dcbaaef..c434100 100644
---- a/lib/parser.c
-+++ b/lib/parser.c
-@@ -6,7 +6,8 @@
-  */
- 
- #include <linux/ctype.h>
--#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/export.h>
- #include <linux/parser.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index dc63d08..3e69c2b 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -22,7 +22,7 @@
- #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/radix-tree.h>
- #include <linux/percpu.h>
- #include <linux/slab.h>
-diff --git a/lib/random32.c b/lib/random32.c
-index fc3545a..938bde5 100644
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -35,7 +35,7 @@
- 
- #include <linux/types.h>
- #include <linux/percpu.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/jiffies.h>
- #include <linux/random.h>
- 
-diff --git a/lib/ratelimit.c b/lib/ratelimit.c
-index c96d500..40e03ea 100644
---- a/lib/ratelimit.c
-+++ b/lib/ratelimit.c
-@@ -11,7 +11,7 @@
- 
- #include <linux/ratelimit.h>
- #include <linux/jiffies.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /*
-  * __ratelimit - rate limiting
-diff --git a/lib/rational.c b/lib/rational.c
-index 3ed247b..d326da3 100644
---- a/lib/rational.c
-+++ b/lib/rational.c
-@@ -7,7 +7,8 @@
-  */
- 
- #include <linux/rational.h>
--#include <linux/module.h>
-+#include <linux/compiler.h>
-+#include <linux/export.h>
- 
- /*
-  * calculate best rational approximation for a given fraction
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index a16be19..d417556 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -21,7 +21,7 @@
- */
- 
- #include <linux/rbtree.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
- {
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index f2393c2..7e0d6a5 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -7,7 +7,7 @@
-  */
+ #include <linux/backing-dev.h>
+ #include <linux/wait.h>
  #include <linux/rwsem.h>
- #include <linux/sched.h>
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index 066836e..29167be 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -10,7 +10,7 @@
+ #include <linux/file.h>
+ #include <linux/fs.h>
+ #include <linux/security.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- 
- struct rwsem_waiter {
- 	struct list_head list;
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index 410aa11..8337e1b 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -6,7 +6,7 @@
- #include <linux/rwsem.h>
- #include <linux/sched.h>
- #include <linux/init.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /*
-  * Initialize an rwsem:
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 4ceb05d..63a7f2e 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -6,7 +6,7 @@
-  * This source code is licensed under the GNU General Public License,
-  * Version 2. See the file COPYING for more details.
-  */
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/slab.h>
- #include <linux/scatterlist.h>
- #include <linux/highmem.h>
-diff --git a/lib/sha1.c b/lib/sha1.c
-index 1de509a..1df191e 100644
---- a/lib/sha1.c
-+++ b/lib/sha1.c
-@@ -6,7 +6,7 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/bitops.h>
- #include <linux/cryptohash.h>
- #include <asm/unaligned.h>
-diff --git a/lib/smp_processor_id.c b/lib/smp_processor_id.c
-index 503f087..4c0d0e5 100644
---- a/lib/smp_processor_id.c
-+++ b/lib/smp_processor_id.c
+ #include <linux/uaccess.h>
+ #include <linux/writeback.h>
+ #include <linux/buffer_head.h>
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 5b2dbb3..001e25b 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
 @@ -3,7 +3,7 @@
-  *
-  * DEBUG_PREEMPT variant of smp_processor_id().
+  *	Library for filesystems writers.
   */
+ 
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/kallsyms.h>
- #include <linux/sched.h>
- 
-diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
-index 5f3eacd..525d160 100644
---- a/lib/spinlock_debug.c
-+++ b/lib/spinlock_debug.c
-@@ -11,7 +11,7 @@
- #include <linux/interrupt.h>
- #include <linux/debug_locks.h>
- #include <linux/delay.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
- 			  struct lock_class_key *key)
-diff --git a/lib/string.c b/lib/string.c
-index dc4a863..e26362f 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -22,7 +22,9 @@
- #include <linux/types.h>
- #include <linux/string.h>
- #include <linux/ctype.h>
--#include <linux/module.h>
-+#include <linux/export.h>
-+#include <linux/bug.h>
-+#include <linux/errno.h>
- 
- #ifndef __HAVE_ARCH_STRNICMP
- /**
-diff --git a/lib/string_helpers.c b/lib/string_helpers.c
-index ab431d4..dd4ece3 100644
---- a/lib/string_helpers.c
-+++ b/lib/string_helpers.c
-@@ -5,7 +5,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+ #include <linux/mount.h>
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 643e9f5..0face1c 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -13,7 +13,7 @@
   */
+ 
  #include <linux/kernel.h>
- #include <linux/math64.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/string_helpers.h>
- 
- /**
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 058935e..9c6c937 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -20,7 +20,7 @@
- #include <linux/cache.h>
- #include <linux/dma-mapping.h>
  #include <linux/mm.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/string.h>
- #include <linux/swiotlb.h>
-diff --git a/lib/syscall.c b/lib/syscall.c
-index a4f7067..58710ee 100644
---- a/lib/syscall.c
-+++ b/lib/syscall.c
-@@ -1,6 +1,6 @@
- #include <linux/ptrace.h>
- #include <linux/sched.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <asm/syscall.h>
- 
- static int collect_syscall(struct task_struct *target, long *callno,
-diff --git a/lib/timerqueue.c b/lib/timerqueue.c
-index 191176a..93287c6 100644
---- a/lib/timerqueue.c
-+++ b/lib/timerqueue.c
-@@ -24,7 +24,7 @@
- 
- #include <linux/timerqueue.h>
- #include <linux/rbtree.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- 
- /**
-  * timerqueue_add - Adds timer to timerqueue.
-diff --git a/lib/uuid.c b/lib/uuid.c
-index 8fadd7c..52a6fe6 100644
---- a/lib/uuid.c
-+++ b/lib/uuid.c
-@@ -19,7 +19,7 @@
+ #include <linux/kdev_t.h>
+ #include <linux/gfp.h>
+diff --git a/fs/namei.c b/fs/namei.c
+index a780ea5..fa549f2 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -15,7 +15,7 @@
   */
  
+ #include <linux/init.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+ #include <linux/namei.h>
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index cea4623..5e325a4 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -18,7 +18,7 @@
+ #include <linux/fs.h>
+ #include <linux/sched.h>
+ #include <linux/posix_acl.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ 
+ #include <linux/errno.h>
+ 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5ad4248..ffc99d2 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -11,7 +11,7 @@
+ #include <linux/uio.h>
+ #include <linux/fsnotify.h>
+ #include <linux/security.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/syscalls.h>
+ #include <linux/pagemap.h>
+ #include <linux/splice.h>
+diff --git a/fs/readdir.c b/fs/readdir.c
+index 356f715..cc0a822 100644
+--- a/fs/readdir.c
++++ b/fs/readdir.c
+@@ -6,7 +6,7 @@
+ 
+ #include <linux/stddef.h>
  #include <linux/kernel.h>
 -#include <linux/module.h>
 +#include <linux/export.h>
- #include <linux/uuid.h>
- #include <linux/random.h>
- 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 8e75003..7f29bfc 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
+ #include <linux/time.h>
+ #include <linux/mm.h>
+ #include <linux/errno.h>
+diff --git a/fs/select.c b/fs/select.c
+index e782258..de668aa 100644
+--- a/fs/select.c
++++ b/fs/select.c
 @@ -17,7 +17,7 @@
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/syscalls.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/poll.h>
+ #include <linux/personality.h> /* for STICKY_TIMEOUTS */
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 4023d6b..9f73c6b 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -6,7 +6,7 @@
   */
  
- #include <stdarg.h>
+ #include <linux/fs.h>
 -#include <linux/module.h>
-+#include <linux/module.h>	/* for KSYM_SYMBOL_LEN */
- #include <linux/types.h>
- #include <linux/string.h>
- #include <linux/ctype.h>
++#include <linux/export.h>
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+ 
+diff --git a/fs/splice.c b/fs/splice.c
+index 1ec0493..66f4ee0 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -25,7 +25,7 @@
+ #include <linux/mm_inline.h>
+ #include <linux/swap.h>
+ #include <linux/writeback.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/syscalls.h>
+ #include <linux/uio.h>
+ #include <linux/security.h>
+diff --git a/fs/stack.c b/fs/stack.c
+index 9c11519..5b53882 100644
+--- a/fs/stack.c
++++ b/fs/stack.c
+@@ -1,4 +1,4 @@
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/fs.h>
+ #include <linux/fs_stack.h>
+ 
+diff --git a/fs/stat.c b/fs/stat.c
+index 8806b89..c9dfa29 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -4,7 +4,7 @@
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/mm.h>
+ #include <linux/errno.h>
+ #include <linux/file.h>
+diff --git a/fs/statfs.c b/fs/statfs.c
+index 2aa6a22..43e6b6f 100644
+--- a/fs/statfs.c
++++ b/fs/statfs.c
+@@ -1,5 +1,5 @@
+ #include <linux/syscalls.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/fs.h>
+ #include <linux/file.h>
+ #include <linux/mount.h>
+diff --git a/fs/super.c b/fs/super.c
+index 6277ec6..52bfd25 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -20,7 +20,7 @@
+  *  Heavily rewritten for 'one fs - one tree' dcache architecture. AV, Mar 2000
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/acct.h>
+ #include <linux/blkdev.h>
+diff --git a/fs/sync.c b/fs/sync.c
+index f3501ef..0e8db93 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -6,7 +6,7 @@
+ #include <linux/file.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/namei.h>
+ #include <linux/sched.h>
+ #include <linux/writeback.h>
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 82f4337..d6dfd24 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -16,7 +16,7 @@
+ #include <linux/security.h>
+ #include <linux/evm.h>
+ #include <linux/syscalls.h>
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/fsnotify.h>
+ #include <linux/audit.h>
+ #include <asm/uaccess.h>
+diff --git a/fs/xattr_acl.c b/fs/xattr_acl.c
+index 8d5a506..69d06b0 100644
+--- a/fs/xattr_acl.c
++++ b/fs/xattr_acl.c
+@@ -5,7 +5,7 @@
+  * Copyright (C) 2001 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
++#include <linux/export.h>
+ #include <linux/fs.h>
+ #include <linux/posix_acl_xattr.h>
+ #include <linux/gfp.h>
 -- 
 1.7.9.1
 
