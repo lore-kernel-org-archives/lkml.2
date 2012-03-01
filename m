@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab2CATbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:31:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42534 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab2CATbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:31:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="116652969"
-Message-ID: <4F4FCE18.4050400@linux.intel.com>
-Date: Thu, 01 Mar 2012 11:29:28 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1755568Ab2CATbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:31:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52568 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab2CATbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:31:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.213.32.205 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
+        fuse-devel@lists.sourceforge.net
+Subject: Re: [PATCH 6/9] fuse: Push file_update_time() into fuse_page_mkwrite()
+References: <1330602103-8851-1-git-send-email-jack@suse.cz>
+	<1330602103-8851-7-git-send-email-jack@suse.cz>
+Date: Thu, 01 Mar 2012 20:31:17 +0100
+In-Reply-To: <1330602103-8851-7-git-send-email-jack@suse.cz> (Jan Kara's
+	message of "Thu, 1 Mar 2012 12:41:40 +0100")
+Message-ID: <87obsgce4a.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk
- parameter
-References: <cover.1330539597.git.dvhart@linux.intel.com> <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com> <4F4EC73E.40209@linux.intel.com> <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com> <4F4ECCE8.90207@linux.intel.com> <20120301024028.GA6612@feng-i7>
-In-Reply-To: <20120301024028.GA6612@feng-i7>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jan Kara <jack@suse.cz> writes:
 
+> CC: Miklos Szeredi <miklos@szeredi.hu>
+> CC: fuse-devel@lists.sourceforge.net
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/fuse/file.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 4a199fd..eade72e 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -1323,6 +1323,7 @@ static int fuse_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  	 */
+>  	struct inode *inode = vma->vm_file->f_mapping->host;
+>  
+> +	file_update_time(vma->vm_file);
 
-On 02/29/2012 06:40 PM, Feng Tang wrote:
-> On Wed, Feb 29, 2012 at 05:12:08PM -0800, Darren Hart wrote:
->>
->>
->> On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
->>> 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
->>>> how do we force the
->>>> 192MHz clock setting BEFORE the pch_phub code runs?
->>>
->>> To realize your requirement,
->>> I think that set by BIOS is only way.
->>
->> Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
->> the initial console and once the phub driver is loaded, it can make the
->> necessary changes and fix things up in the uart port? This would add a
->> binding between the pch_uart and pch_phub code.
->>
->> Thoughts?
-> 
-> To satisfy the early console, one way may be add a x86_init_ops for all
-> Tunnel Creek compatible platform like what Moorestown/Medfield have done,
-> and insert the uart clk setting work into one of the early init function. 
-> 
+Fuse sets S_CMTIME in inode flags, so this is a no-op.  IOW the patch is
+not needed.
 
-I believe this is inline with what Alan was recommending in his response
-to the V1 patch series, and it sounds like a reasonable next step.
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Thanks,
+Miklos
