@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012Ab2CABMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:12:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:36989 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520Ab2CABMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:12:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="72069679"
-Message-ID: <4F4ECCE8.90207@linux.intel.com>
-Date: Wed, 29 Feb 2012 17:12:08 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk
- parameter
-References: <cover.1330539597.git.dvhart@linux.intel.com> <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com> <4F4EC73E.40209@linux.intel.com> <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
-In-Reply-To: <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1758040Ab2CABR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:17:29 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37517 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752184Ab2CABR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 20:17:28 -0500
+Message-ID: <1330564646.23314.23.camel@joe2Laptop>
+Subject: Re: [PATCH] get_maintainer.pl: Add support for moderated lists
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Weinberger <richard@nod.at>, Ian.Campbell@citrix.com,
+        florian@mickler.org, linux-kernel@vger.kernel.org
+Date: Wed, 29 Feb 2012 17:17:26 -0800
+In-Reply-To: <20120229160254.eda62e01.akpm@linux-foundation.org>
+References: <1330544962-995-1-git-send-email-richard@nod.at>
+	 <1330545526.22465.5.camel@joe2Laptop> <4F4E8555.5040002@nod.at>
+	 <20120229160254.eda62e01.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
-> 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
->> how do we force the
->> 192MHz clock setting BEFORE the pch_phub code runs?
+On Wed, 2012-02-29 at 16:02 -0800, Andrew Morton wrote:
+> On Wed, 29 Feb 2012 21:06:45 +0100
+> Richard Weinberger <richard@nod.at> wrote:
 > 
-> To realize your requirement,
-> I think that set by BIOS is only way.
+> > Am 29.02.2012 20:58, schrieb Joe Perches:
+> > > <shrug>  From my perspective, it's correct and simple.
+> > > 
+> > > Moderated lists just means your email may get delayed
+> > > and you may get a "delayed due to moderation" email.
+> > 
+> > Most moderated lists are "moderated" by nobody and the patch
+> > goes to /dev/null.
+> 
+> That's a big problem - we don't want people to send their fixes and bug
+> reports into black holes.
+> 
+> So yes, I think that teaching get_maintainer to emit black hole
+> warnings is a good idea.
+> 
+> Problem is, I don't think the string "moderated" explains the situation
+> very well for the uninitiated :(
 
-Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
-the initial console and once the phub driver is loaded, it can make the
-necessary changes and fix things up in the uart port? This would add a
-binding between the pch_uart and pch_phub code.
+It's also false.  Most moderated lists in MAINTAINERS
+(and I've probably send patches to most of them) are
+in fact moderated.
 
-Thoughts?
+My patches generally show up in their list archives.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
