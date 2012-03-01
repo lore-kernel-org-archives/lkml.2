@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab2CANgC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 08:36:02 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64204 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab2CANf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 08:35:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	id S1759301Ab2CANkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 08:40:35 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34747 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755886Ab2CANke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 08:40:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113291984"
+Date: Thu, 1 Mar 2012 21:35:20 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] writeback: introduce the pageout work
+Message-ID: <20120301133520.GA7202@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120229135156.GA31106@localhost>
 MIME-Version: 1.0
-In-Reply-To: <CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-	<20120229144244.GF5054@shiny>
-	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-Date: Thu, 1 Mar 2012 14:35:57 +0100
-Message-ID: <CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        lczerner@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120229135156.GA31106@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
-> 2012/2/29 Chris Mason <chris.mason@oracle.com>:
->> On Wed, Feb 29, 2012 at 03:07:45PM +0100, Jacek Luczak wrote:
->>
->> [ btrfs faster than ext for find and cp -a ]
->>
->>> 2012/2/29 Jacek Luczak <difrost.kernel@gmail.com>:
->>>
->>> I will try to answer the question from the broken email I've sent.
->>>
->>> @Lukas, it was always a fresh FS on top of LVM logical volume. I've
->>> been cleaning cache/remounting to sync all data before (re)doing
->>> tests.
->>
->> The next step is to get cp -a out of the picture, in this case you're
->> benchmarking both the read speed and the write speed (what are you
->> copying to btw?).
->
-> It's simple cp -a Jenkins{,.bak} so dir to dir copy on same volume.
->
->> Using tar cf /dev/zero <some_dir> is one way to get a consistent picture
->> of the read speed.
->
-> IMO the problem is not - only - in read speed. The directory order hit
-> here. There's a difference in the sequential tests that place btrfs as
-> the winner but still this should not have that huge influence on
-> getdents. I know a bit on the difference between ext4 and btrfs
-> directory handling and I would not expect that huge difference. On the
-> production system where the issue has been observed doing some real
-> work in the background copy takes up to 4h.
->
-> For me btrfs looks perfect here, what could be worth checking is the
-> change of timing in syscall between 39.4 and 3.2.7. Before getdents
-> was not that high on the list while now it jumps to second position
-> but without huge impact on the timings.
->
->> You can confirm the theory that it is directory order causing problems
->> by using acp to read the data.
->>
->> http://oss.oracle.com/~mason/acp/acp-0.6.tar.bz2
->
-> Will check this still today and report back.
->
+> However the other type of works, if ever they come, can still block us
+> for long time. Will need a proper way to guarantee fairness.
 
-While I was about to grab acp I've noticed seekwatcher with made my day :)
+The simplistic way around this may be to refuse to queue new pageout
+works when found other type of works in the queue. Then vmscan will
+fall back to pageout(). It's rare condition anyway and hardly deserves
+a comprehensive fairness scheme.
 
-seekwatcher run of tar cf to eliminate writes (all done on 3.2.7):
-1) btrfs: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs.png
-2) ext4: http://dozzie.jarowit.net/~dozzie/luczajac/tar_ext4.png
-3) both merged: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs_ext4.png
-
-I will send acp results soon.
-
--Jacek
+Thanks,
+Fengguang
