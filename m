@@ -1,77 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2CAFUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 00:20:19 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54242 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab2CAFUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 00:20:17 -0500
-Message-ID: <4F4F0759.6040106@cn.fujitsu.com>
-Date: Thu, 01 Mar 2012 13:21:29 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        linux-kernel@vger.kernel.org, qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] kvm: notify host when guest paniced
-References: <4F4AF1FB.6000903@cn.fujitsu.com> <4F4CB926.6050600@redhat.com> <4F4D7F5E.5040202@cn.fujitsu.com> <4F4DF4C6.90609@redhat.com> <20120229095557.GE24600@redhat.com> <4F4DF749.7060507@redhat.com> <20120229100550.GF24600@redhat.com> <4F4DF913.5030809@redhat.com> <4F4DFB37.8060208@cn.fujitsu.com> <4F4E0061.1050508@redhat.com>
-In-Reply-To: <4F4E0061.1050508@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-01 13:18:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-01 13:18:26,
-	Serialize complete at 2012-03-01 13:18:26
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752442Ab2CAF0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 00:26:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56058 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2CAF0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 00:26:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of siddhesh.poyarekar@gmail.com designates 10.68.191.168 as permitted sender) smtp.mail=siddhesh.poyarekar@gmail.com; dkim=pass header.i=siddhesh.poyarekar@gmail.com
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jamie Lokier <jamie@shareable.org>, Mike Frysinger <vapier@gentoo.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Subject: [PATCH 2/2] procfs: Mark stack vma with pid of the owning task
+Date: Thu,  1 Mar 2012 10:50:59 +0530
+Message-Id: <1330579259-3456-2-git-send-email-siddhesh.poyarekar@gmail.com>
+X-Mailer: git-send-email 1.7.7.4
+In-Reply-To: <1330579259-3456-1-git-send-email-siddhesh.poyarekar@gmail.com>
+References: <20120228174049.GA11136@redhat.com> <201202241112.46337.vapier@gentoo.org>
+ <1330579259-3456-1-git-send-email-siddhesh.poyarekar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 02/29/2012 06:39 PM, Avi Kivity Wrote:
-> On 02/29/2012 12:17 PM, Wen Congyang wrote:
->>>>>
->>>> Yes, crash can be so severe that it is not even detected by a kernel
->>>> itself, so not OOPS message even printed. But in most cases if kernel is
->>>> functional enough to print OOPS it is functional enough to call single
->>>> hypercall instruction.
->>>
->>> Why not print the oops to virtio-serial?  Or even just a regular serial
->>> port?  That's what bare metal does.
->>
->> If virtio-serial's driver has bug or the guest doesn't have such device...
-> 
-> We have the same issue with the hypercall; and virtio-serial is
-> available on many deployed versions.
+This is a usability tweak to the earlier patch to mark thread stack
+vmas based on which vma a task is using as stack. With this patch,
+each marked stack is also marked with the pid of the task to make
+things that little bit easier while troubleshooting issues. I have
+tested to confirm that this does not break current procps
+behaviour. Thanks Mike Frysinger <vapier@gentoo.org> for the idea.
 
-virtio-serial is available, but it is an optional device. If the guest does
-not have this device, the guest cannot tell the host that is is paniced. So
-I still prefer to touch the hypervisor.
+An example output of cat /proc/self/maps with this patch:
 
-Thanks
-Wen Congyang
+$ cat /proc/self/maps
+00400000-0040b000 r-xp 00000000 fd:00 1048598                            /bin/cat
+0060a000-0060b000 r--p 0000a000 fd:00 1048598                            /bin/cat
+0060b000-0060c000 rw-p 0000b000 fd:00 1048598                            /bin/cat
+02370000-02391000 rw-p 00000000 00:00 0                                  [heap]
+7fc8fbf93000-7fc9023b6000 r--p 00000000 fd:00 1714381                    /usr/lib/locale/locale-archive
+7fc9023b6000-7fc902561000 r-xp 00000000 fd:00 2097482                    /lib64/libc-2.14.90.so
+7fc902561000-7fc902761000 ---p 001ab000 fd:00 2097482                    /lib64/libc-2.14.90.so
+7fc902761000-7fc902765000 r--p 001ab000 fd:00 2097482                    /lib64/libc-2.14.90.so
+7fc902765000-7fc902767000 rw-p 001af000 fd:00 2097482                    /lib64/libc-2.14.90.so
+7fc902767000-7fc90276c000 rw-p 00000000 00:00 0
+7fc90276c000-7fc90278e000 r-xp 00000000 fd:00 2097348                    /lib64/ld-2.14.90.so
+7fc90295f000-7fc902962000 rw-p 00000000 00:00 0
+7fc90298c000-7fc90298d000 rw-p 00000000 00:00 0
+7fc90298d000-7fc90298e000 r--p 00021000 fd:00 2097348                    /lib64/ld-2.14.90.so
+7fc90298e000-7fc90298f000 rw-p 00022000 fd:00 2097348                    /lib64/ld-2.14.90.so
+7fc90298f000-7fc902990000 rw-p 00000000 00:00 0
+7fff5fb8d000-7fff5fbae000 rw-p 00000000 00:00 0                          [stack:2663]
+7fff5fbff000-7fff5fc00000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
 
-> 
->>>
->>>>>> Having special kdump
->>>>>> kernel that transfers dump to a host via virtio-serial channel though
->>>>>> sounds interesting. May be that's what you mean.
->>>>>
->>>>> Yes.  The "panic, starting dump" signal should be initiated by the
->>>>> panicking kernel though, in case the dump fails.
->>>>>
->>>> Then panic hypercall sounds like a reasonable solution.
->>>
->>> It is, but I'm trying to see if we can get away with doing nothing.
->>>
->>
->> If we have a reliable way with doing nothing, it is better. But I donot
->> find such way.
-> 
-> We won't have a 100% reliable way.  But I think a variant of the driver
-> that doesn't use interrupts, or just using the ordinary serial driver,
-> should be reliable enough.
-> 
+Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+---
+ Documentation/filesystems/proc.txt |   12 ++++++------
+ fs/proc/task_mmu.c                 |   16 ++++++++++++----
+ fs/proc/task_nommu.c               |    5 +++--
+ include/linux/mm.h                 |    2 +-
+ mm/memory.c                        |   13 +++++++------
+ 5 files changed, 29 insertions(+), 19 deletions(-)
+
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index e0f9de3..a31434e 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -337,7 +337,7 @@ a8024000-a8027000 rw-p 00000000 00:00 0
+ a8027000-a8043000 r-xp 00000000 03:00 8317       /lib/ld-linux.so.2
+ a8043000-a8044000 r--p 0001b000 03:00 8317       /lib/ld-linux.so.2
+ a8044000-a8045000 rw-p 0001c000 03:00 8317       /lib/ld-linux.so.2
+-aff35000-aff4a000 rw-p 00000000 00:00 0          [stack]
++aff35000-aff4a000 rw-p 00000000 00:00 0          [stack:1001]
+ ffffe000-fffff000 r-xp 00000000 00:00 0          [vdso]
+ 
+ where "address" is the address space in the process that it occupies, "perms"
+@@ -356,8 +356,8 @@ The "pathname" shows the name associated file for this mapping.  If the mapping
+ is not associated with a file:
+ 
+  [heap]                   = the heap of the program
+- [stack]                  = the mapping is used as a stack by one
+-                            of the threads of the process
++ [stack:1001]             = the mapping is used as a stack by the thread
++                            with tid 1001
+  [vdso]                   = the "virtual dynamic shared object",
+                             the kernel system call handler
+ 
+@@ -365,9 +365,9 @@ is not associated with a file:
+ 
+ The /proc/PID/task/TID/maps is a view of the virtual memory from the viewpoint
+ of the individual tasks of a process. In this file you will see a mapping marked
+-as [stack] only if that task sees it as a stack. This is a key difference from
+-the content of /proc/PID/maps, where you will see all mappings that are being
+-used as stack by all of those tasks.
++as [stack:TID] only if that task sees it as a stack. This is a key difference
++from the content of /proc/PID/maps, where you will see all mappings that are
++being used as stack by all of those tasks.
+ 
+ The /proc/PID/smaps is an extension based on maps, showing the memory
+ consumption for each of the process's mappings. For each of mappings there
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index f94a12a..8e32e28 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -262,8 +262,14 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+ 				if (vma->vm_start <= mm->brk &&
+ 						vma->vm_end >= mm->start_brk) {
+ 					name = "[heap]";
+-				} else if (vm_is_stack(task, vma, is_pid)) {
+-					name = "[stack]";
++				} else {
++					pid_t tid =
++						vm_is_stack(task, vma, is_pid);
++					if (tid != 0) {
++						pad_len_spaces(m, len);
++						seq_printf(m, "[stack:%d]",
++								tid);
++					}
+ 				}
+ 			} else {
+ 				name = "[vdso]";
+@@ -1099,8 +1105,10 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 		seq_path(m, &file->f_path, "\n\t= ");
+ 	} else if (vma->vm_start <= mm->brk && vma->vm_end >= mm->start_brk) {
+ 		seq_printf(m, " heap");
+-	} else if (vm_is_stack(proc_priv->task, vma, is_pid)) {
+-		seq_printf(m, " stack");
++	} else {
++		pid_t tid = vm_is_stack(proc_priv->task, vma, is_pid);
++		if (tid != 0)
++			seq_printf(m, " stack:%d", tid);
+ 	}
+ 
+ 	if (is_vm_hugetlb_page(vma))
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index bdfff69..8aaba8c 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -170,9 +170,10 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+ 		pad_len_spaces(m, len);
+ 		seq_path(m, &file->f_path, "");
+ 	} else if (mm) {
+-		if (vm_is_stack(priv->task, vma, is_pid))
++		pid_t tid = vm_is_stack(priv->task, vma, is_pid);
++		if (tid != 0) {
+ 			pad_len_spaces(m, len);
+-			seq_puts(m, "[stack]");
++			seq_printf(m, "[stack:%d]", tid);
+ 		}
+ 	}
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 58d47ae..53c3e75 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1040,7 +1040,7 @@ static inline int stack_guard_page_end(struct vm_area_struct *vma,
+ 		!vma_growsup(vma->vm_next, addr);
+ }
+ 
+-extern int
++extern pid_t
+ vm_is_stack(struct task_struct *task, struct vm_area_struct *vma, int in_group);
+ 
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+diff --git a/mm/memory.c b/mm/memory.c
+index d44b180..2533d9f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3919,22 +3919,23 @@ void print_vma_addr(char *prefix, unsigned long ip)
+ /*
+  * Check if the vma is being used as a stack.
+  * If is_group is non-zero, check in the entire thread group or else
+- * just check in the current task.
++ * just check in the current task. Returns the pid of the task that
++ * the vma is stack for.
+  */
+-int vm_is_stack(struct task_struct *task,
+-		struct vm_area_struct *vma, int in_group)
++pid_t vm_is_stack(struct task_struct *task,
++		  struct vm_area_struct *vma, int in_group)
+ {
+-	int ret = 0;
++	pid_t ret = 0;
+ 
+ 	if (vm_is_stack_for_task(task, vma))
+-		return 1;
++		return task->pid;
+ 
+ 	if (in_group) {
+ 		struct task_struct *t = task;
+ 		rcu_read_lock();
+ 		while_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+-				ret = 1;
++				ret = t->pid;
+ 				goto done;
+ 			}
+ 		}
+-- 
+1.7.7.4
 
