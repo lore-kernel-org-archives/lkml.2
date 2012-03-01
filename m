@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab2CAOrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:47:14 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:47851 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932069Ab2CAOrN (ORCPT
+	id S1758210Ab2CAOwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:52:04 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23972 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab2CAOwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:47:13 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwBAKU/KE8Y9geI/2dsb2JhbAAMgVOCPaQnl02GTIErg2eBBwSGUJhU
-X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
-   d="scan'208";a="165364451"
-Message-ID: <4F4F8BEE.3040806@teksavvy.com>
-Date: Thu, 01 Mar 2012 09:47:10 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Thu, 1 Mar 2012 09:52:01 -0500
+Date: Thu, 1 Mar 2012 09:51:55 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+Cc: Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        lczerner@redhat.com
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120301145155.GY5054@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+	lczerner@redhat.com
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+ <CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
+ <20120229144244.GF5054@shiny>
+ <CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
+ <CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
+ <CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
+ <CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
+ <20120301141823.GV5054@shiny>
+ <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.3-rc5
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com> <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F4F8D0F.0178,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-02-28 01:30 PM, Linus Torvalds wrote:
-> On Mon, Feb 27, 2012 at 7:23 AM, Mark Lord <kernel@teksavvy.com> wrote:
->>
->> The i8k driver is still b0rked for COMPAT use in linux-3.2.xx,
->> and I don't think my patch got picked up by anyone for 3.3 yet:
->
-> I really don't like your patch.
-..
+On Thu, Mar 01, 2012 at 03:43:41PM +0100, Jacek Luczak wrote:
+> 2012/3/1 Chris Mason <chris.mason@oracle.com>:
+> > XFS will probably beat btrfs in this test.  Their directory indexes
+> > reflect on disk layout very well.
+> 
+> True, but not that fast on small files.
+> 
+> Except the question I've raised in first mail there's a point in all
+> those action. We are maintaining host that are used for building
+> software: random access, lot of small files and dirs (always a co),
+> heavy parallel IO. We were testing XFS vs ext4 a year ago and XFS was
+> around 10% slower on build times. We did not - yet - done same on
+> btrfs. Now we're looking for replacement for ext4 as we suffer from
+> those issue - but we were not aware of that until stepped into this
+> issue.
+> 
+> If you would like me to do some specific tests around ext4 and btrfs,
+> let me know.
 
-Heh, I think we agree on that point.  I hate it.  :)
+I'm always curious to see comparisons in real world workloads.  You
+should definitely consider testing XFS again, the big three filesystems
+are under pretty constant improvement.  For btrfs, please stick to 3.2
+kernels and higher.
 
-> Quite frankly, I think the right solution is to fix the kernel
-> interface to the right type (int) that is the same. But because we
-> don't want to change the user interface, let's make the kernel
-> *accept* the 8-byte entity and just change it into a 4-byte size, and
-> leave the user-space visible ioctl numbers the same broken crap - it's
-> not like the other ioctl numbers had the right size *either*...
->
-> IOW, have something like the attached in the ioctl handler (and then
-> we need to also add the compat handler, as in your patch).
->
-> Does this (with your compat_ioctl wrapper addition) also work for you?
+This seeky backup performance is somewhat built into ext4, but as Ted
+said there are a few workarounds.
 
+-chris
 
-It's close (after adding a missing left-paren), but not 100% working yet.
-In particular, this command fails to get valid data:  i8kctl bios
-
-    ioctl(3, I8K_BIOS_VERSION, 0xbfc543c8)  = -1 EINVAL (Invalid argument)
-
-That's the original issue I first noticed which prompted me to try
-and get things to roughly behave again.
-
-I think all (or at least most) of the other ioctls appear to be working though.
