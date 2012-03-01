@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab2CAWbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:31:20 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:65129 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754122Ab2CAWbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:31:19 -0500
-Date: Thu, 1 Mar 2012 23:30:49 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: jbarnes@virtuousgeek.org
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, mingo@elte.hu, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com
-Subject: Re: [PATCH V3 0/3] STA2X11: patches for pci bridge support
-Message-ID: <20120301223049.GA30920@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20120223082807.28ea6f23@jbarnes-desktop>
-References: <20120223082807.28ea6f23@jbarnes-desktop>
-  <cover.1329947637.git.rubini@gnudd.com>
+	id S1758189Ab2CAWds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:33:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51257 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758163Ab2CAWdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 17:33:47 -0500
+Date: Thu, 1 Mar 2012 14:33:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Andrea Righi <andrea@betterlinux.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH -V2 1/9] mm:  move hugetlbfs region tracking function to
+ common code
+Message-Id: <20120301143345.7e928efe.akpm@linux-foundation.org>
+In-Reply-To: <1330593380-1361-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1330593380-1361-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Thu,  1 Mar 2012 14:46:12 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Jesse Barnes wrote on Feb 22nd:
-> Ingo, you may as well take the lot of these; they won't clash with
-> other PCI stuff if you take them, but if I take them they may well
-> clash with other x86 stuff.
+> This patch moves the hugetlbfs region tracking function to
+> common code. We will be using this in later patches in the
+> series.
+> 
+> ...
+>
+> +struct file_region {
+> +	struct list_head link;
+> +	long from;
+> +	long to;
+> +};
 
-After this message I got nothing more. I can currently find the
-patches in linux-next nor pci tree nor tip tree.  I've other patches
-that depend on CONFIG_STA2X11 ready and already reviewed by the
-maintainers, so I'd like to have some feedback on the base set.
+Both Andrea Righi and John Stultz are working on (more sophisticated)
+versions of file region tracking code.  And we already have a (poor)
+implementation in fs/locks.c.
 
-Thank you for your patience.
-/alessandro
+That's four versions of the same thing floating around the place.  This
+is nutty.
