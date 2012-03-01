@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935029Ab2C3VGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Mar 2012 17:06:21 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:41906 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934999Ab2C3VGO (ORCPT
+	id S1750919Ab2CAFBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 00:01:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54092 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab2CAFBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Mar 2012 17:06:14 -0400
-Message-Id: <201203302105.q2UL58rb006308@farm-0012.internal.tilera.com>
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Wed, 15 Feb 2012 15:28:04 +1030
-Subject: [PATCH] arch/tile: remove references to cpu_*_map.
-In-Reply-To: <4F761E1C.80808.com>
-References: <4F761E1C.80808.com>
-To: Chris Metcalf <cmetcalf@tilera.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 30 Mar 2012 21:05:09.0069 (UTC) FILETIME=[CA13F7D0:01CD0EB8]
+	Thu, 1 Mar 2012 00:01:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of justinmattock@gmail.com designates 10.204.156.204 as permitted sender) smtp.mail=justinmattock@gmail.com; dkim=pass header.i=justinmattock@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120229235619.GA26970@kroah.com>
+References: <1330356363-3208-1-git-send-email-justinmattock@gmail.com>
+	<20120229235619.GA26970@kroah.com>
+Date: Wed, 29 Feb 2012 21:01:42 -0800
+Message-ID: <CAKFRV=P3_wUJfMvE4JneAMiMUQNDOP+_2y+GbLqa2=3x1anYYA@mail.gmail.com>
+Subject: Re: [PATCH]drivers:staging:iio Fix typos and comments in staging iio.
+From: Justin Mattock <justinmattock@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: trivial@vger.kernel, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, jic23@cam.ac.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has been obsolescent for a while; time for the final push.
+On Wed, Feb 29, 2012 at 3:56 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Feb 27, 2012 at 07:26:03AM -0800, Justin P. Mattock wrote:
+>> From: "Justin P. Mattock" <justinmattock@gmail.com>
+>>
+>> The below patch fixes some comments and some typos that I have found
+>> while reading drivers/staging/iio/*
+>>
+>> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>
+> This patch doesn't apply to my tree, care to redo it against the next
+> linux-next release and resend it?
+>
+> thanks,
+>
+> greg k-h
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/kernel/setup.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+yeah kind of bad to have a typo fix with a typo on the --to.. anyway
+let me pull the latest linux-next and resend a clean one..
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 825bc64..1d43be6 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -1244,7 +1244,7 @@ static void __init setup_cpu_maps(void)
- 			      sizeof(cpu_lotar_map));
- 	if (rc < 0) {
- 		pr_err("warning: no HV_INQ_TILES_LOTAR; using AVAIL\n");
--		cpu_lotar_map = cpu_possible_map;
-+		cpu_lotar_map = *cpu_possible_mask;
- 	}
- 
- #if CHIP_HAS_CBOX_HOME_MAP()
-@@ -1254,9 +1254,9 @@ static void __init setup_cpu_maps(void)
- 			      sizeof(hash_for_home_map));
- 	if (rc < 0)
- 		early_panic("hv_inquire_tiles(HFH_CACHE) failed: rc %d\n", rc);
--	cpumask_or(&cpu_cacheable_map, &cpu_possible_map, &hash_for_home_map);
-+	cpumask_or(&cpu_cacheable_map, cpu_possible_mask, &hash_for_home_map);
- #else
--	cpu_cacheable_map = cpu_possible_map;
-+	cpu_cacheable_map = *cpu_possible_mask;
- #endif
- }
- 
 -- 
-1.6.5.2
-
+Justin P. Mattock
