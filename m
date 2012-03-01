@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab2CAUAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:00:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55951 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab2CAUAa (ORCPT
+	id S1757330Ab2CAUDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:03:16 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15921 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856Ab2CAUDO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:00:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.205.132.138 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Fri, 2 Mar 2012 00:00:26 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
-Message-ID: <20120301200026.GG9930@moon>
-References: <20120229151634.GE4796@moon>
- <20120229192400.GA13194@redhat.com>
- <20120229200103.GJ11326@moon>
- <20120301180616.GA7652@redhat.com>
- <20120301191714.GF9930@moon>
- <20120301194120.GA11400@redhat.com>
+	Thu, 1 Mar 2012 15:03:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 01 Mar 2012 12:02:43 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 1 Mar 2012 12:02:42 -0800
+Subject: RE: [PATCH 5/8] ARM: tegra: work around tegra THUMB2_KERNEL bug
+Thread-Topic: [PATCH 5/8] ARM: tegra: work around tegra THUMB2_KERNEL bug
+Thread-Index: Acz34VoR388E2/ETRGil4izKt/+9mgABJsvw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861726@HQMAIL01.nvidia.com>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+ <1330630010-11241-6-git-send-email-alan@signal11.us>
+In-Reply-To: <1330630010-11241-6-git-send-email-alan@signal11.us>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301194120.GA11400@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 08:41:20PM +0100, Oleg Nesterov wrote:
-...
+Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
+> From: Arnd Bergmann <arnd@arndb.de>
 > 
-> Still can't understand. I think you need:
+> The tegra smp code cannot currently be built for t2, so
+> disable that combination for now, as a workaround.
 > 
-> 	file = fget(fd);
-> 	if (!file)
-> 		return -EBADF;
-> 
-> 	down_write(&mm->mmap_sem);
-> 	if (mm->num_exe_file_vmas) {
-> 		fput(mm->exe_file);
-> 		mm->exe_file = file;
-> 		file = NULL;
-> 	}
-> 	up_write(&mm->mmap_sem);
-> 
-> 	if (!file)
-> 		return 0;
-> 
-> 	fput(file);
-> 	return -ESOMETHING;
-> 
-> and that is all.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-This breaks overall logic of num_exe_file_vmas.
-What the point to have it at all then? I mean,
-if there several executable sections in elf file,
-once loader finish its work we will have
-num_exe_file_vmas more than 1.
+At least in next-20120229 with the .config I'm using, everything appears
+to compile fine. The link step does fail, but the error messages I get
+don't appear to be Tegra specific:
 
-Then the process calls for prctl and replaces
-own exe_file (I'm talking about possible scenario
-since for our own tool we know that there will be
-only one .text section and we're more-less safe
-in replacing own exe_file, but this interface
-will be available for everyone who has c/r config
-entry turned on, so I'm trying to find which
-negative impact this feature might have, call me
-paranoid), so once process has replaced own exe_file
-to something else the code which depends on
-num_exe_file_vmas become broken.
+xxx/kernel/sched/clock.c:334: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `sched_clock' defined in .text section in arch/arm/kernel/built-in.o
+kernel/built-in.o: In function `post_relocation':
+xxx/kernel/module.c:2860: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `module_finalize' defined in .text section in arch/arm/kernel/built-in.o
+kernel/built-in.o: In function `show_interrupts':
+xxx/kernel/irq/proc.c:431: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `arch_show_interrupts' defined in .text section in arch/arm/kernel/built-in.o
+drivers/built-in.o: In function `pci_set_master':
+xxx/drivers/pci/pci.c:2674: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `pcibios_set_master' defined in .text section in arch/arm/kernel/built-in.o
 
-May not we have a scenario when removed_exe_file_vma
-is be called somewhere else later, once this prctl
-finished its work? That's what I fear of.
+What failure does this solve, and how do I trigger it?
 
-	Cyrill
+-- 
+nvpublic
+
