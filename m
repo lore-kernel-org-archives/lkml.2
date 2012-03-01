@@ -1,85 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030215Ab2CAJWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:22:01 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27703 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965265Ab2CAJQ7 (ORCPT
+	id S965965Ab2CAJV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:21:59 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60948 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965254Ab2CAJQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Mar 2012 04:16:59 -0500
-Date: Thu, 1 Mar 2012 09:25:56 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Cc: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-        marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
-Message-ID: <20120301062556.GC22598@mwanda>
-References: <1330535217-26785-1-git-send-email-santoshprasadnayak@gmail.com>
- <CAMXE1-oXtheVHDuU3w52mXqmuY8AK4kk+tuvJpVRDq2=+qEnsQ@mail.gmail.com>
- <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oTHb8nViIGeoXxdp"
-Content-Disposition: inline
-In-Reply-To: <CAOD=uF5Ux0w=EPbX0V3qOy1VnZQr6Q35uUxrF9Qv1hZ4MjYJOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F4F3E85.00A3,ss=1,re=0.000,fgs=0
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 3/9] hugetlbfs: Use the generic region API and drop local one
+Date: Thu,  1 Mar 2012 14:46:14 +0530
+Message-Id: <1330593380-1361-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12022923-1618-0000-0000-000000F6167B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
---oTHb8nViIGeoXxdp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use the new region functions added.
 
-On Thu, Mar 01, 2012 at 11:07:14AM +0530, santosh prasad nayak wrote:
-> @Dan,
->            In future patches I will take care of it. Is it ok ? If
-> required I can resend the patch with required changes on subject line.
->=20
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ mm/hugetlb.c |  160 ++++------------------------------------------------------
+ 1 files changed, 10 insertions(+), 150 deletions(-)
 
-Nope.  Andrei's patch is already in linux-next so you'll have to
-redo this.
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 5f34bd8..9fd6d38 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -21,6 +21,7 @@
+ #include <linux/rmap.h>
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
++#include <linux/region.h>
+ 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+@@ -66,151 +67,10 @@ static DEFINE_SPINLOCK(hugetlb_lock);
+  * or
+  *	down_read(&mm->mmap_sem);
+  *	mutex_lock(&hugetlb_instantiation_mutex);
++ * shared mapping regions are tracked in inode->i_mapping and
++ * private mapping regions in vma_rea_struct
++ *
+  */
+-struct file_region {
+-	struct list_head link;
+-	long from;
+-	long to;
+-};
+-
+-static long region_add(struct list_head *head, long f, long t)
+-{
+-	struct file_region *rg, *nrg, *trg;
+-
+-	/* Locate the region we are either in or before. */
+-	list_for_each_entry(rg, head, link)
+-		if (f <= rg->to)
+-			break;
+-
+-	/* Round our left edge to the current segment if it encloses us. */
+-	if (f > rg->from)
+-		f = rg->from;
+-
+-	/* Check for and consume any regions we now overlap with. */
+-	nrg = rg;
+-	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
+-		if (&rg->link == head)
+-			break;
+-		if (rg->from > t)
+-			break;
+-
+-		/* If this area reaches higher then extend our area to
+-		 * include it completely.  If this is not the first area
+-		 * which we intend to reuse, free it. */
+-		if (rg->to > t)
+-			t = rg->to;
+-		if (rg != nrg) {
+-			list_del(&rg->link);
+-			kfree(rg);
+-		}
+-	}
+-	nrg->from = f;
+-	nrg->to = t;
+-	return 0;
+-}
+-
+-static long region_chg(struct list_head *head, long f, long t)
+-{
+-	struct file_region *rg, *nrg;
+-	long chg = 0;
+-
+-	/* Locate the region we are before or in. */
+-	list_for_each_entry(rg, head, link)
+-		if (f <= rg->to)
+-			break;
+-
+-	/* If we are below the current region then a new region is required.
+-	 * Subtle, allocate a new region at the position but make it zero
+-	 * size such that we can guarantee to record the reservation. */
+-	if (&rg->link == head || t < rg->from) {
+-		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+-		if (!nrg)
+-			return -ENOMEM;
+-		nrg->from = f;
+-		nrg->to   = f;
+-		INIT_LIST_HEAD(&nrg->link);
+-		list_add(&nrg->link, rg->link.prev);
+-
+-		return t - f;
+-	}
+-
+-	/* Round our left edge to the current segment if it encloses us. */
+-	if (f > rg->from)
+-		f = rg->from;
+-	chg = t - f;
+-
+-	/* Check for and consume any regions we now overlap with. */
+-	list_for_each_entry(rg, rg->link.prev, link) {
+-		if (&rg->link == head)
+-			break;
+-		if (rg->from > t)
+-			return chg;
+-
+-		/* We overlap with this area, if it extends further than
+-		 * us then we must extend ourselves.  Account for its
+-		 * existing reservation. */
+-		if (rg->to > t) {
+-			chg += rg->to - t;
+-			t = rg->to;
+-		}
+-		chg -= rg->to - rg->from;
+-	}
+-	return chg;
+-}
+-
+-static long region_truncate(struct list_head *head, long end)
+-{
+-	struct file_region *rg, *trg;
+-	long chg = 0;
+-
+-	/* Locate the region we are either in or before. */
+-	list_for_each_entry(rg, head, link)
+-		if (end <= rg->to)
+-			break;
+-	if (&rg->link == head)
+-		return 0;
+-
+-	/* If we are in the middle of a region then adjust it. */
+-	if (end > rg->from) {
+-		chg = rg->to - end;
+-		rg->to = end;
+-		rg = list_entry(rg->link.next, typeof(*rg), link);
+-	}
+-
+-	/* Drop any remaining regions. */
+-	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
+-		if (&rg->link == head)
+-			break;
+-		chg += rg->to - rg->from;
+-		list_del(&rg->link);
+-		kfree(rg);
+-	}
+-	return chg;
+-}
+-
+-static long region_count(struct list_head *head, long f, long t)
+-{
+-	struct file_region *rg;
+-	long chg = 0;
+-
+-	/* Locate each segment we overlap with, and count that overlap. */
+-	list_for_each_entry(rg, head, link) {
+-		int seg_from;
+-		int seg_to;
+-
+-		if (rg->to <= f)
+-			continue;
+-		if (rg->from >= t)
+-			break;
+-
+-		seg_from = max(rg->from, f);
+-		seg_to = min(rg->to, t);
+-
+-		chg += seg_to - seg_from;
+-	}
+-
+-	return chg;
+-}
+ 
+ /*
+  * Convert the address within this vma to the page offset within
+@@ -981,7 +841,7 @@ static long vma_needs_reservation(struct hstate *h,
+ 	if (vma->vm_flags & VM_MAYSHARE) {
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		return region_chg(&inode->i_mapping->private_list,
+-							idx, idx + 1);
++				  idx, idx + 1, 0);
+ 
+ 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		return 1;
+@@ -991,7 +851,7 @@ static long vma_needs_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *reservations = vma_resv_map(vma);
+ 
+-		err = region_chg(&reservations->regions, idx, idx + 1);
++		err = region_chg(&reservations->regions, idx, idx + 1, 0);
+ 		if (err < 0)
+ 			return err;
+ 		return 0;
+@@ -1005,14 +865,14 @@ static void vma_commit_reservation(struct hstate *h,
+ 
+ 	if (vma->vm_flags & VM_MAYSHARE) {
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		region_add(&inode->i_mapping->private_list, idx, idx + 1);
++		region_add(&inode->i_mapping->private_list, idx, idx + 1, 0);
+ 
+ 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *reservations = vma_resv_map(vma);
+ 
+ 		/* Mark this page used in the map. */
+-		region_add(&reservations->regions, idx, idx + 1);
++		region_add(&reservations->regions, idx, idx + 1, 0);
+ 	}
+ }
+ 
+@@ -2885,7 +2745,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	 * called to make the mapping read-write. Assume !vma is a shm mapping
+ 	 */
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+-		chg = region_chg(&inode->i_mapping->private_list, from, to);
++		chg = region_chg(&inode->i_mapping->private_list, from, to, 0);
+ 	else {
+ 		struct resv_map *resv_map = resv_map_alloc();
+ 		if (!resv_map)
+@@ -2926,7 +2786,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	 * else has to be done for private mappings here
+ 	 */
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+-		region_add(&inode->i_mapping->private_list, from, to);
++		region_add(&inode->i_mapping->private_list, from, to, 0);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9
 
-> @Andrei
->=20
-> In my local clone your changes are  not visible.
->=20
-> What is the schedule of linux-next ?
-> Is it updated every week or bi-weekly or monthly ?
->=20
-
-It's updated every day.  http://linux.f-seidel.de/linux-next/pmwiki/
-
-regards,
-dan carpenter
-
-
---oTHb8nViIGeoXxdp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPTxZ0AAoJEOnZkXI/YHqRsPkP/2SaIlMRfItCbXWhE4pYJunX
-oehGJxK5ODbQH/QBuRz1nLPhnx1yGPonRpA3IeiGsoV9MOTqaSGeFT1GG0Y6p7fL
-Tz8dS0pnUPepzlIdnPJK6DT5Ll+t2curEO1Yk5uWXVocNcuGA10+5zVqqY6QIlKx
-aYtUxUaUJ8NJT9ogJfI2zdQG1KsA+Zk5zYSGqTKbyw6OVPtRnW0fqxcWhFGVUNj6
-i4S/CtxIV+qvovf5E/F2xuVZTfclJkeqUA5Ztm6kuTcS+ZUmKrweNQobe75XLNqW
-pVY4u35l8TYNncIVLoQa+fKnRPHY0RDbO+jUhMcsxfLGEu3uQQMRpHzzAfxtkRqk
-jl79ncEPh1R5RuckVzOFDtGzG088ZWpx4n4ySskXAsz9558M3s+DM4RrSCL5/Jp5
-aa7JjdNNg41W5/FS3H2djzf8S4ijZjSLKJsghFI6scSjHKQY9y3xVL33tT3blPMW
-UHZ9Auk9J00MD6pvYkQD54ZgriuBQ8VZV9nu6lEwJ7dMFgdP4/YwHQhU9aJO5QLM
-aH6DPs173Zd8FCM55/LF5qHAR2kExLE5dQdVzV0sKWDzn1PFjW/O1JeP3/MY4HkW
-I4+hIsSA6WO3U956s08vpytXqziPR0Pnu3Gv8Nd83zpCHlwWuYoFGM3I4A69Gh6n
-2v/hYMzVJdRNoJrW6cHr
-=UTfK
------END PGP SIGNATURE-----
-
---oTHb8nViIGeoXxdp--
