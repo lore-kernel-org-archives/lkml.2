@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376Ab2CAUFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:05:41 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49965 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab2CAUFj convert rfc822-to-8bit (ORCPT
+	id S1757423Ab2CAUF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:05:57 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16477 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757385Ab2CAUFy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:05:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of olof@lixom.net designates 10.236.157.10 as permitted sender) smtp.mail=olof@lixom.net
-MIME-Version: 1.0
-X-Originating-IP: [172.22.162.26]
-In-Reply-To: <1330630010-11241-4-git-send-email-alan@signal11.us>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
-	<1330630010-11241-4-git-send-email-alan@signal11.us>
-Date: Thu, 1 Mar 2012 12:05:37 -0800
-Message-ID: <CAOesGMiFbggUz6_GH-5htzFJuaXzeYhXpTfHafy-LSPAEmkQnw@mail.gmail.com>
-Subject: Re: [PATCH 3/8] ARM: tegra: select CPU_FREQ_TABLE
-From: Olof Johansson <olof@lixom.net>
-To: Alan Ott <alan@signal11.us>
-Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Stephen Warren <swarren@nvidia.com>,
+	Thu, 1 Mar 2012 15:05:54 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 01 Mar 2012 12:05:36 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 1 Mar 2012 12:05:34 -0800
+Subject: RE: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
+Thread-Topic: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
+Thread-Index: Acz34Vn8/MPOfmTYQe25cZFfnIlkDwABPwkA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE86172C@HQMAIL01.nvidia.com>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+ <1330630010-11241-7-git-send-email-alan@signal11.us>
+In-Reply-To: <1330630010-11241-7-git-send-email-alan@signal11.us>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Mar 1, 2012 at 11:26 AM, Alan Ott <alan@signal11.us> wrote:
+Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
 > From: Arnd Bergmann <arnd@arndb.de>
->
-> The tegra cpufreq implementation relies on the cpu_freq_table
-> code, so make sure that this is always there when needed.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-tegra/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
+> 
+> The USB_ULPI driver is selected by tegra, but can only be
+> built if at least one of USB or USB_GADGET is enabled.
+> The kernel fails to link if both are off.
+
 > diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-> index 373652d..b2a038e 100644
-> --- a/arch/arm/mach-tegra/Kconfig
-> +++ b/arch/arm/mach-tegra/Kconfig
+...
 > @@ -10,6 +10,7 @@ config ARCH_TEGRA_2x_SOC
->        select USB_ARCH_HAS_EHCI if USB_SUPPORT
->        select USB_ULPI if USB_SUPPORT
->        select USB_ULPI_VIEWPORT if USB_SUPPORT
-> +       select CPU_FREQ_TABLE if CPU_FREQ
+...
+> +	select USB_GADGET if USB_SUPPORT && !USB
 
-The corresponding chance is needed for T30 as well.
+I don't believe the Tegra USB driver supports gadget mode at present.
+Would the above be better written as:
 
-(the cpufreq driver should probably be moved out to drivers/cpufreq
-and given its own but that's a separate issue)
+    select USB if USB_SUPPORT
 
+And I wonder if the Tegra EHCI driver shouldn't be doing some of these
+selects, not the ARCH_TEGRA_* option.
 
--Olof
+And this is probably required for Tegra30 too not just Tegra20.
+
+-- 
+nvpublic
+
