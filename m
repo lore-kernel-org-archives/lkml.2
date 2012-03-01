@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030611Ab2CAKZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:25:01 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:65247 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab2CAKY7 convert rfc822-to-8bit (ORCPT
+	id S1030648Ab2CAKZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:25:07 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:34879 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2CAKZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:24:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.219.234 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120301102341.GC6488@1984>
-References: <1330593466-19317-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120301102341.GC6488@1984>
-Date: Thu, 1 Mar 2012 15:54:58 +0530
-Message-ID: <CAOD=uF6T-POkOORw6_S7_NtHgLX4GJj_9A8tg4QRCc8=gCvFaA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] netfilter: Remove redundant code.
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 05:25:02 -0500
+Date: Thu, 1 Mar 2012 19:31:22 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] KVM: MMU: Split the main body of rmap_write_protect()
+ off from others
+Message-Id: <20120301193122.f21dc089.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please see last line of my 2nd patch.
-I have added a new label "out" .
+We will use this in the following patch to implement another function
+which needs to write protect pages using the rmap information.
 
+Note that there is a small change in debug printing for large pages:
+we do not differentiate them from others to avoid duplicating code.
 
-regards
-santosh
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+---
+ arch/x86/kvm/mmu.c |   53 ++++++++++++++++++++++++++-------------------------
+ 1 files changed, 27 insertions(+), 26 deletions(-)
 
-On Thu, Mar 1, 2012 at 3:53 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Thu, Mar 01, 2012 at 02:47:46PM +0530, santosh nayak wrote:
->> From: Santosh Nayak <santoshprasadnayak@gmail.com>
->>
->> Remove the redundant code.
->>
->> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
->> ---
->>  net/bridge/netfilter/ebtables.c |   18 ++++++------------
->>  1 files changed, 6 insertions(+), 12 deletions(-)
->>
->> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
->> index 9c0f177..1efc234 100644
->> --- a/net/bridge/netfilter/ebtables.c
->> +++ b/net/bridge/netfilter/ebtables.c
->> @@ -226,10 +226,8 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
->>
->>               if (EBT_MATCH_ITERATE(point, ebt_do_match, skb, &acpar) != 0)
->>                       goto letscontinue;
->> -             if (acpar.hotdrop) {
->> -                     read_unlock_bh(&table->lock);
->> -                     return NF_DROP;
->> -             }
->> +             if (acpar.hotdrop)
->> +                     goto out;
->
-> This is really broken! there's no "out" label in ebt_do_table as in
-> the previous patch!
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ff053ca..67857bd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1010,42 +1010,43 @@ static void drop_spte(struct kvm *kvm, u64 *sptep)
+ 		rmap_remove(kvm, sptep);
+ }
+ 
+-int kvm_mmu_rmap_write_protect(struct kvm *kvm, u64 gfn,
+-			       struct kvm_memory_slot *slot)
++static int __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp, int level)
+ {
+-	unsigned long *rmapp;
+-	u64 *spte;
+-	int i, write_protected = 0;
++	u64 *spte = NULL;
++	int write_protected = 0;
+ 
+-	rmapp = __gfn_to_rmap(gfn, PT_PAGE_TABLE_LEVEL, slot);
+-	spte = rmap_next(rmapp, NULL);
+-	while (spte) {
++	while ((spte = rmap_next(rmapp, spte))) {
+ 		BUG_ON(!(*spte & PT_PRESENT_MASK));
+ 		rmap_printk("rmap_write_protect: spte %p %llx\n", spte, *spte);
+-		if (is_writable_pte(*spte)) {
++
++		if (!is_writable_pte(*spte))
++			continue;
++
++		if (level == PT_PAGE_TABLE_LEVEL) {
+ 			mmu_spte_update(spte, *spte & ~PT_WRITABLE_MASK);
+-			write_protected = 1;
++		} else {
++			BUG_ON(!is_large_pte(*spte));
++			drop_spte(kvm, spte);
++			--kvm->stat.lpages;
++			spte = NULL;
+ 		}
+-		spte = rmap_next(rmapp, spte);
++
++		write_protected = 1;
+ 	}
+ 
+-	/* check for huge page mappings */
+-	for (i = PT_DIRECTORY_LEVEL;
++	return write_protected;
++}
++
++int kvm_mmu_rmap_write_protect(struct kvm *kvm, u64 gfn,
++			       struct kvm_memory_slot *slot)
++{
++	unsigned long *rmapp;
++	int i, write_protected = 0;
++
++	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+-		spte = rmap_next(rmapp, NULL);
+-		while (spte) {
+-			BUG_ON(!(*spte & PT_PRESENT_MASK));
+-			BUG_ON(!is_large_pte(*spte));
+-			pgprintk("rmap_write_protect(large): spte %p %llx %lld\n", spte, *spte, gfn);
+-			if (is_writable_pte(*spte)) {
+-				drop_spte(kvm, spte);
+-				--kvm->stat.lpages;
+-				spte = NULL;
+-				write_protected = 1;
+-			}
+-			spte = rmap_next(rmapp, spte);
+-		}
++		write_protected |= __rmap_write_protect(kvm, rmapp, i);
+ 	}
+ 
+ 	return write_protected;
+-- 
+1.7.5.4
+
