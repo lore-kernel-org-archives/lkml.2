@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2CAIGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 03:06:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40176 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab2CAIGv (ORCPT
+	id S1756985Ab2CAIMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 03:12:23 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36719 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2CAIMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 03:06:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.145.70 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F4F2E16.5080703@openvz.org>
-Date: Thu, 01 Mar 2012 12:06:46 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Thu, 1 Mar 2012 03:12:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ohad@wizery.com designates 10.180.87.8 as permitted sender) smtp.mail=ohad@wizery.com
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH resend] mm: drain percpu lru add/rotate page-vectors on
- cpu hot-unplug
-References: <20120228193620.32063.83425.stgit@zurg> <20120229123818.61a61e9d.akpm@linux-foundation.org>
-In-Reply-To: <20120229123818.61a61e9d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Brian Swetland <swetland@google.com>,
+        Iliyan Malchev <malchev@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mark Grosen <mgrosen@ti.com>,
+        John Williams <john.williams@petalogix.com>,
+        Michal Simek <monstr@monstr.eu>,
+        Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Guzman Lugo Fernando <fernando.lugo@ti.com>,
+        Anna Suman <s-anna@ti.com>, Clark Rob <rob@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Kieran Bingham <kieranbingham@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 0/7] remoteproc: additional virtio support
+Date: Thu,  1 Mar 2012 10:11:30 +0200
+Message-Id: <1330589497-4139-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Tue, 28 Feb 2012 23:40:45 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> This cpu hotplug hook was accidentally removed in commit v2.6.30-rc4-18-g00a62ce
->> ("mm: fix Committed_AS underflow on large NR_CPUS environment")
->
-> That was a long time ago - maybe we should leave it removed ;) I mean,
-> did this bug(?) have any visible effect?  If so, what was that effect?
+The patch set focuses on extending remoteproc's virtio support: we're
+putting behind the single rpmsg virtio device limitation, and allowing
+firmwares to publish any number of virtio devices and of any type.
 
-It's because cpu hotplug/unplug isn't widely used feature.
-Visible effect -- some pages are borrowed in per-cpu page-vectors.
-Truncate can deal with it, but these pages cannot be reused while this cpu is offline.
-So this is like temporary memory leak.
+This allows us to reuse the existing virtio drivers with remote processor
+backends.
 
->
-> IOW, the changelog didn't give anyone any reason to apply the patch to
-> anything!
+For example, by publishing a virtio console device and hooking it up to the
+logging mechanism of OMAP's SYS/BIOS (the RTOS which runs on the M3
+subsystem), we get a fancy console with log messages coming from the M3
+without writing any additional driver:
 
-Sorry, I'm just stuck in pile of patches. It seems I should stop and send them one by one.
-This one isn't critical, so there no reasons for pushing it into stable branches.
+root@omap4430-panda:~# modprobe virtio_console
+root@omap4430-panda:~# cat /dev/hvc0 
+M3 Core0 init...
+Hello from SYS/BIOS
+copyTask 50: Entered...:
+registering rpmsg-client-sample service on 50 with HOST
+copyTask 51: Entered...:
+registering rpmsg-proto service on 51 with HOST
+registering rpmsg-omx service on 60 with HOST
+copyTask 1: Received data: hello world!, len:12
+copyTask 2: Received data: hello world!, len:12
+copyTask 3: Received data: hello world!, len:12
+...
+
+Note: at this point, whether you can start using vanilla virtio drivers
+with your remote processor strongly depends on your platform. E.g., there
+are additional changes required for this to work on OMAP4 (mainly to
+satisfy the M3's iommu requirements), and that's not upstream yet.
+Other non-iommu remote processors might be able to use vanilla virtio
+drivers though (probably DaVinci, for example, but this wasn't tested yet).
+
+Cc: Brian Swetland <swetland@google.com>
+Cc: Iliyan Malchev <malchev@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mark Grosen <mgrosen@ti.com>
+Cc: John Williams <john.williams@petalogix.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>
+Cc: Ludovic BARRE <ludovic.barre@stericsson.com>
+Cc: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Guzman Lugo Fernando <fernando.lugo@ti.com>
+Cc: Anna Suman <s-anna@ti.com>
+Cc: Clark Rob <rob@ti.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Kieran Bingham <kieranbingham@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>
+
+Ohad Ben-Cohen (7):
+  remoteproc: resource table overhaul
+  remoteproc: remoteproc_rpmsg -> remoteproc_virtio
+  remoteproc: safer boot/shutdown order
+  remoteproc: remove the single rpmsg vdev limitation
+  remoteproc/omap: remove the mbox_callback limitation
+  remoteproc: remove the hardcoded vring alignment
+  remoteproc: cleanup resource table parsing paths
+
+ Documentation/remoteproc.txt                       |  136 +++---
+ drivers/remoteproc/Makefile                        |    2 +-
+ drivers/remoteproc/omap_remoteproc.c               |   11 +-
+ drivers/remoteproc/remoteproc_core.c               |  524 ++++++++++++--------
+ drivers/remoteproc/remoteproc_internal.h           |    6 +-
+ .../{remoteproc_rpmsg.c => remoteproc_virtio.c}    |  162 +++----
+ include/linux/remoteproc.h                         |  339 ++++++++++---
+ 7 files changed, 747 insertions(+), 433 deletions(-)
+ rename drivers/remoteproc/{remoteproc_rpmsg.c => remoteproc_virtio.c} (65%)
+
+-- 
+1.7.5.4
+
