@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab2CADCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:02:18 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32187 "EHLO
+	id S1755467Ab2CADCP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:02:15 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32192 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2CADCG (ORCPT
+	with ESMTP id S1753680Ab2CADCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:02:06 -0500
+	Wed, 29 Feb 2012 22:02:07 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,85 +16,129 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 09/36] x86, PCI: embed pci_sysdata into pci_root_info on acpi path
-Date: Wed, 29 Feb 2012 19:00:10 -0800
-Message-Id: <1330570837-26638-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/36] x86, PCI: break down get_current_resource()
+Date: Wed, 29 Feb 2012 19:00:07 -0800
+Message-Id: <1330570837-26638-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
 References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F4EE67F.003F,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4F4EE67C.007C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that part memory will be released on remove path.
+change it to probe_pci_root_info, aka only do one thing.
+
+1. remove resource list head from pci_root_info
+2. make get_current_resources() not pass resources
+   move out add_resources calling out of yet.
+3. rename get_current_resourcs name to probe_pci_root_info
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/acpi.c |   21 ++++-----------------
- 1 files changed, 4 insertions(+), 17 deletions(-)
+ arch/x86/pci/acpi.c |   34 +++++++++++++---------------------
+ 1 files changed, 13 insertions(+), 21 deletions(-)
 
 diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 11c3ae7..2331ccb 100644
+index 304ccf0..763f7bb 100644
 --- a/arch/x86/pci/acpi.c
 +++ b/arch/x86/pci/acpi.c
-@@ -13,6 +13,7 @@ struct pci_root_info {
+@@ -12,7 +12,6 @@ struct pci_root_info {
+ 	char *name;
  	unsigned int res_num;
  	struct resource *res;
+-	struct list_head *resources;
  	int busnum;
-+	struct pci_sysdata sd;
  };
  
- static bool pci_use_crs = true;
-@@ -400,26 +401,16 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 	if (node != -1 && !node_online(node))
- 		node = -1;
- 
--	/* Allocate per-root-bus (not per bus) arch-specific data.
--	 * TODO: leak; this memory is never freed.
--	 * It's arguable whether it's worth the trouble to care.
--	 */
--	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
--	if (!sd) {
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info) {
- 		printk(KERN_WARNING "pci_bus %04x:%02x: "
- 		       "ignored (out of memory)\n", domain, busnum);
- 		return NULL;
+@@ -277,7 +276,8 @@ static void coalesce_windows(struct pci_root_info *info, unsigned long type)
  	}
+ }
  
-+	sd = &info->sd;
- 	sd->domain = domain;
- 	sd->node = node;
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
--	if (!info) {
--		kfree(sd);
--		printk(KERN_WARNING "pci_bus %04x:%02x: "
--		       "ignored (out of memory)\n", domain, busnum);
--		return NULL;
--	}
- 	/*
- 	 * Maybe the desired pci bus has been already scanned. In such case
- 	 * it is unnecessary to scan the pci bus with the given domain,busnum.
-@@ -432,7 +423,6 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		 */
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(info);
--		kfree(sd);
- 	} else {
- 		probe_pci_root_info(info, device, busnum, domain);
- 
-@@ -474,9 +464,6 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		}
+-static void add_resources(struct pci_root_info *info)
++static void add_resources(struct pci_root_info *info,
++			  struct list_head *resources)
+ {
+ 	int i;
+ 	struct resource *res, *root, *conflict;
+@@ -301,7 +301,7 @@ static void add_resources(struct pci_root_info *info)
+ 				 "ignoring host bridge window %pR (conflicts with %s %pR)\n",
+ 				 res, conflict->name, conflict);
+ 		else
+-			pci_add_resource(info->resources, res);
++			pci_add_resource(resources, res);
  	}
+ }
  
--	if (!bus)
--		kfree(sd);
+@@ -313,41 +313,30 @@ static void free_pci_root_info(struct pci_root_info *info)
+ }
+ 
+ static void
+-get_current_resources(struct pci_root_info *info,
+-		      struct acpi_device *device, int busnum,
+-		      int domain, struct list_head *resources)
++probe_pci_root_info(struct pci_root_info *info, struct acpi_device *device,
++		    int busnum, int domain)
+ {
+ 	size_t size;
+ 
+ 	info->bridge = device;
+ 	info->res_num = 0;
+-	info->resources = resources;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
+ 				info);
+ 	if (!info->res_num)
+ 		return;
+ 
+ 	size = sizeof(*info->res) * info->res_num;
++	info->res_num = 0;
+ 	info->res = kmalloc(size, GFP_KERNEL);
+ 	if (!info->res)
+ 		return;
+ 
+ 	info->name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+ 	if (!info->name)
+-		goto name_alloc_fail;
++		return;
+ 
+-	info->res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
+ 				info);
 -
- 	if (bus && node != -1) {
- #ifdef CONFIG_ACPI_NUMA
- 		if (pxm >= 0)
+-	if (pci_use_crs) {
+-		add_resources(info);
+-
+-		return;
+-	}
+-
+-name_alloc_fail:
+-	free_pci_root_info(info);
+ }
+ 
+ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+@@ -412,15 +401,18 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(sd);
+ 	} else {
+-		get_current_resources(&info, device, busnum, domain,
+-					&resources);
++		probe_pci_root_info(&info, device, busnum, domain);
+ 
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+ 		 * defaults or native bridge info if we're ignoring _CRS.
+ 		 */
+-		if (!pci_use_crs)
++		if (pci_use_crs)
++			add_resources(&info, &resources);
++		else {
++			free_pci_root_info(&info);
+ 			x86_pci_root_bus_resources(busnum, &resources);
++		}
+ 		bus = pci_create_root_bus(NULL, busnum, &pci_root_ops, sd,
+ 					  &resources);
+ 		if (bus)
 -- 
 1.7.7
 
