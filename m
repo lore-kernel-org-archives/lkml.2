@@ -1,48 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030736Ab2CALo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:44:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35296 "EHLO mx2.suse.de"
+	id S1030726Ab2CALrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:47:04 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58665 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965273Ab2CALly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:41:54 -0500
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        dchinner@redhat.com, Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/9] fs: Push file_update_time() into __block_page_mkwrite()
-Date: Thu,  1 Mar 2012 12:41:36 +0100
-Message-Id: <1330602103-8851-3-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1330602103-8851-1-git-send-email-jack@suse.cz>
-References: <1330602103-8851-1-git-send-email-jack@suse.cz>
+	id S965605Ab2CALrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:47:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113252522"
+Date: Thu, 1 Mar 2012 19:41:51 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-ID: <20120301114151.GA19049@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+ <20120301110404.GC4385@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301110404.GC4385@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/buffer.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+On Thu, Mar 01, 2012 at 12:04:04PM +0100, Jan Kara wrote:
+> On Tue 28-02-12 16:04:03, Andrew Morton wrote:
+> ...
+> > > --- linux.orig/mm/vmscan.c	2012-02-28 19:07:06.065064464 +0800
+> > > +++ linux/mm/vmscan.c	2012-02-28 20:26:15.559731455 +0800
+> > > @@ -874,12 +874,22 @@ static unsigned long shrink_page_list(st
+> > >  			nr_dirty++;
+> > >  
+> > >  			/*
+> > > -			 * Only kswapd can writeback filesystem pages to
+> > > -			 * avoid risk of stack overflow but do not writeback
+> > > -			 * unless under significant pressure.
+> > > +			 * Pages may be dirtied anywhere inside the LRU. This
+> > > +			 * ensures they undergo a full period of LRU iteration
+> > > +			 * before considering pageout. The intention is to
+> > > +			 * delay writeout to the flusher thread, unless when
+> > > +			 * run into a long segment of dirty pages.
+> > > +			 */
+> > > +			if (references == PAGEREF_RECLAIM_CLEAN &&
+> > > +			    priority == DEF_PRIORITY)
+> > > +				goto keep_locked;
+> > > +
+> > > +			/*
+> > > +			 * Try relaying the pageout I/O to the flusher threads
+> > > +			 * for better I/O efficiency and avoid stack overflow.
+> > >  			 */
+> > > -			if (page_is_file_cache(page) &&
+> > > -					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
+> > > +			if (page_is_file_cache(page) && mapping &&
+> > > +			    queue_pageout_work(mapping, page) >= 0) {
+> > >  				/*
+> > >  				 * Immediately reclaim when written back.
+> > >  				 * Similar in principal to deactivate_page()
+> > > @@ -892,8 +902,13 @@ static unsigned long shrink_page_list(st
+> > >  				goto keep_locked;
+> > >  			}
+> > >  
+> > > -			if (references == PAGEREF_RECLAIM_CLEAN)
+> > > +			/*
+> > > +			 * Only kswapd can writeback filesystem pages to
+> > > +			 * avoid risk of stack overflow.
+> > > +			 */
+> > > +			if (page_is_file_cache(page) && !current_is_kswapd())
+> > 
+> > And here we run into big problems.
+> > 
+> > When a page-allocator enters direct reclaim, that process is trying to
+> > allocate a page from a particular zone (or set of zones).  For example,
+> > he wants a ZONE_NORMAL or ZONE_DMA page.  Asking flusher threads to go
+> > off and write back three gigabytes of ZONE_HIGHMEM is pointless,
+> > inefficient and doesn't fix the caller's problem at all.
+> > 
+> > This has always been the biggest problem with the
+> > avoid-writeback-from-direct-reclaim patches.  And your patchset (as far
+> > as I've read) doesn't address the problem at all and appears to be
+> > blissfully unaware of its existence.
+> > 
+> > 
+> > I've attempted versions of this I think twice, and thrown the patches
+> > away in disgust.  One approach I tried was, within direct reclaim, to
+> > grab the page I wanted (ie: one which is in one of the caller's desired
+> > zones) and to pass that page over to the kernel threads.  The kernel
+> > threads would ensure that this particular page was included in the
+> > writearound preparation.  So that we at least make *some* progress
+> > toward what the caller is asking us to do.
+> > 
+> > iirc, the way I "grabbed" the page was to actually lock it, with
+> > [try_]_lock_page().  And unlock it again way over within the writeback
+> > thread.  I forget why I did it this way, rather than get_page() or
+> > whatever.  Locking the page is a good way of preventing anyone else
+> > from futzing with it.  It also pins the inode, which perhaps meant that
+> > with careful management, I could avoid the igrab()/iput() horrors
+> > discussed above.
+>   I think using get_page() might be a good way to go. Naive implementation:
+> If we need to write a page from kswapd, we do get_page(), attach page to
+> wb_writeback_work and push it to flusher thread to deal with it.
+> Flusher thread sees the work, takes a page lock, verifies the page is still
+> attached to some inode & dirty (it could have been truncated / cleaned by
+> someone else) and if yes, it submits page for IO (possibly with some
+> writearound). This scheme won't have problems with iput() and won't have
+> problems with umount. Also we guarantee some progress - either flusher
+> thread does it, or some else must have done the work before flusher thread
+> got to it.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1a30db7..5294a33 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2300,6 +2300,12 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	loff_t size;
- 	int ret;
- 
-+	/*
-+	 * Update file times before taking page lock. We may end up failing the
-+	 * fault so this update may be superfluous but who really cares...
-+	 */
-+	file_update_time(vma->vm_file);
-+
- 	lock_page(page);
- 	size = i_size_read(inode);
- 	if ((page->mapping != inode->i_mapping) ||
--- 
-1.7.1
+I like this idea.
 
+get_page() looks the perfect solution to verify if the struct inode
+pointer (w/o igrab) is still live and valid.
+
+[...upon rethinking...] Oh but still we need to lock some page to pin
+the inode during the writeout. Then there is the dilemma: if the page
+is locked, we effectively keep it from being written out...
+
+Thanks,
+Fengguang
