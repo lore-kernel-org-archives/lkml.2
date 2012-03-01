@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2CADBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 22:01:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35597 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442Ab2CADBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 22:01:39 -0500
-Date: Wed, 29 Feb 2012 22:01:25 -0500
-From: Dave Jones <davej@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: linux-next: build failure after merge of the cpufreq tree
-Message-ID: <20120301030125.GA27070@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	MyungJoo Ham <myungjoo.ham@samsung.com>,
-	Kyungmin Park <kyungmin.park@samsung.com>
-References: <20120301135601.a164a12e2bd4aee871ff60db@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301135601.a164a12e2bd4aee871ff60db@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932761Ab2CADC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 22:02:27 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32315 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687Ab2CADCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Feb 2012 22:02:16 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        linux-parisc@vger.kernel.org
+Subject: [PATCH 27/36] PCI, parisc: Register busn_res for root buses
+Date: Wed, 29 Feb 2012 19:00:28 -0800
+Message-Id: <1330570837-26638-28-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
+References: <1330570837-26638-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4F4EE685.00AA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 01:56:01PM +1100, Stephen Rothwell wrote:
- > Hi Dave,
- > 
- > After merging the cpufreq tree, today's linux-next build (x86_64
- > allmodconfig) failed like this:
- > 
- > drivers/cpufreq/cpufreq_ondemand.c: In function 'cpufreq_gov_dbs_init':
- > drivers/cpufreq/cpufreq_ondemand.c:880:28: error: 'PM_QOS_DVFS_RESPONSE_LATENCY' undeclared (first use in this function)
- > drivers/cpufreq/cpufreq_ondemand.c: In function 'cpufreq_gov_dbs_exit':
- > drivers/cpufreq/cpufreq_ondemand.c:896:25: error: 'PM_QOS_DVFS_RESPONSE_LATENCY' undeclared (first use in this function)
- > 
- > Caused by commit 500e8ca39c56 ("[CPUFREQ] ondemand: handle QoS request on
- > DVFS response latency").
- > 
- > I have used the cpufreq tree fomr next-20120229 for today.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org
+---
+ drivers/parisc/dino.c    |    5 +++++
+ drivers/parisc/lba_pci.c |    3 +++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-gah, this patch was dependant upon another that didn't apply cleanly.
-
-	Dave
+diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
+index 0610e91..def94af 100644
+--- a/drivers/parisc/dino.c
++++ b/drivers/parisc/dino.c
+@@ -984,6 +984,10 @@ static int __init dino_probe(struct parisc_device *dev)
+ 	if (dino_dev->hba.gmmio_space.flags)
+ 		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
+ 
++	dino_dev->hba.bus_num.start = dino_current_bus;
++	dino_dev->hba.bus_num.end = 255;
++	dino_dev->hba.bus_num.flags |= IORESOURCE_BUS;
++	pci_add_resource(&resources, &dino_dev->hba.bus_num);
+ 	/*
+ 	** It's not used to avoid chicken/egg problems
+ 	** with configuration accessor functions.
+@@ -999,6 +1003,7 @@ static int __init dino_probe(struct parisc_device *dev)
+ 		return 0;
+ 	}
+ 
++	pci_bus_update_busn_res_end(bus, bus->subordinate);
+ 	bus->subordinate = pci_scan_child_bus(bus);
+ 
+ 	/* This code *depends* on scanning being single threaded
+diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
+index e885764..df1e9f9 100644
+--- a/drivers/parisc/lba_pci.c
++++ b/drivers/parisc/lba_pci.c
+@@ -1503,6 +1503,9 @@ lba_driver_probe(struct parisc_device *dev)
+ 	if (lba_dev->hba.gmmio_space.flags)
+ 		pci_add_resource(&resources, &lba_dev->hba.gmmio_space);
+ 
++	lba_dev->hba.bus_num.flags |= IORESOURCE_BUS;
++	pci_add_resource(&resources, &lba_dev->hba.bus_num);
++
+ 	dev->dev.platform_data = lba_dev;
+ 	lba_bus = lba_dev->hba.hba_bus =
+ 		pci_create_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
+-- 
+1.7.7
 
