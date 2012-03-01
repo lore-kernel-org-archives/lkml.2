@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab2CATDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:03:19 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55689 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab2CATDQ convert rfc822-to-8bit (ORCPT
+	id S932189Ab2CATDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:03:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16741 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab2CATDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:03:16 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of yhlu.kernel@gmail.com designates 10.236.116.66 as permitted sender) smtp.mail=yhlu.kernel@gmail.com; dkim=pass header.i=yhlu.kernel@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAL-B5D0Phxhx-2ipYwoKfZCTvCfuh6bX-iqQkQS0cLmRqQHGbg@mail.gmail.com>
-References: <1330556858-11768-1-git-send-email-yinghai@kernel.org>
-	<CAL-B5D0Phxhx-2ipYwoKfZCTvCfuh6bX-iqQkQS0cLmRqQHGbg@mail.gmail.com>
-Date: Thu, 1 Mar 2012 11:03:15 -0800
-X-Google-Sender-Auth: gUeUg-XEyxNnbvqcqOT93JVKiqs
-Message-ID: <CAE9FiQX57=cmfgJJv5E_rTQD1umCsmqJas0Sa22sN_xhdCSUgw@mail.gmail.com>
-Subject: Re: [PATCH 00/39] PCI: pci_host_bridge related cleanup and busn_alloc
-From: Yinghai Lu <yinghai@kernel.org>
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
-        x86 <x86@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 14:03:47 -0500
+X-Authority-Analysis: v=2.0 cv=Z7xu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=gtHglMhDr1sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=r_TA7aP2bN_L1VJppHYA:9 a=Ac3JJ_KxsaziDvllf30A:7 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120301190344.948157137@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Thu, 01 Mar 2012 13:55:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: [PATCH RT 1/9][RFC] [PATCH 1/9] timer: Fix hotplug for -rt
+References: <20120301185527.064629423@goodmis.org>
+Content-Disposition: inline; filename=0001-timer-Fix-hotplug-for-rt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 10:51 AM, Myron Stowe <myron.stowe@gmail.com> wrote:
-> On Wed, Feb 29, 2012 at 4:06 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> The first 14 patches are hostbridge clean up.
->> will add struct device dev into host_bridge struct.
->> also will add release support to make sure allocated resource get
->> freed during root bus removal including hostbridge and pci_sysdata.
->>
->> others 25 patches are busn_alloc related.
->> Set up iobusn_resource tree, and register bus number range to it.
->> Later when need to find bus range, will try to allocate from the tree
->> Need to test on arches other than x86. esp for ia64 and powerpc that support
->>  more than on peer root buses.
->
-> Why did you collapse these two series into one at this point?
->
-> Last I was keeping up with - there was a -v9 00/23 series related to
-> bus_num and a -v2 00/11 series for pci_host_bridge related cleanup.
+Revert the RT patch:
+    Author: Ingo Molnar <mingo@elte.hu>
+    Date:   Fri Jul 3 08:30:32 2009 -0500
+    timers: fix timer hotplug on -rt
 
-the updated busn_alloc patchset, need to be applied on top of
-pci_host_bridge related cleanup.
+    Here we are in the CPU_DEAD notifier, and we must not sleep nor
+    enable interrupts.
 
-So i was thinking put them together would be better to be reviewed
-first 14 for hostbridge clean up. and others for busn_res_alloc.
+There's no problem with sleeping in this notifier.
 
->
-> As a distro maintainer I need to try and keep up with what is occurring
-> here and actions like this - coalescing multiple series - unnecessarily
-> complicates things.  It also masks the fact that the bus_num series is
-> now on -v10 within a very short time frame (which implies a lot).
+But the get_cpu_var() had to be converted to a get_local_var().
 
-I will separate them in next revision, if Jesse would not pick up
-first 14 shortly.
+Replace the previous fix with the get_local_var() convert.
 
-Thanks
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/timer.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-Yinghai
+diff --git a/kernel/timer.c b/kernel/timer.c
+index a791a43..c8c88d1 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1743,21 +1743,17 @@ static void __cpuinit migrate_timers(int cpu)
+ {
+ 	struct tvec_base *old_base;
+ 	struct tvec_base *new_base;
+-	unsigned long flags;
+ 	int i;
+ 
+ 	BUG_ON(cpu_online(cpu));
+ 	old_base = per_cpu(tvec_bases, cpu);
+-	new_base = get_cpu_var(tvec_bases);
++	new_base = get_local_var(tvec_bases);
+ 	/*
+ 	 * The caller is globally serialized and nobody else
+ 	 * takes two locks at once, deadlock is not possible.
+ 	 */
+-	local_irq_save(flags);
+-	while (!spin_trylock(&new_base->lock))
+-		cpu_relax();
+-	while (!spin_trylock(&old_base->lock))
+-		cpu_relax();
++	spin_lock_irq(&new_base->lock);
++	spin_lock_nested(&old_base->lock, SINGLE_DEPTH_NESTING);
+ 
+ 	BUG_ON(old_base->running_timer);
+ 
+@@ -1771,10 +1767,8 @@ static void __cpuinit migrate_timers(int cpu)
+ 	}
+ 
+ 	spin_unlock(&old_base->lock);
+-	spin_unlock(&new_base->lock);
+-	local_irq_restore(flags);
+-
+-	put_cpu_var(tvec_bases);
++	spin_unlock_irq(&new_base->lock);
++	put_local_var(tvec_bases);
+ }
+ #endif /* CONFIG_HOTPLUG_CPU */
+ 
+-- 
+1.7.3.4
+
+
