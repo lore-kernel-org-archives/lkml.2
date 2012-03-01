@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab2CAU05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:26:57 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56883 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751743Ab2CAU0z (ORCPT
+	id S1757595Ab2CAUaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:30:08 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19814 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2CAUaG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:26:55 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18RH9FC2zERk6jd2Sp63aWfTJJSdzaEpoKOAqLI8Z
-	dhxvQTzTRgKcrC
-Message-ID: <1330633603.7414.49.camel@marge.simpson.net>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Mike Galbraith <efault@gmx.de>
-To: Michal Schmidt <mschmidt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Date: Thu, 01 Mar 2012 21:26:43 +0100
-In-Reply-To: <4F4FAF89.3090706@redhat.com>
-References: <20120221211938.GE12236@google.com>
-	 <20120222163858.GB4128@redhat.com> <20120222165714.GC4128@redhat.com>
-	 <1329990094.24994.64.camel@twins> <1330006399.11248.20.camel@twins>
-	 <4F4FAF89.3090706@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 1 Mar 2012 15:30:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 01 Mar 2012 12:29:44 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 1 Mar 2012 12:29:43 -0800
+Subject: RE: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from driver
+Thread-Topic: [PATCH 8/8] ARM: tegra: HACK: remove set_irq_flags() from
+ driver
+Thread-Index: Acz34Vs+fa6bBjn+T7+cKuisSEUdigACCGig
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE86173C@HQMAIL01.nvidia.com>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+ <1330630010-11241-9-git-send-email-alan@signal11.us>
+In-Reply-To: <1330630010-11241-9-git-send-email-alan@signal11.us>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 18:19 +0100, Michal Schmidt wrote: 
-> Dne 23.2.2012 15:13, Peter Zijlstra napsal:
-> > My utter disregard for cgroups comes from having to actually implement a
-> > controller for them, its a frigging nightmare. The systemd retards
-> > mandating all this nonsense for booting a machine is completely bonghit
-> > inspired and hasn't made me feel any better about it.
+Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
+> From: Arnd Bergmann <arnd@arndb.de>
 > 
-> systemd requires only CONFIG_CGROUPS=y. It does not need any controllers.
-> 
-> The insults are entirely unnecessary.
+> The driver should not call set_irq_flags itself, and
 
-At the risk of insulting any systemd person, I recently upgraded my box,
-and had my very first encounter with systemd.  It didn't go well at all,
-to say the very least.  In fact, it quickly became a violent removal.
+Probably true in this case.
 
-After the fact, when I queried, I was told straight out that I should
-live in harmony with the cgroups configuration systemd set up for me and
-be happy.  For the nonce, you can remove it, and here's how (thanks for
-that guys), but that removal option is _going_ to go away.  No, you
-can't simply turn our cgroup setup off and control your box as if you
-actually _own_ the thing, because cgroups is an integral part of the
-systemd concept.
+> cannot do this from a loadable module.
 
-Really.  I hope that was idiotic fanboy tripe, because that flat ain't
-gonna happen here, ever.
+I hope that's not true; grep'ing the entire of drivers/ shows a bunch
+of drivers calling this function, and many look like they'd be reasonable
+as module.
 
-Q: you say systemd requires CONFIG_CGROUPS=y.  Why is that?  It's taking
-over sysvinits job afaiui, what does that have to do with cgroups?
+>From what little I understand of this, any irq_chip is going to call
+that function after setting up any child/cascaded IRQs, and I assume
+that irq_chips can be in modules.
 
--Mike
+> Remove the call for now, which might break the driver
+> but at least lets the kernel link again.
+
+The driver appears to work fine with this removed. At least, on Tegra20
+Harmony, I was able to modprobe ehci-hcd and then use the USB Ethernet
+controller for DHCP and SSH.
+
+So,
+
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+-- 
+nvpublic
 
