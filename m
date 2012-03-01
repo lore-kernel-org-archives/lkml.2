@@ -1,181 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966213Ab2CAA6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 19:58:05 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51218 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442Ab2CAA5L (ORCPT
+	id S1030368Ab2CABGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:06:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44858 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966166Ab2CABGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 19:57:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.92.228 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v6 3/5] MIPS: Octeon: Add irq handlers for GPIO interrupts.
-Date: Wed, 29 Feb 2012 16:57:00 -0800
-Message-Id: <1330563422-14078-4-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com>
+	Wed, 29 Feb 2012 20:06:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.68.216.132 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <4F4EC73E.40209@linux.intel.com>
+References: <cover.1330539597.git.dvhart@linux.intel.com>
+	<CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com>
+	<4F4EC73E.40209@linux.intel.com>
+Date: Thu, 1 Mar 2012 10:06:38 +0900
+Message-ID: <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com>
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk parameter
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
+> how do we force the
+> 192MHz clock setting BEFORE the pch_phub code runs?
 
-This is needed for follow-on on patches for Octeon to use the Device
-Tree to configure GPIO interrupts.
+To realize your requirement,
+I think that set by BIOS is only way.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/cavium-octeon/octeon-irq.c |   96 +++++++++++++++++++++++++++++++++-
- 1 files changed, 95 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index ffd4ae6..bdcedd3 100644
---- a/arch/mips/cavium-octeon/octeon-irq.c
-+++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -505,6 +505,72 @@ static void octeon_irq_ciu_enable_all_v2(struct irq_data *data)
- 	}
- }
- 
-+static void octeon_irq_gpio_setup(struct irq_data *data)
-+{
-+	union cvmx_gpio_bit_cfgx cfg;
-+	int bit = data->irq - OCTEON_IRQ_GPIO0;
-+	u32 t = irqd_get_trigger_type(data);
-+
-+	cfg.u64 = 0;
-+	cfg.s.int_en = 1;
-+	cfg.s.int_type = (t & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING)) != 0;
-+	cfg.s.rx_xor = (t & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_EDGE_FALLING)) != 0;
-+
-+	/* 1 uS glitch filter*/
-+	cfg.s.fil_cnt = 7;
-+	cfg.s.fil_sel = 3;
-+
-+	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), cfg.u64);
-+}
-+
-+static void octeon_irq_ciu_enable_gpio_v2(struct irq_data *data)
-+{
-+	octeon_irq_gpio_setup(data);
-+	octeon_irq_ciu_enable_v2(data);
-+}
-+
-+static void octeon_irq_ciu_enable_gpio(struct irq_data *data)
-+{
-+	octeon_irq_gpio_setup(data);
-+	octeon_irq_ciu_enable(data);
-+}
-+
-+static int octeon_irq_ciu_gpio_set_type(struct irq_data *data, unsigned int t)
-+{
-+	u32 current_type = irqd_get_trigger_type(data);
-+
-+	/* If the type has been set, don't change it */
-+	if (current_type && current_type != t)
-+		return -EINVAL;
-+
-+	irqd_set_trigger_type(data, t);
-+	return IRQ_SET_MASK_OK;
-+}
-+
-+static void octeon_irq_ciu_disable_gpio_v2(struct irq_data *data)
-+{
-+	int bit = data->irq - OCTEON_IRQ_GPIO0;
-+	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
-+
-+	octeon_irq_ciu_disable_all_v2(data);
-+}
-+
-+static void octeon_irq_ciu_disable_gpio(struct irq_data *data)
-+{
-+	int bit = data->irq - OCTEON_IRQ_GPIO0;
-+	cvmx_write_csr(CVMX_GPIO_BIT_CFGX(bit), 0);
-+
-+	octeon_irq_ciu_disable_all(data);
-+}
-+
-+static void octeon_irq_ciu_gpio_ack(struct irq_data *data)
-+{
-+	int bit = data->irq - OCTEON_IRQ_GPIO0;
-+	u64 mask = 1ull << bit;
-+
-+	cvmx_write_csr(CVMX_GPIO_INT_CLR, mask);
-+}
-+
- #ifdef CONFIG_SMP
- 
- static void octeon_irq_cpu_offline_ciu(struct irq_data *data)
-@@ -717,6 +783,31 @@ static struct irq_chip octeon_irq_chip_ciu_mbox = {
- 	.flags = IRQCHIP_ONOFFLINE_ENABLED,
- };
- 
-+static struct irq_chip octeon_irq_chip_ciu_gpio_v2 = {
-+	.name = "CIU-GPIO",
-+	.irq_enable = octeon_irq_ciu_enable_gpio_v2,
-+	.irq_disable = octeon_irq_ciu_disable_gpio_v2,
-+	.irq_ack = octeon_irq_ciu_gpio_ack,
-+	.irq_mask = octeon_irq_ciu_disable_local_v2,
-+	.irq_unmask = octeon_irq_ciu_enable_v2,
-+	.irq_set_type = octeon_irq_ciu_gpio_set_type,
-+#ifdef CONFIG_SMP
-+	.irq_set_affinity = octeon_irq_ciu_set_affinity_v2,
-+#endif
-+};
-+
-+static struct irq_chip octeon_irq_chip_ciu_gpio = {
-+	.name = "CIU-GPIO",
-+	.irq_enable = octeon_irq_ciu_enable_gpio,
-+	.irq_disable = octeon_irq_ciu_disable_gpio,
-+	.irq_mask = octeon_irq_dummy_mask,
-+	.irq_ack = octeon_irq_ciu_gpio_ack,
-+	.irq_set_type = octeon_irq_ciu_gpio_set_type,
-+#ifdef CONFIG_SMP
-+	.irq_set_affinity = octeon_irq_ciu_set_affinity,
-+#endif
-+};
-+
- /*
-  * Watchdog interrupts are special.  They are associated with a single
-  * core, so we hardwire the affinity to that core.
-@@ -890,6 +981,7 @@ static void __init octeon_irq_init_ciu(void)
- 	struct irq_chip *chip_edge;
- 	struct irq_chip *chip_mbox;
- 	struct irq_chip *chip_wd;
-+	struct irq_chip *chip_gpio;
- 
- 	octeon_irq_init_ciu_percpu();
- 	octeon_irq_setup_secondary = octeon_irq_setup_secondary_ciu;
-@@ -904,6 +996,7 @@ static void __init octeon_irq_init_ciu(void)
- 		chip_edge = &octeon_irq_chip_ciu_edge_v2;
- 		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
- 		chip_wd = &octeon_irq_chip_ciu_wd_v2;
-+		chip_gpio = &octeon_irq_chip_ciu_gpio_v2;
- 	} else {
- 		octeon_irq_ip2 = octeon_irq_ip2_v1;
- 		octeon_irq_ip3 = octeon_irq_ip3_v1;
-@@ -911,6 +1004,7 @@ static void __init octeon_irq_init_ciu(void)
- 		chip_edge = &octeon_irq_chip_ciu_edge;
- 		chip_mbox = &octeon_irq_chip_ciu_mbox;
- 		chip_wd = &octeon_irq_chip_ciu_wd;
-+		chip_gpio = &octeon_irq_chip_ciu_gpio;
- 	}
- 	octeon_irq_ip4 = octeon_irq_ip4_mask;
- 
-@@ -921,7 +1015,7 @@ static void __init octeon_irq_init_ciu(void)
- 	for (i = 0; i < 16; i++)
- 		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_WORKQ0, 0, i + 0, chip, handle_level_irq);
- 	for (i = 0; i < 16; i++)
--		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip, handle_level_irq);
-+		octeon_irq_set_ciu_mapping(i + OCTEON_IRQ_GPIO0, 0, i + 16, chip_gpio, handle_level_irq);
- 
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
- 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
--- 
-1.7.2.3
-
+ROHM Co., Ltd.
+tomoya
