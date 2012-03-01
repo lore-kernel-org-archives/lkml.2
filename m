@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030500Ab2CABcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:32:06 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:41153 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965191Ab2CABcE (ORCPT
+	id S1758132Ab2CABfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:35:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42709 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab2CABfG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:32:04 -0500
-Date: Thu, 1 Mar 2012 10:32:01 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Eugene Surovegin <surovegin@google.com>
-Cc: linux-kernel@vger.kernel.org, kexec-list <kexec@lists.infradead.org>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] kdump: force page alignment for per-CPU crash notes.
-Message-ID: <20120301013200.GF16483@verge.net.au>
-References: <1330536083-13098-1-git-send-email-surovegin@google.com>
- <20120301011811.GC16483@verge.net.au>
- <CANrfoUXd4L2bjBO+L8ZBCkc1dfnZahn39sB25zsrUMqGA5zY5A@mail.gmail.com>
+	Wed, 29 Feb 2012 20:35:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.gortmaker@gmail.com designates 10.68.135.137 as permitted sender) smtp.mail=paul.gortmaker@gmail.com; dkim=pass header.i=paul.gortmaker@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANrfoUXd4L2bjBO+L8ZBCkc1dfnZahn39sB25zsrUMqGA5zY5A@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F4EAD36.4070706@xenotime.net>
+References: <20120229175205.d165fa5266f400bc080253a0@canb.auug.org.au>
+	<4F4EAD36.4070706@xenotime.net>
+Date: Wed, 29 Feb 2012 20:35:06 -0500
+X-Google-Sender-Auth: k7wwgoHU3_XcmecwmsQ4jQ87VpQ
+Message-ID: <CAP=VYLoDfhM1gh5Ex-kwOECupk5gwHaj1Nx07ByO1u5ujGXYmA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 29 (spear_thermal.c)
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Vincenzo Frascino <vincenzo.frascino@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 05:23:10PM -0800, Eugene Surovegin wrote:
-> On Wed, Feb 29, 2012 at 5:18 PM, Simon Horman <horms@verge.net.au> wrote:
-> 
-> > On Wed, Feb 29, 2012 at 09:21:23AM -0800, Eugene Surovegin wrote:
-> > > Per-CPU allocations are not guaranteed to be physically contiguous.
-> > > However, kdump kernel and user-space code assumes that per-CPU
-> > > memory, used for saving CPU registers on crash, is.
-> > > This can cause corrupted /proc/vmcore in some cases - the main
-> > > symptom being huge ELF note section.
-> > >
-> > > Force page alignment for note_buf_t to ensure that this assumption holds.
-> >
-> > Ouch. I'm surprised there is an allocation on crash, perhaps
-> > it could at least be done earlier? And am I right in thinking
-> > that this change increases the likely hood that the allocation
-> > could fail?
-> >
-> 
-> I'm not following. This allocation is done on start-up, not on crash.
-> If you cannot allocate this much memory on system boot, I'm not sure what
-> else you can do on this system....
+On Wed, Feb 29, 2012 at 5:56 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 02/28/2012 10:52 PM, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20120228:
+>>
+>> My fixes tree contains:
+>>       x86, efi: Fix unaligned access and endian issues--
+>
+>
+> on x86_64:
+>
+> drivers/built-in.o: In function `spear_thermal_exit':
+> spear_thermal.c:(.text+0x49c042): undefined reference to `clk_disable'
+> spear_thermal.c:(.text+0x49c04b): undefined reference to `clk_put'
+> drivers/built-in.o: In function `spear_thermal_probe':
+> spear_thermal.c:(.text+0x49c0e6): undefined reference to `clk_get'
+> spear_thermal.c:(.text+0x49c0fe): undefined reference to `clk_enable'
+> spear_thermal.c:(.text+0x49c196): undefined reference to `clk_put'
+> spear_thermal.c:(.text+0x49c1cc): undefined reference to `clk_disable'
 
-Sorry, my eyes deceived me. You are correct and I agree.
+Hi Randy,
 
-Is it the case that note_buf_t is never larger than PAGE_SIZE?
-If so I your patch looks good to me.
+I think this should go away once the spear_thermal is limited to
+being built just for that particular ARM platform.
+
+http://www.spinics.net/lists/linux-next/msg18959.html
+
+Paul.
+--
+
+>
+>
+> Full randconfig file is attached.
+>
+> ---
+> ~Randy
