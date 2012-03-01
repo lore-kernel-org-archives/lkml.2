@@ -1,18 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab2CAS70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:59:26 -0500
-Received: from matrix.voodoobox.net ([75.127.97.206]:57251 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab2CAS7Z (ORCPT
+	id S1756374Ab2CATC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:02:27 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61405 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab2CATCZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:59:25 -0500
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: David Dillow <dave@thedillows.org>
-To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+	Thu, 1 Mar 2012 14:02:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of martinez.javier@gmail.com designates 10.236.184.8 as permitted sender) smtp.mail=martinez.javier@gmail.com; dkim=pass header.i=martinez.javier@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com>
+References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
+ <1330606237.27405.5.camel@megeve> <1330606775.2465.56.camel@edumazet-laptop>
+ <4F4F7FFB.6010608@collabora.co.uk> <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com>
+ <CAL4WiiqjvA7iN8nydOx9tp8gOg1M_EDWKU5N+V5JFa90JbS8Ug@mail.gmail.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Thu, 1 Mar 2012 20:02:04 +0100
+Message-ID: <CAAwP0s3Awu9-d5KDgBEdSrNmAJraL0JRO+Z6XVgYk6LX4djKyQ@mail.gmail.com>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
         David Laight <David.Laight@aculab.com>,
         David Miller <davem@davemloft.net>, javier@collabora.co.uk,
@@ -20,30 +28,50 @@ Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
         sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 01 Mar 2012 13:53:34 -0500
-In-Reply-To: <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
-	 <1330606237.27405.5.camel@megeve>
-	 <1330606775.2465.56.camel@edumazet-laptop>
-	 <4F4F7FFB.6010608@collabora.co.uk>
-	 <CABBYNZKN+7z4Sr9DBniokez6Jru02LxPgWdGNcVeYECse+AzEQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1330628015.1026.148.camel@obelisk.thedillows.org>
-Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 18:02 +0200, Luiz Augusto von Dentz wrote:
-> Contrary to someones believes I don't think AF_INET is that fast (e.g.
-> http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
+On Thu, Mar 1, 2012 at 6:59 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le 1 mars 2012 08:02, Luiz Augusto von Dentz <luiz.dentz@gmail.com> a écrit :
+>>
+>> Contrary to someones believes I don't think AF_INET is that fast (e.g.
+>> http://scottmoonen.com/2008/04/05/a-performance-comparison-of-af_unix-with-loopback-on-linux/)
+>>
+>
+> Oh you mention a recent zork it seems ;)
+>
+> Are we speaking of performance problems, apart from scheduler problems
+> for D-Bus (each message wakeing all receivers, all receivers read and
+> drop message but the target) ?
+>
 
-There has been a huge amount of work on the stack in the four years
-since that was written, and even longer since 2.6.18 was considered
-current.
+Hi Eric,
 
-Have anything more recent?
+The only performance problem we are talking about is the scheduling
+for D-bus (context switch to the daemon for each message). With today
+implementation the receivers only gets messages that were sent to it
+but the D-bus daemon has to be wake it up for every message to he can
+do the routing. For multicast messages (i.e: D-bus signals) this is
+even worse since the daemon has to do a send() for each receiver.
 
+> I am actually one of the few people working to improve performance on
+> both AF_INET and AF_UNIX parts. Just take a look at recent commits.
+>
+> Right now you can send/receive millions of udp messages per second on
+> your linux machine, if you figured out how to avoid process scheduler
+> costs. If D-Bus wants more, I highly suggest using shared memory
+> instead of passing messages.
+> --
 
+Yes, I also thought that AF_UNIX would be more efficient than AF_INET
+but I was wrong. Yesterday I wrote some tests using our multicast unix
+socket, UDP multicast over IP on a single machine and even multicast
+using AF_NETLINK sockets and got very similar performance results.
+
+The only problem is the ordering and control flow requirements for D-bus.
+
+Best regards,
+Javier
