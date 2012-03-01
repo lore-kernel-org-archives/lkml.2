@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab2CAMuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 07:50:37 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53327 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab2CAMug (ORCPT
+	id S1030836Ab2CAM5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 07:57:54 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52905 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759069Ab2CAM5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 07:50:36 -0500
-Message-ID: <1330606237.27405.5.camel@megeve>
-Subject: RE: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        David Miller <davem@davemloft.net>, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 01 Mar 2012 13:50:37 +0100
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E86@saturn3.aculab.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 1 Mar 2012 07:57:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of luiz.dentz@gmail.com designates 10.236.189.5 as permitted sender) smtp.mail=luiz.dentz@gmail.com; dkim=pass header.i=luiz.dentz@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <4F4F641E.7000501@collabora.co.uk>
+References: <4F4B8C66.5060206@collabora.co.uk>
+	<20120227.140535.1623396420455657443.davem@davemloft.net>
+	<1330426059.2139.21.camel@megeve>
+	<20120228.140558.1132853996225815681.davem@davemloft.net>
+	<4F4F641E.7000501@collabora.co.uk>
+Date: Thu, 1 Mar 2012 14:57:51 +0200
+Message-ID: <CABBYNZJdYnZwm+Y15wdt225PhX=ApZrAbxH9da4EMrejWVmA1Q@mail.gmail.com>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
+From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: David Miller <davem@davemloft.net>, rodrigo.moya@collabora.co.uk,
+        javier@collabora.co.uk, eric.dumazet@gmail.com, lennart@poettering.net,
+        kay.sievers@vrfy.org, alban.crequy@collabora.co.uk,
+        bart.cerneels@collabora.co.uk, sjoerd.simons@collabora.co.uk,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 12:33 +0000, David Laight wrote:
-> > > So, now we are trying a different approach. To create a new address
-> > > family AF_MCAST. That way we can have more control over the
-> semantics of
-> > > the socket interface for that family.
-> > > 
-> > > We expect to have some patches in a few days and we will resend.
-> > > 
-> > > Does this makes more sense to you?
-> > > 
-> > 
-> > Why adding an obscure set of IPC mechanism in network tree, and not
-> > using (maybe extending) traditional IPC (Messages queues, semaphores,
-> > Shared memory, pipes, futexes, ...).
-> 
-> If it isn't a totally silly suggestion, why not write a simple
-> device driver that just does what you want?
-> Which (I think) is named pipes with multiple readers.
-> 
-the main problem in D-Bus we are trying to solve is the context
-switches, since right now, there is a daemon, which listens on a UNIX
-socket, and all traffic in the bus goes through it, and then the daemon
-has to route the messages it gets on that socket to the corresponding
-place(s). So, every time someone sends a message to D-Bus, since all
-traffic goes through the daemon, dbus-daemon gets waked-up, which is one
-of the biggest bottlenecks we are trying to fix.
+Hi Javier,
 
-That's why we are thinking about using multicast with socket filters, so
-that the daemon only gets traffic it cares about and thus is not waked
-up and context switches don't happen when not needed.
+On Thu, Mar 1, 2012 at 1:57 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> On 02/28/2012 08:05 PM, David Miller wrote:
+>> From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
+>> Date: Tue, 28 Feb 2012 11:47:39 +0100
+>>
+>>> Because of all of this, UDP/IP multicast wasn't even considered as an
+>>> option. We might be wrong in some/all of those, so could you please
+>>> comment on them to check if that's so?
+>>
+>> You guys seem to want something that isn't AF_UNIX, ordering guarentees
+>> and whatnot, it really has no place in these protocols.
+>>
+>> You've designed a userlevel subsystem with requirements that no existing
+>> socket layer can give, and you just figured you'd work that out later.
+>>
+>> I think you rather should have reconsidered these premises and designed
+>> something that could handle reality which is AF_UNIX can't do multicast
+>> and nobody guarentees those strange ordering requirements you seem to
+>> have.
+>
+> Yes, you are right it doesn't follow AF_UNIX semantics so Unix sockets
+> is not the best place to add our multicast implementation.
+>
+> So, now we are trying a different approach. To create a new address
+> family AF_MCAST. That way we can have more control over the semantics of
+> the socket interface for that family.
+>
+> We expect to have some patches in a few days and we will resend.
 
-Using message queues, AFAICS, we would have the same problem, as the
-daemon would create the message queue and would get all traffic, right?
+Lets say AF_MCAST is acceptable, wouldn't it make AF_UNIX obsolete?
+>From what I can tell a lot, if not most, of users of AF_UNIX uses it
+to implement some kind of IPC being it D-Bus, chromium or wayland and
+eventually all of them run into the same problems. Actually the
+article in lwn put it nice together: http://lwn.net/Articles/466304/
 
-cheers
+What about SCM_RIGHTS and other Ancillary Messages, would that be
+acceptable in other socket families?
 
+-- 
+Luiz Augusto von Dentz
