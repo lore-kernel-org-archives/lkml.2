@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab2CAVwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:52:04 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965687Ab2CAVvD (ORCPT
+	id S965706Ab2CAVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:52:26 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35253 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965663Ab2CAVvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:51:03 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.138.200 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:51:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.132.198 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213923.685779931@linuxfoundation.org>
+Message-Id: <20120301213923.395633823@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:31 -0800
+Date: Thu, 01 Mar 2012 13:39:29 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 09/34] crypto: sha512 - Use binary and instead of modulus
+        alan@lxorguk.ukuu.org.uk, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Joe Perches <joe@perches.com>, Sven-Haegar Koch <haegar@sdinet.de>
+Subject: [ 07/34] printk_ratelimited(): fix uninitialized spinlock
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
-commit 58d7d18b5268febb8b1391c6dffc8e2aaa751fcd upstream.
+commit d8521fcc5e0ad3e79bbc4231bb20a6cdc2b50164 upstream.
 
-The previous patch used the modulus operator over a power of 2
-unnecessarily which may produce suboptimal binary code.  This
-patch changes changes them to binary ands instead.
+ratelimit_state initialization of printk_ratelimited() seems broken.  This
+fixes it by using DEFINE_RATELIMIT_STATE() to initialize spinlock
+properly.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sven-Haegar Koch <haegar@sdinet.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/sha512_generic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/kernel.h |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
- 
- static inline void BLEND_OP(int I, u64 *W)
- {
--	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
-+	W[I & 15] += s1(W[(I-2) & 15]) + W[(I-7) & 15] + s0(W[(I-15) & 15]);
- }
- 
- static void
-@@ -105,7 +105,7 @@ sha512_transform(u64 *state, const u8 *i
- 
- #define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
- 	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
-+	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
- 	t2 = e0(a) + Maj(a, b, c);				\
- 	d += t1;						\
- 	h = t1 + t2
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -411,14 +411,13 @@ static inline char *pack_hex_byte(char *
+  * no local ratelimit_state used in the !PRINTK case
+  */
+ #ifdef CONFIG_PRINTK
+-#define printk_ratelimited(fmt, ...)  ({		\
+-	static struct ratelimit_state _rs = {		\
+-		.interval = DEFAULT_RATELIMIT_INTERVAL, \
+-		.burst = DEFAULT_RATELIMIT_BURST,       \
+-	};                                              \
+-							\
+-	if (__ratelimit(&_rs))                          \
+-		printk(fmt, ##__VA_ARGS__);		\
++#define printk_ratelimited(fmt, ...)  ({				\
++	static DEFINE_RATELIMIT_STATE(_rs,				\
++				      DEFAULT_RATELIMIT_INTERVAL,	\
++				      DEFAULT_RATELIMIT_BURST);		\
++									\
++	if (__ratelimit(&_rs))						\
++		printk(fmt, ##__VA_ARGS__);				\
+ })
+ #else
+ /* No effect, but we still get type checking even in the !PRINTK case: */
 
 
