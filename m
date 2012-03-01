@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031170Ab2CAOja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:39:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51708 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030596Ab2CAOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:39:26 -0500
-Date: Thu, 1 Mar 2012 09:39:22 -0500
-From: Dave Jones <davej@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, ilw@linux.intel.com
-Subject: firmware error.
-Message-ID: <20120301143922.GA31369@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-	ilw@linux.intel.com
+	id S1758141Ab2CAOno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 09:43:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39505 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab2CAOnm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 09:43:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120301141823.GV5054@shiny>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
+	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
+	<20120229144244.GF5054@shiny>
+	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
+	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
+	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
+	<CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
+	<20120301141823.GV5054@shiny>
+Date: Thu, 1 Mar 2012 15:43:41 +0100
+Message-ID: <CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
+        lczerner@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Still seeing this occasionally in v3.3-rc5-101-g88ebdda
+2012/3/1 Chris Mason <chris.mason@oracle.com>:
+> On Thu, Mar 01, 2012 at 03:03:53PM +0100, Jacek Luczak wrote:
+>> 2012/3/1 Hillf Danton <dhillf@gmail.com>:
+>> > On Thu, Mar 1, 2012 at 9:35 PM, Jacek Luczak <difrost.kernel@gmail.com> wrote:
+>> >>
+>> >> While I was about to grab acp I've noticed seekwatcher with made my day :)
+>> >>
+>> >> seekwatcher run of tar cf to eliminate writes (all done on 3.2.7):
+>> >> 1) btrfs: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs.png
+>> >> 2) ext4: http://dozzie.jarowit.net/~dozzie/luczajac/tar_ext4.png
+>> >> 3) both merged: http://dozzie.jarowit.net/~dozzie/luczajac/tar_btrfs_ext4.png
+>
+> Whoa, seekwatcher makes it pretty clear.
 
-iwlwifi 0000:04:00.0: Received BA when not expected
-iwlwifi 0000:04:00.0: Microcode SW error detected.  Restarting 0x2000000.
-iwlwifi 0000:04:00.0: Loaded firmware version: 8.83.5.1 build 33692
-iwlwifi 0000:04:00.0: Start IWL Error Log Dump:
-iwlwifi 0000:04:00.0: Status: 0x000412E4, count: 5
-iwlwifi 0000:04:00.0: 0x0000001C | ADVANCED_SYSASSERT          
-iwlwifi 0000:04:00.0: 0x000006E4 | uPc
-iwlwifi 0000:04:00.0: 0x000005AA | branchlink1
-iwlwifi 0000:04:00.0: 0x00000820 | branchlink2
-iwlwifi 0000:04:00.0: 0x00000916 | interruptlink1
-iwlwifi 0000:04:00.0: 0x0000E52E | interruptlink2
-iwlwifi 0000:04:00.0: 0x00000002 | data1
-iwlwifi 0000:04:00.0: 0x02630000 | data2
-iwlwifi 0000:04:00.0: 0x00000236 | line
-iwlwifi 0000:04:00.0: 0x00C04D1D | beacon time
-iwlwifi 0000:04:00.0: 0xFDF602E3 | tsf low
-iwlwifi 0000:04:00.0: 0x000000DD | tsf hi
-iwlwifi 0000:04:00.0: 0x00000000 | time gp1
-iwlwifi 0000:04:00.0: 0x57F562C0 | time gp2
-iwlwifi 0000:04:00.0: 0x00000000 | time gp3
-iwlwifi 0000:04:00.0: 0x00010853 | uCode version
-iwlwifi 0000:04:00.0: 0x00000024 | hw version
-iwlwifi 0000:04:00.0: 0x00480302 | board version
-iwlwifi 0000:04:00.0: 0x0B59001C | hcmd
-iwlwifi 0000:04:00.0: 0x2F873802 | isr0
-iwlwifi 0000:04:00.0: 0x014BF800 | isr1
-iwlwifi 0000:04:00.0: 0x0000011A | isr2
-iwlwifi 0000:04:00.0: 0x1443FCC3 | isr3
-iwlwifi 0000:04:00.0: 0x00804110 | isr4
-iwlwifi 0000:04:00.0: 0x00000236 | isr_pref
-iwlwifi 0000:04:00.0: 0x000000D4 | wait_event
-iwlwifi 0000:04:00.0: 0x00000004 | l2p_control
-iwlwifi 0000:04:00.0: 0x00000007 | l2p_duration
-iwlwifi 0000:04:00.0: 0x00101042 | l2p_mhvalid
-iwlwifi 0000:04:00.0: 0x00000015 | l2p_addr_match
-iwlwifi 0000:04:00.0: 0x02121704 | lmpm_pmg_sel
-iwlwifi 0000:04:00.0: 0x14B498A0 | timestamp
-iwlwifi 0000:04:00.0: 0x00000100 | flow_handler
-iwlwifi 0000:04:00.0: CSR values:
-iwlwifi 0000:04:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
-iwlwifi 0000:04:00.0:        CSR_HW_IF_CONFIG_REG: 0X00480302
-iwlwifi 0000:04:00.0:          CSR_INT_COALESCING: 0X00000040
-iwlwifi 0000:04:00.0:                     CSR_INT: 0X00000000
-iwlwifi 0000:04:00.0:                CSR_INT_MASK: 0X00000000
-iwlwifi 0000:04:00.0:           CSR_FH_INT_STATUS: 0X00000000
-iwlwifi 0000:04:00.0:                 CSR_GPIO_IN: 0X00000000
-iwlwifi 0000:04:00.0:                   CSR_RESET: 0X00000000
-iwlwifi 0000:04:00.0:                CSR_GP_CNTRL: 0X080403c5
-iwlwifi 0000:04:00.0:                  CSR_HW_REV: 0X00000024
-iwlwifi 0000:04:00.0:              CSR_EEPROM_REG: 0X00000000
-iwlwifi 0000:04:00.0:               CSR_EEPROM_GP: 0X90000004
-iwlwifi 0000:04:00.0:              CSR_OTP_GP_REG: 0X00060000
-iwlwifi 0000:04:00.0:                 CSR_GIO_REG: 0X00080042
-iwlwifi 0000:04:00.0:            CSR_GP_UCODE_REG: 0X00003001
-iwlwifi 0000:04:00.0:           CSR_GP_DRIVER_REG: 0X00000000
-iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
-iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
-iwlwifi 0000:04:00.0:                 CSR_LED_REG: 0X00000058
-iwlwifi 0000:04:00.0:        CSR_DRAM_INT_TBL_REG: 0X8811137b
-iwlwifi 0000:04:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
-iwlwifi 0000:04:00.0:             CSR_ANA_PLL_CFG: 0X00880300
-iwlwifi 0000:04:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
-iwlwifi 0000:04:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0000
-iwlwifi 0000:04:00.0: FH register values:
-iwlwifi 0000:04:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X11672c00
-iwlwifi 0000:04:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X011672b0
-iwlwifi 0000:04:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000098
-iwlwifi 0000:04:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X00819104
-iwlwifi 0000:04:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
-iwlwifi 0000:04:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X02630000
-iwlwifi 0000:04:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
-iwlwifi 0000:04:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
-iwlwifi 0000:04:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
-iwlwifi 0000:04:00.0: Start IWL Event Log Dump: display last 20 entries
-iwlwifi 0000:04:00.0: EVT_LOGT:1475497643:0x00000000:0210
-iwlwifi 0000:04:00.0: EVT_LOGT:1475497653:0x00000000:0207
-iwlwifi 0000:04:00.0: EVT_LOGT:1475497655:0x01002111:0211
-iwlwifi 0000:04:00.0: EVT_LOGT:1475497660:0x00000000:0212
-iwlwifi 0000:04:00.0: EVT_LOGT:1475498758:0x00000000:0215
-iwlwifi 0000:04:00.0: EVT_LOGT:1475498760:0x00000008:0220
-iwlwifi 0000:04:00.0: EVT_LOGT:1475498779:0x00000000:0301
-iwlwifi 0000:04:00.0: EVT_LOGT:1475498967:0x00000000:0355
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499319:0x00001359:0217
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499323:0x0b58001c:0218
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499401:0x0b59001c:0206
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499402:0x00000001:0204
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499405:0x01102100:0209
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499430:0x00000000:0210
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499446:0x00000000:0207
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499449:0x2b110000:0227
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499449:0xc3f02b50:0228
-iwlwifi 0000:04:00.0: EVT_LOGT:1475499454:0x57f255be:1586
-iwlwifi 0000:04:00.0: EVT_LOGT:1475699376:0x000000d7:0123
-iwlwifi 0000:04:00.0: EVT_LOGT:1475699415:0x00000000:0125
-ieee80211 phy0: Hardware restart was requested
-iwlwifi 0000:04:00.0: L1 Enabled; Disabling L0S
-iwlwifi 0000:04:00.0: Radio type=0x0-0x2-0x0
+Yep, ext4 is close to my wife's closet.
 
+>> >>
+>> >> I will send acp results soon.
+>> >>
+>> > Would you please take reiserfs into account?
+>>
+>> As of now not (lack of time) but I'm pretty close to consider XFS in
+>> the game. Whenever I will have more time and there won't be a pressure
+>> on giving host back to production I will redo same tests for reiserfs.
+>>
+>> Now I'm focused on the userspace sorting results.
+>
+> reiserfs should have results very similar to ext4.  The directory
+> hashing used by reiserfs is going to result in a very random read
+> pattern.
+>
+> XFS will probably beat btrfs in this test.  Their directory indexes
+> reflect on disk layout very well.
 
-04:00.0 Network controller: Intel Corporation Ultimate N WiFi Link 5300
+True, but not that fast on small files.
 
-	Dave
+Except the question I've raised in first mail there's a point in all
+those action. We are maintaining host that are used for building
+software: random access, lot of small files and dirs (always a co),
+heavy parallel IO. We were testing XFS vs ext4 a year ago and XFS was
+around 10% slower on build times. We did not - yet - done same on
+btrfs. Now we're looking for replacement for ext4 as we suffer from
+those issue - but we were not aware of that until stepped into this
+issue.
 
+If you would like me to do some specific tests around ext4 and btrfs,
+let me know.
+
+-Jacek
