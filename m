@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab2CAKSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 05:18:17 -0500
-Received: from mail.us.es ([193.147.175.20]:33222 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758853Ab2CAKSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 05:18:15 -0500
-Date: Thu, 1 Mar 2012 11:18:09 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/3] netfilter: Fix copy_to_user too small size
- parametre.
-Message-ID: <20120301101809.GA6488@1984>
-References: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
+	id S1030349Ab2CAKTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 05:19:19 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55036 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966042Ab2CAKTS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 05:19:18 -0500
+Date: Thu, 1 Mar 2012 11:19:05 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] dmaengine: Add support for multiple descriptors
+ for imx-dma.
+Message-ID: <20120301101904.GA3852@pengutronix.de>
+References: <1330445298-3522-1-git-send-email-javier.martin@vista-silicon.com>
+ <1330445298-3522-3-git-send-email-javier.martin@vista-silicon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330593390-19233-1-git-send-email-santoshprasadnayak@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1330445298-3522-3-git-send-email-javier.martin@vista-silicon.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:14:32 up 109 days, 18:01, 34 users,  load average: 0.00, 0.01,
+ 0.15
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 02:46:30PM +0530, santosh nayak wrote:
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Tue, Feb 28, 2012 at 05:08:18PM +0100, Javier Martin wrote:
+> dmaengine specifies the possibility that several descriptors
+> can be queued for transfer. It also indicates that tasklets
+> must be used for DMA callbacks.
 > 
-> While copying to userspace, the size of source is 29byte where as
-> size parametre is 32 byte.  Its leaking extra-information from
-> kernel space to user space.
-> Replace EBT_FUNCTION_MAXNAMELEN by XT_EXTENSION_MAXNAMELEN.
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
 
-There's no information leak.
+Have you tested this patch with audio?
 
-Let me clarify this. Have a look at /linux/netfilter/x_tables.h, then
-you find:
 
-#define XT_FUNCTION_MAXNAMELEN 30
-#define XT_EXTENSION_MAXNAMELEN 29
-#define XT_TABLE_MAXNAMELEN 32
+> +static int imxdma_xfer_desc(struct imxdma_desc *d)
+> +{
+> +	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
+> +	int ret;
+> +
+> +	/* Configure and enable */
+> +	switch (d->type) {
+> +	case IMXDMA_DESC_MEMCPY:
+> +		ret = imx_dma_config_channel(imxdmac->imxdma_channel,
+> +					  d->config_port, d->config_mem, 0, 0);
+> +		if (ret < 0)
+> +			return ret;
+> +		ret = imx_dma_setup_single(imxdmac->imxdma_channel, d->src,
+> +					   d->len, d->dest, d->dmamode);
+> +		if (ret < 0)
+> +			return ret;
+> +		break;
+> +	case IMXDMA_DESC_CYCLIC:
+> +		ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
+> +							imxdma_progression);
+> +		if (ret < 0)
+> +			return ret;
 
-For iptables, everything has been 30 bytes, but we stole one
-byte to store the revision field for matches/targets.
+You fall through here. Is this intended? If yes, a comment would be good
+here.
 
-For ebtables, there's no revision field and the length of the
-table name is different.
+Sascha
 
-But linux/netfilter/in ebtables.h, you'll find:
-
-#define EBT_TABLE_MAXNAMELEN 32
-#define EBT_CHAIN_MAXNAMELEN EBT_TABLE_MAXNAMELEN
-#define EBT_FUNCTION_MAXNAMELEN EBT_TABLE_MAXNAMELEN
-
-Note that someone decided to use 32 bytes for the ebtables
-tables/match/target name instead of 30 bytes in iptables.
-
-Yes, it sucks a bit we have to live with these interfaces until
-we have some netlink interface for all these things.
-
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> ---
->  net/bridge/netfilter/ebtables.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-> index 5864cc4..f3fcbd9 100644
-> --- a/net/bridge/netfilter/ebtables.c
-> +++ b/net/bridge/netfilter/ebtables.c
-> @@ -1335,7 +1335,7 @@ static inline int ebt_make_matchname(const struct ebt_entry_match *m,
->      const char *base, char __user *ubase)
->  {
->  	char __user *hlp = ubase + ((char *)m - base);
-> -	if (copy_to_user(hlp, m->u.match->name, EBT_FUNCTION_MAXNAMELEN))
-> +	if (copy_to_user(hlp, m->u.match->name, XT_EXTENSION_MAXNAMELEN))
->  		return -EFAULT;
->  	return 0;
->  }
-> @@ -1344,7 +1344,7 @@ static inline int ebt_make_watchername(const struct ebt_entry_watcher *w,
->      const char *base, char __user *ubase)
->  {
->  	char __user *hlp = ubase + ((char *)w - base);
-> -	if (copy_to_user(hlp , w->u.watcher->name, EBT_FUNCTION_MAXNAMELEN))
-> +	if (copy_to_user(hlp , w->u.watcher->name, XT_EXTENSION_MAXNAMELEN))
->  		return -EFAULT;
->  	return 0;
->  }
-> @@ -1368,7 +1368,7 @@ ebt_make_names(struct ebt_entry *e, const char *base, char __user *ubase)
->  	ret = EBT_WATCHER_ITERATE(e, ebt_make_watchername, base, ubase);
->  	if (ret != 0)
->  		return ret;
-> -	if (copy_to_user(hlp, t->u.target->name, EBT_FUNCTION_MAXNAMELEN))
-> +	if (copy_to_user(hlp, t->u.target->name, XT_EXTENSION_MAXNAMELEN))
->  		return -EFAULT;
->  	return 0;
->  }
-> -- 
-> 1.7.4.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
