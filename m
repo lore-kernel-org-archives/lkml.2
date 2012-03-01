@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965321Ab2CAVuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:50:12 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35253 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965283Ab2CAVuI (ORCPT
+	id S965447Ab2CAV5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:57:04 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35281 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965317Ab2CAVuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.74.74 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.208.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213925.010712470@linuxfoundation.org>
+Message-Id: <20120301213925.344945355@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:39 -0800
+Date: Thu, 01 Mar 2012 13:39:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Adam Radford <aradford@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 17/34] SCSI: 3w-9xxx fix bug in sgl loading
+        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nico@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rabin Vincent <rabin@rab.in>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 19/34] ARM: 7325/1: fix v7 boot with lockdep enabled
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,56 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: adam radford <aradford@gmail.com>
+From: Rabin Vincent <rabin@rab.in>
 
-commit 53ca353594a254e6bd45ccf2d405aa31bcbb7091 upstream.
+commit 8e43a905dd574f54c5715d978318290ceafbe275 upstream.
 
-This small patch fixes a bug in the 3w-9xxx driver where it would load
-an invalid sgl address in the ioctl path even if request length was zero.
+Bootup with lockdep enabled has been broken on v7 since b46c0f74657d
+("ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR").
 
-Signed-off-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+This is because v7_setup (which is called very early during boot) calls
+v7_flush_dcache_all, and the save_and_disable_irqs added by that patch
+ends up attempting to call into lockdep C code (trace_hardirqs_off())
+when we are in no position to execute it (no stack, MMU off).
+
+Fix this by using a notrace variant of save_and_disable_irqs.  The code
+already uses the notrace variant of restore_irqs.
+
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/3w-9xxx.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/assembler.h |    5 +++++
+ arch/arm/mm/cache-v7.S           |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -76,6 +76,7 @@
-                  Fix bug in twa_get_param() on 4GB+.
-                  Use pci_resource_len() for ioremap().
-    2.26.02.012 - Add power management support.
-+   2.26.02.013 - Fix bug in twa_load_sgl().
- */
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -133,6 +133,11 @@
+ 	disable_irq
+ 	.endm
  
- #include <linux/module.h>
-@@ -100,7 +101,7 @@
- #include "3w-9xxx.h"
- 
- /* Globals */
--#define TW_DRIVER_VERSION "2.26.02.012"
-+#define TW_DRIVER_VERSION "2.26.02.013"
- static TW_Device_Extension *twa_device_extension_list[TW_MAX_SLOT];
- static unsigned int twa_device_extension_count;
- static int twa_major = -1;
-@@ -1378,10 +1379,12 @@ static void twa_load_sgl(TW_Device_Exten
- 		newcommand = &full_command_packet->command.newcommand;
- 		newcommand->request_id__lunl =
- 			cpu_to_le16(TW_REQ_LUN_IN(TW_LUN_OUT(newcommand->request_id__lunl), request_id));
--		newcommand->sg_list[0].address = TW_CPU_TO_SGL(dma_handle + sizeof(TW_Ioctl_Buf_Apache) - 1);
--		newcommand->sg_list[0].length = cpu_to_le32(length);
-+		if (length) {
-+			newcommand->sg_list[0].address = TW_CPU_TO_SGL(dma_handle + sizeof(TW_Ioctl_Buf_Apache) - 1);
-+			newcommand->sg_list[0].length = cpu_to_le32(length);
-+		}
- 		newcommand->sgl_entries__lunh =
--			cpu_to_le16(TW_REQ_LUN_IN(TW_LUN_OUT(newcommand->sgl_entries__lunh), 1));
-+			cpu_to_le16(TW_REQ_LUN_IN(TW_LUN_OUT(newcommand->sgl_entries__lunh), length ? 1 : 0));
- 	} else {
- 		oldcommand = &full_command_packet->command.oldcommand;
- 		oldcommand->request_id = request_id;
++	.macro	save_and_disable_irqs_notrace, oldcpsr
++	mrs	\oldcpsr, cpsr
++	disable_irq_notrace
++	.endm
++
+ /*
+  * Restore interrupt state previously stored in a register.  We don't
+  * guarantee that this will preserve the flags.
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -40,7 +40,7 @@ loop1:
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
+ #ifdef CONFIG_PREEMPT
+-	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
+ #endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
 
 
