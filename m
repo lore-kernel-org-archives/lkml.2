@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab2CACN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 21:13:28 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:33455 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756175Ab2CACN0 (ORCPT
+	id S1757845Ab2CACXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 21:23:24 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:36895 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab2CACXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 21:13:26 -0500
-Message-ID: <4F4EDB4A.4090006@xenotime.net>
-Date: Wed, 29 Feb 2012 18:13:30 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Vincenzo Frascino <vincenzo.frascino@st.com>
-Subject: Re: linux-next: Tree for Feb 29 (spear_thermal.c)
-References: <20120229175205.d165fa5266f400bc080253a0@canb.auug.org.au>	<4F4EAD36.4070706@xenotime.net> <CAP=VYLoDfhM1gh5Ex-kwOECupk5gwHaj1Nx07ByO1u5ujGXYmA@mail.gmail.com>
-In-Reply-To: <CAP=VYLoDfhM1gh5Ex-kwOECupk5gwHaj1Nx07ByO1u5ujGXYmA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Feb 2012 21:23:23 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Zhengwang Ruan <ruan.zhengwang@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Trace: initialize variable to clear warning
+In-Reply-To: Your message of "Thu, 01 Mar 2012 10:08:56 +0800."
+             <4F4EDA38.2070803@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1330420174-20537-1-git-send-email-ruan.zhengwang@gmail.com> <1330438591.25686.214.camel@gandalf.stny.rr.com> <48875.1330555230@turing-police.cc.vt.edu> <1330564158.25686.230.camel@gandalf.stny.rr.com>
+            <4F4EDA38.2070803@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1330568597_2887P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Date: Wed, 29 Feb 2012 21:23:17 -0500
+Message-ID: <3661.1330568597@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4F4EDD97.008F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/29/2012 05:35 PM, Paul Gortmaker wrote:
+--==_Exmh_1330568597_2887P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Feb 29, 2012 at 5:56 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On 02/28/2012 10:52 PM, Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20120228:
->>>
->>> My fixes tree contains:
->>>       x86, efi: Fix unaligned access and endian issues--
->>
->>
->> on x86_64:
->>
->> drivers/built-in.o: In function `spear_thermal_exit':
->> spear_thermal.c:(.text+0x49c042): undefined reference to `clk_disable'
->> spear_thermal.c:(.text+0x49c04b): undefined reference to `clk_put'
->> drivers/built-in.o: In function `spear_thermal_probe':
->> spear_thermal.c:(.text+0x49c0e6): undefined reference to `clk_get'
->> spear_thermal.c:(.text+0x49c0fe): undefined reference to `clk_enable'
->> spear_thermal.c:(.text+0x49c196): undefined reference to `clk_put'
->> spear_thermal.c:(.text+0x49c1cc): undefined reference to `clk_disable'
-> 
-> Hi Randy,
-> 
-> I think this should go away once the spear_thermal is limited to
-> being built just for that particular ARM platform.
-> 
-> http://www.spinics.net/lists/linux-next/msg18959.html
+On Thu, 01 Mar 2012 10:08:56 +0800, Zhengwang Ruan said:
 
-Yep, thanks.
+> > /* if you get a warning here, upgrade your gcc to 4.6 */
+> >
+>=20
+> OK, I will resend this patch.
 
+For the version with Steven's suggested comment:
 
+Acked-By: Valdis Kletnieks <valdis.kletnieks=40vt.edu>
 
-> Paul.
-> --
-> 
->>
->>
->> Full randconfig file is attached.
->>
->> ---
->> ~Randy
+--==_Exmh_1330568597_2887P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
+iQIVAwUBT07dlQdmEQWDXROgAQIG5Q/+OEVFdJu9lDsV95hagzYlgJSSEqJfNSaF
+tfZ/GK9rpilHnIU3JBGf6UDx/Y3jwhX6NBoWMEQ3v9NTbklwmmfGUg2+J0jjTzF4
+FUsjbb8lY+YN0wMuyQCFnCe8qZC1vyYavNwZC29iCpnyZqARp+GjQN56U9gTZYt+
+BP/fy2pLh/TkEkPvUS6CtE6edhZzPaEWI3IaGyyerEZ0YEl+okV2h1sgH2WC/Vzo
+loHCMcvp9iNw4+e1PtLZT+m5slctj9BAEyR8GCoT+kqrR0eb1nclhftCOfX8EgLV
+U8ELBaodLPbsokaLBR4jGRNLwh2biu98UJRHSrfQqFIIATosDQa3w9Ezey9QB2Z9
+4gq3UJxen//VGc8Uk66XhZ5x8yd0jS9CLHlW/v56WaVwFZwINBZDnyt5F7Rmw9PG
+cKzwwaWiL09O+kDbie2Tz66JXt8LaligOL2Wv22p67T6WQO0cQbpPODUPv/RdLab
+h8eymmevZ7hbgfvWCf5WAi6VtZUNcgJSRypKhwQkv/QQ286F0yLdBgHMCHsPwly0
+kv5LWiugp1raNqy4Vi4ddNYECD0Ffeaz7rEFo9yXaqFHp35JP1yVdDAIr0C014od
+1qQQORs3Duy6EJPJ24o6gOP2F67Nrr6rCZ9TYgviKd402Kw1/LNA7o/wkLGHyzIo
+Ma5qC7K5y8M=
+=NfvD
+-----END PGP SIGNATURE-----
 
--- 
-~Randy
+--==_Exmh_1330568597_2887P--
+
