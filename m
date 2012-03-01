@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2CATzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:55:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753561Ab2CATzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:55:19 -0500
-Message-ID: <4F4FD412.1040902@redhat.com>
-Date: Thu, 01 Mar 2012 16:54:58 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1757298Ab2CAT7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:59:24 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45867 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757180Ab2CAT7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:59:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of olof@lixom.net designates 10.236.182.232 as permitted sender) smtp.mail=olof@lixom.net
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-References: <4F4E1F91.9080705@redhat.com> <20120229134556.GG21224@aftab> <4F4E3059.7040004@redhat.com> <20120229144054.GH21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com> <20120229171626.GJ21224@aftab> <3908561D78D1C84285E8C5FCA982C28F040193@ORSMSX104.amr.corp.intel.com> <20120301112949.GA32410@aftab> <4F4F776B.90609@redhat.com> <3908561D78D1C84285E8C5FCA982C28F040AB7@ORSMSX104.amr.corp.intel.com> <20120301184544.GA3391@aftab> <3908561D78D1C84285E8C5FCA982C28F040B18@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040B18@ORSMSX104.amr.corp.intel.com>
-X-Enigmail-Version: 1.3.5
+X-Originating-IP: [172.22.162.26]
+In-Reply-To: <1330630010-11241-2-git-send-email-alan@signal11.us>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+	<1330630010-11241-2-git-send-email-alan@signal11.us>
+Date: Thu, 1 Mar 2012 11:59:21 -0800
+Message-ID: <CAOesGMhom2ybsKKgezPKkrhH9NniZu+FMprQhibHwEX92MNtEQ@mail.gmail.com>
+Subject: Re: [PATCH 1/8] ARM: tegra: export tegra_gpio_{en,dis}able
+From: Olof Johansson <olof@lixom.net>
+To: Alan Ott <alan@signal11.us>
+Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-usb@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 01-03-2012 15:58, Luck, Tony escreveu:
->> Query from where? (And pls don't tell me DMI tables. :-))
-> 
-> Sorry - but DMI is all we've got.  We need to start using it, and have
-> people report bugs when it is wrong. Then it might get better. Linux
-> has had some success in shaming BIOS writers with:
-> 
->  printk("Your BIOS is buggy ...")
-> 
-> Our biggest problem here is the life-cycle ... by the time Linux
-> users start seeing these problems, the BIOS people have already
-> moved on to the next generation system.
-> 
-> BUT - if Linux wants to play in RAS space - we need this to be
-> right - and to do that we need SMBIOS (DMI) bugs to be regarded as
-> priority #1.
+Hi,
 
-This approach may work, if we put enough pressure on BIOS bugs. It is
-a way better for us than the way EDAC took: adding a sysfs node for some
-util to write the labels there. Yet, they did that because a lot of DMI 
-tables were wrong.
+On Thu, Mar 1, 2012 at 11:26 AM, Alan Ott <alan@signal11.us> wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+> These two functions are used in drivers that can be
+> modules, so they need to be exported.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Well, we can always have a buggy-BIOS quirk file shaming the BIOS writers,
-while providing the right values to the end users, as we got bugs reporting
-issues with certain motherboards and/or manufacturers.
+With some of the pinmux changes going in this will no longer be
+needed, but it is for now so:
 
-Regards,
-Mauro.
+Acked-by: Olof Johansson <olof@lixom.net>
