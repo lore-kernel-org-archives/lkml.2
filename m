@@ -1,156 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030250Ab2CAJvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:51:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45975 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965838Ab2CAJvp (ORCPT
+	id S1758806Ab2CAJyp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:54:45 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36598 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758791Ab2CAJyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:51:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dave.martin@linaro.org designates 10.204.153.206 as permitted sender) smtp.mail=dave.martin@linaro.org
-Date: Thu, 1 Mar 2012 09:51:39 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-Message-ID: <20120301095139.GC2034@linaro.org>
-References: <1330360043.8557.302.camel@zakaz.uk.xensource.com>
- <20120227180355.GB2023@linaro.org>
- <1330371219.10008.34.camel@dagon.hellion.org.uk>
- <20120228102040.GB2063@linaro.org>
- <1330426133.31269.70.camel@zakaz.uk.xensource.com>
- <alpine.DEB.2.00.1202281149210.23091@kaball-desktop>
- <20120229093436.GA2077@linaro.org>
- <1330509362.4270.20.camel@zakaz.uk.xensource.com>
- <20120229125826.GC2077@linaro.org>
- <alpine.DEB.2.00.1202291435400.23091@kaball-desktop>
+	Thu, 1 Mar 2012 04:54:37 -0500
+Date: Thu, 1 Mar 2012 10:54:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+cc: Greg KH <gregkh@linuxfoundation.org>, Jidong Xiao <jidong.xiao@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Can we move device drivers into user-space?
+In-Reply-To: <1330105668.23014.152.camel@groeck-laptop>
+Message-ID: <alpine.LFD.2.02.1203010932070.2742@ionos>
+References: <CAG4AFWb0iG_t+Ps2isC_DF=f3WfVKyL+H-=ybKCtRP=ZmAAUUA@mail.gmail.com>  <CAG4AFWZD8LeFkidnESCMfYFVFbjekAMJ_OZCTc2NRKJsvN3Qjw@mail.gmail.com>  <20120224153811.GA16535@kroah.com>  <1330103229.23014.130.camel@groeck-laptop>  <20120224171752.GB9485@kroah.com>
+ <1330105668.23014.152.camel@groeck-laptop>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202291435400.23091@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 02:52:38PM +0000, Stefano Stabellini wrote:
-> On Wed, 29 Feb 2012, Dave Martin wrote:
-> > On Wed, Feb 29, 2012 at 09:56:02AM +0000, Ian Campbell wrote:
-> > > On Wed, 2012-02-29 at 09:34 +0000, Dave Martin wrote:
-> > > > On Tue, Feb 28, 2012 at 12:28:29PM +0000, Stefano Stabellini wrote:
-> > > 
-> > > > > I don't have a very strong opinion on which register we should use, but
-> > > > > I would like to avoid r7 if it is already actively used by gcc.
-> > > > 
-> > > > But there is no framepointer for Thumb-2 code (?)
-> > > 
-> > > Peter Maydell suggested there was:
-> > > > r7 is (used by gcc as) the Thumb frame pointer; I don't know if this
-> > > > makes it worth avoiding in this context.
-> > > 
-> > > Sounds like it might be a gcc-ism, possibly a non-default option?
-> > > 
-> > > Anyway, I think r12 will be fine for our purposes so the point is rather
-> > > moot.
+On Fri, 24 Feb 2012, Guenter Roeck wrote:
+> On Fri, 2012-02-24 at 12:17 -0500, Greg KH wrote:
+> > On Fri, Feb 24, 2012 at 09:07:09AM -0800, Guenter Roeck wrote:
+> > > How about dropping UIO support from the kernel ? That would make more
+> > > sense to me.
 > > 
-> > Just had a chat with some tools guys -- apparently, when passing register
-> > arguments to gcc inline asms there really isn't a guarantee that those
-> > variables will be in the expected registers on entry to the inline asm.
+> > Again, UIO solves a real need, are you to tell the users of that code
+> > that somehow we are now not going to support them anymore?
 > > 
-> > If gcc reorders other function calls or other code around the inline asm
-> > (which it can do, except under certain controlled situations), then
-> > intervening code can clobber any registers in general.
+> > UIO was created when Thomas and I sat in the back of a conference
+> > presentation and saw, for the umpteenth time, a presentation by someone
+> > who was trying to write userspace drivers, and obviously didn't know
+> > what they were doing.
 > > 
-> > Or, to summarise another way, there is no way to control which register
-> > is used to pass something to an inline asm in general (often we get away
-> > with this, and there are a lot of inline asms in the kernel that assume
-> > it works, but the more you inline the more likely you are to get nasty
-> > surprises).  There is no workaroud, except on some architectures where
-> > special asm constraints allow specific individual registers to be
-> > specified for operands (i386 for example).
+> > UIO provides a framework that actually works (unlike all of the previous
+> > research papers were trying to do), and is used in real systems (laser
+> > welding robots!) every day, manufacturing things that you use and rely
+> > on.
 > > 
-> > If you need a specific register, this means that you must set up that
-> > register explicitly inside the asm if you want a guarantee that the
-> > code will work:
-> > 
-> > 	asm volatile (
-> > 		"movw	r12, %[hvc_num]\n\t"
-> > 		...
-> > 		"hvc	#0"
-> > 		:: [hvc_num] "i" (NUMBER) : "r12"
-> > 	);
-> > 
+> > You remove UIO at the risk of pissing off those robots, the choice is
+> > yours, I know I'm not going to do it...
 > 
-> OK, we can arrange the hypercall code to be like that.
-> Also with your patch series it would be "_hvc" because of the .macro,
-> right?
-
-Yes, but I would avoid making too many assumptions about the final form
-of that patch -- it looks like there's significant work to do there,
-since I made some unsafe assumptions about how the tools work...
-
-We might end up with a magic #define after all.
-
-> > This is the kind of problem which goes away when out-of-lining the
-> > hvc wrapper behind a C function interface, since the ABI then provides
-> > guarantees about how values are mershaled into and out of that code.
+> I understand the background and reasoning, but ...
 > 
-> Do you mean implementing the entire HYPERVISOR_example_op in assembly
-> and calling it from C?
-> Because I guess that gcc would still be free to mess with the registers
-> between the C function entry point and any inline assembly code.
+> I have seen UIO used for networking drivers, hwmon drivers, I2C bus
+> master drivers (with matching I2C client drivers in user-space), mfd
+> devices, and so on. I have seen existing kernel drivers re-implemented
+> as UIO drivers. I have seen UIO drivers where the kernel part of the
+> driver is larger than the entire driver written as kernel driver. I have
+> seen UIO drivers using polling instead of interrupts "because it is
+> faster than interrupts".
+> 
+> Often, those drivers are then re-written for the next board (to support
+> the same chip) because they were not written with HW-independence in
+> mind and don't support HW abstraction.
+> 
+> Yes, there may be real need for UIO in some cases, but all I have seen
+> it used for so far is what I would call abuse, resulting in maintenance
+> nightmares.
 
-gcc can arrange for the relevant things to be already in r0-r3 and the
-relevant stack slots before branching to a function just as for inline
-asm.  The only differences are that the compiler cannot choose which
-registers to use, and the branch cannot be optimised away by the compiler
-(the CPU may be able to optimise the branch away at runtime of course,
-but that's another story...)
+UIO always had a clear target: devices which are application bound and
+not related to any larger set of functonality (device class
+frameworks, communication stacks, ...)
 
-What libc appears to do is wrap each syscall in a separate function.
-This means that it's not necessary to shuffle all the arguments by
-one position when invoking the actual syscall.  (The generic "syscall"
-function does of course need to shuffle the arguments so as to
-displace the syscall number from the first argument to r7 --
-but that's hard to avoid without inlining.)
+For that kind of devices in kernel drivers are overkill and
+performance bottlenecks. The drivers which are in tree come with open
+user space access libraries and are completely sane.
 
-For example:
+We can't punish the sane users for the asinnity of other people.
 
-00090b50 <shmdt>:
-   90b50:       e52d7004        push    {r7}            ; (str r7, [sp, #-4]!)
-   90b54:       e59f7010        ldr     r7, [pc, #16]   ; 90b6c <shmdt+0x1c>
-   90b58:       ef000000        svc     0x00000000
-   90b5c:       e49d7004        pop     {r7}            ; (ldr r7, [sp], #4)
-   90b60:       e3700a01        cmn     r0, #4096       ; 0x1000
-...
+If people go there and abuse UIO for other purposes, we can't prevent
+it. We can't prevent either that people write totally crappy kernel
+drivers ...
 
-Syscalls with more than 4 args still need to load the extra ones
-from the stack, of course:
+> Given the choice, I would be quite happy to piss off some robots. Call
+> it a prejudice if you like ;).
 
-00090090 <getsockopt>:
-   90090:       e92d0090        push    {r4, r7}
-   90094:       e59d4008        ldr     r4, [sp, #8]
-   90098:       e59f7010        ldr     r7, [pc, #16]   ; 900b0 <getsockopt+0x20>
-   9009c:       ef000000        svc     0x00000000
-...
+You might become less happy when the robot welds your ear onto a car
+hood :)
 
+Thanks,
 
-I don't know whether that makes sense for a hypervisor... it partly
-depends on how many different hypercalls there are.
-
-By all means implement it both ways and measure the performance
-difference, if possible.
-
-Cheers
----Dave
+	tglx
