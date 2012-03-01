@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965447Ab2CAV5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:57:04 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35281 "EHLO
+	id S965287Ab2CAVuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:50:08 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46239 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965317Ab2CAVuM (ORCPT
+	with ESMTP id S965207Ab2CAVuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:50:12 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.208.196 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.130.138 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213925.344945355@linuxfoundation.org>
+Message-Id: <20120301213924.690173361@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:41 -0800
+Date: Thu, 01 Mar 2012 13:39:37 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nico@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 19/34] ARM: 7325/1: fix v7 boot with lockdep enabled
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 15/34] drm/radeon/kms: fix MSI re-arm on rv370+
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,57 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin@rab.in>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8e43a905dd574f54c5715d978318290ceafbe275 upstream.
+commit b7f5b7dec3d539a84734f2bcb7e53fbb1532a40b upstream.
 
-Bootup with lockdep enabled has been broken on v7 since b46c0f74657d
-("ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR").
+MSI_REARM_EN register is a write only trigger register.
+There is no need RMW when re-arming.
 
-This is because v7_setup (which is called very early during boot) calls
-v7_flush_dcache_all, and the save_and_disable_irqs added by that patch
-ends up attempting to call into lockdep C code (trace_hardirqs_off())
-when we are in no position to execute it (no stack, MMU off).
+May fix:
+https://bugs.freedesktop.org/show_bug.cgi?id=41668
 
-Fix this by using a notrace variant of save_and_disable_irqs.  The code
-already uses the notrace variant of restore_irqs.
-
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/assembler.h |    5 +++++
- arch/arm/mm/cache-v7.S           |    2 +-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/r100.c  |    4 +---
+ drivers/gpu/drm/radeon/rs600.c |    4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
---- a/arch/arm/include/asm/assembler.h
-+++ b/arch/arm/include/asm/assembler.h
-@@ -133,6 +133,11 @@
- 	disable_irq
- 	.endm
- 
-+	.macro	save_and_disable_irqs_notrace, oldcpsr
-+	mrs	\oldcpsr, cpsr
-+	disable_irq_notrace
-+	.endm
-+
- /*
-  * Restore interrupt state previously stored in a register.  We don't
-  * guarantee that this will preserve the flags.
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -40,7 +40,7 @@ loop1:
- 	cmp	r1, #2				@ see what cache we have at this level
- 	blt	skip				@ skip if no cache, or just i-cache
- #ifdef CONFIG_PREEMPT
--	save_and_disable_irqs r9		@ make cssr&csidr read atomic
-+	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
- #endif
- 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
- 	isb					@ isb to sych the new cssr&csidr
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -218,9 +218,7 @@ int r100_irq_process(struct radeon_devic
+ 			WREG32(RADEON_AIC_CNTL, msi_rearm | RS400_MSI_REARM);
+ 			break;
+ 		default:
+-			msi_rearm = RREG32(RADEON_MSI_REARM_EN) & ~RV370_MSI_REARM_EN;
+-			WREG32(RADEON_MSI_REARM_EN, msi_rearm);
+-			WREG32(RADEON_MSI_REARM_EN, msi_rearm | RV370_MSI_REARM_EN);
++			WREG32(RADEON_MSI_REARM_EN, RV370_MSI_REARM_EN);
+ 			break;
+ 		}
+ 	}
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -270,9 +270,7 @@ int rs600_irq_process(struct radeon_devi
+ 			WREG32(RADEON_BUS_CNTL, msi_rearm | RS600_MSI_REARM);
+ 			break;
+ 		default:
+-			msi_rearm = RREG32(RADEON_MSI_REARM_EN) & ~RV370_MSI_REARM_EN;
+-			WREG32(RADEON_MSI_REARM_EN, msi_rearm);
+-			WREG32(RADEON_MSI_REARM_EN, msi_rearm | RV370_MSI_REARM_EN);
++			WREG32(RADEON_MSI_REARM_EN, RV370_MSI_REARM_EN);
+ 			break;
+ 		}
+ 	}
 
 
