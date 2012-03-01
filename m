@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758777Ab2CAJbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:31:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51349 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758566Ab2CAJbv (ORCPT
+	id S1758426Ab2CAJe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:34:27 -0500
+Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:39034 "EHLO
+	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753975Ab2CAJeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:31:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.204.156.133 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
+	Thu, 1 Mar 2012 04:34:25 -0500
+Date: Thu, 1 Mar 2012 10:33:40 +0100
+From: Jesper Nilsson <jesper@jni.nu>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] cris/eth_v10: use dev_set_mac_address() instead of
+ e100_set_mac_address()
+Message-ID: <20120301093339.GG16481@jni.nu>
+References: <1330530176-24952-1-git-send-email-danny.kukawka@bisect.de>
+ <1330530176-24952-4-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-Date: Thu, 1 Mar 2012 10:31:49 +0100
-Message-ID: <CAHR064iK14qOg72B1W=8TjnN2gipdCZjRODqCCwBFey_FftW1w@mail.gmail.com>
-Subject: Re: About recovery status of patchwork.kernel.org
-From: Corentin Chary <corentin.chary@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Geunsik Lim <leemgs1@gmail.com>, Konstantin Ryabitsev <mricon@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330530176-24952-4-git-send-email-danny.kukawka@bisect.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.249.222.9
+X-Scan-Result: No virus found in message 1S32Oa-0003uv-IM.
+X-Scan-Signature: ch-smtp05.sth.basefarm.net 1S32Oa-0003uv-IM 242cbba952465fc9d07c7f2381a7ee2d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Feb 29, 2012 at 04:42:51PM +0100, Danny Kukawka wrote:
+> Use dev_set_mac_address() instead of e100_set_mac_address() directly
+> to get validation checks for free.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-Any news about patchwork.kernel.org recovery ? The hostname seems to
-point to two down servers (140.211.167.41, 140.211.167.43).
-By the way, what is (will be) the process to add a mailing list to
-patchwork ? It would be great to add platform-drivers-x86@v.k.o once
-patchwork is up and running.
+> ---
+>  drivers/net/cris/eth_v10.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 
-Thanks,
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+/^JN - Jesper Nilsson
