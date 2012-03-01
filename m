@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab2CAQ5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 11:57:30 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46708 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964779Ab2CAQ52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 11:57:28 -0500
-Date: Thu, 1 Mar 2012 16:57:26 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: .. anybody know of any filesystems that depend on the exact VFS
- 'namehash' implementation?
-Message-ID: <20120301165726.GF23916@ZenIV.linux.org.uk>
-References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
+	id S965293Ab2CAQ67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 11:58:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964779Ab2CAQ65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 11:58:57 -0500
+Date: Thu, 1 Mar 2012 17:51:53 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jamie Lokier <jamie@shareable.org>, Mike Frysinger <vapier@gentoo.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Take rcu read lock when iterating through thread
+	group
+Message-ID: <20120301165153.GA4211@redhat.com>
+References: <20120228174049.GA11136@redhat.com> <201202241112.46337.vapier@gentoo.org> <1330579259-3456-1-git-send-email-siddhesh.poyarekar@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1330579259-3456-1-git-send-email-siddhesh.poyarekar@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 03:36:09PM -0800, Linus Torvalds wrote:
-> However, doing the same thing for link_path_walk() would require that
-> we actually change the hash function we use internally in the VFS
-> layer, and while I think that shouldn't really be a problem, I worry
-> that some filesystem might actually use the hash we generate and save
-> it somewhere on disk (rather than only use it for the hashed lookup
-> itself).
+On 03/01, Siddhesh Poyarekar wrote:
+>
+> Protect the iteration through thread group with rcu_read_lock when
+> looking for tasks in the group that use the current vma as
+> stack. Thanks KOSAKI Motohiro (kosaki.motohiro@gmail.com) for pointing
+> it out.
+>
+> Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+> ---
+>  mm/memory.c |   15 +++++++++++----
+>  1 files changed, 11 insertions(+), 4 deletions(-)
 > 
-> Computing the hash one long-word at a time is trivial if we just
-> change what the hash is. Finding the terminating NUL or '/' characters
-> that involves some big constants (0x2f2f2f2f2f2f2f2f,
-> 0x0101010101010101 and 0x8080808080808080 but seems similarly fairly
-> easy. But if filesystems actually depend on our current hash
-> algorithm, the word-at-a-time model falls apart.
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 601a920..a88b764 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3915,20 +3915,27 @@ void print_vma_addr(char *prefix, unsigned long ip)
+>   * just check in the current task.
+>   */
+>  int vm_is_stack(struct task_struct *task,
+> -			      struct vm_area_struct *vma, int in_group)
+> +		struct vm_area_struct *vma, int in_group)
+>  {
+> +	int ret = 0;
+> +
+>  	if (vm_is_stack_for_task(task, vma))
+>  		return 1;
+>  
+>  	if (in_group) {
+>  		struct task_struct *t = task;
+> +		rcu_read_lock();
+>  		while_each_thread(task, t) {
 
-As long as full_name_hash() is still around, any such filesystem is welcome
-to use it for ->d_hash() and STFU.
+This is the commont mistake. rcu_read_lock() can not help unless you
+verify that ->thread_group.next still points to the rcu-protected
+memory.
 
-Note that there are places like this one (in btrfs_real_readdir())
-                        q.name = name_ptr;
-                        q.len = name_len;
-                        q.hash = full_name_hash(q.name, q.len);  
-                        tmp = d_lookup(filp->f_dentry, &q);
-and they _will_ need to be updated if we switch the default.  I'd be more
-worried about that kind of breakage, TBH, than anything leaking hash
-on disk without bothering to calculate it manually (if nothing else,
-finn_name_hash() is not endian-neutral, so any such place is buggy for
-another reason already).
+Just suppose that this task exits, then next_thread() exits too. Now
+you take rcu_read_lock() but it is too late, ->next points to nowhere.
+
+Also. In fact while_each_thread() is not safe under rcu. We are going
+to fix this, but only for the case when while_each_thread() starts at
+the thread group leader.
+
+Oleg.
+
