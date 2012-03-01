@@ -1,150 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965742Ab2CAJTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 04:19:21 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58414 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965347Ab2CAJTM (ORCPT
+	id S965311Ab2CAJRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 04:17:00 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52708 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758631Ab2CAJQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 04:19:12 -0500
+	Thu, 1 Mar 2012 04:16:54 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        hughd@google.com
-Cc: linux-kernel@vger.kernel.org,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V2] hugetlbfs: Drop taking inode i_mutex lock from hugetlbfs_read
-Date: Thu,  1 Mar 2012 14:48:50 +0530
-Message-Id: <1330593530-2022-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V2 2/9] mm: Update region function to take new data arg
+Date: Thu,  1 Mar 2012 14:46:13 +0530
+Message-Id: <1330593380-1361-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
-x-cbid: 12022923-7014-0000-0000-000000A98726
+In-Reply-To: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12022923-6102-0000-0000-000000F59854
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Taking i_mutex lock in hugetlbfs_read can result in deadlock with mmap
-as explained below
- Thread A:
-  read() on hugetlbfs
-   hugetlbfs_read() called
-    i_mutex grabbed
-     hugetlbfs_read_actor() called
-      __copy_to_user() called
-       page fault is triggered
- Thread B, sharing address space with A:
-  mmap() the same file
-   ->mmap_sem is grabbed on task_B->mm->mmap_sem
-    hugetlbfs_file_mmap() is called
-     attempt to grab ->i_mutex and block waiting for A to give it up
- Thread A:
-  pagefault handled blocked on attempt to grab task_A->mm->mmap_sem,
- which happens to be the same thing as task_B->mm->mmap_sem.  Block waiting
- for B to give it up.
+This patch adds a new data arg to region tracking functions.
+region_chg function will merge regions only if data arg match
+otherwise it will create a new region to map the range.
 
-AFAIU i_mutex lock got added to  hugetlbfs_read as per
-http://lkml.indiana.edu/hypermail/linux/kernel/0707.2/3066.html
-to take care of the race between truncate and read. This patch fix
-this by looking at page->mapping under page_lock (find_lock_page())
-to ensure; the inode didn't get truncated in the range during a
-parallel read.
-
-Ideally we can extend the patch to make sure we don't increase i_size
-in mmap. But that will break userspace, because application will now
-have to use truncate(2) to increase i_size in hugetlbfs.
-
-Based on the original patch from Hillf Danton <dhillf@gmail.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/hugetlbfs/inode.c |   25 +++++++++----------------
- 1 files changed, 9 insertions(+), 16 deletions(-)
+ include/linux/region.h |   20 ++++--
+ mm/region.c            |  177 ++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 132 insertions(+), 65 deletions(-)
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 1e85a7a..3645cd3 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -238,17 +238,10 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 	loff_t isize;
- 	ssize_t retval = 0;
+diff --git a/include/linux/region.h b/include/linux/region.h
+index a8a5b46..609e24c 100644
+--- a/include/linux/region.h
++++ b/include/linux/region.h
+@@ -16,13 +16,21 @@
+ #define _LINUX_REGION_H
  
--	mutex_lock(&inode->i_mutex);
+ struct file_region {
++	unsigned long from, to;
++	unsigned long data;
+ 	struct list_head link;
+-	long from;
+-	long to;
+ };
+ 
+-extern long region_add(struct list_head *head, long from, long to);
+-extern long region_chg(struct list_head *head, long from, long to);
+-extern long region_truncate(struct list_head *head, long end);
+-extern long region_count(struct list_head *head, long from, long to);
++extern long region_chg(struct list_head *head, unsigned long from,
++		       unsigned long to, unsigned long data);
++extern void region_add(struct list_head *head, unsigned long from,
++		       unsigned long to, unsigned long data);
++extern long region_truncate_range(struct list_head *head, unsigned long from,
++				  unsigned long end);
++static inline long region_truncate(struct list_head *head, unsigned long from)
++{
++	return region_truncate_range(head, from, ULONG_MAX);
++}
++extern long region_count(struct list_head *head, unsigned long from,
++			 unsigned long to);
+ #endif
+diff --git a/mm/region.c b/mm/region.c
+index ab59fe7..e547631 100644
+--- a/mm/region.c
++++ b/mm/region.c
+@@ -18,66 +18,46 @@
+ #include <linux/list.h>
+ #include <linux/region.h>
+ 
+-long region_add(struct list_head *head, long from, long to)
++long region_chg(struct list_head *head, unsigned long from,
++		unsigned long to, unsigned long data)
+ {
+-	struct file_region *rg, *nrg, *trg;
 -
- 	/* validate length */
- 	if (len == 0)
- 		goto out;
- 
--	isize = i_size_read(inode);
--	if (!isize)
--		goto out;
+-	/* Locate the region we are either in or before. */
+-	list_for_each_entry(rg, head, link)
+-		if (from <= rg->to)
+-			break;
 -
--	end_index = (isize - 1) >> huge_page_shift(h);
- 	for (;;) {
- 		struct page *page;
- 		unsigned long nr, ret;
-@@ -256,18 +249,21 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 
- 		/* nr is the maximum number of bytes to copy from this page */
- 		nr = huge_page_size(h);
-+		isize = i_size_read(inode);
-+		if (!isize)
-+			goto out;
-+		end_index = (isize - 1) >> huge_page_shift(h);
- 		if (index >= end_index) {
- 			if (index > end_index)
- 				goto out;
- 			nr = ((isize - 1) & ~huge_page_mask(h)) + 1;
--			if (nr <= offset) {
-+			if (nr <= offset)
- 				goto out;
--			}
- 		}
- 		nr = nr - offset;
- 
- 		/* Find the page */
--		page = find_get_page(mapping, index);
-+		page = find_lock_page(mapping, index);
- 		if (unlikely(page == NULL)) {
- 			/*
- 			 * We have a HOLE, zero out the user-buffer for the
-@@ -279,17 +275,18 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 			else
- 				ra = 0;
- 		} else {
-+			unlock_page(page);
-+
- 			/*
- 			 * We have the page, copy it to user space buffer.
- 			 */
- 			ra = hugetlbfs_read_actor(page, offset, buf, len, nr);
- 			ret = ra;
-+			page_cache_release(page);
- 		}
- 		if (ra < 0) {
- 			if (retval == 0)
- 				retval = ra;
--			if (page)
--				page_cache_release(page);
- 			goto out;
- 		}
- 
-@@ -299,16 +296,12 @@ static ssize_t hugetlbfs_read(struct file *filp, char __user *buf,
- 		index += offset >> huge_page_shift(h);
- 		offset &= ~huge_page_mask(h);
- 
--		if (page)
--			page_cache_release(page);
+-	/* Round our left edge to the current segment if it encloses us. */
+-	if (from > rg->from)
+-		from = rg->from;
 -
- 		/* short read or no more work */
- 		if ((ret != nr) || (len == 0))
+-	/* Check for and consume any regions we now overlap with. */
+-	nrg = rg;
+-	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
+-		if (&rg->link == head)
+-			break;
+-		if (rg->from > to)
+-			break;
+-
+-		/* If this area reaches higher then extend our area to
+-		 * include it completely.  If this is not the first area
+-		 * which we intend to reuse, free it. */
+-		if (rg->to > to)
+-			to = rg->to;
+-		if (rg != nrg) {
+-			list_del(&rg->link);
+-			kfree(rg);
+-		}
+-	}
+-	nrg->from = from;
+-	nrg->to = to;
+-	return 0;
+-}
+-
+-long region_chg(struct list_head *head, long from, long to)
+-{
+-	struct file_region *rg, *nrg;
+ 	long chg = 0;
++	struct file_region *rg, *nrg, *trg;
+ 
+ 	/* Locate the region we are before or in. */
+ 	list_for_each_entry(rg, head, link)
+ 		if (from <= rg->to)
  			break;
+-
+-	/* If we are below the current region then a new region is required.
++	/*
++	 * If we are below the current region then a new region is required.
+ 	 * Subtle, allocate a new region at the position but make it zero
+-	 * size such that we can guarantee to record the reservation. */
++	 * size such that we can guarantee to record the reservation.
++	 */
+ 	if (&rg->link == head || to < rg->from) {
+ 		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+ 		if (!nrg)
+ 			return -ENOMEM;
+ 		nrg->from = from;
+-		nrg->to   = from;
++		nrg->to = from;
++		nrg->data = data;
+ 		INIT_LIST_HEAD(&nrg->link);
+ 		list_add(&nrg->link, rg->link.prev);
+-
+ 		return to - from;
  	}
- out:
- 	*ppos = ((loff_t)index << huge_page_shift(h)) + offset;
--	mutex_unlock(&inode->i_mutex);
- 	return retval;
++	/*
++	 * from rg->from to rg->to
++	 */
++	if (from < rg->from && data != rg->data) {
++		/* we need to allocate a new region */
++		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++		if (!nrg)
++			return -ENOMEM;
++		nrg->from = from;
++		nrg->to = from;
++		nrg->data = data;
++		INIT_LIST_HEAD(&nrg->link);
++		list_add(&nrg->link, rg->link.prev);
++	}
+ 
+ 	/* Round our left edge to the current segment if it encloses us. */
+ 	if (from > rg->from)
+@@ -85,15 +65,28 @@ long region_chg(struct list_head *head, long from, long to)
+ 	chg = to - from;
+ 
+ 	/* Check for and consume any regions we now overlap with. */
+-	list_for_each_entry(rg, rg->link.prev, link) {
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
+ 		if (&rg->link == head)
+ 			break;
+ 		if (rg->from > to)
+ 			return chg;
+-
+-		/* We overlap with this area, if it extends further than
+-		 * us then we must extend ourselves.  Account for its
+-		 * existing reservation. */
++		/*
++		 * rg->from from rg->to to
++		 */
++		if (to > rg->to && data != rg->data) {
++			/* we need to allocate a new region */
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			if (!nrg)
++				return -ENOMEM;
++			nrg->from = rg->to;
++			nrg->to  = rg->to;
++			nrg->data = data;
++			INIT_LIST_HEAD(&nrg->link);
++			list_add(&nrg->link, &rg->link);
++		}
++		/*
++		 * update charge
++		 */
+ 		if (rg->to > to) {
+ 			chg += rg->to - to;
+ 			to = rg->to;
+@@ -103,29 +96,96 @@ long region_chg(struct list_head *head, long from, long to)
+ 	return chg;
  }
  
+-long region_truncate(struct list_head *head, long end)
++void region_add(struct list_head *head, unsigned long from,
++		unsigned long to, unsigned long data)
++{
++	struct file_region *rg, *nrg, *trg;
++
++	/* Locate the region we are before or in. */
++	list_for_each_entry(rg, head, link)
++		if (from <= rg->to)
++			break;
++
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++
++		if (rg->from > to)
++			return;
++		if (&rg->link == head)
++			return;
++
++		/*FIXME!! this can possibly delete few regions */
++		/* We need to worry only if we match data */
++		if (rg->data == data) {
++			if (from < rg->from)
++				rg->from = from;
++			if (to > rg->to) {
++				/* if we are the last entry */
++				if (rg->link.next == head) {
++					rg->to = to;
++					break;
++				} else {
++					nrg = list_entry(rg->link.next,
++							 typeof(*nrg), link);
++					rg->to = nrg->from;
++				}
++			}
++		}
++		from = rg->to;
++	}
++}
++
++long region_truncate_range(struct list_head *head, unsigned long from,
++			   unsigned long to)
+ {
+-	struct file_region *rg, *trg;
+ 	long chg = 0;
++	struct file_region *rg, *trg;
+ 
+ 	/* Locate the region we are either in or before. */
+ 	list_for_each_entry(rg, head, link)
+-		if (end <= rg->to)
++		if (from <= rg->to)
+ 			break;
+ 	if (&rg->link == head)
+ 		return 0;
+ 
+ 	/* If we are in the middle of a region then adjust it. */
+-	if (end > rg->from) {
+-		chg = rg->to - end;
+-		rg->to = end;
++	if (from > rg->from) {
++		if (to < rg->to) {
++			struct file_region *nrg;
++			/* rf->from from to rg->to */
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			/*
++			 * If we fail to allocate we return the
++			 * with the 0 charge . Later a complete
++			 * truncate will reclaim the left over space
++			 */
++			if (!nrg)
++				return 0;
++			nrg->from = to;
++			nrg->to = rg->to;
++			nrg->data = rg->data;
++			INIT_LIST_HEAD(&nrg->link);
++			list_add(&nrg->link, &rg->link);
++
++			/* Adjust the rg entry */
++			rg->to = from;
++			chg = to - from;
++			return chg;
++		}
++		chg = rg->to - from;
++		rg->to = from;
+ 		rg = list_entry(rg->link.next, typeof(*rg), link);
+ 	}
+-
+-	/* Drop any remaining regions. */
++	/* Drop any remaining regions till to */
+ 	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (rg->from >= to)
++			break;
+ 		if (&rg->link == head)
+ 			break;
++		if (rg->to > to) {
++			chg += to - rg->from;
++			rg->from = to;
++			return chg;
++		}
+ 		chg += rg->to - rg->from;
+ 		list_del(&rg->link);
+ 		kfree(rg);
+@@ -133,10 +193,10 @@ long region_truncate(struct list_head *head, long end)
+ 	return chg;
+ }
+ 
+-long region_count(struct list_head *head, long from, long to)
++long region_count(struct list_head *head, unsigned long from, unsigned long to)
+ {
+-	struct file_region *rg;
+ 	long chg = 0;
++	struct file_region *rg;
+ 
+ 	/* Locate each segment we overlap with, and count that overlap. */
+ 	list_for_each_entry(rg, head, link) {
+@@ -153,6 +213,5 @@ long region_count(struct list_head *head, long from, long to)
+ 
+ 		chg += seg_to - seg_from;
+ 	}
+-
+ 	return chg;
+ }
 -- 
 1.7.9
 
