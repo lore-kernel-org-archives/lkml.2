@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab2CAWBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:01:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39100 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405Ab2CAWBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:01:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of luiz.dentz@gmail.com designates 10.236.184.8 as permitted sender) smtp.mail=luiz.dentz@gmail.com; dkim=pass header.i=luiz.dentz@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120301.154415.1692328508436381200.davem@davemloft.net>
-References: <20120228.140558.1132853996225815681.davem@davemloft.net>
-	<4F4F641E.7000501@collabora.co.uk>
-	<1330604802.2465.43.camel@edumazet-laptop>
-	<20120301.154415.1692328508436381200.davem@davemloft.net>
-Date: Fri, 2 Mar 2012 00:01:40 +0200
-Message-ID: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, javier.martinez@collabora.co.uk,
-        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932516Ab2CAWBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:01:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755915Ab2CAWBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 17:01:51 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] memcg: avoid THP split in task migration
+Date: Thu,  1 Mar 2012 17:01:38 -0500
+Message-Id: <1330639298-10342-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1330633336-10707-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Thu, Mar 01, 2012 at 03:22:16PM -0500, Naoya Horiguchi wrote:
+> > > @@ -5219,7 +5255,13 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+> > >  	pte_t *pte;
+> > >  	spinlock_t *ptl;
+> > >
+> > > -	split_huge_page_pmd(walk->mm, pmd);
+> > > +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> > > +		if (is_target_huge_pmd_for_mc(vma, addr, *pmd, NULL))
+> > > +			mc.precharge += HPAGE_PMD_NR;
+> >
+> > Your use of HPAGE_PMD_NR looks fine, that path will be eliminated at
+> > build time if THP is off. This is the nice way to write code that is
+> > already optimal for THP=off without making special cases or #ifdefs.
+> >
+> > Other review suggests changing HPAGE_PMD_NR as BUILD_BUG, that sounds
+> > good idea too, but in this (correct) usage of HPAGE_PMD_NR it wouldn't
+> > make a difference because of the whole branch is correctly eliminated
+> > at build time. In short changing it to BUILD_BUG will simply make sure
+> > the whole pmd_trans_huge_lock == 1 branch is eliminated at build
+> > time. It looks good change too but it's orthogonal so I'd leave it for
+> > a separate patch.
+> 
+> In my trial, without changing HPAGE_PMD_NR as BUILD_BUG a build did not
+> pass with !CONFIG_TRANSPARENT_HUGEPAGE as Hillf said.
+> Evaluating HPAGE_PMD_NR seems to be prior to eliminating whole
+> pmd_trans_huge_lock == 1 branch, so I think this change is necessary.
 
-On Thu, Mar 1, 2012 at 10:44 PM, David Miller <davem@davemloft.net> wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Thu, 01 Mar 2012 04:26:42 -0800
->
->> Why adding an obscure set of IPC mechanism in network tree, and not
->> using (maybe extending) traditional IPC (Messages queues, semaphores,
->> Shared memory, pipes, futexes, ...).
->
-> I actually don't understand why there is so much resistence to using a
-> real bonafide on-the-wire protocol, and that way if you ever wanted to
-> connect dbus instances on multiple machines or log dbus transactions
-> remotely for debugging, you could just do it.
+I said the wrong thing.
+The error I experienced was just "HPAGE_PMD_NR is undefined."
+This is not related to changeing BUG() to BUILD_BUG() in already defined
+HPAGE_PMD_(SHIFT|MASK|SIZE).
+And using BUILD_BUG() to confirm elimination is good for me. 
 
-I don't think you understood the problem, we want something that scale
-for less powerful devices, why do you think Android have all the
-trouble to create binder?
-
-Besides what is really the point in having AF_UNIX if you can't use
-for what it is for?
-
-"The  AF_UNIX (also known as AF_LOCAL) socket family is used to
-communicate between processes on the same machine efficiently."
-
--- 
-Luiz Augusto von Dentz
+Sorry for confusion.
+Naoya
