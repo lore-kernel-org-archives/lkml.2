@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965715Ab2CAVvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:51:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63550 "EHLO
+	id S965769Ab2CAVvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:51:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40975 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965686Ab2CAVvC (ORCPT
+	with ESMTP id S965618Ab2CAVvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:51:02 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.240.135 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:51:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.231 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213923.522958258@linuxfoundation.org>
+Message-Id: <20120301213922.418552074@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:30 -0800
+Date: Thu, 01 Mar 2012 13:39:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nikolaus Schulz <mail@microschulz.de>
-Subject: [ 08/34] hwmon: (f75375s) Fix automatic pwm mode setting for F75373 & F75375
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Keith Packard <keithp@keithp.com>
+Subject: [ 01/34] drm/i915: no lvds quirk for AOpen MP45
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolaus Schulz <schulz@macnetix.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 09e87e5c4f9af656af2a8a3afc03487c5d9287c3 upstream.
+commit e57b6886f555ab57f40a01713304e2053efe51ec upstream.
 
-In order to enable temperature mode aka automatic mode for the F75373 and
-F75375 chips, the two FANx_MODE bits in the fan configuration register
-need be set to 01, not 10.
+According to a bug report, it doesn't have one.
 
-Signed-off-by: Nikolaus Schulz <mail@microschulz.de>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44263
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/f75375s.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/hwmon/f75375s.c
-+++ b/drivers/hwmon/f75375s.c
-@@ -311,7 +311,7 @@ static int set_pwm_enable_direct(struct
- 		fanmode  |= (3 << FAN_CTRL_MODE(nr));
- 		break;
- 	case 2: /* AUTOMATIC*/
--		fanmode  |= (2 << FAN_CTRL_MODE(nr));
-+		fanmode  |= (1 << FAN_CTRL_MODE(nr));
- 		break;
- 	case 3: /* fan speed */
- 		break;
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -892,6 +892,14 @@ static const struct dmi_system_id intel_
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++                .ident = "AOpen i45GMx-I",
++                .matches = {
++                        DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
++                        DMI_MATCH(DMI_BOARD_NAME, "i45GMx-I"),
++                },
++        },
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Aopen i945GTt-VFA",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
 
 
