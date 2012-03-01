@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab2CAUqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:46:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64167 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467Ab2CAUqX (ORCPT
+	id S932584Ab2CAUrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:47:07 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:21258 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932472Ab2CAUrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:46:23 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 5/8] ARM: tegra: work around tegra THUMB2_KERNEL bug
-Date: Thu, 1 Mar 2012 20:46:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Warren <swarren@nvidia.com>, Alan Ott <alan@signal11.us>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE861726@HQMAIL01.nvidia.com> <20120301204203.GA19274@n2100.arm.linux.org.uk>
-In-Reply-To: <20120301204203.GA19274@n2100.arm.linux.org.uk>
+	Thu, 1 Mar 2012 15:47:05 -0500
+Date: Thu, 1 Mar 2012 21:45:13 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-cifs@vger.kernel.org
+cc: samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        Steve French <sfrench@samba.org>, sfrench@us.ibm.com
+Subject: [PATCH] cifs: don't dereference potentially NULL variable in
+ match_session()
+Message-ID: <alpine.LNX.2.00.1203012143280.19443@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203012046.17768.arnd@arndb.de>
-X-Provags-ID: V02:K0:vddfHrc+YhLbmgPrsRhfp4J10+zuhZ9BcFsFmctW1y1
- IsG6DdVVENqjuh/oTpDhGETsPHb0Qov7i6gwYo8LrkSIzoKPmM
- ljFHER9L3KqU5GYlA153HxcUvZQzrEBigi/hL63rd3S2Ri8GdC
- kbJn4M8FE1vzUco7NTdWlstZl9VvGLL1E+2TgkVm2gDALABgVM
- /ZL+Xn+eAs32Y06o3HaiFi+A3kCLFI5nwO9FOdP1NT8v+Zpd6H
- U0TYjMJGIsqRyQFxYxV4gKCKYbVdGWH6JEtVMf5RI6CvKk3jY/
- 08dcUftSH+AoWcnkJ9vUDoMZcDx+GR6aUzdq5NS29L/HdBPB2X
- mCeI4WbiHFRrYyLIHok0=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 March 2012, Russell King - ARM Linux wrote:
-> On Thu, Mar 01, 2012 at 12:02:42PM -0800, Stephen Warren wrote:
-> > Alan Ott wrote at Thursday, March 01, 2012 12:27 PM:
-> > > From: Arnd Bergmann <arnd@arndb.de>
-> > > 
-> > > The tegra smp code cannot currently be built for t2, so
-> > > disable that combination for now, as a workaround.
-> > > 
-> > > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > At least in next-20120229 with the .config I'm using, everything appears
-> > to compile fine. The link step does fail, but the error messages I get
-> > don't appear to be Tegra specific:
-> > 
-> > xxx/kernel/sched/clock.c:334: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `sched_clock' defined in .text section in arch/arm/kernel/built-in.o
-> > kernel/built-in.o: In function `post_relocation':
-> > xxx/kernel/module.c:2860: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `module_finalize' defined in .text section in arch/arm/kernel/built-in.o
-> > kernel/built-in.o: In function `show_interrupts':
-> > xxx/kernel/irq/proc.c:431: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `arch_show_interrupts' defined in .text section in arch/arm/kernel/built-in.o
-> > drivers/built-in.o: In function `pci_set_master':
-> > xxx/drivers/pci/pci.c:2674: relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `pcibios_set_master' defined in .text section in arch/arm/kernel/built-in.o
-> 
-> At a guess, it suggests your kernel image is too big for the relocations
-> contained within the code.  That's something for Thumb people to look
-> into and solve.
+This bit of code:
+...
+		if (strncmp(ses->user_name,
+			    vol->username ? vol->username : "",
+			    MAX_USERNAME_SIZE))
+			return 0;
+...
+implies that 'vol->username' may be NULL.
+If it is NULL, then the 'strlen(vol->username)' that follows will
+dereference a NULL pointer.
 
-IIRC, that was not the issue I was trying to fix when I originally made the
-patch. It's quite likely that the original bug was fixed already, so I'd suggest
-we drop the patch for now and see if the problem comes back when all other
-randconfig problems have been resolved on Tegra.
+This patch should take care of that issue.
 
-	Arnd
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ fs/cifs/connect.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+ Compile tested only.
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 602f77c..2f3cf02 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2014,8 +2014,9 @@ static int match_session(struct cifs_ses *ses, struct smb_vol *vol)
+ 			    vol->username ? vol->username : "",
+ 			    MAX_USERNAME_SIZE))
+ 			return 0;
+-		if (strlen(vol->username) != 0 &&
+-		    ses->password != NULL &&
++		if (vol->username &&
++		    strlen(vol->username) != 0 &&
++		    ses->password &&
+ 		    strncmp(ses->password,
+ 			    vol->password ? vol->password : "",
+ 			    MAX_PASSWORD_SIZE))
+-- 
+1.7.9.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
