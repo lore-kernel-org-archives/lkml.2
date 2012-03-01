@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2CAVWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:22:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50582 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab2CAVWR (ORCPT
+	id S932725Ab2CAVW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:22:56 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:47091 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514Ab2CAVWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:22:17 -0500
-Date: Thu, 1 Mar 2012 13:22:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Greg Thelen <gthelen@google.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-Id: <20120301132215.71246044.akpm@linux-foundation.org>
-In-Reply-To: <20120301211551.GD13104@quack.suse.cz>
-References: <20120228140022.614718843@intel.com>
-	<20120228144747.198713792@intel.com>
-	<20120228160403.9c9fa4dc.akpm@linux-foundation.org>
-	<20120301110404.GC4385@quack.suse.cz>
-	<20120301114201.d1dcacad.akpm@linux-foundation.org>
-	<20120301211551.GD13104@quack.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Thu, 1 Mar 2012 16:22:55 -0500
+Date: Thu, 01 Mar 2012 16:21:30 -0500 (EST)
+Message-Id: <20120301.162130.2267876784560089802.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: danny.kukawka@bisect.de, eilong@broadcom.com, dkukawka@suse.de,
+        eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl, jpirko@redhat.com,
+        nhorman@tuxdriver.com, rdunlap@xenotime.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] net: validate MAC address directly in
+ dev_set_mac_address()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330624289.2609.36.camel@bwh-desktop>
+References: <1330620747-4047-1-git-send-email-danny.kukawka@bisect.de>
+	<1330620747-4047-2-git-send-email-danny.kukawka@bisect.de>
+	<1330624289.2609.36.camel@bwh-desktop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Mar 2012 13:21:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012 22:15:51 +0100
-Jan Kara <jack@suse.cz> wrote:
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Thu, 1 Mar 2012 17:51:29 +0000
 
-> On Thu 01-03-12 11:42:01, Andrew Morton wrote:
-> > On Thu, 1 Mar 2012 12:04:04 +0100
-> > Jan Kara <jack@suse.cz> wrote:
-> > 
-> > > > iirc, the way I "grabbed" the page was to actually lock it, with
-> > > > [try_]_lock_page().  And unlock it again way over within the writeback
-> > > > thread.  I forget why I did it this way, rather than get_page() or
-> > > > whatever.  Locking the page is a good way of preventing anyone else
-> > > > from futzing with it.  It also pins the inode, which perhaps meant that
-> > > > with careful management, I could avoid the igrab()/iput() horrors
-> > > > discussed above.
-> > >
-> > >   I think using get_page() might be a good way to go.
-> > 
-> > get_page() doesn't pin the inode - truncate() will still detach it
-> > from the address_space().
->   Yes, I know. And exactly because of that I'd like to use it. Flusher
-> thread would lock the page from the work item, check whether it is still
-> attached to the inode and if yes, it will proceed. Otherwise it will just
-> discard the work item because we know the page has already been written out
-> by someone else or truncated.
+> On Thu, 2012-03-01 at 17:52 +0100, Danny Kukawka wrote:
+>> Validate the given MAC address directly in dev_set_mac_address()
+>> if a .ndo_validate_addr function is available before calling
+>> the .ndo_set_mac_address function.
+>> 
+>> Changed .ndo_validate_addr to take a second parameter containing
+>> a sockaddr struct to be checked instead of the net_device dev_addr.
+>> The behaviour of .ndo_validate_addr is now: if the second parameter
+>> is NULL the net_device->dev_addr gets validate, if != NULL
+>> the given parameter/sockaddr gets validated instead.
+> [...]
+> 
+> The caller is assumed to have validated the address family, so why not
+> just pass a pointer to the hardware address (u8 *), and get rid of the
+> special case for NULL?
+> 
+> That is, dev_set_mac_address would call:
+> 	ops->ndo_validate_addr(dev, sa->sa_data);
+> and dev_open would call:
+> 	ops->ndo_validate_addr(dev, dev->dev_addr);
 
-That would work OK.  The vmscanning process won't know that its
-writeback effort failed, but it's hard to see how that could cause a
-problem.
-
+Yes, this looks a lot better.
