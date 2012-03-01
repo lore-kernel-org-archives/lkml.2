@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965706Ab2CAVw0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:52:26 -0500
+	id S965654Ab2CAVu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:50:58 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35253 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965663Ab2CAVvA (ORCPT
+	with ESMTP id S965609Ab2CAVuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:51:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.132.198 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+	Thu, 1 Mar 2012 16:50:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.74.74 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Message-Id: <20120301213923.395633823@linuxfoundation.org>
+Message-Id: <20120301213923.055148129@linuxfoundation.org>
 User-Agent: quilt/0.51-17.1
-Date: Thu, 01 Mar 2012 13:39:29 -0800
+Date: Thu, 01 Mar 2012 13:39:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Joe Perches <joe@perches.com>, Sven-Haegar Koch <haegar@sdinet.de>
-Subject: [ 07/34] printk_ratelimited(): fix uninitialized spinlock
+        alan@lxorguk.ukuu.org.uk, Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 05/34] mac80211: timeout a single frame in the rx reorder buffer
 In-Reply-To: <20120301214654.GA13231@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+From: Eliad Peller <eliad@wizery.com>
 
-commit d8521fcc5e0ad3e79bbc4231bb20a6cdc2b50164 upstream.
+commit 07ae2dfcf4f7143ce191c6436da1c33f179af0d6 upstream.
 
-ratelimit_state initialization of printk_ratelimited() seems broken.  This
-fixes it by using DEFINE_RATELIMIT_STATE() to initialize spinlock
-properly.
+The current code checks for stored_mpdu_num > 1, causing
+the reorder_timer to be triggered indefinitely, but the
+frame is never timed-out (until the next packet is received)
 
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sven-Haegar Koch <haegar@sdinet.de>
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/kernel.h |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ net/mac80211/rx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -411,14 +411,13 @@ static inline char *pack_hex_byte(char *
-  * no local ratelimit_state used in the !PRINTK case
-  */
- #ifdef CONFIG_PRINTK
--#define printk_ratelimited(fmt, ...)  ({		\
--	static struct ratelimit_state _rs = {		\
--		.interval = DEFAULT_RATELIMIT_INTERVAL, \
--		.burst = DEFAULT_RATELIMIT_BURST,       \
--	};                                              \
--							\
--	if (__ratelimit(&_rs))                          \
--		printk(fmt, ##__VA_ARGS__);		\
-+#define printk_ratelimited(fmt, ...)  ({				\
-+	static DEFINE_RATELIMIT_STATE(_rs,				\
-+				      DEFAULT_RATELIMIT_INTERVAL,	\
-+				      DEFAULT_RATELIMIT_BURST);		\
-+									\
-+	if (__ratelimit(&_rs))						\
-+		printk(fmt, ##__VA_ARGS__);				\
- })
- #else
- /* No effect, but we still get type checking even in the !PRINTK case: */
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2363,7 +2363,7 @@ static u8 ieee80211_sta_manage_reorder_b
+ 	index = seq_sub(tid_agg_rx->head_seq_num, tid_agg_rx->ssn)
+ 						% tid_agg_rx->buf_size;
+ 	if (!tid_agg_rx->reorder_buf[index] &&
+-	    tid_agg_rx->stored_mpdu_num > 1) {
++	    tid_agg_rx->stored_mpdu_num) {
+ 		/*
+ 		 * No buffers ready to be released, but check whether any
+ 		 * frames in the reorder buffer have timed out.
 
 
