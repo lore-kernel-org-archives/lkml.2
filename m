@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab2CAUnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 15:43:12 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:46726 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757875Ab2CAUnI (ORCPT
+	id S1757954Ab2CAUnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 15:43:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60037 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757801Ab2CAUnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 15:43:08 -0500
-Date: Thu, 01 Mar 2012 15:42:58 -0500 (EST)
-Message-Id: <20120301.154258.1696335721519362903.davem@davemloft.net>
-To: javier.martinez@collabora.co.uk
-Cc: rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
-        eric.dumazet@gmail.com, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F4F641E.7000501@collabora.co.uk>
-References: <1330426059.2139.21.camel@megeve>
-	<20120228.140558.1132853996225815681.davem@davemloft.net>
-	<4F4F641E.7000501@collabora.co.uk>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 1 Mar 2012 15:43:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 6/8] ARM: tegra: USB_ULPI needs USB
+Date: Thu, 1 Mar 2012 20:42:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+References: <1330630010-11241-1-git-send-email-alan@signal11.us> <201203012025.53560.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF17BE861741@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE861741@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Mar 2012 12:43:01 -0800 (PST)
+Message-Id: <201203012042.51936.arnd@arndb.de>
+X-Provags-ID: V02:K0:9E/ZJK4lUxYz0wYKG1De6CjaYmuQJYyLPrP7oHVu9fs
+ n9uR0gVm+7p7TtRCBpoJ++uxbgHOFrbjCrGeoPzspAZRfPxyxG
+ Kw+0n/Q6Z8mbkWzmy/wFL0eUTLDwD7ligm+INBuuUh1sTXagNo
+ LDymInrnT5rO/xTx0SWxTuTolmu2ePiEb6Fj0fRg08uM7Jcqi+
+ VNAkwb+BBKLAhh7V4nU82J2mWVZjO+zBhmWgKnCWevc9qhceez
+ M3/Dd3uWzb8lGJLt2qMVgfBIwV89zQNmd2KWv8U06k/ZSM+u5Z
+ z8CIdKwcGfs2uvZImP6WJW+k4Fc6FG2cLQMq3IHvGkcCK1emFI
+ Q0HcMhxMc6D2siOxokxg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Date: Thu, 01 Mar 2012 12:57:18 +0100
+On Thursday 01 March 2012, Stephen Warren wrote:
+> > Or maybe just don't select
+> > USB_ULPI to start with and put it into the defconfig instead.
+> 
+> Perhaps USB_EHCI_TEGRA should depend on USB, and select USB_EHCI?
 
-> Does this makes more sense to you?
+I think it should, but that is a different issue. All EHCI bus
+glues currently depend on USB_EHCI_HCD instead of selecting it.
 
-No, creating an entire new socket family for one user doesn't make
-any sense.
+Changing that would likely break a number of other things that
+have come to depend on the current behavior.
+
+	Arnd
