@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab2CAT3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:29:53 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64617 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab2CAT1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:27:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.116.73 as permitted sender) smtp.mail=alan@signal11.us
+	id S1756036Ab2CATbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:31:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42534 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141Ab2CATbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 14:31:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="116652969"
+Message-ID: <4F4FCE18.4050400@linux.intel.com>
+Date: Thu, 01 Mar 2012 11:29:28 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-From: Alan Ott <alan@signal11.us>
-To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
+To: Feng Tang <feng.tang@intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/8] ARM: tegra: export tegra_gpio_{en,dis}able
-Date: Thu,  1 Mar 2012 14:26:43 -0500
-Message-Id: <1330630010-11241-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1330630010-11241-1-git-send-email-alan@signal11.us>
-References: <1330630010-11241-1-git-send-email-alan@signal11.us>
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 0/4 V2] pch_uart: Cleanups, board quirks, and user uartclk
+ parameter
+References: <cover.1330539597.git.dvhart@linux.intel.com> <CANKRQnhFVJAUHAg0qTPFJ8L0L_+-_q4ZtfOnV0wSR1Xa6Mn8UQ@mail.gmail.com> <4F4EC73E.40209@linux.intel.com> <CANKRQnjQ4WB-ExmM5G5diw1LyA_HwySzkNyhKmf4fDLn0ZO7wg@mail.gmail.com> <4F4ECCE8.90207@linux.intel.com> <20120301024028.GA6612@feng-i7>
+In-Reply-To: <20120301024028.GA6612@feng-i7>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
 
-These two functions are used in drivers that can be
-modules, so they need to be exported.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/gpio/gpio-tegra.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+On 02/29/2012 06:40 PM, Feng Tang wrote:
+> On Wed, Feb 29, 2012 at 05:12:08PM -0800, Darren Hart wrote:
+>>
+>>
+>> On 02/29/2012 05:06 PM, Tomoya MORINAGA wrote:
+>>> 2012年3月1日9:47 Darren Hart <dvhart@linux.intel.com>:
+>>>> how do we force the
+>>>> 192MHz clock setting BEFORE the pch_phub code runs?
+>>>
+>>> To realize your requirement,
+>>> I think that set by BIOS is only way.
+>>
+>> Perhaps a pch_phub.bios_uartclk parameter could be used for setting up
+>> the initial console and once the phub driver is loaded, it can make the
+>> necessary changes and fix things up in the uart port? This would add a
+>> binding between the pch_uart and pch_phub code.
+>>
+>> Thoughts?
+> 
+> To satisfy the early console, one way may be add a x86_init_ops for all
+> Tunnel Creek compatible platform like what Moorestown/Medfield have done,
+> and insert the uart clk setting work into one of the early init function. 
+> 
 
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index bdc2937..96662cc 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -107,11 +107,13 @@ void tegra_gpio_enable(int gpio)
- {
- 	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 1);
- }
-+EXPORT_SYMBOL_GPL(tegra_gpio_enable);
- 
- void tegra_gpio_disable(int gpio)
- {
- 	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 0);
- }
-+EXPORT_SYMBOL_GPL(tegra_gpio_disable);
- 
- static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
- {
+I believe this is inline with what Alan was recommending in his response
+to the V1 patch series, and it sounds like a reasonable next step.
+
 -- 
-1.7.0.4
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
