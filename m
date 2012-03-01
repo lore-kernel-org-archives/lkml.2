@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab2CABW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:22:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45736 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab2CABW2 (ORCPT
+	id S1030452Ab2CAB0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:26:11 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:48282 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756388Ab2CAB0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:22:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.212.3 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
-Date: Wed, 29 Feb 2012 17:22:25 -0800 (PST)
+	Wed, 29 Feb 2012 20:26:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.228.41 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
+Date: Wed, 29 Feb 2012 17:26:07 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: =?UTF-8?Q?Pawe=C5=82_Sikora?= <pawel.sikora@agmk.net>
-cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [3.2.2] oom + no-killable-processes.
-In-Reply-To: <1888499.Wt33pfNhUs@vmx>
-Message-ID: <alpine.DEB.2.00.1202291719400.17729@chino.kir.corp.google.com>
-References: <3905756.9FRF7uBtcE@vmx> <20120229200910.GB31348@kroah.com> <1888499.Wt33pfNhUs@vmx>
+To: Rafael Aquini <aquini@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH] mm: SLAB Out-of-memory diagnostics
+In-Reply-To: <20120229032715.GA23758@t510.redhat.com>
+Message-ID: <alpine.DEB.2.00.1202291724100.17729@chino.kir.corp.google.com>
+References: <20120229032715.GA23758@t510.redhat.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-997887433-1330564946=:17729"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 29 Feb 2012, Rafael Aquini wrote:
 
---397155492-997887433-1330564946=:17729
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 29 Feb 2012, Paweł Sikora wrote:
-
-> > > Hi all,
-> > > 
-> > > i've found on my 8-core opterons following oops (oom+nokillable): http://imgbin.org/index.php?page=image&id=6945
-> > > usualy the kernel just kills processes from userspace but this time something has gone wrong...
-> > > sysrq was dead, so no more stacktraces :/
-> > 
-> > Is this something new with 3.2.2?
+> Following the example at mm/slub.c, add out-of-memory diagnostics to the SLAB
+> allocator to help on debugging OOM conditions. This patch also adds a new
+> sysctl, 'oom_dump_slabs_forced', that overrides the effect of __GFP_NOWARN page
+> allocation flag and forces the kernel to report every slab allocation failure.
 > 
-> i see such nokillable oom first time. the 3.1.x stable has been working for few months.
-> as you can see on the oops timestamp the 3.2.2 failed after ~27.5d so it isn't an immediate
-> crash which can be easily bisected :/ currently i'm stressing the 3.2.7...
+> An example print out looks like this:
 > 
+>   <snip page allocator out-of-memory message>
+>   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+>      cache: bio-0, object size: 192, order: 0
+>      node0: slabs: 3/3, objs: 60/60, free: 0
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
-The trace you posted isn't very useful because all the important 
-information has already scrolled off the screen.
-
-This only happens if all eligible threads are oom disabled.  If you're not 
-using cpusets or mempolicies or the memory controller, check 
-/proc/pid/oom_score for all pids.  Those with a score of '0' are 
-unkillable.  If there are threads that should be eligible, check 
-/proc/pid/oom_score_adj for that pid.  If it is -1000, then userspace has 
-probably disabled oom killing for it unnecessarily.
-
-If you're using cpusets or the memory controller, then the system will 
-panic if the oom occurred because all cpuset mems or the memcg limit is 
-exhausted and there are also no threads in that cpuset or memcg that are 
-killable (same process above).
---397155492-997887433-1330564946=:17729--
+I like it, except for the addition of the sysctl.  __GFP_NOWARN is used 
+for a reason, usually because whatever is allocating memory can gracefully 
+handle a failure and should not be emitted to the kernel log under any 
+circumstances.
