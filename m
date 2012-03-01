@@ -1,86 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab2CATZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 14:25:07 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23013 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab2CATZD (ORCPT
+	id S1756676Ab2CAT0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 14:26:37 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:32779 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab2CAT0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 14:25:03 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-usb@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [RFC PATCH 2/3] usb, PCI: remove disable/enable device with non-xhci quirk
-Date: Thu,  1 Mar 2012 11:24:02 -0800
-Message-Id: <1330629843-6027-2-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1330629843-6027-1-git-send-email-yinghai@kernel.org>
-References: <1330629843-6027-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4F4FCCEE.0098,ss=1,re=0.000,fgs=0
+	Thu, 1 Mar 2012 14:26:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of daniel.vetter@ffwll.ch designates 10.216.134.30 as permitted sender) smtp.mail=daniel.vetter@ffwll.ch; dkim=pass header.i=daniel.vetter@ffwll.ch
+MIME-Version: 1.0
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH] mm: extend prefault helpers to fault in more than PAGE_SIZE
+Date: Thu,  1 Mar 2012 20:22:59 +0100
+Message-Id: <1330629779-1449-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <20120229153216.8c3ae31d.akpm@linux-foundation.org>
+References: <20120229153216.8c3ae31d.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-| commit cab928ee1f221c9cc48d6615070fefe2e444384a
-|    USB: Fix handoff when BIOS disables host PCI device.
+drm/i915 wants to read/write more than one page in its fastpath
+and hence needs to prefault more than PAGE_SIZE bytes.
 
-mention only need to do disable/enable for xhci controller.
+Add new functions in filemap.h to make that possible.
 
-So just remove that for non-xhci controller and restore old behavior for them.
+Also kill a copy&pasted spurious space in both functions while at it.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+v2: As suggested by Andrew Morton, add a multipage parameter to both
+functions to avoid the additional branch for the pagemap.c hotpath.
+My gcc 4.6 here seems to dtrt and indeed reap these branches where not
+needed.
 
+v3: Becaus I couldn't find a way around adding a uaddr += PAGE_SIZE to
+the filemap.c hotpaths (that the compiler couldn't remove again),
+let's go with separate new functions for the multipage use-case.
+
+Cc: linux-mm@kvack.org
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- drivers/usb/host/pci-quirks.c |   18 ------------------
- 1 file changed, 18 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c            |    6 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
+ include/linux/pagemap.h                    |   62 +++++++++++++++++++++++++++-
+ 3 files changed, 64 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/drivers/usb/host/pci-quirks.c
-===================================================================
---- linux-2.6.orig/drivers/usb/host/pci-quirks.c
-+++ linux-2.6/drivers/usb/host/pci-quirks.c
-@@ -889,13 +889,7 @@ static void __devinit quirk_usb_early_ha
- 	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
- 		return;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 544e528..3e631fc 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -436,7 +436,7 @@ i915_gem_shmem_pread(struct drm_device *dev,
+ 		mutex_unlock(&dev->struct_mutex);
  
--	if (pci_enable_device(pdev) < 0) {
--		dev_warn(&pdev->dev, "Can't enable PCI device, "
--				"BIOS handoff failed.\n");
--		return;
--	}
- 	quirk_usb_handoff_uhci(pdev);
--	pci_disable_device(pdev);
- }
- DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_SERIAL_USB_UHCI, 0, quirk_usb_early_handoff_uhci);
-@@ -908,13 +902,7 @@ static void __devinit quirk_usb_early_ha
- 	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
- 		return;
+ 		if (!prefaulted) {
+-			ret = fault_in_pages_writeable(user_data, remain);
++			ret = fault_in_multipages_writeable(user_data, remain);
+ 			/* Userspace is tricking us, but we've already clobbered
+ 			 * its pages with the prefault and promised to write the
+ 			 * data up to the first fault. Hence ignore any errors
+@@ -822,8 +822,8 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
+ 		       args->size))
+ 		return -EFAULT;
  
--	if (pci_enable_device(pdev) < 0) {
--		dev_warn(&pdev->dev, "Can't enable PCI device, "
--				"BIOS handoff failed.\n");
--		return;
--	}
- 	quirk_usb_handoff_ohci(pdev);
--	pci_disable_device(pdev);
- }
- DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_SERIAL_USB_OHCI, 0, quirk_usb_early_handoff_ohci);
-@@ -924,13 +912,7 @@ static void __devinit quirk_usb_early_ha
- 	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
- 		return;
+-	ret = fault_in_pages_readable((char __user *)(uintptr_t)args->data_ptr,
+-				      args->size);
++	ret = fault_in_multipages_readable((char __user *)(uintptr_t)args->data_ptr,
++					   args->size);
+ 	if (ret)
+ 		return -EFAULT;
  
--	if (pci_enable_device(pdev) < 0) {
--		dev_warn(&pdev->dev, "Can't enable PCI device, "
--				"BIOS handoff failed.\n");
--		return;
--	}
- 	quirk_usb_handoff_ehci(pdev);
--	pci_disable_device(pdev);
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index 81687af..ef87f52 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -955,7 +955,7 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		if (!access_ok(VERIFY_WRITE, ptr, length))
+ 			return -EFAULT;
+ 
+-		if (fault_in_pages_readable(ptr, length))
++		if (fault_in_multipages_readable(ptr, length))
+ 			return -EFAULT;
+ 	}
+ 
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index cfaaa69..0a91375 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -426,7 +426,7 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
+ 		 */
+ 		if (((unsigned long)uaddr & PAGE_MASK) !=
+ 				((unsigned long)end & PAGE_MASK))
+-		 	ret = __put_user(0, end);
++			ret = __put_user(0, end);
+ 	}
+ 	return ret;
  }
- DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
- 		PCI_CLASS_SERIAL_USB_EHCI, 0, quirk_usb_early_handoff_ehci);
+@@ -445,13 +445,71 @@ static inline int fault_in_pages_readable(const char __user *uaddr, int size)
+ 
+ 		if (((unsigned long)uaddr & PAGE_MASK) !=
+ 				((unsigned long)end & PAGE_MASK)) {
+-		 	ret = __get_user(c, end);
++			ret = __get_user(c, end);
+ 			(void)c;
+ 		}
+ 	}
+ 	return ret;
+ }
+ 
++/* Multipage variants of the above prefault helpers, useful if more than
++ * PAGE_SIZE of date needs to be prefaulted. These are separate from the above
++ * functions (which only handle up to PAGE_SIZE) to avoid clobbering the
++ * filemap.c hotpaths. */
++static inline int fault_in_multipages_writeable(char __user *uaddr, int size)
++{
++	int ret;
++	const char __user *end = uaddr + size - 1;
++
++	if (unlikely(size == 0))
++		return 0;
++
++	/*
++	 * Writing zeroes into userspace here is OK, because we know that if
++	 * the zero gets there, we'll be overwriting it.
++	 */
++	while (uaddr <= end) {
++		ret = __put_user(0, uaddr);
++		if (ret != 0)
++			return ret;
++		uaddr += PAGE_SIZE;
++	}
++
++	/* Check whether the range spilled into the next page. */
++	if (((unsigned long)uaddr & PAGE_MASK) ==
++			((unsigned long)end & PAGE_MASK))
++		ret = __put_user(0, end);
++
++	return ret;
++}
++
++static inline int fault_in_multipages_readable(const char __user *uaddr,
++					       int size)
++{
++	volatile char c;
++	int ret;
++	const char __user *end = uaddr + size - 1;
++
++	if (unlikely(size == 0))
++		return 0;
++
++	while (uaddr <= end) {
++		ret = __get_user(c, uaddr);
++		if (ret != 0)
++			return ret;
++		uaddr += PAGE_SIZE;
++	}
++
++	/* Check whether the range spilled into the next page. */
++	if (((unsigned long)uaddr & PAGE_MASK) ==
++			((unsigned long)end & PAGE_MASK)) {
++		ret = __get_user(c, end);
++		(void)c;
++	}
++
++	return ret;
++}
++
+ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+-- 
+1.7.7.6
+
