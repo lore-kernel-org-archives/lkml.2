@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab2CAWKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 17:10:25 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:55824 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758096Ab2CAWKV (ORCPT
+	id S965229Ab2CAWYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 17:24:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33232 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758075Ab2CAWYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 17:10:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 0/6] Remove tty_lock from the console drivers
-Date: Thu, 1 Mar 2012 22:10:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-References: <20120301194831.11322.38295.stgit@bob.linux.org.uk>
-In-Reply-To: <20120301194831.11322.38295.stgit@bob.linux.org.uk>
+	Thu, 1 Mar 2012 17:24:36 -0500
+Message-ID: <4F4FF712.2030400@windriver.com>
+Date: Thu, 1 Mar 2012 16:24:18 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Andrei Warkentin <awarkentin@vmware.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andrei Warkentin <andreiw@vmware.com>,
+        <kgdb-bugreport@lists.sourceforge.net>, Matt Mackall <mpm@selenic.com>,
+        Andrei Warkentin <andrey.warkentin@gmail.com>
+Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+References: <1191723499.1820816.1330635848166.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1191723499.1820816.1330635848166.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203012210.19222.arnd@arndb.de>
-X-Provags-ID: V02:K0:szAu4koYP6HGzYC5KSIHuyRsDemRUN1PeHpVmMFzGCo
- FzyE2vmwGyzYoWCYUOUNyhBhu5NGtZPqP2/n/dtV1V/ogxletB
- Lh0vv9SvK6MyUtMYjbwtbxvvAyZDB/khZmxCGS0OH3AjNgDPz2
- 37sGbhfdohP5T+5EYr8KFX5V/kS0MfQc1gNu3x1d/zU36cCgmN
- cXfWr7OnzP2M34QiDtAjXSzJWnkpAa4ScTZUh0E5biaDtlnZ0p
- GPXeiIXhO+DvVsf7ZOhXvXl9nYQkcX/4jFYL06JCZktOowdtWD
- kgR+6qIZy8Ioh5CBcqk5W+pZNndsMYpdmeyywRpfFPNvcFA7NB
- ImklGjk5eGCmi5NhvmOU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 March 2012, Alan Cox wrote:
-> 
-> This needs a fair bit of testing and a bit of review wouldn't go amiss, but
-> it does drive the tty_lock() mess out of the console and correct chunks of
-> console locking in the process.
+On 03/01/2012 03:04 PM, Andrei Warkentin wrote:
+> ----- Original Message -----
+>> From: "Andrei Warkentin" <awarkentin@vmware.com>
+>> To: "Jason Wessel" <jason.wessel@windriver.com>
+>> Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "Andrei Warkentin" <andreiw@vmware.com>,
+>> kgdb-bugreport@lists.sourceforge.net, "Matt Mackall" <mpm@selenic.com>, "Andrei Warkentin"
+>> <andrey.warkentin@gmail.com>
+>> Sent: Tuesday, February 28, 2012 12:43:52 PM
+>> Subject: Re: [PATCHv3 1/3] NETPOLL: Extend rx_hook support.
+>>
+>>> All that netpoll_poll() did was to call netpoll_poll_dev().  I have
+>>> not yet looked at the differences between kgdboe and the netkdb
+>>> code
+>>> you proposed but I would have suspected it also falls victim to the
+>>> ethernet preemption problem which prevented kgdboe from ever being
+>>> considered for a mainline merge.  Certainly there are ways to fix
+>>> this
+>>> problem but most involved changes to scheduling, core net code, or
+>>> substantial driver specific changes.
+>>>
+>> I see, I read up on the issues w.r.t. preemption. Could this be
+>> worked
+>> around by modifiying affected drivers to bypass locking if they are
+>> used in KDB context? Make some accessor netdev-specific lock/unlocks
+>> that won't do anything if running in KDB context.
+>>
+>>
+> By the way, is there a good way to repro the preemption case? Hopefully this doesn't
+> involve some crazy hardware...
 
-I've spent an hour looking at the patches and trying to understand the code
-paths you touch.  The use of console_lock for more stuff than it's currently
-used for is slightly worrying, mostly because it's still an old-style
-semaphore and not covered by lockdep because of that, which might make testing
-harder, but it also seems to be the logical thing to do as you write.
 
-Other than that and the VT_WAITEVENT issue that Jiri pointed out, nothing
-else caught my eye, it all looks good.
+I have several cases which will usually hang the machine fairly quickly, but they all involve using gdb and a target using SMP.  Most often it is as simple as this:
 
-	Arnd
+* Use an SMP system with with at least 2 cores
+* Start two threads rapidly running some processes
+     while [ 1 ] ; do date > /dev/null ; done &
+     while [ 1 ] ; do date > /dev/null ; done &
+* Connect with gdb to kgdb and set a breakpoint at do_fork
+   Now do "c"
+   Now do "c 1000"
+
+Generally the system will hang long before you get 1000 breakpoints hit and it will be a condition where there is a lock needed to create an skb, or the ethernet driver is preempted or some part of the network stack is preempted (or holding a lock) on the non master cpu.
+
+There is another condition that is hard to catch that involves a task migrating from one cpu to the next, but we'll stick to the simple test case I described above for now.
+
+I did have a question, because it seems you were using qemu / kvm.   I have a number of test cases that use kvm, but the netkkgdb does not seem to work with the nc.  My question is how am I supposed to actually use the netkgdb?
+
+Here is what I observe on the target system:
+
+insmod netkgdb.ko netkgdb=@/,@10.0.2.2/
+echo g > /proc/sysrq-trigger
+
+On my host system:
+nc.traditional -l -u -p 7777
+
+I will type help, and then the netkgdb is toast.  It doesn't seem to respond anymore.
+
+Jason.
