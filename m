@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030486Ab2CAB0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Feb 2012 20:26:40 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43881 "EHLO
+	id S1030448Ab2CAB1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Feb 2012 20:27:36 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55821 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030457Ab2CAB0h (ORCPT
+	with ESMTP id S1756233Ab2CAB1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Feb 2012 20:26:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.130.72 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
-Message-ID: <1330565187.5373.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: Kill max8997_get_rid function
+	Wed, 29 Feb 2012 20:27:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.229.5 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330565249.5373.2.camel@phoenix>
+Subject: [PATCH 2/2] regulator: Kill max8998_get_ldo function
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 01 Mar 2012 09:26:27 +0800
+Date: Thu, 01 Mar 2012 09:27:29 +0800
+In-Reply-To: <1330565187.5373.1.camel@phoenix>
+References: <1330565187.5373.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
@@ -28,129 +30,67 @@ Use rdev_get_id() directly.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/regulator/max8997.c |   29 ++++++++++++-----------------
- 1 files changed, 12 insertions(+), 17 deletions(-)
+ drivers/regulator/max8998.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index bb7cd9d..9657929 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -130,15 +130,10 @@ static const struct voltage_map_desc *reg_voltage_map[] = {
- 	[MAX8997_CHARGER_TOPOFF] = &topoff_current_map_desc,
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 2d38c24..634f257 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -112,16 +112,11 @@ static const struct voltage_map_desc *ldo_voltage_map[] = {
+ 	&buck4_voltage_map_desc,	/* BUCK4 */
  };
  
--static inline int max8997_get_rid(struct regulator_dev *rdev)
+-static inline int max8998_get_ldo(struct regulator_dev *rdev)
 -{
 -	return rdev_get_id(rdev);
 -}
 -
- static int max8997_list_voltage_safeout(struct regulator_dev *rdev,
- 		unsigned int selector)
- {
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 
- 	if (rid == MAX8997_ESAFEOUT1 || rid == MAX8997_ESAFEOUT2) {
- 		switch (selector) {
-@@ -161,7 +156,7 @@ static int max8997_list_voltage_safeout(struct regulator_dev *rdev,
- static int max8997_list_voltage_charger_cv(struct regulator_dev *rdev,
- 		unsigned int selector)
- {
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 
- 	if (rid != MAX8997_CHARGER_CV)
- 		goto err;
-@@ -184,7 +179,7 @@ static int max8997_list_voltage(struct regulator_dev *rdev,
- 		unsigned int selector)
+ static int max8998_list_voltage(struct regulator_dev *rdev,
+ 				unsigned int selector)
  {
  	const struct voltage_map_desc *desc;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
+-	int ldo = max8998_get_ldo(rdev);
++	int ldo = rdev_get_id(rdev);
  	int val;
  
- 	if (rid >= ARRAY_SIZE(reg_voltage_map) ||
-@@ -205,7 +200,7 @@ static int max8997_list_voltage(struct regulator_dev *rdev,
- static int max8997_get_enable_register(struct regulator_dev *rdev,
- 		int *reg, int *mask, int *pattern)
+ 	if (ldo >= ARRAY_SIZE(ldo_voltage_map))
+@@ -141,7 +136,7 @@ static int max8998_list_voltage(struct regulator_dev *rdev,
+ static int max8998_get_enable_register(struct regulator_dev *rdev,
+ 					int *reg, int *shift)
  {
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
+-	int ldo = max8998_get_ldo(rdev);
++	int ldo = rdev_get_id(rdev);
  
- 	switch (rid) {
- 	case MAX8997_LDO1 ... MAX8997_LDO21:
-@@ -325,7 +320,7 @@ static int max8997_reg_disable(struct regulator_dev *rdev)
- static int max8997_get_voltage_register(struct regulator_dev *rdev,
- 		int *_reg, int *_shift, int *_mask)
+ 	switch (ldo) {
+ 	case MAX8998_LDO2 ... MAX8998_LDO5:
+@@ -222,7 +217,7 @@ static int max8998_ldo_disable(struct regulator_dev *rdev)
+ static int max8998_get_voltage_register(struct regulator_dev *rdev,
+ 				int *_reg, int *_shift, int *_mask)
  {
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	int reg, shift = 0, mask = 0x3f;
+-	int ldo = max8998_get_ldo(rdev);
++	int ldo = rdev_get_id(rdev);
+ 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
+ 	int reg, shift = 0, mask = 0xff;
  
- 	switch (rid) {
-@@ -386,7 +381,7 @@ static int max8997_get_voltage(struct regulator_dev *rdev)
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int reg, shift, mask, ret;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	u8 val;
- 
- 	ret = max8997_get_voltage_register(rdev, &reg, &shift, &mask);
-@@ -446,7 +441,7 @@ static int max8997_set_voltage_charger_cv(struct regulator_dev *rdev,
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	int lb, ub;
- 	int reg, shift = 0, mask, ret = 0;
- 	u8 val = 0x0;
-@@ -503,7 +498,7 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
- 	struct i2c_client *i2c = max8997->iodev->i2c;
+@@ -310,7 +305,7 @@ static int max8998_set_voltage_ldo(struct regulator_dev *rdev,
+ 	struct i2c_client *i2c = max8998->iodev->i2c;
  	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
  	const struct voltage_map_desc *desc;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	int reg, shift = 0, mask, ret;
- 	int i;
- 	u8 org;
-@@ -564,7 +559,7 @@ static int max8997_assess_side_effect(struct regulator_dev *rdev,
- 		u8 new_val, int *best)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	u8 *buckx_val[3];
- 	bool buckx_gpiodvs[3];
- 	int side_effect[8];
-@@ -641,7 +636,7 @@ static int max8997_set_voltage_buck(struct regulator_dev *rdev,
- 		int min_uV, int max_uV, unsigned *selector)
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
- 	const struct voltage_map_desc *desc;
- 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
- 	bool gpio_dvs_mode = false;
-@@ -724,7 +719,7 @@ static int max8997_set_voltage_safeout(struct regulator_dev *rdev,
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
+-	int ldo = max8998_get_ldo(rdev);
++	int ldo = rdev_get_id(rdev);
  	int reg, shift = 0, mask, ret;
  	int i = 0;
- 	u8 val;
-@@ -766,7 +761,7 @@ static int max8997_reg_disable_suspend(struct regulator_dev *rdev)
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
- 	int ret, reg, mask, pattern;
--	int rid = max8997_get_rid(rdev);
-+	int rid = rdev_get_id(rdev);
  
- 	ret = max8997_get_enable_register(rdev, &reg, &mask, &pattern);
- 	if (ret)
+@@ -362,7 +357,7 @@ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
+ 	struct i2c_client *i2c = max8998->iodev->i2c;
+ 	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 	const struct voltage_map_desc *desc;
+-	int buck = max8998_get_ldo(rdev);
++	int buck = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask, ret;
+ 	int difference = 0, i = 0, j = 0, previous_vol = 0;
+ 	u8 val = 0;
 -- 
 1.7.5.4
 
