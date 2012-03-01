@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab2CASPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 13:15:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58959 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab2CASPw convert rfc822-to-8bit (ORCPT
+	id S1755847Ab2CASSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 13:18:36 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:41438
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753229Ab2CASSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 13:15:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="116624879"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Topic: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Thread-Index: AQHM9jOzRSobI8iWIk6i7fpsFGO9fZZUW7aAgAAO6gCAAAUXgIAACkUA//+aNaCAAJFAAP//fIVQgAG094CAAB6wgP//ywVw
-Date: Thu, 1 Mar 2012 18:15:46 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F040AB7@ORSMSX104.amr.corp.intel.com>
-References: <1330445487-15020-1-git-send-email-bp@amd64.org>
- <1330445487-15020-2-git-send-email-bp@amd64.org>
- <4F4E1F91.9080705@redhat.com> <20120229134556.GG21224@aftab>
- <4F4E3059.7040004@redhat.com> <20120229144054.GH21224@aftab>
- <3908561D78D1C84285E8C5FCA982C28F040115@ORSMSX104.amr.corp.intel.com>
- <20120229171626.GJ21224@aftab>
- <3908561D78D1C84285E8C5FCA982C28F040193@ORSMSX104.amr.corp.intel.com>
- <20120301112949.GA32410@aftab> <4F4F776B.90609@redhat.com>
-In-Reply-To: <4F4F776B.90609@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Mar 2012 13:18:35 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzzz2fh668h839h93fh)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F4FBD65.7020006@am.sony.com>
+Date: Thu, 1 Mar 2012 10:18:13 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Questions about ptrace on a dying process
+References: <4F4E6915.1010209@am.sony.com> <m2mx81pi7x.fsf@firstfloor.org> <4F4E8E6A.2020601@am.sony.com> <201203010812.54769.vda.linux@googlemail.com>
+In-Reply-To: <201203010812.54769.vda.linux@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On all the above, the socket label starts on 1, but I bet we'll find cases
-> where it start from 0.
+On 02/29/2012 11:12 PM, Denys Vlasenko wrote:
+> On Wednesday 29 February 2012 21:45, Tim Bird wrote:
+>> This is on embedded systems, where the dump is not saved.  The dump
+>> is available via stdin to the core pipe handler, but it would be
+>> kind of a pain to wrapper that for random access, which is needed
+>> for stuff like stack unwinding.
+> 
+> Stack unwinding only requires the stack data and knowledge
+> of the mapped binary and library files. You can parse coredump's ELF header,
+> and skip all sizable data segments which you won't need anyway.
+> 
+> I estimate that usually you will need to save only ~150k of data
+> in order to produce a stacktrace, and even then,
+> only because Linux pre-allocates ridiculously large
+> stack for every new process - 132k. It can easily be reduced
+> to something saner with one-line patch.
 
-Agreed. "Socket Designation" seems to be a free format string at the whim of
-the board designer (and then interpreted and string filled in by a BIOS writer
-with all the usual caveats that implies).
+My budget for each crash report is about 8k.  I have to do
+the unwind at the time of the crash (on target) (and without
+symbols - these are added later on a host).  Given the other
+stuff I want to save, saving the whole stack is usually not
+an option, and saving a coredump is out of the question.
+ -- Tim
 
-I suppose a smart reporting system would try to query this stuff ahead of
-time to determine whether socket numbers were zero based, one based, or something
-else altogether (Socket A, B, C ????)
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
--Tony
