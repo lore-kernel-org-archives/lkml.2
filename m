@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016Ab2CAVe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 16:34:58 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21999 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964794Ab2CAVe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 16:34:57 -0500
-Date: Thu, 1 Mar 2012 22:33:06 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
-In-Reply-To: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1203012232480.19443@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S965116Ab2CAVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 16:39:29 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965066Ab2CAVj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 16:39:27 -0500
+Message-ID: <4F4FEC83.6090504@nod.at>
+Date: Thu, 01 Mar 2012 22:39:15 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org
+Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-3-git-send-email-richard@nod.at> <20120301112732.GA6806@1984>
+In-Reply-To: <20120301112732.GA6806@1984>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig071856318EA3679E1D7573C8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig071856318EA3679E1D7573C8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ping?
+Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
+> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
+> corrupts the log line. Note the extra PROTO=3D, I don't have any UDPLIT=
+E
+> traffic here.
+>=20
+> Looks like a missing break in one switch.
 
-On Mon, 6 Feb 2012, Jesper Juhl wrote:
+I got confused by my own logic. :-\
+Does the attached patch fix the issue?
+It's based on "Netfilter: xt_LOG: Add timestamp support".
 
-> At the start of the function we assign 'a->d' to 'ap'. Then we use the
-> RESIZE_IF_NEEDED macro on 'a' - this may free 'a->d' and replace it
-> with newly allocaetd storage. In that case, we'll be operating on
-> freed memory further down in the function when we index into 'ap[]'.
-> Since we don't actually need 'ap' until after the use of the
-> RESIZE_IF_NEEDED macro we can just delay the assignment to it until
-> after we've potentially resized, thus avoiding the issue.
-> 
-> While I was there anyway I also changed the integer variable 'n' to be
-> const. It might as well be since we only assign to it once and use it
-> as a constant, and then the compiler will tell us if we ever assign to
-> it in the future.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  lib/mpi/mpi-bit.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
->  only compile tested.
-> 
-> diff --git a/lib/mpi/mpi-bit.c b/lib/mpi/mpi-bit.c
-> index 2f52662..0c50536 100644
-> --- a/lib/mpi/mpi-bit.c
-> +++ b/lib/mpi/mpi-bit.c
-> @@ -177,8 +177,8 @@ int mpi_rshift(MPI x, MPI a, unsigned n)
->   */
->  int mpi_lshift_limbs(MPI a, unsigned int count)
->  {
-> -	mpi_ptr_t ap = a->d;
-> -	int n = a->nlimbs;
-> +	const int n = a->nlimbs;
-> +	mpi_ptr_t ap;
->  	int i;
->  
->  	if (!count || !n)
-> @@ -187,6 +187,7 @@ int mpi_lshift_limbs(MPI a, unsigned int count)
->  	if (RESIZE_IF_NEEDED(a, n + count) < 0)
->  		return -ENOMEM;
->  
-> +	ap = a->d;
->  	for (i = n - 1; i >= 0; i--)
->  		ap[i + count] = ap[i];
->  	for (i = 0; i < count; i++)
-> 
+Thanks,
+//richard
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+index 4e392cf..019fb64 100644
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@ -269,12 +269,14 @@ static void dump_ipv4_packet(struct sbuff *m,
+ 				    ntohs(ih->frag_off) & IP_OFFSET,
+ 				    iphoff+ih->ihl*4, logflags))
+ 			return;
++		break;
+ 	case IPPROTO_UDP:
+ 	case IPPROTO_UDPLITE:
+ 		if (dump_udp_header(m, skb, ih->protocol,
+ 				    ntohs(ih->frag_off) & IP_OFFSET,
+ 				    iphoff+ih->ihl*4))
+ 			return;
++		break;
+ 	case IPPROTO_ICMP: {
+ 		struct icmphdr _icmph;
+ 		const struct icmphdr *ich;
+@@ -723,10 +725,12 @@ static void dump_ipv6_packet(struct sbuff *m,
+ 		if (dump_tcp_header(m, skb, currenthdr, fragment, ptr,
+ 		    logflags))
+ 			return;
++		break;
+ 	case IPPROTO_UDP:
+ 	case IPPROTO_UDPLITE:
+ 		if (dump_udp_header(m, skb, currenthdr, fragment, ptr))
+ 			return;
++		break;
+ 	case IPPROTO_ICMPV6: {
+ 		struct icmp6hdr _icmp6h;
+ 		const struct icmp6hdr *ic;
 
+
+--------------enig071856318EA3679E1D7573C8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPT+yKAAoJEN9758yqZn9euysH/2G19o/m9i58iOu/hE+UzpQs
+JmvR5mqX5uNqB/uuEkpgF6mZiVtZkHvGi37psT0QGbtSW8s69S+bbmeXnWEhsRhx
+ly+Z7uNqaOuE4FAj+nGzaOGaYyFars/VT/m+MRZLUgx7W1kF8fEv2XCTb9D4vp6e
+RG91/m1dyKIu4gQaJAMecieE7U8NlofC1cV+5I+uJ93ZbnaLva1rlRwlu7i7VHDM
+nes4N9f902PUdc9Li/06v4bYzecUQVBa547iyCd7J6XjYxJYRkEayE/FGvaKTOUV
+FaP5ZHdPw92PfksnHFpEfeDlAhnfw9idXW8psdzAP0/Fh3Fupok6AgInA9Qyv+g=
+=dIu+
+-----END PGP SIGNATURE-----
+
+--------------enig071856318EA3679E1D7573C8--
