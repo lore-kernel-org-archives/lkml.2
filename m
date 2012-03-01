@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab2CAO5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 09:57:54 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34360 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab2CAO5w convert rfc822-to-8bit (ORCPT
+	id S932471Ab2CAPDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 10:03:20 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:25336 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757757Ab2CAPDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 09:57:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	Thu, 1 Mar 2012 10:03:19 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: qfbIvocVM1nhlhctFjmmsmfRY66orQqscVqpQjPlntzAgB6
+ 8Vzo5jNaAakpstifslJ7m7FeZhweMwEvvMjQeOSybC.sGxYy78Tla.d3pX.B
+ BJzx1Zpsrz00IFZqZFzrdNvuDddAD1K_flkppe5ZHyUThQuH4LE0lDozRPWY
+ AeP4uNhku1Hn.yE_P2.Wh5EEYMTdsDZN.IsDEhlYt5JAu90Di69H45nfhDr.
+ hAMZHNrWIaE6WBUB8rDMpULNzU1l_6XkTWpDi3.5lqUfqRtLwXyMEwbca9G4
+ SapjOqs0_MXMLACXyGv6Y6_jyqoLTB6vDXR_kkcvygDRRbc_lp5PS_sqGmvL
+ x1YXIa6qzk50xNpNqzi2p0gdmm8lOJUcPgLmg4lqdtsh8piKlGHuRU_yNNrV
+ mp5wSAX8grPjr99GzXEvCVXawnUkoxbmo9fko48iUvQdQJJWN.4Ygltk86g-
+ -
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 1 Mar 2012 09:03:16 -0600 (CST)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Namhyung Kim <namhyung@gmail.com>
+cc: Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
+In-Reply-To: <1330587031.1762.46.camel@leonhard>
+Message-ID: <alpine.DEB.2.00.1203010901020.5004@router.home>
+References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>  <alpine.DEB.2.00.1202290922210.32268@router.home> <1330587031.1762.46.camel@leonhard>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120301145155.GY5054@shiny>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-	<20120229144244.GF5054@shiny>
-	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
-	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
-	<CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
-	<20120301141823.GV5054@shiny>
-	<CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
-	<20120301145155.GY5054@shiny>
-Date: Thu, 1 Mar 2012 15:57:50 +0100
-Message-ID: <CADDYkjQn-2-XjAZYe6AZeVcNa_A3Jc_qYcOUd3bExBDNWxDMUw@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        lczerner@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/1 Chris Mason <chris.mason@oracle.com>:
-> On Thu, Mar 01, 2012 at 03:43:41PM +0100, Jacek Luczak wrote:
->> 2012/3/1 Chris Mason <chris.mason@oracle.com>:
->> > XFS will probably beat btrfs in this test.  Their directory indexes
->> > reflect on disk layout very well.
->>
->> True, but not that fast on small files.
->>
->> Except the question I've raised in first mail there's a point in all
->> those action. We are maintaining host that are used for building
->> software: random access, lot of small files and dirs (always a co),
->> heavy parallel IO. We were testing XFS vs ext4 a year ago and XFS was
->> around 10% slower on build times. We did not - yet - done same on
->> btrfs. Now we're looking for replacement for ext4 as we suffer from
->> those issue - but we were not aware of that until stepped into this
->> issue.
->>
->> If you would like me to do some specific tests around ext4 and btrfs,
->> let me know.
+On Thu, 1 Mar 2012, Namhyung Kim wrote:
+
+> > You cannot free a tail page of a compound higher order page independently.
+> > You must free the whole compound.
+> >
 >
-> I'm always curious to see comparisons in real world workloads.  You
-> should definitely consider testing XFS again, the big three filesystems
-> are under pretty constant improvement.  For btrfs, please stick to 3.2
-> kernels and higher.
+> I meant freeing a *slab object* resides in a compound page using buddy
+> system API (e.g. free_pages). I know it's definitely a programming
+> error. However there's no safety net to protect and/or warn such a
+> misbehavior AFAICS - except for head page which has PG_slab set - when
+> it happened by any chance.
 
-That's the plan but I'm waiting for more of the briliant work that
-recently popped up in XFS. For btrfs, the 3.2 introduced changes led
-me to give here a try. I don't have nice pictures and digits in my
-hand now but first tests shown close to 40% of timing improvements
-between 2.6.39.4 and 3.2.7 - keep doing that great work guys (and
-girls if any)!
+?? One generally passed a struct page pointer to the page allocator. Slab
+allocator takes pointers to object. The calls that take a pointer to an
+object must have a page aligned value.
 
--Jacek
+> Without it, it might be possible to free part of tail pages silently,
+> and cause unexpected not-so-funny results some time later. It should be
+> hard to find out.
+
+Ok then fix the page allocator to BUG() on tail pages. That is an issue
+with the page allocator not the slab allocator.
+
+Adding PG_tail to the flags checked on free should do the trick (at least
+for 64 bit).
+
