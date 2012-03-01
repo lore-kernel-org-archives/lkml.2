@@ -1,140 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab2CALEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 06:04:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753504Ab2CALEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 06:04:08 -0500
-Date: Thu, 1 Mar 2012 12:04:04 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Greg Thelen <gthelen@google.com>,
-        Jan Kara <jack@suse.cz>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120301110404.GC4385@quack.suse.cz>
-References: <20120228140022.614718843@intel.com>
- <20120228144747.198713792@intel.com>
- <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+	id S965059Ab2CALLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 06:11:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57031 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755714Ab2CALLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 06:11:05 -0500
+Date: Thu, 1 Mar 2012 11:10:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 1/2] regulator: Kill max8997_get_rid function
+Message-ID: <20120301111056.GB3124@opensource.wolfsonmicro.com>
+References: <1330565187.5373.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="24zk1gE8NUlDmwG9"
 Content-Disposition: inline
-In-Reply-To: <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1330565187.5373.1.camel@phoenix>
+X-Cookie: You may be recognized soon.  Hide.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-02-12 16:04:03, Andrew Morton wrote:
-...
-> > --- linux.orig/mm/vmscan.c	2012-02-28 19:07:06.065064464 +0800
-> > +++ linux/mm/vmscan.c	2012-02-28 20:26:15.559731455 +0800
-> > @@ -874,12 +874,22 @@ static unsigned long shrink_page_list(st
-> >  			nr_dirty++;
-> >  
-> >  			/*
-> > -			 * Only kswapd can writeback filesystem pages to
-> > -			 * avoid risk of stack overflow but do not writeback
-> > -			 * unless under significant pressure.
-> > +			 * Pages may be dirtied anywhere inside the LRU. This
-> > +			 * ensures they undergo a full period of LRU iteration
-> > +			 * before considering pageout. The intention is to
-> > +			 * delay writeout to the flusher thread, unless when
-> > +			 * run into a long segment of dirty pages.
-> > +			 */
-> > +			if (references == PAGEREF_RECLAIM_CLEAN &&
-> > +			    priority == DEF_PRIORITY)
-> > +				goto keep_locked;
-> > +
-> > +			/*
-> > +			 * Try relaying the pageout I/O to the flusher threads
-> > +			 * for better I/O efficiency and avoid stack overflow.
-> >  			 */
-> > -			if (page_is_file_cache(page) &&
-> > -					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
-> > +			if (page_is_file_cache(page) && mapping &&
-> > +			    queue_pageout_work(mapping, page) >= 0) {
-> >  				/*
-> >  				 * Immediately reclaim when written back.
-> >  				 * Similar in principal to deactivate_page()
-> > @@ -892,8 +902,13 @@ static unsigned long shrink_page_list(st
-> >  				goto keep_locked;
-> >  			}
-> >  
-> > -			if (references == PAGEREF_RECLAIM_CLEAN)
-> > +			/*
-> > +			 * Only kswapd can writeback filesystem pages to
-> > +			 * avoid risk of stack overflow.
-> > +			 */
-> > +			if (page_is_file_cache(page) && !current_is_kswapd())
-> 
-> And here we run into big problems.
-> 
-> When a page-allocator enters direct reclaim, that process is trying to
-> allocate a page from a particular zone (or set of zones).  For example,
-> he wants a ZONE_NORMAL or ZONE_DMA page.  Asking flusher threads to go
-> off and write back three gigabytes of ZONE_HIGHMEM is pointless,
-> inefficient and doesn't fix the caller's problem at all.
-> 
-> This has always been the biggest problem with the
-> avoid-writeback-from-direct-reclaim patches.  And your patchset (as far
-> as I've read) doesn't address the problem at all and appears to be
-> blissfully unaware of its existence.
-> 
-> 
-> I've attempted versions of this I think twice, and thrown the patches
-> away in disgust.  One approach I tried was, within direct reclaim, to
-> grab the page I wanted (ie: one which is in one of the caller's desired
-> zones) and to pass that page over to the kernel threads.  The kernel
-> threads would ensure that this particular page was included in the
-> writearound preparation.  So that we at least make *some* progress
-> toward what the caller is asking us to do.
-> 
-> iirc, the way I "grabbed" the page was to actually lock it, with
-> [try_]_lock_page().  And unlock it again way over within the writeback
-> thread.  I forget why I did it this way, rather than get_page() or
-> whatever.  Locking the page is a good way of preventing anyone else
-> from futzing with it.  It also pins the inode, which perhaps meant that
-> with careful management, I could avoid the igrab()/iput() horrors
-> discussed above.
-  I think using get_page() might be a good way to go. Naive implementation:
-If we need to write a page from kswapd, we do get_page(), attach page to
-wb_writeback_work and push it to flusher thread to deal with it.
-Flusher thread sees the work, takes a page lock, verifies the page is still
-attached to some inode & dirty (it could have been truncated / cleaned by
-someone else) and if yes, it submits page for IO (possibly with some
-writearound). This scheme won't have problems with iput() and won't have
-problems with umount. Also we guarantee some progress - either flusher
-thread does it, or some else must have done the work before flusher thread
-got to it.
 
-For better efficiency, we could further refine the scheme - record mapping
-pointer (as an opaque cookie), starting index, and writeout length in
-wb_writeback_work together with page pointer. That way if we need to
-writeout another page, we can check whether it's not already included in an
-existing work or whether extending existing work wouldn't be better. The
-downside of this scheme is, that the progress guarantee isn't that strong
-anymore - we guarantee that the page referenced from the work is cleaned
-but not necessarily all those other pages that were bundled in the same
-work item (because once our referenced page is cleaned, we cannot get to
-inode anymore). To mitigate this, we could:
-a) have references to N pages from work item and at most that many pages
-to be packed into a single work - this restores the progress guarantee.
-b) have references to N pages from work item but don't limit how many page
-writeout requests are packed - isn't as strong as a) but lowers probability
-of not enough progress. Also we could further lower the probability we
-don't have a usable page reference in work item by including a reference
-to a page whose writeout was last bundled to the work item.
+--24zk1gE8NUlDmwG9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-What do you think?
+On Thu, Mar 01, 2012 at 09:26:27AM +0800, Axel Lin wrote:
+> Use rdev_get_id() directly.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Applied both, thanks.
+
+--24zk1gE8NUlDmwG9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPT1jTAAoJEBus8iNuMP3dfk8P/jt7JL3+xUU1Giz6sUBOkWGP
+iT2TZzRZbpR2l0wZPTdMFkzCo5p5e1Mm+7KdchYjLW5Kh9OngZ4AkGc8NOeYeIYM
+W+W1udqroAo6BsFYPkrbGqNQmEAqS5VoEsY+nNyIFmxSQnzO/5XwRXT0nUKy7uRN
+I8EKgjwVGNNBxIloR4zGgwKAZNZ3Q2zea74/lMoh2zocZdxrefw+SQfNmeHson9X
+7QuA+Diwf0k/JJr02Wg4FkQKJsT5K2qq4M2GHd0G435e+rkcuO/4kAin4fJDrexE
+P7UxQ52Z/Zzwvi76Q+D3kOnfutKJYqUs1WImSa1MYPsxRrqT8YUg1hssqwNP9rix
+cCD9aPQV8w/pRfnwBqI5EuZGdr4RjjUtuT4vgQb0Mcy32bM7ZLcO2XorWdaXtksb
+g1/dvvJHRwH+MyG8E7OLLftTa8kKgpYgx+fuYw5JVymaU5Ja8f57HVnfgam1EHTn
+TjP0jswiV781vy2pjLOv1mSD3LMN8cEJxaUbMDyjyW+6GarkBI1zprStVz4FWhTp
+Ni0MmlF4nmRguGQc4PqKtRn3ZCVTlEX/L8aj3bXTMhiBuKbpUs1ePU+ZYWPuM+As
+/WoLwmjCc6mZy42KowUma6CsZcduJtJ43bTjr9t2bHtZoogRhMLIshOt2m70w8Nk
+O3kWKdEzhglJogQot1Wy
+=WZq0
+-----END PGP SIGNATURE-----
+
+--24zk1gE8NUlDmwG9--
