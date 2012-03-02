@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab2CBRGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:06:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51524 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab2CBRGr (ORCPT
+	id S1756338Ab2CBRID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:08:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:22641 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751964Ab2CBRIA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:06:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.134.33 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 2 Mar 2012 09:04:49 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Eric Andersson <eric.andersson@unixphere.com>,
-        linux-kernel@vger.kernel.org, christoph.mair@gmail.com,
-        stefan.nilsson@unixphere.com, zhengguang.guo@bosch-sensortec.com,
-        peter.moeller@cn.bosch.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH 0/3] Replace bmp085 with bmp18x
-Message-ID: <20120302170449.GA3186@kroah.com>
-References: <1330545489-31169-1-git-send-email-eric.andersson@unixphere.com>
- <201202292018.45557.arnd@arndb.de>
- <20120229235217.494d49d8@pyramind.ukuu.org.uk>
- <201203021649.18156.arnd@arndb.de>
+	Fri, 2 Mar 2012 12:08:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="113890795"
+Message-ID: <4F50FE1B.7090008@intel.com>
+Date: Fri, 02 Mar 2012 17:06:35 +0000
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203021649.18156.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-pci@vger.kernel.org,
+        "Struk, Tadeusz" <tadeusz.struk@intel.com>
+Subject: Re: [PATCH v2] Dynamically add and remove device specific reset functions
+References: <4f50b540.6AzyOmpHR+z7jLk1%tadeusz.struk@intel.com> <CAErSpo6JaNXvJf_KEkRUYLed8ET4vSunfCAq9BWq3yd3+dZQpA@mail.gmail.com>
+In-Reply-To: <CAErSpo6JaNXvJf_KEkRUYLed8ET4vSunfCAq9BWq3yd3+dZQpA@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 04:49:17PM +0000, Arnd Bergmann wrote:
-> On Wednesday 29 February 2012, Alan Cox wrote:
-> > On Wed, 29 Feb 2012 20:18:45 +0000
-> > Arnd Bergmann <arnd@arndb.de> wrote:
-> > 
-> > > On Wednesday 29 February 2012, Eric Andersson wrote:
-> > > > This patch-set replaces the BMP085 driver with a driver for Bosch Sensortec's new
-> > > > generation of pressure sensors called BMP18x. These pressure sensors can be
-> > > > connected on I2C but also on SPI as a variant, so the driver implements both.
-> > > > Register-wise they are fully compatible with the older BMP085, so the driver will
-> > > > support those chips as well.
-> > > > 
-> > > > The driver is based on bmp085.c by Christoph Mair.
-> > > 
-> > > Hmm,  the implementation looks fine, but I don't think we should add support
-> > > for new devices with a one-off interface that we know is getting replaced by
-> > > something generic.
-> > > 
-> > > Why is this not using IIO for its user interface?
-> > 
-> > This is become a repeating problem
-> > 
-> > Either get the IIO layer out of staging (where it appears to have
-> > congealed) or stop asking people to use it. IIO stuck in staging is
-> > becoming a problem not a cure. It's creating uncertainty blocking lots of
-> > stuff that needs to get upstream and that current stream is going to
-> > become a tide post Android merging.
-> > 
-> > It needs resolving one way or the other and soon.
-> 
-> Yes, that is probably true. It has been looking like we are closing in
-> on merging IIO for some time now, but I'm not sure how well it's going
-> recently. In November, Jonathan mentioned that he is busy with other
-> things and that he would welcome other people to help out. There were
-> patches to move parts of IIO out of staging, but I'm not completely
-> sure how far they have come.
-> 
-> In case of bmp085 I don't see much of a problem and I was probably
-> overreacting as this is an existing driver.
-> 
-> Unfortunately, I'm not sure if there is any reasonable alternative
-> to iio for new device drivers: If we get a flood of new drivers for
-> all sorts of sensors that each have their own user interface,
-> someone still needs to review all those interfaces and come up
-> with infrastucture to reduce the amount of code duplication and
-> interface differences between the drivers. IIO was promising to
-> do just that, and it has come a long way since it was initially
-> included into staging. 
+On 02/03/12 16:29, Bjorn Helgaas wrote:
+> Where do you plan to add calls to pci_dev_specific_reset_add()?  In
+> drivers?
 
-I merged a bunch of patches cleaning up some of the core changes that
-iio needed to make in order for it to be able to move out of staging,
-and those will show up in 3.4.  So, maybe, if all goes well, and people
-do the work, 3.5 might have it moving out.
+Yes, I'm working on a driver for a device with SRIOV capability.
+I'll call it from there.
 
-Hopefully :)
+> Did you consider adding a "reset" function pointer to struct
+> pci_driver?  That might be more natural -- the reset function is right
+> with all the other code that knows about the device, and there's no
+> issue with looking up the correct reset function.
+> With this patch, we sort of have two different ways to map
+> vendor/device IDs to code: the usual pci_register_driver() approach,
+> and this one using reset_list.  If pci_driver had a "reset" pointer,
+> that would be used most of the time.  You might still need the
+> reset_list for generic things, e.g., the reset_intel_generic_dev()
+> function, but it would be a fallback.  It might look something like:
+> 
+>     struct pci_driver *drv = dev->driver;
+> 
+>     if (drv && drv->reset) {
+>         drv->reset(dev);
+>         return;
+>     }
+> 
+>     list_for_each_entry(i, &reset_list, list) {
+>         ...
+> 
 
-greg k-h
+No, I didn't think about it.
+This is good idea, but for me the pci_dev_specific_reset() works fine.
+
+> In that case, you might not even need the ability to dynamically add
+> things to the list, since the only things to add would be "generic"
+> things that would be more static.
+> 
+> Perhaps this approach was previously discussed and discarded; if so, I
+> missed it.
+> 
+> Bjorn
+
+Do you want me to send another patch that fixes these minor issues you pointed out?
+Thanks for you comments.
+Tadeusz
+
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
+
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
+
