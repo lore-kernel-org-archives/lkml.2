@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab2CBVRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:17:13 -0500
-Received: from mga05.intel.com ([192.55.52.89]:21678 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932142Ab2CBVRJ convert rfc822-to-8bit (ORCPT
+	id S932591Ab2CBVR7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:17:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37432 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142Ab2CBVR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:17:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dan.j.williams@intel.com designates 10.182.109.106 as permitted sender) smtp.mail=dan.j.williams@intel.com
-MIME-Version: 1.0
-In-Reply-To: <20120302205600.GB4728@wavehammer.waldi.eu.org>
-References: <20120220181618.GD17566@burratino>
-	<4F4891B8.9050008@goirand.fr>
-	<20120302055715.GA692@burratino>
-	<CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
-	<20120302162159.GB31683@wavehammer.waldi.eu.org>
-	<CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
-	<20120302175719.GA1468@wavehammer.waldi.eu.org>
-	<CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
-	<20120302200826.GA4728@wavehammer.waldi.eu.org>
-	<CABE8wwvKC0k=nS8SU3vRyUQVBA=WgnsxbNOnGyy9dFNQLshdvA@mail.gmail.com>
-	<20120302205600.GB4728@wavehammer.waldi.eu.org>
-Date: Fri, 2 Mar 2012 13:17:07 -0800
-Message-ID: <CABE8wwtqg5eOqW19EBX+bhq2Gz6O8V6JHVgEB+zeBWpr1D92tw@mail.gmail.com>
-Subject: Re: [Pkg-xen-devel] ioatdma: Boot process hangs then reboots when
- using Xen + Linux 3.2
-From: Dan Williams <dan.j.williams@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, xen-devel@lists.xensource.com,
-        pkg-xen-devel@lists.alioth.debian.org,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 16:17:58 -0500
+Date: Fri, 2 Mar 2012 13:17:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>
+Subject: Re: ODEBUG: selftest warnings failed 4 != 5 (WARNING: at
+ lib/debugobjects.c:908 check_results.constprop.9)
+Message-Id: <20120302131756.32e7f788.akpm@linux-foundation.org>
+In-Reply-To: <CAFLxGvy0yWe2utG-+vFw4BhfH-i0vfjNy3k6kUsxkN7M4BSWQg@mail.gmail.com>
+References: <20120218023521.GB13538@smp.if.uj.edu.pl>
+	<CAFLxGvy0yWe2utG-+vFw4BhfH-i0vfjNy3k6kUsxkN7M4BSWQg@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 12:56 PM, Bastian Blank <waldi@debian.org> wrote:
-> On Fri, Mar 02, 2012 at 12:16:47PM -0800, Dan Williams wrote:
->> On Fri, Mar 2, 2012 at 12:08 PM, Bastian Blank <waldi@debian.org> wrote:
->> > On Fri, Mar 02, 2012 at 11:31:56AM -0800, Dan Williams wrote:
->> >> On Fri, Mar 2, 2012 at 9:57 AM, Bastian Blank <waldi@debian.org> wrote:
->> >> > phys_complete (a 32 bit value) gets compared to struct
->> >> > dma_async_tx_descriptor.phys, which is defined as dma_addr_t, a _64_ bit
->> >> > value.
->> >> The assumption is that the driver's control structures are not in high
->> >> memory so all address values will only have 32-bits of valid data,
->> > Can you back that up by some kernel documentation? There is a reason why
->> > pci_alloc_pool uses dma_addr_t to store the address and _not_ unsigned
->> > long. This are physical addresses, nothing the kernel can access
->> > directly without a mapping.
->> High memory can only be accessed with kmap(), so the assumption is
->> that dma_alloc never gives a buffer address above 32-bits on a 32-bit
->> build.  Yes, if HIGHMEM64G is set dma_addr_t becomes 64-bit, but that
->> is only to access high memory mapped application buffers via dma_map.
->
-> All memory needs to be mapped.  Linux just have a default mapping of 1GiB
-> of the memory handy. However this is irrelevant for the physical DMA
-> addresses we talk about.
+On Fri, 2 Mar 2012 00:18:37 +0100
+richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
 
-I'm not sure you understand how himem works or we're talking past each other.
+> On Sat, Feb 18, 2012 at 3:35 AM, Witold Baryluk
+> <baryluk@smp.if.uj.edu.pl> wrote:
+> > Hello everybody,
+> >
+> > I recently enabled a CONFIG_DEBUG_OBJECTS kconfig option, and this is what I got when booting
+> >
+> > ...
+> > [ __ __0.000000] Linux version 3.3.0-rc3-t43-devel-smp-00278-g4903062-dirty (baryluk@sredniczarny) (gcc version 4.6.2 (Debian 4.6.2-14) ) #27 SMP Fri Feb 17 20:13:29 CE
+> > ...
+> > ...
+> > ...
+> > [ __ __0.000000] SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+> > [ __ __0.000000] Hierarchical RCU implementation.
+> > [ __ __0.000000] __RCU debugfs-based tracing is enabled.
+> > [ __ __0.000000] __RCU lockdep checking is enabled.
+> > [ __ __0.000000] NR_IRQS:2304 nr_irqs:256 16
+> > [ __ __0.000000] CPU 0 irqstacks, hard=f5408000 soft=f540a000
+> > [ __ __0.000000] Extended CMOS year: 2000
+> > [ __ __0.000000] Console: colour VGA+ 80x25
+> > [ __ __0.000000] console [tty0] enabled
+> > [ __ __0.000000] Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
+> > [ __ __0.000000] ... MAX_LOCKDEP_SUBCLASSES: __8
+> > [ __ __0.000000] ... MAX_LOCK_DEPTH: __ __ __ __ __48
+> > [ __ __0.000000] ... MAX_LOCKDEP_KEYS: __ __ __ __8191
+> > [ __ __0.000000] ... CLASSHASH_SIZE: __ __ __ __ __4096
+> > [ __ __0.000000] ... MAX_LOCKDEP_ENTRIES: __ __ 16384
+> > [ __ __0.000000] ... MAX_LOCKDEP_CHAINS: __ __ __32768
+> > [ __ __0.000000] ... CHAINHASH_SIZE: __ __ __ __ __16384
+> > [ __ __0.000000] __memory used by lock dependency info: 3823 kB
+> > [ __ __0.000000] __per task-struct memory footprint: 1920 bytes
+> > [ __ __0.000000] ------------------------
+> > [ __ __0.000000] | Locking API testsuite:
+> > ...
+> > ...
+> > [ __ __0.000000] -------------------------------------------------------
+> > [ __ __0.000000] Good, all 218 testcases passed! |
+> > [ __ __0.000000] ---------------------------------
+> > [ __ __0.000000] ODEBUG: 14 of 14 active objects replaced
+> > [ __ __0.000000] ------------[ cut here ]------------
+> > [ __ __0.000000] WARNING: at lib/debugobjects.c:908 check_results.constprop.9+0x11c/0x140()
+> > [ __ __0.000000] Hardware name: 2669UYD
+> > [ __ __0.000000] ODEBUG: selftest warnings failed 4 != 5
+> 
+> This warning is still present.
+> Andrew?
+
+Dunno, sorry.  There are only two patches to bisect through - try
+reverting b84d435cc228e ("debugobjects: Extend to assert that an object
+is initialized") and then feac18dda25134 ("debugobjects: Be smarter
+about static objects")?  
