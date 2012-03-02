@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab2CBJ4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:56:10 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48610 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946Ab2CBJ4H (ORCPT
+	id S1758651Ab2CBJ5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:57:55 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:51523 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755603Ab2CBJ5x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:56:07 -0500
-Date: Fri, 2 Mar 2012 10:55:49 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] x86, RAS: Add a decoded msg buffer
-Message-ID: <20120302095548.GB7907@aftab>
-References: <1330445487-15020-1-git-send-email-bp@amd64.org>
- <1330445487-15020-3-git-send-email-bp@amd64.org>
- <3908561D78D1C84285E8C5FCA982C28F03FD68@ORSMSX104.amr.corp.intel.com>
- <20120229101146.GB21224@aftab>
+	Fri, 2 Mar 2012 04:57:53 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120229101146.GB21224@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
+Date: Fri, 2 Mar 2012 09:57:01 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E8B@saturn3.aculab.com>
+In-Reply-To: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
+Thread-Index: Acz4Q5iTXw6U0OlcQUeiLtslOSAZDgAFwPRw
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Liu Gang" <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <Alexandre.Bounine@idt.com>
+Cc: "Shaohui Xie" <Shaohui.Xie@freescale.com>, <r61911@freescale.com>,
+        <linux-kernel@vger.kernel.org>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        <akpm@linux-foundation.org>, <r58472@freescale.com>
+X-OriginalArrivalTime: 02 Mar 2012 09:57:01.0929 (UTC) FILETIME=[D0B6D590:01CCF85A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:11:46AM +0100, Borislav Petkov wrote:
-> > Is there some upper bound for how long this string can get? Why not
-> > just allocate a generous amount at boot time?
-> 
-> Yep, this sounds like the easiest thing to do, let me play with MCE
-> injection a bit.
+ 
+> For the file "arch/powerpc/sysdev/fsl_rmu.c", there will be 
+> some compile errors while using the corenet64_smp_defconfig:
 
-So I left it inject all kinds of errors overnight and the buffer got
-enlarged to 400 bytes:
+I'm sure that replacing 'u32' with 'unsigned long'
+is really the best thing to do here.
+It looks to me as though they should be some pointer type.
 
-[ 1115.162484] Buffer enlarged to 250
-[ 1115.166059] Buffer enlarged to 300
-[ 1115.169604] Buffer enlarged to 350
-[ 3855.129854] Buffer enlarged to 400
+	David
 
-So I'm guessing something like 500 bytes would be a safe bet in the
-current situation.
 
-Now whether 500 bytes is a lot or not, dunno, we'll see how it plays
-out in testing. Also, the question is what would happen if we need to
-enlarge it later for some more info, hm. Maybe I should go over the
-decoded strings and try slimming them up a bit...
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
