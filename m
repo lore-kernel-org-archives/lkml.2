@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab2CBAq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:46:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:4861 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab2CBAq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:46:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="72566016"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: .. anybody know of any filesystems that depend on the exact VFS 'namehash' implementation?
-References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
-Date: Thu, 01 Mar 2012 16:46:46 -0800
-In-Reply-To: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
-	(Linus Torvalds's message of "Wed, 29 Feb 2012 15:36:09 -0800")
-Message-ID: <m2ipinq16x.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1757536Ab2CBArp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 19:47:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58748 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757274Ab2CBArN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 19:47:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of eric.dumazet@gmail.com designates 10.42.29.70 as permitted sender) smtp.mail=eric.dumazet@gmail.com; dkim=pass header.i=eric.dumazet@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120301233712.GS3990@outflux.net>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	<20120301233712.GS3990@outflux.net>
+Date: Thu, 1 Mar 2012 16:47:13 -0800
+Message-ID: <CAL4WiipsJz5Nc8aqUgRgM0r3tA5p7W-DgATJNs8uKo0twr=iag@mail.gmail.com>
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: akpm@linux-foundation.org, sfr@canb.auug.org.au,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> So I'm doing my normal profiling ("empty kernel build" is my favorite
-> one), and link_path_walk() and __d_lookup_rcu() remain some of the
-> hottest kernel functions due to their per-character loops.
+Le 1 mars 2012 15:37, Kees Cook <keescook@chromium.org> a écrit :
+> Hi,
 >
-> I can improve __d_lookup_rcu() on my machine by what appears to be
-> around 15% by doing things a "unsigned long" at a time (it would be an
-> option that only works on little-endian and with cheap unaligned
-> accesses, although the big-endian modifications should be pretty
-> trivial).
+> So far, it looks like everyone who spoke up is satisfied with this patch
+> series. Or their MUAs got caught up on a leap-year bug and missed the
+> posting. ;)
+>
 
-There should be generally better modern general hash algorithms around,
-like murmur, cityhash or snoopy. Perhaps even the fnv we have in tree,
-but it's somewhat dated by know.
+Sorry for the delay, I only had time to review patch 01/13
 
-They all have larger code, but if it's really that hot it would be worth
-it.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
