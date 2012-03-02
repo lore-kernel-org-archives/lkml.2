@@ -1,100 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030413Ab2CBRny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:43:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52128 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964943Ab2CBRnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:43:53 -0500
-Date: Fri, 2 Mar 2012 17:43:49 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Remove memory barrier damage from the page
- allocator
-Message-ID: <20120302174349.GB3481@suse.de>
-References: <20120302112358.GA3481@suse.de>
- <alpine.DEB.2.00.1203021018130.15125@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1203021018130.15125@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030416Ab2CBRpe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:45:34 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57863 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab2CBRpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 12:45:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of slyich@gmail.com designates 10.14.204.70 as permitted sender) smtp.mail=slyich@gmail.com; dkim=pass header.i=slyich@gmail.com
+Date: Fri, 2 Mar 2012 20:50:00 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Glauber Costa <glommer@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+Message-ID: <20120302205000.088bf231@sf.home>
+In-Reply-To: <20120302202421.753b36bc@sf.home>
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com>
+	<4F509150.5060904@redhat.com>
+	<20120302202421.753b36bc@sf.home>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/kfM1nuDy5/1jSc=OEoG88qy"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 10:19:55AM -0600, Christoph Lameter wrote:
-> On Fri, 2 Mar 2012, Mel Gorman wrote:
-> 
-> > diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> > index e9eaec5..ba6d217 100644
-> > --- a/include/linux/cpuset.h
-> > +++ b/include/linux/cpuset.h
-> > @@ -92,38 +92,25 @@ extern void cpuset_print_task_mems_allowed(struct task_struct *p);
-> >   * reading current mems_allowed and mempolicy in the fastpath must protected
-> >   * by get_mems_allowed()
-> >   */
-> > -static inline void get_mems_allowed(void)
-> > +static inline unsigned long get_mems_allowed(void)
-> >  {
-> > -	current->mems_allowed_change_disable++;
-> > -
-> > -	/*
-> > -	 * ensure that reading mems_allowed and mempolicy happens after the
-> > -	 * update of ->mems_allowed_change_disable.
-> > -	 *
-> > -	 * the write-side task finds ->mems_allowed_change_disable is not 0,
-> > -	 * and knows the read-side task is reading mems_allowed or mempolicy,
-> > -	 * so it will clear old bits lazily.
-> > -	 */
-> > -	smp_mb();
-> > +	return atomic_read(&current->mems_allowed_seq);
-> >  }
-> >
-> > -static inline void put_mems_allowed(void)
-> > +/*
-> > + * If this returns false, the operation that took place after get_mems_allowed
-> > + * may have failed. It is up to the caller to retry the operation if
-> > + * appropriate
-> > + */
-> > +static inline bool put_mems_allowed(unsigned long seq)
-> >  {
-> > -	/*
-> > -	 * ensure that reading mems_allowed and mempolicy before reducing
-> > -	 * mems_allowed_change_disable.
-> > -	 *
-> > -	 * the write-side task will know that the read-side task is still
-> > -	 * reading mems_allowed or mempolicy, don't clears old bits in the
-> > -	 * nodemask.
-> > -	 */
-> > -	smp_mb();
-> > -	--ACCESS_ONCE(current->mems_allowed_change_disable);
-> > +	return seq == atomic_read(&current->mems_allowed_seq);
-> >  }
-> 
-> Use seqlock instead of the counter? Seems that you are recoding much of
-> what a seqlock does. A seqlock also allows you to have a writer that sort
-> of blocks the reades if necessary.
-> 
+--Sig_/kfM1nuDy5/1jSc=OEoG88qy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I considered using a seqlock but it isn't cheap. The read side is heavy
-with the possibility that it starts spinning and incurs a read barrier
-(looking at read_seqbegin()) here. The retry block incurs another read
-barrier so basically it would not be no better than what is there currently
-(which at a 4% performance hit, sucks)
+> > > The change looks like a typo (division flipped to multiplication):
+> > >> limit =3D nr_free_buffer_pages() / 8;
+> > >> limit =3D nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
+> >=20
+> > Hi, thanks for the reporting. It's not a typo. It was previously:=20
+> > sysctl_tcp_mem[1] << (PAGE_SHIFT -  7). Looks like we need to do the=20
+> > limit check before shift the value. Please try the following patch, tha=
+nks.
+>=20
+> Still does not help. I test it by checking sha1sum of a large file over N=
+FS
+> (small files seem to work simetimes):
+>=20
+>     $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2=20
+>     ...
+>     open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+>     <HUNG>
+> After a certain timeout dmesg gets odd spam:
+> [  314.848094] nfs: server vmhost not responding, still trying
+> [  314.848134] nfs: server vmhost not responding, still trying
+> [  314.848145] nfs: server vmhost not responding, still trying
+> [  314.957047] nfs: server vmhost not responding, still trying
+> [  314.957066] nfs: server vmhost not responding, still trying
+> [  314.957075] nfs: server vmhost not responding, still trying
+> [  314.957085] nfs: server vmhost not responding, still trying
+> [  314.957100] nfs: server vmhost not responding, still trying
+> [  314.958023] nfs: server vmhost not responding, still trying
+> [  314.958035] nfs: server vmhost not responding, still trying
+> [  314.958044] nfs: server vmhost not responding, still trying
+> [  314.958054] nfs: server vmhost not responding, still trying
+>=20
+> looks like bogus messages. Might be relevant to mishandled timings
+> somewhere else or a bug in nfs code.
 
-In the case of seqlocks, a reader will backoff if a writer is in progress
-but the page allocator doesn't need that which is why I felt it was ok
-to special case.  Instead, it will try allocate a page while the update
-is in progress and only take special action if the allocation will fail.
-Allocation failure is an unusual situation that can trigger application
-exit or an OOM so it's ok to treat it as a slow path. A normal seqlock
-would retry unconditionally and potentially have to handle the case
-where it needs to free the page before retrying which is pointless.
+And after 120 seconds hung tasks shows it might be an OOM issue
+Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
+not running anything heavy:
 
--- 
-Mel Gorman
-SUSE Labs
+[  720.798052] INFO: task sha1sum:3811 blocked for more than 120 seconds.
+[  720.798056] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[  720.798059] sha1sum         D ffff88007bd11d40     0  3811      1 0x0000=
+0005
+[  720.798065]  ffff880073de9c08 0000000000000082 ffff880073de9af8 ffff8800=
+73de9fd8
+[  720.798070]  ffff880070db1620 ffff880073de9fd8 ffff880073de8000 00000000=
+00004000
+[  720.798075]  ffff880073de8000 ffff880073de9fd8 ffff8800790e0000 ffff8800=
+70db1620
+[  720.798079] Call Trace:
+[  720.798089]  [<ffffffff810fdd53>] ? kfree+0x123/0x150
+[  720.798094]  [<ffffffff8123227d>] ? nfs_access_free_entry+0x1d/0x30
+[  720.798097]  [<ffffffff810fdd53>] ? kfree+0x123/0x150
+[  720.798101]  [<ffffffff8123227d>] ? nfs_access_free_entry+0x1d/0x30
+[  720.798104]  [<ffffffff81233cb8>] ? nfs_do_access+0x3a8/0x3d0
+[  720.798109]  [<ffffffff8166525a>] schedule+0x3a/0x50
+[  720.798112]  [<ffffffff8166390e>] __mutex_lock_slowpath+0xee/0x190
+[  720.798117]  [<ffffffff81639228>] ? put_rpccred+0x48/0x130
+[  720.798120]  [<ffffffff8166374e>] mutex_lock+0x1e/0x40
+[  720.798125]  [<ffffffff81114927>] do_lookup+0x277/0x3a0
+[  720.798128]  [<ffffffff811162b8>] do_last.clone.39+0x148/0x7e0
+[  720.798132]  [<ffffffff81116a61>] path_openat+0xd1/0x3e0
+[  720.798136]  [<ffffffff810604d1>] ? get_parent_ip+0x11/0x50
+[  720.798140]  [<ffffffff81060675>] ? add_preempt_count+0x95/0xd0
+[  720.798144]  [<ffffffff81666677>] ? _raw_spin_lock_irq+0x17/0x40
+[  720.798147]  [<ffffffff81116e84>] do_filp_open+0x44/0xa0
+[  720.798151]  [<ffffffff810605a5>] ? sub_preempt_count+0x95/0xd0
+[  720.798154]  [<ffffffff81666371>] ? _raw_spin_unlock+0x11/0x40
+[  720.798158]  [<ffffffff81123014>] ? alloc_fd+0xe4/0x130
+[  720.798163]  [<ffffffff81106f7d>] do_sys_open+0xfd/0x1e0
+[  720.798169]  [<ffffffff8100f290>] ? syscall_trace_enter+0xf0/0x1a0
+[  720.798172]  [<ffffffff8110707c>] sys_open+0x1c/0x20
+[  720.798176]  [<ffffffff81667219>] tracesys+0xd0/0xd5
+
+--=20
+
+  Sergei
+
+--Sig_/kfM1nuDy5/1jSc=OEoG88qy
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk9RCEgACgkQcaHudmEf86pJQQCfY4Z/amPYoOflHA1yZnBzq9kU
+FgwAn3ejqe7I1vlRZmUWLkXqq9wWbewd
+=fwbX
+-----END PGP SIGNATURE-----
+
+--Sig_/kfM1nuDy5/1jSc=OEoG88qy--
