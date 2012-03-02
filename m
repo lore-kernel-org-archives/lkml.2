@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab2CBJlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:41:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47026 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756246Ab2CBJl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:41:27 -0500
-Date: Fri, 2 Mar 2012 10:41:22 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        dchinner@redhat.com, Jaya Kumar <jayalk@intworks.biz>,
-        Sage Weil <sage@newdream.net>, ceph-devel@vger.kernel.org,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 00/11 v2] Push file_update_time() into .page_mkwrite
-Message-ID: <20120302094122.GA1744@quack.suse.cz>
-References: <1330602103-8851-1-git-send-email-jack@suse.cz>
- <20120301232942.GH32588@thunk.org>
+	id S1758330Ab2CBJmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:42:12 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43678 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339Ab2CBJmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 04:42:08 -0500
+Message-ID: <4F5095D6.1090806@kernel.dk>
+Date: Fri, 02 Mar 2012 10:41:42 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301232942.GH32588@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+CC: Luis Henriques <luis.henriques@canonical.com>, Tejun Heo <tj@kernel.org>,
+        Naveen Goswamy <naveen.goswamy@polymtl.ca>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: Kernel crashing on eject SD card
+References: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca> <20120212220836.6aa7fa4d@stein> <20120212222027.71651e8b@stein> <20120213021813.GA589@redhat.com> <1329154831.4f394b0f3c69c@www.imp.polymtl.ca> <4F3A4220.4010901@ce.jp.nec.com> <20120214162858.GM12117@google.com> <4F3B1ED3.4000706@ce.jp.nec.com> <20120215172617.GB24986@google.com> <4F3C5B4E.3080606@ce.jp.nec.com> <20120301185817.GA16253@zeus> <4F501052.5070301@ce.jp.nec.com>
+In-Reply-To: <4F501052.5070301@ce.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-03-12 18:29:42, Ted Tso wrote:
-> On Thu, Mar 01, 2012 at 12:41:34PM +0100, Jan Kara wrote:
-> > 
-> > To fix the issue, this patch set changes page fault code to call
-> > file_update_time() only when ->page_mkwrite() callback is not provided. If the
-> > callback is provided, it is the responsibility of the filesystem to perform
-> > update of i_mtime / i_ctime if needed. We also push file_update_time() call
-> > to all existing ->page_mkwrite() implementations if the time update does not
-> > obviously happen by other means. If you know your filesystem does not need
-> > update of modification times in ->page_mkwrite() handler, please speak up and
-> > I'll drop the patch for your filesystem.
+On 03/02/2012 01:12 AM, Jun'ichi Nomura wrote:
+> Hi,
 > 
-> I don't know if this introductory text is going to be saved anywhere
-> permanent, such as the merge commit (since git now has the ability to
-> have much more informative merge descriptions).  But if it is going to
-> be preserved, it might be worth mentioning that if the filesystem uses
-> block_page_mkpage(), it will handled automatically for them since the
-> patch series does push the call to file_update_time(0 into
-> __block_page_mkpage().
-  Good point, added to description.
+> On 03/02/12 03:58, Luis Henriques wrote:
+>> Are there any updates on this fix?  I was wondering if any progress has been
+>> made and if this patch has any chances of hitting mainline soon.
+>>
+>> I have executed a quick test and it seems to solve the problem (or, at least, I
+>> am not able to reproduce the oops anymore).
+> 
+> Thank you for testing and feedback.
+> 
+> The patch is posted here and waiting for Jens to pick up:
+>   https://lkml.org/lkml/2012/2/21/443
+>   [PATCH] Fix NULL pointer dereference in sd_revalidate_disk
 
-								Honza
+It's queued up, I'll send off patches to Linus today.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jens Axboe
+
