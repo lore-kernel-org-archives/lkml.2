@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab2CBEDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 23:03:10 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49178 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab2CBEDH (ORCPT
+	id S1757877Ab2CBEFC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 23:05:02 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:55011 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab2CBEE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 23:03:07 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4F504645.5040708@jp.fujitsu.com>
-Date: Fri, 02 Mar 2012 13:02:13 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 1 Mar 2012 23:04:59 -0500
+Message-ID: <eba2ab81bc32f208b8b94fd959fd7f2f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20120301171914.7c64f095.akpm@linux-foundation.org>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+    <20120301233712.GS3990@outflux.net>
+    <20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+    <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+    <20120301171914.7c64f095.akpm@linux-foundation.org>
+Date: Fri, 2 Mar 2012 05:04:41 +0100
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
+ load_pointer
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Andrew Morton" <akpm@linux-foundation.org>
+Cc: "Kees Cook" <keescook@chromium.org>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab> <4F4E145E.4040901@redhat.com> <20120229121914.GD21224@aftab> <4F4E22B1.6020505@redhat.com> <20120229133741.GF21224@aftab> <4F4EDD9A.4050900@jp.fujitsu.com> <20120301114023.GB32410@aftab> <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 919fae14bc17c74543a025539baad412
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/03/02 3:28), Luck, Tony wrote:
->>> My concern is; on Sandy Bridge, is it safe to gather info about the DIMM
->>> location in/from machine check context in a reasonable time span?
->>
->> Well, what amd64_edac does is "buffer" the required lookup info so
->> whenever you get an error, you simply lookup the channel and chip select
->> - all ops which can be done in atomic context.
-> 
-> Yes - we could pre-read all the config space registers ahead of time and
-> save them in memory (none of the values should change - except if the platform
-> supports hot-plug for memory). Total is only a few Kbytes. Then decode in
-> machine check context is both safe, and fast.
+On Fri, March 2, 2012 02:19, Andrew Morton wrote:
+> That assumes that we're going to merge this stuff into 3.4 - if we
+> don't, unwrecker gets rewrecked and grumpy.
+>
+> I don't know if we're going to merge it into 3.4?  I haven't been
+> paying a lot of attention and haven't looked at the patches in a while.
 
-To sort out my thought:
+I think it should be merged, but I think 3.5 is probably better.
 
- - First of all, OS gathers info about physical location of DIMMs from
-   DMI/ACPI/PCI etc., before enabling MCE mechanism.
- - Make a kind of "physical memory location table" on memory buffer,
-   to ease mapping a physical address to the location of a DIMM module
-   and/or chip which have the memory cell pointed by the address.
-    - It would be better to have a well organized table rather than
-      having a raw copy of config space etc.
-    - Likewise it will also nice if we can map logical processor numbers
-      to the location of physical sockets on motherboard.
-    - Happy if user can refer the table via sysfs.
-    - Allow updating the table if the platform supports hot-plug.
- - Once MCE is enabled, handler can refer the table on memory to
-   determine an erroneous device which should be replaced.
+This because we haven't heard anything from the networking people
+about the BPF changes, and I'm also unsure if the current approach
+is the best one: It both increases the filter.o size significantly
+while slowing down sk_run_filter, while the point was to avoid both.
+I'm trying to think of an alternative approach with lower impact.
 
-This storyline up to here is reasonable and acceptable, I think.
+The ptrace integration may need some more time to settle too, even
+just to make sure the latest version does what needs to be done.
 
-Then now it is clear that the last point where I feel uneasy about is
-putting a string into the ring buffer instead of binary bits like index
-of location table.  Please use binary (or "binary + string") to tell
-the error location to userland.
+Both directly affect the user space ABI, so I think it's best to
+not be too hasty with pushing this upstream. Waiting one release
+while having a stable final patch gives people the chance to go
+and try to use it for their purposes and thus both test the code
+more and get experience with the ABI.
 
+Greetings,
 
-Thanks,
-H.Seto
+Indan
+
 
