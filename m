@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758439Ab2CBIvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:51:33 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757416Ab2CBIvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:51:32 -0500
-Message-ID: <4F508A11.9000405@nod.at>
-Date: Fri, 02 Mar 2012 09:51:29 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Jonas Bonn <jonas@southpole.se>
-CC: linux@openrisc.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: OpenRISC: Module loader broken
-References: <4F501C7A.30307@nod.at> <1330668690.19557.91.camel@satguru>
-In-Reply-To: <1330668690.19557.91.camel@satguru>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB1EFCE28C1A1129B4463BD7A"
+	id S1758458Ab2CBIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:53:26 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:18365 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757611Ab2CBIxZ convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Fri, 2 Mar 2012 03:53:25 -0500
+Message-Id: <4F5098B80200007800075F33@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 02 Mar 2012 08:54:00 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Alex Shi" <alex.shi@intel.com>
+Cc: <jeremy@goop.org>, "asit.k.mallick@intel.com" <asit.k.mallick@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, <tglx@linutronix.de>,
+        "Andi Kleen" <ak@linux.intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [RFC patch] cmpxchg_double: remove local variables to get
+ better performance
+References: <1330677063.21053.1532.camel@debian>
+In-Reply-To: <1330677063.21053.1532.camel@debian>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB1EFCE28C1A1129B4463BD7A
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+>>> On 02.03.12 at 09:31, Alex Shi <alex.shi@intel.com> wrote:
+> There are some local variables in cmpxchg_double macro, seems these are
+> used to for force casting on input variables to transfer them into '*p1'
+> type. May there are some reason I don't know. But I just saw 2 problems
+> here:
+> 
+> 1, user may mis-use the macro, like give a 'long' type o1, but just use
+> a 'int*' or 'char*' p1.  
 
-Am 02.03.2012 07:11, schrieb Jonas Bonn:
-> Hi Richard,
->=20
-> On Fri, 2012-03-02 at 02:03 +0100, Richard Weinberger wrote:
->> Hi!
->>
->> The OpenRISC module loader is broken.
->=20
-> OK, that's new as we've been using module loading quite a bit on this
-> platform earlier.  Where did you get your toolchain from?
+No - see the BUILD_BUG_ON()s right after the lines you suggest to
+remove.
 
-I built it two days ago from source as described here:
-http://openrisc.net/toolchain-build.html
+Further, it seems to be intentional to allow _compatible_ types for
+o1 and o2 - you could pass in a literal number without L suffix here,
+which I don't think you can anymore with the intermediate variable
+removed.
 
-Thanks,
-//richard
+> If we remove the force cast here, gcc will check the mis-using in
+> compiling. and user can get the error report in compiling for such
+> issues.
+> 
+> 2, local variable increased the data section, and bring extra memory bus
+
+These aren't static, so the data section can't possibly increase.
+
+> accesses, that hurt performance in this critical macro.
+
+With optimization enabled, the compiler should eliminate all unnecessary
+intermediate variables.
+
+> I did a little experiment on my nhm i7 desktop, to run the macro with a
+> fixed times, here is the data:
+> 			 using local vars         no local variable
+> with lock prefix,         267700578ns             232079696ns
+> without lock prefix,      34715666ns              34687566ns
+> 
+> So, we may need rethink about the local variable usage here. 
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+
+Sorry, but if this counts, this is a nack from me.
+
+Jan
+
+> diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+> index b3b7332..8bf9127 100644
+> --- a/arch/x86/include/asm/cmpxchg.h
+> +++ b/arch/x86/include/asm/cmpxchg.h
+> @@ -210,17 +210,15 @@ extern void __add_wrong_size(void)
+>  #define __cmpxchg_double(pfx, p1, p2, o1, o2, n1, n2)			\
+>  ({									\
+>  	bool __ret;							\
+> -	__typeof__(*(p1)) __old1 = (o1), __new1 = (n1);			\
+> -	__typeof__(*(p2)) __old2 = (o2), __new2 = (n2);			\
+>  	BUILD_BUG_ON(sizeof(*(p1)) != sizeof(long));			\
+>  	BUILD_BUG_ON(sizeof(*(p2)) != sizeof(long));			\
+>  	VM_BUG_ON((unsigned long)(p1) % (2 * sizeof(long)));		\
+>  	VM_BUG_ON((unsigned long)((p1) + 1) != (unsigned long)(p2));	\
+>  	asm volatile(pfx "cmpxchg%c4b %2; sete %0"			\
+> -		     : "=a" (__ret), "+d" (__old2),			\
+> +		     : "=a" (__ret), "+d" (o2),				\
+>  		       "+m" (*(p1)), "+m" (*(p2))			\
+> -		     : "i" (2 * sizeof(long)), "a" (__old1),		\
+> -		       "b" (__new1), "c" (__new2));			\
+> +		     : "i" (2 * sizeof(long)), "a" (o1),		\
+> +		       "b" (n1), "c" (n2));				\
+>  	__ret;								\
+>  })
+>  
 
 
---------------enigB1EFCE28C1A1129B4463BD7A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPUIoSAAoJEN9758yqZn9eWLIH+gMLqCd9mtAehp1kKRk3PBt1
-qcvIcMO//OIa29xnWG8M3lJh3qyXslIej1y1hc2PRuE5xPrWbgQfH4TCJdt5Xamp
-4hACVNrMlI8r3lrIbr/zWh6mJpPXJgjoSzSgTyyfECSBuOzAQDL+kReK5BOm4Ivx
-3md951CaZ43iNNUxcDIHH/pplDrwHNqqm/Ohaa1xTjed8GuBjNAtUoiFXXo6h/Tv
-1YJBYcCWIjEAixtCmFD5W1QZTD2Owa5YLCdIDEyFAGtyhQvkAkghLVf5vkI2ccWj
-PJ0dZA6iDeBi5RsWAJexOFEsXILIM0tASEMyuooeufTE699Iqil29DFelm47+2A=
-=SE3S
------END PGP SIGNATURE-----
-
---------------enigB1EFCE28C1A1129B4463BD7A--
