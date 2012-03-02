@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2CBFyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 00:54:36 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40635 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756152Ab2CBFye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 00:54:34 -0500
-Message-ID: <1330667673.1939.22.camel@joe2Laptop>
-Subject: [PATCH] checkpatch: Add --strict test for strings split across
- multiple lines
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, gustavo@padovan.org,
-        johan.hedberg@gmail.com, linville@tuxdriver.com,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 01 Mar 2012 21:54:33 -0800
-In-Reply-To: <1330666534.1939.19.camel@joe2Laptop>
-References: <20120302025554.GA13493@joana>
-	 <20120301.221643.881299898523907213.davem@davemloft.net>
-	 <20120301.222316.1877216960521396397.davem@davemloft.net>
-	 <20120301.222604.1508242694024394849.davem@davemloft.net>
-	 <1330661602.1939.13.camel@joe2Laptop> <1330666534.1939.19.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756645Ab2CBF51 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 00:57:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58870 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab2CBF50 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 00:57:26 -0500
+Date: Thu, 1 Mar 2012 23:57:16 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Thomas Goirand <thomas@goirand.fr>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        xen-devel@lists.xensource.com, William Dauchy <wdauchy@gmail.com>,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        pkg-xen-devel@lists.alioth.debian.org, linux-kernel@vger.kernel.org
+Subject: Re: ioatdma: Boot process hangs then reboots when using Xen + Linux
+ 3.2
+Message-ID: <20120302055715.GA692@burratino>
+References: <CAJ75kXZ-2vWZpG7Uz3firg6ew4y_DdorXotkAkUGSK0GWLMUQQ@mail.gmail.com>
+ <20120127144737.GA27750@andromeda.dapyr.net>
+ <20120219223125.GA820@burratino>
+ <20120220181618.GD17566@burratino>
+ <4F4891B8.9050008@goirand.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4891B8.9050008@goirand.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strings split across multiple lines are commonly used
-as formats.  These uncoalesced formats are hard to grep
-and are relatively error prone.
+Hi Dan,
 
-Suggest coalescing split strings when using --strict.
+Thomas and William (cc-ed) have been having trouble loading the
+ioatdma driver on a 32-bit Xen dom0.  The module loads automatically
+at boot time and trips
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+	BUG_ON(active && !seen_current); /* no active descs have written a completion? */
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 581a14c..5d0b46c 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1860,6 +1860,12 @@ sub process {
- 			    "Don't begin block comments with only a /* line, use /* comment...\n" . $hereprev);
- 		}
- 
-+		if ($prevline =~ /^\+.*"[ \t]*$/ &&
-+		    $line =~ /^\+[ \t]*"/) {
-+			CHK("COALESCE_STRING",
-+			    "Coalesced strings are easier to grep and less error prone\n" . $hereprev);
-+		}
-+
- # check for spaces at the beginning of a line.
- # Exceptions:
- #  1) within comments
--- 
-1.7.8.111.gad25c.dirty
+from drivers/dma/ioat/dma_v2.c.  That check has been present since
+5cbafa65b92e (ioat2,3: convert to a true ring buffer, 2009-08-26).
+The bug is probably in Xen code and seems to be a regression (the bug
+is present in 3.2 but not 3.1.8).
 
+Thomas Goirand wrote:
+> On 03/01/2012 11:53 PM, Bastian Blank wrote:
+>> On Thu, Mar 01, 2012 at 06:02:15PM +0800, Thomas Goirand wrote:
 
+>>>                     Any clue why I don't see crashes without Xen, with a
+>>> 64 bits kernel, or with earlier versions of Linux (eg: 3.1 for example)?
+>>
+>> xen/i386 uses a different memory model to anything else, this may be a
+>> problem.
+[...]
+> Replacing BUG_ON by a WARN_ON, and adding #define DEBUG 1 on top of
+> dma_v2.c, my kernel booted, and I had the attached dmesg output.
+>
+> Blacklisting the ioatdma kernel module of course, solved the issue.
+>
+> I hope that helps, please let me know if I should do more to help. If
+> you need access to my server, that's possible (I use it only for
+> packaging XCP and some tests...).
 
+I don't expect you to debug this Xen-specific bug, but I'm wondering:
+is there any reason this check has to be a BUG_ON instead of a
+WARN_ON?  If there is some way to recover when the impossible happens,
+that would make using and debugging the kernel a little easier.
+
+Curious,
+Jonathan
