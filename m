@@ -1,268 +1,759 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab2CBShl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 13:37:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64090 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab2CBShk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 13:37:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.129.137 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Fri, 2 Mar 2012 10:37:04 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 3.3] memcg: fix GPF when cgroup removal races with last
- exit
-Message-ID: <alpine.LSU.2.00.1203021030140.2094@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1758413Ab2CBSot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 13:44:49 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42734 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754743Ab2CBSoq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 13:44:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.112.25.8 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <a6fdbe9d1daf6864589c9affc7048965.squirrel@webmail.greenhost.nl>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	<1330559620-23543-6-git-send-email-wad@chromium.org>
+	<a6fdbe9d1daf6864589c9affc7048965.squirrel@webmail.greenhost.nl>
+Date: Fri, 2 Mar 2012 12:44:41 -0600
+Message-ID: <CABqD9habOw0kWWRVLqfrOS_5UFn+yw9eohrAw3f=vmy-AbQfdQ@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH v12 06/13] seccomp: add system call
+ filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: kernel-hardening@lists.openwall.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, netdev@vger.kernel.org, x86@kernel.org,
+        arnd@arndb.de, davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When moving tasks from old memcg (with move_charge_at_immigrate on new
-memcg), followed by removal of old memcg, hit General Protection Fault
-in mem_cgroup_lru_del_list() (called from release_pages called from
-free_pages_and_swap_cache from tlb_flush_mmu from tlb_finish_mmu from
-exit_mmap from mmput from exit_mm from do_exit).
+On Thu, Mar 1, 2012 at 11:45 PM, Indan Zupancic <indan@nul.nu> wrote:
+> Hello,
+>
+> Mostly minor nitpicks.
 
-Somewhat reproducible, takes a few hours: the old struct mem_cgroup has
-been freed and poisoned by SLAB_DEBUG, but mem_cgroup_lru_del_list() is
-still trying to update its stats, and take page off lru before freeing.
+Thanks!
 
-A task, or a charge, or a page on lru: each secures a memcg against
-removal.  In this case, the last task has been moved out of the old
-memcg, and it is exiting: anonymous pages are uncharged one by one
-from the memcg, as they are zapped from its pagetables, so the charge
-gets down to 0; but the pages themselves are queued in an mmu_gather
-for freeing.
+> On Thu, March 1, 2012 00:53, Will Drewry wrote:
+>> diff --git a/arch/Kconfig b/arch/Kconfig
+>> index e5d3778..7a696a9 100644
+>> --- a/arch/Kconfig
+>> +++ b/arch/Kconfig
+>> @@ -233,4 +233,21 @@ config HAVE_CMPXCHG_DOUBLE
+>> config ARCH_WANT_OLD_COMPAT_IPC
+>>       bool
+>>
+>> +config HAVE_ARCH_SECCOMP_FILTER
+>> +     bool
+>> +     help
+>> +       This symbol should be selected by an architecure if it provides
+>
+> 'architecture'
 
-Most of those pages will be on lru (and force_empty is careful to
-lru_add_drain_all, to add pages from pagevec to lru first), but not
-necessarily all: perhaps some have been isolated for page reclaim,
-perhaps some isolated for other reasons.  So, force_empty may find
-no task, no charge and no page on lru, and let the removal proceed.
+Oops
 
-There would still be no problem if these pages were immediately
-freed; but typically (and the put_page_testzero protocol demands it)
-they have to be added back to lru before they are found freeable,
-then removed from lru and freed.  We don't see the issue when adding,
-because the mem_cgroup_iter() loops keep their own reference to the
-memcg being scanned; but when it comes to mem_cgroup_lru_del_list().
+>> +       asm/syscall.h, specifically syscall_get_arguments() and
+>> +       syscall_get_arch().
+>> +
+>> +config SECCOMP_FILTER
+>> +     def_bool y
+>> +     depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
+>> +     help
+>> +       Enable tasks to build secure computing environments defined
+>> +       in terms of Berkeley Packet Filter programs which implement
+>> +       task-defined system call filtering polices.
+>> +
+>> +       See Documentation/prctl/seccomp_filter.txt for details.
+>> +
+>> source "kernel/gcov/Kconfig"
+>> diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+>> index ecd0afb..b1e6a74 100644
+>> --- a/include/linux/Kbuild
+>> +++ b/include/linux/Kbuild
+>> @@ -332,6 +332,7 @@ header-y += scc.h
+>> header-y += sched.h
+>> header-y += screen_info.h
+>> header-y += sdla.h
+>> +header-y += seccomp.h
+>> header-y += securebits.h
+>> header-y += selinux_netlink.h
+>> header-y += sem.h
+>> diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+>> index d61f27f..6ef133c 100644
+>> --- a/include/linux/seccomp.h
+>> +++ b/include/linux/seccomp.h
+>> @@ -1,14 +1,67 @@
+>> #ifndef _LINUX_SECCOMP_H
+>> #define _LINUX_SECCOMP_H
+>>
+>> +#include <linux/compiler.h>
+>> +#include <linux/types.h>
+>> +
+>> +
+>> +/* Valid values for seccomp.mode and prctl(PR_SET_SECCOMP, <mode>) */
+>> +#define SECCOMP_MODE_DISABLED        0 /* seccomp is not in use. */
+>> +#define SECCOMP_MODE_STRICT  1 /* uses hard-coded filter. */
+>> +#define SECCOMP_MODE_FILTER  2 /* uses user-supplied filter. */
+>
+> I'd add a space or tab to align the numbers, or rename DISABLED to NONE,
+> but that's just me I guess.
+>
+>> +
+>> +/*
+>> + * All BPF programs must return a 32-bit value.
+>> + * The bottom 16-bits are reserved for future use.
+>> + * The upper 16-bits are ordered from least permissive values to most.
+>> + *
+>> + * The ordering ensures that a min_t() over composed return values always
+>> + * selects the least permissive choice.
+>> + */
+>> +#define SECCOMP_RET_KILL     0x00000000U /* kill the task immediately */
+>> +#define SECCOMP_RET_ALLOW    0x7fff0000U /* allow */
+>> +
+>> +/* Masks for the return value sections. */
+>> +#define SECCOMP_RET_ACTION   0xffff0000U
+>> +#define SECCOMP_RET_DATA     0x0000ffffU
+>> +
+>> +/**
+>> + * struct seccomp_data - the format the BPF program executes over.
+>
+> format?
 
-I believe this was not an issue in v3.2: there, PageCgroupAcctLRU and
-PageCgroupUsed flags were used (like a trick with mirrors) to deflect
-view of pc->mem_cgroup to the stable root_mem_cgroup when neither set.
-38c5d72f3ebe "memcg: simplify LRU handling by new rule" mercifully
-removed those convolutions, but left this General Protection Fault.
+I'll reword - I meant that this is the format, or layout, of the data.
 
-But it's surprisingly easy to restore the old behaviour: just check
-PageCgroupUsed in mem_cgroup_lru_add_list() (which decides on which
-lruvec to add), and reset pc to root_mem_cgroup if page is uncharged.
-A risky change? just going back to how it worked before; testing,
-and an audit of uses of pc->mem_cgroup, show no problem.
+>> + * @nr: the system call number
+>> + * @arch: indicates system call convention as an AUDIT_ARCH_* value
+>> + *        as defined in <linux/audit.h>.
+>> + * @instruction_pointer: at the time of the system call.
+>
+> If the vDSO is used this will always be the same, so what good is this?
+> I haven't gotten an answer to this yet.
+>
+> That said, it's eays enough to add, I just don't see the point of it.
 
-And there's a nice bonus: with mem_cgroup_lru_add_list() itself making
-sure that an uncharged page goes to root lru, mem_cgroup_reset_owner()
-no longer has any purpose, and we can safely revert 4e5f01c2b9b9
-"memcg: clear pc->mem_cgroup if necessary".
+[refers to rest of thread :]
 
-Calling update_page_reclaim_stat() after add_page_to_lru_list() in
-swap.c is not strictly necessary: the lru_lock there, with RCU before
-memcg structures are freed, makes mem_cgroup_get_reclaim_stat_from_page
-safe without that; but it seems cleaner to rely on one dependency less.
+>> + * @args: up to 6 system call arguments always stored as 64-bit values
+>> + *        regardless of the architecture.
+>> + */
+>> +struct seccomp_data {
+>> +     int nr;
+>> +     __u32 arch;
+>> +     __u64 instruction_pointer;
+>> +     __u64 args[6];
+>> +};
+>>
+>> +#ifdef __KERNEL__
+>> #ifdef CONFIG_SECCOMP
+>>
+>> #include <linux/thread_info.h>
+>> #include <asm/seccomp.h>
+>>
+>> +struct seccomp_filter;
+>> +/**
+>> + * struct seccomp - the state of a seccomp'ed process
+>> + *
+>> + * @mode:  indicates one of the valid values above for controlled
+>> + *         system calls available to a process.
+>> + * @filter: The metadata and ruleset for determining what system calls
+>> + *          are allowed for a task.
+>> + *
+>> + *          @filter must only be accessed from the context of current as there
+>
+> I'd move 'as there' to the next line.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+Done
 
-I had to delay sending this for a few days, since tests were still
-crashing, but differently.  Now I understand why: it's a different bug,
-and not even a regression, confined to memcg swap accounting - I'll
-send a fix to that one in a couple of days.
+>> + *          is no locking.
+>> + */
+>> struct seccomp {
+>>       int mode;
+>> +     struct seccomp_filter *filter;
+>> };
+>
+> If the extra memory usage is a problem, a union could be used:
+>
+> union seccomp {
+>        long mode;
+>        struct seccomp_filter *filter;
+> };
+>
+> That way mode is 0 when it's disabled, 1 for SECCOMP_MODE_STRICT and
+> a pointer for SECCOMP_MODE_FILTER.
 
-Konstantin, I've not yet looked into how this patch affects your
-patchsets; but I do know that this surreptitious-switch-to-root
-behaviour seemed nightmarish when I was doing per-memcg per-zone
-locking (particularly inside something like __activate_page(), where
-we del and add under a single lock), and unnecessary once you and I
-secure the memcg differently.  So you may just want to revert this in
-patches for linux-next; but I've a suspicion that now we understand
-it better, this technique might still be usable, and more efficient.
+I haven't heard any specific complaints about the extra unsigned long,
+but if so, we could do this.  It would make me a bit uneasy even
+though it should be safe in practice.
 
- include/linux/memcontrol.h |    5 -----
- mm/ksm.c                   |   11 -----------
- mm/memcontrol.c            |   30 +++++++++++++-----------------
- mm/migrate.c               |    2 --
- mm/swap.c                  |    8 +++++---
- mm/swap_state.c            |   10 ----------
- 6 files changed, 18 insertions(+), 48 deletions(-)
+>>
+>> extern void __secure_computing(int);
+>> @@ -19,7 +72,7 @@ static inline void secure_computing(int this_syscall)
+>> }
+>>
+>> extern long prctl_get_seccomp(void);
+>> -extern long prctl_set_seccomp(unsigned long);
+>> +extern long prctl_set_seccomp(unsigned long, char __user *);
+>>
+>> static inline int seccomp_mode(struct seccomp *s)
+>> {
+>> @@ -31,15 +84,16 @@ static inline int seccomp_mode(struct seccomp *s)
+>> #include <linux/errno.h>
+>>
+>> struct seccomp { };
+>> +struct seccomp_filter { };
+>>
+>> -#define secure_computing(x) do { } while (0)
+>> +#define secure_computing(x) 0
+>>
+>> static inline long prctl_get_seccomp(void)
+>> {
+>>       return -EINVAL;
+>> }
+>>
+>> -static inline long prctl_set_seccomp(unsigned long arg2)
+>> +static inline long prctl_set_seccomp(unsigned long arg2, char __user *arg3)
+>> {
+>>       return -EINVAL;
+>> }
+>> @@ -48,7 +102,15 @@ static inline int seccomp_mode(struct seccomp *s)
+>> {
+>>       return 0;
+>> }
+>> -
+>> #endif /* CONFIG_SECCOMP */
+>>
+>> +#ifdef CONFIG_SECCOMP_FILTER
+>> +extern void put_seccomp_filter(struct seccomp_filter *);
+>> +extern void get_seccomp_filter(struct seccomp_filter *);
+>> +#else  /* CONFIG_SECCOMP_FILTER */
+>> +/* These macros consume the seccomp.filter reference. */
+>
+> I think it's cleaner to let put/get_seccomp_filter have struct task*
+> as a parameter instead of the filter.
+>
+>> +#define put_seccomp_filter(_s) do { } while (0)
+>> +#define get_seccomp_filter(_s) do { } while (0)
+>> +#endif /* CONFIG_SECCOMP_FILTER */
+>> +#endif /* __KERNEL__ */
+>> #endif /* _LINUX_SECCOMP_H */
+>> diff --git a/kernel/fork.c b/kernel/fork.c
+>> index b18c107..da3e489 100644
+>> --- a/kernel/fork.c
+>> +++ b/kernel/fork.c
+>> @@ -34,6 +34,7 @@
+>> #include <linux/cgroup.h>
+>> #include <linux/security.h>
+>> #include <linux/hugetlb.h>
+>> +#include <linux/seccomp.h>
+>> #include <linux/swap.h>
+>> #include <linux/syscalls.h>
+>> #include <linux/jiffies.h>
+>> @@ -171,6 +172,7 @@ void free_task(struct task_struct *tsk)
+>>       free_thread_info(tsk->stack);
+>>       rt_mutex_debug_task_free(tsk);
+>>       ftrace_graph_exit_task(tsk);
+>> +     put_seccomp_filter(tsk->seccomp.filter);
+>>       free_task_struct(tsk);
+>> }
+>> EXPORT_SYMBOL(free_task);
+>> @@ -1166,6 +1168,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>>               goto fork_out;
+>>
+>>       ftrace_graph_init_task(p);
+>> +     get_seccomp_filter(p->seccomp.filter);
+>>
+>>       rt_mutex_init_task(p);
+>>
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index e8d76c5..71df324 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -3,16 +3,272 @@
+>>  *
+>>  * Copyright 2004-2005  Andrea Arcangeli <andrea@cpushare.com>
+>>  *
+>> - * This defines a simple but solid secure-computing mode.
+>> + * Copyright (C) 2012 Google, Inc.
+>> + * Will Drewry <wad@chromium.org>
+>> + *
+>> + * This defines a simple but solid secure-computing facility.
+>> + *
+>> + * Mode 1 uses a fixed list of allowed system calls.
+>> + * Mode 2 allows user-defined system call filters in the form
+>> + *        of Berkeley Packet Filters/Linux Socket Filters.
+>>  */
+>>
+>> +#include <linux/atomic.h>
+>> #include <linux/audit.h>
+>> -#include <linux/seccomp.h>
+>> -#include <linux/sched.h>
+>> #include <linux/compat.h>
+>> +#include <linux/filter.h>
+>> +#include <linux/sched.h>
+>> +#include <linux/seccomp.h>
+>> +#include <linux/security.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/uaccess.h>
+>> +
+>> +#include <linux/tracehook.h>
+>> +#include <asm/syscall.h>
+>>
+>> /* #define SECCOMP_DEBUG 1 */
+>> -#define NR_SECCOMP_MODES 1
+>> +
+>> +#ifdef CONFIG_SECCOMP_FILTER
+>> +/**
+>> + * struct seccomp_filter - container for seccomp BPF programs
+>> + *
+>> + * @usage: reference count to manage the object liftime.
+>> + *         get/put helpers should be used when accessing an instance
+>> + *         outside of a lifetime-guarded section.  In general, this
+>> + *         is only needed for handling filters shared across tasks.
+>> + * @prev: points to a previously installed, or inherited, filter
+>> + * @insns: the BPF program instructions to evaluate
+>> + * @len: the number of instructions in the program
+>> + *
+>> + * seccomp_filter objects are organized in a tree linked via the @prev
+>> + * pointer.  For any task, it appears to be a singly-linked list starting
+>> + * with current->seccomp.filter, the most recently attached or inherited filter.
+>> + * However, multiple filters may share a @prev node, by way of fork(), which
+>> + * results in a unidirectional tree existing in memory.  This is similar to
+>> + * how namespaces work.
+>> + *
+>> + * seccomp_filter objects should never be modified after being attached
+>> + * to a task_struct (other than @usage).
+>> + */
+>> +struct seccomp_filter {
+>> +     atomic_t usage;
+>> +     struct seccomp_filter *prev;
+>> +     unsigned short len;  /* Instruction count */
+>
+> To avoid 4 bytes of the padding on 64-bit, you could move len to just after
+> atomic_t, which is an int.
 
---- 3.3-rc5/include/linux/memcontrol.h	2012-01-24 20:40:19.201922679 -0800
-+++ linux/include/linux/memcontrol.h	2012-02-29 10:17:45.180012045 -0800
-@@ -129,7 +129,6 @@ extern void mem_cgroup_print_oom_info(st
- extern void mem_cgroup_replace_page_cache(struct page *oldpage,
- 					struct page *newpage);
- 
--extern void mem_cgroup_reset_owner(struct page *page);
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- extern int do_swap_account;
- #endif
-@@ -392,10 +391,6 @@ static inline void mem_cgroup_replace_pa
- 				struct page *newpage)
- {
- }
--
--static inline void mem_cgroup_reset_owner(struct page *page)
--{
--}
- #endif /* CONFIG_CGROUP_MEM_CONT */
- 
- #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
---- 3.3-rc5/mm/ksm.c	2012-01-20 08:42:35.000000000 -0800
-+++ linux/mm/ksm.c	2012-02-29 10:15:18.456008873 -0800
-@@ -28,7 +28,6 @@
- #include <linux/kthread.h>
- #include <linux/wait.h>
- #include <linux/slab.h>
--#include <linux/memcontrol.h>
- #include <linux/rbtree.h>
- #include <linux/memory.h>
- #include <linux/mmu_notifier.h>
-@@ -1572,16 +1571,6 @@ struct page *ksm_does_need_to_copy(struc
- 
- 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
- 	if (new_page) {
--		/*
--		 * The memcg-specific accounting when moving
--		 * pages around the LRU lists relies on the
--		 * page's owner (memcg) to be valid.  Usually,
--		 * pages are assigned to a new owner before
--		 * being put on the LRU list, but since this
--		 * is not the case here, the stale owner from
--		 * a previous allocation cycle must be reset.
--		 */
--		mem_cgroup_reset_owner(new_page);
- 		copy_user_highpage(new_page, page, address, vma);
- 
- 		SetPageDirty(new_page);
---- 3.3-rc5/mm/memcontrol.c	2012-02-25 13:02:05.165830574 -0800
-+++ linux/mm/memcontrol.c	2012-02-29 14:23:57.492362468 -0800
-@@ -1042,6 +1042,19 @@ struct lruvec *mem_cgroup_lru_add_list(s
- 
- 	pc = lookup_page_cgroup(page);
- 	memcg = pc->mem_cgroup;
-+
-+	/*
-+	 * Surreptitiously switch any uncharged page to root:
-+	 * an uncharged page off lru does nothing to secure
-+	 * its former mem_cgroup from sudden removal.
-+	 *
-+	 * Our caller holds lru_lock, and PageCgroupUsed is updated
-+	 * under page_cgroup lock: between them, they make all uses
-+	 * of pc->mem_cgroup safe.
-+	 */
-+	if (!PageCgroupUsed(pc) && memcg != root_mem_cgroup)
-+		pc->mem_cgroup = memcg = root_mem_cgroup;
-+
- 	mz = page_cgroup_zoneinfo(memcg, page);
- 	/* compound_order() is stabilized through lru_lock */
- 	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
-@@ -3027,23 +3040,6 @@ void mem_cgroup_uncharge_end(void)
- 	batch->memcg = NULL;
- }
- 
--/*
-- * A function for resetting pc->mem_cgroup for newly allocated pages.
-- * This function should be called if the newpage will be added to LRU
-- * before start accounting.
-- */
--void mem_cgroup_reset_owner(struct page *newpage)
--{
--	struct page_cgroup *pc;
--
--	if (mem_cgroup_disabled())
--		return;
--
--	pc = lookup_page_cgroup(newpage);
--	VM_BUG_ON(PageCgroupUsed(pc));
--	pc->mem_cgroup = root_mem_cgroup;
--}
--
- #ifdef CONFIG_SWAP
- /*
-  * called after __delete_from_swap_cache() and drop "page" account.
---- 3.3-rc5/mm/migrate.c	2012-02-05 16:33:52.405387309 -0800
-+++ linux/mm/migrate.c	2012-02-29 10:14:21.140006935 -0800
-@@ -839,8 +839,6 @@ static int unmap_and_move(new_page_t get
- 	if (!newpage)
- 		return -ENOMEM;
- 
--	mem_cgroup_reset_owner(newpage);
--
- 	if (page_count(page) == 1) {
- 		/* page was freed from under us. So we are done. */
- 		goto out;
---- 3.3-rc5/mm/swap.c	2012-02-08 20:50:28.365491381 -0800
-+++ linux/mm/swap.c	2012-02-29 14:38:55.556384455 -0800
-@@ -652,7 +652,7 @@ EXPORT_SYMBOL(__pagevec_release);
- void lru_add_page_tail(struct zone* zone,
- 		       struct page *page, struct page *page_tail)
- {
--	int active;
-+	int uninitialized_var(active);
- 	enum lru_list lru;
- 	const int file = 0;
- 
-@@ -672,7 +672,6 @@ void lru_add_page_tail(struct zone* zone
- 			active = 0;
- 			lru = LRU_INACTIVE_ANON;
- 		}
--		update_page_reclaim_stat(zone, page_tail, file, active);
- 	} else {
- 		SetPageUnevictable(page_tail);
- 		lru = LRU_UNEVICTABLE;
-@@ -693,6 +692,9 @@ void lru_add_page_tail(struct zone* zone
- 		list_head = page_tail->lru.prev;
- 		list_move_tail(&page_tail->lru, list_head);
- 	}
-+
-+	if (!PageUnevictable(page))
-+		update_page_reclaim_stat(zone, page_tail, file, active);
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
-@@ -710,8 +712,8 @@ static void __pagevec_lru_add_fn(struct
- 	SetPageLRU(page);
- 	if (active)
- 		SetPageActive(page);
--	update_page_reclaim_stat(zone, page, file, active);
- 	add_page_to_lru_list(zone, page, lru);
-+	update_page_reclaim_stat(zone, page, file, active);
- }
- 
- /*
---- 3.3-rc5/mm/swap_state.c	2012-01-20 08:42:35.000000000 -0800
-+++ linux/mm/swap_state.c	2012-02-29 10:14:30.752007622 -0800
-@@ -300,16 +300,6 @@ struct page *read_swap_cache_async(swp_e
- 			new_page = alloc_page_vma(gfp_mask, vma, addr);
- 			if (!new_page)
- 				break;		/* Out of memory */
--			/*
--			 * The memcg-specific accounting when moving
--			 * pages around the LRU lists relies on the
--			 * page's owner (memcg) to be valid.  Usually,
--			 * pages are assigned to a new owner before
--			 * being put on the LRU list, but since this
--			 * is not the case here, the stale owner from
--			 * a previous allocation cycle must be reset.
--			 */
--			mem_cgroup_reset_owner(new_page);
- 		}
- 
- 		/*
+Good call.
+
+>> +     struct sock_filter insns[];
+>> +};
+>> +
+>> +/* Limit any path through the tree to 5 megabytes worth of instructions. */
+>> +#define MAX_INSNS_PER_PATH ((5 << 20) / sizeof(struct sock_filter))
+>
+> I think this is too high, that are 160 filters with max instruction length.
+>
+> I vote for a 1MB or lower limit, that's 32 filters with max size.
+
+1MB is fine.  My goal is just to protect the system from total
+resource exhaustion
+
+>> +
+>> +static void seccomp_filter_log_failure(int syscall)
+>> +{
+>> +     int compat = 0;
+>> +#ifdef CONFIG_COMPAT
+>> +     compat = is_compat_task();
+>> +#endif
+>> +     pr_info("%s[%d]: %ssystem call %d blocked at 0x%lx\n",
+>> +             current->comm, task_pid_nr(current),
+>> +             (compat ? "compat " : ""),
+>> +             syscall, KSTK_EIP(current));
+>> +}
+>
+> Hm, I thought everyone agreed this wasn't really necessary?
+
+Yep - instead of just fixing it up, I included Kees's patch in the patch series.
+
+>> +
+>> +/**
+>> + * get_u32 - returns a u32 offset into data
+>
+> It doesn't return an offset.
+
+True enough
+
+>> + * @data: a unsigned 64 bit value
+>
+> Well, yes, it's a u64.
+
+I'm glad we agree :)
+>> + * @index: 0 or 1 to return the first or second 32-bits
+>> + *
+>> + * This inline exists to hide the length of unsigned long.
+>
+> and to get the upper half of it.
+>
+>> + * If a 32-bit unsigned long is passed in, it will be extended
+>> + * and the top 32-bits will be 0. If it is a 64-bit unsigned
+>> + * long, then whatever data is resident will be properly returned.
+>> + */
+>
+> Personally I would leave out the whole comment, because reading the
+> two lines of code is faster and gives the same info.
+
+Sounds good.
+
+>> +static inline u32 get_u32(u64 data, int index)
+>> +{
+>> +     return ((u32 *)&data)[index];
+>> +}
+>> +
+>> +/* Helper for bpf_load below. */
+>> +#define BPF_DATA(_name) offsetof(struct seccomp_data, _name)
+>> +/**
+>> + * bpf_load: checks and returns a pointer to the requested offset
+>> + * @nr: int syscall passed as a void * to bpf_run_filter
+>> + * @off: offset into struct seccomp_data to load from (must be u32 aligned)
+>> + * @size: number of bytes to load (must be 4 bytes)
+>> + * @buf: temporary storage supplied by bpf_run_filter (4 bytes)
+>> + *
+>> + * Returns a pointer to the loaded data (usually @buf).
+>> + * On failure, returns NULL.
+>> + */
+>> +static void *bpf_load(const void *nr, int off, unsigned int size, void *buf)
+>> +{
+>> +     unsigned long value;
+>> +     u32 *A = buf;
+>> +
+>> +     if (size != sizeof(u32) || off % sizeof(u32))
+>> +             return NULL;
+>> +
+>> +     if (off >= BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
+>> +             struct pt_regs *regs = task_pt_regs(current);
+>> +             int arg = (off - BPF_DATA(args[0])) / sizeof(u64);
+>> +             int index = (off % sizeof(u64)) ? 1 : 0;
+>> +             syscall_get_arguments(current, regs, arg, 1, &value);
+>> +             *A = get_u32(value, index);
+>> +     } else if (off == BPF_DATA(nr)) {
+>> +             *A = (u32)(uintptr_t)nr;
+>> +     } else if (off == BPF_DATA(arch)) {
+>> +             struct pt_regs *regs = task_pt_regs(current);
+>> +             *A = syscall_get_arch(current, regs);
+>> +     } else if (off == BPF_DATA(instruction_pointer)) {
+>> +             *A = get_u32(KSTK_EIP(current), 0);
+>> +     } else if (off == BPF_DATA(instruction_pointer) + sizeof(u32)) {
+>> +             *A = get_u32(KSTK_EIP(current), 1);
+>> +     } else {
+>> +             return NULL;
+>> +     }
+>> +     return buf;
+>> +}
+>
+> The interface doesn't match, the alignment doesn't match, and the LD
+> instructions couldn't be reused, with code size and even slowdowns in
+> the networking filter code as a result. I have the impression this
+> isn't the best approach after all.
+>
+> I'm going to take a look at implementing it as anscillary data accesses
+> instead of generic loads. That hopefully reduces the code churn in filter.c
+> a lot.
+
+Your alternative approach is nice. I guess it all depends on what
+makes sense to netdev too.  Perhaps Eric Dumazet or someone from
+netdev can weigh in on it.
+
+>> +
+>> +/**
+>> + * seccomp_run_filters - evaluates all seccomp filters against @syscall
+>> + * @syscall: number of the current system call
+>> + *
+>> + * Returns valid seccomp BPF response codes.
+>> + */
+>> +static u32 seccomp_run_filters(int syscall)
+>> +{
+>> +     struct seccomp_filter *f;
+>> +     u32 ret = SECCOMP_RET_KILL;
+>> +     static const struct bpf_load_fn fns = {
+>> +             bpf_load,
+>> +             sizeof(struct seccomp_data),
+>> +     };
+>> +     const void *sc_ptr = (const void *)(uintptr_t)syscall;
+>> +
+>> +     /*
+>> +      * All filters are evaluated in order of youngest to oldest. The lowest
+>> +      * BPF return value always takes priority.
+>> +      */
+>> +     for (f = current->seccomp.filter; f; f = f->prev) {
+>> +             ret = bpf_run_filter(sc_ptr, f->insns, &fns);
+>> +             if (ret != SECCOMP_RET_ALLOW)
+>> +                     break;
+>> +     }
+>> +     return ret;
+>> +}
+>> +
+>> +/**
+>> + * seccomp_attach_filter: Attaches a seccomp filter to current.
+>> + * @fprog: BPF program to install
+>> + *
+>> + * Returns 0 on success or an errno on failure.
+>> + */
+>> +static long seccomp_attach_filter(struct sock_fprog *fprog)
+>> +{
+>> +     struct seccomp_filter *filter;
+>> +     unsigned long fp_size = fprog->len * sizeof(struct sock_filter);
+>> +     unsigned long total_insns = fprog->len;
+>> +     long ret;
+>> +
+>> +     if (fprog->len == 0 || fprog->len > BPF_MAXINSNS)
+>> +             return -EINVAL;
+>> +
+>> +     /* Walk the list to ensure the new instruction count is allowed. */
+>> +     for (filter = current->seccomp.filter; filter; filter = filter->prev) {
+>> +             if (total_insns > MAX_INSNS_PER_PATH - filter->len)
+>> +                     return -E2BIG;
+>> +             total_insns += filter->len;
+>> +     }
+>
+> Now you go over the limit once before that if check is ever true, and it can
+> only be true for the last filter. So take it out of the loop, that makes the
+> code clearer, faster and more correct.
+
+I'll make it clearer.  Correctness should be maintained in either case.
+
+> I'm not sure E2BIG ("Argument list too long") is the best return value.
+> ENOMEM seems more fitting, because it's not this filter's instruction
+> length that's too long, it's the combined filters that are taking too
+> much memory.
+
+Ah yeah - wrong one.  What about ENOSPC?  It'd be nice to
+differentiate this from an actual out of memory condition even though
+there is no seccomp filter "device".  (Alternatively EACCES, EBUSY,
+EFBIG, ?)
+
+>> +
+>> +     /* Allocate a new seccomp_filter */
+>> +     filter = kzalloc(sizeof(struct seccomp_filter) + fp_size, GFP_KERNEL);
+>> +     if (!filter)
+>> +             return -ENOMEM;
+>> +     atomic_set(&filter->usage, 1);
+>> +     filter->len = fprog->len;
+>> +
+>> +     /* Copy the instructions from fprog. */
+>> +     ret = -EFAULT;
+>> +     if (copy_from_user(filter->insns, fprog->filter, fp_size))
+>> +             goto out;
+>> +
+>> +     /* Check the fprog */
+>> +     ret = bpf_chk_filter(filter->insns, filter->len, BPF_CHK_FLAGS_NO_SKB);
+>> +     if (ret)
+>> +             goto out;
+>> +
+>> +     /*
+>> +      * Installing a seccomp filter requires that the task have
+>> +      * CAP_SYS_ADMIN in its namespace or be running with no_new_privs.
+>> +      * This avoids scenarios where unprivileged tasks can affect the
+>> +      * behavior of privileged children.
+>> +      */
+>> +     ret = -EACCES;
+>> +     if (!current->no_new_privs &&
+>> +         security_capable_noaudit(current_cred(), current_user_ns(),
+>> +                                  CAP_SYS_ADMIN) != 0)
+>> +             goto out;
+>
+> I think this check should be done first, before allocating any memory.
+
+Makes sense.
+
+>> +
+>> +     /*
+>> +      * If there is an existing filter, make it the prev and don't drop its
+>> +      * task reference.
+>> +      */
+>> +     filter->prev = current->seccomp.filter;
+>> +     current->seccomp.filter = filter;
+>> +     return 0;
+>> +out:
+>> +     put_seccomp_filter(filter);  /* for get or task, on err */
+>
+> Let put_seccomp_filter() take a struct task* as argument and instead of
+> calling it here, just do a kfree() directly. That's more symmetrical too.
+
+That'll let them be static inlines instead of macros then, so that's good.
+
+>> +     return ret;
+>> +}
+>> +
+>> +/**
+>> + * seccomp_attach_user_filter - attaches a user-supplied sock_fprog
+>> + * @user_filter: pointer to the user data containing a sock_fprog.
+>> + *
+>> + * Returns 0 on success and non-zero otherwise.
+>> + */
+>> +long seccomp_attach_user_filter(char __user *user_filter)
+>> +{
+>> +     struct sock_fprog fprog;
+>> +     long ret = -EFAULT;
+>> +
+>> +     if (!user_filter)
+>> +             goto out;
+>
+> Isn't this checked by copy_from_user() already?
+
+Not explicitly. I think it's safer to check before calling copy_from_user.
+
+>> +#ifdef CONFIG_COMPAT
+>> +     if (is_compat_task()) {
+>> +             struct compat_sock_fprog fprog32;
+>> +             if (copy_from_user(&fprog32, user_filter, sizeof(fprog32)))
+>> +                     goto out;
+>> +             fprog.len = fprog32.len;
+>> +             fprog.filter = compat_ptr(fprog32.filter);
+>> +     } else /* falls through to the if below. */
+>> +#endif
+>> +     if (copy_from_user(&fprog, user_filter, sizeof(fprog)))
+>> +             goto out;
+>> +     ret = seccomp_attach_filter(&fprog);
+>> +out:
+>> +     return ret;
+>> +}
+>> +
+>> +/* get_seccomp_filter - increments the reference count of @orig. */
+>> +void get_seccomp_filter(struct seccomp_filter *orig)
+>> +{
+>> +     if (!orig)
+>> +             return;
+>> +     /* Reference count is bounded by the number of total processes. */
+>> +     atomic_inc(&orig->usage);
+>> +}
+>> +
+>> +/* put_seccomp_filter - decrements the ref count of @orig and may free. */
+>> +void put_seccomp_filter(struct seccomp_filter *orig)
+>> +{
+>> +     /* Clean up single-reference branches iteratively. */
+>> +     while (orig && atomic_dec_and_test(&orig->usage)) {
+>> +             struct seccomp_filter *freeme = orig;
+>> +             orig = orig->prev;
+>> +             kfree(freeme);
+>> +     }
+>> +}
+>> +#endif       /* CONFIG_SECCOMP_FILTER */
+>>
+>> /*
+>>  * Secure computing mode 1 allows only read/write/exit/sigreturn.
+>> @@ -34,10 +290,11 @@ static int mode1_syscalls_32[] = {
+>> void __secure_computing(int this_syscall)
+>> {
+>>       int mode = current->seccomp.mode;
+>> -     int * syscall;
+>> +     int exit_code = SIGKILL;
+>> +     int *syscall;
+>>
+>>       switch (mode) {
+>> -     case 1:
+>> +     case SECCOMP_MODE_STRICT:
+>>               syscall = mode1_syscalls;
+>> #ifdef CONFIG_COMPAT
+>>               if (is_compat_task())
+>> @@ -48,6 +305,14 @@ void __secure_computing(int this_syscall)
+>>                               return;
+>>               } while (*++syscall);
+>>               break;
+>> +#ifdef CONFIG_SECCOMP_FILTER
+>> +     case SECCOMP_MODE_FILTER:
+>> +             if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
+>> +                     return;
+>> +             seccomp_filter_log_failure(this_syscall);
+>> +             exit_code = SIGSYS;
+>> +             break;
+>> +#endif
+>>       default:
+>>               BUG();
+>>       }
+>> @@ -56,7 +321,7 @@ void __secure_computing(int this_syscall)
+>>       dump_stack();
+>> #endif
+>>       audit_seccomp(this_syscall);
+>> -     do_exit(SIGKILL);
+>> +     do_exit(exit_code);
+>> }
+>>
+>> long prctl_get_seccomp(void)
+>> @@ -64,25 +329,48 @@ long prctl_get_seccomp(void)
+>>       return current->seccomp.mode;
+>> }
+>>
+>> -long prctl_set_seccomp(unsigned long seccomp_mode)
+>> +/**
+>> + * prctl_set_seccomp: configures current->seccomp.mode
+>> + * @seccomp_mode: requested mode to use
+>> + * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
+>> + *
+>> + * This function may be called repeatedly with a @seccomp_mode of
+>> + * SECCOMP_MODE_FILTER to install additional filters.  Every filter
+>> + * successfully installed will be evaluated (in reverse order) for each system
+>
+> I'd move the 'each system' to the next line.
+>
+>> + * call the task makes.
+>> + *
+>> + * Once current->seccomp.mode is non-zero, it may not be changed.
+>> + *
+>> + * Returns 0 on success or -EINVAL on failure.
+>> + */
+>> +long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+>> {
+>> -     long ret;
+>> +     long ret = -EINVAL;
+>>
+>> -     /* can set it only once to be even more secure */
+>> -     ret = -EPERM;
+>> -     if (unlikely(current->seccomp.mode))
+>> +     if (current->seccomp.mode &&
+>> +         current->seccomp.mode != seccomp_mode)
+>>               goto out;
+>>
+>> -     ret = -EINVAL;
+>> -     if (seccomp_mode && seccomp_mode <= NR_SECCOMP_MODES) {
+>> -             current->seccomp.mode = seccomp_mode;
+>> -             set_thread_flag(TIF_SECCOMP);
+>> +     switch (seccomp_mode) {
+>> +     case SECCOMP_MODE_STRICT:
+>> +             ret = 0;
+>> #ifdef TIF_NOTSC
+>>               disable_TSC();
+>> #endif
+>> -             ret = 0;
+>> +             break;
+>> +#ifdef CONFIG_SECCOMP_FILTER
+>> +     case SECCOMP_MODE_FILTER:
+>> +             ret = seccomp_attach_user_filter(filter);
+>> +             if (ret)
+>> +                     goto out;
+>> +             break;
+>> +#endif
+>> +     default:
+>> +             goto out;
+>>       }
+>>
+>> - out:
+>> +     current->seccomp.mode = seccomp_mode;
+>> +     set_thread_flag(TIF_SECCOMP);
+>> +out:
+>>       return ret;
+>> }
+>> diff --git a/kernel/sys.c b/kernel/sys.c
+>> index 4686119..0addc11 100644
+>> --- a/kernel/sys.c
+>> +++ b/kernel/sys.c
+>> @@ -1955,7 +1955,7 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2,
+> unsigned long, arg3,
+>>                       error = prctl_get_seccomp();
+>>                       break;
+>>               case PR_SET_SECCOMP:
+>> -                     error = prctl_set_seccomp(arg2);
+>> +                     error = prctl_set_seccomp(arg2, (char __user *)arg3);
+>>                       break;
+>>               case PR_GET_TSC:
+>>                       error = GET_TSC_CTL(arg2);
+>> --
+>
+> Reviewed-by: Indan Zupancic <indan@nul.nu>
+
+Thanks!
+will
