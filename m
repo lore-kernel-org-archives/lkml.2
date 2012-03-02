@@ -1,175 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab2CBNQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 08:16:36 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34365 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab2CBNQe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 08:16:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cwillu@gmail.com designates 10.52.27.111 as permitted sender) smtp.mail=cwillu@gmail.com; dkim=pass header.i=cwillu@gmail.com
+	id S1753928Ab2CBNSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 08:18:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab2CBNSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 08:18:04 -0500
+Message-ID: <4F50C86E.3010305@redhat.com>
+Date: Fri, 02 Mar 2012 10:17:34 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-Date: Fri, 2 Mar 2012 07:16:33 -0600
-X-Google-Sender-Auth: 9O6xBQuaLPkFBmnOQk3-xw7PZws
-Message-ID: <CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
-From: cwillu <cwillu@cwillu.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Lin Ming <ming.m.lin@intel.com>, Norbert Preining <preining@logic.at>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab> <4F4E145E.4040901@redhat.com> <20120229121914.GD21224@aftab> <4F4E22B1.6020505@redhat.com> <20120229133741.GF21224@aftab> <4F4EDD9A.4050900@jp.fujitsu.com> <20120301114023.GB32410@aftab> <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com> <4F504645.5040708@jp.fujitsu.com>
+In-Reply-To: <4F504645.5040708@jp.fujitsu.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 12:38 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> This series addresses regression problems with
->
->    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
->    ahci: start engine only during soft/hard resets
+Em 02-03-2012 01:02, Hidetoshi Seto escreveu:
+> (2012/03/02 3:28), Luck, Tony wrote:
+>>>> My concern is; on Sandy Bridge, is it safe to gather info about the DIMM
+>>>> location in/from machine check context in a reasonable time span?
+>>>
+>>> Well, what amd64_edac does is "buffer" the required lookup info so
+>>> whenever you get an error, you simply lookup the channel and chip select
+>>> - all ops which can be done in atomic context.
+>>
+>> Yes - we could pre-read all the config space registers ahead of time and
+>> save them in memory (none of the values should change - except if the platform
+>> supports hot-plug for memory). Total is only a few Kbytes. Then decode in
+>> machine check context is both safe, and fast.
+> 
+> To sort out my thought:
+> 
+>  - First of all, OS gathers info about physical location of DIMMs from
+>    DMI/ACPI/PCI etc., before enabling MCE mechanism.
+>  - Make a kind of "physical memory location table" on memory buffer,
+>    to ease mapping a physical address to the location of a DIMM module
+>    and/or chip which have the memory cell pointed by the address.
+>     - It would be better to have a well organized table rather than
+>       having a raw copy of config space etc.
+>     - Likewise it will also nice if we can map logical processor numbers
+>       to the location of physical sockets on motherboard.
 
-I just spent the better part of last night tracking down the specific
-sources of the log entry I get when I disconnect my e-sata drive; once
-it disconnects, the port is dead until I reboot; no combination of
-anything I've been able to poke at in /sys or elsewhere gets it live
-again.  This starts with 3.3rc1, and turns out to still work fine in
-3.2.1. Any chance it's related?
+If you take a look at the SB driver, my original idea was do to it: there's a
+routine there (get_memory_layout) that parses all PCI registers used to describe
+the memory.
 
-3.3rc5, immediately after the unplug:
+On my preliminary versions, I was storing their contents into the private data.
 
-[359799.624284] ata5: exception Emask 0x50 SAct 0x0 SErr 0x4090800
-action 0xe frozen
-[359799.624293] ata5: irq_stat 0x00400040, connection status changed
-[359799.624298] ata5: SError: { HostInt PHYRdyChg 10B8B DevExch }
-[359799.624304] ata5: hard resetting link
-[359800.348021] ata5: SATA link down (SStatus 0 SControl 300)
-[359805.348019] ata5: hard resetting link
-[359805.668015] ata5: SATA link down (SStatus 0 SControl 300)
-[359805.668030] ata5: limiting SATA link speed to 1.5 Gbps
-[359810.668014] ata5: hard resetting link
-[359810.988027] ata5: SATA link down (SStatus 0 SControl 310)
-[359810.988038] ata5.00: disabled
-[359810.988052] ata5: EH complete
-[359810.988062] ata5.00: detaching (SCSI 4:0:0:0)
-[359810.989357] sd 4:0:0:0: [sde] Synchronizing SCSI cache
-[359810.989403] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
-[359810.989410] sd 4:0:0:0: [sde] Stopping disk
-[359810.989422] sd 4:0:0:0: [sde] START_STOP FAILED
-[359810.989426] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
+About the same logic is duplicated at get_memory_error_data(), which is the function
+that actually parses the memory error. In the past, it was using the cached
+data.
 
-plug it back in, and nothing happens.
+I ended by removing the cache due to a few reasons:
 
-3.3rc4 + v2 of your patch series (because there's nothing better than
-finding a likely culprit after 8 hours reading unfamiliar code, and
-the first search result for its commit log has words  "However, some
-devices currently have issues with that fix, so we must implement a
-flag that delays the ahci_start_engine() call only for specific
-controllers" along with a patch):
+	- how to detect and re-run the get_memory_error_data() when memory is
+hot-plugged?
 
-[  135.966542] netconsole: network logging started
-[  136.043949] Fri Mar 2 06:09:41 CST 2012
-[  164.204992] SysRq : Changing Loglevel
-[  164.205008] Loglevel set to 9
+	- I had to re-write the logic several times, as I was discovering more
+things about the SB. Writing a more clever/faster logic for storing the data
+for each new change were taking too much time;
 
-unplug the esata cable
+	- While I never tried to measure the performance of that logic, I
+suspect that the performance benefits may not justify the cache;
 
-[  182.076415] ata5: exception Emask 0x50 SAct 0x0 SErr 0x4090800
-action 0xe frozen
-[  182.076429] ata5: irq_stat 0x00400040, connection status changed
-[  182.076443] ata5: SError: { HostInt PHYRdyChg 10B8B DevExch }
-[  182.076449] ata5: hard resetting link
-[  182.800028] ata5: SATA link down (SStatus 0 SControl 300)
-[  187.800020] ata5: hard resetting link
-[  188.120032] ata5: SATA link down (SStatus 0 SControl 300)
-[  188.120050] ata5: limiting SATA link speed to 1.5 Gbps
-[  193.120021] ata5: hard resetting link
-[  193.440046] ata5: SATA link down (SStatus 0 SControl 310)
-[  193.440087] ata5.00: disabled
-[  193.440106] ata5: EH complete
-[  193.440127] ata5.00: detaching (SCSI 4:0:0:0)
-[  193.441626] sd 4:0:0:0: [sde] Synchronizing SCSI cache
-[  193.441726] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
-[  193.441734] sd 4:0:0:0: [sde] Stopping disk
-[  193.441745] sd 4:0:0:0: [sde] START_STOP FAILED
-[  193.441750] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
+	- It was more important to have something work, than a very optimized
+driver;
 
-plug it back in, and nothing happens.
+	-  Paraphrasing Blaise Pascal, "I have made the decoding logic slower, 
+	   because I have not had the time to make it faster".
+
+Feel free to write some patches to optimize it.
+
+>     - Happy if user can refer the table via sysfs.
+
+Representing the logic via sysfs is not easy, due to interlacing. Sandy
+Bridge has several ways to interlace memories, among their channels, plus
+arranging the address on NUMA/non-NUMA mode. The way it is represented
+internally is complex to understand.
+
+I would love to find a way to tell the user that addresses between
+x and y belongs to DIMM z, but, due to certain interlace modes, this
+would be a very complex task.
+
+>     - Allow updating the table if the platform supports hot-plug.
+
+This change is not trivial. The EDAC core requires to allocate the memory at
+the beginning. 
+
+Not sure if it is easy to support hot-plug there. It will likely need to
+receive a hot-plug event, and call some routine that would call a memory
+discovery callback.
+
+If is there any MCA event for memory hot-plug, it sounds feasible.
+
+>  - Once MCE is enabled, handler can refer the table on memory to
+>    determine an erroneous device which should be replaced.
+
+MCE enabled is a requirement for the SB driver:
+
+config EDAC_SBRIDGE
+	tristate "Intel Sandy-Bridge Integrated MC"
+	depends on EDAC_MM_EDAC && PCI && X86_64 && X86_MCE_INTEL
+
+> This storyline up to here is reasonable and acceptable, I think.
+> 
+> Then now it is clear that the last point where I feel uneasy about is
+> putting a string into the ring buffer instead of binary bits like index
+> of location table.  Please use binary (or "binary + string") to tell
+> the error location to userland.
+
+I agree with you that merging everything into a single string is very bad,
+and this is the main point we're discussing.
+
+Let me make a summary of the status.
+
+As you know, there are two types of location (silkscreen label and the
+location itself, as recognized internally by the hardware. 
+
+I'm fixing the EDAC core, as it is currently not able to handle the real
+location, and requires that everything to be converted into a per-rank
+memory description (csrow/channel), with doesn't work for most non-legacy 
+drivers.
+
+The EDAC core provides a way to convert from location into the silkscreen label.
+
+Basically, there's a sysfs node with the dimm label, with is filled at
+the machine boot time, via the edac utils. 
+
+Depending on the driver, the location, can actually be:
+	branch/channel/slot	=> DIMM
+	channel/slot		=> DIMM
+	csrow/channel		=> DIMM rank
+
+The patch series I'm working add a way for the driver to tell the core what of 
+the above applies, and, when an error occurs, it allows the driver to tell 
+exactly on what location the error happened [1].
 
 
-The same the same thing on 3.2.1 for comparison:
+[1] With the upstream version, the "location" is a meaningless, fake information,
+    on all Intel non-legacy drivers (i5xxx edac drivers, i7core_edac, sb_edac).
 
-[   68.834142] netconsole: network logging started
-[   76.551905] SysRq : Changing Loglevel
-[   76.551917] Loglevel set to 9
 
-unplug
+It is possible to use the internal representation I've added on it, storing
+them on a binary way, and exporting as such to userspace.
 
-[   87.530721] ata5: exception Emask 0x50 SAct 0x0 SErr 0x4090800
-action 0xe frozen
-[   87.530735] ata5: irq_stat 0x00400040, connection status changed
-[   87.530739] ata5: SError: { HostInt PHYRdyChg 10B8B DevExch }
-[   87.530748] ata5: hard resetting link
-[   88.252038] ata5: SATA link down (SStatus 0 SControl 300)
-[   93.252026] ata5: hard resetting link
-[   93.576040] ata5: SATA link down (SStatus 0 SControl 300)
-[   93.576069] ata5: limiting SATA link speed to 1.5 Gbps
-[   98.576034] ata5: hard resetting link
-[   98.896035] ata5: SATA link down (SStatus 0 SControl 310)
-[   98.896052] ata5.00: disabled
-[   98.896069] ata5: EH complete
-[   98.896090] ata5.00: detaching (SCSI 4:0:0:0)
-[   98.897565] sd 4:0:0:0: [sde] Synchronizing SCSI cache
-[   98.898391] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
-[   98.898405] sd 4:0:0:0: [sde] Stopping disk
-[   98.898417] sd 4:0:0:0: [sde] START_STOP FAILED
-[   98.898421] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
+Borislav is arguing against it, for MCA based events, as such kind of 
+representation would require a memory-specific tracepoint.
 
-and plug it back in...
+For non-MCA events, there's not much problems, as there aren't many types
+of errors.
 
-[  111.783606] ata5: exception Emask 0x10 SAct 0x0 SErr 0x4040000
-action 0xe frozen
-[  111.783620] ata5: irq_stat 0x00000040, connection status changed
-[  111.783625] ata5: SError: { CommWake DevExch }
-[  111.783633] ata5: limiting SATA link speed to 1.5 Gbps
-[  111.783638] ata5: hard resetting link
-[  112.676058] ata5: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-[  112.678304] ata5.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
-[  112.678316] ata5.00: 1953525168 sectors, multi 16: LBA48 NCQ (depth
-31/32), AA
-[  112.679599] ata5.00: configured for UDMA/133
-[  112.679635] ata5: EH complete
-[  112.679763] scsi 4:0:0:0: Direct-Access     ATA      WDC
-WD10EARS-00Y 80.0 PQ: 0 ANSI: 5
-[  112.679933] sd 4:0:0:0: [sde] 1953525168 512-byte logical blocks:
-(1.00 TB/931 GiB)
-[  112.680107] sd 4:0:0:0: [sde] Write Protect is off
-[  112.680112] sd 4:0:0:0: [sde] Mode Sense: 00 3a 00 00
-[  112.680140] sd 4:0:0:0: [sde] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[  112.680804] sd 4:0:0:0: Attached scsi generic sg4 type 0
-[  113.099967]  sde: unknown partition table
-[  113.100259] sd 4:0:0:0: [sde] Attached SCSI disk
+In the end, we have a few alternatives, and no consensus was reached with regards
+to it.
 
-It lives!  (and it works fine all the way back to 2.6.32, possibly earlier).
+The alternatives for MCA errors are either to use a single tracepoint for all
+hardware types, forcing the driver/core to convert the internal binary representation
+into a string, or to have multiple traces for hardware errors.
 
-Now, the reason I'm picking on you is that git blame only has a
-handful of lines in libata-eh.c, and as near as I can figure, the only
-lines of code that changed in 3.3 that would seem to be able to cause
-this are the ones that your series is a quasi revert of.  I don't have
-hard evidence yet (unless the logged messages are more damning than I
-think they are), but it does seem likely that, at the very least, you
-might have some idea what's going on :p
+Three different strategies were actually proposed:
 
--- Carey
+1) Everything goes into a single string (Borislav's patchset [2]);
+
+2) A memory error specific tracepoint, plus other tracepoints for other types of
+errors (my patch [3]).
+
+3) An hybrid alternative, splitting the severity, location and silk_screen label from
+the error message (my proposal, no patch for it yet [4]). As the location there
+should be independent of the type of the hardware, it has to be a string.
+
+
+[2] https://lkml.org/lkml/2012/2/28/280
+
+[3] http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=4eb2a29419c1fefd76c8dbcd308b84a4b52faf4d
+
+[4] https://lkml.org/lkml/2012/2/29/187
+
+
+Looking at the existing code, what happens with regards to location is that there
+are currently two types of location:
+
+a) a memory location (could be 2 or 3 integers);
+
+b) a CPU location (one integer).
+
+Internally, for each trace, a printk string should be defined, like:
+
+TP_printk("%s error %s on \"%s\" (location: %s)",
+	  __get_str(msg),
+	  __get_str(label),
+	  __get_str(location))
+
+It is easy to write such macro for strings, but doing it for a variable-length
+location field would likely require more work.
+
+A binary way to represent the memory location would be as an array, whose size is
+specified by a parameter, or with an structure that would have a location name, value
+pair, like:
+
+struct {
+	char *name;
+	int value;
+} key_value_pair mem_location[] = {
+	{ "csrow", 0},
+	{ "channel", 1},
+};
+
+I don't think that trace as some trace macro that would allow to  print something like
+that, currently. Not sure how easy/difficult do add support for it at perf, on both
+kernelspace and userspace.
+
+Regards,
+Mauro
