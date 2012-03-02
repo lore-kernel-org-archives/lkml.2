@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab2CBRSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:18:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59185 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2CBRSP convert rfc822-to-8bit (ORCPT
+	id S1758089Ab2CBRUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:20:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38096 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924Ab2CBRUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:18:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.112.23.66 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
-MIME-Version: 1.0
-In-Reply-To: <4F50FE1B.7090008@intel.com>
-References: <4f50b540.6AzyOmpHR+z7jLk1%tadeusz.struk@intel.com>
- <CAErSpo6JaNXvJf_KEkRUYLed8ET4vSunfCAq9BWq3yd3+dZQpA@mail.gmail.com> <4F50FE1B.7090008@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 2 Mar 2012 10:17:53 -0700
-Message-ID: <CAErSpo6QzCy7cgN8boXu4zhGhTbjEG7RyJ6avaVKL_u=vGMOUw@mail.gmail.com>
-Subject: Re: [PATCH v2] Dynamically add and remove device specific reset functions
-To: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 2 Mar 2012 12:20:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of slyich@gmail.com designates 10.213.19.83 as permitted sender) smtp.mail=slyich@gmail.com; dkim=pass header.i=slyich@gmail.com
+Date: Fri, 2 Mar 2012 20:24:21 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Sergei Trofimovich <slyfox@gentoo.org>,
+        Glauber Costa <glommer@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+Message-ID: <20120302202421.753b36bc@sf.home>
+In-Reply-To: <4F509150.5060904@redhat.com>
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com>
+	<4F509150.5060904@redhat.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/bI_Plm/eG5_5ZOHWj55DqAo"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 10:06 AM, Tadeusz Struk <tadeusz.struk@intel.com> wrote:
-> On 02/03/12 16:29, Bjorn Helgaas wrote:
->> Where do you plan to add calls to pci_dev_specific_reset_add()?  In
->> drivers?
->
-> Yes, I'm working on a driver for a device with SRIOV capability.
-> I'll call it from there.
->
->> Did you consider adding a "reset" function pointer to struct
->> pci_driver?  That might be more natural -- the reset function is right
->> with all the other code that knows about the device, and there's no
->> issue with looking up the correct reset function.
->> With this patch, we sort of have two different ways to map
->> vendor/device IDs to code: the usual pci_register_driver() approach,
->> and this one using reset_list.  If pci_driver had a "reset" pointer,
->> that would be used most of the time.  You might still need the
->> reset_list for generic things, e.g., the reset_intel_generic_dev()
->> function, but it would be a fallback.  It might look something like:
->>
->>     struct pci_driver *drv = dev->driver;
->>
->>     if (drv && drv->reset) {
->>         drv->reset(dev);
->>         return;
->>     }
->>
->>     list_for_each_entry(i, &reset_list, list) {
->>         ...
->
-> No, I didn't think about it.
-> This is good idea, but for me the pci_dev_specific_reset() works fine.
+--Sig_/bI_Plm/eG5_5ZOHWj55DqAo
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I know your patch works fine, but I think we should have the
-discussion about whether adding a struct pci_driver pointer is a
-better long-term solution.
+> > The change looks like a typo (division flipped to multiplication):
+> >> limit =3D nr_free_buffer_pages() / 8;
+> >> limit =3D nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
+>=20
+> Hi, thanks for the reporting. It's not a typo. It was previously:=20
+> sysctl_tcp_mem[1] << (PAGE_SHIFT -  7). Looks like we need to do the=20
+> limit check before shift the value. Please try the following patch, thank=
+s.
 
-Greg, Jesse, others, chime in if you have any thoughts.
+Still does not help. I test it by checking sha1sum of a large file over NFS
+(small files seem to work simetimes):
 
-Bjorn
+    $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2=20
+    ...
+    open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+    <HUNG>
+After a certain timeout dmesg gets odd spam:
+[  314.848094] nfs: server vmhost not responding, still trying
+[  314.848134] nfs: server vmhost not responding, still trying
+[  314.848145] nfs: server vmhost not responding, still trying
+[  314.957047] nfs: server vmhost not responding, still trying
+[  314.957066] nfs: server vmhost not responding, still trying
+[  314.957075] nfs: server vmhost not responding, still trying
+[  314.957085] nfs: server vmhost not responding, still trying
+[  314.957100] nfs: server vmhost not responding, still trying
+[  314.958023] nfs: server vmhost not responding, still trying
+[  314.958035] nfs: server vmhost not responding, still trying
+[  314.958044] nfs: server vmhost not responding, still trying
+[  314.958054] nfs: server vmhost not responding, still trying
+
+looks like bogus messages. Might be relevant to mishandled timings
+somewhere else or a bug in nfs code.
+
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 22ef5f9..4035aab 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -3299,8 +3299,8 @@ void __init tcp_init(void)
+>=20
+>          tcp_init_mem(&init_net);
+>          /* Set per-socket limits to no more than 1/128 the pressure=20
+> threshold */
+> -       limit =3D nr_free_buffer_pages() << (PAGE_SHIFT - 10);
+> -       limit =3D max(limit, 128UL);
+> +       limit =3D nr_free_buffer_pages() / 8;
+> +       limit =3D max(limit, 128UL) << (PAGE_SHIFT - 7);
+>          max_share =3D min(4UL*1024*1024, limit);
+>=20
+>          sysctl_tcp_wmem[0] =3D SK_MEM_QUANTUM;
+>=20
+>=20
+>=20
+
+
+--=20
+
+  Sergei
+
+--Sig_/bI_Plm/eG5_5ZOHWj55DqAo
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk9RAkwACgkQcaHudmEf86rz/gCfWiVShYHe8d5fxe7GN4o/C/O2
+TwYAn0GugtZNsGcdaNAXQEoh/o6zihbK
+=Y0Sa
+-----END PGP SIGNATURE-----
+
+--Sig_/bI_Plm/eG5_5ZOHWj55DqAo--
