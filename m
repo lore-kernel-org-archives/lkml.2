@@ -1,129 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab2CBO4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:56:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45553 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553Ab2CBO4f (ORCPT
+	id S1758268Ab2CBO7o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:59:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab2CBO7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:56:35 -0500
-Date: Fri, 2 Mar 2012 06:55:47 -0800
-From: tip-bot for Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Message-ID: <tip-2e5b5b3a1b7768c89fbfeca18e75f8ee377e924c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, h-shimamoto@ct.jp.nec.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, h-shimamoto@ct.jp.nec.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4F45FBB7.5090607@ct.jp.nec.com>
-References: <4F45FBB7.5090607@ct.jp.nec.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Clean up parameter passing of proc_sched_autogroup_set_nice()
-Git-Commit-ID: 2e5b5b3a1b7768c89fbfeca18e75f8ee377e924c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 2 Mar 2012 09:59:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Subject: Re: [PATCH 01/03] MFD: add ADC support to DA9052/53 MFD  core v2
+Date: Fri, 2 Mar 2012 14:59:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        sameo@linux.intel.com
+References: <1330698533.21817.30.camel@dhruva>
+In-Reply-To: <1330698533.21817.30.camel@dhruva>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Mar 2012 06:56:14 -0800 (PST)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203021459.36840.arnd@arndb.de>
+X-Provags-ID: V02:K0:M3IbcCFn/PQJ5KGEeylLY4DBV45X1ua+U81wsiVWFyB
+ UgG2MVi8NqqozYAVyHLWCve21yz0Ai2V4ZOkve9tWCimNj/0p0
+ ihbb2ukDOGOPHq7Rk19967tjONp1AiMXN0o9T4eSl0WUIHnNH8
+ 5LV/74mZhAWqFDpnlFwuzBsZSaTBU/qrX3UjArVDT0bMpl+0PL
+ veh67+Bg0v80cozul+zoJ/Az/jXcwsIm7BSQVKmMi4l+utjS5n
+ cwObDBzVbX2QgO35QrniZmNAZHymqI/c6O4WvfbJnnlSdHzB6m
+ U2OuT0TGsaDP27XCK7IfqHP3qW4dZEaPgQTzdV4F3qKOhqnEtA
+ sJFA/wJB+pNWXvT8wl4M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e5b5b3a1b7768c89fbfeca18e75f8ee377e924c
-Gitweb:     http://git.kernel.org/tip/2e5b5b3a1b7768c89fbfeca18e75f8ee377e924c
-Author:     Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-AuthorDate: Thu, 23 Feb 2012 17:41:27 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 2 Mar 2012 12:23:49 +0100
+On Friday 02 March 2012, Ashish Jangam wrote:
+> +
+> +       mutex_lock(&da9052->auxadc_lock);
+> +
+> +       /* Channel gets activated on enabling the Conversion bit */
+> +       mux_sel = chan_mux[channel] | DA9052_ADC_MAN_MAN_CONV;
+> +
+> +       ret = da9052_reg_write(da9052, DA9052_ADC_MAN_REG, mux_sel);
+> +       if (ret < 0)
+> +               goto err;
+> +
+> +       /* Wait for an interrupt */
+> +       wait_for_completion_timeout(&da9052->done, msecs_to_jiffies(500));
 
-sched: Clean up parameter passing of proc_sched_autogroup_set_nice()
+Shouldn't this check the return value of wait_for_completion_timeout
+and return an error if it timed out?
 
-Pass nice as a value to proc_sched_autogroup_set_nice().
+If you don't expect a timeout to ever happen, it's probably better to
+use wait_for_completion instead of wait_for_completion_timeout, but
+if it can time out, you should handle it.
 
-No side effect is expected, and the variable err will be overwritten with
-the return value.
-
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4F45FBB7.5090607@ct.jp.nec.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- fs/proc/base.c            |    3 +--
- include/linux/sched.h     |    2 +-
- kernel/sched/auto_group.c |   12 ++++++------
- 3 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index d4548dd..965d4bd 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1310,8 +1310,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
- 	if (!p)
- 		return -ESRCH;
- 
--	err = nice;
--	err = proc_sched_autogroup_set_nice(p, &err);
-+	err = proc_sched_autogroup_set_nice(p, nice);
- 	if (err)
- 		count = err;
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c628a91..c298fb9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2065,7 +2065,7 @@ extern void sched_autogroup_fork(struct signal_struct *sig);
- extern void sched_autogroup_exit(struct signal_struct *sig);
- #ifdef CONFIG_PROC_FS
- extern void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m);
--extern int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice);
-+extern int proc_sched_autogroup_set_nice(struct task_struct *p, int nice);
- #endif
- #else
- static inline void sched_autogroup_create_attach(struct task_struct *p) { }
-diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-index e8a1f83..0984a21 100644
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -195,20 +195,20 @@ __setup("noautogroup", setup_autogroup);
- 
- #ifdef CONFIG_PROC_FS
- 
--int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
-+int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
- {
- 	static unsigned long next = INITIAL_JIFFIES;
- 	struct autogroup *ag;
- 	int err;
- 
--	if (*nice < -20 || *nice > 19)
-+	if (nice < -20 || nice > 19)
- 		return -EINVAL;
- 
--	err = security_task_setnice(current, *nice);
-+	err = security_task_setnice(current, nice);
- 	if (err)
- 		return err;
- 
--	if (*nice < 0 && !can_nice(current, *nice))
-+	if (nice < 0 && !can_nice(current, nice))
- 		return -EPERM;
- 
- 	/* this is a heavy operation taking global locks.. */
-@@ -219,9 +219,9 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
- 	ag = autogroup_task_get(p);
- 
- 	down_write(&ag->lock);
--	err = sched_group_set_shares(ag->tg, prio_to_weight[*nice + 20]);
-+	err = sched_group_set_shares(ag->tg, prio_to_weight[nice + 20]);
- 	if (!err)
--		ag->nice = *nice;
-+		ag->nice = nice;
- 	up_write(&ag->lock);
- 
- 	autogroup_kref_put(ag);
+	Arnd
