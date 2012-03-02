@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2CBVdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:33:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47510 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab2CBVc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:32:59 -0500
-Message-ID: <4F513C80.2090709@zytor.com>
-Date: Fri, 02 Mar 2012 13:32:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755062Ab2CBVdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:33:15 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:16021
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753417Ab2CBVdN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:33:13 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+Thread-Index: AQHM+LUYOjJW5Du7G0WJSaUrHj4mnJZXgVQAgAABJ6CAAAOzAIAAAD8A
+Date: Fri, 2 Mar 2012 21:33:00 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B73679D@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
+ <20120302211354.GB6008@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20120302213116.GA23443@kroah.com>
+In-Reply-To: <20120302213116.GA23443@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Joshua C." <joshuacov@googlemail.com>
-CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com> <4F4EC19F.4050002@zytor.com> <CAKL7Q7rZyUNNP+jy5ajL2KSbC8S4LEQZWG3vuPVSvSOCd_ZGQg@mail.gmail.com> <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com> <4F4FE1FA.1040008@zytor.com> <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com> <4F51114D.80704@zytor.com> <CAKL7Q7rKVu-5OkKWoO3ZiCakiKsC=MAugRTXWB+rnudqUzvPvw@mail.gmail.com>
-In-Reply-To: <CAKL7Q7rKVu-5OkKWoO3ZiCakiKsC=MAugRTXWB+rnudqUzvPvw@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 01:21 PM, Joshua C. wrote:
-> 2012/3/2 H. Peter Anvin <hpa@zytor.com>:
->>
->> Yeah, it seems a bit excessive in this case.
->>
->>        -hpa
->>
->> --
->> H. Peter Anvin, Intel Open Source Technology Center
->> I work for Intel.  I don't speak on their behalf.
->>
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, March 02, 2012 4:31 PM
+> To: KY Srinivasan
+> Cc: linux-scsi@vger.kernel.org; Haiyang Zhang; ohering@suse.com;
+> jbottomley@parallels.com; linux-kernel@vger.kernel.org; hch@infradead.org;
+> virtualization@lists.osdl.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+> the host
 > 
-> This is the final version. It works fine here on one laptop and a desktop.
+> On Fri, Mar 02, 2012 at 09:22:38PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Friday, March 02, 2012 4:14 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
+> > > hch@infradead.org; linux-scsi@vger.kernel.org; Haiyang Zhang
+> > > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+> > > the host
+> > >
+> > > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
+> > > > Windows hosts don't handle the ATA_16 command; don't pass it to the
+> host.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > ---
+> > > >  drivers/scsi/storvsc_drv.c |    2 ++
+> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > >
+> > > Should this go to older kernel versions as well?
+> >
+> > I think it should. Do you want me to resend this patch with the correct tag?
+> > Also, given that storvsc has changed so much over the last several months,
+> > this patch may or may not apply to earlier versions of this driver even though
+> > this patch itself is quite trivial.
 > 
-> @Alan
-> Can you, please, queue this for the mainline and also push it to
-> stable? The patch is straight forward and set the NumLock on a
-> keyboard according to the data in the BIOS.
-> 
+> I'll tag it for the stable tree, then when it doesn't apply, you will
+> get an email saying it didn't, so you can then send me the correct one
+> :)
 
-I still prefer the inline function instead of a macro for KBD_DEFLEDS,
-but this is in deep nitpick territory at this point, and the macro is
-already there.
+Thanks Greg.
 
-Reviewed-by: H. Peter Anvin <hpa@zytor.com>
+K. Y
 
 
-	-hpa
