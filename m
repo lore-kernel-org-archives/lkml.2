@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030212Ab2CBOiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:38:17 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:44142
+	id S1758068Ab2CBOi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:38:58 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:37332
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965364Ab2CBOiO (ORCPT
+	by vger.kernel.org with ESMTP id S1754669Ab2CBOi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:38:14 -0500
-X-SpamScore: 9
-X-BigFish: VPS9(zz2176Mc8kzz1202hzz8275bh11f642sz2dh2a8h668h839h93fh)
+	Fri, 2 Mar 2012 09:38:57 -0500
+X-SpamScore: 3
+X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh2a8h668h839h93fh)
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 02/03] HWMON: HWMON driver for DA9052/53 PMIC v3
+Subject: [PATCH 03/03] ONKEY: OnKey module for DA9052/53 PMIC
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: <randy.dunlap@oracle.com>, <linaro-dev@lists.linaro.org>,
-        <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>, <sameo@linux.intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <dchen@diasemi.com>, <sameo@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 2 Mar 2012 19:59:05 +0530
-Message-ID: <1330698545.21817.31.camel@dhruva>
+Date: Fri, 2 Mar 2012 19:59:54 +0530
+Message-ID: <1330698594.21817.32.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -28,143 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
-resolution and 10 channels.
-
-This patch monitors the DA9052 PMIC's ADC channels mostly for battery
-parameters like battery temperature, junction temperature, battery
-current etc.
-
-This patch is functionally tested on Samsung SMDKV6410
+On-key Driver for Dialog Semiconductor DA9052/53 PMICs.
 
 Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 --- 
-Changes since v2
-- Update documentation file
-Changes since v1
-- Update documentation file for url
-- Modify the entry in Kconfig file
-- Correct reporting of junction temperature
-- Add conversion function for backup battery voltage
-- Change labels for temperatures in the device attributes to follow sensor index
----
- Documentation/hwmon/da9052   |   61 ++++++++
- drivers/hwmon/Kconfig        |   10 ++
- drivers/hwmon/Makefile       |    1 +
- drivers/hwmon/da9052-hwmon.c |  344 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 416 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/hwmon/da9052
- create mode 100644 drivers/hwmon/da9052-hwmon.c
+drivers/input/misc/Kconfig        |   10 ++
+ drivers/input/misc/Makefile       |    1 +
+ drivers/input/misc/da9052_onkey.c |  174 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 185 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/da9052_onkey.c
 
-diff --git a/Documentation/hwmon/da9052 b/Documentation/hwmon/da9052
-new file mode 100644
-index 0000000..ef89855
---- /dev/null
-+++ b/Documentation/hwmon/da9052
-@@ -0,0 +1,61 @@
-+Supported chips:
-+  * Dialog Semiconductors DA9052-BC and DA9053-AA/Bx PMICs
-+    Prefix: 'da9052'
-+    Datasheet: Datasheet is not publicly available.
-+
-+Authors: David Dajun Chen <dchen@diasemi.com>
-+
-+Description
-+-----------
-+
-+The DA9052/53 provides an Analogue to Digital Converter (ADC) with 10 bits
-+resolution and track and hold circuitry combined with an analogue input
-+multiplexer. The analogue input multiplexer will allow conversion of up to 10
-+different inputs. The track and hold circuit ensures stable input voltages at
-+the input of the ADC during the conversion.
-+
-+The ADC is used to measure the following inputs:
-+Channel 0: VDDOUT - measurement of the system voltage
-+Channel 1: ICH - internal battery charger current measurement
-+Channel 2: TBAT - output from the battery NTC
-+Channel 3: VBAT - measurement of the battery voltage
-+Channel 4: ADC_IN4 - high impedance input (0 - 2.5V)
-+Channel 5: ADC_IN5 - high impedance input (0 - 2.5V)
-+Channel 6: ADC_IN6 - high impedance input (0 - 2.5V)
-+Channel 7: XY - TSI interface to measure the X and Y voltage of the touch
-+	   screen resistive potentiometers
-+Channel 8: Internal Tjunc. - sense (internal temp. sensor)
-+Channel 9: VBBAT - measurement of the backup battery voltage
-+
-+By using sysfs attributes we can measure the system voltage VDDOUT, the battery
-+charging current ICH, battery temperature TBAT, battery junction temperature
-+TJUNC, battery voltage VBAT and the back up battery voltage VBBAT.
-+
-+Voltage Monitoring
-+------------------
-+
-+Voltages are sampled by a 10 bit ADC.
-+
-+The battery voltage is calculated as:
-+	Milli volt = ((ADC value * 1000) / 512) + 2500
-+
-+The backup battery voltage is calculated as:
-+	Milli volt = (ADC value * 2500) / 512;
-+
-+The voltages on ADC channels 4, 5 and 6 are calculated as:
-+	Milli volt = (ADC value * 2500) / 1023
-+
-+Temperature Monitoring
-+----------------------
-+
-+Temperatures are sampled by a 10 bit ADC. Junction and battery temperatures
-+are monitored by the ADC channels.
-+
-+The junction temperature is calculated:
-+	Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+The junction temperature attribute is supported by the driver.
-+
-+The battery temperature is calculated:
-+	Degree Celcius = 1 / (t1 + 1/298)- 273
-+where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
-+Default values of R25, B, ITBAT are 10e3, 3380 and 50e-6 respectively.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index b58a947..f115fbf 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -313,6 +313,16 @@ config SENSORS_DS1621
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called ds1621.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 532754f..835fb8f 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -454,6 +454,16 @@ config INPUT_RB532_BUTTON
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called rb532_button.
  
-+config SENSORS_DA9052_ADC
-+	tristate "Dialog DA9052/DA9053 ADC"
++config INPUT_DA9052_ONKEY
++	tristate "Dialog DA9052/DA9053 Onkey"
 +	depends on PMIC_DA9052
 +	help
-+	  Say y here to support the ADC found on Dialog Semiconductor
-+	  DA9052-BC and DA9053-AA/Bx PMICs.
++	  Support the ONKEY of Dialog DA9052 PMICs as an input device
++	  reporting power button status.
 +
-+	  This driver can also be built as module. If so, the module
-+	  will be called da9052-hwmon.
++	  To compile this driver as a module, choose M here: the
++	  module will be called da9052_onkey.
 +
- config SENSORS_EXYNOS4_TMU
- 	tristate "Temperature sensor on Samsung EXYNOS4"
- 	depends on ARCH_EXYNOS4
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 6d3f11f..a950362 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_SENSORS_APPLESMC)	+= applesmc.o
- obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
- obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
- obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
-+obj-$(CONFIG_SENSORS_DA9052_ADC)+= da9052-hwmon.o
- obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
- obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
- obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
+ config INPUT_DM355EVM
+ 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
+ 	depends on MFD_DM355EVM_MSP
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 46671a8..a6d8de0 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_INPUT_CM109)		+= cm109.o
+ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
+ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
++obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+ obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
+ obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
+diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
 new file mode 100644
-index 0000000..9bef6ab
+index 0000000..c153a28
 --- /dev/null
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -0,0 +1,344 @@
++++ b/drivers/input/misc/da9052_onkey.c
+@@ -0,0 +1,174 @@
 +/*
-+ * HWMON Driver for Dialog DA9052
++ * ON pin driver for Dialog DA9052 PMICs
 + *
 + * Copyright(c) 2012 Dialog Semiconductor Ltd.
 + *
@@ -174,340 +88,169 @@ index 0000000..9bef6ab
 + *  under  the terms of  the GNU General  Public License as published by the
 + *  Free Software Foundation;  either version 2 of the  License, or (at your
 + *  option) any later version.
-+ *
 + */
 +
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
 +#include <linux/init.h>
-+#include <linux/kernel.h>
++#include <linux/input.h>
 +#include <linux/module.h>
-+#include <linux/slab.h>
 +#include <linux/platform_device.h>
++#include <linux/workqueue.h>
 +
 +#include <linux/mfd/da9052/da9052.h>
 +#include <linux/mfd/da9052/reg.h>
 +
-+struct da9052_hwmon {
-+	struct da9052	*da9052;
-+	struct device	*class_device;
-+	struct mutex	hwmon_lock;
++struct da9052_onkey {
++	struct da9052 *da9052;
++	struct input_dev *input;
++	struct delayed_work work;
++	int irq;
 +};
 +
-+static const char * const input_names[] = {
-+	[DA9052_ADC_VDDOUT]	=	"VDDOUT",
-+	[DA9052_ADC_ICH]	=	"CHARGING CURRENT",
-+	[DA9052_ADC_TBAT]	=	"BATTERY TEMP",
-+	[DA9052_ADC_VBAT]	=	"BATTERY VOLTAGE",
-+	[DA9052_ADC_IN4]	=	"ADC IN4",
-+	[DA9052_ADC_IN5]	=	"ADC IN5",
-+	[DA9052_ADC_IN6]	=	"ADC IN6",
-+	[DA9052_ADC_TJUNC]	=	"BATTERY JUNCTION TEMP",
-+	[DA9052_ADC_VBBAT]	=	"BACK-UP BATTERY VOLTAGE",
-+};
-+
-+/* Conversion function for VDDOUT and VBAT */
-+static inline int volt_reg_to_mV(int value)
++static void da9052_onkey_query(struct da9052_onkey *onkey)
 +{
-+	return ((value * 1000) / 512) + 2500;
-+}
++	int key_stat;
 +
-+/* Conversion function for ADC channels 4, 5 and 6 */
-+static inline int input_reg_to_mV(int value)
-+{
-+	return (value * 2500) / 1023;
-+}
-+
-+/* Conversion function for VBBAT */
-+static inline int vbbat_reg_to_mV(int value)
-+{
-+	return (value * 2500) / 512;
-+}
-+
-+static int da9052_enable_vddout_channel(struct da9052 *da9052)
-+{
-+	int ret;
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret |= DA9052_ADCCONT_AUTOVDDEN;
-+
-+	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+}
-+
-+static int da9052_disable_vddout_channel(struct da9052 *da9052)
-+{
-+	int ret;
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret &= ~DA9052_ADCCONT_AUTOVDDEN;
-+
-+	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+}
-+
-+static ssize_t da9052_read_vddout(struct device *dev,
-+				  struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret, vdd;
-+
-+	mutex_lock(&hwmon->hwmon_lock);
-+
-+	ret = da9052_enable_vddout_channel(hwmon->da9052);
-+	if (ret < 0)
-+		goto hwmon_err;
-+
-+	vdd = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
-+	if (vdd < 0) {
-+		ret = vdd;
-+		goto hwmon_err_release;
++	key_stat = da9052_reg_read(onkey->da9052, DA9052_EVENT_B_REG);
++	if (key_stat < 0) {
++		dev_err(onkey->da9052->dev,
++			"Failed to read onkey event %d\n", key_stat);
++		key_stat = 1;
++	} else {
++		/*
++		 * Since interrupt for deassertion of ONKEY pin is not
++		 * generated, onkey event state determines the onkey
++		 * button state.
++		 */
++		key_stat &= DA9052_EVENTB_ENONKEY;
++		input_report_key(onkey->input, KEY_POWER, key_stat);
++		input_sync(onkey->input);
 +	}
-+
-+	ret = da9052_disable_vddout_channel(hwmon->da9052);
-+	if (ret < 0)
-+		goto hwmon_err;
-+
-+	mutex_unlock(&hwmon->hwmon_lock);
-+	return sprintf(buf, "%d\n", volt_reg_to_mV(vdd));
-+
-+hwmon_err_release:
-+	da9052_disable_vddout_channel(hwmon->da9052);
-+hwmon_err:
-+	mutex_unlock(&hwmon->hwmon_lock);
-+	return ret;
-+}
-+
-+static ssize_t da9052_read_ich(struct device *dev,
-+			       struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = da9052_reg_read(hwmon->da9052, DA9052_ICHG_AV_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Equivalent to 3.9mA/bit in register ICHG_AV */
-+	return sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(ret * 39, 10));
-+}
-+
-+static ssize_t da9052_read_tbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", da9052_adc_read_temp(hwmon->da9052));
-+}
-+
-+static ssize_t da9052_read_vbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBAT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", volt_reg_to_mV(ret));
-+}
-+
-+static ssize_t da9052_read_misc_channel(struct device *dev,
-+					struct device_attribute *devattr,
-+					char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int channel = to_sensor_dev_attr(devattr)->index;
-+	int ret;
-+
-+	ret = da9052_adc_manual_read(hwmon->da9052, channel);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", input_reg_to_mV(ret));
-+}
-+
-+static ssize_t da9052_read_tjunc(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int tjunc;
-+	int toffset;
-+
-+	tjunc = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
-+	if (tjunc < 0)
-+		return tjunc;
-+
-+	toffset = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
-+	if (toffset < 0)
-+		return toffset;
-+
 +	/*
-+	 * Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+	 * T_OFFSET is a trim value used to improve accuracy of the result
++	 * Interrupt is generated only when the ONKEY pin is asserted.
++	 * Hence the deassertion of the pin is simulated through work queue.
 +	 */
-+	return sprintf(buf, "%d\n", 1708 * (tjunc - toffset) - 108800);
++	if (key_stat)
++		schedule_delayed_work(&onkey->work, msecs_to_jiffies(50));
 +}
 +
-+static ssize_t da9052_read_vbbat(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
++static void da9052_onkey_work(struct work_struct *work)
 +{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
++	struct da9052_onkey *onkey = container_of(work, struct da9052_onkey,
++						  work.work);
 +
-+	ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBBAT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", vbbat_reg_to_mV(ret));
++	da9052_onkey_query(onkey);
 +}
 +
-+static ssize_t da9052_hwmon_show_name(struct device *dev,
-+				      struct device_attribute *devattr,
-+				      char *buf)
++static irqreturn_t da9052_onkey_irq(int irq, void *data)
 +{
-+	return sprintf(buf, "da9052-hwmon\n");
++	struct da9052_onkey *onkey = data;
++
++	da9052_onkey_work(&onkey->work.work);
++
++	return IRQ_HANDLED;
 +}
 +
-+static ssize_t show_label(struct device *dev,
-+			  struct device_attribute *devattr, char *buf)
++static int __devinit da9052_onkey_probe(struct platform_device *pdev)
 +{
-+	return sprintf(buf, "%s\n",
-+		       input_names[to_sensor_dev_attr(devattr)->index]);
-+}
++	struct da9052_onkey *onkey;
++	int error;
 +
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9052_read_vddout, NULL,
-+			  DA9052_ADC_VDDOUT);
-+static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VDDOUT);
-+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, da9052_read_vbat, NULL,
-+			  DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, da9052_read_vbbat, NULL,
-+			  DA9052_ADC_VBBAT);
-+static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VBBAT);
-+
-+static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, da9052_read_ich, NULL,
-+			  DA9052_ADC_ICH);
-+static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_ICH);
-+
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9052_read_tbat, NULL,
-+			  DA9052_ADC_TBAT);
-+static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_TBAT);
-+static SENSOR_DEVICE_ATTR(temp8_input, S_IRUGO, da9052_read_tjunc, NULL,
-+			  DA9052_ADC_TJUNC);
-+static SENSOR_DEVICE_ATTR(temp8_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_TJUNC);
-+
-+static DEVICE_ATTR(name, S_IRUGO, da9052_hwmon_show_name, NULL);
-+
-+static struct attribute *da9052_attr[] = {
-+	&dev_attr_name.attr,
-+	&sensor_dev_attr_in0_input.dev_attr.attr,
-+	&sensor_dev_attr_in0_label.dev_attr.attr,
-+	&sensor_dev_attr_in3_input.dev_attr.attr,
-+	&sensor_dev_attr_in3_label.dev_attr.attr,
-+	&sensor_dev_attr_in4_input.dev_attr.attr,
-+	&sensor_dev_attr_in4_label.dev_attr.attr,
-+	&sensor_dev_attr_in5_input.dev_attr.attr,
-+	&sensor_dev_attr_in5_label.dev_attr.attr,
-+	&sensor_dev_attr_in6_input.dev_attr.attr,
-+	&sensor_dev_attr_in6_label.dev_attr.attr,
-+	&sensor_dev_attr_in9_input.dev_attr.attr,
-+	&sensor_dev_attr_in9_label.dev_attr.attr,
-+	&sensor_dev_attr_curr1_input.dev_attr.attr,
-+	&sensor_dev_attr_curr1_label.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+	&sensor_dev_attr_temp2_label.dev_attr.attr,
-+	&sensor_dev_attr_temp8_input.dev_attr.attr,
-+	&sensor_dev_attr_temp8_label.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group da9052_attr_group = {.attrs = da9052_attr};
-+
-+static int __init da9052_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct da9052_hwmon *hwmon;
-+	int ret;
-+
-+	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9052_hwmon),
-+			     GFP_KERNEL);
-+	if (!hwmon)
++	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
++	if (!onkey) {
++		dev_err(&pdev->dev, "Failed to allocate memory\n");
 +		return -ENOMEM;
-+
-+	mutex_init(&hwmon->hwmon_lock);
-+	hwmon->da9052 = dev_get_drvdata(pdev->dev.parent);
-+
-+	platform_set_drvdata(pdev, hwmon);
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &da9052_attr_group);
-+	if (ret)
-+		goto err_mem;
-+
-+	hwmon->class_device = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(hwmon->class_device)) {
-+		ret = PTR_ERR(hwmon->class_device);
-+		goto err_sysfs;
 +	}
 +
++	onkey->input = input_allocate_device();
++	if (!onkey->input) {
++		error = -ENOMEM;
++		dev_err(&pdev->dev, "Failed to allocate input device, %d\n",
++			error);
++		goto err_mem;
++	}
++
++	onkey->da9052 = dev_get_drvdata(pdev->dev.parent);
++	if (!onkey->da9052) {
++		error = -ENOMEM;
++		dev_err(&pdev->dev, "Failed to get the driver's data, %d\n",
++			error);
++		goto err_input;
++	}
++
++	onkey->irq = platform_get_irq_byname(pdev, "ONKEY");
++	if (onkey->irq < 0) {
++		error = onkey->irq;
++		dev_err(&pdev->dev,
++			"Failed to get an IRQ for input device, %d\n",
++			onkey->irq);
++		goto err_input;
++	}
++
++	onkey->input->evbit[0] = BIT_MASK(EV_KEY);
++	onkey->input->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
++	onkey->input->name = "da9052-onkey";
++	onkey->input->phys = "da9052-onkey/input0";
++	onkey->input->dev.parent = &pdev->dev;
++
++	INIT_DELAYED_WORK(&onkey->work, da9052_onkey_work);
++
++	error = request_threaded_irq(onkey->irq, NULL, da9052_onkey_irq,
++				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++				     "ONKEY", onkey);
++	if (error < 0) {
++		dev_err(onkey->da9052->dev,
++			"Failed to register ONKEY IRQ %d, error = %d\n",
++			onkey->irq, error);
++		goto err_req_irq;
++	}
++
++	error = input_register_device(onkey->input);
++	if (error) {
++		dev_err(&pdev->dev, "Unable to register input device, %d\n",
++			error);
++		goto err_irq;
++	}
++
++	platform_set_drvdata(pdev, onkey);
++
 +	return 0;
 +
-+err_sysfs:
-+	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
++err_irq:
++	free_irq(onkey->irq, onkey);
++err_req_irq:
++	cancel_delayed_work_sync(&onkey->work);
++err_input:
++	input_free_device(onkey->input);
 +err_mem:
-+	return ret;
++	return error;
 +}
 +
-+static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
++static int __devexit da9052_onkey_remove(struct platform_device *pdev)
 +{
-+	struct da9052_hwmon *hwmon = platform_get_drvdata(pdev);
++	struct da9052_onkey *onkey = platform_get_drvdata(pdev);
 +
-+	hwmon_device_unregister(hwmon->class_device);
-+	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
++	free_irq(onkey->irq, onkey);
++	cancel_delayed_work_sync(&onkey->work);
++	input_unregister_device(onkey->input);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver da9052_hwmon_driver = {
-+	.probe = da9052_hwmon_probe,
-+	.remove = __devexit_p(da9052_hwmon_remove),
++static struct platform_driver da9052_onkey_driver = {
++	.probe	= da9052_onkey_probe,
++	.remove	= __devexit_p(da9052_onkey_remove),
 +	.driver = {
-+		.name = "da9052-hwmon",
-+		.owner = THIS_MODULE,
++		.name	= "da9052-onkey",
++		.owner	= THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9052_hwmon_driver);
++module_platform_driver(da9052_onkey_driver);
 +
 +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9052 HWMON driver");
++MODULE_DESCRIPTION("Onkey driver for DA9052");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9052-hwmon");
-
++MODULE_ALIAS("platform:da9052-onkey");
 
 
 
