@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2CBCkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 21:40:05 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55613 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755711Ab2CBCjo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 21:39:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.152.130.98 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
-MIME-Version: 1.0
-In-Reply-To: <20120301171914.7c64f095.akpm@linux-foundation.org>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-	<20120301171914.7c64f095.akpm@linux-foundation.org>
-Date: Thu, 1 Mar 2012 20:39:40 -0600
-Message-ID: <CABqD9ha4ACGaVt_VDY9LFJKW1dJ3LrRm=pDyTCQwupLZQ0Ovhg@mail.gmail.com>
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
-From: Will Drewry <wad@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756199Ab2CBClq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 21:41:46 -0500
+Received: from bureau59.ns.utoronto.ca ([128.100.132.146]:48427 "EHLO
+	bureau59.ns.utoronto.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755077Ab2CBClp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 21:41:45 -0500
+From: Steven Truelove <steven.truelove@utoronto.ca>
+To: wli@holomorphy.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Steven Truelove <steven.truelove@utoronto.ca>
+Subject: [PATCH] Correct alignment of huge page requests.
+Date: Thu,  1 Mar 2012 21:41:16 -0500
+Message-Id: <1330656076-14341-1-git-send-email-steven.truelove@utoronto.ca>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 7:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 1 Mar 2012 16:57:49 -0800 Kees Cook <keescook@chromium.org> wrote:
->
->> On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> > Hi Kees,
->> >
->> > On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
->> >>
->> >> Is it time to pull this into -next so more people can feel it? I brought
->> >> Andy Lutomirski's patches forward (needed to bump the prctl values), and
->> >> updated my git tree. If we're ready, here it is in all its request-pull
->> >> format glory:
->> >>
->> >> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
->> >> __ Stephen Rothwell (1):
->> >> __ __ __ __ Add linux-next specific files for 20120301
->> >
->> > OK, not commenting on anything else, but I cannot merge that into
->> > linux-next because it is based on yesterday's linux-next release and
->> > linux-next (effectively) rebases every day ...
->> >
->> > Does this work depend on anything in linux-next? __Or could it be just
->> > based off Linus' tree. __If it depends on other tree(s) merged into
->> > linux-next, then you should base your tree on those tree(s) as long as
->> > they never get rebased ...
->>
->> Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
->>
->> And at least the ptrace changes are, IIRC, in -mm, which has no tree.
->> :P Given that, what's the best thing for me to do for this to be easy
->> for you to pull?
->
-> Base the tree on mainline and wreck the -mm patches I guess.  I'm good
-> at unwrecking patches.
->
-> That assumes that we're going to merge this stuff into 3.4 - if we
-> don't, unwrecker gets rewrecked and grumpy.
->
-> I don't know if we're going to merge it into 3.4?  I haven't been
-> paying a lot of attention and haven't looked at the patches in a while.
->
+When calling shmget() with SHM_HUGETLB, shmget aligns the request size to PAGE_SIZE, but this is not sufficient.  Modified hugetlb_file_setup() to align requests to the huge page size, and to accept an address argument so that all alignment checks can be performed in hugetlb_file_setup(), rather than in its callers.  Changed newseg and mmap_pgoff to match new prototype and eliminated a now redundant alignment check.
+---
+ fs/hugetlbfs/inode.c    |   12 ++++++++----
+ include/linux/hugetlb.h |    3 ++-
+ ipc/shm.c               |    2 +-
+ mm/mmap.c               |    6 +++---
+ 4 files changed, 14 insertions(+), 9 deletions(-)
 
-I'll roll a v13 which is just a rebase back onto mainline and see if I
-can just stage it in kees's tree.
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 1e85a7a..a97b7cc 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -928,7 +928,7 @@ static int can_do_hugetlb_shm(void)
+ 	return capable(CAP_IPC_LOCK) || in_group_p(sysctl_hugetlb_shm_group);
+ }
+ 
+-struct file *hugetlb_file_setup(const char *name, size_t size,
++struct file *hugetlb_file_setup(const char *name, unsigned long addr, size_t size,
+ 				vm_flags_t acctflag,
+ 				struct user_struct **user, int creat_flags)
+ {
+@@ -938,6 +938,8 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
+ 	struct path path;
+ 	struct dentry *root;
+ 	struct qstr quick_string;
++	struct hstate *hstate;
++	int num_pages;
+ 
+ 	*user = NULL;
+ 	if (!hugetlbfs_vfsmount)
+@@ -967,10 +969,12 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
+ 	if (!inode)
+ 		goto out_dentry;
+ 
++	hstate = hstate_inode(inode);
++	size += addr & ~huge_page_mask(hstate);
++	num_pages = ALIGN(size, huge_page_size(hstate)) >>
++			huge_page_shift(hstate);
+ 	error = -ENOMEM;
+-	if (hugetlb_reserve_pages(inode, 0,
+-			size >> huge_page_shift(hstate_inode(inode)), NULL,
+-			acctflag))
++	if (hugetlb_reserve_pages(inode, 0, num_pages, NULL, acctflag))
+ 		goto out_inode;
+ 
+ 	d_instantiate(path.dentry, inode);
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d9d6c86..4b9e59d 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -164,7 +164,8 @@ static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
+ 
+ extern const struct file_operations hugetlbfs_file_operations;
+ extern const struct vm_operations_struct hugetlb_vm_ops;
+-struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
++struct file *hugetlb_file_setup(const char *name, unsigned long addr,
++				size_t size, vm_flags_t acct,
+ 				struct user_struct **user, int creat_flags);
+ int hugetlb_get_quota(struct address_space *mapping, long delta);
+ void hugetlb_put_quota(struct address_space *mapping, long delta);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index b76be5b..406c5b2 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -482,7 +482,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 		/* hugetlb_file_setup applies strict accounting */
+ 		if (shmflg & SHM_NORESERVE)
+ 			acctflag = VM_NORESERVE;
+-		file = hugetlb_file_setup(name, size, acctflag,
++		file = hugetlb_file_setup(name, 0, size, acctflag,
+ 					&shp->mlock_user, HUGETLB_SHMFS_INODE);
+ 	} else {
+ 		/*
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3f758c7..4bf211a 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1099,9 +1099,9 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+ 		 * A dummy user value is used because we are not locking
+ 		 * memory so no accounting is necessary
+ 		 */
+-		len = ALIGN(len, huge_page_size(&default_hstate));
+-		file = hugetlb_file_setup(HUGETLB_ANON_FILE, len, VM_NORESERVE,
+-						&user, HUGETLB_ANONHUGE_INODE);
++		file = hugetlb_file_setup(HUGETLB_ANON_FILE, addr, len,
++						VM_NORESERVE, &user,
++						HUGETLB_ANONHUGE_INODE);
+ 		if (IS_ERR(file))
+ 			return PTR_ERR(file);
+ 	}
+-- 
+1.7.3.4
 
-Thanks!
-will
