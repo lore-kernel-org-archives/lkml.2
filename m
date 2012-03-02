@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758097Ab2CBBLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:11:22 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:58817 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757942Ab2CBBLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:11:21 -0500
-Date: Fri, 2 Mar 2012 02:11:19 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: .. anybody know of any filesystems that depend on the exact VFS 'namehash' implementation?
-Message-ID: <20120302011119.GA22197@one.firstfloor.org>
-References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com> <m2ipinq16x.fsf@firstfloor.org> <CA+55aFw=wwGD=QLmQgfGm+oZR3UyvKBmXdXj+SJtK6pipCe45A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw=wwGD=QLmQgfGm+oZR3UyvKBmXdXj+SJtK6pipCe45A@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758129Ab2CBBMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:12:05 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757942Ab2CBBMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:12:03 -0500
+Message-ID: <4F501E60.3090701@nod.at>
+Date: Fri, 02 Mar 2012 02:12:00 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: OpenRISC: BUG: failure at mm/page_alloc.c:2467/free_pages()!
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigAD10C4B40BCF779998401382"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 05:01:52PM -0800, Linus Torvalds wrote:
-> On Thu, Mar 1, 2012 at 4:46 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > There should be generally better modern general hash algorithms around,
-> > like murmur, cityhash or snoopy. Perhaps even the fnv we have in tree,
-> > but it's somewhat dated by know.
-> >
-> > They all have larger code, but if it's really that hot it would be worth
-> > it.
-> 
-> The quality of our hash function really doesn't seem to be the issue.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigAD10C4B40BCF779998401382
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-With better I meant mainly faster in cycles.
+Hi!
 
-e.g. CityHash claims upto ~6 bytes/cycle. That's extreme and may need
-the SSE versions, but there are non SSE variants e.g. in spooky that are 
-somewhat competive.
+CONFIG_DEBUG_VM exposes this splat:
+BUG: failure at mm/page_alloc.c:2467/free_pages()!
 
-Are you anywhere near that with your hash function?
+addr is 0xc100c000, but memory_end is 0x02000000.
 
-Partly they get that from unrolling, but there are also lots of other tricks.
+Thanks,
+//richard
 
-Also BTW if we had better hash functions (in mixing) we could do smaller
-hash tables.
 
--Andi
+--------------enigAD10C4B40BCF779998401382
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPUB5gAAoJEN9758yqZn9e4EAH/Rnxm8InPqpPyF4ZmV5P1yWq
+Xet4sispDVLDKKDOye93qSO4GVtu0IeZzDx7SNu3uCk8C7c9m7cTUKbkbyluY79J
+/YQv9y2neLwuGGY5sWYbeTz7jzfmxeZZ64YMZrn0Kh4rpPRNbQCZk3UegrSLETDh
+TQ3Ug6WrcAmLwQ/bd1rAmQem7ROWst8eXaR+2K/cZPp0lnd2nxKGkjObeU7ycuA1
+Cw5p0d8E2HwoGmi9yo1+GqidPyDsQcKmytqGhiVWpQ0mC8xTbznufK/o4ZPEJBYL
+umGeYP70vWrWrdQ1VYEReGv688IP3qloE1IkNSLNE7nN4n6eGSJhumxX15/QCd4=
+=M5uW
+-----END PGP SIGNATURE-----
+
+--------------enigAD10C4B40BCF779998401382--
