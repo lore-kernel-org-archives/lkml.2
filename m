@@ -1,176 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965340Ab2CBL4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 06:56:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14615 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab2CBL4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 06:56:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="72748262"
-Date: Fri, 02 Mar 2012 11:55:44 +0000
-From: tadeusz.struk@intel.com
-To: jbarnes@virtuousgeek.org, bhelgaas@google.com
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org, tadeusz.struk@intel.com
-Subject: [PATCH v2] Dynamically add and remove device specific reset
- functions
-Message-ID: <4f50b540.6AzyOmpHR+z7jLk1%tadeusz.struk@intel.com>
-User-Agent: nail 11.25 7/29/05
+	id S965185Ab2CBMNi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 07:13:38 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44846 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756Ab2CBMNh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 07:13:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.23.199 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1330648313-32593-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1330648313-32593-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Fri, 2 Mar 2012 20:13:36 +0800
+Message-ID: <CAJd=RBBN9Rdf8WQSSYP2LCNdZZCaAOJ0sb98CxPxnz8gmLgnDw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] thp: add HPAGE_PMD_* definitions for !CONFIG_TRANSPARENT_HUGEPAGE
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Reworked according to comments.
-I have a use case where I need to cleanup resource allocated for Virtual
-Functions after a guest OS that used it crashed. This cleanup needs to
-be done before the VF is being FLRed. The only possible way to do this
-seems to be by using pci_dev_specific_reset() function. Unfortunately
-this function only works for devices defined in a static table in the
-drivers/pci/quirks.c file. This patch changes it so that specific reset
-functions can be added and deleted dynamically.
+On Fri, Mar 2, 2012 at 8:31 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> These macros will be used in later patch, where all usage are expected
+> to be optimized away without #ifdef CONFIG_TRANSPARENT_HUGEPAGE.
+> But to detect unexpected usages, we convert existing BUG() to BUILD_BUG().
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
----
- drivers/pci/pci.h    |   14 +++++++++++
- drivers/pci/quirks.c |   61 +++++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 65 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 1009a5e..3e95df6 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -312,6 +312,7 @@ static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
- extern void pci_enable_acs(struct pci_dev *dev);
- 
- struct pci_dev_reset_methods {
-+	struct list_head list;
- 	u16 vendor;
- 	u16 device;
- 	int (*reset)(struct pci_dev *dev, int probe);
-@@ -319,11 +320,24 @@ struct pci_dev_reset_methods {
- 
- #ifdef CONFIG_PCI_QUIRKS
- extern int pci_dev_specific_reset(struct pci_dev *dev, int probe);
-+extern int pci_dev_specific_reset_add(struct pci_dev_reset_methods
-+					*reset_method);
-+extern int pci_dev_specific_reset_remove(struct pci_dev_reset_methods
-+					*reset_method);
- #else
- static inline int pci_dev_specific_reset(struct pci_dev *dev, int probe)
- {
- 	return -ENOTTY;
- }
-+int pci_dev_specific_reset_add(struct pci_dev_reset_methods *reset_method)
-+{
-+	return 0;
-+}
-+int
-+pci_dev_specific_reset_remove(struct pci_dev_reset_methods *reset_method)
-+{
-+	return 0;
-+}
- #endif
- 
- #endif /* DRIVERS_PCI_H */
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 6476547..a0152fd 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3070,26 +3070,67 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
- }
- 
- #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
--
--static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
--	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
--		 reset_intel_82599_sfp_virtfn },
--	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
-+static struct pci_dev_reset_methods pci_dev_reset_methods[] = {
-+	{ {NULL, NULL}, PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
-+		reset_intel_82599_sfp_virtfn },
-+	{ {NULL, NULL}, PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
- 		reset_intel_generic_dev },
--	{ 0 }
- };
- 
-+static DEFINE_SPINLOCK(reset_list_lock);
-+static LIST_HEAD(reset_list);
-+
-+static int __init pci_dev_specific_reset_init(void)
-+{
-+	int i;
-+	for (i = 0; i < ARRAY_SIZE(pci_dev_reset_methods); i++) {
-+		pci_dev_specific_reset_add(&pci_dev_reset_methods[i]);
-+	}
-+	return 0;
-+}
-+
-+late_initcall(pci_dev_specific_reset_init);
-+
-+int pci_dev_specific_reset_add(struct pci_dev_reset_methods *reset_method)
-+{
-+	WARN_ON(!reset_method->reset);
-+	INIT_LIST_HEAD(&reset_method->list);
-+	spin_lock(&reset_list_lock);
-+	list_add(&reset_method->list, &reset_list);
-+	spin_unlock(&reset_list_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(pci_dev_specific_reset_add);
-+
-+int pci_dev_specific_reset_remove(struct pci_dev_reset_methods *reset_method)
-+{
-+	spin_lock(&reset_list_lock);
-+	list_del(&reset_method->list);
-+	spin_unlock(&reset_list_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(pci_dev_specific_reset_remove);
-+
- int pci_dev_specific_reset(struct pci_dev *dev, int probe)
- {
- 	const struct pci_dev_reset_methods *i;
-+	spin_lock(&reset_list_lock);
-+	list_for_each_entry(i, &reset_list, list) {
-+		if (i->vendor == dev->vendor &&
-+		    i->device == dev->device) {
-+			spin_unlock(&reset_list_lock);
-+			return i->reset(dev, probe);
-+		}
-+	}
- 
--	for (i = pci_dev_reset_methods; i->reset; i++) {
-+	list_for_each_entry(i, &reset_list, list) {
- 		if ((i->vendor == dev->vendor ||
- 		     i->vendor == (u16)PCI_ANY_ID) &&
--		    (i->device == dev->device ||
--		     i->device == (u16)PCI_ANY_ID))
-+		     i->device == (u16)PCI_ANY_ID) {
-+			spin_unlock(&reset_list_lock);
- 			return i->reset(dev, probe);
-+		}
- 	}
--
-+	spin_unlock(&reset_list_lock);
- 	return -ENOTTY;
- }
--- 
-1.7.7.6
-
---------------------------------------------------------------
-Intel Shannon Limited
-Registered in Ireland
-Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
-Registered Number: 308263
-Business address: Dromore House, East Park, Shannon, Co. Clare
-
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
-
-
+> ---
+>  include/linux/huge_mm.h |   11 ++++++-----
+>  1 files changed, 6 insertions(+), 5 deletions(-)
+>
+> diff --git linux-next-20120228.orig/include/linux/huge_mm.h linux-next-20120228/include/linux/huge_mm.h
+> index f56cacb..c8af7a2 100644
+> --- linux-next-20120228.orig/include/linux/huge_mm.h
+> +++ linux-next-20120228/include/linux/huge_mm.h
+> @@ -51,6 +51,9 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+>                                     unsigned long address,
+>                                     enum page_check_address_pmd_flag flag);
+>
+> +#define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+> +#define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
+> +
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  #define HPAGE_PMD_SHIFT HPAGE_SHIFT
+>  #define HPAGE_PMD_MASK HPAGE_MASK
+> @@ -102,8 +105,6 @@ extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+>                BUG_ON(pmd_trans_splitting(*____pmd) ||                 \
+>                       pmd_trans_huge(*____pmd));                       \
+>        } while (0)
+> -#define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
+> -#define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
+>  #if HPAGE_PMD_ORDER > MAX_ORDER
+>  #error "hugepages can't be allocated by the buddy allocator"
+>  #endif
+> @@ -158,9 +159,9 @@ static inline struct page *compound_trans_head(struct page *page)
+>        return page;
+>  }
+>  #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+> -#define HPAGE_PMD_SHIFT ({ BUG(); 0; })
+> -#define HPAGE_PMD_MASK ({ BUG(); 0; })
+> -#define HPAGE_PMD_SIZE ({ BUG(); 0; })
+> +#define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
+> +#define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+> +#define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+>
+>  #define hpage_nr_pages(x) 1
+>
+> --
+> 1.7.7.6
+>
