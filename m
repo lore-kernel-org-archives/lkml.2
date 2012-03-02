@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030438Ab2CBS24 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 13:28:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46535 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab2CBS2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 13:28:55 -0500
-Message-ID: <4F51114D.80704@zytor.com>
-Date: Fri, 02 Mar 2012 10:28:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1757064Ab2CBSfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 13:35:11 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32744 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab2CBSfJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 13:35:09 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19ppqbevzU/ci2aE/Kav0MN
+Date: Fri, 2 Mar 2012 10:35:05 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/4] mmc: omap_hsmmc: Use gpio_find_by_chip_name() for
+ omap_hsmmc_gpio_init()
+Message-ID: <20120302183505.GN18901@atomide.com>
+References: <20120301185044.29210.44521.stgit@kaulin.local>
+ <20120301185528.29210.85854.stgit@kaulin.local>
+ <4F5075EE.1050902@ti.com>
+ <20120302170830.GH18901@atomide.com>
 MIME-Version: 1.0
-To: "Joshua C." <joshuacov@googlemail.com>
-CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
-References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com> <4F4EC19F.4050002@zytor.com> <CAKL7Q7rZyUNNP+jy5ajL2KSbC8S4LEQZWG3vuPVSvSOCd_ZGQg@mail.gmail.com> <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com> <4F4FE1FA.1040008@zytor.com> <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com>
-In-Reply-To: <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302170830.GH18901@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 09:53 AM, Joshua C. wrote:
+* Tony Lindgren <tony@atomide.com> [120302 08:38]:
+> * Rajendra Nayak <rnayak@ti.com> [120301 22:54]:
+>
+> > >@@ -2093,8 +2123,7 @@ err1:
+> > >  	platform_set_drvdata(pdev, NULL);
+> > >  	mmc_free_host(mmc);
+> > >  err_alloc:
+> > >-	omap_hsmmc_gpio_free(pdata);
+> > >-err:
+> > >+	omap_hsmmc_gpio_free(host);
+> > 
+> > This error handling needs to be fixed up. In case
+> > omap_hsmmc_gpio_init() fails, which already frees up
+> > any requested gpios, omap_hsmmc_gpio_free() again tries
+> > freeing gpios.
 > 
-> I thought about your idea for separating the platform specific code in
-> another file. It will make the code more modular but at the end we're
-> talking about a single function that flips a single bit. I really
-> don't see any real benefit from defining it in a separate file. It
-> makes (from my point of view) reading the file just more difficult.
-> That's why I decided to return the platform specific code back where
-> it originally was and only modifiy the x86 code. So I can keep the
-> changes at minimum. I'll post the patch later today and cc the tty
-> maintainer. Thanks for the help and the ideas.
-> 
+> Hmm that sounds like a separate patch that should be a fixed
+> before this series?
 
-Yeah, it seems a bit excessive in this case.
+Nope, I was confused. The error handling needs to change
+as the omap_hsmmc_gpio_init() got moved later so host is
+initialized. Will fix.
 
-	-hpa
+Regards,
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Tony
