@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965230Ab2CBWjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:39:03 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46259 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab2CBWjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:39:02 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.74.197 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 2 Mar 2012 14:38:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kay Sievers <kay.sievers@vrfy.org>,
-        Federico Vaga <federico.vaga@gmail.com>
-Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org
-Subject: Re: How to make a bus with heterogeneous devices?
-Message-ID: <20120302223853.GA24929@kroah.com>
-References: <20120224152051.GA23232@mail.gnudd.com>
- <20120225004008.GA3973@kroah.com>
- <1380686.VGpImaUmFA@harkonnen>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1380686.VGpImaUmFA@harkonnen>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965392Ab2CBWjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:39:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:4365 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965271Ab2CBWjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 17:39:05 -0500
+Message-Id: <e39f63$3uf6dn@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="132618679"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [Linaro-mm-sig] [PATCH 2/3] dma-buf: add support for kernel cpu access
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org
+In-Reply-To: <1330616161-1937-3-git-send-email-daniel.vetter@ffwll.ch>
+References: <1330616161-1937-1-git-send-email-daniel.vetter@ffwll.ch> <1330616161-1937-3-git-send-email-daniel.vetter@ffwll.ch>
+Date: Fri, 02 Mar 2012 22:38:58 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 11:18:59AM +0100, Federico Vaga wrote:
-> > That's fine, it is what happens with lots of drivers, you can do this
-> > with the default attribute group assigned to that driver, right?
+On Thu,  1 Mar 2012 16:36:00 +0100, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> Big differences to other contenders in the field (like ion) is
+> that this also supports highmem, so we have to split up the cpu
+> access from the kernel side into a prepare and a kmap step.
 > 
-> We can't because a driver can handle devices with different set of 
-> attributes. We  can't use device->groups because only if match succeed 
-> we know which attributes add to the device.
-> That's because the same driver handles several similar devices, to avoid 
-> proliferation of almost-identical drivers. So the drivers attaches 
-> attributes to the device after match succeeds.
-
-Unless you manage the uevents by "hand", you can run into big problems
-with userspace tools if you add the attributes after the device is
-matched to a driver.  Be very careful here.
-
-> The solution that I temporarily  implemented is the following:
+> Prepare is allowed to fail and should do everything required so that
+> the kmap calls can succeed (like swapin/backing storage allocation,
+> flushing, ...).
 > 
-> > > [...]
-> > > 3- Attributes may be added after match succeeds, before calling
-> > > probe.
-> > > This cam be done with a "raw" call to sysfs_create_group(); then
-> > > groups cna be added to dev->groups so they will be removed on
-> > > device_unregister().
-> > > [...]
+> More in-depth explanations will follow in the follow-up documentation
+> patch.
 > 
-> (with calling probe I mean calling "my" driver probe)
+> Changes in v2:
 > 
-> I know it's not a nice solution and I know it's not nice add groups to 
-> device->groups after registration. I can use sysfs_create_group() and 
-> sysfs_remove_group() without touching the device.
+> - Clear up begin_cpu_access confusion noticed by Sumit Semwal.
+> - Don't automatically fallback from the _atomic variants to the
+>   non-atomic variants. The _atomic callbacks are not allowed to
+>   sleep, so we want exporters to make this decision explicit. The
+>   function signatures are explicit, so simpler exporters can still
+>   use the same function for both.
+> - Make the unmap functions optional. Simpler exporters with permanent
+>   mappings don't need to do anything at unmap time.
 
-It's not an issue of "touching" the device, it's an issue of "userspace
-just got missed all of those attributes", so your tools will be all
-confused.  The kernel has no problem with it :)
+Are we going to have to have a dma_buf->ops->begin_async_access(&me, dir)
+variant for coherency control of rendering with an imported dma_buf?
+There is also no concurrency control here between multiple importers
+doing simultaneous begin_cpu_access(). I presume that is going to be a
+common function across all exporters so the midlayer might offer a
+semaphore as a library function and then the
+dma_buf->ops->begin_cpu_access() becomes mandatory as at a minimum it
+has to point to the default implementation.
+-Chris
 
-> > I think you need to look at how the system bus is handled.  It just 
-> > went into 3.3-rc and allows for "different" types of devices to all be 
-> > on the same bus, with different drivers and attributes.  Let me know if 
-> > how that works does not work out for you.
-> 
-> (thank you for the reference to the patches)
-> 
-> I think it doesn't work in our case for the same reason we can't use 
-> device_driver->groups: we know too late in the register process which 
-> attributes add to a device, practically at the end of the registration.
-> Maybe I'm missing something.
-
-I think you are.
-
-Kay, you know this area of the driver core better than I do at the
-moment, given your most recent changes here.  Any reason why Alessandro
-and Federico can't do the same thing that the sysdev rework did for
-their devices here?
-
-thanks,
-
-greg k-h
+-- 
+Chris Wilson, Intel Open Source Technology Centre
