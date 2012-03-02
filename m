@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab2CBKHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:07:32 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48274 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab2CBKHa (ORCPT
+	id S1755578Ab2CBKIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:08:14 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48244 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab2CBKIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:07:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.224.9 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
-Message-ID: <1330682841.4191.1.camel@phoenix>
-Subject: [PATCH RFC/RFT] regulator: Fix mask parameter in da9052_reg_update
- calls
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Fri, 02 Mar 2012 18:07:21 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Mar 2012 05:08:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of luiz.dentz@gmail.com designates 10.236.189.5 as permitted sender) smtp.mail=luiz.dentz@gmail.com; dkim=pass header.i=luiz.dentz@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120302.035509.1994457175982020283.davem@davemloft.net>
+References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
+	<20120301.170848.432407217191581288.davem@davemloft.net>
+	<CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
+	<20120302.035509.1994457175982020283.davem@davemloft.net>
+Date: Fri, 2 Mar 2012 12:08:11 +0200
+Message-ID: <CABBYNZJWKGpkK2mSbGCQ2KkE+jC3ih-wR3JQZSMgj7AYhbxeuw@mail.gmail.com>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
+From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, javier.martinez@collabora.co.uk,
+        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the mask parameter is 0, info->activate_bit bit won't be set by
-calling da9052_reg_update.
+Hi David,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Hi,
-I cannot find the datasheet, but current code looks does not make sense.
-Can someone confirm if this is a correct fix?
+On Fri, Mar 2, 2012 at 10:55 AM, David Miller <davem@davemloft.net> wrote:
+> From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+> Date: Fri, 2 Mar 2012 10:39:24 +0200
+>
+>> Like I said before there is many projects using AF_UNIX as IPC
+>> transport, the documentation actually induces people to use for this
+>> purpose, and many would benefit from being able to do multicast.
+>
+> You can't have it both ways.
+>
+> If it's useful for many applications, then many applications would
+> benefit from a userland library that solved the problem using
+> existing facilities such as IP multicast.
+>
+> If it's only useful for dbus that that absoltely means we should
+> not add thousands of lines of code to the kernel specifically for
+> that application.
 
-Regards,
-Axel
+Instead we should add many times that into dbus-daemon and do IP
+multicast, am I missing something?
 
- drivers/regulator/da9052-regulator.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> So either way, kernel changes are not justified.
 
-diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
-index 3767364..ea4d8f5 100644
---- a/drivers/regulator/da9052-regulator.c
-+++ b/drivers/regulator/da9052-regulator.c
-@@ -260,8 +260,8 @@ static int da9052_set_ldo5_6_voltage(struct regulator_dev *rdev,
- 	 * the LDO activate bit to implment the changes on the
- 	 * LDO output.
- 	*/
--	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
--				 info->activate_bit);
-+	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
-+				 info->activate_bit, info->activate_bit);
- }
- 
- static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
-@@ -280,8 +280,8 @@ static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
- 	 * the DCDC activate bit to implment the changes on the
- 	 * DCDC output.
- 	*/
--	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
--				 info->activate_bit);
-+	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
-+				 info->activate_bit, info->activate_bit);
- }
- 
- static int da9052_get_regulator_voltage_sel(struct regulator_dev *rdev)
+I respect your opinion, but I don't agree with it, you are pushing
+userspace to a much more complex solution.
+
+At this point it would probably better to just use shared memory and
+forget about any security, eavesdrop all the way.
+
 -- 
-1.7.5.4
-
-
-
+Luiz Augusto von Dentz
