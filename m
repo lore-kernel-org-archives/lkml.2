@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539Ab2CBVUa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:20:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38341 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758401Ab2CBVU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:20:27 -0500
-Message-ID: <4F513990.1030401@ti.com>
-Date: Fri, 2 Mar 2012 22:20:16 +0100
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] devicetree: Add empty of_platform_populate() for !CONFIG_OF_ADDRESS
- (sparc)
-References: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758479Ab2CBVVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:21:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53666 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757545Ab2CBVVQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:21:16 -0500
+Message-ID: <1330723262.11248.233.camel@twins>
+Subject: Re: [PATCH] cpuset: mm: Remove memory barrier damage from the page
+ allocator
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 02 Mar 2012 22:21:02 +0100
+In-Reply-To: <20120302112358.GA3481@suse.de>
+References: <20120302112358.GA3481@suse.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Fri, 2012-03-02 at 11:23 +0000, Mel Gorman wrote:
+> For extra style points, the commit introduced the use of yield() in an
+> implementation of what looks like a spinning mutex.
 
-In fact this patch is not working for build without CONFIG_OF like x86.
+Andrew, could you simply say no to any patch adding a yield()? There's a
+99% chance its a bug, as was this. 
 
-On 2/24/2012 11:06 PM, Grant Likely wrote:
-> --- a/include/linux/of_platform.h
-> +++ b/include/linux/of_platform.h
-> @@ -81,7 +81,7 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
->   					 struct device *parent);
->   extern struct platform_device *of_find_device_by_node(struct device_node *np);
->
-> -#if !defined(CONFIG_SPARC) /* SPARC has its own device registration method */
-> +#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
->   /* Platform devices and busses creation */
->   extern struct platform_device *of_platform_device_create(struct device_node *np,
->   						   const char *bus_id,
-> @@ -94,7 +94,15 @@ extern int of_platform_populate(struct device_node *root,
->   				const struct of_device_id *matches,
->   				const struct of_dev_auxdata *lookup,
->   				struct device *parent);
-> -#endif /* !CONFIG_SPARC */
-> +#else
-> +static inline int of_platform_populate(struct device_node *root,
-> +					const struct of_device_id *matches,
-> +					const struct of_dev_auxdata *lookup,
-> +					struct device *parent)
-> +{
-> +	return -ENODEV;
-> +}
-> +#endif /* !CONFIG_OF_ADDRESS */
->
->   #endif /* CONFIG_OF_DEVICE */
-
-Because if CONFIG_OF_DEVICE is not defined, then the stub for 
-of_platform_populate will not be defined either. It should exist for any 
-config without CONFIG_OF.
-
-Building twl4030 for x86 is actually broken.
-
-Regards,
-Benoit
-
+This code would life-lock when cpuset_change_task_nodemask() would be
+called by the highest priority FIFO task on UP or when pinned to the
+same cpu the task doing get_mems_allowed().
