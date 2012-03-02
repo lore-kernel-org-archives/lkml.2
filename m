@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751104Ab2CBFFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 00:05:16 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:45540 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2CBFFN (ORCPT
+	id S1751234Ab2CBFIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 00:08:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60833 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2CBFIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 00:05:13 -0500
-Date: Fri, 2 Mar 2012 14:11:34 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] KVM: Avoid checking huge page mappings in
- get_dirty_log()
-Message-Id: <20120302141134.1971c5da.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120302115624.46cbaa00.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120302115624.46cbaa00.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Mar 2012 00:08:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.42.138.193 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
+Date: Thu, 1 Mar 2012 23:08:13 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Rik Theys <Rik.Theys@esat.kuleuven.be>,
+        David Flyn <davidf@rd.bbc.co.uk>
+Subject: Re: [PATCH v2] NFSv4: Save the owner/group name string when doing
+ open
+Message-ID: <20120302050813.GA32761@burratino>
+References: <1325956115-21767-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1325960863-31742-1-git-send-email-Trond.Myklebust@netapp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325960863-31742-1-git-send-email-Trond.Myklebust@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp> wrote:
+Hi,
 
-> Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp> wrote:
-> 
-> > +	while (mask) {
-> > +		rmapp = &slot->rmap[gfn_offset + __ffs(mask)];
-> > +		__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL);
-> >  
-> > -	return write_protected;
-> > +		/* clear the first set bit */
-> > +		mask &= mask - 1;
-> > +	}
-> >  }
-> 
-> while (mask) {
-> 	fsbit = __ffs(mask);
-> 	gfn_offset += fsbit;
-> 	mask >>= fsbit + 1;
-> 
-> 	rmapp = &slot->rmap[gfn_offset];
-> 	__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL);
-> }
-> 
-> Seems to be better: BSF friendly.
+Trond Myklebust wrote:
 
-I was wrong.
+> [Subject: NFSv4: Save the owner/group name string when doing open]
+>
+> ...so that we can do the uid/gid mapping outside the asynchronous RPC
+> context.
+> This fixes a bug in the current NFSv4 atomic open code where the client
+> isn't able to determine what the true uid/gid fields of the file are,
+> (because the asynchronous nature of the OPEN call denies it the ability
+> to do an upcall) and so fills them with default values, marking the
+> inode as needing revalidation.
+> Unfortunately, in some cases, the VFS will do some additional sanity
+> checks on the file, and may override the server's decision to allow
+> the open because it sees the wrong owner/group fields.
 
-"and < shift" and bsf did not show any difference for this kind of loop
-on my box.  So we should keep the original implementation.
+Thanks!  This patch (commit 6926afd1925a, 2012-01-07) fixes the
+following client-side bug[1]:
 
-	Takuya
+| Our home directories here are mounted over NFS4. When I log in to machine A
+| and run
+|
+| vim
+| :q
+|
+| and then log into machine B and do:
+|
+| vim
+| :q
+|
+| I get E137: Viminfo file is not writable: /users/system/rtheys/.viminfo
+|
+| Every invocation of 'vim and :q' will trigger this.
+|
+| Explicitely doing a stat of the file fixes this.
+
+Rik Theys bisected and found the bug reproducible after and not before
+v2.6.32-rc1~412^2~48^2~15 (NFSv4: Don't do idmapper upcalls for
+asynchronous RPC calls, 2009-08-09).
+
+[...]
+>  6 files changed, 162 insertions(+), 64 deletions(-)
+
+Now I am wondering what, if anything, can be done to fix this in the
+2.6.32.y, 3.0.y, and 3.2.y stable kernels.  The patch looks too big
+for inclusion under the usual stable_kernel_rules:
+
+ - It cannot be bigger than 100 lines, with context.
+
+Ideas?
+Jonathan
+
+[1] http://bugs.debian.org/659111
+    http://thread.gmane.org/gmane.linux.nfs/37230
