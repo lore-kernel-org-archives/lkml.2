@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab2CBOLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:11:38 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:27761 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab2CBOLg (ORCPT
+	id S1756995Ab2CBOPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:15:20 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35117 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab2CBOPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:11:36 -0500
-Date: Fri, 2 Mar 2012 15:11:18 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-i2c@vger.kernel.org,
+	Fri, 2 Mar 2012 09:15:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mnazarewicz@gmail.com designates 10.14.119.136 as permitted sender) smtp.mail=mnazarewicz@gmail.com; dkim=pass header.i=mnazarewicz@gmail.com
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>, linux-usb@vger.kernel.org,
+        "Thomas Faber" <thfabba@gmx.de>
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: another i2c/for-next branch
-Message-ID: <20120302151118.554efb4a@endymion.delvare>
-In-Reply-To: <20120302134305.GA19451@pengutronix.de>
-References: <20120302134305.GA19451@pengutronix.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] usb: gadgetfs: return number of bytes on ep0 read request
+References: <4F5087CE.50304@gmx.de>
+Date: Fri, 02 Mar 2012 15:15:15 +0100
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wajq7pvf3l0zgt@mpn-glaptop>
+In-Reply-To: <4F5087CE.50304@gmx.de>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012 14:43:05 +0100, Wolfram Sang wrote:
-> Hi Stephen,
-> 
-> I am also collecting patches for the i2c-subsystem. Can you add my branch to
-> linux-next, please?
-> 
-> git://git.pengutronix.de/git/wsa/linux.git i2c-embedded/for-next
+On Fri, 02 Mar 2012 09:41:50 +0100, Thomas Faber <thfabba@gmx.de> wrote:
+> A read from GadgetFS endpoint 0 during the data stage of a control
+> request would always return 0 on success (as returned by
+> wait_event_interruptible) despite having written data into the user
+> buffer.
+> This patch makes it correctly set the return value to the number of
+> bytes read.
+>
+> Signed-off-by: Thomas Faber <thfabba@gmx.de>
 
-Would be good to have this in linux-next, yes. Thanks Wolfram for your
-help!
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: stable@vger.kernel.org
+
+> ---
+>  drivers/usb/gadget/inode.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+> index ae04266..4f18a0e 100644
+> --- a/drivers/usb/gadget/inode.c
+> +++ b/drivers/usb/gadget/inode.c
+> @@ -1043,6 +1043,8 @@ ep0_read (struct file *fd, char __user *buf, size_t len, loff_t *ptr)
+>  // FIXME don't call this with the spinlock held ...
+>  				if (copy_to_user (buf, dev->req->buf, len))
+>  					retval = -EFAULT;
+> +				else
+> +					retval = len;
+>  				clean_req (dev->gadget->ep0, dev->req);
+>  				/* NOTE userspace can't yet choose to stall */
+>  			}
+
 
 -- 
-Jean Delvare
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
