@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab2CBA4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:56:24 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:56030 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757767Ab2CBA4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:56:21 -0500
-Message-ID: <1330649779.23314.80.camel@joe2Laptop>
-Subject: Re: [PATCH] net: add QCA alx Ethernet driver
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mcgrof@frijolero.org, qca-linux-team@qualcomm.com,
-        nic-devel@qualcomm.com, kgiori@qca.qualcomm.com, chris.snook@gmail.com,
-        mathieu@qca.qualcomm.com, bryanh@quicinc.com
-Date: Thu, 01 Mar 2012 16:56:19 -0800
-In-Reply-To: <20120301234007.GA18488@electric-eye.fr.zoreil.com>
-References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
-	 <20120228193237.2d56f2b8@nehalam.linuxnetplumber.net>
-	 <20120301234007.GA18488@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757899Ab2CBA5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 19:57:55 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:38963 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751156Ab2CBA5w convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 19:57:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.60.11.40 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
+MIME-Version: 1.0
+In-Reply-To: <20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	<20120301233712.GS3990@outflux.net>
+	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+Date: Thu, 1 Mar 2012 16:57:49 -0800
+X-Google-Sender-Auth: HbUt5BW6ORyWfbrhuwx6pIdnRIY
+Message-ID: <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
+From: Kees Cook <keescook@chromium.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: akpm@linux-foundation.org, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-02 at 00:40 +0100, Francois Romieu wrote:
-> Stephen Hemminger <shemminger@vyatta.com> :
-> [...]
-> > Evolution is better. The new driver has lots of new callbacks to handle
-> > the fact it is dealing with two different chipsets. Not only that your callbacks
-> > are built at runtime which leads to security concerns.
-> > 
-> > There is a reason the two Marvell based drivers (skge and sky2) are
-> > different drivers. Having to do extra per-chip callbacks is a clear sign
-> > the driver should be split in two.
-> 
-> (arguable)
-[]
-> > +void alx_hw_printk(const char *level, const struct alx_hw *hw,
-> > +		   const char *fmt, ...)
-> > +{
-> > +	struct va_format vaf;
-> > +	va_list args;
-> > +
-> > +	va_start(args, fmt);
-> > +	vaf.fmt = fmt;
-> > +	vaf.va = &args;
-> > +
-> > +	if (hw && hw->adpt && hw->adpt->netdev)
-> > +		__netdev_printk(level, hw->adpt->netdev, &vaf);
-> > +	else
-> > +		printk("%salx_hw: %pV", level, &vaf);
-> > +
-> > +	va_end(args);
-> > +}
-> 
-> Designing a new logging facility smells like being unable to figure
-> the current context.
-> 
-> And the printk does not even use KERN_... :o(
+Hi,
 
-Sure it does.
+On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Kees,
+>
+> On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
+>>
+>> Is it time to pull this into -next so more people can feel it? I brought
+>> Andy Lutomirski's patches forward (needed to bump the prctl values), and
+>> updated my git tree. If we're ready, here it is in all its request-pull
+>> format glory:
+>>
+>> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
+>>   Stephen Rothwell (1):
+>>         Add linux-next specific files for 20120301
+>
+> OK, not commenting on anything else, but I cannot merge that into
+> linux-next because it is based on yesterday's linux-next release and
+> linux-next (effectively) rebases every day ...
+>
+> Does this work depend on anything in linux-next?  Or could it be just
+> based off Linus' tree.  If it depends on other tree(s) merged into
+> linux-next, then you should base your tree on those tree(s) as long as
+> they never get rebased ...
 
-level is the first argument and is emitted as %s
+Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
 
-> > +/*
-> > + *  alx_validate_mac_addr - Validate MAC address
-> > + */
-> > +static int alx_validate_mac_addr(u8 *mac_addr)
-> > +{
-> > +	int retval = 0;
-> > +
-> > +	if (mac_addr[0] & 0x01) {
-> > +		printk(KERN_DEBUG "MAC address is multicast\n");
-> > +		retval = -EADDRNOTAVAIL;
-> > +	} else if (mac_addr[0] == 0xff && mac_addr[1] == 0xff) {
-> > +		printk(KERN_DEBUG "MAC address is broadcast\n");
-> > +		retval = -EADDRNOTAVAIL;
-> > +	} else if (mac_addr[0] == 0 && mac_addr[1] == 0 &&
-> > +		   mac_addr[2] == 0 && mac_addr[3] == 0 &&
-> > +		   mac_addr[4] == 0 && mac_addr[5] == 0) {
-> > +		printk(KERN_DEBUG "MAC address is all zeros\n");
-> > +		retval = -EADDRNOTAVAIL;
-> > +	}
-> > +	return retval;
-> > +}
-> 
-> Bloat. It should use is_valid_ether_addr.
+And at least the ptrace changes are, IIRC, in -mm, which has no tree.
+:P Given that, what's the best thing for me to do for this to be easy
+for you to pull?
 
-I sent patches already.
-It's also out of order, testing multicast then broadcast
-instead of the reverse.
+-Kees
 
-
+-- 
+Kees Cook
+ChromeOS Security
