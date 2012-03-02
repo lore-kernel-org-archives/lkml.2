@@ -1,141 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab2CBPZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:25:54 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59795 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756289Ab2CBPZw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:25:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.152.148.230 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
+	id S1758811Ab2CBP0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:26:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43794 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756289Ab2CBP0n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 10:26:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mnazarewicz@gmail.com designates 10.14.99.2 as permitted sender) smtp.mail=mnazarewicz@gmail.com; dkim=pass header.i=mnazarewicz@gmail.com
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: m.szyprowski@samsung.com, "Barry Song" <Barry.Song@csr.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, "Barry Song" <Baohua.Song@csr.com>
+Subject: Re: [PATCH] MM: CMA: add a simple kernel module as the helper to test
+ CMA
+References: <1330656742-5233-1-git-send-email-Barry.Song@csr.com>
+Date: Fri, 02 Mar 2012 16:26:39 +0100
 MIME-Version: 1.0
-In-Reply-To: <20120302144728.GA14004@infradead.org>
-References: <1329195360-10699-1-git-send-email-semenzato@chromium.org>
-	<1329310113.2293.72.camel@twins>
-	<20120215134733.GL28614@infradead.org>
-	<CAA25o9SW+EqsUhv-Ze6fX5-DyZ4fTHXL5CZd0rHnTLsOBxV7xg@mail.gmail.com>
-	<20120215174748.GN28614@infradead.org>
-	<CABPqkBQkbWWyaEKt-Oyqetyd11jm9mL86oi5TJgYaqXLOo7rpQ@mail.gmail.com>
-	<20120302144728.GA14004@infradead.org>
-Date: Fri, 2 Mar 2012 16:25:48 +0100
-Message-ID: <CABPqkBRHrPCXOHMkbBOwsyoh2oFtW8GsNBy3vJ8CQVJZZX=Fig@mail.gmail.com>
-Subject: Re: [PATCH] Perf: bug fix: distinguish between rename and exec
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Luigi Semenzato <semenzato@chromium.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org, olofj@chromium.org
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wajuip2a3l0zgt@mpn-glaptop>
+In-Reply-To: <1330656742-5233-1-git-send-email-Barry.Song@csr.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 3:47 PM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Fri, Mar 02, 2012 at 02:44:37PM +0100, Stephane Eranian escreveu:
->> Did we come to an agreement on this problem?
->>
->> Seems like we do want to distinguish exec from renames, as perf
->> David's example with top.
->> In Luigi's patch, the distinction is made via the header->misc
->> bitmask. Now, I see people have
->> proposed a new record type: PERF_RECORD_COMM vs. PERF_RECORD_EXEC. This would
->> also work but it would require a lot more changes in the tool, i.e.,
->
-> He is working on it, already submitted a RFC and will follow up on lkml
-> soon,
->
-On which solution is he working on?
+On Fri, 02 Mar 2012 03:52:22 +0100, Barry Song <Barry.Song@csr.com> wrote:
 
-> - Arnaldo
+> From: Barry Song <Baohua.Song@csr.com>
 >
->> you have to process a new
->> record type. What's wrong with the header->misc approach?
->>
->>
->> On Wed, Feb 15, 2012 at 6:47 PM, Arnaldo Carvalho de Melo
->> <acme@ghostprotocols.net> wrote:
->> > Em Wed, Feb 15, 2012 at 09:07:47AM -0800, Luigi Semenzato escreveu:
->> >> On Wed, Feb 15, 2012 at 5:47 AM, Arnaldo Carvalho de Melo
->> >> <acme@ghostprotocols.net> wrote:
->> >> > Em Wed, Feb 15, 2012 at 01:48:33PM +0100, Peter Zijlstra escreveu:
->> >> >> I really dislike changing generic code purely for the purpose of
->> >> >> instrumentation like this. Better to pull perf_event_comm() out of here
->> >> >> if you want to change semantics.
->> >> >>
->> >> >> Personally I couldn't care less about renames, I think they're a waste
->> >> >> of time, so I'm ok with the simple patch moving the perf_event_comm()
->> >> >> into setup_new_exec() and possibly renaming it to perf_event_exec().
->> >> >>
->> >> >> Acme, do you care about renames?
->> >> >
->> >> > I like your idea of keeping the semantics of PERF_RECORD_COMM and
->> >> > introducing a PERF_RECORD_EXEC, just have to think about how to handle
->> >> > that in a way that the tools detect that we have PERF_RECORD_EXEC...
->> >>
->> >> I considered this but I don't know how important it is to be backward
->> >> compatible.  Adding a new record type makes old "perf report" fail to
->> >> parse new perf.data files.  (Unless we pad the new record to a
->> >
->> > Hey, old perf record would still see the PERF_RECORD_COMM, i.e. we would
->> > continue asking for PERF_RECORD_COMM in new versions. Together with
->> > PERF_RECORD_EXEC.
->> >
->> >> multiple of 8 bytes, but I don't think we want to go down that path).
->> >>
->> >> If looking forward is more important, I agree a new new record type is
->> >> best.  We might want to consider adding a PERF_RECORD_RENAME for
->> >
->> > PERF_RECORD_COMM is good enough, well, it always was confusing for most
->> > people that asked "hey, that means an EXEC, right?"
->> >
->> > First thing pople think is "hey, this is when it sets the thread COMM,
->> > right?"
->> >
->> >> renames, and leaving the COMM record to its historical meaning (exec),
->> >> possibly renaming it to PERF_RECORD_EXEC for clarity.  And yes, the
->> >> perf instrumentation should not be in set_task_comm(), that's why the
->> >> bug exists in the first place.
->> >>
->> >> We might also want to change the parsing of perf.data so that in the
->> >> future it is more tolerant of new record types.
->> >
->> > Yes, what is the behaviour now? Lemme see... Well, difficult, I'm barely
->> > reading this, just after magnifying it, dilated pupils two hours ago,
->> > grrr
->> >
->> > Wiĺl check later, but IIRC it just warns and skips the record, right?
->> >
->> >> > Humm, will be yet another fallback for setting an perf_event_attr bit,
->> >> > just like with .sample_id_all and .exclude_{guest,host}...
->> >> >
->> >> > That together with the per class errnos + __strerror() method will allow
->> >> > to move all the event creation finally to perf_evlist__open() where all
->> >> > this gets nicely hidden away from poor tools.
->> >> >
->> >> > We can then even have an ui__evlist_perror() method that does all the
->> >> > ui__warning calls, etc.
->> >> >
->> >> > So, yes, from a tooling perspective, I want to be notified of renames
->> >> > and being able to stop relying on PERF_RECORD_COMM to call
->> >> > map_groups__flush and instead do it at PERF_RECORD_EXEC seems a
->> >> > bonus.
->> >> >
->> >> > - Arnaldo
+> Any write request to /dev/cma_test will let the module to allocate memory from
+> CMA, for example:
+>
+> 1st time
+> $ echo 0 > /dev/cma_test
+> will require cma_test to request 1MB
+> 2nd time
+> $ echo 0 > /dev/cma_test
+> will require cma_test to request 2MB
+>
+> Any read request to /dev/cma_test will let the module to free memory from CMA,
+> for example:
+>
+> 1st time
+> $ cat /dev/cma_test
+> will require cma_test to free the 1MB allocated in the first write request
+> 2nd time
+> $ echo 0 > /dev/cma_test
+> will require cma_test to free the 2MB allocated in the second write request
+
+Looks quite all right.  It has a race condition but I guess for a test device it's
+not that big of a deal (I think the race cannot cause panic).  Either way, would be
+nice if one could specify how much memory device should allocate.  How about those
+changes:
+
+diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
+index 3ee89f3..3d3b074 100644
+--- a/tools/cma/cma_test.c
++++ b/tools/cma/cma_test.c
+@@ -6,66 +6,96 @@
+   * Licensed under GPLv2 or later.
+   */
+
+-#include <linux/module.h>
+  #include <linux/device.h>
++#include <linux/dma-mapping.h>
+  #include <linux/fs.h>
++#include <linux/list.h>
+  #include <linux/miscdevice.h>
+-#include <linux/dma-mapping.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
++
++struct cma_allocation {
++	struct list_head list;
++	unsigned long size;
++	dma_addr_t dma;
++	void *virt;
++};
+
+-#define CMA_NUM  10
+  static struct device *cma_dev;
+-static dma_addr_t dma_phys[CMA_NUM];
+-static void *dma_virt[CMA_NUM];
++static LIST_HEAD(cma_allocations);
++static DEFINE_SPINLOCK(cma_lock);
+
+-/* any read request will free coherent memory, eg.
++/*
++ * Any read request will free a single coherent memory, eg.
+   * cat /dev/cma_test
+   */
+  static ssize_t
+  cma_test_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+  {
+-	int i;
+-
+-	for (i = 0; i < CMA_NUM; i++) {
+-		if (dma_virt[i]) {
+-			dma_free_coherent(cma_dev, (i + 1) * SZ_1M, dma_virt[i], dma_phys[i]);
+-			_dev_info(cma_dev, "free virt: %p phys: %p\n", dma_virt[i], (void *)dma_phys[i]);
+-			dma_virt[i] = NULL;
+-			break;
+-		}
++	struct cma_allocation *alloc = NULL;
++
++	spin_lock(&cma_lock);
++	if (!list_empty(&cma_allocations)) {
++		alloc = list_first_entry(&cma_allocations,
++					 struct cma_allocation, list);
++		list_del(&alloc->list);
+  	}
++	spin_unlock(&cma_lock);
++
++	if (alloc) {
++		dma_free_coherent(cma_dev, alloc->size, alloc->virt,
++				  alloc->dma);
++		_dev_info(cma_dev, "free virt: %p phys: %p\n",
++			  alloc->phys, (void *)alloc->dma);
++		kfree(alloc);
++	}
++
+  	return 0;
+  }
+
+  /*
+- * any write request will alloc coherent memory, eg.
+- * echo 0 > /dev/cma_test
++ * Writes request specified number of pages, eg.
++ * echo 1024 > /dev/cma_test
+   */
+  static ssize_t
+-cma_test_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
++cma_test_write(struct file *file, const char __user *buf, size_t count,
++	       loff_t *ppos)
+  {
+-	int i;
++	struct cma_allocation *alloc;
+  	int ret;
+
+-	for (i = 0; i < CMA_NUM; i++) {
+-		if (!dma_virt[i]) {
+-			dma_virt[i] = dma_alloc_coherent(cma_dev, (i + 1) * SZ_1M, &dma_phys[i], GFP_KERNEL);
+-
+-			if (dma_virt[i]) {
+-				void *p;
+-				/* touch every page in the allocated memory */
+-				for (p = dma_virt[i]; p <  dma_virt[i] + (i + 1) * SZ_1M; p += PAGE_SIZE)
+-					*(u32 *)p = 0;
+-
+-				_dev_info(cma_dev, "alloc virt: %p phys: %p\n", dma_virt[i], (void *)dma_phys[i]);
+-			} else {
+-				dev_err(cma_dev, "no mem in CMA area\n");
+-				ret = -ENOMEM;
+-			}
+-			break;
+-		}
+-	}
++	alloc = kmalloc(sizeof *alloc, GFP_KERNEL);
++	if (!alloc)
++		return -ENOMEM;
++
++	ret = kstrtouint_from_user(buf, count, 0, &alloc->size);
++	if (ret)
++		return ret;
++
++	if (!alloc->size)
++		return -EINVAL;
++
++	if (alloc->size > (ULONG_MAX << PAGE_SHIFT))
++		return -EOVERFLOW;
+
+-	return count;
++	alloc->size >>= PAGE_SHIFT;
++	alloc->virt = dma_alloc_coherent(cma_dev, alloc->size,
++					 &alloc->dma, GFP_KERNEL);
++
++	if (alloc->virt) {
++		_dev_info(cma_dev, "alloc virt: %p phys: %p\n", alloc->virt,
++			  (void *)alloc->dma);
++
++		spin_lock(&cma_lock);
++		list_add_tail(&alloc->list, &cma_allocations);
++		spin_unlock(&cma_lock);
++
++		return count;
++	} else {
++		dev_err(cma_dev, "no mem in CMA area\n");
++		kfree(alloc);
++		return -ENOSPC;
++	}
+  }
+
+  static const struct file_operations cma_test_fops = {
+
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> ---
+>  tools/cma/Makefile   |   13 ++++++
+>  tools/cma/cma_test.c |  108 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 121 insertions(+), 0 deletions(-)
+>  create mode 100644 tools/cma/Makefile
+>  create mode 100644 tools/cma/cma_test.c
+>
+> diff --git a/tools/cma/Makefile b/tools/cma/Makefile
+> new file mode 100644
+> index 0000000..d15c2c0
+> --- /dev/null
+> +++ b/tools/cma/Makefile
+> @@ -0,0 +1,13 @@
+> +# Kernel modules
+> +#
+> +# To compile for ARM:
+> +# make ARCH=arm CC=arm-none-linux-gnueabi-gcc
+> +#
+> +obj-m	+= cma_test.o
+> +
+> +build: kernel_modules
+> +
+> +kernel_modules:
+> +	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR)
+> +clean:
+> +	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR) clean
+> diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
+> new file mode 100644
+> index 0000000..3ee89f3
+> --- /dev/null
+> +++ b/tools/cma/cma_test.c
+> @@ -0,0 +1,108 @@
+> +/*
+> + * kernel module helper for testing CMA
+> + *
+> + * Copyright (c) 2011 Cambridge Silicon Radio Limited, a CSR plc group company.
+> + *
+> + * Licensed under GPLv2 or later.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/device.h>
+> +#include <linux/fs.h>
+> +#include <linux/miscdevice.h>
+> +#include <linux/dma-mapping.h>
+> +
+> +#define CMA_NUM  10
+> +static struct device *cma_dev;
+> +static dma_addr_t dma_phys[CMA_NUM];
+> +static void *dma_virt[CMA_NUM];
+> +
+> +/* any read request will free coherent memory, eg.
+> + * cat /dev/cma_test
+> + */
+> +static ssize_t
+> +cma_test_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < CMA_NUM; i++) {
+> +		if (dma_virt[i]) {
+> +			dma_free_coherent(cma_dev, (i + 1) * SZ_1M, dma_virt[i], dma_phys[i]);
+> +			_dev_info(cma_dev, "free virt: %p phys: %p\n", dma_virt[i], (void *)dma_phys[i]);
+> +			dma_virt[i] = NULL;
+> +			break;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +/*
+> + * any write request will alloc coherent memory, eg.
+> + * echo 0 > /dev/cma_test
+> + */
+> +static ssize_t
+> +cma_test_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+> +{
+> +	int i;
+> +	int ret;
+> +
+> +	for (i = 0; i < CMA_NUM; i++) {
+> +		if (!dma_virt[i]) {
+> +			dma_virt[i] = dma_alloc_coherent(cma_dev, (i + 1) * SZ_1M, &dma_phys[i], GFP_KERNEL);
+> +
+> +			if (dma_virt[i]) {
+> +				void *p;
+> +				/* touch every page in the allocated memory */
+> +				for (p = dma_virt[i]; p <  dma_virt[i] + (i + 1) * SZ_1M; p += PAGE_SIZE)
+> +					*(u32 *)p = 0;
+> +
+> +				_dev_info(cma_dev, "alloc virt: %p phys: %p\n", dma_virt[i], (void *)dma_phys[i]);
+> +			} else {
+> +				dev_err(cma_dev, "no mem in CMA area\n");
+> +				ret = -ENOMEM;
+> +			}
+> +			break;
+> +		}
+> +	}
+> +
+> +	return count;
+> +}
+> +
+> +static const struct file_operations cma_test_fops = {
+> +	.owner =    THIS_MODULE,
+> +	.read  =    cma_test_read,
+> +	.write =    cma_test_write,
+> +};
+> +
+> +static struct miscdevice cma_test_misc = {
+> +	.name = "cma_test",
+> +	.fops = &cma_test_fops,
+> +};
+> +
+> +static int __init cma_test_init(void)
+> +{
+> +	int ret = 0;
+> +
+> +	ret = misc_register(&cma_test_misc);
+> +	if (unlikely(ret)) {
+> +		pr_err("failed to register cma test misc device!\n");
+> +		return ret;
+> +	}
+> +	cma_dev = cma_test_misc.this_device;
+> +	cma_dev->coherent_dma_mask = ~0;
+> +	_dev_info(cma_dev, "registered.\n");
+> +
+> +	return ret;
+> +}
+> +module_init(cma_test_init);
+> +
+> +static void __exit cma_test_exit(void)
+> +{
+> +	misc_deregister(&cma_test_misc);
+> +}
+> +module_exit(cma_test_exit);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Barry Song <Baohua.Song@csr.com>");
+> +MODULE_DESCRIPTION("kernel module to help the test of CMA");
+> +MODULE_ALIAS("CMA test");
+
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
