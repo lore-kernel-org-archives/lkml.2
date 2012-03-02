@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2CBB3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:29:31 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33421 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab2CBB33 (ORCPT
+	id S1755028Ab2CBBfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:35:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35426 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2CBBfh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:29:29 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of vda.linux@googlemail.com designates 10.213.105.140 as permitted sender) smtp.mail=vda.linux@googlemail.com; dkim=pass header.i=vda.linux@googlemail.com
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Subject: Re: Questions about ptrace on a dying process
-Date: Fri, 2 Mar 2012 02:29:25 +0100
-User-Agent: KMail/1.8.2
-Cc: Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-References: <4F4E6915.1010209@am.sony.com> <201203010812.54769.vda.linux@googlemail.com> <4F4FBD65.7020006@am.sony.com>
-In-Reply-To: <4F4FBD65.7020006@am.sony.com>
+	Thu, 1 Mar 2012 20:35:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201203020229.25267.vda.linux@googlemail.com>
+In-Reply-To: <1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+	<20120223075027.GB15306@elte.hu>
+	<CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
+	<1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
+Date: Thu, 1 Mar 2012 17:35:37 -0800
+Message-ID: <CABeCy1btewB-oTgyL06qvebLLXTqareYNy-wdNZ3oiHR3KPwEw@mail.gmail.com>
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES interrupts
+ to an idle CPU -v1
+From: Venki Pallipadi <venki@google.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 March 2012 19:18, Tim Bird wrote:
-> On 02/29/2012 11:12 PM, Denys Vlasenko wrote:
-> > On Wednesday 29 February 2012 21:45, Tim Bird wrote:
-> >> This is on embedded systems, where the dump is not saved.  The dump
-> >> is available via stdin to the core pipe handler, but it would be
-> >> kind of a pain to wrapper that for random access, which is needed
-> >> for stuff like stack unwinding.
-> > 
-> > Stack unwinding only requires the stack data and knowledge
-> > of the mapped binary and library files. You can parse coredump's ELF header,
-> > and skip all sizable data segments which you won't need anyway.
-> > 
-> > I estimate that usually you will need to save only ~150k of data
-> > in order to produce a stacktrace, and even then,
-> > only because Linux pre-allocates ridiculously large
-> > stack for every new process - 132k. It can easily be reduced
-> > to something saner with one-line patch.
-> 
-> My budget for each crash report is about 8k.  I have to do
-> the unwind at the time of the crash (on target) (and without
-> symbols - these are added later on a host).  Given the other
-> stuff I want to save, saving the whole stack is usually not
-> an option, and saving a coredump is out of the question.
+On Thu, Mar 1, 2012 at 5:28 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> On Thu, 2012-03-01 at 16:33 -0800, Venki Pallipadi wrote:
+>> >
+>> > fork_idle() should also make sure it does not schedule the child
+>> > thread: thus we'd also be able to further simplify smpboot.c and
+>> > get rid of all that extremely ugly 'struct create_idle'
+>> > gymnastics in smpboot.c.
+>>
+>> But not this. I am not sure where fork_idle results in resched of the child.
+>> As I saw it, fork_idle calls init_idle and that sets the affinity of
+>> idle_task to target CPU. So, reschedule should not be a problem. What
+>> am I missing here?
+>
+> I think Ingo is referring to the fact that we can't use kthread_create()
+> here and hence we were relying on fork_idle().
+>
+>> Also, I tried this silly test patch (Cut and paste... Sorry) and it
+>> seemed to work fine both with and without CPU hotplug.
+>>
+>
+> I don't think we can do this today, as we need to make sure we have the
+> correct current context. With dynamic cpu hotplug, current context can
+> be any process and hence we were depending on the schedule_work()
+> context.
+>
 
-How about this algorithm?
+schedule_work() is only done at boot time. In case of dynamic cpu
+hotplug, we skip the whole fork_idle as we already have the task
+struct and just do init_idle().
 
-Read coredump sequentially. First come ELF header and program headers.
-Read headers and remember their virtual address ranges, sizes, and flags.
-The rest you don't need.
-
-Then comes NOTE segment. Parse it and fetch the value of stack pointer
-register. Don't save anything else.
-
-Then read LOAD segments and discard their data until you reach a
-stack segment (one which stack pointer points to).
-
-Read all words from stack starting from stack pointer up to the top
-of the stack. If a word, when interpreted as a pointer, points into
-an executable segment, then add it to stack trace. Else, ignore the word.
-
-After you finished reading the stack, read and discard the rest (there
-usually is nothing after stack).
-
-Then you can sanitize stack trace: if some addresses there point
-to a *beginning* of a function, not in the middle of it,
-then it's likely a false positive (someone was passing function
-pointer parameter, or had it in on-stack auto variable).
-To do this sanitization, you don't need (and can't use, even if you'd have it)
-coredump - you need to examine binary and libraries instead.
-
-But I suspect even without sanitizing it, resulting stack trace
-will often be rather good: it will contain all real return addresses,
-and often will have no false positives at all.
-
--- 
-vda
+> thanks,
+> suresh
+>
+>> Thanks,
+>> Venki
+>>
+>> ---
+>> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+>> index 66d250c..36b80ef 100644
+>> --- a/arch/x86/kernel/smpboot.c
+>> +++ b/arch/x86/kernel/smpboot.c
+>> @@ -686,7 +686,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
+>>                 .done   = COMPLETION_INITIALIZER_ONSTACK(c_idle.done),
+>>         };
+>>
+>> -       INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
+>> +       // INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
+>>
+>>         alternatives_smp_switch(1);
+>>
+>> @@ -703,12 +703,13 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
+>>                 goto do_rest;
+>>         }
+>>
+>> -       schedule_work(&c_idle.work);
+>> -       wait_for_completion(&c_idle.done);
+>> +       // schedule_work(&c_idle.work);
+>> +       // wait_for_completion(&c_idle.done);
+>> +       c_idle.idle = fork_idle(cpu);
+>>
+>>         if (IS_ERR(c_idle.idle)) {
+>>                 printk("failed fork for CPU %d\n", cpu);
+>> -               destroy_work_on_stack(&c_idle.work);
+>> +               // destroy_work_on_stack(&c_idle.work);
+>>                 return PTR_ERR(c_idle.idle);
+>>         }
+>>
+>> @@ -831,7 +832,7 @@ do_rest:
+>>                 smpboot_restore_warm_reset_vector();
+>>         }
+>>
+>> -       destroy_work_on_stack(&c_idle.work);
+>> +       // destroy_work_on_stack(&c_idle.work);
+>>         return boot_error;
+>>  }
+>>
+>> ---
+>>
+>> >
+>> > Thanks,
+>> >
+>> >        Ingo
+>
+>
