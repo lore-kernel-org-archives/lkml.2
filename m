@@ -1,150 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030306Ab2CBPhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:37:01 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17145 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030202Ab2CBPg7 (ORCPT
+	id S1030312Ab2CBPiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:38:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51191 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754532Ab2CBPiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:36:59 -0500
-X-Authority-Analysis: v=2.0 cv=Z7xu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=iqH1YQEIiWMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0DtkhaoAg2pSKGPVn9IA:9 a=4tUZVHvCoqhFIeNa9DYA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330702617.25686.265.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
- PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>
-Date: Fri, 02 Mar 2012 10:36:57 -0500
-In-Reply-To: <alpine.LFD.2.02.1203021618330.2742@ionos>
-References: <20120301185527.064629423@goodmis.org>
-	  <20120301190346.172835662@goodmis.org>
-	  <alpine.LFD.2.02.1203021518501.2742@ionos>
-	 <1330701323.25686.260.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.02.1203021618330.2742@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Mar 2012 10:38:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of 21cnbao@gmail.com designates 10.204.154.211 as permitted sender) smtp.mail=21cnbao@gmail.com; dkim=pass header.i=21cnbao@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <op.wajuip2a3l0zgt@mpn-glaptop>
+References: <1330656742-5233-1-git-send-email-Barry.Song@csr.com> <op.wajuip2a3l0zgt@mpn-glaptop>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 2 Mar 2012 23:37:46 +0800
+Message-ID: <CAGsJ_4zz=C2k3pvc=1_=iviSUkz78QCF+yumEEMaknysLHFxag@mail.gmail.com>
+Subject: Re: [PATCH] MM: CMA: add a simple kernel module as the helper to test CMA
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: m.szyprowski@samsung.com, workgroup.linux@csr.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-02 at 16:20 +0100, Thomas Gleixner wrote:
+2012/3/2 Michal Nazarewicz <mina86@mina86.com>:
+> On Fri, 02 Mar 2012 03:52:22 +0100, Barry Song <Barry.Song@csr.com> wrote:
+>
+>> From: Barry Song <Baohua.Song@csr.com>
+>>
+>> Any write request to /dev/cma_test will let the module to allocate memory
+>> from
+>> CMA, for example:
+>>
+>> 1st time
+>> $ echo 0 > /dev/cma_test
+>> will require cma_test to request 1MB
+>> 2nd time
+>> $ echo 0 > /dev/cma_test
+>> will require cma_test to request 2MB
+>>
+>> Any read request to /dev/cma_test will let the module to free memory from
+>> CMA,
+>> for example:
+>>
+>> 1st time
+>> $ cat /dev/cma_test
+>> will require cma_test to free the 1MB allocated in the first write request
+>> 2nd time
+>> $ echo 0 > /dev/cma_test
+>> will require cma_test to free the 2MB allocated in the second write
+>> request
+>
+>
+> Looks quite all right.  It has a race condition but I guess for a test
+> device it's
+> not that big of a deal (I think the race cannot cause panic).  Either way,
+> would be
+> nice if one could specify how much memory device should allocate.  How about
+> those
+> changes:
 
-> Already queued. I'd say #4 is a bug fix as well, though I
-> fundamentally hate the ass backwards semantics of that new function.
+Michal, i think these improvements have maken the cma_test much more
+useful and flexible.
 
-It is a bug fix, but I don't like it either. Note, that the patch didn't
-update the pin_current_cpu() code, which would have to be done too (to
-be a full fix).
+>
+> diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
+> index 3ee89f3..3d3b074 100644
+> --- a/tools/cma/cma_test.c
+> +++ b/tools/cma/cma_test.c
+> @@ -6,66 +6,96 @@
+>
+>  * Licensed under GPLv2 or later.
+>  */
+>
+> -#include <linux/module.h>
+>  #include <linux/device.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/fs.h>
+> +#include <linux/list.h>
+>  #include <linux/miscdevice.h>
+> -#include <linux/dma-mapping.h>
+> +#include <linux/module.h>
+> +#include <linux/spinlock.h>
+> +
+> +struct cma_allocation {
+> +       struct list_head list;
+> +       unsigned long size;
+> +       dma_addr_t dma;
+> +       void *virt;
+> +};
+>
+> -#define CMA_NUM  10
+>  static struct device *cma_dev;
+> -static dma_addr_t dma_phys[CMA_NUM];
+> -static void *dma_virt[CMA_NUM];
+> +static LIST_HEAD(cma_allocations);
+> +static DEFINE_SPINLOCK(cma_lock);
+>
+>
+> -/* any read request will free coherent memory, eg.
+> +/*
+> + * Any read request will free a single coherent memory, eg.
+>  * cat /dev/cma_test
+>  */
+>  static ssize_t
+>
+>  cma_test_read(struct file *file, char __user *buf, size_t count, loff_t
+> *ppos)
+>  {
+> -       int i;
+> -
+> -       for (i = 0; i < CMA_NUM; i++) {
+> -               if (dma_virt[i]) {
+> -                       dma_free_coherent(cma_dev, (i + 1) * SZ_1M,
+> dma_virt[i], dma_phys[i]);
+> -                       _dev_info(cma_dev, "free virt: %p phys: %p\n",
+> dma_virt[i], (void *)dma_phys[i]);
+> -                       dma_virt[i] = NULL;
+> -                       break;
+> -               }
+> +       struct cma_allocation *alloc = NULL;
+> +
+> +       spin_lock(&cma_lock);
+> +       if (!list_empty(&cma_allocations)) {
+> +               alloc = list_first_entry(&cma_allocations,
+> +                                        struct cma_allocation, list);
+> +               list_del(&alloc->list);
+>        }
+> +       spin_unlock(&cma_lock);
+> +
+> +       if (alloc) {
+> +               dma_free_coherent(cma_dev, alloc->size, alloc->virt,
+> +                                 alloc->dma);
+>
+> +               _dev_info(cma_dev, "free virt: %p phys: %p\n",
+> +                         alloc->phys, (void *)alloc->dma);
+> +               kfree(alloc);
+> +       }
+> +
+>        return 0;
+>
+>  }
+>
+>  /*
+> - * any write request will alloc coherent memory, eg.
+> - * echo 0 > /dev/cma_test
+> + * Writes request specified number of pages, eg.
+> + * echo 1024 > /dev/cma_test
+>  */
+>
+>  static ssize_t
+> -cma_test_write(struct file *file, const char __user *buf, size_t count,
+> loff_t *ppos)
+> +cma_test_write(struct file *file, const char __user *buf, size_t count,
+> +              loff_t *ppos)
+>  {
+> -       int i;
+> +       struct cma_allocation *alloc;
+>        int ret;
+>
+> -       for (i = 0; i < CMA_NUM; i++) {
+> -               if (!dma_virt[i]) {
+> -                       dma_virt[i] = dma_alloc_coherent(cma_dev, (i + 1) *
+> SZ_1M, &dma_phys[i], GFP_KERNEL);
+> -
+> -                       if (dma_virt[i]) {
+> -                               void *p;
+> -                               /* touch every page in the allocated memory
+> */
+> -                               for (p = dma_virt[i]; p <  dma_virt[i] + (i
+> + 1) * SZ_1M; p += PAGE_SIZE)
+> -                                       *(u32 *)p = 0;
+> -
+> -                               _dev_info(cma_dev, "alloc virt: %p phys:
+> %p\n", dma_virt[i], (void *)dma_phys[i]);
+> -                       } else {
+> -                               dev_err(cma_dev, "no mem in CMA area\n");
+> -                               ret = -ENOMEM;
+> -                       }
+> -                       break;
+> -               }
+> -       }
+> +       alloc = kmalloc(sizeof *alloc, GFP_KERNEL);
+> +       if (!alloc)
+> +               return -ENOMEM;
+> +
+> +       ret = kstrtouint_from_user(buf, count, 0, &alloc->size);
+> +       if (ret)
+> +               return ret;
+> +
+> +       if (!alloc->size)
+> +               return -EINVAL;
+> +
+> +       if (alloc->size > (ULONG_MAX << PAGE_SHIFT))
+> +               return -EOVERFLOW;
+>
+> -       return count;
+> +       alloc->size >>= PAGE_SHIFT;
+> +       alloc->virt = dma_alloc_coherent(cma_dev, alloc->size,
+> +                                        &alloc->dma, GFP_KERNEL);
+> +
+> +       if (alloc->virt) {
+> +               _dev_info(cma_dev, "alloc virt: %p phys: %p\n", alloc->virt,
+> +                         (void *)alloc->dma);
+> +
+> +               spin_lock(&cma_lock);
+> +               list_add_tail(&alloc->list, &cma_allocations);
+> +               spin_unlock(&cma_lock);
+> +
+> +               return count;
+> +       } else {
+>
+> +               dev_err(cma_dev, "no mem in CMA area\n");
+> +               kfree(alloc);
+> +               return -ENOSPC;
+> +       }
+>
+>  }
+>
+>  static const struct file_operations cma_test_fops = {
+>
+>> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+>> ---
+>>  tools/cma/Makefile   |   13 ++++++
+>>  tools/cma/cma_test.c |  108
+>> ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 121 insertions(+), 0 deletions(-)
+>>  create mode 100644 tools/cma/Makefile
+>>  create mode 100644 tools/cma/cma_test.c
+>>
+>> diff --git a/tools/cma/Makefile b/tools/cma/Makefile
+>> new file mode 100644
+>> index 0000000..d15c2c0
+>> --- /dev/null
+>> +++ b/tools/cma/Makefile
+>> @@ -0,0 +1,13 @@
+>> +# Kernel modules
+>> +#
+>> +# To compile for ARM:
+>> +# make ARCH=arm CC=arm-none-linux-gnueabi-gcc
+>> +#
+>> +obj-m  += cma_test.o
+>> +
+>> +build: kernel_modules
+>> +
+>> +kernel_modules:
+>> +       ${MAKE} -C $(CURDIR)/../.. M=$(CURDIR)
+>> +clean:
+>> +       ${MAKE} -C $(CURDIR)/../.. M=$(CURDIR) clean
+>> diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
+>> new file mode 100644
+>> index 0000000..3ee89f3
+>> --- /dev/null
+>> +++ b/tools/cma/cma_test.c
+>> @@ -0,0 +1,108 @@
+>> +/*
+>> + * kernel module helper for testing CMA
+>> + *
+>> + * Copyright (c) 2011 Cambridge Silicon Radio Limited, a CSR plc group
+>> company.
+>> + *
+>> + * Licensed under GPLv2 or later.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/device.h>
+>> +#include <linux/fs.h>
+>> +#include <linux/miscdevice.h>
+>> +#include <linux/dma-mapping.h>
+>> +
+>> +#define CMA_NUM  10
+>> +static struct device *cma_dev;
+>> +static dma_addr_t dma_phys[CMA_NUM];
+>> +static void *dma_virt[CMA_NUM];
+>> +
+>> +/* any read request will free coherent memory, eg.
+>> + * cat /dev/cma_test
+>> + */
+>> +static ssize_t
+>> +cma_test_read(struct file *file, char __user *buf, size_t count, loff_t
+>> *ppos)
+>> +{
+>> +       int i;
+>> +
+>> +       for (i = 0; i < CMA_NUM; i++) {
+>> +               if (dma_virt[i]) {
+>> +                       dma_free_coherent(cma_dev, (i + 1) * SZ_1M,
+>> dma_virt[i], dma_phys[i]);
+>> +                       _dev_info(cma_dev, "free virt: %p phys: %p\n",
+>> dma_virt[i], (void *)dma_phys[i]);
+>> +                       dma_virt[i] = NULL;
+>> +                       break;
+>> +               }
+>> +       }
+>> +       return 0;
+>> +}
+>> +
+>> +/*
+>> + * any write request will alloc coherent memory, eg.
+>> + * echo 0 > /dev/cma_test
+>> + */
+>> +static ssize_t
+>> +cma_test_write(struct file *file, const char __user *buf, size_t count,
+>> loff_t *ppos)
+>> +{
+>> +       int i;
+>> +       int ret;
+>> +
+>> +       for (i = 0; i < CMA_NUM; i++) {
+>> +               if (!dma_virt[i]) {
+>> +                       dma_virt[i] = dma_alloc_coherent(cma_dev, (i + 1)
+>> * SZ_1M, &dma_phys[i], GFP_KERNEL);
+>> +
+>> +                       if (dma_virt[i]) {
+>> +                               void *p;
+>> +                               /* touch every page in the allocated
+>> memory */
+>> +                               for (p = dma_virt[i]; p <  dma_virt[i] +
+>> (i + 1) * SZ_1M; p += PAGE_SIZE)
+>> +                                       *(u32 *)p = 0;
+>> +
+>> +                               _dev_info(cma_dev, "alloc virt: %p phys:
+>> %p\n", dma_virt[i], (void *)dma_phys[i]);
+>> +                       } else {
+>> +                               dev_err(cma_dev, "no mem in CMA area\n");
+>> +                               ret = -ENOMEM;
+>> +                       }
+>> +                       break;
+>> +               }
+>> +       }
+>> +
+>> +       return count;
+>> +}
+>> +
+>> +static const struct file_operations cma_test_fops = {
+>> +       .owner =    THIS_MODULE,
+>> +       .read  =    cma_test_read,
+>> +       .write =    cma_test_write,
+>> +};
+>> +
+>> +static struct miscdevice cma_test_misc = {
+>> +       .name = "cma_test",
+>> +       .fops = &cma_test_fops,
+>> +};
+>> +
+>> +static int __init cma_test_init(void)
+>> +{
+>> +       int ret = 0;
+>> +
+>> +       ret = misc_register(&cma_test_misc);
+>> +       if (unlikely(ret)) {
+>> +               pr_err("failed to register cma test misc device!\n");
+>> +               return ret;
+>> +       }
+>> +       cma_dev = cma_test_misc.this_device;
+>> +       cma_dev->coherent_dma_mask = ~0;
+>> +       _dev_info(cma_dev, "registered.\n");
+>> +
+>> +       return ret;
+>> +}
+>> +module_init(cma_test_init);
+>> +
+>> +static void __exit cma_test_exit(void)
+>> +{
+>> +       misc_deregister(&cma_test_misc);
+>> +}
+>> +module_exit(cma_test_exit);
+>> +
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_AUTHOR("Barry Song <Baohua.Song@csr.com>");
+>> +MODULE_DESCRIPTION("kernel module to help the test of CMA");
+>> +MODULE_ALIAS("CMA test");
+>
+>
+>
+> --
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+>
+>
 
-But I was also thinking that as a work around, as we plan on changing
-this code anyway. Instead of adding a new API which is ass backwards,
-just encompass the cpu_hotplug.lock instead. Something like this:
-
-Not tested nor complied.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-Yes this is ugly, but at least we don't introduce an ass backwards
-semantic.
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index fa40834..c25b5ff 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -46,7 +46,12 @@ static int cpu_hotplug_disabled;
- 
- static struct {
- 	struct task_struct *active_writer;
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	/* Makes the lock keep the task's state */
-+	spinlock_t lock;
-+#else
- 	struct mutex lock; /* Synchronizes accesses to refcount, */
-+#endif
- 	/*
- 	 * Also blocks the new readers during
- 	 * an ongoing cpu hotplug operation.
-@@ -58,6 +63,14 @@ static struct {
- 	.refcount = 0,
- };
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+# define hotplug_lock() spin_lock(&cpu_hotplug.lock)
-+# define hotplug_unlock() spin_unlock(&cpu_hotplug.lock)
-+#else
-+# define hotplug_lock() mutex_lock(&cpu_hotplug.lock)
-+# define hotplug_lock() mutex_unlock(&cpu_hotplug.lock)
-+#endif
-+
- struct hotplug_pcp {
- 	struct task_struct *unplug;
- 	int refcount;
-@@ -87,8 +100,8 @@ retry:
- 		return;
- 	}
- 	preempt_enable();
--	mutex_lock(&cpu_hotplug.lock);
--	mutex_unlock(&cpu_hotplug.lock);
-+	hotplug_lock();
-+	hotplug_unlock();
- 	preempt_disable();
- 	goto retry;
- }
-@@ -161,9 +174,9 @@ void get_online_cpus(void)
- 	might_sleep();
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	mutex_lock(&cpu_hotplug.lock);
-+	hotplug_lock();
- 	cpu_hotplug.refcount++;
--	mutex_unlock(&cpu_hotplug.lock);
-+	hotplug_unlock();
- 
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
-@@ -172,10 +185,10 @@ void put_online_cpus(void)
- {
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	mutex_lock(&cpu_hotplug.lock);
-+	hotplug_lock();
- 	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
- 		wake_up_process(cpu_hotplug.active_writer);
--	mutex_unlock(&cpu_hotplug.lock);
-+	hotplug_unlock();
- 
- }
- EXPORT_SYMBOL_GPL(put_online_cpus);
-@@ -207,11 +220,11 @@ static void cpu_hotplug_begin(void)
- 	cpu_hotplug.active_writer = current;
- 
- 	for (;;) {
--		mutex_lock(&cpu_hotplug.lock);
-+		hotplug_lock();
- 		if (likely(!cpu_hotplug.refcount))
- 			break;
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
--		mutex_unlock(&cpu_hotplug.lock);
-+		hotplug_unlock();
- 		schedule();
- 	}
- }
-@@ -219,7 +232,7 @@ static void cpu_hotplug_begin(void)
- static void cpu_hotplug_done(void)
- {
- 	cpu_hotplug.active_writer = NULL;
--	mutex_unlock(&cpu_hotplug.lock);
-+	hotplug_unlock();
- }
- 
- #else /* #if CONFIG_HOTPLUG_CPU */
-
-
+-barry
