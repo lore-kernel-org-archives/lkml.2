@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab2CBVwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:52:31 -0500
-Received: from gate.crashing.org ([63.228.1.57]:35025 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab2CBVwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:52:30 -0500
-Message-ID: <1330725132.11728.52.camel@pasglop>
-Subject: Re: linux-next: boot failure for next-20120227 and later (pci tree
- related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Sat, 03 Mar 2012 08:52:12 +1100
-In-Reply-To: <CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
-References: <20120302170638.3d172369d04335d9b921a28c@canb.auug.org.au>
-	 <CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757974Ab2CBV5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:57:13 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:46055 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab2CBV5M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:57:12 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mjg@redhat.com" <mjg@redhat.com>,
+        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
+Date: Fri, 2 Mar 2012 16:55:56 -0500
+Subject: RE: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
+ with NMI fallback
+Thread-Topic: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
+ with NMI fallback
+Thread-Index: Acz4uR7a6dfHO5KsS9KW3BbyDKPlSQABfMjQ
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DACAECAE4@USINDEVS01.corp.hds.com>
+References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
+ <1329164860-668-2-git-send-email-dzickus@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA8F@USINDEVS01.corp.hds.com>
+ <20120302211156.GM3083@redhat.com>
+In-Reply-To: <20120302211156.GM3083@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1203020202
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-02 at 10:10 -0700, Bjorn Helgaas wrote:
-> On Thu, Mar 1, 2012 at 11:06 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi Jesse,
-> >
-> > Staring with next-20120227, one of my boot tests is failing like this:
-> 
-> Hi Stephen,
-> 
-> Thanks a lot for the test report and the bisection.  I wish I had a
-> machine to test on so I wouldn't have to bother you about it.
-> 
-> Any chance you could point me at the complete before/after dmesg logs?
->  There should be information about the PCI host bridge apertures and
-> offsets in the "after" log.  If that's not enough, we might need to
-> collect new before/after logs with something like this
-> (whitespace-mangled):
 
-Or give me a chance to dig :-) I'll have a look next week.
+> 
+> I don't think kdump uses the notifier_chain.
 
-Cheers,
-Ben.
+Sorry about that. I looked at old kernel.
+Currently, kdump uses register_nmi_handler() as well.
+
+Seiji
 
 
