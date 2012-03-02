@@ -1,385 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2CBGLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 01:11:24 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34116 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757303Ab2CBGLW (ORCPT
+	id S1757599Ab2CBGMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 01:12:03 -0500
+Received: from mail.southpole.se ([193.12.106.18]:56120 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757303Ab2CBGMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 01:11:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.133.212 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F506486.4090204@openvz.org>
-Date: Fri, 02 Mar 2012 10:11:18 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Fri, 2 Mar 2012 01:12:00 -0500
+Message-ID: <1330668690.19557.91.camel@satguru>
+Subject: Re: OpenRISC: Module loader broken
+From: Jonas Bonn <jonas@southpole.se>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux@openrisc.net,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/7] mm: rework reclaim_stat counters
-References: <20120229090748.29236.35489.stgit@zurg>	<20120229091556.29236.96896.stgit@zurg> <20120302142825.cd583b59.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120302142825.cd583b59.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 02 Mar 2012 07:11:30 +0100
+In-Reply-To: <4F501C7A.30307@nod.at>
+References: <4F501C7A.30307@nod.at>
+Organization: South Pole Consulting AB
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-rIP2IqCugb6zpSwx6hKp"
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
+X-Assp-Version: 2.1.1(11364) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 68717-12373
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Wed, 29 Feb 2012 13:15:56 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> Currently there is two types of reclaim-stat counters:
->> recent_scanned (pages picked from from lru),
->> recent_rotated (pages putted back to active lru).
->> Reclaimer uses ratio recent_rotated / recent_scanned
->> for balancing pressure between file and anon pages.
->>
->> But if we pick page from lru we can either reclaim it or put it back to lru, thus:
->> recent_scanned == recent_rotated[inactive] + recent_rotated[active] + reclaimed
->> This can be called "The Law of Conservation of Memory" =)
->>
-> I'm sorry....where is the count for active->incative ?
 
-If reclaimer deactivates page it will bump recent_rotated[LRU_INACTIVE_ANON/FILE],
-(if I understand your question right) recent_rotated[] now count each evictable lru independently
 
->
->
->
->> Thus recent_rotated counters for each lru list is enough, reclaimed pages can be
->> counted as rotatation into inactive lru. After that reclaimer can use this ratio:
->> recent_rotated[active] / (recent_rotated[active] + recent_rotated[inactive])
->>
->> After this patch struct zone_reclaimer_stat has only one array: recent_rotated,
->> which is directly indexed by lru list index.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> I'm sorry if I misunderstand..
-> Recent_scanned can be update by some logics other than vmscan..
->
-> For example, how lru_deactivate_fn() is handled ?
+--=-rIP2IqCugb6zpSwx6hKp
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-It increase recent_rotated[LRU_INACTIVE_ANON/LRU_INACTIVE_FILE]
+Hi Richard,
 
->
+On Fri, 2012-03-02 at 02:03 +0100, Richard Weinberger wrote:
+> Hi!
+>=20
+> The OpenRISC module loader is broken.
+
+OK, that's new as we've been using module loading quite a bit on this
+platform earlier.  Where did you get your toolchain from?
+
+> It explodes somewhere in apply_relocate_add().
+> This function is anyway fishy:
+>                 case R_OR32_CONST:
+>                         location =3D (uint16_t *)location + 1;
+>                         *((uint16_t *)location) =3D (uint16_t) (value);
+>                         break;
+>                 case R_OR32_CONSTH:
+>                         location =3D (uint16_t *)location + 1;
+>                         *((uint16_t *)location) =3D (uint16_t) (value >> =
+16);
+>                         break;
+>=20
+> Why the cast to (uint16_t *)?
+
+This is for loading a 32 bit const, which is done in two steps:
+
+l.movhi rX,hi(const)
+l.ori   rX,rX,lo(const)
+
+The immediate value 'const' here is encoded in the low 16 bits of those
+instructions.
+
+Since 'location' points at the 32-bit instruction in question, that cast
+is supposed to be saying:  'move 16 bit value into low 16 bits of
+instruction'.
+
+/Jonas
+
+>=20
+> ---cut---
+> # insmod ext2.ko
+> KERNEL: Unaligned Access 0xbc13b68e
+> CPU #: 0
+>    PC: c0007864    SR: 0000827f    SP: c172fe28
+> GPR00: 00000000 GPR01: c172fe28 GPR02: bc0dd298 GPR03: c0690000
+> GPR04: 00000001 GPR05: bc13b68e GPR06: bc1363fc GPR07: bc13b6e4
+> GPR08: bc127f6c GPR09: c00528c4 GPR10: c172e000 GPR11: 00000000
+> GPR12: 00000000 GPR13: c0a068c0 GPR14: bc0d9138 GPR15: 00000001
+> GPR16: 00000000 GPR17: 00000004 GPR18: bc0d9570 GPR19: fffffffc
+> GPR20: bc0d8f30 GPR21: 00000003 GPR22: 0000000c GPR23: 0000000b
+> GPR24: bc13b6f0 GPR25: 48151139 GPR26: c172fe6c GPR27: fffffff9
+> GPR28: c066538c GPR29: c005194c GPR30: 00000004 GPR31: b496906d
+>   RES: 00000000 oGPR11: 00000000 syscallno: 00000000
+> Process insmod (pid: 126, stackpage=3Dc16aeae0)
+>=20
+> Stack: Stack dump [0xc172fd1c]:
+> sp + 00: 0xc172fe28
+> sp + 04: 0xbc0dd298
+> sp + 08: 0xc0690000
+> sp + 12: 0x00000001
+> sp + 16: 0xbc13b68e
+> sp + 20: 0xbc1363fc
+> sp + 24: 0xbc13b6e4
+> sp + 28: 0xbc127f6c
+> sp + 32: 0xc00528c4
+> sp + 36: 0xc172e000
+> sp + 40: 0x00000000
+> sp + 44: 0x00000000
+> sp + 48: 0xc0a068c0
+> sp + 52: 0xbc0d9138
+> sp + 56: 0x00000001
+> sp + 60: 0x00000000
+> sp + 64: 0x00000004
+> sp + 68: 0xbc0d9570
+> sp + 72: 0xfffffffc
+> sp + 76: 0xbc0d8f30
+> sp + 80: 0x00000003
+> sp + 84: 0x0000000c
+> sp + 88: 0x0000000b
+> sp + 92: 0xbc13b6f0
+> sp + 96: 0x48151139
+> sp + 100: 0xc172fe6c
+> sp + 104: 0xfffffff9
+> sp + 108: 0xc066538c
+> sp + 112: 0xc005194c
+> sp + 116: 0x00000004
+> sp + 120: 0xb496906d
+> sp + 124: 0xc0007864
+> sp + 128: 0x00000000
+> sp + 132: 0x00000000
+> sp + 136: 0xc172fdd4
+> sp + 140: 0xc00514c4
+> sp + 144: 0x00000000
+> sp + 148: 0x00000000
+> sp + 152: 0x00000000
+> sp + 156: 0xbc129290
+> sp + 160: 0xbc12929a
+> sp + 164: 0xc0051584
+> sp + 168: 0xbc139e00
+> sp + 172: 0x00000000
+> sp + 176: 0x00000004
+> sp + 180: 0xbc13b7c4
+> sp + 184: 0x6b65726e
+> sp + 188: 0x656c0000
+> sp + 192: 0x00000000
+> sp + 196: 0x00000000
+> sp + 200: 0x00000000
+> sp + 204: 0x00000000
+> sp + 208: 0x00000000
+> sp + 212: 0x00000000
+> sp + 216: 0x00000000
+> sp + 220: 0x00000000
+> sp + 224: 0x00000000
+> sp + 228: 0x00000000
+> sp + 232: 0x00000000
+> sp + 236: 0x00000000
+> sp + 240: 0x00000000
+> sp + 244: 0x00000088
+> sp + 248: 0xbc03b850
+> sp + 252: 0x0000002a
+> sp + 256: 0x001360cd
+> sp + 260: 0x00000690
+> sp + 264: 0xc06653b0
+> sp + 268: 0x00000000
+> sp + 272: 0xbc13b6e4
+> sp + 276: 0x00000004
+> sp + 280: 0x0000000d
+> sp + 284: 0xbc13b6e4
+> sp + 288: 0x00000208
+> sp + 292: 0x001360cd
+> sp + 296: 0x00000000
+> sp + 300: 0xbc13b6f0
+> sp + 304: 0xc00528c4
+> sp + 308: 0x00000000
+> sp + 312: 0x00000000
+> sp + 316: 0x00000000
+> sp + 320: 0x000fc450
+> sp + 324: 0x00000003
+> sp + 328: 0x0000d7cc
+> sp + 332: 0x0000d7cc
+> sp + 336: 0xbc02e000
+> sp + 340: 0x000fc450
+> sp + 344: 0xbc0d8f30
+> sp + 348: 0xbc0d8dc1
+> sp + 352: 0xbc12929c
+> sp + 356: 0x00000000
+> sp + 360: 0x00000000
+> sp + 364: 0x00000000
+> sp + 368: 0x00000000
+> sp + 372: 0x00000028
+> sp + 376: 0x00000029
+> sp + 380: 0x00000011
+> sp + 384: 0x00000000
+> sp + 388: 0x0000000e
+> sp + 392: 0x00000000
+> sp + 396: 0xc16c8750
+> sp + 400: 0xc16c8750
+> sp + 404: 0xc10e1644
+> sp + 408: 0xc00b1200
+> sp + 412: 0x00000000
+> sp + 416: 0xc16c8750
+> sp + 420: 0xc1695950
+> sp + 424: 0x7fb4bec8
+> sp + 428: 0x001360cd
+> sp + 432: 0x00000069
+> sp + 436: 0x7fb4becc
+> sp + 440: 0x00000f2c
+> sp + 444: 0x00000000
+> sp + 448: 0x7fb4bec4
+> sp + 452: 0x7f967b5c
+> sp + 456: 0x0013e254
+> sp + 460: 0x00000000
+> sp + 464: 0xc00055a4
+> sp + 468: 0x0000847e
+> sp + 472: 0x7fb4bc94
+> sp + 476: 0x7fb4bec8
+> sp + 480: 0x30000008
+> sp + 484: 0x000fc450
+> sp + 488: 0x001360cd
+> sp + 492: 0x00000022
+> sp + 496: 0x00000000
+> sp + 500: 0x00000000
+> sp + 504: 0x0001b730
+> sp + 508: 0x00000000
+> sp + 512: 0x00000069
+> sp + 516: 0x00000000
+> sp + 520: 0x0010b08c
+> sp + 524: 0x000fe000
+> sp + 528: 0x0000847e
+> sp + 532: 0x00000048
+> sp + 536: 0xfffffff9
+> sp + 540: 0x000fc801
+> sp + 544: 0x00008079
+> sp + 548: 0x000fc800
+> sp + 552: 0x00000003
+> sp + 556: 0x00000003
+> sp + 560: 0x00000001
+> sp + 564: 0x7fb4bec4
+> sp + 568: 0x48151139
+> sp + 572: 0x00001fff
+> sp + 576: 0xfffffff9
+> sp + 580: 0x0013e254
+> sp + 584: 0x00008079
+> sp + 588: 0x00000000
+> sp + 592: 0xb496906d
+> sp + 596: 0x000eb380
+> sp + 600: 0x00000069
+> sp + 604: 0x00000069
+> sp + 608: 0x00000002
+> sp + 612: 0x00000000
+> sp + 616: 0x00000000
+> sp + 620: 0x00000000
+> sp + 624: 0x00000000
+> sp + 628: 0x00000000
+> sp + 632: 0x00000000
+> sp + 636: 0x00000000
+> sp + 640: 0x00000000
+> sp + 644: 0x00000000
+> sp + 648: 0x00000000
+> sp + 652: 0x00000000
+> sp + 656: 0x00000000
+> sp + 660: 0x00000000
+> sp + 664: 0x00000000
+> sp + 668: 0x00000000
+> sp + 672: 0x00000000
+> sp + 676: 0x00000000
+> sp + 680: 0x00000000
+> sp + 684: 0x00000000
+> sp + 688: 0x00000000
+> sp + 692: 0x00000000
+> sp + 696: 0x00000000
+> sp + 700: 0x00000000
+> sp + 704: 0x00000000
+> sp + 708: 0x00000000
+> sp + 712: 0x00000000
+> sp + 716: 0x00000000
+> sp + 720: 0x00000000
+> sp + 724: 0x00000000
+> sp + 728: 0x00000000
+> sp + 732: 0x00000000
+> sp + 736: 0x00000000
+>=20
+>  [<c00528c4>]
+>  [<c005194c>]
+>  [<c0007864>]
+>  [<c00514c4>]
+>  [<c0051584>]
+>  [<c00528c4>]
+>  [<c00b1200>]
+>  [<c00055a4>]
+>  =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>=20
+> Code: 86 c1 ff f4 44 00 48 00 87 01 ff f8 b8 c6 00 50 03 ff ff c3 dc 05 3=
+0 02 (03) ff ff c1 d4 05 30 00 d7 e1 17 dc a8 43 00 00 18 60 bb ff d7 e1 77=
+ e0
+> ---cut---
+>=20
 > Thanks,
-> -Kame
->
->
->
->
->> ---
->>   include/linux/mmzone.h |   11 +++++------
->>   mm/memcontrol.c        |   29 +++++++++++++++++------------
->>   mm/page_alloc.c        |    6 ++----
->>   mm/swap.c              |   26 ++++++++------------------
->>   mm/vmscan.c            |   42 ++++++++++++++++++++++--------------------
->>   5 files changed, 54 insertions(+), 60 deletions(-)
->>
->> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->> index 2fed935..fdcd683 100644
->> --- a/include/linux/mmzone.h
->> +++ b/include/linux/mmzone.h
->> @@ -137,12 +137,14 @@ enum lru_list {
->>        LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
->>        LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
->>        LRU_UNEVICTABLE,
->> -     NR_LRU_LISTS
->> +     NR_LRU_LISTS,
->> +     NR_EVICTABLE_LRU_LISTS = LRU_UNEVICTABLE,
->>   };
->>
->>   #define for_each_lru(lru) for (lru = 0; lru<  NR_LRU_LISTS; lru++)
->>
->> -#define for_each_evictable_lru(lru) for (lru = 0; lru<= LRU_ACTIVE_FILE; lru++)
->> +#define for_each_evictable_lru(lru) \
->> +     for (lru = 0; lru<  NR_EVICTABLE_LRU_LISTS; lru++)
->>
->>   static inline int is_file_lru(enum lru_list lru)
->>   {
->> @@ -165,11 +167,8 @@ struct zone_reclaim_stat {
->>         * mem/swap backed and file backed pages are refeferenced.
->>         * The higher the rotated/scanned ratio, the more valuable
->>         * that cache is.
->> -      *
->> -      * The anon LRU stats live in [0], file LRU stats in [1]
->>         */
->> -     unsigned long           recent_rotated[2];
->> -     unsigned long           recent_scanned[2];
->> +     unsigned long           recent_rotated[NR_EVICTABLE_LRU_LISTS];
->>   };
->>
->>   struct lruvec {
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index aeebb9e..2809531 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -4189,26 +4189,31 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
->>
->>   #ifdef CONFIG_DEBUG_VM
->>        {
->> -             int nid, zid;
->> +             int nid, zid, lru;
->>                struct mem_cgroup_per_zone *mz;
->>                struct zone_reclaim_stat *rstat;
->> -             unsigned long recent_rotated[2] = {0, 0};
->> -             unsigned long recent_scanned[2] = {0, 0};
->> +             unsigned long recent_rotated[NR_EVICTABLE_LRU_LISTS];
->>
->> +             memset(recent_rotated, 0, sizeof(recent_rotated));
->>                for_each_online_node(nid)
->>                        for (zid = 0; zid<  MAX_NR_ZONES; zid++) {
->>                                mz = mem_cgroup_zoneinfo(memcg, nid, zid);
->>                                rstat =&mz->lruvec.reclaim_stat;
->> -
->> -                             recent_rotated[0] += rstat->recent_rotated[0];
->> -                             recent_rotated[1] += rstat->recent_rotated[1];
->> -                             recent_scanned[0] += rstat->recent_scanned[0];
->> -                             recent_scanned[1] += rstat->recent_scanned[1];
->> +                             for_each_evictable_lru(lru)
->> +                                     recent_rotated[lru] +=
->> +                                             rstat->recent_rotated[lru];
->>                        }
->> -             cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
->> -             cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
->> -             cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
->> -             cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
->> +
->> +             cb->fill(cb, "recent_rotated_anon",
->> +                             recent_rotated[LRU_ACTIVE_ANON]);
->> +             cb->fill(cb, "recent_rotated_file",
->> +                             recent_rotated[LRU_ACTIVE_FILE]);
->> +             cb->fill(cb, "recent_scanned_anon",
->> +                             recent_rotated[LRU_ACTIVE_ANON] +
->> +                             recent_rotated[LRU_INACTIVE_ANON]);
->> +             cb->fill(cb, "recent_scanned_file",
->> +                             recent_rotated[LRU_ACTIVE_FILE] +
->> +                             recent_rotated[LRU_INACTIVE_FILE]);
->>        }
->>   #endif
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index ab2d210..ea40034 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -4365,10 +4365,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->>                zone_pcp_init(zone);
->>                for_each_lru(lru)
->>                        INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
->> -             zone->lruvec.reclaim_stat.recent_rotated[0] = 0;
->> -             zone->lruvec.reclaim_stat.recent_rotated[1] = 0;
->> -             zone->lruvec.reclaim_stat.recent_scanned[0] = 0;
->> -             zone->lruvec.reclaim_stat.recent_scanned[1] = 0;
->> +             memset(&zone->lruvec.reclaim_stat, 0,
->> +                             sizeof(struct zone_reclaim_stat));
->>                zap_zone_vm_stats(zone);
->>                zone->flags = 0;
->>                if (!size)
->> diff --git a/mm/swap.c b/mm/swap.c
->> index 9a6850b..c7bcde7 100644
->> --- a/mm/swap.c
->> +++ b/mm/swap.c
->> @@ -277,7 +277,7 @@ void rotate_reclaimable_page(struct page *page)
->>   }
->>
->>   static void update_page_reclaim_stat(struct zone *zone, struct page *page,
->> -                                  int file, int rotated)
->> +                                  enum lru_list lru)
->>   {
->>        struct zone_reclaim_stat *reclaim_stat;
->>
->> @@ -285,9 +285,7 @@ static void update_page_reclaim_stat(struct zone *zone, struct page *page,
->>        if (!reclaim_stat)
->>                reclaim_stat =&zone->lruvec.reclaim_stat;
->>
->> -     reclaim_stat->recent_scanned[file]++;
->> -     if (rotated)
->> -             reclaim_stat->recent_rotated[file]++;
->> +     reclaim_stat->recent_rotated[lru]++;
->>   }
->>
->>   static void __activate_page(struct page *page, void *arg)
->> @@ -295,7 +293,6 @@ static void __activate_page(struct page *page, void *arg)
->>        struct zone *zone = page_zone(page);
->>
->>        if (PageLRU(page)&&  !PageActive(page)&&  !PageUnevictable(page)) {
->> -             int file = page_is_file_cache(page);
->>                int lru = page_lru_base_type(page);
->>                del_page_from_lru_list(zone, page, lru);
->>
->> @@ -304,7 +301,7 @@ static void __activate_page(struct page *page, void *arg)
->>                add_page_to_lru_list(zone, page, lru);
->>                __count_vm_event(PGACTIVATE);
->>
->> -             update_page_reclaim_stat(zone, page, file, 1);
->> +             update_page_reclaim_stat(zone, page, lru);
->>        }
->>   }
->>
->> @@ -482,7 +479,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
->>
->>        if (active)
->>                __count_vm_event(PGDEACTIVATE);
->> -     update_page_reclaim_stat(zone, page, file, 0);
->> +     update_page_reclaim_stat(zone, page, lru);
->>   }
->>
->>   /*
->> @@ -646,9 +643,7 @@ EXPORT_SYMBOL(__pagevec_release);
->>   void lru_add_page_tail(struct zone* zone,
->>                       struct page *page, struct page *page_tail)
->>   {
->> -     int active;
->>        enum lru_list lru;
->> -     const int file = 0;
->>
->>        VM_BUG_ON(!PageHead(page));
->>        VM_BUG_ON(PageCompound(page_tail));
->> @@ -660,13 +655,10 @@ void lru_add_page_tail(struct zone* zone,
->>        if (page_evictable(page_tail, NULL)) {
->>                if (PageActive(page)) {
->>                        SetPageActive(page_tail);
->> -                     active = 1;
->>                        lru = LRU_ACTIVE_ANON;
->> -             } else {
->> -                     active = 0;
->> +             } else
->>                        lru = LRU_INACTIVE_ANON;
->> -             }
->> -             update_page_reclaim_stat(zone, page_tail, file, active);
->> +             update_page_reclaim_stat(zone, page_tail, lru);
->>        } else {
->>                SetPageUnevictable(page_tail);
->>                lru = LRU_UNEVICTABLE;
->> @@ -694,17 +686,15 @@ static void __pagevec_lru_add_fn(struct page *page, void *arg)
->>   {
->>        enum lru_list lru = (enum lru_list)arg;
->>        struct zone *zone = page_zone(page);
->> -     int file = is_file_lru(lru);
->> -     int active = is_active_lru(lru);
->>
->>        VM_BUG_ON(PageActive(page));
->>        VM_BUG_ON(PageUnevictable(page));
->>        VM_BUG_ON(PageLRU(page));
->>
->>        SetPageLRU(page);
->> -     if (active)
->> +     if (is_active_lru(lru))
->>                SetPageActive(page);
->> -     update_page_reclaim_stat(zone, page, file, active);
->> +     update_page_reclaim_stat(zone, page, lru);
->>        add_page_to_lru_list(zone, page, lru);
->>   }
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 483b98e..fe00a22 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1355,11 +1355,7 @@ putback_inactive_pages(struct mem_cgroup_zone *mz,
->>                SetPageLRU(page);
->>                lru = page_lru(page);
->>                add_page_to_lru_list(zone, page, lru);
->> -             if (is_active_lru(lru)) {
->> -                     int file = is_file_lru(lru);
->> -                     int numpages = hpage_nr_pages(page);
->> -                     reclaim_stat->recent_rotated[file] += numpages;
->> -             }
->> +             reclaim_stat->recent_rotated[lru] += hpage_nr_pages(page);
->>                if (put_page_testzero(page)) {
->>                        __ClearPageLRU(page);
->>                        __ClearPageActive(page);
->> @@ -1543,8 +1539,11 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->>
->>        spin_lock_irq(&zone->lru_lock);
->>
->> -     reclaim_stat->recent_scanned[0] += nr_anon;
->> -     reclaim_stat->recent_scanned[1] += nr_file;
->> +     /*
->> +      * Count reclaimed pages as rotated, this helps balance scan pressure
->> +      * between file and anonymous pages in get_scan_ratio.
->> +      */
->> +     reclaim_stat->recent_rotated[lru] += nr_reclaimed;
->>
->>        if (current_is_kswapd())
->>                __count_vm_events(KSWAPD_STEAL, nr_reclaimed);
->> @@ -1685,8 +1684,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
->>        if (global_reclaim(sc))
->>                zone->pages_scanned += nr_scanned;
->>
->> -     reclaim_stat->recent_scanned[file] += nr_taken;
->> -
->>        __count_zone_vm_events(PGREFILL, zone, nr_scanned);
->>        __mod_zone_page_state(zone, NR_LRU_BASE + lru, -nr_taken);
->>        __mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
->> @@ -1742,7 +1739,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
->>         * helps balance scan pressure between file and anonymous pages in
->>         * get_scan_ratio.
->>         */
->> -     reclaim_stat->recent_rotated[file] += nr_rotated;
->> +     reclaim_stat->recent_rotated[lru] += nr_rotated;
->>
->>        move_active_pages_to_lru(zone,&l_active,&l_hold, lru);
->>        move_active_pages_to_lru(zone,&l_inactive,&l_hold, lru - LRU_ACTIVE);
->> @@ -1875,6 +1872,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
->>        unsigned long anon_prio, file_prio;
->>        unsigned long ap, fp;
->>        struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
->> +     unsigned long *recent_rotated = reclaim_stat->recent_rotated;
->>        u64 fraction[2], denominator;
->>        enum lru_list lru;
->>        int noswap = 0;
->> @@ -1940,14 +1938,16 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
->>         * anon in [0], file in [1]
->>         */
->>        spin_lock_irq(&mz->zone->lru_lock);
->> -     if (unlikely(reclaim_stat->recent_scanned[0]>  anon / 4)) {
->> -             reclaim_stat->recent_scanned[0] /= 2;
->> -             reclaim_stat->recent_rotated[0] /= 2;
->> +     if (unlikely(recent_rotated[LRU_INACTIVE_ANON] +
->> +                  recent_rotated[LRU_ACTIVE_ANON]>  anon / 4)) {
->> +             recent_rotated[LRU_INACTIVE_ANON] /= 2;
->> +             recent_rotated[LRU_ACTIVE_ANON] /= 2;
->>        }
->>
->> -     if (unlikely(reclaim_stat->recent_scanned[1]>  file / 4)) {
->> -             reclaim_stat->recent_scanned[1] /= 2;
->> -             reclaim_stat->recent_rotated[1] /= 2;
->> +     if (unlikely(recent_rotated[LRU_INACTIVE_FILE] +
->> +                  recent_rotated[LRU_ACTIVE_FILE]>  file / 4)) {
->> +             recent_rotated[LRU_INACTIVE_FILE] /= 2;
->> +             recent_rotated[LRU_ACTIVE_FILE] /= 2;
->>        }
->>
->>        /*
->> @@ -1955,11 +1955,13 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
->>         * proportional to the fraction of recently scanned pages on
->>         * each list that were recently referenced and in active use.
->>         */
->> -     ap = (anon_prio + 1) * (reclaim_stat->recent_scanned[0] + 1);
->> -     ap /= reclaim_stat->recent_rotated[0] + 1;
->> +     ap = (anon_prio + 1) * (recent_rotated[LRU_INACTIVE_ANON] +
->> +                             recent_rotated[LRU_ACTIVE_ANON] + 1);
->> +     ap /= recent_rotated[LRU_ACTIVE_ANON] + 1;
->>
->> -     fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
->> -     fp /= reclaim_stat->recent_rotated[1] + 1;
->> +     fp = (file_prio + 1) * (recent_rotated[LRU_INACTIVE_FILE] +
->> +                             recent_rotated[LRU_ACTIVE_FILE] + 1);
->> +     fp /= recent_rotated[LRU_ACTIVE_FILE] + 1;
->>        spin_unlock_irq(&mz->zone->lru_lock);
->>
->>        fraction[0] = ap;
->>
->>
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+> //richard
+>=20
+> P.s: Tested with Jonas Linux tree as of today.
+>=20
+
+
+--=-rIP2IqCugb6zpSwx6hKp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk9QZJIACgkQ70gcjN2673P4cwCfR+rnCPyXbP5ER0+HBvnvXt37
+9W8AnAm4J19fIyinwdYLPDKX4erDoV8N
+=tztR
+-----END PGP SIGNATURE-----
+
+--=-rIP2IqCugb6zpSwx6hKp--
 
