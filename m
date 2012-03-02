@@ -1,88 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965357Ab2CBIj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:39:26 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38799 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab2CBIjZ convert rfc822-to-8bit (ORCPT
+	id S965415Ab2CBIjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:39:51 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54229 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757498Ab2CBIjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:39:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of luiz.dentz@gmail.com designates 10.101.151.6 as permitted sender) smtp.mail=luiz.dentz@gmail.com; dkim=pass header.i=luiz.dentz@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120301.170848.432407217191581288.davem@davemloft.net>
-References: <1330604802.2465.43.camel@edumazet-laptop>
-	<20120301.154415.1692328508436381200.davem@davemloft.net>
-	<CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
-	<20120301.170848.432407217191581288.davem@davemloft.net>
-Date: Fri, 2 Mar 2012 10:39:24 +0200
-Message-ID: <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to AF_UNIX
-From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, javier.martinez@collabora.co.uk,
-        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 03:39:49 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 2 Mar 2012 17:38:16 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to
+ memcg
+Message-Id: <20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Thu,  1 Mar 2012 14:46:15 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-On Fri, Mar 2, 2012 at 12:08 AM, David Miller <davem@davemloft.net> wrote:
-> From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-> Date: Fri, 2 Mar 2012 00:01:40 +0200
->
->> I don't think you understood the problem, we want something that scale
->> for less powerful devices, why do you think Android have all the
->> trouble to create binder?
->
-> So our protocol stack is so cpu hungry compared to AF_UNIX that it's
-> unusable on low power devices?
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> Non reclaim resources include hugetlb pages or ramfs pages.
+> Both these file systems are memory based and they don't support
+> page reclaim. So enforcing memory controller limit during actual
+> page allocation doesn't make sense for them. Instead we would
+> enforce the limit during mmap and keep track of the mmap range
+> along with memcg information in charge list.
+> 
+> We could have multiple non reclaim resources which we want to track
+> indepedently, like huge pages with different huge page size.
+> 
+> Current code don't allow removal of memcg if they have any non
+> reclaim resource charge.
 
-I never said unusable, it will drastically increase latency of message
-which translates in less responsive applications.
+Hmmm why ? The reason is from coding trouble ? Or it's the spec. ?
 
-> I can't take you seriously if you say this after showing us the
-> thousands of lines of code you guys think we should add to the AF_UNIX
-> socket layer.
 
-But what you are suggesting transforms dbus-daemon in a ip router just
-to do multicast, actually how many lines of code do you think we gonna
-need to implement that? Probably much more than adding this much to
-the kernel and is not necessarily useful for anybody else.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  include/linux/memcontrol.h |   11 +++
+>  init/Kconfig               |   11 +++
+>  mm/memcontrol.c            |  198 +++++++++++++++++++++++++++++++++++++++++++-
+>  3 files changed, 219 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 4d34356..59d93ee 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -171,6 +171,17 @@ void mem_cgroup_split_huge_fixup(struct page *head);
+>  bool mem_cgroup_bad_page_check(struct page *page);
+>  void mem_cgroup_print_bad_page(struct page *page);
+>  #endif
+> +extern long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
+> +					    unsigned long from,
+> +					    unsigned long to, int idx);
+> +extern void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
+> +					  int idx, unsigned long nr_pages);
+> +extern void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
+> +					       unsigned long from,
+> +					       unsigned long to);
+> +extern long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
+> +					      unsigned long from,
+> +					      unsigned long to, int idx);
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>  struct mem_cgroup;
+>  
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 3f42cd6..c4306f7 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -673,6 +673,17 @@ config CGROUP_MEM_RES_CTLR
+>  	  This config option also selects MM_OWNER config option, which
+>  	  could in turn add some fork/exit overhead.
+>  
+> +config MEM_RES_CTLR_NORECLAIM
+> +	bool "Memory Resource Controller non reclaim Extension"
+> +	depends on CGROUP_MEM_RES_CTLR
 
-Like I said before there is many projects using AF_UNIX as IPC
-transport, the documentation actually induces people to use for this
-purpose, and many would benefit from being able to do multicast.
+EXPERIMENTAL please.
 
-Btw Im not involved with the implementation and perhaps it need some
-extra work, but IMO the idea is very useful.
 
->> Besides what is really the point in having AF_UNIX if you can't use
->> for what it is for?
->
-> Because it doesn't have the handful of extra features you absolutely
-> require of it.
+> +	help
+> +	  Add non reclaim resource management to memory resource controller.
+> +	  Currently only HugeTLB pages will be managed using this extension.
+> +	  The controller limit is enforced during mmap(2), so that
+> +	  application can fall back to allocations using smaller page size
+> +	  if the memory controller limit prevented them from allocating HugeTLB
+> +	  pages.
+> +
 
-You mean multicast, that is one and only, with many implementation
-details with that I agree.
+Hm. In other thread, KMEM accounting is discussed. There is 2 proposals and
+ - 1st is accounting only reclaimable slabs (as dcache etc.)
+ - 2nd is accounting all slab allocations.
 
-> AF_UNIX is a complicated socket layer which is already extremely hard
-> to maintain.  We're still finding bugs in it even after all these
-> years, and that's without adding major new functionality.
+Here, 2nd one includes NORECLAIM kmem cache. (Discussion is not ended.)
 
-I understand your concern, this could make things even more unstable,
-but in the other hand hacking support of multicast to loopback would
-also mess with AF_INET, so in one way or the other the kernel will
-have to be involved.
+So, for your developments,  How about MEM_RES_CTLR_HUGEPAGE ?
 
-Also note that AF_UNIX has very key features of an efficient IPC, like
-the ability to pass fd to another process with SCM_RIGHTS.
+With your design, memory.hugeltb.XX.xxxxxx files area added and
+the interface is divided from other noreclaim mems. If necessary,
+iwe can change the scope of config without affecting user space by refactoring
+after having this features.
 
--- 
-Luiz Augusto von Dentz
+BTW, please set default n because this will forbid rmdir of cgroup.
+
+
+
+>  config CGROUP_MEM_RES_CTLR_SWAP
+>  	bool "Memory Resource Controller Swap Extension"
+>  	depends on CGROUP_MEM_RES_CTLR && SWAP
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6728a7a..b00d028 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -49,6 +49,7 @@
+>  #include <linux/page_cgroup.h>
+>  #include <linux/cpu.h>
+>  #include <linux/oom.h>
+> +#include <linux/region.h>
+>  #include "internal.h"
+>  #include <net/sock.h>
+>  #include <net/tcp_memcontrol.h>
+> @@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+>  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
+>  
+>  /*
+> + * Currently only hugetlbfs pages are tracked using no reclaim
+> + * resource count. So we need only MAX_HSTATE res counter
+> + */
+> +#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
+> +/*
+>   * The memory controller data structure. The memory controller controls both
+>   * page cache and RSS per cgroup. We would eventually like to provide
+>   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+> @@ -235,6 +241,11 @@ struct mem_cgroup {
+>  	 */
+>  	struct res_counter memsw;
+>  	/*
+> +	 * the counter to account for non reclaim resources
+> +	 * like hugetlb pages
+> +	 */
+> +	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
+
+struct res_counter hugepages;
+
+will be ok.
+
+
+> +	/*
+>  	 * Per cgroup active and inactive list, similar to the
+>  	 * per zone LRU lists.
+>  	 */
+> @@ -4887,6 +4898,7 @@ err_cleanup:
+>  static struct cgroup_subsys_state * __ref
+>  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>  {
+> +	int idx;
+>  	struct mem_cgroup *memcg, *parent;
+>  	long error = -ENOMEM;
+>  	int node;
+> @@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>  	if (parent && parent->use_hierarchy) {
+>  		res_counter_init(&memcg->res, &parent->res);
+>  		res_counter_init(&memcg->memsw, &parent->memsw);
+> +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
+> +			res_counter_init(&memcg->no_rcl_res[idx],
+> +					 &parent->no_rcl_res[idx]);
+> +		}
+
+You can remove this kinds of loop and keep your implemenation simple.
+
+>  		/*
+>  		 * We increment refcnt of the parent to ensure that we can
+>  		 * safely access it on res_counter_charge/uncharge.
+> @@ -4932,6 +4948,8 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>  	} else {
+>  		res_counter_init(&memcg->res, NULL);
+>  		res_counter_init(&memcg->memsw, NULL);
+> +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++)
+> +			res_counter_init(&memcg->no_rcl_res[idx], NULL);
+>  	}
+>  	memcg->last_scanned_node = MAX_NUMNODES;
+>  	INIT_LIST_HEAD(&memcg->oom_notify);
+> @@ -4950,8 +4968,22 @@ free_out:
+>  static int mem_cgroup_pre_destroy(struct cgroup_subsys *ss,
+>  					struct cgroup *cont)
+>  {
+> +	int idx;
+> +	u64 val;
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> -
+> +	/*
+> +	 * We don't allow a cgroup deletion if it have some
+> +	 * non reclaim resource charged against it. We can
+> +	 * update the charge list to point to parent cgroup
+> +	 * and allow this cgroup deletion here. But that
+> +	 * involve tracking all the chg list which have this
+> +	 * cgroup reference.
+> +	 */
+
+I don't like this..... until this is fixed, default should be "N".
+
+
+
+> +	for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
+> +		val = res_counter_read_u64(&memcg->no_rcl_res[idx], RES_USAGE);
+> +		if (val)
+> +			return -EBUSY;
+> +	}
+>  	return mem_cgroup_force_empty(memcg, false);
+>  }
+>  
+> @@ -5489,6 +5521,170 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
+> +/*
+> + * For supporting resource control on non reclaim pages like hugetlbfs
+> + * and ramfs, we enforce limit during mmap time. We also maintain
+> + * a chg list for these resource, which track the range alog with
+> + * memcg information. We need to have seperate chg_list for shared
+> + * and private mapping. Shared mapping are mostly maintained in
+> + * file inode and private mapping in vm_area_struct.
+> + */
+> +long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
+> +				     unsigned long from, unsigned long to,
+> +				     int idx)
+> +{
+> +	long chg;
+> +	int ret = 0;
+> +	unsigned long csize;
+> +	struct mem_cgroup *memcg;
+> +	struct res_counter *fail_res;
+> +
+> +	/*
+> +	 * Get the task cgroup within rcu_readlock and also
+> +	 * get cgroup reference to make sure cgroup destroy won't
+> +	 * race with page_charge. We don't allow a cgroup destroy
+> +	 * when the cgroup have some charge against it
+> +	 */
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_from_task(current);
+> +	css_get(&memcg->css);
+
+css_tryget() ?
+
+
+> +	rcu_read_unlock();
+> +
+> +	chg = region_chg(chg_list, from, to, (unsigned long)memcg);
+> +	if (chg < 0)
+> +		goto err_out;
+
+I don't think all NORECLAIM objects has 'region' ;)
+Makeing this dedicated for hugetlbfs will be good.
+
+
+
+> +
+> +	if (mem_cgroup_is_root(memcg))
+> +		goto err_out;
+> +
+> +	csize = chg * PAGE_SIZE;
+> +	ret = res_counter_charge(&memcg->no_rcl_res[idx], csize, &fail_res);
+> +
+> +err_out:
+> +	/* Now that we have charged we can drop cgroup reference */
+> +	css_put(&memcg->css);
+> +	if (!ret)
+> +		return chg;
+> +
+> +	/* We don't worry about region_uncharge */
+> +	return ret;
+> +}
+> +
+> +void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
+> +				   int idx, unsigned long nr_pages)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_from_task(current);
+> +
+> +	if (!mem_cgroup_is_root(memcg))
+> +		res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
+
+What happens a task using hugeltb is moved to root cgroup ?
+
+
+> +	rcu_read_unlock();
+> +	/*
+> +	 * We could ideally remove zero size regions from
+> +	 * resv map hcg_regions here
+> +	 */
+> +	return;
+> +}
+> +
+> +void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
+> +					unsigned long from, unsigned long to)
+> +{
+> +	struct mem_cgroup *memcg;
+> +
+> +	rcu_read_lock();
+> +	memcg = mem_cgroup_from_task(current);
+> +	region_add(chg_list, from, to, (unsigned long)memcg);
+> +	rcu_read_unlock();
+> +	return;
+> +}
+
+Why we have both of try_charge() and charge ?
+
+
+> +
+> +long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
+> +				       unsigned long from, unsigned long to,
+> +				       int idx)
+> +{
+> +	long chg = 0, csize;
+> +	struct mem_cgroup *memcg;
+> +	struct file_region *rg, *trg;
+> +
+> +	/* Locate the region we are either in or before. */
+> +	list_for_each_entry(rg, chg_list, link)
+> +		if (from <= rg->to)
+> +			break;
+> +	if (&rg->link == chg_list)
+> +		return 0;
+> +
+> +	/* If we are in the middle of a region then adjust it. */
+> +	if (from > rg->from) {
+> +		if (to < rg->to) {
+> +			struct file_region *nrg;
+> +			/* rg->from from to rg->to */
+> +			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> +			/*
+> +			 * If we fail to allocate we return the
+> +			 * with the 0 charge . Later a complete
+> +			 * truncate will reclaim the left over space
+> +			 */
+> +			if (!nrg)
+> +				return 0;
+> +			nrg->from = to;
+> +			nrg->to = rg->to;
+> +			nrg->data = rg->data;
+> +			INIT_LIST_HEAD(&nrg->link);
+> +			list_add(&nrg->link, &rg->link);
+> +
+> +			/* Adjust the rg entry */
+> +			rg->to = from;
+> +			chg = to - from;
+> +			memcg = (struct mem_cgroup *)rg->data;
+> +			if (!mem_cgroup_is_root(memcg)) {
+> +				csize = chg * PAGE_SIZE;
+> +				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
+> +			}
+> +			return chg;
+> +		}
+> +		chg = rg->to - from;
+> +		rg->to = from;
+> +		memcg = (struct mem_cgroup *)rg->data;
+> +		if (!mem_cgroup_is_root(memcg)) {
+> +			csize = chg * PAGE_SIZE;
+> +			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
+> +		}
+> +		rg = list_entry(rg->link.next, typeof(*rg), link);
+> +	}
+> +	/* Drop any remaining regions till to */
+> +	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
+> +		if (rg->from >= to)
+> +			break;
+> +		if (&rg->link == chg_list)
+> +			break;
+> +		if (rg->to > to) {
+> +			/* rg->from to rg->to */
+> +			chg += to - rg->from;
+> +			rg->from = to;
+> +			memcg = (struct mem_cgroup *)rg->data;
+> +			if (!mem_cgroup_is_root(memcg)) {
+> +				csize = (to - rg->from) * PAGE_SIZE;
+> +				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
+> +			}
+> +			return chg;
+> +		}
+> +		chg += rg->to - rg->from;
+> +		memcg = (struct mem_cgroup *)rg->data;
+> +		if (!mem_cgroup_is_root(memcg)) {
+> +			csize = (rg->to - rg->from) * PAGE_SIZE;
+> +			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
+> +		}
+> +		list_del(&rg->link);
+> +		kfree(rg);
+> +	}
+> +	return chg;
+> +}
+> +#endif
+> +
+
+Can't we move most of this to region.c ?
+
+Thanks,
+-Kame
+
+
+>  struct cgroup_subsys mem_cgroup_subsys = {
+>  	.name = "memory",
+>  	.subsys_id = mem_cgroup_subsys_id,
+> -- 
+> 1.7.9
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
