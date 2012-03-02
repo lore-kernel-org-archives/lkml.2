@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab2CBJk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:40:27 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:52469 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab2CBJkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:40:22 -0500
-Date: Fri, 02 Mar 2012 04:39:27 -0500 (EST)
-Message-Id: <20120302.043927.1075141476785695419.davem@davemloft.net>
-To: javier.martinez@collabora.co.uk
-Cc: shemminger@vyatta.com, ying.xue@windriver.com, luiz.dentz@gmail.com,
-        eric.dumazet@gmail.com, rodrigo.moya@collabora.co.uk,
-        javier@collabora.co.uk, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F509274.9060302@collabora.co.uk>
-References: <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
-	<20120302.035509.1994457175982020283.davem@davemloft.net>
-	<4F509274.9060302@collabora.co.uk>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 02 Mar 2012 01:39:32 -0800 (PST)
+	id S1758150Ab2CBJlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:41:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47026 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756246Ab2CBJl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 04:41:27 -0500
+Date: Fri, 2 Mar 2012 10:41:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        dchinner@redhat.com, Jaya Kumar <jayalk@intworks.biz>,
+        Sage Weil <sage@newdream.net>, ceph-devel@vger.kernel.org,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 00/11 v2] Push file_update_time() into .page_mkwrite
+Message-ID: <20120302094122.GA1744@quack.suse.cz>
+References: <1330602103-8851-1-git-send-email-jack@suse.cz>
+ <20120301232942.GH32588@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120301232942.GH32588@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Date: Fri, 02 Mar 2012 10:27:16 +0100
+On Thu 01-03-12 18:29:42, Ted Tso wrote:
+> On Thu, Mar 01, 2012 at 12:41:34PM +0100, Jan Kara wrote:
+> > 
+> > To fix the issue, this patch set changes page fault code to call
+> > file_update_time() only when ->page_mkwrite() callback is not provided. If the
+> > callback is provided, it is the responsibility of the filesystem to perform
+> > update of i_mtime / i_ctime if needed. We also push file_update_time() call
+> > to all existing ->page_mkwrite() implementations if the time update does not
+> > obviously happen by other means. If you know your filesystem does not need
+> > update of modification times in ->page_mkwrite() handler, please speak up and
+> > I'll drop the patch for your filesystem.
+> 
+> I don't know if this introductory text is going to be saved anywhere
+> permanent, such as the merge commit (since git now has the ability to
+> have much more informative merge descriptions).  But if it is going to
+> be preserved, it might be worth mentioning that if the filesystem uses
+> block_page_mkpage(), it will handled automatically for them since the
+> patch series does push the call to file_update_time(0 into
+> __block_page_mkpage().
+  Good point, added to description.
 
-> Do you think that a simpler AF_UNIX multicast implementation without the
-> locking to guarantee order delivery and the flow control that blocks the
-> sender can be resend to you to reconsider merging it?
-
-No.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
