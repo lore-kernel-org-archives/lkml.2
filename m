@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965317Ab2CBII7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:08:59 -0500
-Received: from mx.anti-virus.by ([93.125.111.29]:51473 "EHLO tux.vba.com.by"
+	id S965148Ab2CBII6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:08:58 -0500
+Received: from mx.anti-virus.by ([93.125.111.29]:51472 "EHLO tux.vba.com.by"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757297Ab2CBII5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754116Ab2CBII5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Mar 2012 03:08:57 -0500
+X-Greylist: delayed 715 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Mar 2012 03:08:57 EST
 From: Sergei Trofimovich <slyich@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>,
         Jason Wang <jasowang@redhat.com>,
         Glauber Costa <glommer@parallels.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] tcp: properly initialize tcp memory limits part 2 (fix nfs regression)
-Date: Fri,  2 Mar 2012 10:56:38 +0300
-Message-Id: <1330674998-16704-1-git-send-email-slyich@gmail.com>
+Subject: [PATCHv 2] tcp: properly initialize tcp memory limits part 2 (fix nfs regression)
+Date: Fri,  2 Mar 2012 10:59:33 +0300
+Message-Id: <1330675173-18968-1-git-send-email-slyich@gmail.com>
 X-Mailer: git-send-email 1.7.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,7 +23,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sergei Trofimovich <slyfox@gentoo.org>
 
-The commit introduced NFS file transfer hangup (proved by bisection).
+The commit c43b874d5d7 introduced NFS file transfer hangup (proved by bisection).
 > Commit 4acb4190 tries to fix the using uninitialized value
 > introduced by commit 3dc43e3,  but it would make the
 > per-socket memory limits too small.
@@ -42,6 +43,9 @@ CC: David S. Miller <davem@davemloft.net>
 Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 Tested-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
+
+Change since v1: added forgotten commit ID
+
  net/ipv4/tcp.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
