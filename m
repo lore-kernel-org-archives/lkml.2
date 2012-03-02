@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab2CBJXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:23:08 -0500
-Received: from smtp-vbr8.xs4all.nl ([194.109.24.28]:2397 "EHLO
-	smtp-vbr8.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965226Ab2CBJXB (ORCPT
+	id S1758618Ab2CBJ0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:26:36 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:54179 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758570Ab2CBJ0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:23:01 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: halli manjunatha <manjunatha_halli@ti.com>
-Subject: Re: [PATCH 3/3] wl128x: Add sysfs based support for FM features
-Date: Fri, 2 Mar 2012 10:22:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc1-durdane; KDE/4.6.5; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>, shahed@ti.com
-References: <1330114471-26435-1-git-send-email-manjunatha_halli@ti.com> <201202291225.50801.hverkuil@xs4all.nl> <CAMT6PyeaW2OwRc5So5JtTeUVJ9vFLafddLteSqoW3GJaVrFesA@mail.gmail.com>
-In-Reply-To: <CAMT6PyeaW2OwRc5So5JtTeUVJ9vFLafddLteSqoW3GJaVrFesA@mail.gmail.com>
+	Fri, 2 Mar 2012 04:26:33 -0500
+Message-ID: <4F509274.9060302@collabora.co.uk>
+Date: Fri, 02 Mar 2012 10:27:16 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        ying.xue@windriver.com
+CC: luiz.dentz@gmail.com, eric.dumazet@gmail.com, rodrigo.moya@collabora.co.uk,
+        javier@collabora.co.uk, lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com> <20120301.170848.432407217191581288.davem@davemloft.net> <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com> <20120302.035509.1994457175982020283.davem@davemloft.net>
+In-Reply-To: <20120302.035509.1994457175982020283.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203021022.49464.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 29, 2012 18:19:27 halli manjunatha wrote:
-> On Wed, Feb 29, 2012 at 5:25 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> > On Tuesday, February 28, 2012 23:52:21 halli manjunatha wrote:
-> >> On Tue, Feb 28, 2012 at 4:05 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> >> > On Monday, February 27, 2012 17:29:18 halli manjunatha wrote:
-> >> >> Hi Hans,
-> >> >>
-> >> >> Agreed I don't mind to create new controls for below things
-> >> >>
-> >> >> 1) FM RX Band selection (US/Europe, Japan and Russian bands)
-> >> >> 2) FM RX RDS AF turn ON/OFF
-> >> >> 3) FM RX RSSI level set/get
-> >> >> 4) FM TX Alternate Frequency set/get
-> >> >> 5) FM RX De-Emphasis mode set/get
-> >> >>
-> >> >> However, previously you have suggested me to hide few controls (like
-> >> >> band selection) from the user but few of our application wanted
-> >> >> controls like above and that is why I have created the sysfs entries.
-> >> >>
-> >> >> Please suggest me how can I move forward with new controls or with sysfs?
-> >> >
-> >> > The first question is which of these controls are general to FM receivers or
-> >> > transmitters, and which are specific to this chipset. The chipset specific
-> >> > controls should be private controls (look at V4L2_CID_MPEG_CX2341X_BASE in
-> >> > videodev2.h how those are defined). The others should be defined as new
-> >> > controls of the FM_TX class or the FM_RX class. The FM_RX class should be
-> >> > defined as a new class as it doesn't exist at the moment. Don't forget to
-> >> > document these controls clearly.
-> >> >
-> >> > With regards to the band selection: I remember that there was a discussion,
-> >> > but not the details. Do you have a link to that discussion? I can't find it
-> >> > (at least not quickly :-) ).
-> >>
-> >> Below features are generic to all FM receivers so we can add new CID's
-> >> for below features
-> >> 1) FM RX RDS AF turn ON/OFF
-> >> 2) FM TX Alternate Frequency set/get
-> >>
-> >> About other 3 features its different issue,
-> >>     1) FM RX Band selection (US/Europe, Japan and Russian bands)
-> >>     2) FM RX RSSI level set/get
-> >>     3) FM RX De-Emphasis mode set/get
-> >>
-> >> All these 3 features are generic to any FM receiver, only question is
-> >> does all FM receivers wants to expose these controls to application
-> >> writer?
-> >
-> > Good question, and there is no good answer at the moment. See e.g. this
-> > IRC discussion:
-> >
-> > http://www.spinics.net/lists/linux-media/msg44023.html
-> >
-> > In the absence of a good solution to this problem I am inclined to make
-> > these controls driver specific but marked experimental. The experimental
-> > tag allows us to eventually make it a generic control without too much
-> > hassle.
+On 03/02/2012 09:55 AM, David Miller wrote:
+> From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+> Date: Fri, 2 Mar 2012 10:39:24 +0200
 > 
-> Agreed, I will make them driver specific and mark them as experimental.
+>> Like I said before there is many projects using AF_UNIX as IPC
+>> transport, the documentation actually induces people to use for this
+>> purpose, and many would benefit from being able to do multicast.
 > 
-> >
-> >> Example Band selection, every FM receiver at the minimum supports both
-> >> Europe and Japan band, now the question is should we add a CID to
-> >> switch between these two bands?
-> >
-> > If we decide to add a band selection control, then that would be a menu
-> > control (since there are up to three bands) and it would only be implemented
-> > by drivers that need it.
-> >
-> > What I am still not clear on is *why* you would want this control. What
-> > is the reason your customers want this? What does it allow you to do that
-> > can't be done today?
+> You can't have it both ways.
 > 
-> There are 2 reasons for this,
+> If it's useful for many applications, then many applications would
+> benefit from a userland library that solved the problem using
+> existing facilities such as IP multicast.
 > 
-> First, our chip supports weather band, unlike other bands (Europe,
-> Japan and Russian) user may wants to
-> switch to weather band and wants to listen to weather report and again
-> switches back to normal band.
+> If it's only useful for dbus that that absoltely means we should
+> not add thousands of lines of code to the kernel specifically for
+> that application.
+> 
 
-OK, that makes sense. Are the RX and TX independent with regards to
-band selection?
+You are right that D-bus is the only one that will use it but D-bus is
+more than an application is an IPC system that is used for almost every
+single application that runs on your Linux desktop.
 
-Make sure that when the band is changed the rangelow and rangehigh values
-are also changed. If the current frequency is out of that range, then the
-frequency should be clamped to the closest value frequency. Although an
-alternative strategy might be to remember the last used frequency for each
-band. That might make more sense in the case of switching between a normal
-band and the weather band. We need to define and document which strategy
-should be used here.
+> So either way, kernel changes are not justified.
 
-BTW, is the receiver for the weather band implemented as a separate receiver?
-I read that some devices can listen to the normal band and interrupt that
-when a weather report is broadcast on the weather band. That implies two
-receivers and it would require a rethink.
+Yes, you are right that packets drops, out-of-order delivery and flow
+control could be handled in another layer (i.e: the D-bus library in
+user-space).
 
-Also, is this feature really implemented as separate frequency ranges in
-hardware? Or is the receiver able to receive on the whole range of frequencies
-from 65.8 (OIRT) to approx. 165 (weather band range)?
+Also I won't argue about performance since we did some stress test and
+found that AF_INET, AF_UNIX and AF_NETLINK performs very similar for
+multicast.
 
-Is the datasheet of this device available somewhere?
+> Stop reinventing the wheel, use facilities that exist already.
 
-> Second,  for FM TX, our chip supports band selection for FM
-> transmitter, so if the same phone is used in different
-> regions of world then user can switch to the actual band and start
-> transmitting by choosing a blank frequency in that band.
+We are the most interested in using a facility already found in the
+kernel, we will try ZeroMQ as Stephen suggested and TIPC but really
+didn't find an IPC mechanism that fits our needs. The most important
+issue right now is the fd passing for D-bus application doing
+out-of-band communication.
 
-Isn't this something that can be equally easily done in userspace?
+Another approach that we are trying is to use Netlink sockets using the
+Generic Netlink kernel API and develop a kernel module that does the
+routing. That way if you don't accept our code at least it will be
+easier for us to maintain. Not sure if netlink supports fd passing though.
+
+Do you think that a simpler AF_UNIX multicast implementation without the
+locking to guarantee order delivery and the flow control that blocks the
+sender can be resend to you to reconsider merging it?
 
 Regards,
-
-	Hans
+Javier
