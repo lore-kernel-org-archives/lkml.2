@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758828Ab2CBPyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:54:19 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52836 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750879Ab2CBPyR (ORCPT
+	id S1758857Ab2CBPyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:54:32 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36826 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758838Ab2CBPya convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:54:17 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: fix the pin descriptor kerneldoc
-Date: Fri, 2 Mar 2012 16:53:41 +0100
-Message-ID: <1330703621-4044-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Fri, 2 Mar 2012 10:54:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.129.36 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1330702146.2611.1.camel@bwh-desktop>
+References: <1330700945-18195-1-git-send-email-santoshprasadnayak@gmail.com>
+	<1330702146.2611.1.camel@bwh-desktop>
+Date: Fri, 2 Mar 2012 21:24:29 +0530
+Message-ID: <CAOD=uF5ebyA-yd8T8nXd9vYRw1yvFKVQd9TmcBwMnxFs6enKvA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] qla3xxx: ethernet: Fix bogus interrupt state flag.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: jitendra.kalsaria@qlogic.com, ron.mercer@qlogic.com,
+        linux-driver@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+I am getting following error :
 
-The introduction of the owner field on the pin descriptor was not
-properly documented so fix this up.
+"qla3xxx.c:3231 ql_adapter_initialize() error: calling
+'spin_unlock_irqrestore()' with bogus flags"
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/core.h |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 97f8124..e1dfdb3 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -76,9 +76,7 @@ struct pinctrl {
-  *	datasheet or such
-  * @dynamic_name: if the name of this pin was dynamically allocated
-  * @lock: a lock to protect the descriptor structure
-- * @mux_requested: whether the pin is already requested by pinmux or not
-- * @mux_function: a named muxing function for the pin that will be passed to
-- *	subdrivers and shown in debugfs etc
-+ * @owner: the device holding this pin or NULL of no device has claimed it
-  */
- struct pin_desc {
- 	struct pinctrl_dev *pctldev;
--- 
-1.7.8
+In "ql_adapter_up"  locking and unlocking  are happening in proper
+sequence and the interrupt
+state saved in "hw_flags" is restored.
 
+In "ql_adapter_initialize", first unlock is done by
+"spin_unlock_irqrestore(&qdev->hw_lock, hw_flags)"
+with "hw_flags = 0"   ("hw_flags" is local variable and initialized to
+zero.),   which is as good as
+spin_unlock_irq.
+
+
+To avoid the above error and  for better performance
+'spin_unlock_irqrestore()' can be replaced
+with 'spin_unlock_irq()' and 'spin_lock_irqsave()' can be replaced by
+'spin_lock_irq()' in "ql_adapter_initialize()"
+
+
+regards
+santosh
+
+On Fri, Mar 2, 2012 at 8:59 PM, Ben Hutchings <bhutchings@solarflare.com> wrote:
+> On Fri, 2012-03-02 at 20:39 +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> In 'ql_adapter_initialize'
+>> the first call for 'spin_unlock_irqrestore()' is with hw_flags = 0,
+>> which is as good as 'spin_unlock_irq()' (unconditional interrupt
+>> enabling). If this is intended, then for better performance
+>> 'spin_unlock_irqrestore()' can be replaced with 'spin_unlock_irq()'
+>> and 'spin_lock_irqsave()' can be replaced by 'spin_lock_irq()
+>
+> Maybe you should make the same change in ql_adapter_up(), which is the
+> caller that acquires this spinlock (and certainly shouldn't be called in
+> IRQ context).
+>
+> Ben.
+>
+>> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+>> ---
+>>  drivers/net/ethernet/qlogic/qla3xxx.c |    5 ++---
+>>  1 files changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+>> index d49f6da..8da3e41 100644
+>> --- a/drivers/net/ethernet/qlogic/qla3xxx.c
+>> +++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+>> @@ -3017,7 +3017,6 @@ static int ql_adapter_initialize(struct ql3_adapter *qdev)
+>>               (void __iomem *)port_regs;
+>>       u32 delay = 10;
+>>       int status = 0;
+>> -     unsigned long hw_flags = 0;
+>>
+>>       if (ql_mii_setup(qdev))
+>>               return -1;
+>> @@ -3228,9 +3227,9 @@ static int ql_adapter_initialize(struct ql3_adapter *qdev)
+>>               value = ql_read_page0_reg(qdev, &port_regs->portStatus);
+>>               if (value & PORT_STATUS_IC)
+>>                       break;
+>> -             spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
+>> +             spin_unlock_irq(&qdev->hw_lock);
+>>               msleep(500);
+>> -             spin_lock_irqsave(&qdev->hw_lock, hw_flags);
+>> +             spin_lock_irq(&qdev->hw_lock);
+>>       } while (--delay);
+>>
+>>       if (delay == 0) {
+>
+> --
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+>
