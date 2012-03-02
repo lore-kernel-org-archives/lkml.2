@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab2CBPUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:20:11 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43433 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab2CBPUG (ORCPT
+	id S1758700Ab2CBPWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:22:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:56641 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753990Ab2CBPWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:20:06 -0500
-Date: Fri, 2 Mar 2012 16:20:04 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
- PREEMPT_RT
-In-Reply-To: <1330701323.25686.260.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1203021618330.2742@ionos>
-References: <20120301185527.064629423@goodmis.org>  <20120301190346.172835662@goodmis.org>  <alpine.LFD.2.02.1203021518501.2742@ionos> <1330701323.25686.260.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Mar 2012 10:22:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dennis Chen <kernel.org.gnu@gmail.com>
+Subject: Re: [PATCH] <down,down_interruptible...>, kernel <3.2.9>
+Date: Fri, 2 Mar 2012 15:22:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <CA+U0gVhRUv_dWkO2yntsLvG_L727c=0zrVRkN_ceiPUwoAGbBg@mail.gmail.com>
+In-Reply-To: <CA+U0gVhRUv_dWkO2yntsLvG_L727c=0zrVRkN_ceiPUwoAGbBg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203021522.10518.arnd@arndb.de>
+X-Provags-ID: V02:K0:TVWRjOYriJi8Xn6lz1vCvhRtgJoHQkuODzAHAcPt648
+ 4X+enlN7/hHVBfcA2dIXgVCSngbCblyZlkfFyaRFgId+3Z2HfB
+ QLzapJOtDK1R/I7KxOXs0lv7xTtADROspjgHq+3uFBkkLKUvyf
+ iuTPdYznF9nUEVxbie/tCTsJQyxAL0T805fI0Xb9BY/Ex4dhie
+ oPC7pKhExBjWueqHDZoXnIUWdVucE22RK4Wkv6gGHA86KkHOOL
+ I4J1lYP7ZqSeW4KgT/Z0Ny5tRZJN7ciizUp8h927y07KNszK9I
+ Mh1Nz0pK6sK+4Ck+iDgSxEuULFW71Eeb71VklQo48/GmNBXxgw
+ 7t5KAtFTwxkPjr068l8Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Steven Rostedt wrote:
-
-> On Fri, 2012-03-02 at 15:52 +0100, Thomas Gleixner wrote:
+On Friday 02 March 2012, Dennis Chen wrote:
+> Current down family functions use mismatch spin_lock pairs, this will
+> incur some interrupt state chaos, for example,
+> down_interruptible --
+>      spin_lock_irqsave(&sem->lock, flags);              P1
+>            __down_common--
+>                  spin_unlock_irq(&sem->lock);              P2
+>                 timeout = schedule_timeout(timeout);
+>                 spin_lock_irq(&sem->lock);                  P3
 > 
-> > So no, I rather keep the current problem than applying that insanity.
+>      spin_unlock_irqrestore(&sem->lock, flags);       P4
 > 
-> Note, patches 1,2,3,5 and 6, were bugs I found while debugging hotplug.
-> Please add them, they are not insanity fixes but real bug fixes.
+> Suppose 2 kernel thread A and B in an UP system call
+> down_interruptible to get the semaphore, if the irq is OFF before A
+> calls, in the section between P2 and P3,  the irq will be turned _ON_,
+> then B begins to call down_interruptible, it will save a flag
+> indicating irq is _ON_. So after A finish the path of
+> down_interruptible, the irq is still _OFF_, but when B wakes up and
+> finish the path, the irq will be _ON_. Actually, irq should be in on
+> state before any down_interruptible calling, so
+> spin_lock_irqsave/irqrestore is not necessary. Given it will make
+> confusion for the reason of unmatched spin_lock pairs between
+> down_interruptible and __down_common, so it's reason for the patch.
+> Any comments?
 
-Already queued. I'd say #4 is a bug fix as well, though I
-fundamentally hate the ass backwards semantics of that new function.
- 
-Thanks,
+You are right that the spin_lock_irqsave is unnecessary because
+down() can only be called in non-atomic state with interrupts enabled.
+Your patch will be tiny performance improvement on architectures where
+saving the interrupt state does not come for free.
 
-	tglx
+However, there is nothing in the code where we can end up with an
+unexpected state, because both threads have their own copy of the
+'flags' variable, which always contains the enabled state that gets
+restored upon leaving the functions.
 
+	Arnd
