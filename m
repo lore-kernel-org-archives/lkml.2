@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2CBHwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:52:00 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62535 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2CBHv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:51:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.liu@linaro.org designates 10.68.132.69 as permitted sender) smtp.mail=paul.liu@linaro.org
-Message-ID: <4F507C1B.1050909@linaro.org>
-Date: Fri, 02 Mar 2012 15:51:55 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v6 1/2] mfd: Add anatop mfd driver
-References: <1330593052-15184-1-git-send-email-paul.liu@linaro.org> <1330671641-6439-1-git-send-email-paul.liu@linaro.org> <D958900912E20642BCBC71664EFECE3E6DD2912252@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD2912252@BGMAIL02.nvidia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1758287Ab2CBHxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:53:39 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48196 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756918Ab2CBHxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 02:53:38 -0500
+Message-ID: <1330674796.2361.36.camel@work-vm>
+Subject: Re: [PATCH 4/9] time: Update timekeeper structure using a local
+ shadow
+From: John Stultz <john.stultz@linaro.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Date: Thu, 01 Mar 2012 23:53:16 -0800
+In-Reply-To: <20120302073848.GB32401@elte.hu>
+References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org>
+	 <1330672368-32290-5-git-send-email-john.stultz@linaro.org>
+	 <20120302073848.GB32401@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030207-1976-0000-0000-00000B1AD3D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012年03月02日 15:07), Venu Byravarasu wrote:
-> Why you did not made use of regmap?
+On Fri, 2012-03-02 at 08:38 +0100, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
 > 
+> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> > index f9ee96c..09460c1 100644
+> > --- a/kernel/time/timekeeping.c
+> > +++ b/kernel/time/timekeeping.c
+> > @@ -74,6 +74,7 @@ struct timekeeper {
+> >  };
+> >  
+> >  static struct timekeeper timekeeper;
+> > +static struct timekeeper shadow_tk;
+> 
+> Sigh.
+> 
+> As I said it in the first round of review, it's fundamentally 
+> wrong to copy live fields like locks or the clocksource pointer 
+> around.
 
-Hi Venu,
+So I actually removed the locks out from the timekeeper structure to try
+to address this concern.
 
-I cannot fully understand. Anatop is not SPI or I2C device. It is
-internally embedded into the SoC. It is directly accessed by memory I/O.
+> It's doubly wrong to do it in a global variable that no-one else 
+> but the copying function (update_wall_time()) is supposed to 
+> access.
+> 
+> There are over a dozen fields in 'struct timekeeper' - exactly 
+> which ones of them are used on this private copy, as 
+> update_wall_time() does the cycle accumulation and calls down 
+> into timkeeping_adjust()?
 
-Do you mean I should implement a regmap_bus which uses memory I/O and
-then use regmap?
+Just about all of timekeeper state is used and modified in the
+update_wall_time. 
 
-Regards,
-Paul
+> The right solution would be to separate timekeeping time state 
+> from global state:
+> 
+> struct timekeeper {
+> 	spinlock_t		lock;
+> 
+> 	struct time_state	time_state;
+> };
+> 
+> And then standardize the time calculation code on passing around 
+> not 'struct timekeeper *' but 'struct time_state *' ! Then you 
+> can have a local shadow copy of the global state:
+> 
+> 	struct time_state time_state_copy;
+> 
+> and copy it from the global one and then pass it down to 
+> calculation functions.
+> 
+> This also gives the freedom to add other global state fields 
+> beyond the lock. (Right now the lock appears to be the only 
+> global state field - there might be more.)
 
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
->> owner@vger.kernel.org] On Behalf Of Ying-Chun Liu (PaulLiu)
->> Sent: Friday, March 02, 2012 12:31 PM
->> To: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org; linaro-dev@lists.linaro.org;
->> patches@linaro.org; Ying-Chun Liu (PaulLiu); Samuel Ortiz; Mark Brown; Shawn
->> Guo
->> Subject: [PATCH v6 1/2] mfd: Add anatop mfd driver
->>
->> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
->>
->> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
->> Anatop provides regulators and thermal.
->> This driver handles the address space and the operation of the mfd device.
->>
->> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
->> Cc: Samuel Ortiz <sameo@linux.intel.com>
->> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->> ---
->>  drivers/mfd/Kconfig        |    6 ++
+So, just to be clear, you want me to push basically everything in the
+timekeeper structure, except the lock (which would be re-added), into a
+time_state sub-structure?
+
+Sorry for being dense here (its been a long day), but maybe could you
+clarify a bit more about the differences you're describing between
+time-state and global-state wrt the timekeeper?
+
+thanks
+-john
 
