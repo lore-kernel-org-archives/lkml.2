@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758687Ab2CBKBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:01:35 -0500
-Received: from mail.us.es ([193.147.175.20]:42246 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755099Ab2CBKBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:01:33 -0500
-Date: Fri, 2 Mar 2012 11:01:28 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: santosh nayak <santoshprasadnayak@gmail.com>, bart.de.schuymer@pandora.be,
-        kaber@trash.net, shemminger@vyatta.com, davem@davemloft.net,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: Resend [PATCH] netfilter: Fix copy_to_user too small size
- parametre.
-Message-ID: <20120302100128.GA12266@1984>
-References: <1330621743-12883-1-git-send-email-santoshprasadnayak@gmail.com>
- <AE90C24D6B3A694183C094C60CF0A2F6026B6E87@saturn3.aculab.com>
+	id S1758695Ab2CBKGC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:06:02 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54829 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab2CBKF7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 05:05:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.120.210 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E87@saturn3.aculab.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120301143859.GX5054@shiny>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+	<20120301143859.GX5054@shiny>
+Date: Fri, 2 Mar 2012 11:05:56 +0100
+Message-ID: <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>, Theodore Tso <tytso@mit.edu>,
+        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 09:05:10AM -0000, David Laight wrote:
->  
-> > -	if (copy_to_user(hlp, m->u.match->name, 
-> > EBT_FUNCTION_MAXNAMELEN))
-> > +	char name[EBT_FUNCTION_MAXNAMELEN] = {};
-> > +
-> > +	strncpy(name, m->u.match->name, sizeof(name));
-> > +	if (copy_to_user(hlp, name, EBT_FUNCTION_MAXNAMELEN))
-> >  		return -EFAULT;
-> 
-> strncpy() is very rarely the function you are looking for.
-> In this case it MIGHT be right (since you do a fixed size
-> copy_to_user).
-> OTOH there is no need to also initialise name[].
+2012/3/1 Chris Mason <chris.mason@oracle.com>:
+> On Wed, Feb 29, 2012 at 11:44:31PM -0500, Theodore Tso wrote:
+>> You might try sorting the entries returned by readdir by inode number before you stat them.    This is a long-standing weakness in ext3/ext4, and it has to do with how we added hashed tree indexes to directories in (a) a backwards compatible way, that (b) was POSIX compliant with respect to adding and removing directory entries concurrently with reading all of the directory entries using readdir.
+>>
+>> You might try compiling spd_readdir from the e2fsprogs source tree (in the contrib directory):
+>>
+>> http://git.kernel.org/?p=fs/ext2/e2fsprogs.git;a=blob;f=contrib/spd_readdir.c;h=f89832cd7146a6f5313162255f057c5a754a4b84;hb=d9a5d37535794842358e1cfe4faa4a89804ed209
+>>
+>> … and then using that as a LD_PRELOAD, and see how that changes things.
+>>
+>> The short version is that we can't easily do this in the kernel since it's a problem that primarily shows up with very big directories, and using non-swappable kernel memory to store all of the directory entries and then sort them so they can be returned in inode number just isn't practical.   It is something which can be easily done in userspace, though, and a number of programs (including mutt for its Maildir support) does do, and it helps greatly for workloads where you are calling readdir() followed by something that needs to access the inode (i.e., stat, unlink, etc.)
+>>
+>
+> For reading the files, the acp program I sent him tries to do something
+> similar.  I had forgotten about spd_readdir though, we should consider
+> hacking that into cp and tar.
+>
+> One interesting note is the page cache used to help here.  Picture two
+> tests:
+>
+> A) time tar cf /dev/zero /home
+>
+> and
+>
+> cp -a /home /new_dir_in_new_fs
+> unmount / flush caches
+> B) time tar cf /dev/zero /new_dir_in_new_fs
+>
+> On ext, The time for B used to be much faster than the time for A
+> because the files would get written back to disk in roughly htree order.
+> Based on Jacek's data, that isn't true anymore.
 
-We have to make sure that array is filled with zeros for the gap
-between byte 29 and byte 32 due to backward compatibility issues.
+I've took both on tests. The subject is acp and spd_readdir used with
+tar, all on ext4:
+1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
+2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
+3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
 
-I'll mangle the patch to add some comment close to strncpy and to
-explain the way we're doing this.
+The acp looks much better than spd_readdir but directory copy with
+spd_readdir decreased to 52m 39sec (30 min less).
 
-> And it isn't entirely clear whether the application
-> is allowed to be given a non-terminated string.
-
-Match names are 29 bytes long, while ebtables expects 32 bytes. So
-we're copying less bytes.
-
-We can add the final \0 if you feel more confortable, but that string
-is going to be null-terminated the way the code look now.
+-Jacek
