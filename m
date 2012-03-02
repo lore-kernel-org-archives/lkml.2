@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965243Ab2CBOwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:52:11 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43185 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2CBOwJ (ORCPT
+	id S1030215Ab2CBOwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:52:23 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57899 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757968Ab2CBOwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:52:09 -0500
-Date: Fri, 2 Mar 2012 15:52:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
- PREEMPT_RT
-In-Reply-To: <20120301190346.172835662@goodmis.org>
-Message-ID: <alpine.LFD.2.02.1203021518501.2742@ionos>
-References: <20120301185527.064629423@goodmis.org> <20120301190346.172835662@goodmis.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Mar 2012 09:52:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.216.132 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
+Message-ID: <4F50DEA0.2020607@gmail.com>
+Date: Fri, 02 Mar 2012 07:52:16 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Ingo Molnar <mingo@elte.hu>
+CC: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        peterz@infradead.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [tip:perf/core] perf tools: Allow multiple threads or processes
+ in record, stat, top
+References: <1328718772-16688-1-git-send-email-dsahern@gmail.com> <tip-b52956c961be3a04182ae7b776623531601e0fb7@git.kernel.org> <20120302105620.GA21762@elte.hu>
+In-Reply-To: <20120302105620.GA21762@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012, Steven Rostedt wrote:
-> Bringing a CPU down is a pain with the PREEMPT_RT kernel because
-> tasks can be preempted in many more places than in non-RT. In
-> order to handle per_cpu variables, tasks may be pinned to a CPU
-> for a while, and even sleep. But these tasks need to be off the CPU
-> if that CPU is going down.
-> 
-> Several synchronization methods have been tried, but when stressed
-> they failed. This is a new approach.
+That first cup of coffee is so important.
 
-OMG! That hotplug stuff has been ugly as hell already, but you managed
-to make it exponentially worse. That's really an achievement.
- 
-Instead of adding more mess, we should simply fix hotplug. 
+On 3/2/12 3:56 AM, Ingo Molnar wrote:
+> phoenix:~>  perf record -a sleep 1
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.023 MB perf.data (~988 samples) ]
+> phoenix:~>  perf report --stdio
+> Warning:
+> The perf.data file has no samples!
+> # ========
+> # captured on: Fri Mar  2 12:01:41 2012
+> # hostname : phoenix
+> # os release : 3.3.0-rc5+
+> # perf version : 3.3.rc5.1698.g68a63a.dirty
+> # arch : x86_64
+> # nrcpus online : 16
+> # nrcpus avail : 16
+> # cpudesc : Quad-Core AMD Opteron(tm) Processor 8356
+> # cpuid : AuthenticAMD,16,2,3
 
-We can migrate away all tasks _before_ we run stomp-machine and
-prevent that any new tasks go on the cpu which is about to be taken
-down. Once all migratable tasks are gone, we only have to deal with
-the cpu bound ones, which is not causing such headaches.
+Would you mind adding this patch:
+   https://lkml.org/lkml/2012/2/29/217
+and see if it fixes your problem?
 
-So no, I rather keep the current problem than applying that insanity.
+Quick test with an updated tree:
+$ /tmp/pbuild/perf record -a sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.046 MB perf.data (~1990 samples) ]
 
-Thanks,
+$ /tmp/pbuild/perf script
+<samples dumped>
 
-	tglx
+$ /tmp/pbuild/perf --version
+perf version perf.core.for.mingo.36.g8eedce
+
+This is your tip.git repository, tip/perf/core branch:
+
+[remote "tip"]
+     url = git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+     fetch = +refs/heads/*:refs/remotes/tip/*
+[branch "tip-perf-core"]
+     remote = tip
+     merge = refs/heads/perf/core
+
+I did noticed that this branch only shows 3.3.0-rc2 as the latest kernel 
+version.
+
+> # total memory : 33012240 kB
+> # cmdline : /home/mingo/bin/perf record -a sleep 1
+> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_k
+> # HEADER_CPU_TOPOLOGY info available, use -I to display
+> # HEADER_NUMA_TOPOLOGY info available, use -I to display
+> # ========
+> phoenix:~>  perf --version
+> perf version 3.3.rc5.1698.g68a63a.dirty
+> phoenix:~>
+>
+> The later fixes to b52956c9, such as:
+>
+>    6b1bee9035d4: perf tools: fix broken perf record -a mode
+>
+> did not fix this system - it's still broken as of today's -tip.
+>
+> Another system running the same kernel does not exhibit this
+> problem, so it's somehow specific to this system.
+
+Is the other system Intel based?
+
+David
