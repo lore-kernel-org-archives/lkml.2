@@ -1,170 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030559Ab2CBUNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:13:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030514Ab2CBUNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:13:30 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Date: Fri,  2 Mar 2012 15:13:09 -0500
-Message-Id: <1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1759292Ab2CBUQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:16:56 -0500
+Received: from mga12.intel.com ([143.182.124.36]:12662 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756423Ab2CBUQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 15:16:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dan.j.williams@intel.com designates 10.60.29.68 as permitted sender) smtp.mail=dan.j.williams@intel.com
+MIME-Version: 1.0
+In-Reply-To: <20120302200826.GA4728@wavehammer.waldi.eu.org>
+References: <20120127144737.GA27750@andromeda.dapyr.net>
+	<20120219223125.GA820@burratino>
+	<20120220181618.GD17566@burratino>
+	<4F4891B8.9050008@goirand.fr>
+	<20120302055715.GA692@burratino>
+	<CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+	<20120302162159.GB31683@wavehammer.waldi.eu.org>
+	<CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+	<20120302175719.GA1468@wavehammer.waldi.eu.org>
+	<CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
+	<20120302200826.GA4728@wavehammer.waldi.eu.org>
+Date: Fri, 2 Mar 2012 12:16:47 -0800
+Message-ID: <CABE8wwvKC0k=nS8SU3vRyUQVBA=WgnsxbNOnGyy9dFNQLshdvA@mail.gmail.com>
+Subject: Re: [Pkg-xen-devel] ioatdma: Boot process hangs then reboots when
+ using Xen + Linux 3.2
+From: Dan Williams <dan.j.williams@intel.com>
+To: Dan Williams <dan.j.williams@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, xen-devel@lists.xensource.com,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we can't do task migration among memory cgroups without THP split,
-which means processes heavily using THP experience large overhead in task
-migration. This patch introduce the code for moving charge of THP and makes
-THP more valuable.
+On Fri, Mar 2, 2012 at 12:08 PM, Bastian Blank <waldi@debian.org> wrote:
+> On Fri, Mar 02, 2012 at 11:31:56AM -0800, Dan Williams wrote:
+>> On Fri, Mar 2, 2012 at 9:57 AM, Bastian Blank <waldi@debian.org> wrote:
+>> > phys_complete (a 32 bit value) gets compared to struct
+>> > dma_async_tx_descriptor.phys, which is defined as dma_addr_t, a _64_ bit
+>> > value.
+>> The assumption is that the driver's control structures are not in high
+>> memory so all address values will only have 32-bits of valid data,
+>
+> Can you back that up by some kernel documentation? There is a reason why
+> pci_alloc_pool uses dma_addr_t to store the address and _not_ unsigned
+> long. This are physical addresses, nothing the kernel can access
+> directly without a mapping.
 
-Changes from v2:
-- add move_anon() and mapcount check
+High memory can only be accessed with kmap(), so the assumption is
+that dma_alloc never gives a buffer address above 32-bits on a 32-bit
+build.  Yes, if HIGHMEM64G is set dma_addr_t becomes 64-bit, but that
+is only to access high memory mapped application buffers via dma_map.
+I'm not aware of any documentation in this area.
 
-Changes from v1:
-- rename is_target_huge_pmd_for_mc() to is_target_thp_for_mc()
-- remove pmd_present() check (it's buggy when pmd_trans_huge(pmd) is true)
-- is_target_thp_for_mc() calls get_page() only when checks are passed
-- unlock page table lock if !mc.precharge
-- compare return value of is_target_thp_for_mc() explicitly to MC_TARGET_TYPE
-- clean up &walk->mm->page_table_lock to &vma->vm_mm->page_table_lock
-- add comment about why race with split_huge_page() does not happen
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
----
- mm/memcontrol.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 83 insertions(+), 6 deletions(-)
-
-diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-index c83aeb5..b6d1bab 100644
---- linux-next-20120228.orig/mm/memcontrol.c
-+++ linux-next-20120228/mm/memcontrol.c
-@@ -5211,6 +5211,41 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
- 	return ret;
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+/*
-+ * We don't consider swapping or file mapped pages because THP does not
-+ * support them for now.
-+ * Caller should make sure that pmd_trans_huge(pmd) is true.
-+ */
-+static int is_target_thp_for_mc(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t pmd, union mc_target *target)
-+{
-+	struct page *page = NULL;
-+	struct page_cgroup *pc;
-+	int ret = 0;
-+
-+	page = pmd_page(pmd);
-+	VM_BUG_ON(!page || !PageHead(page));
-+	if (!move_anon() || page_mapcount(page) != 1)
-+		return 0;
-+	pc = lookup_page_cgroup(page);
-+	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-+		ret = MC_TARGET_PAGE;
-+		if (target) {
-+			get_page(page);
-+			target->page = page;
-+		}
-+	}
-+	return ret;
-+}
-+#else
-+static inline int is_target_thp_for_mc(struct vm_area_struct *vma,
-+		unsigned long addr, pmd_t pmd, union mc_target *target)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
- 					unsigned long addr, unsigned long end,
- 					struct mm_walk *walk)
-@@ -5219,7 +5254,14 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
--	split_huge_page_pmd(walk->mm, pmd);
-+	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-+		if (is_target_thp_for_mc(vma, addr, *pmd, NULL)
-+		    == MC_TARGET_PAGE)
-+			mc.precharge += HPAGE_PMD_NR;
-+		spin_unlock(&vma->vm_mm->page_table_lock);
-+		cond_resched();
-+		return 0;
-+	}
- 
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
-@@ -5378,16 +5420,51 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 	struct vm_area_struct *vma = walk->private;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	int type;
-+	union mc_target target;
-+	struct page *page;
-+	struct page_cgroup *pc;
-+
-+	/*
-+	 * We don't take compound_lock() here but no race with splitting thp
-+	 * happens because:
-+	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
-+	 *    under splitting, which means there's no concurrent thp split,
-+	 *  - if another thread runs into split_huge_page() just after we
-+	 *    entered this if-block, the thread must wait for page table lock
-+	 *    to be unlocked in __split_huge_page_splitting(), where the main
-+	 *    part of thp split is not executed yet.
-+	 */
-+	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-+		if (!mc.precharge) {
-+			spin_unlock(&vma->vm_mm->page_table_lock);
-+			cond_resched();
-+			return 0;
-+		}
-+		type = is_target_thp_for_mc(vma, addr, *pmd, &target);
-+		if (type == MC_TARGET_PAGE) {
-+			page = target.page;
-+			if (!isolate_lru_page(page)) {
-+				pc = lookup_page_cgroup(page);
-+				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-+							     pc, mc.from, mc.to,
-+							     false)) {
-+					mc.precharge -= HPAGE_PMD_NR;
-+					mc.moved_charge += HPAGE_PMD_NR;
-+				}
-+				putback_lru_page(page);
-+			}
-+			put_page(page);
-+		}
-+		spin_unlock(&vma->vm_mm->page_table_lock);
-+		cond_resched();
-+		return 0;
-+	}
- 
--	split_huge_page_pmd(walk->mm, pmd);
- retry:
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
--		union mc_target target;
--		int type;
--		struct page *page;
--		struct page_cgroup *pc;
- 		swp_entry_t ent;
- 
- 		if (!mc.precharge)
--- 
-1.7.7.6
-
+I don't mind bumping up the size if xen32 is changing the above
+assumptions, but I'd want confirmation that this is the failure
+scenario.
