@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2CBTHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:07:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:44607 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2CBTHc (ORCPT
+	id S932553Ab2CBTHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:07:48 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59005 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932362Ab2CBTHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:07:32 -0500
-Date: Fri, 2 Mar 2012 22:09:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: walter harms <wharms@bfs.de>
-Cc: Eric Wollesen <ericw@xmtp.net>, Doug Thompson <dougthompson@xmission.com>,
-        list-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] edac i5000: fix pointer math in i5000_get_mc_regs()
-Message-ID: <20120302190932.GI22598@mwanda>
-References: <20120302065441.GB24508@elgon.mountain>
- <4F508C16.30900@bfs.de>
+	Fri, 2 Mar 2012 14:07:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of grant.likely@secretlab.ca designates 10.68.203.73 as permitted sender) smtp.mail=grant.likely@secretlab.ca
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mXDO3udm/xYWQeMQ"
-Content-Disposition: inline
-In-Reply-To: <4F508C16.30900@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020209.4F511A70.00AB,ss=1,re=0.000,fgs=0
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
+To: David Daney <david.daney@cavium.com>, Rob Herring <robherring2@gmail.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4F510B8E.3070201@cavium.com>
+References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com>
+Date: Fri, 02 Mar 2012 12:07:44 -0700
+Message-Id: <20120302190744.571E03E1C63@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 02 Mar 2012 10:03:58 -0800, David Daney <david.daney@cavium.com> wrote:
+> On 03/02/2012 06:22 AM, Rob Herring wrote:
+> [...]
+> >> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> >> index ce30e2f..01344ae 100644
+> >> --- a/arch/mips/Kconfig
+> >> +++ b/arch/mips/Kconfig
+> >> @@ -1432,6 +1432,7 @@ config CPU_CAVIUM_OCTEON
+> >>   	select WEAK_ORDERING
+> >>   	select CPU_SUPPORTS_HIGHMEM
+> >>   	select CPU_SUPPORTS_HUGEPAGES
+> >> +	select IRQ_DOMAIN
+> >
+> > IIRC, Grant has a patch cued up that enables IRQ_DOMAIN for all of MIPS.
+> >
+> 
+> Indeed, I now see it in linux-next.  I will remove this one.
+> 
+> >>   	help
+> >>   	  The Cavium Octeon processor is a highly integrated chip containing
+> >>   	  many ethernet hardware widgets for networking tasks. The processor
+> >> diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+> >> index bdcedd3..e9f2f6c 100644
+> >> --- a/arch/mips/cavium-octeon/octeon-irq.c
+> >> +++ b/arch/mips/cavium-octeon/octeon-irq.c
+> [...]
+> >> +static void __init octeon_irq_set_ciu_mapping(unsigned int irq,
+> >> +					      unsigned int line,
+> >> +					      unsigned int bit,
+> >> +					      struct irq_domain *domain,
+> >>   					      struct irq_chip *chip,
+> >>   					      irq_flow_handler_t handler)
+> >>   {
+> >> +	struct irq_data *irqd;
+> >>   	union octeon_ciu_chip_data cd;
+> >>
+> >>   	irq_set_chip_and_handler(irq, chip, handler);
+> >> -
+> >>   	cd.l = 0;
+> >>   	cd.s.line = line;
+> >>   	cd.s.bit = bit;
+> >>
+> >>   	irq_set_chip_data(irq, cd.p);
+> >>   	octeon_irq_ciu_to_irq[line][bit] = irq;
+> >> +
+> >> +	irqd = irq_get_irq_data(irq);
+> >> +	irqd->hwirq = line<<  6 | bit;
+> >> +	irqd->domain = domain;
+> >
+> > I think the domain code will set these.
+> 
+> It is my understanding that the domain code only does this for:
+> 
+> o irq_domain_add_legacy()
+> 
+> o irq_create_direct_mapping()
+> 
+> o irq_create_mapping()
+> 
+> We use none of those.  So I do it here.
+> 
+> If there is a better way, I am open to suggestions.
 
---mXDO3udm/xYWQeMQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+irq_create_mapping is called by irq_create_of_mapping() which is
+in turn called by irq_of_parse_and-map().  irq_domain always
+manages the hwirq and domain values.  Driver code cannot manipulate
+them manually.
 
-On Fri, Mar 02, 2012 at 10:00:06AM +0100, walter harms wrote:
-> > diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-> > index 4dc3ac2..fcdc4ab 100644
-> > --- a/drivers/edac/i5000_edac.c
-> > +++ b/drivers/edac/i5000_edac.c
-> > @@ -1130,7 +1130,7 @@ static void i5000_get_mc_regs(struct mem_ctl_info=
- *mci)
-> >  	pci_read_config_dword(pvt->system_address, AMBASE,
-> >  			(u32 *) & pvt->ambase);
-> >  	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
-> > -			((u32 *) & pvt->ambase) + sizeof(u32));
-> > +			(u32 *)((char *) &pvt->ambase + sizeof(u32)));
-> > =20
-> >  	maxdimmperch =3D pvt->maxdimmperch;
-> >  	maxch =3D pvt->maxch;
->=20
-> i think this is hard to understand. personally i would prefer a union or =
-other
-> more obvious solutions. my suggestion would be to get rid of this.
->=20
-> u32 bottom,top;
->  	pci_read_config_dword(pvt->system_address, AMBASE,
->   			&bottom);
-> 	pci_read_config_dword(pvt->system_address, AMBASE+ sizeof(u32),
->   			&top);
-> 	maxdimmperch=3D(u64)top<<32|bottom;
-> =09
-> you can find this pattern in other parts of the kernel also.
->=20
-
-Sure.  I want to do this again anyway because I see I've missed some
-other parts which have the same bug.  I'll resend a patch later.
-
-regards,
-dan carpenter
-
---mXDO3udm/xYWQeMQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPURrsAAoJEOnZkXI/YHqRcvEQAK+pJNqbiVna3olJmofaOUoA
-qGB+b/eqIJdr/yFb2VV1Ia0X0LU6BWF4NQGndxRKTV2F0sja2vlB4Aqa/FB0ZM3o
-lRxcm0zP13g1kBZeAF9jzuCQqM/AV4XYpDLjE3oGa7eehvwuZFiZn+6P7OEyZWU/
-Mnb0gvB8miCR757zL/j0H4LqFDQbiD46NX9JlTW/l7S7xfRHAfHNkAFJZzMItWOv
-oTKjxHeqPpTiIBu37pa/Hlmrn0tpX+nB1MfzFlv2mMIoXc7TmGtQX5sqRXKlodgt
-1HK1JHolUUQqTMAPJ6yEWyhSAGW/xoxjEhjvh91sp5n2EGzyEG7HMXbwiJjiCEK3
-SQIcOC0UPm53twZoa+hcZy0WOGIcNGQwY7yRvEmmayQuqL4+fHFnBI2UlOa0Po0O
-T41exswyMdyTGb4vd1zPgKPpFWXXIrbgF2mxmdjj0+Y+gF8yknUldig8OUZN2UCo
-PHNN48qFWJ3lDxRzsqtvRB/99McczPjh33lYO5B96f+BTW1PKC2ouqDfZ44Mudk2
-78sQB98aD2UNt7HpG79uSX+m/v3WpEzHt1VATjB3wsIX0jGe26+kHQ/oQyhTNmPu
-poT6X+kzyFpZ1UeChIuAaXpdqltjmc1029yVpv3+YudMflqVklOZwFkeWOcGP3e8
-VBiCGgy+lirO/ReAIyRP
-=ClNJ
------END PGP SIGNATURE-----
-
---mXDO3udm/xYWQeMQ--
+g.
