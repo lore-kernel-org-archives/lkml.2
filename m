@@ -1,98 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab2CBHxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:53:39 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:48196 "EHLO e6.ny.us.ibm.com"
+	id S1757100Ab2CBH4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:56:22 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:32839 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756918Ab2CBHxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:53:38 -0500
-Message-ID: <1330674796.2361.36.camel@work-vm>
-Subject: Re: [PATCH 4/9] time: Update timekeeper structure using a local
- shadow
-From: John Stultz <john.stultz@linaro.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Date: Thu, 01 Mar 2012 23:53:16 -0800
-In-Reply-To: <20120302073848.GB32401@elte.hu>
-References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org>
-	 <1330672368-32290-5-git-send-email-john.stultz@linaro.org>
-	 <20120302073848.GB32401@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1756719Ab2CBH4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 02:56:21 -0500
+X-Greylist: delayed 877 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Mar 2012 02:56:20 EST
+Date: Fri, 02 Mar 2012 16:42:35 +0900
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+To: linux-kernel@vger.kernel.org
+Subject: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout parameter when message can be performed immediately
+Cc: torvalds@linux-foundation.org
+Message-Id: <20120302164234.4938.38390934@jp.panasonic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030207-1976-0000-0000-00000B1AD3D4
+X-Mailer: Becky! ver. 2.56.05 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-02 at 08:38 +0100, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
-> 
-> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> > index f9ee96c..09460c1 100644
-> > --- a/kernel/time/timekeeping.c
-> > +++ b/kernel/time/timekeeping.c
-> > @@ -74,6 +74,7 @@ struct timekeeper {
-> >  };
-> >  
-> >  static struct timekeeper timekeeper;
-> > +static struct timekeeper shadow_tk;
-> 
-> Sigh.
-> 
-> As I said it in the first round of review, it's fundamentally 
-> wrong to copy live fields like locks or the clocksource pointer 
-> around.
+This patch fixes up the regression problem of mq_timed{send,receive} syscall.
 
-So I actually removed the locks out from the timekeeper structure to try
-to address this concern.
+When a message of mqueue can be performed immediately,
+the validity of abs_timeout parameter should not be checked.
 
-> It's doubly wrong to do it in a global variable that no-one else 
-> but the copying function (update_wall_time()) is supposed to 
-> access.
-> 
-> There are over a dozen fields in 'struct timekeeper' - exactly 
-> which ones of them are used on this private copy, as 
-> update_wall_time() does the cycle accumulation and calls down 
-> into timkeeping_adjust()?
+According to the manpage of mq_timedreceive:
+    Under no circumstance shall the operation fail with a timeout
+    if a message can be removed from the message queue immediately.
+    The validity of the abstime parameter need not be checked
+    if a message can be removed from the message queue immediately.
 
-Just about all of timekeeper state is used and modified in the
-update_wall_time. 
+On 2.6.35+ kernel, mq_timed{send,receive} returns EINVAL incorrectly,
+in this situation.
 
-> The right solution would be to separate timekeeping time state 
-> from global state:
-> 
-> struct timekeeper {
-> 	spinlock_t		lock;
-> 
-> 	struct time_state	time_state;
-> };
-> 
-> And then standardize the time calculation code on passing around 
-> not 'struct timekeeper *' but 'struct time_state *' ! Then you 
-> can have a local shadow copy of the global state:
-> 
-> 	struct time_state time_state_copy;
-> 
-> and copy it from the global one and then pass it down to 
-> calculation functions.
-> 
-> This also gives the freedom to add other global state fields 
-> beyond the lock. (Right now the lock appears to be the only 
-> global state field - there might be more.)
+I found this problem during the OPTS testcase
+"conformance/interfaces/mq_timedreceive/10-2":
 
-So, just to be clear, you want me to push basically everything in the
-timekeeper structure, except the lock (which would be re-added), into a
-time_state sub-structure?
+    # ./10-2.test
+    FAIL: the validity of abs_timeout is checked
+    Test FAILED
 
-Sorry for being dense here (its been a long day), but maybe could you
-clarify a bit more about the differences you're describing between
-time-state and global-state wrt the timekeeper?
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+---
+ ipc/mqueue.c |   31 +++++++++++++++++++++++++++----
+ 1 files changed, 27 insertions(+), 4 deletions(-)
 
-thanks
--john
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 86ee272..7cd4411 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -861,14 +861,22 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+ 	struct msg_msg *msg_ptr;
+ 	struct mqueue_inode_info *info;
+ 	ktime_t expires, *timeout = NULL;
++	int timeout_param_error = 0;
+ 	struct timespec ts;
+ 	int ret;
+ 
+ 	if (u_abs_timeout) {
+ 		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+ 		if (res)
+-			return res;
+-		timeout = &expires;
++			/*
++			 * The validity of the abs_timeout parameter need not be
++			 * checked when there is sufficient room in the queue.
++			 * So, do not return here, even if the parameter is
++			 * invalid.
++			 */
++			timeout_param_error = res;
++		else
++			timeout = &expires;
+ 	}
+ 
+ 	if (unlikely(msg_prio >= (unsigned long) MQ_PRIO_MAX))
+@@ -916,6 +924,9 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+ 		if (filp->f_flags & O_NONBLOCK) {
+ 			spin_unlock(&info->lock);
+ 			ret = -EAGAIN;
++		} else if (unlikely(timeout_param_error)) {
++			spin_unlock(&info->lock);
++			ret = timeout_param_error;
+ 		} else {
+ 			wait.task = current;
+ 			wait.msg = (void *) msg_ptr;
+@@ -955,13 +966,21 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 	struct mqueue_inode_info *info;
+ 	struct ext_wait_queue wait;
+ 	ktime_t expires, *timeout = NULL;
++	int timeout_param_error = 0;
+ 	struct timespec ts;
+ 
+ 	if (u_abs_timeout) {
+ 		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+ 		if (res)
+-			return res;
+-		timeout = &expires;
++			/*
++			 * The validity of the abs_timeout parameter need not be
++			 * checked if a message can be removed from the message
++			 * queue immediately. So, do not return here, even if
++			 * the parameter is invalid.
++			 */
++			timeout_param_error = res;
++		else
++			timeout = &expires;
+ 	}
+ 
+ 	audit_mq_sendrecv(mqdes, msg_len, 0, timeout ? &ts : NULL);
+@@ -996,6 +1015,10 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+ 		if (filp->f_flags & O_NONBLOCK) {
+ 			spin_unlock(&info->lock);
+ 			ret = -EAGAIN;
++		} else if (unlikely(timeout_param_error)) {
++			spin_unlock(&info->lock);
++			ret = timeout_param_error;
++			msg_ptr = NULL; /* just for shutting up warning */
+ 		} else {
+ 			wait.task = current;
+ 			wait.state = STATE_NONE;
+-- 
+1.7.4.1
+
 
