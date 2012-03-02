@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942Ab2CBBRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:17:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52460 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab2CBBRp (ORCPT
+	id S932409Ab2CBBTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:19:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38429 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab2CBBTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:17:45 -0500
-Date: Thu, 1 Mar 2012 17:19:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
- load_pointer
-Message-Id: <20120301171914.7c64f095.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 1 Mar 2012 20:19:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.226.9 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330651142.6247.1.camel@phoenix>
+Subject: [PATCH] regulator: Simplify the code to get selector in
+ isl6271a_set_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Marek Vasut <marek.vasut@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 02 Mar 2012 09:19:02 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012 16:57:49 -0800 Kees Cook <keescook@chromium.org> wrote:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/isl6271a-regulator.c |   14 +++-----------
+ 1 files changed, 3 insertions(+), 11 deletions(-)
 
-> On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi Kees,
-> >
-> > On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
-> >>
-> >> Is it time to pull this into -next so more people can feel it? I brought
-> >> Andy Lutomirski's patches forward (needed to bump the prctl values), and
-> >> updated my git tree. If we're ready, here it is in all its request-pull
-> >> format glory:
-> >>
-> >> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
-> >> __ Stephen Rothwell (1):
-> >> __ __ __ __ Add linux-next specific files for 20120301
-> >
-> > OK, not commenting on anything else, but I cannot merge that into
-> > linux-next because it is based on yesterday's linux-next release and
-> > linux-next (effectively) rebases every day ...
-> >
-> > Does this work depend on anything in linux-next? __Or could it be just
-> > based off Linus' tree. __If it depends on other tree(s) merged into
-> > linux-next, then you should base your tree on those tree(s) as long as
-> > they never get rebased ...
-> 
-> Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
-> 
-> And at least the ptrace changes are, IIRC, in -mm, which has no tree.
-> :P Given that, what's the best thing for me to do for this to be easy
-> for you to pull?
+diff --git a/drivers/regulator/isl6271a-regulator.c b/drivers/regulator/isl6271a-regulator.c
+index c1a456c..775f5fd 100644
+--- a/drivers/regulator/isl6271a-regulator.c
++++ b/drivers/regulator/isl6271a-regulator.c
+@@ -63,23 +63,15 @@ static int isl6271a_set_voltage(struct regulator_dev *dev,
+ 				unsigned *selector)
+ {
+ 	struct isl_pmic *pmic = rdev_get_drvdata(dev);
+-	int vsel, err, data;
++	int err, data;
+ 
+ 	if (minuV < ISL6271A_VOLTAGE_MIN || minuV > ISL6271A_VOLTAGE_MAX)
+ 		return -EINVAL;
+ 	if (maxuV < ISL6271A_VOLTAGE_MIN || maxuV > ISL6271A_VOLTAGE_MAX)
+ 		return -EINVAL;
+ 
+-	/* Align to 50000 mV */
+-	vsel = minuV - (minuV % ISL6271A_VOLTAGE_STEP);
+-
+-	/* If the result fell out of [minuV,maxuV] range, put it back */
+-	if (vsel < minuV)
+-		vsel += ISL6271A_VOLTAGE_STEP;
+-
+-	/* Convert the microvolts to data for the chip */
+-	data = (vsel - ISL6271A_VOLTAGE_MIN) / ISL6271A_VOLTAGE_STEP;
+-
++	data = DIV_ROUND_UP(minuV - ISL6271A_VOLTAGE_MIN,
++			    ISL6271A_VOLTAGE_STEP);
+ 	*selector = data;
+ 
+ 	mutex_lock(&pmic->mtx);
+-- 
+1.7.5.4
 
-Base the tree on mainline and wreck the -mm patches I guess.  I'm good
-at unwrecking patches.
 
-That assumes that we're going to merge this stuff into 3.4 - if we
-don't, unwrecker gets rewrecked and grumpy.
-
-I don't know if we're going to merge it into 3.4?  I haven't been
-paying a lot of attention and haven't looked at the patches in a while.
 
