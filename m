@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030650Ab2CBUqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:46:54 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50885 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030608Ab2CBUqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:46:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jgpobox@gmail.com designates 10.52.68.48 as permitted sender) smtp.mail=jgpobox@gmail.com; dkim=pass header.i=jgpobox@gmail.com
-Message-ID: <4F5131B9.6010803@pobox.com>
-Date: Fri, 02 Mar 2012 15:46:49 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1759330Ab2CBUuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:50:55 -0500
+Received: from void.printf.net ([89.145.121.20]:32808 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759094Ab2CBUuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 15:50:54 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: "Bityutskiy\, Artem" <artem.bityutskiy@intel.com>,
+        Huang Shijie <b32955@freescale.com>,
+        "alsa-devel\@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Koul\, Vinod" <vinod.koul@intel.com>,
+        "broonie\@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "w.sang\@pengutronix.de" <w.sang@pengutronix.de>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd\@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "shawn.guo\@linaro.org" <shawn.guo@linaro.org>,
+        "lrg\@ti.com" <lrg@ti.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "LW\@KARO-electronics.de" <LW@karo-electronics.de>
+Subject: Re: [PATCH v6 0/2] patch set about the MXS-DMA
+References: <1329373053-19494-1-git-send-email-b32955@freescale.com>
+	<4F4D9725.3090100@freescale.com>
+	<1330502098.3545.78.camel@sauron.fi.intel.com>
+	<4F4DE0E5.8070808@freescale.com>
+	<1330516974.3545.104.camel@sauron.fi.intel.com>
+	<CAMiH66HmV+58w36DGCt+e=ihTrYUwXf1Cur+678YX2GKcB1-jA@mail.gmail.com>
+Date: Fri, 02 Mar 2012 15:50:25 -0500
+In-Reply-To: <CAMiH66HmV+58w36DGCt+e=ihTrYUwXf1Cur+678YX2GKcB1-jA@mail.gmail.com>
+	(Huang Shijie's message of "Wed, 29 Feb 2012 08:13:15 -0500")
+Message-ID: <m2mx7yn2we.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Liu Qiang-B32616 <B32616@freescale.com>
-CC: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: Re: [PATCH V3] fsl-sata: add support for interrupt coalsecing feature
-References: <1329291634-883-1-git-send-email-qiang.liu@freescale.com> <CADRPPNTmRvPVymJmW4vagU+2M4DmqeDSEj=4=R_=YDJekOTccQ@mail.gmail.com> <BCB48C05FCE8BC4D9E61E841ECBE6DB70424A8@039-SN2MPN1-012.039d.mgd.msft.net>
-In-Reply-To: <BCB48C05FCE8BC4D9E61E841ECBE6DB70424A8@039-SN2MPN1-012.039d.mgd.msft.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2012 09:54 PM, Liu Qiang-B32616 wrote:
-> Hi Jeff,
+Hi,
+
+On Wed, Feb 29 2012, Huang Shijie wrote:
+>> Pushed both to l2-mtd.git tree, thanks. I am worried that it touches
+>> other subsystems like dma, sound, and mmc and there are no acks for
+>> those. Would be nice to get them somehow.
 >
-> Do you plan to apply it to upstream, or any suggestions? Thanks.
+> I ever thought Vinod could accept this patch set.
+>
+> To Vinod & Chris:
+>       Could you give the ack to the first patch?
 
-This patch has been in libata-dev (and thus linux-next) for about 2 weeks...
+Yes -- for the first patch:
 
+Acked-by: Chris Ball <cjb@laptop.org>
 
+(I think Shawn's ACK is sufficient for the second patch.)
 
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
