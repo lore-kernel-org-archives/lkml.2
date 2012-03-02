@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2CBSzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 13:55:19 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:60332 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430Ab2CBSzR (ORCPT
+	id S1759051Ab2CBTAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:00:07 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54102 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab2CBTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 13:55:17 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: mjg@redhat.com
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] samsung-laptop: add N230 to supported models
-Date: Fri,  2 Mar 2012 19:55:05 +0100
-Message-Id: <1330714505-13170-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9.2
+	Fri, 2 Mar 2012 14:00:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.217.65 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
+Message-ID: <4F5118B1.5070406@gmail.com>
+Date: Fri, 02 Mar 2012 12:00:01 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+Subject: perf_guest default bug
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a version of N230 which has only this in product and board
-names. See dmidecode in the bugzilla entry.
+Similar to my last email, this patch is not in urgent trees or Linus' 
+yet the problem exists in Linus' tree:
+https://lkml.org/lkml/2012/2/17/82
 
-Without this patch, one has to pass the force module parameter to have
-rfkill working.
+$ /tmp/pbuild/perf record -a  -- sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.319 MB perf.data (~13935 samples) ]
+Segmentation fault
 
-References: https://bugzilla.novell.com/show_bug.cgi?id=746695
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+Root cause is the perf_guest setting.
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-index fd73ea8..7765929 100644
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -679,6 +679,16 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
- 		.callback = dmi_check_cb,
- 	},
- 	{
-+		.ident = "N230",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "N230"),
-+			DMI_MATCH(DMI_BOARD_NAME, "N230"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
-+	{
- 		.ident = "N150/N210/N220/N230",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR,
--- 
-1.7.9.2
+$ /tmp/pbuild/perf --version
+perf version 3.3.rc5.60.g203738
 
-
+David
