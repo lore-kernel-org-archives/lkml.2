@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965226Ab2CBLes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 06:34:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45175 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab2CBLeq convert rfc822-to-8bit (ORCPT
+	id S965369Ab2CBLlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 06:41:45 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42898 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964797Ab2CBLln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 06:34:46 -0500
-Message-ID: <1330688075.11248.230.camel@twins>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michal Schmidt <mschmidt@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-Date: Fri, 02 Mar 2012 12:34:35 +0100
-In-Reply-To: <4F50AEC3.5090807@redhat.com>
-References: <20120221211938.GE12236@google.com>
-	    <20120222163858.GB4128@redhat.com> <20120222165714.GC4128@redhat.com>
-	    <1329990094.24994.64.camel@twins> <1330006399.11248.20.camel@twins>
-	   <4F4FAF89.3090706@redhat.com> <1330624986.11248.209.camel@twins>
-	  <4F50AA22.9080007@redhat.com> <1330687394.11248.222.camel@twins>
-	 <4F50AEC3.5090807@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 2 Mar 2012 06:41:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of sshtylyov@mvista.com designates 10.204.136.219 as permitted sender) smtp.mail=sshtylyov@mvista.com
+Message-ID: <4F50B1A7.60207@ru.mvista.com>
+Date: Fri, 02 Mar 2012 15:40:23 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Alan Ott <alan@signal11.us>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 4/8] ARM: tegra: build localtimer support only when needed
+References: <1330630010-11241-1-git-send-email-alan@signal11.us> <1330630010-11241-5-git-send-email-alan@signal11.us>
+In-Reply-To: <1330630010-11241-5-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-02 at 12:28 +0100, Michal Schmidt wrote:
-> On 03/02/2012 12:23 PM, Peter Zijlstra wrote:
-> > On Fri, 2012-03-02 at 12:08 +0100, Michal Schmidt wrote:
-> >> It's recommended not to do that and nobody actively
-> >> tests this setup, but at least systemd will not abort. So it can be used
-> >> to check if the kernel boots and to run some tests.
-> >
-> > So you don't recommend people use server type setups? Quality
-> > engineering that!
-> 
-> I don't follow. Are you saying that CONFIG_CGROUPS=y is incompatible 
-> with server setups?
+Hello.
 
-It is for mine, I don't need it, not building it gives a smaller kernel
-and thus less attack/bug surface. 
+On 01-03-2012 23:26, Alan Ott wrote:
+
+> From: Arnd Bergmann<arnd@arndb.de>
+
+> It is possible to build a tegra kernel without localtimer
+> support, so the tegra specific parts should only be built
+> when that is indeed enabled.
+
+> Signed-off-by: Arnd Bergmann<arnd@arndb.de>
+> ---
+>   arch/arm/mach-tegra/Makefile |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+
+> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+> index e120ff5..a956df8 100644
+> --- a/arch/arm/mach-tegra/Makefile
+> +++ b/arch/arm/mach-tegra/Makefile
+> @@ -13,7 +13,8 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
+>   obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= pinmux-tegra20-tables.o
+>   obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= pinmux-tegra30-tables.o
+>   obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
+> -obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
+> +obj-$(CONFIG_SMP)                       += platsmp.o headsmp.o
+
+   Could use the chance to indent here with tabs instead of spaces, like below.
+
+> +obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
+
+WBR, Sergei
