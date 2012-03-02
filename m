@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab2CBDLC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 22:11:02 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60563 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623Ab2CBDK7 (ORCPT
+	id S1756896Ab2CBDNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 22:13:42 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48171 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab2CBDNl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 22:10:59 -0500
-Date: Fri, 2 Mar 2012 14:10:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@chromium.org>
-Cc: akpm@linux-foundation.org, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
- load_pointer
-Message-Id: <20120302141038.aaafc42b59ac7cf95d3553ed@canb.auug.org.au>
-In-Reply-To: <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__2_Mar_2012_14_10_38_+1100_iimP6pwrK=tATLVh"
+	Thu, 1 Mar 2012 22:13:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of festevam@gmail.com designates 10.14.131.13 as permitted sender) smtp.mail=festevam@gmail.com; dkim=pass header.i=festevam@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CAP=VYLpd5EFmD+8Yo_jm-9N7O5zkLTsTwGjgmxG4u_G6t=4fag@mail.gmail.com>
+References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
+	<1330650922-24143-1-git-send-email-festevam@gmail.com>
+	<CAP=VYLpd5EFmD+8Yo_jm-9N7O5zkLTsTwGjgmxG4u_G6t=4fag@mail.gmail.com>
+Date: Fri, 2 Mar 2012 00:13:40 -0300
+Message-ID: <CAOMZO5DYNdp=1h9WJ7QRBJSAe-pJEerVZmA0tro+7brhZi6PxQ@mail.gmail.com>
+Subject: Re: [PATCH v2] compiler.h: Include <linux/bug.h> to avoid build
+ breakage with ARRAY_SIZE()
+From: Fabio Estevam <festevam@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux@arm.linux.org.uk, sam@ravnborg.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__2_Mar_2012_14_10_38_+1100_iimP6pwrK=tATLVh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 1, 2012 at 11:49 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
 
-Hi Kees,
-
-On Thu, 1 Mar 2012 16:57:49 -0800 Kees Cook <keescook@chromium.org> wrote:
+> Thanks, but no.
 >
-> Unfortunately, yes, it does -- there were both ptrace changes and prctl c=
-hanges.
->
-> And at least the ptrace changes are, IIRC, in -mm, which has no tree.
-> :P Given that, what's the best thing for me to do for this to be easy
-> for you to pull?
+> You missed the whole point of my previous comments -- that being
+> that we don't want to just jam headers into always-used headers.
 
-Does this set of patches *depend* on functionality provided by those, or
-just produce conflicts against the other changes?  If it is just
-conflicts, then base your tree on Linus and I and (he when it comes to
-it) can fix the conflicts as needed (with some hints if you think it is a
-good idea i.e. is the conflicts are particularly complex).
+Yes, it is not clear for me how to fix this build error. I got
+different feedbacks from you, Russell and Sam.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> The compiler.h is going to be an "always used" header.  So if we
+> can avoid stuffing it full of extra crap, we need to really try.
 
---Signature=_Fri__2_Mar_2012_14_10_38_+1100_iimP6pwrK=tATLVh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPUDouAAoJEECxmPOUX5FE+FgP/2ciSTssakN+2+OPgebOgSZE
-kheNauQ21xKq5ADFPJ7rOhG5IBwrQAxrkBjfa79jwQq4pwIQTbi86leCazu6p/8R
-jZxC+fH7qDbMyhfcP3TnA4y/DuFni/7IhbStaA6naj8qLHgHzn1O5/aSgBngFPV5
-gfK9G58ZalygySgw21amEW2WUk4+b8GcnUOnI3suqSTBwqgw7Etke8QXXrca+WOn
-al/40C5H1HH/gMmfA65ClmgKdZO5gruz+jtraaopFc43dVxgxUlrk497O8bkDyxw
-aO5/WpgmJl3lLxoBtat6Is91AvJga1FaLUH/b9dJGXeipVdbU+9g+CfG4PBC9KVW
-ltydGrJiuuaKO+pnMhcpe2WM3UEmX/vX6s+wn2XfUjIuwUEmVg7upo78suCKfLG/
-YToUv+uZlsgDrWK7eDPy2OvoidroRRs5j5U7lut7DsA0nJlo/EZfpaAs+KrmGZjJ
-u6vUm5Su4BisU9hihrT97ytlQfpyuWezX019M1btSHRhJiEsdwtuB1zPedNMw1/6
-GnSsEkvxDPMfASIj4X23KVeioext4ZsV9WCI7nxmj1f/9FdMnpYSFJv+wEB5bPs0
-0dsWzVMWAXTSKsAQcfvlzSm/LNFNIoE4Ne37/Spu1uNHJlsMr2C+fhpz5uXHNmhP
-uGdv7WPzJgOV2rnjYaEa
-=/L5q
------END PGP SIGNATURE-----
-
---Signature=_Fri__2_Mar_2012_14_10_38_+1100_iimP6pwrK=tATLVh--
+So let me ask you: how do you want me to fix the build error I am seeing?
