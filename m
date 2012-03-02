@@ -1,66 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965369Ab2CBLlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 06:41:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42898 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964797Ab2CBLln (ORCPT
+	id S965385Ab2CBLvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 06:51:39 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:47239
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965054Ab2CBLvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 06:41:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of sshtylyov@mvista.com designates 10.204.136.219 as permitted sender) smtp.mail=sshtylyov@mvista.com
-Message-ID: <4F50B1A7.60207@ru.mvista.com>
-Date: Fri, 02 Mar 2012 15:40:23 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 2 Mar 2012 06:51:37 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M09A9U-02-6BI-02
+X-M-MSG: 
+Date: Fri, 2 Mar 2012 12:51:30 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: <mingo@redhat.com>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <sp@numascale.com>, <bp@amd64.org>, <tglx@linutronix.de>,
+        <borislav.petkov@amd.com>, <daniel@numascale-asia.com>,
+        <linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/platform: Remove incorrect error message in
+ x86_default_fixup_cpu_id()
+Message-ID: <20120302115130.GA17876@alberich.amd.com>
+References: <20120224153127.GD28921@alberich.amd.com>
+ <tip-20b25f03fbd17b4e32b786024a5f9c6306795411@git.kernel.org>
+ <20120302110440.GA24019@elte.hu>
 MIME-Version: 1.0
-To: Alan Ott <alan@signal11.us>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 4/8] ARM: tegra: build localtimer support only when needed
-References: <1330630010-11241-1-git-send-email-alan@signal11.us> <1330630010-11241-5-git-send-email-alan@signal11.us>
-In-Reply-To: <1330630010-11241-5-git-send-email-alan@signal11.us>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120302110440.GA24019@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Mar 02, 2012 at 12:04:40PM +0100, Ingo Molnar wrote:
+> 
+> * tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com> wrote:
+> 
+> > +++ b/arch/x86/kernel/cpu/common.c
+> > diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> > index 947a06c..67cf78a 100644
+> > --- a/arch/x86/kernel/x86_init.c
+> > +++ b/arch/x86/kernel/x86_init.c
+> > @@ -90,6 +90,7 @@ struct x86_init_ops x86_init __initdata = {
+> >  	},
+> >  };
+> >  
+> > +void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int n) { }
+> >  struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
+> 
+> Hm, I missed this first time around:
+> 
+>  - why is this function global? It's not used by anything else.
 
-On 01-03-2012 23:26, Alan Ott wrote:
+No reason. Should be static.
 
-> From: Arnd Bergmann<arnd@arndb.de>
+>  - why is it squeezed before a structure without any vertical 
+>    separation?
 
-> It is possible to build a tegra kernel without localtimer
-> support, so the tegra specific parts should only be built
-> when that is indeed enabled.
+Should be corrected too.
 
-> Signed-off-by: Arnd Bergmann<arnd@arndb.de>
-> ---
->   arch/arm/mach-tegra/Makefile |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
+>  - why does it have the body as { }, as if it were an inline 
+>    function?
 
-> diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-> index e120ff5..a956df8 100644
-> --- a/arch/arm/mach-tegra/Makefile
-> +++ b/arch/arm/mach-tegra/Makefile
-> @@ -13,7 +13,8 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
->   obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= pinmux-tegra20-tables.o
->   obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= pinmux-tegra30-tables.o
->   obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
-> -obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
-> +obj-$(CONFIG_SMP)                       += platsmp.o headsmp.o
+To make it fit into one line, similar to other default init functions,
+e.g.  default_nmi_init().
 
-   Could use the chance to indent here with tabs instead of spaces, like below.
+> Really, this should either be a short static function, with a 
+> proper body, or we should accept a NULL pointer there and check 
+> for it before calling it - there's a single usage site right 
+> now.
 
-> +obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
+> The latter looks like the cleanest solution to me.
 
-WBR, Sergei
+Yes, the NULL pointer check is probably the better alternative.
+How about below patch version?
+
+
+Regards,
+Andreas
+--
+x86: Remove wrong error message in x86_default_fixup_cpu_id
+
+It's only called from amd.c:srat_detect_node(). The introduced
+condition for calling the fixup code is true for all AMD multi-node
+processors, e.g. Magny-Cours and Interlagos. There we have 2 NUMA
+nodes on one socket. Thus there are cores having different
+numa-node-id but with equal phys_proc_id.
+
+There is no point to print error messages in such a situation.
+
+The confusing/misleading error message was introduced with commit
+64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add x86_init platform
+override to fix up NUMA core numbering).
+
+Remove the default fixup function (especially the error message) and
+replace it by a NULL pointer check, move the Numascale-specific
+condition for calling the fixup into the fixup-function itself and
+slightly adapt the comment.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/include/asm/x86_init.h      |    1 -
+ arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
+ arch/x86/kernel/cpu/amd.c            |    7 ++++---
+ arch/x86/kernel/cpu/common.c         |    9 ---------
+ arch/x86/kernel/x86_init.c           |    1 -
+ 5 files changed, 9 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 517d476..a609c39 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -189,6 +189,5 @@ extern struct x86_msi_ops x86_msi;
+ 
+ extern void x86_init_noop(void);
+ extern void x86_init_uint_noop(unsigned int unused);
+-extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node);
+ 
+ #endif
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+index 09d3d8c..ade0182 100644
+--- a/arch/x86/kernel/apic/apic_numachip.c
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -201,8 +201,11 @@ static void __init map_csrs(void)
+ 
+ static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
+-	c->phys_proc_id = node;
+-	per_cpu(cpu_llc_id, smp_processor_id()) = node;
++
++	if (c->phys_proc_id != node) {
++		c->phys_proc_id = node;
++		per_cpu(cpu_llc_id, smp_processor_id()) = node;
++	}
+ }
+ 
+ static int __init numachip_system_init(void)
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 0a44b90..c8fd678 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -353,10 +353,11 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
+ 		node = per_cpu(cpu_llc_id, cpu);
+ 
+ 	/*
+-	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
+-	 * so invoke platform-specific handler
++	 * On multi-fabric platform (e.g. Numascale NumaChip) a
++	 * platform-specific handler needs to be called to fixup some
++	 * IDs of the CPU.
+ 	 */
+-	if (c->phys_proc_id != node)
++	if (x86_cpuinit.fixup_cpu_id)
+ 		x86_cpuinit.fixup_cpu_id(c, node);
+ 
+ 	if (!node_online(node)) {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ade9c79..abd0af5 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1162,15 +1162,6 @@ static void dbg_restore_debug_regs(void)
+ #endif /* ! CONFIG_KGDB */
+ 
+ /*
+- * Prints an error where the NUMA and configured core-number mismatch and the
+- * platform didn't override this to fix it up
+- */
+-void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+-{
+-	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+-}
+-
+-/*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+  * and IDT. We reload them nevertheless, this function acts as a
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 947a06c..83b05ad 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -92,7 +92,6 @@ struct x86_init_ops x86_init __initdata = {
+ 
+ struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
+ 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
+-	.fixup_cpu_id			= x86_default_fixup_cpu_id,
+ };
+ 
+ static void default_nmi_init(void) { };
+-- 
+1.7.8.4
+
+
+
