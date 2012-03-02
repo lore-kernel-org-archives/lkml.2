@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab2CBPCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:02:43 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab2CBPCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:02:41 -0500
-Message-ID: <4F50E10B.6040806@nod.at>
-Date: Fri, 02 Mar 2012 16:02:35 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1758359Ab2CBPIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:08:15 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42260 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725Ab2CBPIL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 10:08:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of aaron.lwe@gmail.com designates 10.52.24.40 as permitted sender) smtp.mail=aaron.lwe@gmail.com; dkim=pass header.i=aaron.lwe@gmail.com
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ian.Campbell@citrix.com,
-        florian@mickler.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: Add support for moderated lists
-References: <1330544962-995-1-git-send-email-richard@nod.at>  <1330545526.22465.5.camel@joe2Laptop> <4F4E8555.5040002@nod.at>  <20120229160254.eda62e01.akpm@linux-foundation.org> <1330564646.23314.23.camel@joe2Laptop>
-In-Reply-To: <1330564646.23314.23.camel@joe2Laptop>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF618CCC855228CD2C1F176FB"
+In-Reply-To: <1330671765.3412.7.camel@minggr>
+References: <Pine.LNX.4.44L0.1203011059230.9392-100000@netrider.rowland.org>
+	<1330671765.3412.7.camel@minggr>
+Date: Fri, 2 Mar 2012 23:08:10 +0800
+X-Google-Sender-Auth: n0STHewCXxDRKngfEyXNW8cm4oI
+Message-ID: <CAOzJMDRTbq5o+jCyTtaAW_RPysfY3LhQ9gFC-tsvM8bsnh=rxQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 8/8] [SCSI] sr: check and enable Zero-power ODD support
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF618CCC855228CD2C1F176FB
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Am 01.03.2012 02:17, schrieb Joe Perches:
-> On Wed, 2012-02-29 at 16:02 -0800, Andrew Morton wrote:
->> On Wed, 29 Feb 2012 21:06:45 +0100
->> Richard Weinberger <richard@nod.at> wrote:
+On Fri, Mar 2, 2012 at 3:02 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Thu, 2012-03-01 at 11:02 -0500, Alan Stern wrote:
+>> On Thu, 1 Mar 2012, Lin Ming wrote:
 >>
->>> Am 29.02.2012 20:58, schrieb Joe Perches:
->>>> <shrug>  From my perspective, it's correct and simple.
->>>>
->>>> Moderated lists just means your email may get delayed
->>>> and you may get a "delayed due to moderation" email.
->>>
->>> Most moderated lists are "moderated" by nobody and the patch
->>> goes to /dev/null.
+>> > ZPODD(Zero Power Optical Disk Drive) is a new feature in
+>> > SATA 3.1 specification. It provides a way to power off unused ODD.
+>> >
+>> > ZPODD support is checked in in sr_probe().
+>> > can_power_off flag is set during suspend if ZPODD is supported.
+>> >
+>> > ATA port's runtime suspend callback will actually power off the ODD
+>> > and its runtime resume callback will actually power on the ODD.
+>> >
+>> > When ODD is powered off(D3Cold state), inserting disk will trigger a
+>> > wakeup event(GPE). GPE AML handler notifies the associated device. Then
+>> > ODD is resumed in the notify handler.
 >>
->> That's a big problem - we don't want people to send their fixes and bu=
-g
->> reports into black holes.
+>> I have one stylistic comment on this patch...
 >>
->> So yes, I think that teaching get_maintainer to emit black hole
->> warnings is a good idea.
+>> > diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+>> > index 37c8f6b..39b3d8c 100644
+>> > --- a/drivers/scsi/sr.h
+>> > +++ b/drivers/scsi/sr.h
+>> > @@ -42,6 +42,9 @@ typedef struct scsi_cd {
+>> >     unsigned readcd_cdda:1; /* reading audio data using READ_CD */
+>> >     unsigned media_present:1;       /* media is present */
+>> >
+>> > +   unsigned zpodd:1;       /* is ZPODD supported */
+>> > +   unsigned zpodd_event:1;
+>> > +
 >>
->> Problem is, I don't think the string "moderated" explains the situatio=
-n
->> very well for the uninitiated :(
->=20
-> It's also false.  Most moderated lists in MAINTAINERS
-> (and I've probably send patches to most of them) are
-> in fact moderated.
+>> You should not expect your readers to understand what "ZPODD" means.
+>> drivers/scsi/sr.h is used by lots of different people, many of whom
+>> will have no idea what it refers to, especially since it is part of
+>> the SATA spec and not the SCSI spec.  You should provide a brief
+>> explanation.
+>
+> I'll add some explanation.
+>
+> But I'm thinking maybe it's better to move this flag to ata layer, for
 
-What about linux@lists.openrisc.net?
-None of my patches shows up there:
-http://lists.openrisc.net/pipermail/openrisc/
+Agree.
 
-> My patches generally show up in their list archives.
->=20
+> example, adding a flag to libata.h
+>
+> ATA_DFLAG_ZPODD
+>
 
-You must be a lucky guy. ;-)
+How about ATA_DFLAG_DA(device attention)?
+It follows the name used in the sata spec and this feature might have
+other uses in the future in addition to zero power odd(just my wild guess).
 
-Thanks,
-//richard
+> sr runtime pm is only enabled when ZPODD(or more general, power off) is
+> supported.
+> So the problem is how will sr driver know this flag?
+>
 
+What about adding a new field to scsi_device to reflect this capability of
+the underlying sata device? We can then set this field in ata_scsi_scan_host.
 
---------------enigF618CCC855228CD2C1F176FB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPUOEMAAoJEN9758yqZn9e0PQIANVJJfmWlmoNq1sG3i5+Xj8C
-T0YrOKAbJ4vW4tC0TvD/c/iA8N01ttYRkP0qOLXSp2DsxKn7n8oRceNSkqjQTsWU
-a6X86CwWiwzXhek1wSqfx+7g6BvpcSFj8bcsv3KK9GgbDd8VFFObEAwwotBaBrrW
-w0rNRQrAspvB6yx2alVSgoejbmgm6bhIJAvHpYJbKFJQsVVReILEnRnw3da/emYX
-QP03Zdse87CChIxWuKI6QQBcHl6qs7Zxk8uN6upSPeLboinfToDCnf3oqJw27VJ6
-eq3geRDPD3rQ6+NEbmOneWr1S6nMyj7eoj/kKVmZSsKcefT751Xh53iNe7/5In8=
-=sO13
------END PGP SIGNATURE-----
-
---------------enigF618CCC855228CD2C1F176FB--
+-Aaron
