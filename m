@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030407Ab2CBQw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 11:52:56 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	id S1030427Ab2CBQxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 11:53:23 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:36582 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab2CBQwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 11:52:54 -0500
-Message-ID: <4F50FAE2.4080903@nod.at>
-Date: Fri, 02 Mar 2012 17:52:50 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1030410Ab2CBQxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 11:53:20 -0500
+Message-ID: <1330707053.23014.279.camel@groeck-laptop>
+Subject: RE: [lm-sensors] [PATCH 02/03] HWMON: HWMON driver for DA9052/53
+ PMIC v3
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+CC: Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "dchen@diasemi.com" <dchen@diasemi.com>
+Date: Fri, 2 Mar 2012 08:50:53 -0800
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59046AE9@BGSMSX101.gar.corp.intel.com>
+References: <1330698545.21817.31.camel@dhruva>
+	 <4D68720C2E767A4AA6A8796D42C8EB59046AE9@BGSMSX101.gar.corp.intel.com>
+Organization: Ericsson
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org
-Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-References: <1328400892-22409-1-git-send-email-richard@nod.at> <1328400892-22409-3-git-send-email-richard@nod.at> <20120301112732.GA6806@1984> <4F4FEC83.6090504@nod.at> <20120302164945.GA13723@1984>
-In-Reply-To: <20120302164945.GA13723@1984>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCBCEF1B047BB2CE5FDF55683"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCBCEF1B047BB2CE5FDF55683
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Durga,
 
-Am 02.03.2012 17:49, schrieb Pablo Neira Ayuso:
-> On Thu, Mar 01, 2012 at 10:39:15PM +0100, Richard Weinberger wrote:
->> Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
->>> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
->>> corrupts the log line. Note the extra PROTO=3D, I don't have any UDPL=
-ITE
->>> traffic here.
->>>
->>> Looks like a missing break in one switch.
->>
->> I got confused by my own logic. :-\
->> Does the attached patch fix the issue?
->> It's based on "Netfilter: xt_LOG: Add timestamp support"
->=20
-> This patch lacks of description. If you don't make it myself, I have
-> to do it for you :-(
->=20
-> Please, send me patches following the standard format next time.
+On Fri, 2012-03-02 at 11:44 -0500, R, Durgadoss wrote:
+> Hi,
+> 
+> > -----Original Message-----
+> > From: lm-sensors-bounces@lm-sensors.org [mailto:lm-sensors-bounces@lm-
+> > sensors.org] On Behalf Of Ashish Jangam
+> > Sent: Friday, March 02, 2012 7:59 PM
+> > To: Guenter Roeck
+> > Cc: randy.dunlap@oracle.com; linaro-dev@lists.linaro.org;
+> > sameo@linux.intel.com; linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org;
+> > dchen@diasemi.com
+> > Subject: [lm-sensors] [PATCH 02/03] HWMON: HWMON driver for DA9052/53 PMIC v3
+> >
+> > The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
+> > resolution and 10 channels.
+> >
+> > This patch monitors the DA9052 PMIC's ADC channels mostly for battery
+> > parameters like battery temperature, junction temperature, battery
+> > current etc.
+> >
+> > This patch is functionally tested on Samsung SMDKV6410
+> >
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
-It was a "does this patch solve the problem"-Patch.
-Does it fix the problem?
+[ ... ]
 
-If so, I'll send an official one...
+> > +static int __init da9052_hwmon_probe(struct platform_device *pdev)
+> > +{
+> > +     struct da9052_hwmon *hwmon;
+> > +     int ret;
+> > +
+> > +     hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9052_hwmon),
+> > +                          GFP_KERNEL);
+> > +     if (!hwmon)
+> > +             return -ENOMEM;
+> > +
+> > +     mutex_init(&hwmon->hwmon_lock);
+> > +     hwmon->da9052 = dev_get_drvdata(pdev->dev.parent);
+> > +
+> > +     platform_set_drvdata(pdev, hwmon);
+> > +
+> > +     ret = sysfs_create_group(&pdev->dev.kobj, &da9052_attr_group);
+> > +     if (ret)
+> > +             goto err_mem;
+> > +
+> > +     hwmon->class_device = hwmon_device_register(&pdev->dev);
+> > +     if (IS_ERR(hwmon->class_device)) {
+> > +             ret = PTR_ERR(hwmon->class_device);
+> > +             goto err_sysfs;
+> > +     }
+> > +
+> > +     return 0;
+> > +
+> > +err_sysfs:
+> > +     sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
+> > +err_mem:
+> 
+> I think you should do a kfree(hwmon) here.
+> 
 
-Thanks,
-//richard
+Not needed because devm_kzalloc() is used above.
+
+> > +     return ret;
+> > +}
+> > +
+> > +static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
+> > +{
+> > +     struct da9052_hwmon *hwmon = platform_get_drvdata(pdev);
+> > +
+> > +     hwmon_device_unregister(hwmon->class_device);
+> > +     sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
+> 
+>  Kfree(hwmon);
+> 
+Same here.
+
+Guenter
 
 
---------------enigCBCEF1B047BB2CE5FDF55683
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPUPriAAoJEN9758yqZn9e80UIANX8yMFMPz4VkGtKNb+hsuyP
-y6QCUqSz5et3h4uPgQBQLgYNQG3VZSJyMFaINnFtirVJw8Zj05V5MnODvsQNjMrB
-TSgL0MnGPsygf+sP4asp5DQ4jxxKiW04l+24dWVIY20C9eLGlNYI0Ex3Dxw3bd2O
-rsXoHdgpeYCztue6sBRzKhqrniJzqqYJnydnMkBjjb5pgBGUztjnm24ZQgz5/ypd
-hlnehNhSDc9SvSDXd6SdL+BE0h1GLL82cH/dgWJyNr7ybWSDBuNWYI6+jHJlTZhS
-4/rCo1y6YtrOCEBrjF3yM0V6OIa6NdmXnhH88cY7PRs2yEsklujPKvOHRrRvaD0=
-=Rpk4
------END PGP SIGNATURE-----
-
---------------enigCBCEF1B047BB2CE5FDF55683--
