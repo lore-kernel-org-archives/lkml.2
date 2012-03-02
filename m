@@ -1,258 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab2CBDsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 22:48:13 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:64127 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754748Ab2CBDsM (ORCPT
+	id S1756978Ab2CBD6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 22:58:06 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52059 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321Ab2CBD6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 22:48:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwBAKU/KE8Y9geI/2dsb2JhbAAMgVOCPbt0hkyFEoEHBIZQhT6TFg
-X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
-   d="scan'208";a="165481913"
-Message-ID: <4F5042F9.1050101@teksavvy.com>
-Date: Thu, 01 Mar 2012 22:48:09 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.3-rc5
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com> <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com> <4F4F8BEE.3040806@teksavvy.com> <CA+55aFyij_ORw+BE-Sbkt9Y9qcUQSmW_4e-r7p3t0DNA4Sg9pA@mail.gmail.com> <4F5011AC.2020909@teksavvy.com> <4F501282.8050408@teksavvy.com> <CA+55aFw8GLGtQ+rVi6eqbgyd+qKc3CszMkGv8L+2MC28K61O5Q@mail.gmail.com>
-In-Reply-To: <CA+55aFw8GLGtQ+rVi6eqbgyd+qKc3CszMkGv8L+2MC28K61O5Q@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------070309020502030904030404"
+	Thu, 1 Mar 2012 22:58:03 -0500
+Date: Fri, 2 Mar 2012 14:57:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Will Drewry <wad@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
+ load_pointer
+Message-Id: <20120302145750.41b96e8be011a9a73c4fedf7@canb.auug.org.au>
+In-Reply-To: <CABmXcB83uFMUFUuRKCtkMjU2KLv7N4JB08qzZLVDdT=CStmQjw@mail.gmail.com>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	<20120301233712.GS3990@outflux.net>
+	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+	<20120302141038.aaafc42b59ac7cf95d3553ed@canb.auug.org.au>
+	<CABmXcB83uFMUFUuRKCtkMjU2KLv7N4JB08qzZLVDdT=CStmQjw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070309020502030904030404
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+--Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 12-03-01 07:31 PM, Linus Torvalds wrote:
-> On Thu, Mar 1, 2012 at 4:21 PM, Mark Lord <kernel@teksavvy.com> wrote:
->>
->> Here's the promised strace from 64/32 mode:
+On Thu, 1 Mar 2012 21:41:51 -0600 Will Drewry <wad@chromium.org> wrote:
 >
-> This is odd.
->
->> ioctl(0x3, 0xc0046986, 0xffc06dcc)      = -1 (errno 22)
->
-> When I do a "make drivers/char/i8k.s" (with my patch), I can see that
-> constant in the resulting code. It's right there. It doesn't return
-> EINVAL.
->
-> Can you send me the patch you are using with the compat_ioctl thing added?
+> No explicit dependency.   It's just a conflict in how ptrace options
+> are set, defined, and masked (and STOP being renumbered).  Other than
+> the ptrace changes, the whole series patches cleanly onto both trees.
+> The resolved version is less code and easier to read, so I don't
+> suspect it'll be a challenge at all.
 
-Yeah.. here's the version I was testing with just now,
-which generated the errno above:
+OK, so we need a tree based on Linus' (like v3.3-rc5 or something - and
+preferably tested ;-)) and an explicit request to me to include that tree.
 
---- old/include/linux/i8k.h
-+++ linux/include/linux/i8k.h
-@@ -20,14 +20,24 @@
- #define I8K_PROC		"/proc/i8k"
- #define I8K_PROC_FMT		"1.0"
+I will sort out any conflicts with Andrews's tree and post the fixups I
+make so others can correct me if necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-+/*
-+ * For hysterical raisins we expose the wrong size to user space
-+ * in the ioctl numbering. The actual real data size is "int".
-+ */
-+#ifdef __KERNEL__
-+#define borked_i8k_arg int
-+#else
-+#define borked_i8k_arg size_t
-+#endif
-+
- #define I8K_BIOS_VERSION	_IOR ('i', 0x80, int)	/* broken: meant 4 bytes */
- #define I8K_MACHINE_ID		_IOR ('i', 0x81, int)	/* broken: meant 16 bytes */
--#define I8K_POWER_STATUS	_IOR ('i', 0x82, size_t)
--#define I8K_FN_STATUS		_IOR ('i', 0x83, size_t)
--#define I8K_GET_TEMP		_IOR ('i', 0x84, size_t)
--#define I8K_GET_SPEED		_IOWR('i', 0x85, size_t)
--#define I8K_GET_FAN		_IOWR('i', 0x86, size_t)
--#define I8K_SET_FAN		_IOWR('i', 0x87, size_t)
-+#define I8K_POWER_STATUS	_IOR ('i', 0x82, borked_i8k_arg)
-+#define I8K_FN_STATUS		_IOR ('i', 0x83, borked_i8k_arg)
-+#define I8K_GET_TEMP		_IOR ('i', 0x84, borked_i8k_arg)
-+#define I8K_GET_SPEED		_IOWR('i', 0x85, borked_i8k_arg)
-+#define I8K_GET_FAN		_IOWR('i', 0x86, borked_i8k_arg)
-+#define I8K_SET_FAN		_IOWR('i', 0x87, borked_i8k_arg)
+--Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9
+Content-Type: application/pgp-signature
 
- #define I8K_FAN_LEFT		1
- #define I8K_FAN_RIGHT		0
---- old/drivers/char/i8k.c	2012-03-01 09:44:03.400800231 -0500
-+++ linux/drivers/char/i8k.c	2012-03-01 10:17:26.909946304 -0500
-@@ -92,6 +92,23 @@
- static int i8k_open_fs(struct inode *inode, struct file *file);
- static long i8k_ioctl(struct file *, unsigned int, unsigned long);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-+#ifdef CONFIG_COMPAT
-+static long
-+i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg);
-+
-+static long
-+i8k_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
-+{
-+	long ret;
-+
-+	mutex_lock(&i8k_mutex);
-+	ret = i8k_ioctl_unlocked(fp, cmd, arg);
-+	mutex_unlock(&i8k_mutex);
-+
-+	return ret;
-+}
-+#endif
-+
- static const struct file_operations i8k_fops = {
- 	.owner		= THIS_MODULE,
- 	.open		= i8k_open_fs,
-@@ -99,6 +116,9 @@
- 	.llseek		= seq_lseek,
- 	.release	= single_release,
- 	.unlocked_ioctl	= i8k_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl   = i8k_compat_ioctl,
-+#endif
- };
+iQIcBAEBCAAGBQJPUEU+AAoJEECxmPOUX5FEpwAP/REQHzmhoCTZS02bUk+qc0AP
+V99l9dTuhNEgQsDW23aMXy26Q6yUkoNJcsaOzcp8zxTcxLySKy8I9KYCld52fjcm
+JFdPpYR/cHUsSb0tbfDwnFEXDGHUh1OqGWp1GmS/6WoZWLd0mWioVm6FBgiDVr0k
+aj9SZmjeHzyEZco/XLaty3eA+5jRHfFLC0n9d1g2C57P8LrPzns7MfHQdXclgulm
+P4/E1AEewbx7nYwDdtzcupSWOSDPanppgqT7942uty1qSmMI/8QuqDiZFiDSGFU3
+EYzbso5Y5N2FI01ic/z0HL25jiVoO19GIS1IYRr5M0DslNxtdxTpnkXVVdcPdTXm
+IymIIN6fjQ1X7uAWRoS4ES9oHDbgUaHwkiM1KoJPCtF4k/tp7gH1W34GpCIolapt
+4hr9NiPs5MED30n/q2M6hwWFnnX6DrdgfAzgFLyHnwkoeDvJ/47Ygpf3kKE+99hk
+9JRORvSDI4pMKAig8CZmS8WOXgaRkOYrTTuJ6+fJWjBS/HMFWgY6ZwYJxX+VzRjW
+939edFtsuy+lwk1V5hUrO4PSv2KrdFBgr5fRbmEib80FMOouCRzp4oc9SOB9Cz28
+RTevmY88HpiqSFALRBaf5V9BkLbPvh1F6nfL26ASjJUjzRxWcUTBnNWBC2eqOYS4
+1avPUU5cukzYPgzs3KWK
+=g1Ug
+-----END PGP SIGNATURE-----
 
- struct smm_regs {
-@@ -318,17 +338,21 @@
- static int
- i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
- {
--	int val = 0;
--	int speed;
-+	int i, speed, val = 0;
- 	unsigned char buff[16];
- 	int __user *argp = (int __user *)arg;
-
- 	if (!argp)
- 		return -EINVAL;
-
-+	/* We had some bad 64-bit confusion */
-+	if (((cmd >> _IOC_SIZESHIFT) & _IOC_SIZEMASK) == 8)
-+		cmd -= 4 << _IOC_SIZESHIFT;
-+
- 	switch (cmd) {
- 	case I8K_BIOS_VERSION:
--		val = i8k_get_bios_version();
-+		for (val = 0, i = 0; i < strlen(bios_version); i++)
-+			val = (val << 8) | bios_version[i];
- 		break;
-
- 	case I8K_MACHINE_ID:
-
---------------070309020502030904030404
-Content-Type: text/x-patch;
- name="07_i8k_ioctl_fixes.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="07_i8k_ioctl_fixes.patch"
-
-Fix all kinds of badness in the i8k driver's ioctl handling.
-This enables it to continue to work with existing 32-bit binaries
-under both 32-bit and 64-bit kernels.
-
-It also fixes the broken I8K_BIOS_VERSION call for all situations.
-
-Signed-off-by: Mark Lord <mlord@pobox.com>
-
---- old/include/linux/i8k.h
-+++ linux/include/linux/i8k.h
-@@ -20,14 +20,24 @@
- #define I8K_PROC		"/proc/i8k"
- #define I8K_PROC_FMT		"1.0"
- 
-+/*
-+ * For hysterical raisins we expose the wrong size to user space
-+ * in the ioctl numbering. The actual real data size is "int".
-+ */
-+#ifdef __KERNEL__
-+#define borked_i8k_arg int
-+#else
-+#define borked_i8k_arg size_t
-+#endif
-+
- #define I8K_BIOS_VERSION	_IOR ('i', 0x80, int)	/* broken: meant 4 bytes */
- #define I8K_MACHINE_ID		_IOR ('i', 0x81, int)	/* broken: meant 16 bytes */
--#define I8K_POWER_STATUS	_IOR ('i', 0x82, size_t)
--#define I8K_FN_STATUS		_IOR ('i', 0x83, size_t)
--#define I8K_GET_TEMP		_IOR ('i', 0x84, size_t)
--#define I8K_GET_SPEED		_IOWR('i', 0x85, size_t)
--#define I8K_GET_FAN		_IOWR('i', 0x86, size_t)
--#define I8K_SET_FAN		_IOWR('i', 0x87, size_t)
-+#define I8K_POWER_STATUS	_IOR ('i', 0x82, borked_i8k_arg)
-+#define I8K_FN_STATUS		_IOR ('i', 0x83, borked_i8k_arg)
-+#define I8K_GET_TEMP		_IOR ('i', 0x84, borked_i8k_arg)
-+#define I8K_GET_SPEED		_IOWR('i', 0x85, borked_i8k_arg)
-+#define I8K_GET_FAN		_IOWR('i', 0x86, borked_i8k_arg)
-+#define I8K_SET_FAN		_IOWR('i', 0x87, borked_i8k_arg)
- 
- #define I8K_FAN_LEFT		1
- #define I8K_FAN_RIGHT		0
---- old/drivers/char/i8k.c	2012-03-01 09:44:03.400800231 -0500
-+++ linux/drivers/char/i8k.c	2012-03-01 10:17:26.909946304 -0500
-@@ -92,6 +92,23 @@
- static int i8k_open_fs(struct inode *inode, struct file *file);
- static long i8k_ioctl(struct file *, unsigned int, unsigned long);
- 
-+#ifdef CONFIG_COMPAT
-+static long
-+i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg);
-+
-+static long
-+i8k_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
-+{
-+	long ret;
-+
-+	mutex_lock(&i8k_mutex);
-+	ret = i8k_ioctl_unlocked(fp, cmd, arg);
-+	mutex_unlock(&i8k_mutex);
-+
-+	return ret;
-+}
-+#endif
-+
- static const struct file_operations i8k_fops = {
- 	.owner		= THIS_MODULE,
- 	.open		= i8k_open_fs,
-@@ -99,6 +116,9 @@
- 	.llseek		= seq_lseek,
- 	.release	= single_release,
- 	.unlocked_ioctl	= i8k_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl   = i8k_compat_ioctl,
-+#endif
- };
- 
- struct smm_regs {
-@@ -318,17 +338,21 @@
- static int
- i8k_ioctl_unlocked(struct file *fp, unsigned int cmd, unsigned long arg)
- {
--	int val = 0;
--	int speed;
-+	int i, speed, val = 0;
- 	unsigned char buff[16];
- 	int __user *argp = (int __user *)arg;
- 
- 	if (!argp)
- 		return -EINVAL;
- 
-+	/* We had some bad 64-bit confusion */
-+	if (((cmd >> _IOC_SIZESHIFT) & _IOC_SIZEMASK) == 8)
-+		cmd -= 4 << _IOC_SIZESHIFT;
-+
- 	switch (cmd) {
- 	case I8K_BIOS_VERSION:
--		val = i8k_get_bios_version();
-+		for (val = 0, i = 0; i < strlen(bios_version); i++)
-+			val = (val << 8) | bios_version[i];
- 		break;
- 
- 	case I8K_MACHINE_ID:
-
---------------070309020502030904030404--
+--Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9--
