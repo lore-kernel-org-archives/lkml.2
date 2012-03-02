@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab2CBTxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:53:49 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:39903 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756594Ab2CBTxs (ORCPT
+	id S1030479Ab2CBT5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:57:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37020 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759246Ab2CBT5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:53:48 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: q24X1SkVM1lsAocR05cxWKLSQNZusr_DxmYlCcNKxHCrZn5
- ietD8P3NvIWyiM7j6AYk4XiJk.dXPk0_lc6boyLLNGJfBZqpDO.ljtlT.f.A
- qumlakJUnQFgBI2UJ_NjEA2rbqn7NTdvCwCEWiDy0sUCNNpxA02M99IIQ.lj
- _rdp_3nlGsjYsyhrqgA3z5roLeueEEST74wt3v_0YHSYY8hyciN6O7xdjaJZ
- IafyzS2l3uqYPKo2xelPsvi25R3iztCM7_lHS_2VABDPvqVV2G2N34D1eSj1
- C97iJ9lBceBqx.UxpojRTUhJlrzYRF9hXpT1VYj3.mAQkNB5lgsU9GLACQWU
- EruFMWqXvfE4u7lmEmXhNSDWzslYzE.akzcS3a8Ja17ErGPX2Ha1p1zzal4E
- hdXFLlZP1MiMtjz58zzGOJswFe5Qr58KQN0J1
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 2 Mar 2012 13:53:45 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Remove memory barrier damage from the page
- allocator
-In-Reply-To: <20120302174349.GB3481@suse.de>
-Message-ID: <alpine.DEB.2.00.1203021349020.18523@router.home>
-References: <20120302112358.GA3481@suse.de> <alpine.DEB.2.00.1203021018130.15125@router.home> <20120302174349.GB3481@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 2 Mar 2012 14:57:02 -0500
+Date: Fri, 2 Mar 2012 11:57:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-Id: <20120302115700.7d970497.akpm@linux-foundation.org>
+In-Reply-To: <20120302103951.GA13378@localhost>
+References: <20120228140022.614718843@intel.com>
+	<20120228144747.198713792@intel.com>
+	<20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+	<20120301123640.GA30369@localhost>
+	<20120301163837.GA13104@quack.suse.cz>
+	<20120302044858.GA14802@localhost>
+	<20120302095910.GB1744@quack.suse.cz>
+	<20120302103951.GA13378@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Mel Gorman wrote:
+On Fri, 2 Mar 2012 18:39:51 +0800
+Fengguang Wu <fengguang.wu@intel.com> wrote:
 
-> I considered using a seqlock but it isn't cheap. The read side is heavy
-> with the possibility that it starts spinning and incurs a read barrier
-> (looking at read_seqbegin()) here. The retry block incurs another read
-> barrier so basically it would not be no better than what is there currently
-> (which at a 4% performance hit, sucks)
+> > And I agree it's unlikely but given enough time and people, I
+> > believe someone finds a way to (inadvertedly) trigger this.
+> 
+> Right. The pageout works could add lots more iput() to the flusher
+> and turn some hidden statistical impossible bugs into real ones.
+> 
+> Fortunately the "flusher deadlocks itself" case is easy to detect and
+> prevent as illustrated in another email.
 
-Oh. You dont have a read barrier? So your approach is buggy? We could have
-read a state before someone else incremented the seq counter, then cached
-it, then we read the counter, did the processing and found that the
-sequid was not changed?
-
-> In the case of seqlocks, a reader will backoff if a writer is in progress
-> but the page allocator doesn't need that which is why I felt it was ok
-
-You can just not use the writer section if you think that is ok. Doubt it
-but lets at least start using a known serialization construct that would
-allow us to fix it up if we find that we need to update multiple variables
-protected by the seqlock.
-
-> Allocation failure is an unusual situation that can trigger application
-> exit or an OOM so it's ok to treat it as a slow path. A normal seqlock
-> would retry unconditionally and potentially have to handle the case
-> where it needs to free the page before retrying which is pointless.
-
-It will only retry as long as the writer hold the "lock". Like a spinlock
-the holdoff times depends on the size of the critical section and
-initially you could just avoid having write sections.
+It would be a heck of a lot safer and saner to avoid the iput().  We
+know how to do this, so why not do it?
 
