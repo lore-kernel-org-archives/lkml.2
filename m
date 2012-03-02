@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965389Ab2CBV0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:26:18 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50645 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758004Ab2CBV0R convert rfc822-to-8bit (ORCPT
+	id S1030643Ab2CBVb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:31:29 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36022 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755689Ab2CBVb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:26:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of robdclark@gmail.com designates 10.52.24.139 as permitted sender) smtp.mail=robdclark@gmail.com; dkim=pass header.i=robdclark@gmail.com
+	Fri, 2 Mar 2012 16:31:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 2 Mar 2012 13:31:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+ the host
+Message-ID: <20120302213116.GA23443@kroah.com>
+References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
+ <20120302211354.GB6008@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <1330616161-1937-2-git-send-email-daniel.vetter@ffwll.ch>
-References: <1330616161-1937-1-git-send-email-daniel.vetter@ffwll.ch>
-	<1330616161-1937-2-git-send-email-daniel.vetter@ffwll.ch>
-Date: Fri, 2 Mar 2012 15:26:16 -0600
-X-Google-Sender-Auth: 7ZZ36qxaXmljUnpyeAjPj2YETuE
-Message-ID: <CAF6AEGsfC-BM2DvFn457pMhE-b_Mr5O4RgaP5WVO78QwRBe-5g@mail.gmail.com>
-Subject: Re: [PATCH 1/3] dma-buf: don't hold the mutex around map/unmap calls
-From: Rob Clark <rob.clark@linaro.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 9:35 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> The mutex protects the attachment list and hence needs to be held
-> around the callbakc to the exporters (optional) attach/detach
-> functions.
->
-> Holding the mutex around the map/unmap calls doesn't protect any
-> dma_buf state. Exporters need to properly protect any of their own
-> state anyway (to protect against calls from their own interfaces).
-> So this only makes the locking messier (and lockdep easier to anger).
->
-> Therefore let's just drop this.
->
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+On Fri, Mar 02, 2012 at 09:22:38PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Friday, March 02, 2012 4:14 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
+> > hch@infradead.org; linux-scsi@vger.kernel.org; Haiyang Zhang
+> > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+> > the host
+> > 
+> > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
+> > > Windows hosts don't handle the ATA_16 command; don't pass it to the host.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > >  drivers/scsi/storvsc_drv.c |    2 ++
+> > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > Should this go to older kernel versions as well?
+> 
+> I think it should. Do you want me to resend this patch with the correct tag?
+> Also, given that storvsc has changed so much over the last several months,
+> this patch may or may not apply to earlier versions of this driver even though
+> this patch itself is quite trivial.
 
-Reviewed-by: Rob Clark <rob.clark@linaro.org>
+I'll tag it for the stable tree, then when it doesn't apply, you will
+get an email saying it didn't, so you can then send me the correct one
+:)
 
-> ---
->  drivers/base/dma-buf.c  |    4 ----
->  include/linux/dma-buf.h |    2 +-
->  2 files changed, 1 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index e38ad24..1b11192 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
-> @@ -258,10 +258,8 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
->        if (WARN_ON(!attach || !attach->dmabuf || !attach->dmabuf->ops))
->                return ERR_PTR(-EINVAL);
->
-> -       mutex_lock(&attach->dmabuf->lock);
->        if (attach->dmabuf->ops->map_dma_buf)
->                sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
-> -       mutex_unlock(&attach->dmabuf->lock);
->
->        return sg_table;
->  }
-> @@ -282,10 +280,8 @@ void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
->                            || !attach->dmabuf->ops))
->                return;
->
-> -       mutex_lock(&attach->dmabuf->lock);
->        if (attach->dmabuf->ops->unmap_dma_buf)
->                attach->dmabuf->ops->unmap_dma_buf(attach, sg_table);
-> -       mutex_unlock(&attach->dmabuf->lock);
->
->  }
->  EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);
-> diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
-> index f8ac076..f7ad2ca 100644
-> --- a/include/linux/dma-buf.h
-> +++ b/include/linux/dma-buf.h
-> @@ -86,7 +86,7 @@ struct dma_buf {
->        struct file *file;
->        struct list_head attachments;
->        const struct dma_buf_ops *ops;
-> -       /* mutex to serialize list manipulation and other ops */
-> +       /* mutex to serialize list manipulation and attach/detach */
->        struct mutex lock;
->        void *priv;
->  };
-> --
-> 1.7.7.5
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+thanks,
+
+greg k-h
