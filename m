@@ -1,77 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965017Ab2CBBWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:22:15 -0500
-Received: from mail.us.es ([193.147.175.20]:36722 "EHLO mail.us.es"
+	id S965031Ab2CBB2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:28:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56490 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758070Ab2CBBWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:22:13 -0500
-Date: Fri, 2 Mar 2012 02:22:08 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-Cc: bart.de.schuymer@pandora.be, kaber@trash.net, shemminger@vyatta.com,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/3] netfilter: potential null derefence.
-Message-ID: <20120302012208.GA10185@1984>
-References: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752091Ab2CBB2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:28:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="132033287"
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 Mar 2012 17:28:52 -0800
+In-Reply-To: <CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+	 <20120223075027.GB15306@elte.hu>
+	 <CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 02:47:14PM +0530, santosh nayak wrote:
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Thu, 2012-03-01 at 16:33 -0800, Venki Pallipadi wrote:
+> >
+> > fork_idle() should also make sure it does not schedule the child
+> > thread: thus we'd also be able to further simplify smpboot.c and
+> > get rid of all that extremely ugly 'struct create_idle'
+> > gymnastics in smpboot.c.
 > 
-> I am getting following error.
-> " net/bridge/netfilter/ebtables.c:269 ebt_do_table()
->   error: potential null derefence 'cs'"
+> But not this. I am not sure where fork_idle results in resched of the child.
+> As I saw it, fork_idle calls init_idle and that sets the affinity of
+> idle_task to target CPU. So, reschedule should not be a problem. What
+> am I missing here?
+
+I think Ingo is referring to the fact that we can't use kthread_create()
+here and hence we were relying on fork_idle().
+
+> Also, I tried this silly test patch (Cut and paste... Sorry) and it
+> seemed to work fine both with and without CPU hotplug.
 > 
->     i = cs[sp].n;  // If cs == Null then this will cause problem.
+
+I don't think we can do this today, as we need to make sure we have the
+correct current context. With dynamic cpu hotplug, current context can
+be any process and hence we were depending on the schedule_work()
+context.
+
+thanks,
+suresh
+
+> Thanks,
+> Venki
 > 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 > ---
->  net/bridge/netfilter/ebtables.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 66d250c..36b80ef 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -686,7 +686,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
+>                 .done   = COMPLETION_INITIALIZER_ONSTACK(c_idle.done),
+>         };
 > 
-> diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-> index f3fcbd9..9c0f177 100644
-> --- a/net/bridge/netfilter/ebtables.c
-> +++ b/net/bridge/netfilter/ebtables.c
-> @@ -209,8 +209,10 @@ unsigned int ebt_do_table (unsigned int hook, struct sk_buff *skb,
->  	   smp_processor_id());
->  	if (private->chainstack)
->  		cs = private->chainstack[smp_processor_id()];
-> -	else
-> +	else {
->  		cs = NULL;
-
-I just noticed we can remove this cs = NULL. No need to resend, I'll
-mangle it myself.
-
-> +		goto out;
-> +	}
->  	chaininfo = private->hook_entry[hook];
->  	nentries = private->hook_entry[hook]->nentries;
->  	point = (struct ebt_entry *)(private->hook_entry[hook]->data);
-> @@ -313,6 +315,7 @@ letscontinue:
->  		read_unlock_bh(&table->lock);
->  		return NF_ACCEPT;
->  	}
-> +out:
->  	read_unlock_bh(&table->lock);
->  	return NF_DROP;
+> -       INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
+> +       // INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
+> 
+>         alternatives_smp_switch(1);
+> 
+> @@ -703,12 +703,13 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
+>                 goto do_rest;
+>         }
+> 
+> -       schedule_work(&c_idle.work);
+> -       wait_for_completion(&c_idle.done);
+> +       // schedule_work(&c_idle.work);
+> +       // wait_for_completion(&c_idle.done);
+> +       c_idle.idle = fork_idle(cpu);
+> 
+>         if (IS_ERR(c_idle.idle)) {
+>                 printk("failed fork for CPU %d\n", cpu);
+> -               destroy_work_on_stack(&c_idle.work);
+> +               // destroy_work_on_stack(&c_idle.work);
+>                 return PTR_ERR(c_idle.idle);
+>         }
+> 
+> @@ -831,7 +832,7 @@ do_rest:
+>                 smpboot_restore_warm_reset_vector();
+>         }
+> 
+> -       destroy_work_on_stack(&c_idle.work);
+> +       // destroy_work_on_stack(&c_idle.work);
+>         return boot_error;
 >  }
-> -- 
-> 1.7.4.4
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netfilter" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> ---
+> 
+> >
+> > Thanks,
+> >
+> >        Ingo
+
+
