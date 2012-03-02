@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2CBWT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:19:58 -0500
-Received: from mail.lang.hm ([64.81.33.126]:60855 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751940Ab2CBWT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:19:57 -0500
-Date: Fri, 2 Mar 2012 14:19:45 -0800 (PST)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: David Miller <davem@davemloft.net>
-cc: luiz.dentz@gmail.com, eric.dumazet@gmail.com,
-        javier.martinez@collabora.co.uk, rodrigo.moya@collabora.co.uk,
-        javier@collabora.co.uk, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-In-Reply-To: <20120302.035509.1994457175982020283.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1203021405040.7143@asgard.lang.hm>
-References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com> <20120301.170848.432407217191581288.davem@davemloft.net> <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
- <20120302.035509.1994457175982020283.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1756993Ab2CBWXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:23:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38057 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754826Ab2CBWXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 17:23:06 -0500
+Date: Fri, 2 Mar 2012 14:23:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: yanmin_zhang@linux.intel.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Liu, ShuoX" <shuox.liu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Subject: [PATCH] cpuidle: Add a sysfs entry to disable specific
+ C state for debug purpose.
+Message-Id: <20120302142303.648285a7.akpm@linux-foundation.org>
+In-Reply-To: <1330647453.1916.7.camel@ymzhang>
+References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
+	<1330647453.1916.7.camel@ymzhang>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, David Miller wrote:
+On Fri, 02 Mar 2012 08:17:33 +0800
+Yanmin Zhang <yanmin_zhang@linux.intel.com> wrote:
 
-> From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-> Date: Fri, 2 Mar 2012 10:39:24 +0200
->
->> Like I said before there is many projects using AF_UNIX as IPC
->> transport, the documentation actually induces people to use for this
->> purpose, and many would benefit from being able to do multicast.
->
-> You can't have it both ways.
->
-> If it's useful for many applications, then many applications would
-> benefit from a userland library that solved the problem using
-> existing facilities such as IP multicast.
+> On Wed, 2012-02-29 at 04:55 +0000, Liu, ShuoX wrote:
+> > From: ShuoX Liu <shuox.liu@intel.com>
+> > 
+> > Some C states of new CPU might be not good. One reason is BIOS might configure
+> > them incorrectly. To help developers root cause it quickly, the patch adds a
+> > new sysfs entry, so developers could disable specific C state manually.
+> > 
+> > In addition, C state might have much impact on performance tuning, as it takes
+> > much time to enter/exit C states, which might delay interrupt processing. With
+> > the new debug option, developers could check if a deep C state could  impact
+> > performance and how much impact it could cause.
+> > 
+> > Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> Andrew,
+> 
+> Would you like to merge the patch into your testing tree?
 
-I missed the start of this discussion (but did see the lwn.net article on 
-it)
+I can do that, but it's hardly my area and I can't comment on the
+desirability of the patch and Len is having quiet time.  Perhaps the
+x86 guys can take a look please>
 
-as I understand it, they are looking for some features that are not in IP 
-multicast (or at least not as I understand it)
+> It's useful to help developers debug some issues.
 
-1. reliable delivery
+It would help developers more if it was documented a bit.  As it
+stands, they'd be lucky if they even knew it existed.
 
-2. in-order delivery
+Looky:
 
-3. sender blocking on recipients rather than dropping messages when the 
-channel is full.
+akpm:/usr/src/linux-3.3-rc5> grep -ril cpuidle Documentation 
+Documentation/trace/events-power.txt
+Documentation/ABI/testing/sysfs-devices-system-cpu
+Documentation/kernel-parameters.txt
+Documentation/00-INDEX
+Documentation/cpuidle/core.txt
+Documentation/cpuidle/sysfs.txt
+Documentation/cpuidle/driver.txt
+Documentation/cpuidle/governor.txt
 
-IP multicast definantly does not do #3, and as far as I understand it, is 
-essentially UDP to multiple recipients, and UDP does not provide either #1 
-or #2
-
-Yes, this could be done entirely in userspace (with something like 0MQ as 
-I see others mentioning), and I don't understand the Android aversion to 
-any userspace daemons, but with all of that being said, I do think that a 
-kernel-based mechanism that supports having iptables type filters on it 
-would be a very nice thing to have (and should be able to re-use a lot of 
-existing code that would end up being duplicated if this is done in a 
-userspace daemon)
-
-now it may be that some of the requirements may result in error O_PONY or 
-O_SANITY (the sender blocking seems like a potential problem, but that 
-may possibly make sense as a configurable option)
-
-David Lang
