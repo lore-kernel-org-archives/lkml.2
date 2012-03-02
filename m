@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab2CBHmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:42:19 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:30864 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2CBHmR (ORCPT
+	id S1757050Ab2CBHwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:52:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62535 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab2CBHv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:42:17 -0500
-Date: Fri, 2 Mar 2012 10:44:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
-Message-ID: <20120302074414.GG22598@mwanda>
-References: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
+	Fri, 2 Mar 2012 02:51:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.liu@linaro.org designates 10.68.132.69 as permitted sender) smtp.mail=paul.liu@linaro.org
+Message-ID: <4F507C1B.1050909@linaro.org>
+Date: Fri, 02 Mar 2012 15:51:55 +0800
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6BvahUXLYAruDZOj"
-Content-Disposition: inline
-In-Reply-To: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F5079D4.00CB,ss=1,re=0.000,fgs=0
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v6 1/2] mfd: Add anatop mfd driver
+References: <1330593052-15184-1-git-send-email-paul.liu@linaro.org> <1330671641-6439-1-git-send-email-paul.liu@linaro.org> <D958900912E20642BCBC71664EFECE3E6DD2912252@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD2912252@BGMAIL02.nvidia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2012年03月02日 15:07), Venu Byravarasu wrote:
+> Why you did not made use of regmap?
+> 
 
---6BvahUXLYAruDZOj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Venu,
 
-When you put "Resend:" in the subject it breaks git am.  Git am is
-supposed to strip out the [PATCH] but the Resend confuses it.
+I cannot fully understand. Anatop is not SPI or I2C device. It is
+internally embedded into the SoC. It is directly accessed by memory I/O.
 
-Put the subject as:
-[PATCH v3] Bluetooth: Fix Endian Bug.
+Do you mean I should implement a regmap_bus which uses memory I/O and
+then use regmap?
 
-regards,
-dan carpenter
+Regards,
+Paul
 
+>> -----Original Message-----
+>> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+>> owner@vger.kernel.org] On Behalf Of Ying-Chun Liu (PaulLiu)
+>> Sent: Friday, March 02, 2012 12:31 PM
+>> To: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org; linaro-dev@lists.linaro.org;
+>> patches@linaro.org; Ying-Chun Liu (PaulLiu); Samuel Ortiz; Mark Brown; Shawn
+>> Guo
+>> Subject: [PATCH v6 1/2] mfd: Add anatop mfd driver
+>>
+>> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+>>
+>> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
+>> Anatop provides regulators and thermal.
+>> This driver handles the address space and the operation of the mfd device.
+>>
+>> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>> Cc: Shawn Guo <shawn.guo@linaro.org>
+>> ---
+>>  drivers/mfd/Kconfig        |    6 ++
 
---6BvahUXLYAruDZOj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPUHpOAAoJEOnZkXI/YHqRHeIP/jxrFMsvkRKXf/nG60GkpcyU
-06kc4HL6Q8ga6KH6LNU9jPXSYEQ60m/a//aWrSQbbDBoErxDnDHrskQGxIX5beMv
-wPzCTW36kquiuVhQ6Gpsa825aKhZl2Wl87R91PCieN8lZFnpCyYC/qZmVCc3M1hu
-Dfd/ca7dBhQNrjHMrv2aLSUL3VkXwwyPcrGc0OAzVrPaHBSyMXR2tzi0WyR5aKdb
-0ebvJAqAEduI/xPa57VMnnAzIt2JPo6byt2B6HNn8rhL9QFEreB0i49HJMVSZzGj
-Bwh71j6IejcC+FQW0apRdjAGktgBd48rdVu3HE8kxlWdyidNcfXMGG5rgIHYPuPs
-yyBsRmNjUZyWPCn7ANiGUfBFM+T9IlAycy0++IxTDgNozwHWrioP51hxIIPinyVS
-3orJFq4cB5OHJNQ3e9Q7+r58Kt6+b/S7+Xw4fStYyEArKCTuLgCZs4CgJf4/hanY
-n2YxhFaVFkj2Pnc49v6rWlg1zPV0/knFDkCEpEtcQjHBZ8SdBaJWHmlmLDtQ/mEV
-88WkGJQVsXJ/vWDw7PQFpN5ZR4y5QT5YVAF8ZHLAiiAfiA7r017VMg5EANGmVJBz
-M4dW66Eh5C0lZCjOmNe9P+QGtL0+xl49Zu8UpGdMxA6i1mJbr4PVoHNHO3dxk+t8
-MG/aytQAWw2w8mm5vlfN
-=B2LU
------END PGP SIGNATURE-----
-
---6BvahUXLYAruDZOj--
