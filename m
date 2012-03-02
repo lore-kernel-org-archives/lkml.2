@@ -1,51 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759097Ab2CBTpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:45:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab2CBTpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:45:02 -0500
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH] x86/PCI: add spinlock held check to
-	'pcibios_fwaddrmap_lookup()'
-To: jbarnes@virtuousgeek.org
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 02 Mar 2012 12:45:01 -0700
-Message-ID: <20120302194501.26152.22845.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
+	id S1030471Ab2CBTpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:45:47 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:65348 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab2CBTpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 14:45:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rengels@optionscity.com designates 10.52.70.167 as permitted sender) smtp.mail=rengels@optionscity.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Fri, 2 Mar 2012 13:45:43 -0600
+Message-ID: <CA+q+rD0NhnpminvgHJoOAJKfqc8RfXUjEnYpTi7ZVKEXLOjQxA@mail.gmail.com>
+Subject: re: kernel-rt 3.0.9 panics/bugs
+From: Robert Engels <rengels@optionscity.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'pcibios_fwaddrmap_lookup()' is used to maintain FW-assigned BIOS BAR
-values for reinstatement when normal resource assignment attempts
-fail and must be called with the 'pcibios_fwaddrmap_lock' spinlock
-held.
+Was this not the proper place to post this for a response? The error
+messages in the logs stated I should 'report this'. I am not expecting
+a "solution" in one day, but maybe just some direction would be nice.
 
-This patch adds a WARN_ON notification if the spinlock is not currently
-held by the caller.
+-- 
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
-
- arch/x86/pci/i386.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 33e6a0b..831971e 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -57,6 +57,8 @@ static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
- {
- 	struct pcibios_fwaddrmap *map;
- 
-+	WARN_ON(!spin_is_locked(&pcibios_fwaddrmap_lock));
-+
- 	list_for_each_entry(map, &pcibios_fwaddrmappings, list)
- 		if (map->dev == dev)
- 			return map;
-
+Robert Engels
+OptionsCity Software Inc.
+Chicago, IL
