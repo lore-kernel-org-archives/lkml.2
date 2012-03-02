@@ -1,147 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab2CBRWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:22:30 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:41376
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756218Ab2CBRW0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:22:26 -0500
-X-SpamScore: -5
-X-BigFish: VPS-5(zz9371I148cMzz1202hzz8275bhz2ei2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-From: Rajesh Borundia <rajesh.borundia@qlogic.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>,
-        Sony Chacko <sony.chacko@qlogic.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Date: Fri, 2 Mar 2012 11:22:16 -0600
-Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Index: Acz4huksGUPQbVX+SkaVPFqBQzZrkwAEDpk/
-Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA81A886ED36@MNEXMB1.qlogic.org>
-References: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com>
-In-Reply-To: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758877Ab2CBRW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:22:57 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23221 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756218Ab2CBRWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 12:22:55 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+5gBXaxk7HWQ7Hw/3r2B8u
+Date: Fri, 2 Mar 2012 09:22:51 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC
+ card detect
+Message-ID: <20120302172251.GJ18901@atomide.com>
+References: <20120301185044.29210.44521.stgit@kaulin.local>
+ <20120301185535.29210.71546.stgit@kaulin.local>
+ <4F50643B.9050500@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F50643B.9050500@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Santosh,
+* Rajendra Nayak <rnayak@ti.com> [120301 21:38]:
+> On Friday 02 March 2012 12:25 AM, Tony Lindgren wrote:
+> >--- a/arch/arm/mach-omap2/board-omap4panda.c
+> >+++ b/arch/arm/mach-omap2/board-omap4panda.c
+> >@@ -153,8 +153,8 @@ static struct omap2_hsmmc_info mmc[] = {
+> >  	{
+> >  		.mmc		= 1,
+> >  		.caps		= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA,
+> >-		.gpio_wp	= -EINVAL,
+> >  		.gpio_cd	= -EINVAL,
+> >+		.gpio_wp	= -EINVAL,
+> 
+> stray change.
 
-Thanks for pointing out the bug. But adapter takes  ip in big endian format.
-So no need to use  be32_to_cpu instead data type of ip should be changed to __be32.
-Also in netxen_config_ipaddr()
--      req.words[1] = cpu_to_le64(ip);
-+      req.words[1] = ip;
+Hmm I'd like to keep this change before this ordering gets copied
+to ten other board files that we may have in testing-board for a while..
+I'll add a comment to the patch description about that.
 
-Rest looks fine.
+> >--- a/drivers/mmc/host/omap_hsmmc.c
+> >+++ b/drivers/mmc/host/omap_hsmmc.c
+> >@@ -34,6 +34,7 @@
+> >  #include<linux/gpio.h>
+> >  #include<linux/regulator/consumer.h>
+> >  #include<linux/pm_runtime.h>
+> >+#include<linux/i2c/twl.h>
+> >  #include<plat/dma.h>
+> >  #include<mach/hardware.h>
+> >  #include<plat/board.h>
+> >@@ -578,6 +579,32 @@ static void omap_hsmmc_gpio_free(struct omap_hsmmc_host *host)
+> >  		gpio_free(host->gpio_cd);
+> >  }
+> >
+> >+#ifdef CONFIG_TWL4030_CORE
+> >+static int omap_hsmmc_init_twl6030(struct omap_hsmmc_host *host)
+> >+{
+> >+	struct omap_mmc_platform_data *pdata = host->pdata;
+> >+	struct omap_mmc_slot_data *slot =&pdata->slots[0];
+> >+	int irq;
+> >+
+> >+	if (gpio_is_valid(host->gpio_cd) || host->id)
+> 
+> I have a series, which I am asking Chris to pull, which completely
+> gets rid of all host->id based hard-codings' in the driver.
+> Isn't there a better way to do this than rely on the device instance?
 
-Rajesh
-________________________________________
-From: santosh nayak [santoshprasadnayak@gmail.com]
-Sent: Friday, March 02, 2012 8:41 PM
-To: Sony Chacko
-Cc: Rajesh Borundia; netdev; linux-kernel; kernel-janitors@vger.kernel.org; Santosh Nayak
-Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+Yes I was thinking about that too. I guess we need to pass some
+flag in pdata for twl6030 card detect. I was thinking about using
+the gpiochip_cd, but twl6030 is not gpio based card detect, so
+a separate flag is better.
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+BTW, with -rc5, looks like re-inserting omap_hsmmc on omap4 fails
+to detect any cards, and then fails to unload. This works on omap3
+just fine. Any ideas why that would be?
 
-Fix endian bug.
-Add a default case in 'netxen_list_config_vlan_ip'
+Regards,
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-index 8dc4a134..971b286 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter *adapter)
-                        adapter->driver_mismatch = 1;
-                        return;
-                }
--               ptr32[i] = cpu_to_le32(val);
-+               ptr32[i] = val;
-                offset += sizeof(u32);
-        }
-
-@@ -3028,7 +3028,7 @@ netxen_list_config_vlan_ip(struct netxen_adapter *adapter,
-                list_for_each(head, &adapter->vlan_ip_list) {
-                        cur = list_entry(head, struct nx_vlan_ip_list, list);
-
--                       if (cur->ip_addr == ifa->ifa_address)
-+                       if (cur->ip_addr == be32_to_cpu(ifa->ifa_address))
-                                return;
-                }
-
-@@ -3039,18 +3039,22 @@ netxen_list_config_vlan_ip(struct netxen_adapter *adapter,
-                        return;
-                }
-
--               cur->ip_addr = ifa->ifa_address;
-+               cur->ip_addr = be32_to_cpu(ifa->ifa_address);
-                list_add_tail(&cur->list, &adapter->vlan_ip_list);
-                break;
-        case NX_IP_DOWN:
-                list_for_each_entry_safe(cur, tmp_cur,
-                                        &adapter->vlan_ip_list, list) {
--                       if (cur->ip_addr == ifa->ifa_address) {
-+                       if (cur->ip_addr == be32_to_cpu(ifa->ifa_address)) {
-                                list_del(&cur->list);
-                                kfree(cur);
-                                break;
-                        }
-                }
-+               break;
-+       default:
-+               printk(KERN_ERR "%ld: Wrong event id \n", event);
-+               break;
-        }
- }
- static void
-@@ -3070,12 +3074,12 @@ netxen_config_indev_addr(struct netxen_adapter *adapter,
-                switch (event) {
-                case NETDEV_UP:
-                        netxen_config_ipaddr(adapter,
--                                       ifa->ifa_address, NX_IP_UP);
-+                                       be32_to_cpu(ifa->ifa_address), NX_IP_UP);
-                        netxen_list_config_vlan_ip(adapter, ifa, NX_IP_UP);
-                        break;
-                case NETDEV_DOWN:
-                        netxen_config_ipaddr(adapter,
--                                       ifa->ifa_address, NX_IP_DOWN);
-+                                       be32_to_cpu(ifa->ifa_address), NX_IP_DOWN);
-                        netxen_list_config_vlan_ip(adapter, ifa, NX_IP_DOWN);
-                        break;
-                default:
-@@ -3167,11 +3171,11 @@ recheck:
-
-        switch (event) {
-        case NETDEV_UP:
--               netxen_config_ipaddr(adapter, ifa->ifa_address, NX_IP_UP);
-+               netxen_config_ipaddr(adapter, be32_to_cpu(ifa->ifa_address), NX_IP_UP);
-                netxen_list_config_vlan_ip(adapter, ifa, NX_IP_UP);
-                break;
-        case NETDEV_DOWN:
--               netxen_config_ipaddr(adapter, ifa->ifa_address, NX_IP_DOWN);
-+               netxen_config_ipaddr(adapter, be32_to_cpu(ifa->ifa_address), NX_IP_DOWN);
-                netxen_list_config_vlan_ip(adapter, ifa, NX_IP_DOWN);
-                break;
-        default:
---
-1.7.4.4
-
-
-
+Tony
