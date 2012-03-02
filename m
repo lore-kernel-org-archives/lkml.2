@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2CBQT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 11:19:59 -0500
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:26116 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758838Ab2CBQT6 (ORCPT
+	id S932376Ab2CBQ17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 11:27:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49903 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758109Ab2CBQ15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 11:19:58 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: eHBSaQQVM1kvibbmhLO3qfhhKH6VateBVEdXtexOBpUJ6Ze
- etYebxNmCpkwYqJ2vzFqnzWlmIgh39dFnj5WEgD6DNDD16VA_SBwW6DVSGPY
- GGpQ5gyXacW8Ylw5Em8EsGCCMhRtjDWDK.zv_Ppx8gj4Odz9MdUszqrFoys1
- pyq_fOrelwHTcRnIpiEZHXZCMrdaVvEmLirD9hc2Lc6KZeqcRlayzVYo5jXJ
- fVAnXq01jhI8VJ_WvfvmFGBDxj6XdDkmxrL.Nt4.RWiif9.j518DTCrUcNR9
- dIH.MtYnFKz8gvYHVTIoxCnQSrOPlWovXu0R_AUyK2T1hiTf3klWE6V8mUQ5
- .GdURIi6t1hZIq8Q.FT0XKXkm0VuQPkzY0QXpiOzm4UnEAp6t1WbfNop4s33
- 1YNfxcOFZ1S0KZDAK6znxn8Xzlzzmk3Px7ucK
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 2 Mar 2012 10:19:55 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>, Miao Xie <miaox@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Remove memory barrier damage from the page
- allocator
-In-Reply-To: <20120302112358.GA3481@suse.de>
-Message-ID: <alpine.DEB.2.00.1203021018130.15125@router.home>
-References: <20120302112358.GA3481@suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 2 Mar 2012 11:27:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of anton.vorontsov@linaro.org designates 10.204.10.66 as permitted sender) smtp.mail=anton.vorontsov@linaro.org
+Date: Fri, 2 Mar 2012 20:27:53 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: cgroups@vger.kernel.org
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [RFC] memcg usage_in_bytes does not account file mapped and slab
+ memory
+Message-ID: <20120302162753.GA11748@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Mel Gorman wrote:
+... and thus is useless for low memory notifications.
 
-> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> index e9eaec5..ba6d217 100644
-> --- a/include/linux/cpuset.h
-> +++ b/include/linux/cpuset.h
-> @@ -92,38 +92,25 @@ extern void cpuset_print_task_mems_allowed(struct task_struct *p);
->   * reading current mems_allowed and mempolicy in the fastpath must protected
->   * by get_mems_allowed()
->   */
-> -static inline void get_mems_allowed(void)
-> +static inline unsigned long get_mems_allowed(void)
->  {
-> -	current->mems_allowed_change_disable++;
-> -
-> -	/*
-> -	 * ensure that reading mems_allowed and mempolicy happens after the
-> -	 * update of ->mems_allowed_change_disable.
-> -	 *
-> -	 * the write-side task finds ->mems_allowed_change_disable is not 0,
-> -	 * and knows the read-side task is reading mems_allowed or mempolicy,
-> -	 * so it will clear old bits lazily.
-> -	 */
-> -	smp_mb();
-> +	return atomic_read(&current->mems_allowed_seq);
->  }
->
-> -static inline void put_mems_allowed(void)
-> +/*
-> + * If this returns false, the operation that took place after get_mems_allowed
-> + * may have failed. It is up to the caller to retry the operation if
-> + * appropriate
-> + */
-> +static inline bool put_mems_allowed(unsigned long seq)
->  {
-> -	/*
-> -	 * ensure that reading mems_allowed and mempolicy before reducing
-> -	 * mems_allowed_change_disable.
-> -	 *
-> -	 * the write-side task will know that the read-side task is still
-> -	 * reading mems_allowed or mempolicy, don't clears old bits in the
-> -	 * nodemask.
-> -	 */
-> -	smp_mb();
-> -	--ACCESS_ONCE(current->mems_allowed_change_disable);
-> +	return seq == atomic_read(&current->mems_allowed_seq);
->  }
+Hi all!
 
-Use seqlock instead of the counter? Seems that you are recoding much of
-what a seqlock does. A seqlock also allows you to have a writer that sort
-of blocks the reades if necessary.
+While working on userspace low memory killer daemon (a supposed
+substitution for the kernel low memory killer, i.e.
+drivers/staging/android/lowmemorykiller.c), I noticed that current
+cgroups memory notifications aren't suitable for such a daemon.
 
+Suppose we want to install a notification when free memory drops below
+8 MB. Logically (taking memory hotplug aside), using current usage_in_bytes
+notifications we would install an event on 'total_ram - 8MB' threshold.
+
+But as usage_in_bytes doesn't account file mapped memory and memory
+used by kernel slab, the formula won't work.
+
+Currently I use the following patch that makes things going:
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 228d646..c8abdc5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3812,6 +3812,9 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
+ 
+        val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
+        val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
++       val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
++       val += global_page_state(NR_SLAB_RECLAIMABLE);
++       val += global_page_state(NR_SLAB_UNRECLAIMABLE);
+
+
+But here are some questions:
+
+1. Is there any particular reason we don't currently account file mapped
+   memory in usage_in_bytes?
+
+   To me, MEM_CGROUP_STAT_FILE_MAPPED hunk seems logical even if we
+   don't use it for lowmemory notifications.
+
+   Plus, it seems that FILE_MAPPED _is_ accounted for the non-root
+   cgroups, so I guess it's clearly a bug for the root memcg?
+
+2. As for NR_SLAB_RECLAIMABLE and NR_SLAB_UNRECLAIMABLE, it seems that
+   these numbers are only applicable for the root memcg.
+   I'm not sure that usage_in_bytes semantics should actually account
+   these, but I tend to think that we should.
+
+All in all, not accounting both 1. and 2. looks like bugs to me.
+
+But if for some reason we don't want to change usage_in_bytes, should
+I just go ahead and implement a new cftype (say free_in_bytes), which
+would account free memory as total_ram - cache - rss - mapped - slab,
+with ability to install notifiers? That way we would also could solve
+memory hotplug issue in the kernel, so that userland won't need to
+bother with reinstalling lowmemory notifiers when memory added/removed.
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
