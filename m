@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab2CBVdP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:33:15 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:16021
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753417Ab2CBVdN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:33:13 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Index: AQHM+LUYOjJW5Du7G0WJSaUrHj4mnJZXgVQAgAABJ6CAAAOzAIAAAD8A
-Date: Fri, 2 Mar 2012 21:33:00 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B73679D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
- <20120302211354.GB6008@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20120302213116.GA23443@kroah.com>
-In-Reply-To: <20120302213116.GA23443@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754456Ab2CBVff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:35:35 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58826 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab2CBVfe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:35:34 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120302204521.GD22215@thunk.org>
+References: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
+	<20120302204521.GD22215@thunk.org>
+Date: Fri, 2 Mar 2012 21:35:33 +0000
+Message-ID: <CADzG2TC-AiUBgwu-s64A7PGch4qnto4avFmQtBzL9Dc7+6CKWQ@mail.gmail.com>
+Subject: Re: ext4 bug? last write time precedes last mount time on a writable volume!
+From: Neil Clarkson <neilaclarkson@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Neil Clarkson <neilaclarkson@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for responding Ted.
+
+That would all make sense, if it weren't for the last write time on
+the Ubuntu box being earlier than the last mount time, when clearly
+the superblock *must* have got modified. Clearly that isn't what
+Ubuntu is doing with it. But I guess, given that Ubuntu is different
+from OpenSuse and Fedora in this regard, perhaps that's just something
+Canonical have changed, intentionally or otherwise.
+
+Andi Kleen was right then, when he offered much the same explanation
+to me last week on the list.
+
+> Is there a reason why you particularly care about s_wtime being updated?
+
+Yes and no ;)
+
+It was interesting to me when it seemed like it might be a way to find
+the time of the last write to the file system, bugs notwithstanding. A
+few public domain info sources suggest this is what it is. I could
+have made good use of that in some work I'm doing. But if its not
+meant to do that, which certainly makes sense from a performance
+perspective, then no.
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, March 02, 2012 4:31 PM
-> To: KY Srinivasan
-> Cc: linux-scsi@vger.kernel.org; Haiyang Zhang; ohering@suse.com;
-> jbottomley@parallels.com; linux-kernel@vger.kernel.org; hch@infradead.org;
-> virtualization@lists.osdl.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> the host
-> 
-> On Fri, Mar 02, 2012 at 09:22:38PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Friday, March 02, 2012 4:14 PM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
-> > > hch@infradead.org; linux-scsi@vger.kernel.org; Haiyang Zhang
-> > > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> > > the host
-> > >
-> > > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
-> > > > Windows hosts don't handle the ATA_16 command; don't pass it to the
-> host.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > ---
-> > > >  drivers/scsi/storvsc_drv.c |    2 ++
-> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > >
-> > > Should this go to older kernel versions as well?
-> >
-> > I think it should. Do you want me to resend this patch with the correct tag?
-> > Also, given that storvsc has changed so much over the last several months,
-> > this patch may or may not apply to earlier versions of this driver even though
-> > this patch itself is quite trivial.
-> 
-> I'll tag it for the stable tree, then when it doesn't apply, you will
-> get an email saying it didn't, so you can then send me the correct one
-> :)
+On 2 March 2012 20:45, Ted Ts'o <tytso@mit.edu> wrote:
 
-Thanks Greg.
-
-K. Y
-
-
+> It shows the last time the superblock has been modified, and one of
+> the things that we've been doing lately has been to optimize ext4 so
+> that it writes to the superblock *much* less often.  It was a
+> performance bottleneck to be constantly updating the number of free
+> blocks in the superblock each time we write to a new block, for
+> example --- or update the superblock to update the number of free
+> inodes each time we allocate a new inode.
+>
+> Is there a reason why you particularly care about s_wtime being
+> updated?
+>
+>                                        - Ted
