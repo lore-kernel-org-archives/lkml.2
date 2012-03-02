@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab2CBPvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:51:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43623 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2CBPvH (ORCPT
+	id S1758828Ab2CBPyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:54:19 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52836 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750879Ab2CBPyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:51:07 -0500
-Date: Fri, 2 Mar 2012 16:51:05 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>
-Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
- PREEMPT_RT
-In-Reply-To: <1330702617.25686.265.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1203021649580.2742@ionos>
-References: <20120301185527.064629423@goodmis.org>   <20120301190346.172835662@goodmis.org>   <alpine.LFD.2.02.1203021518501.2742@ionos>  <1330701323.25686.260.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1203021618330.2742@ionos>
- <1330702617.25686.265.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Mar 2012 10:54:17 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: fix the pin descriptor kerneldoc
+Date: Fri, 2 Mar 2012 16:53:41 +0100
+Message-ID: <1330703621-4044-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Steven Rostedt wrote:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> On Fri, 2012-03-02 at 16:20 +0100, Thomas Gleixner wrote:
-> 
-> > Already queued. I'd say #4 is a bug fix as well, though I
-> > fundamentally hate the ass backwards semantics of that new function.
-> 
-> It is a bug fix, but I don't like it either. Note, that the patch didn't
-> update the pin_current_cpu() code, which would have to be done too (to
-> be a full fix).
+The introduction of the owner field on the pin descriptor was not
+properly documented so fix this up.
 
-I know.
- 
-> But I was also thinking that as a work around, as we plan on changing
-> this code anyway. Instead of adding a new API which is ass backwards,
-> just encompass the cpu_hotplug.lock instead. Something like this:
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/core.h |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Thought about that already. It's way less fugly.
- 
-Thanks,
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 97f8124..e1dfdb3 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -76,9 +76,7 @@ struct pinctrl {
+  *	datasheet or such
+  * @dynamic_name: if the name of this pin was dynamically allocated
+  * @lock: a lock to protect the descriptor structure
+- * @mux_requested: whether the pin is already requested by pinmux or not
+- * @mux_function: a named muxing function for the pin that will be passed to
+- *	subdrivers and shown in debugfs etc
++ * @owner: the device holding this pin or NULL of no device has claimed it
+  */
+ struct pin_desc {
+ 	struct pinctrl_dev *pctldev;
+-- 
+1.7.8
 
-	tglx
