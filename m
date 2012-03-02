@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2CBKAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:00:25 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:62206 "EHLO mail.gnudd.com"
+	id S1758687Ab2CBKBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:01:35 -0500
+Received: from mail.us.es ([193.147.175.20]:42246 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab2CBKAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:00:23 -0500
-Date: Fri, 2 Mar 2012 11:00:12 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: grant.likely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, sameo@linux.intel.com,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH V2 2/2] gpio: add STA2X11 GPIO block
-Message-ID: <20120302100012.GA31314@mail.gnudd.com>
+	id S1755099Ab2CBKBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 05:01:33 -0500
+Date: Fri, 2 Mar 2012 11:01:28 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: santosh nayak <santoshprasadnayak@gmail.com>, bart.de.schuymer@pandora.be,
+        kaber@trash.net, shemminger@vyatta.com, davem@davemloft.net,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: Resend [PATCH] netfilter: Fix copy_to_user too small size
+ parametre.
+Message-ID: <20120302100128.GA12266@1984>
+References: <1330621743-12883-1-git-send-email-santoshprasadnayak@gmail.com>
+ <AE90C24D6B3A694183C094C60CF0A2F6026B6E87@saturn3.aculab.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20120302074800.C2F973E17BE@localhost>
-References: <20120302074800.C2F973E17BE@localhost>
-  <cover.1329396583.git.rubini@gnudd.com>
- <5ad22021512895427a9ddee29018f5beb31a26dd.1329396583.git.rubini@gnudd.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E87@saturn3.aculab.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you Grant for your comments. Agreed with all of them.
-
->> +	/* 384 was used in previous code: be compatible for other drivers */
->> +	err = irq_alloc_descs(-1, 384, GSTA_NR_GPIO, NUMA_NO_NODE);
+On Fri, Mar 02, 2012 at 09:05:10AM -0000, David Laight wrote:
+>  
+> > -	if (copy_to_user(hlp, m->u.match->name, 
+> > EBT_FUNCTION_MAXNAMELEN))
+> > +	char name[EBT_FUNCTION_MAXNAMELEN] = {};
+> > +
+> > +	strncpy(name, m->u.match->name, sizeof(name));
+> > +	if (copy_to_user(hlp, name, EBT_FUNCTION_MAXNAMELEN))
+> >  		return -EFAULT;
 > 
-> That's a lot of irqs.  Will they all be used?
+> strncpy() is very rarely the function you are looking for.
+> In this case it MIGHT be right (since you do a fixed size
+> copy_to_user).
+> OTOH there is no need to also initialise name[].
 
-384 is the starting point, isn't it? The number is 128. One per gpio pin.
-We have change-detect for mmc and other stuff that live in high gpio
-numbers.
+We have to make sure that array is filled with zeros for the gap
+between byte 29 and byte 32 due to backward compatibility issues.
 
-> How do other drivers determine which irq number to use (is it
-> statically assigned, or is there a dynamic mechanism)?  If only a
-> portion are used, then the irq_domain linear mapping would be a win
-> here.
+I'll mangle the patch to add some comment close to strncpy and to
+explain the way we're doing this.
 
-The code I received uses static numbers. The chip is the main chipset
-in the typical use case, so only one is there even if it is PCI.  I
-also have a PCIe card to use it as slave device, and I'm careful to
-allow several of them, even if it's not the main use case. Maybe here
-I fell short. I'm reposting soon, with a full change log.
+> And it isn't entirely clear whether the application
+> is allowed to be given a non-terminated string.
 
-This "compatibility" is something I need to run the boards with
-existing code for the parts that are not cleaned up for upstream, yet.
+Match names are 29 bytes long, while ebtables expects 32 bytes. So
+we're copying less bytes.
 
-/alessandro
+We can add the final \0 if you feel more confortable, but that string
+is going to be null-terminated the way the code look now.
