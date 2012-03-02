@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758618Ab2CBJ0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:26:36 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:54179 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758570Ab2CBJ0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:26:33 -0500
-Message-ID: <4F509274.9060302@collabora.co.uk>
-Date: Fri, 02 Mar 2012 10:27:16 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1753382Ab2CBJaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:30:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812Ab2CBJat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 04:30:49 -0500
+Date: Fri, 2 Mar 2012 10:30:38 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: io_apic: Move and reenable irq only when
+ CONFIG_GENERIC_PENDING_IRQ=y
+Message-ID: <20120302093034.GE8350@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        ying.xue@windriver.com
-CC: luiz.dentz@gmail.com, eric.dumazet@gmail.com, rodrigo.moya@collabora.co.uk,
-        javier@collabora.co.uk, lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com> <20120301.170848.432407217191581288.davem@davemloft.net> <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com> <20120302.035509.1994457175982020283.davem@davemloft.net>
-In-Reply-To: <20120302.035509.1994457175982020283.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 09:55 AM, David Miller wrote:
-> From: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
-> Date: Fri, 2 Mar 2012 10:39:24 +0200
-> 
->> Like I said before there is many projects using AF_UNIX as IPC
->> transport, the documentation actually induces people to use for this
->> purpose, and many would benefit from being able to do multicast.
-> 
-> You can't have it both ways.
-> 
-> If it's useful for many applications, then many applications would
-> benefit from a userland library that solved the problem using
-> existing facilities such as IP multicast.
-> 
-> If it's only useful for dbus that that absoltely means we should
-> not add thousands of lines of code to the kernel specifically for
-> that application.
-> 
+When CONFIG_GENERIC_PENDING_IRQ=n irq move and reenable code is never get
+executed, nor do_unmask_irq variable updates its init value. Move both the
+code and do_unmask_irq under CONFIG_GENERIC_PENDING_IRQ macro.
 
-You are right that D-bus is the only one that will use it but D-bus is
-more than an application is an IPC system that is used for almost every
-single application that runs on your Linux desktop.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-> So either way, kernel changes are not justified.
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..57dec14 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2515,8 +2515,11 @@ atomic_t irq_mis_count;
+ static void ack_apic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+-	int i, do_unmask_irq = 0, irq = data->irq;
++	int i, irq = data->irq;
+ 	unsigned long v;
++#ifdef CONFIG_GENERIC_PENDING_IRQ
++	int do_unmask_irq = 0;
++#endif
+ 
+ 	irq_complete_move(cfg);
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+@@ -2581,6 +2584,7 @@ static void ack_apic_level(struct irq_data *data)
+ 		eoi_ioapic_irq(irq, cfg);
+ 	}
+ 
++#ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	/* Now we can move and renable the irq */
+ 	if (unlikely(do_unmask_irq)) {
+ 		/* Only migrate the irq if the ack has been received.
+@@ -2613,6 +2617,7 @@ static void ack_apic_level(struct irq_data *data)
+ 			irq_move_masked_irq(data);
+ 		unmask_ioapic(cfg);
+ 	}
++#endif
+ }
+ 
+ #ifdef CONFIG_IRQ_REMAP
+-- 
+1.7.7.6
 
-Yes, you are right that packets drops, out-of-order delivery and flow
-control could be handled in another layer (i.e: the D-bus library in
-user-space).
-
-Also I won't argue about performance since we did some stress test and
-found that AF_INET, AF_UNIX and AF_NETLINK performs very similar for
-multicast.
-
-> Stop reinventing the wheel, use facilities that exist already.
-
-We are the most interested in using a facility already found in the
-kernel, we will try ZeroMQ as Stephen suggested and TIPC but really
-didn't find an IPC mechanism that fits our needs. The most important
-issue right now is the fd passing for D-bus application doing
-out-of-band communication.
-
-Another approach that we are trying is to use Netlink sockets using the
-Generic Netlink kernel API and develop a kernel module that does the
-routing. That way if you don't accept our code at least it will be
-easier for us to maintain. Not sure if netlink supports fd passing though.
-
-Do you think that a simpler AF_UNIX multicast implementation without the
-locking to guarantee order delivery and the flow control that blocks the
-sender can be resend to you to reconsider merging it?
-
-Regards,
-Javier
