@@ -1,141 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2CBIuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:50:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54811 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932142Ab2CBIuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:50:50 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.57+drm33.23
-Date: Fri,  2 Mar 2012 09:50:46 +0100
-Message-Id: <1330678246-11403-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.9
+	id S1758439Ab2CBIvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:51:33 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757416Ab2CBIvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 03:51:32 -0500
+Message-ID: <4F508A11.9000405@nod.at>
+Date: Fri, 02 Mar 2012 09:51:29 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Jonas Bonn <jonas@southpole.se>
+CC: linux@openrisc.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: OpenRISC: Module loader broken
+References: <4F501C7A.30307@nod.at> <1330668690.19557.91.camel@satguru>
+In-Reply-To: <1330668690.19557.91.camel@satguru>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigB1EFCE28C1A1129B4463BD7A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.57+drm33.23 longterm tree.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigB1EFCE28C1A1129B4463BD7A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+Am 02.03.2012 07:11, schrieb Jonas Bonn:
+> Hi Richard,
+>=20
+> On Fri, 2012-03-02 at 02:03 +0100, Richard Weinberger wrote:
+>> Hi!
+>>
+>> The OpenRISC module loader is broken.
+>=20
+> OK, that's new as we've been using module loading quite a bit on this
+> platform earlier.  Where did you get your toolchain from?
 
-This release updates the DRM subsystem only.
+I built it two days ago from source as described here:
+http://openrisc.net/toolchain-build.html
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-or
-  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
+Thanks,
+//richard
 
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-or
-  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
 
--Stefan
+--------------enigB1EFCE28C1A1129B4463BD7A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-* drm/i915: Fix TV Out refresh rate.
-* Linux 2.6.32.57+drm33.23
+iQEcBAEBAgAGBQJPUIoSAAoJEN9758yqZn9eWLIH+gMLqCd9mtAehp1kKRk3PBt1
+qcvIcMO//OIa29xnWG8M3lJh3qyXslIej1y1hc2PRuE5xPrWbgQfH4TCJdt5Xamp
+4hACVNrMlI8r3lrIbr/zWh6mJpPXJgjoSzSgTyyfECSBuOzAQDL+kReK5BOm4Ivx
+3md951CaZ43iNNUxcDIHH/pplDrwHNqqm/Ohaa1xTjed8GuBjNAtUoiFXXo6h/Tv
+1YJBYcCWIjEAixtCmFD5W1QZTD2Owa5YLCdIDEyFAGtyhQvkAkghLVf5vkI2ccWj
+PJ0dZA6iDeBi5RsWAJexOFEsXILIM0tASEMyuooeufTE699Iqil29DFelm47+2A=
+=SE3S
+-----END PGP SIGNATURE-----
 
- Makefile                        |    2 +-
- drivers/gpu/drm/i915/intel_tv.c |   16 ++++++++--------
- 2 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 6ecde40..f0bb72a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .57+drm33.22
-+EXTRAVERSION = .57+drm33.23
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index 552ec11..ae64f9d 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -415,7 +415,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name		= "NTSC-M",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 3.580MHz */
-@@ -458,7 +458,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name		= "NTSC-443",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 4.43MHz */
-@@ -500,7 +500,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name		= "NTSC-J",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
-
-@@ -543,7 +543,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name		= "PAL-M",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
-
-@@ -587,7 +587,7 @@ static const struct tv_mode tv_modes[] = {
- 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
- 		.name	    = "PAL-N",
- 		.clock		= 108000,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
-
-@@ -632,7 +632,7 @@ static const struct tv_mode tv_modes[] = {
- 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
- 		.name	    = "PAL",
- 		.clock		= 108000,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
-
-@@ -819,7 +819,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name       = "1080i@50Hz",
- 		.clock		= 148800,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample     = TV_OVERSAMPLE_2X,
- 		.component_only = 1,
-
-@@ -845,7 +845,7 @@ static const struct tv_mode tv_modes[] = {
- 	{
- 		.name       = "1080i@60Hz",
- 		.clock		= 148800,
--		.refresh	= 30000,
-+		.refresh	= 60000,
- 		.oversample     = TV_OVERSAMPLE_2X,
- 		.component_only = 1,
-
+--------------enigB1EFCE28C1A1129B4463BD7A--
