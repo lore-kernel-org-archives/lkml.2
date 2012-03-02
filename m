@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab2CBHa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:30:59 -0500
-Received: from mga14.intel.com ([143.182.124.37]:42590 "EHLO mga14.intel.com"
+	id S1758198Ab2CBHiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:38:54 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37438 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab2CBHa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:30:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="113700560"
-Subject: Re: change last level cache alignment on x86?
-From: Alex Shi <alex.shi@intel.com>
-To: tglx@linutronix.de
-Cc: hpa@zytor.com, mingo@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, asit.k.mallick@intel.com
-In-Reply-To: <1330590816.21053.1336.camel@debian>
-References: <1330590816.21053.1336.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Mar 2012 15:30:25 +0800
-Message-ID: <1330673425.21053.1503.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755015Ab2CBHiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 02:38:52 -0500
+Date: Fri, 2 Mar 2012 08:38:48 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 4/9] time: Update timekeeper structure using a local
+ shadow
+Message-ID: <20120302073848.GB32401@elte.hu>
+References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org>
+ <1330672368-32290-5-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330672368-32290-5-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 16:33 +0800, Alex,Shi wrote:
-> Currently last level defined in kernel is still 128 bytes, but actually
-> I checked intel's core2, NHM, SNB, atom, serial platforms, all of them
-> are using 64 bytes. 
-> I did not get detailed info on AMD platforms. Guess someone like to give
-> the info here. So, Is if it possible to do the similar following changes
-> to use 64 byte cache alignment in kernel?
+
+* John Stultz <john.stultz@linaro.org> wrote:
+
+> Uses a local shadow structure to update the timekeeper. This
+> will allow for reduced timekeeper.rlock hold time.
 > 
-> ===
-> diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-> index 3c57033..f342a5a 100644
-> --- a/arch/x86/Kconfig.cpu
-> +++ b/arch/x86/Kconfig.cpu
-> @@ -303,7 +303,7 @@ config X86_GENERIC
->  config X86_INTERNODE_CACHE_SHIFT
->  	int
->  	default "12" if X86_VSMP
-> -	default "7" if NUMA
-> +	default "7" if NUMA && (MPENTIUM4)
->  	default X86_L1_CACHE_SHIFT
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Richard Cochran <richardcochran@gmail.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/time/timekeeping.c |   43 +++++++++++++++++++++++--------------------
+>  1 files changed, 23 insertions(+), 20 deletions(-)
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index f9ee96c..09460c1 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -74,6 +74,7 @@ struct timekeeper {
+>  };
 >  
->  config X86_CMPXCHG
+>  static struct timekeeper timekeeper;
+> +static struct timekeeper shadow_tk;
 
-In arch/x86/include/asm/cache.h, the INTERNODE_CACHE_SHIFT macro will
-transfer to '__cacheline_aligned_in_smp' finally. 
+Sigh.
 
-#ifdef CONFIG_X86_VSMP
-#ifdef CONFIG_SMP
-#define __cacheline_aligned_in_smp                                      \
-        __attribute__((__aligned__(INTERNODE_CACHE_BYTES)))             \
-        __page_aligned_data
-#endif
-#endif
+As I said it in the first round of review, it's fundamentally 
+wrong to copy live fields like locks or the clocksource pointer 
+around.
 
-look at the following contents in Kconfig.cpu, I wondering if it is
-possible to remove 'default "7" if NUMA' line. Then a thin and fit cache
-alignment will be potential helpful on performance.
-Anyone like to give some comments? 
+It's doubly wrong to do it in a global variable that no-one else 
+but the copying function (update_wall_time()) is supposed to 
+access.
 
-===
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 3c57033..6443c6f 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -303,7 +303,6 @@ config X86_GENERIC
- config X86_INTERNODE_CACHE_SHIFT
-        int
-        default "12" if X86_VSMP
--       default "7" if NUMA
-        default X86_L1_CACHE_SHIFT
- 
- config X86_CMPXCHG
-====
+There are over a dozen fields in 'struct timekeeper' - exactly 
+which ones of them are used on this private copy, as 
+update_wall_time() does the cycle accumulation and calls down 
+into timkeeping_adjust()?
 
-some contents in Kconfig.cpu: 
+The right solution would be to separate timekeeping time state 
+from global state:
 
-config X86_INTERNODE_CACHE_SHIFT
-        int
-        default "12" if X86_VSMP
-        default "7" if NUMA && (MPENTIUM4 || MPSC)
-        default X86_L1_CACHE_SHIFT
+struct timekeeper {
+	spinlock_t		lock;
 
-config X86_CMPXCHG
-        def_bool X86_64 || (X86_32 && !M386)
+	struct time_state	time_state;
+};
 
-config X86_L1_CACHE_SHIFT
-        int
-        default "7" if MPENTIUM4 || MPSC
-        default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
-        default "4" if MELAN || M486 || M386 || MGEODEGX1
-        default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+And then standardize the time calculation code on passing around 
+not 'struct timekeeper *' but 'struct time_state *' ! Then you 
+can have a local shadow copy of the global state:
 
+	struct time_state time_state_copy;
 
-> 
+and copy it from the global one and then pass it down to 
+calculation functions.
 
+This also gives the freedom to add other global state fields 
+beyond the lock. (Right now the lock appears to be the only 
+global state field - there might be more.)
 
+Thanks,
+
+	Ingo
