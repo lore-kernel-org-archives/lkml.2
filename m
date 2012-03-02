@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab2CBRaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:30:22 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35997 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756329Ab2CBRaV (ORCPT
+	id S1758987Ab2CBRlM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:41:12 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15710 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877Ab2CBRlK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:30:21 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/RQD+SmQH17koTcK6Zx/QV
-Date: Fri, 2 Mar 2012 09:30:18 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] Start getting rid of pdata callbacks with
- gpio_find_by_chip_name()
-Message-ID: <20120302173017.GK18901@atomide.com>
-References: <20120301185044.29210.44521.stgit@kaulin.local>
- <4F508DAE.9000005@ti.com>
+	Fri, 2 Mar 2012 12:41:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 02 Mar 2012 09:41:07 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Fri, 2 Mar 2012 09:41:04 -0800
+Subject: RE: [PATCH] pinctrl: resurrect verbose pinmux-pins
+Thread-Topic: [PATCH] pinctrl: resurrect verbose pinmux-pins
+Thread-Index: Acz4lixCNm7g+kafTBifQmUDymm0IwAAk6OgAAC7AsA=
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861991@HQMAIL01.nvidia.com>
+References: <1330705873-10798-1-git-send-email-linus.walleij@stericsson.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BE861978@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE861978@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F508DAE.9000005@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rajendra Nayak <rnayak@ti.com> [120302 00:35]:
-> Hi Tony,
+Stephen Warren wrote at Friday, March 02, 2012 10:22 AM:
+> Linus Walleij wrote at riday, March 02, 2012 9:31 AM:
+> > From: Linus Walleij <linus.walleij@linaro.org>
+> >
+> > This reintroduces the verbosity in the pinmux-pins file, now this
+> > file will list all pins, their names, owning device (and if it's
+> > a hog) and also in applicable cases the function and group making
+> > use of that pin right now.
+> >
+> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > 
-> On Friday 02 March 2012 12:25 AM, Tony Lindgren wrote:
-> >Hi all,
-> >
-> >This series adds gpio_find_by_name() that allows finding
-> >GPIOs on specific gpio_chips. As the GPIO numbers can be
-> >dynamic, it's hard to find the GPIO numbers from drivers
-> >using them directly.
-> >
-> >So far we've dealt with this using platform specific callbacks,
-> >but that is messy. This series removes the needs for these
-> >callbacks for omap hsmmc driver. Further callbacks can be
-> >removed people are OK with adding gpio_find_by_name().
-> >
-> >This series is based on the omap fixes-non-critical that's
-> >needed for the arch/arm/mach-omap2 parts of this series.
-> 
-> I tested these on my beagle/panda/omap4sdp and they seem to
-> work fine, also fixing the broken panda card detect (due to
-> missing card_detect_irq in the board file). There are still
-> issues however when I build twl4030-gpio as a module, which I
-> already commented on, and the fact that the init sequence now
-> works by luck :)
+> It'd be nice if we could defer this fix until after all the API rework,
+> because it'll cause all kinds of conflicts otherwise.
 
-Hmm it should not be luck based, loading omap_hsmmc module
-should fail with a sensible error if the configured card detect
-or write protect is not available.
+Oh, I see this patch is in your for-next branch already before I had a chance
+to comment on it. I guess I'll have write a patch to convert the removed struct
+type to char*s and rebase on top of it:-(
 
-I guess this is with twl6030 non-gpio based card detect?
+--
+nvpublic
 
-If so, I'll add something to pass the twl6030 card detect from
-pdata so we can fail with a sensible error in that case too.
-
-Also, sounds like twl as module and mmc built in case won't
-work without deferred probe. But at least there is a sensible
-error for that. And maybe we can prevent that in Kconfig.
-
-> The other issue also is that the multiple insmod/rmmod test
-> suggested by Russell still fails, since the second time around
-> the gpio_requests in the board callback fail because they are
-> not freed when you do a module unload/unbind.
-> That would need this patch from me to add the .teardown
-> hooks
-> http://marc.info/?l=linux-omap&m=133007767831297&w=2
-
-Yes let's add the teardown patch as a fix for now, but let's
-plan on getting rid of the twl_setup callback function
-completely.
-
-With these patches LCD and WLAN too can request the twl gpios
-directly from the driver based on gpio_chip + gpio offset.
-
-Regards,
-
-Tony
