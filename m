@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2CBAvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:51:32 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49709 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754436Ab2CBAva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:51:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.68.222.194 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120301101502.GB2535@pengutronix.de>
-References: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
-	<20120224121753.GE2479@pengutronix.de>
-	<CANKRQngWB8kUO68UdbDeWey5eGRF0nGCE341j8jyCMogvYUYKA@mail.gmail.com>
-	<20120301101502.GB2535@pengutronix.de>
-Date: Fri, 2 Mar 2012 09:51:29 +0900
-Message-ID: <CANKRQniA2icHddFG22r7VtLTuoefbK61tpcUQnXgShFHuffUuA@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce
- wait time
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Feng Tang <feng.tang@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S932155Ab2CBAz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 19:55:27 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757529Ab2CBAzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 19:55:24 -0500
+From: Richard Weinberger <richard@nod.at>
+To: jonas@southpole.se
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3/5] OpenRISC: Export memory_start and memory_end
+Date: Fri,  2 Mar 2012 01:55:13 +0100
+Message-Id: <1330649715-32438-3-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1330649715-32438-1-git-send-email-richard@nod.at>
+References: <1330649715-32438-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012年3月1日19:15 Wolfram Sang <w.sang@pengutronix.de>:
-> Ah, thanks for the update! Are you fine with the patch in question now?
+At least virt_addr_valid() makes use of memory_end.
 
-Alexander's patch looks good.
-Did Alexander test i2c-eg20t driver with this patch ?
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/openrisc/include/asm/page.h |    4 ++--
+ arch/openrisc/kernel/setup.c     |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-thanks,
+diff --git a/arch/openrisc/include/asm/page.h b/arch/openrisc/include/asm/page.h
+index b041b34..4dfe477 100644
+--- a/arch/openrisc/include/asm/page.h
++++ b/arch/openrisc/include/asm/page.h
+@@ -71,8 +71,8 @@ typedef struct page *pgtable_t;
+ #define __pgd(x)	((pgd_t) { (x) })
+ #define __pgprot(x)	((pgprot_t) { (x) })
+ 
+-extern unsigned long memory_start;
+-extern unsigned long memory_end;
++extern phys_addr_t memory_start;
++extern phys_addr_t memory_end;
+ 
+ #endif /* !__ASSEMBLY__ */
+ 
+diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
+index bf5eba2..c993c92 100644
+--- a/arch/openrisc/kernel/setup.c
++++ b/arch/openrisc/kernel/setup.c
+@@ -52,6 +52,7 @@
+ #include "vmlinux.h"
+ 
+ char __initdata cmd_line[COMMAND_LINE_SIZE] = CONFIG_CMDLINE;
++phys_addr_t memory_start, memory_end;
+ 
+ static unsigned long __init setup_memory(void)
+ {
+@@ -59,7 +60,6 @@ static unsigned long __init setup_memory(void)
+ 	unsigned long ram_start_pfn;
+ 	unsigned long free_ram_start_pfn;
+ 	unsigned long ram_end_pfn;
+-	phys_addr_t memory_start, memory_end;
+ 	struct memblock_region *region;
+ 
+ 	memory_end = memory_start = 0;
 -- 
-ROHM Co., Ltd.
-tomoya
+1.7.7.3
+
