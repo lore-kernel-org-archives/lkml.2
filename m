@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030448Ab2CBTpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:45:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759200Ab2CBTpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:45:22 -0500
-Date: Fri, 2 Mar 2012 14:44:54 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, paulus@samba.org,
-        mingo@elte.hu, acme@ghostprotocols.net,
-        Vegard Nossum <vegardno@ifi.uio.no>
-Subject: Re: [PATCH 0/2 x86] fix some page faults in nmi if kmemcheck is
- enabled
-Message-ID: <20120302194454.GL3083@redhat.com>
-References: <1329717665.3448.28.camel@ThinkPad-T61>
- <1329735648.2293.307.camel@twins>
- <1329788560.3448.45.camel@ThinkPad-T61>
- <1329819437.2293.382.camel@twins>
- <1329990828.19165.36.camel@ThinkPad-T61>
- <1330340324.11248.60.camel@twins>
- <1330397141.4112.23.camel@ThinkPad-T61>
+	id S1759236Ab2CBTux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:50:53 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:45056 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab2CBTuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 14:50:50 -0500
+Date: Fri, 2 Mar 2012 14:50:45 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Jacek Luczak <difrost.kernel@gmail.com>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120302195045.GA28296@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Ted Ts'o <tytso@mit.edu>, Jacek Luczak <difrost.kernel@gmail.com>,
+	linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+ <20120301143859.GX5054@shiny>
+ <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+ <20120302140038.GD5054@shiny>
+ <CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
+ <20120302142651.GH5054@shiny>
+ <20120302193215.GB22215@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330397141.4112.23.camel@ThinkPad-T61>
+In-Reply-To: <20120302193215.GB22215@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090206.4F512498.007A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 10:45:41AM +0800, Li Zhong wrote:
-> > > I'm not sure whether I understand it correctly. Do you mean that
-> > > nmiaction is initialized in register_nmi_handler(), which indicates it
-> > > will be used in nmi, so it shouldn't be marked non-present?
+On Fri, Mar 02, 2012 at 02:32:15PM -0500, Ted Ts'o wrote:
+> On Fri, Mar 02, 2012 at 09:26:51AM -0500, Chris Mason wrote:
 > > 
-> > No, you said that it marks memory non-present to detect uninitialized
-> > stuff, but since it is initialized, it shouldn't then be non-present,
-> > right?
+> > filefrag will tell you how many extents each file has, any file with
+> > more than one extent is interesting.  (The ext4 crowd may have better
+> > suggestions on measuring fragmentation).
 > 
-> From my understanding of kmemcheck, the checking is based on the
-> non-present page. So while handling page fault, if the memory hasn't
-> been written before read, kmemcheck knows that it is uninitialized. 
+> You can get a *huge* amount of information (probably more than you'll
+> want to analyze) by doing this:
 > 
-> I think it is used to find code errors, so it need mark all non-present,
-> to check if there are any access to uninitialized memory. 
+>      e2fsck -nf -E fragcheck /dev/XXXX >& /tmp/fragcheck.out
+> 
+> I haven't had time to do this in a while, but a while back I used this
+> to debug the writeback code with an eye towards reducing
+> fragmentation.  At the time I was trying to optimize the case of
+> reducing fragmentation in the easist case possible, where you start
+> with an empty file system, and then copy all of the data from another
+> file system onto it using rsync -avH.
+> 
+> It would be worth while to see what happens with files written by the
+> compiler and linker.  Given that libelf tends to write .o files
+> non-sequentially, and without telling us how big the space is in
+> advance, I could well imagine that we're not doing the best job
+> avoiding free space fragmentation, which eventually leads to extra
+> file system aging.
 
-I am not sure if this is what your tool is catching, but someone pointed
-out to me privately that when panic'ing in an NMI, either the shutdown
-path I modified or the kdump path will register an NMI handler in an NMI
-context.  Thus they will try to allocate memory in the NMI context.
+I just realized that I confused things.  He's doing a read on the
+results of a cp -a to a fresh FS, so there's no way the compiler/linker
+are causing trouble.
 
-So I will have to fix that.  Wonder if that popular lockless memory
-allocator can help me there... otherwise I have to go back to pass in
-structs like the notifier blocks do.
+> 
+> It would be interesting to have a project where someone added
+> fallocate() support into libelf, and then added some hueristics into
+> ext4 so that if a file is fallocated to a precise size, or if the file
+> is fully written and closed before writeback begins, that we use this
+> to more efficiently pack the space used by the files by the block
+> allocator.  This is a place where I would not be surprised that XFS
+> has some better code to avoid accelerated file system aging, and where
+> we could do better with ext4 with some development effort.
 
-Cheers,
-Don
+The part I don't think any of us have solved is writing back the files
+in a good order after we've fallocated the blocks.
+
+So this will probably be great for reads and not so good for writes.
+
+> 
+> Of course, it might also be possible to hack around this by simply
+> using VPATH and dropping your build files in a separate place from
+> your source files, and periodically reformatting the file system where
+> your build tree lives.  (As a side note, something that works well for
+> me is to use an SSD for my source files, and a separate 5400rpm HDD
+> for my build tree.  That allows me to use a smaller and more
+> affordable SSD, and since the object files can be written
+> asynchronously by the writeback threads, but the compiler can't move
+> forward until it gets file data from the .c or .h file, it gets me the
+> best price/performance for a laptop build environment.)
+
+mkfs for defrag ;)  It's the only way to be sure.
+
+> 
+> BTW, I suspect we could make acp even more efficient by teaching it to
+> use FIEMAP ioctl to map out the data blocks for all of the files in
+> the source file system, and then copied the files (or perhaps even
+> parts of files) in a read order which reduced seeking on the source
+> drive.
+
+acp does have a -b mode where it fibmaps (I was either lazy or it is
+older than fiemap, I forget) the first block in the file, and uses that
+to sort.  It does help if the file blocks aren't ordered well wrt their
+inode numbers, but not if the files are fragmented.
+
+It's also worth mentioning that acp doesn't actually cp.  I never got
+that far.  It was supposed to be the perfect example of why everything
+should be done via aio, but it just ended up demonstrating that ordering
+by inode number and leveraging kernel/hardware reada were more
+important.
+
+-chris
