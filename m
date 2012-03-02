@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2CBRRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:17:23 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3515 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756483Ab2CBRRW convert rfc822-to-8bit (ORCPT
+	id S1757850Ab2CBRSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:18:17 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59185 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010Ab2CBRSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:17:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 02 Mar 2012 09:17:18 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Fri, 2 Mar 2012 09:17:17 -0800
-Subject: RE: [PATCH] pinctrl: fix the pin descriptor kerneldoc
-Thread-Topic: [PATCH] pinctrl: fix the pin descriptor kerneldoc
-Thread-Index: Acz4jLoKiUVn046DTUKqwW7G7fjXkQAC3Nlw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861969@HQMAIL01.nvidia.com>
-References: <1330703621-4044-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1330703621-4044-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 12:18:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.112.23.66 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
 MIME-Version: 1.0
+In-Reply-To: <4F50FE1B.7090008@intel.com>
+References: <4f50b540.6AzyOmpHR+z7jLk1%tadeusz.struk@intel.com>
+ <CAErSpo6JaNXvJf_KEkRUYLed8ET4vSunfCAq9BWq3yd3+dZQpA@mail.gmail.com> <4F50FE1B.7090008@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 2 Mar 2012 10:17:53 -0700
+Message-ID: <CAErSpo6QzCy7cgN8boXu4zhGhTbjEG7RyJ6avaVKL_u=vGMOUw@mail.gmail.com>
+Subject: Re: [PATCH v2] Dynamically add and remove device specific reset functions
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, March 02, 2012 8:54 AM:
-> The introduction of the owner field on the pin descriptor was not
-> properly documented so fix this up.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Fri, Mar 2, 2012 at 10:06 AM, Tadeusz Struk <tadeusz.struk@intel.com> wrote:
+> On 02/03/12 16:29, Bjorn Helgaas wrote:
+>> Where do you plan to add calls to pci_dev_specific_reset_add()?  In
+>> drivers?
+>
+> Yes, I'm working on a driver for a device with SRIOV capability.
+> I'll call it from there.
+>
+>> Did you consider adding a "reset" function pointer to struct
+>> pci_driver?  That might be more natural -- the reset function is right
+>> with all the other code that knows about the device, and there's no
+>> issue with looking up the correct reset function.
+>> With this patch, we sort of have two different ways to map
+>> vendor/device IDs to code: the usual pci_register_driver() approach,
+>> and this one using reset_list.  If pci_driver had a "reset" pointer,
+>> that would be used most of the time.  You might still need the
+>> reset_list for generic things, e.g., the reset_intel_generic_dev()
+>> function, but it would be a fallback.  It might look something like:
+>>
+>>     struct pci_driver *drv = dev->driver;
+>>
+>>     if (drv && drv->reset) {
+>>         drv->reset(dev);
+>>         return;
+>>     }
+>>
+>>     list_for_each_entry(i, &reset_list, list) {
+>>         ...
+>
+> No, I didn't think about it.
+> This is good idea, but for me the pci_dev_specific_reset() works fine.
 
-I did have this fix buried later in my patch series, but it's probably a
-good idea to patch it separately before then.
+I know your patch works fine, but I think we should have the
+discussion about whether adding a struct pci_driver pointer is a
+better long-term solution.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Greg, Jesse, others, chime in if you have any thoughts.
 
--- 
-nvpublic
-
+Bjorn
