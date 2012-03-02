@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965236Ab2CBMdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 07:33:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19648 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756115Ab2CBMdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 07:33:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="113815062"
-Date: Fri, 2 Mar 2012 14:32:15 +0200
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
-Message-ID: <20120302123210.GA4741@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	santosh prasad nayak <santoshprasadnayak@gmail.com>,
-	marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
-	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
- <20120301123540.GE25627@aemeltch-MOBL1>
- <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
+	id S1758727Ab2CBMfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 07:35:23 -0500
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:50049 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756115Ab2CBMfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 07:35:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of lighthorsenetworks@gmail.com designates 10.68.216.132 as permitted sender) smtp.mail=lighthorsenetworks@gmail.com; dkim=pass header.i=lighthorsenetworks@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 2 Mar 2012 05:35:21 -0700
+Message-ID: <CAPVG_r26QSxAEaQ6ajpp7_kORFguNX+CnSn-ESt-wwtt_iMJig@mail.gmail.com>
+Subject: [ANNOUNCE] Cloudstream Kernel Source and Patches Posted 2.6.18-194.26.1
+From: jeff merkey <lighthorsenetworks@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Santosh,
+Pursuant to the GPL, the following source trees are posted on Google
+Code for the Cloudstream Linux kernel with all patches and
+configuration files for the base kernel used to support Cloudstream
+Network Forensics Appliances.
 
-On Thu, Mar 01, 2012 at 07:34:58PM +0530, santosh prasad nayak wrote:
-> Andrei,
-> 
-> I could not get you.
-> 
-> Do you want me to resend the patch with subject,
->   "[PATCH] Bluetooth: Fix network to host endian conversion for L2CAP
-> chan id."  ?
+http://cloudstream-linux.googlecode.com/files/linux-2.6.18-194.26.1-el5.x86_64.tar.gz
+http://cloudstream-linux.googlecode.com/files/cs--10-22-2011.patch
+http://cloudstream-linux.googlecode.com/files/cs-2.6.18-194.26.1.x86_64.config
+http://cloudstream-linux.googlecode.com/files/cs-2.6.18-194.26.1.i386.config
+http://cloudstream-linux.googlecode.com/files/parted-1.8.8.4-cloudstream.tar.gz
+http://cloudstream-linux.googlecode.com/files/cslinux-2.6.18.194.26.1.cloudstream.11.15.2011.1321409549-1.src.rpm
+http://cloudstream-linux.googlecode.com/files/csheaders-2.6.18.194.26.1.cloudstream.11.15.2011.1321409239-1.src.rpm
 
-No, the main concern was your commit message which is changelog and should
-come after "---" as it is shown in the example below.
+For additional information, please visit
 
-> > On Thu, Mar 01, 2012 at 04:29:21PM +0530, santosh nayak wrote:
-> >> From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> >>
-> >> Fix for endian bug.
-> >>
-> >> Fix for null dereferenced removed as it is already
-> >> submitted by Andrei.
-> >>
-> >> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> >> ---
-> >>  net/bluetooth/l2cap_sock.c |    5 +++--
-> >>  1 files changed, 3 insertions(+), 2 deletions(-)
-> >
-> > We prefer following commit log (this is the example)
-> >
-> > <------8<----------------------------------------------------------
-> > |  From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> > |
-> > |  Fix network to host endian conversion for L2CAP chan id.
-> > |
-> > |  Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> > |
-> > |  ---
-> > |          * v2 Fix for null dereferenced removed as it is already
-> > |          submitted by Andrei.
-> > |
-> > |    net/bluetooth/l2cap_sock.c |    5 +++--
-> > |    1 files changed, 3 insertions(+), 2 deletions(-)
-> > |
-> > <------8<----------------------------------------------------------
+http://www.lighthorsenetworks.com
 
-Best regards 
-Andrei Emeltchenko 
+Lighthorse Networks
