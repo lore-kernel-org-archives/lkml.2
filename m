@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab2CBJwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:52:05 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36601 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab2CBJv5 (ORCPT
+	id S1758656Ab2CBJwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:52:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44097 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758644Ab2CBJwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:51:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.51.15 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	Fri, 2 Mar 2012 04:52:18 -0500
+Date: Fri, 2 Mar 2012 01:51:26 -0800
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-cfbd70c17c4535e64be92ea442a2a45078a18184@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1330111898-68071-1-git-send-email-dsahern@gmail.com>
+References: <1330111898-68071-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Ensure comm string is properly terminated
+Git-Commit-ID: cfbd70c17c4535e64be92ea442a2a45078a18184
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120301184248.GC32588@thunk.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<CADDYkjRni4i3QvWo+hOn-Ct4mFoTpL1-ydmE7fbzYJmHFhS3_Q@mail.gmail.com>
-	<CADDYkjRYrKaBvTQ4Pe6bfemL7r5W=AU468uy0krFAEJD45syow@mail.gmail.com>
-	<20120229144244.GF5054@shiny>
-	<CADDYkjSEcktUYS+FzoEQ-FH1yMCvq4as5S2LoJyQBPM9=+CoTw@mail.gmail.com>
-	<CADDYkjQ-N2+2sJMb9=DZt1vr1=nWkCCdXB2xJAPgkhAuguEPyg@mail.gmail.com>
-	<CAJd=RBAs3KGVO8hdUY3peoG1JuxU7_SZ4Z=H0Uy43wLpUFkh7g@mail.gmail.com>
-	<CADDYkjR+d+pFYN-mQ91ZP4KcU4zzwC5jmxj1xxMDrp+X+Z8c6g@mail.gmail.com>
-	<20120301141823.GV5054@shiny>
-	<CADDYkjRs934T2D7DPCk_dcrazptWtLu70=A61R32p22Ee1iXsw@mail.gmail.com>
-	<20120301184248.GC32588@thunk.org>
-Date: Fri, 2 Mar 2012 10:51:55 +0100
-Message-ID: <CADDYkjRXP8jQXEGoDcfghRgtC-XvS40EZ6U4H1z67fCapz54MA@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Jacek Luczak <difrost.kernel@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org,
-        lczerner@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Mar 2012 01:51:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/1 Ted Ts'o <tytso@mit.edu>:
-> On Thu, Mar 01, 2012 at 03:43:41PM +0100, Jacek Luczak wrote:
->>
->> Yep, ext4 is close to my wife's closet.
->>
->
-> Were all of the file systems freshly laid down, or was this an aged
-> ext4 file system?
+Commit-ID:  cfbd70c17c4535e64be92ea442a2a45078a18184
+Gitweb:     http://git.kernel.org/tip/cfbd70c17c4535e64be92ea442a2a45078a18184
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 24 Feb 2012 12:31:38 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 29 Feb 2012 18:29:45 -0300
 
-Always fresh, recreated for each tests - that's why it takes quite
-much time as I had to copy the test dir back in places. Env is kept in
-all tests as much consistent as possible thus the values should have
-credibility.
+perf tools: Ensure comm string is properly terminated
 
-> Also you should beware that if you have a workload which is heavy
-> parallel I/O, with lots of random, read/write accesses to small files,
-> a benchmark using tar might not be representative of what you will see
-> in production --- different file systems have different strengths and
-> weaknesses --- and the fact that ext3/ext4's readdir() returns inodes
-> in a non-optimal order for stat(2) or unlink(2) or file copy in the
-> cold cache case may not matter as much as you think in a build server.
-> (i.e., the directories that do need to be searched will probably be
-> serviced out of the dentry cache, etc.)
+If threads in a multi-threaded process have names shorter than the main
+thread the comm for the named threads is not properly terminated.
 
-The set of tests were chosen as is not to find best fs for build purposes.
+E.g., for the process 'namedthreads' where each thread is named noploop%d
+where %d is the thread number:
 
-For a pure builds ext4 is as of now the best and most of the points
-you've put above are valid here. We've performed a real tests in a
-clone of production environment. Results are not that surprising as
-one can find same from e.g. Phoronix test. We've done test in XFS vs
-ext[34] and ext4 vs btrfs. Here if we are taking into account only a
-software compilation ext4 rocks. Btrfs is only few seconds slower (max
-5 in average). The choice then was to use ext4 due to more mature
-foundations and support in RHEL. Why we're looking for new one? Well,
-the build environment is not only based on software building. There
-are e.g. some strange tests running in parallel, code analysis, etc.
-Users are doing damn odd things there ... are using Java, you can
-imagine how bad bad bad bad zombie java can be. We've failed here and
-are not able to isolate each use cases and create profiled
-environment. Thus we need to find sth that will provide common sense
-for all use cases.
+Before:
+    perf script -f comm,tid,ip,sym,dso
+    noploop:4ads 21616  400a49 noploop (/tmp/namedthreads)
+The 'ads' in the thread comm bleeds over from the process name.
 
-The previous tests shown that ext[34] rocks on compilation timing, but
-all around not really. Also one need to remember that fs content
-changes often. The ext3 was ageing in 4-6 months of use. XFS on the
-other hand was great all around while not in compilation timings.
-Roughly 10% is not that much but if hosts is doing builds 24h/7 then
-after a few days we've been much behind ext[34] clone env. Btrfs was
-only tested against compilation timings, not in general use.
+After:
+    perf script -f comm,tid,ip,sym,dso
+       noploop:4 21616  400a49 noploop (/tmp/namedthreads)
 
-We've created a simple test case for compilation. It's quite not same
-as what we got in real env but is good baseline (kernel build system
-is too perfect). Simply parallel kernel builds with randomly
-allyesconfig or allmodconfig. Below are the seekwatcher graphs of
-around 1h of tests running. There were 10 builds (kernels
-2.6.20-2.6.29) running with three parallel threads:
-1) ext4: http://91.234.146.107/~difrost/seekwatcher/kt_ext4.png
-2) btrfs: http://91.234.146.107/~difrost/seekwatcher/kt_btrfs.png
-3) both: http://91.234.146.107/~difrost/seekwatcher/kt_btrfs_ext4.png
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1330111898-68071-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/event.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Above graphs prove that ext4 is ahead in this ,,competition''. I will
-try to setup there a real build env to see how those two compare.
-
--Jacek
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 2044324..2a6f33c 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -74,6 +74,7 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+ 			if (size >= len)
+ 				size = len - 1;
+ 			memcpy(comm, name, size);
++			comm[size] = '\0';
+ 
+ 		} else if (memcmp(bf, "Tgid:", 5) == 0) {
+ 			char *tgids = bf + 5;
