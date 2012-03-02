@@ -1,46 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab2CBJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:57:55 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:51523 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755603Ab2CBJ5x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:57:53 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1758671Ab2CBJ7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:59:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48400 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755603Ab2CBJ7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 04:59:13 -0500
+Date: Fri, 2 Mar 2012 10:59:10 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-ID: <20120302095910.GB1744@quack.suse.cz>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+ <20120301123640.GA30369@localhost>
+ <20120301163837.GA13104@quack.suse.cz>
+ <20120302044858.GA14802@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
-Date: Fri, 2 Mar 2012 09:57:01 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E8B@saturn3.aculab.com>
-In-Reply-To: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
-Thread-Index: Acz4Q5iTXw6U0OlcQUeiLtslOSAZDgAFwPRw
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Liu Gang" <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <Alexandre.Bounine@idt.com>
-Cc: "Shaohui Xie" <Shaohui.Xie@freescale.com>, <r61911@freescale.com>,
-        <linux-kernel@vger.kernel.org>,
-        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        <akpm@linux-foundation.org>, <r58472@freescale.com>
-X-OriginalArrivalTime: 02 Mar 2012 09:57:01.0929 (UTC) FILETIME=[D0B6D590:01CCF85A]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302044858.GA14802@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> For the file "arch/powerpc/sysdev/fsl_rmu.c", there will be 
-> some compile errors while using the corenet64_smp_defconfig:
+On Fri 02-03-12 12:48:58, Wu Fengguang wrote:
+> On Thu, Mar 01, 2012 at 05:38:37PM +0100, Jan Kara wrote:
+> > On Thu 01-03-12 20:36:40, Wu Fengguang wrote:
+> > > > Please have a think about all of this and see if you can demonstrate
+> > > > how the iput() here is guaranteed safe.
+> > > 
+> > > There are already several __iget()/iput() calls inside fs-writeback.c.
+> > > The existing iput() calls already demonstrate its safety?
+> > > 
+> > > Basically the flusher works in this way
+> > > 
+> > > - the dirty inode list i_wb_list does not reference count the inode at all
+> > > 
+> > > - the flusher thread does something analog to igrab() and set I_SYNC
+> > >   before going off to writeout the inode
+> > > 
+> > > - evict() will wait for completion of I_SYNC
+> >   Yes, you are right that currently writeback code already holds inode
+> > references and so it can happen that flusher thread drops the last inode
+> > reference. But currently that could create problems only if someone waits
+> > for flusher thread to make progress while effectively blocking e.g.
+> > truncate from happening. Currently flusher thread handles sync(2) and
+> > background writeback and filesystems take care to not hold any locks
+> > blocking IO / truncate while possibly waiting for these.
+> > 
+> > But with your addition situation changes significantly - now anyone doing
+> > allocation can block and do allocation from all sorts of places including
+> > ones where we hold locks blocking other fs activity. The good news is that
+> > we use GFP_NOFS in such places. So if GFP_NOFS allocation cannot possibly
+> > depend on a completion of some writeback work, then I'd still be
+> > comfortable with dropping inode references from writeback code. But Andrew
+> > is right this at least needs some arguing...
+> 
+> You seem to miss the point that we don't do wait or page allocations
+> inside queue_pageout_work().
+  I didn't miss this point. I know we don't wait directly. But if the only
+way to free pages from the zone where we need to do allocation is via flusher
+thread, then we effectively *are* waiting for the work to complete. And if
+the flusher thread is blocked, we have a problem. And I agree it's unlikely
+but given enough time and people, I believe someone finds a way to
+(inadvertedly) trigger this.
 
-I'm sure that replacing 'u32' with 'unsigned long'
-is really the best thing to do here.
-It looks to me as though they should be some pointer type.
+> The final iput() will not block the
+> random tasks because the latter don't wait for completion of the work.
+> 
+>         random task                     flusher thread
+> 
+>         page allocation
+>           page reclaim
+>             queue_pageout_work()
+>               igrab()
+> 
+>                   ......  after a while  ......
+> 
+>                                         execute pageout work                
+>                                         iput()
+>                                         <work completed>
+> 
+> There will be some reclaim_wait()s if the pageout works are not
+> executed quickly, in which case vmscan will be impacted and slowed
+> down. However it's not waiting for any specific work to complete, so
+> there is no chance to form a loop of dependencies leading to deadlocks.
+> 
+> The iput() does have the theoretic possibility to deadlock the flusher
+> thread itself (but not with the other random tasks). Since the flusher
+> thread has always been doing iput() w/o running into such bugs, we can
+> reasonably expect the new iput() to be as safe in practical.
+  But so far, kswapd could do writeout itself so even if flusher thread is
+blocked in iput(), we could still do writeout from kswapd to clean zones.
 
-	David
+Now I don't think blocking on iput() can be a problem because of reasons I
+outlined in another email yesterday (GFP_NOFS allocations and such). Just
+I don't agree with your reasoning that it cannot be a problem because it
+was not problem previously. That's just not true.
 
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
