@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899Ab2CBA5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:57:55 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:38963 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751156Ab2CBA5w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:57:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.60.11.40 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
+	id S964774Ab2CBBCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:02:15 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50830 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab2CBBCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:02:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.83.42 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-Date: Thu, 1 Mar 2012 16:57:49 -0800
-X-Google-Sender-Auth: HbUt5BW6ORyWfbrhuwx6pIdnRIY
-Message-ID: <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
-From: Kees Cook <keescook@chromium.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: akpm@linux-foundation.org, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+In-Reply-To: <m2ipinq16x.fsf@firstfloor.org>
+References: <CA+55aFyv=OKUuAV6pqdmbHeUL7Motsh+n026nWqaT63aEgBjBQ@mail.gmail.com>
+ <m2ipinq16x.fsf@firstfloor.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 1 Mar 2012 17:01:52 -0800
+X-Google-Sender-Auth: rLDOGDUolt7pwX0oqoOVpIVBL3Y
+Message-ID: <CA+55aFw=wwGD=QLmQgfGm+oZR3UyvKBmXdXj+SJtK6pipCe45A@mail.gmail.com>
+Subject: Re: .. anybody know of any filesystems that depend on the exact VFS
+ 'namehash' implementation?
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Kees,
+On Thu, Mar 1, 2012 at 4:46 PM, Andi Kleen <andi@firstfloor.org> wrote:
 >
-> On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
->>
->> Is it time to pull this into -next so more people can feel it? I brought
->> Andy Lutomirski's patches forward (needed to bump the prctl values), and
->> updated my git tree. If we're ready, here it is in all its request-pull
->> format glory:
->>
->> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
->>   Stephen Rothwell (1):
->>         Add linux-next specific files for 20120301
+> There should be generally better modern general hash algorithms around,
+> like murmur, cityhash or snoopy. Perhaps even the fnv we have in tree,
+> but it's somewhat dated by know.
 >
-> OK, not commenting on anything else, but I cannot merge that into
-> linux-next because it is based on yesterday's linux-next release and
-> linux-next (effectively) rebases every day ...
->
-> Does this work depend on anything in linux-next?  Or could it be just
-> based off Linus' tree.  If it depends on other tree(s) merged into
-> linux-next, then you should base your tree on those tree(s) as long as
-> they never get rebased ...
+> They all have larger code, but if it's really that hot it would be worth
+> it.
 
-Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
+The quality of our hash function really doesn't seem to be the issue.
+In fact, my (other - I've done both cache-hot and cache-cold) profiles
+seem to indicate that the only access that ever matters is the first
+one (ie the read from the hash table, not the following of the
+chains).
 
-And at least the ptrace changes are, IIRC, in -mm, which has no tree.
-:P Given that, what's the best thing for me to do for this to be easy
-for you to pull?
+I have a dim memory of us playing with the hash function itself long
+long ago, and what made a difference was using the right bits from the
+"parent" pointer, not the hash of the name itself. That's especially
+true since many filenames are really just in the 3-8 character length
+thing, so creating a 32-bit hash from that is not going to have lots
+of collisions.
 
--Kees
+We basically have "two hashes": we have the full 32-bit "hash number"
+that we compute over the filename (and also compare at lookup time
+before we do a name compare), and then we have the "bucket number"
+which is the actual hash chain number.
 
--- 
-Kees Cook
-ChromeOS Security
+The bucket number is generate from both the filename hash number and
+the parent pointer, and then we try to mix bits around with that
+GOLDEN_RATIO_PRIME thing. And last time this was an issue, it was the
+"mixing bits around" that made a difference to proper bucket use. See
+commit 99effef9544e: "[PATCH] dentry and inode cache hash algorithm
+performance changes." in the historical BK import by Thomas.
+
+                         Linus
