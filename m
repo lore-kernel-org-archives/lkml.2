@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab2CBTHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:07:48 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59005 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2CBTHr (ORCPT
+	id S1030256Ab2CBTOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:14:32 -0500
+Received: from 177.16.140.54.static.host.gvt.net.br ([177.16.140.54]:56642
+	"EHLO sandy.ghostprotocols.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751634Ab2CBTOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:07:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of grant.likely@secretlab.ca designates 10.68.203.73 as permitted sender) smtp.mail=grant.likely@secretlab.ca
+	Fri, 2 Mar 2012 14:14:31 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Mar 2012 14:14:31 EST
+Date: Fri, 2 Mar 2012 16:08:22 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, mingo@elte.hu, ravitillo@lbl.gov,
+        khandual@linux.vnet.ibm.com, asharma@fb.com, robert.richter@amd.com,
+        ming.m.lin@intel.com, vweaver1@eecs.utk.edu, andi@firstfloor.org
+Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
+Message-ID: <20120302190822.GA12431@infradead.org>
+References: <20120224094048.GA7952@quad>
+ <4F47ABAD.9080408@gmail.com>
+ <CABPqkBT1R_SJiQkjujS4dN5yQZPakjOmmCLNR3DmNxTmVT_p9A@mail.gmail.com>
+ <4F47AD6A.6080609@gmail.com>
+ <CABPqkBQyBtxO3ytcZKHyGNAiwYzmqODy+C-EY5gQTENKtngBFw@mail.gmail.com>
+ <4F47B1A3.6050503@gmail.com>
+ <CABPqkBT=po0=-oi0GgGEVCNCxuSMwMyh5vPz=sWcNrqSZDc68Q@mail.gmail.com>
+ <CABPqkBTBkrA5qdeyhznr48Pqa9L-EX-LABypX55f_GoMRk-hDg@mail.gmail.com>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
-To: David Daney <david.daney@cavium.com>, Rob Herring <robherring2@gmail.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <4F510B8E.3070201@cavium.com>
-References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com>
-Date: Fri, 02 Mar 2012 12:07:44 -0700
-Message-Id: <20120302190744.571E03E1C63@localhost>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTBkrA5qdeyhznr48Pqa9L-EX-LABypX55f_GoMRk-hDg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Mar 2012 10:03:58 -0800, David Daney <david.daney@cavium.com> wrote:
-> On 03/02/2012 06:22 AM, Rob Herring wrote:
-> [...]
-> >> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-> >> index ce30e2f..01344ae 100644
-> >> --- a/arch/mips/Kconfig
-> >> +++ b/arch/mips/Kconfig
-> >> @@ -1432,6 +1432,7 @@ config CPU_CAVIUM_OCTEON
-> >>   	select WEAK_ORDERING
-> >>   	select CPU_SUPPORTS_HIGHMEM
-> >>   	select CPU_SUPPORTS_HUGEPAGES
-> >> +	select IRQ_DOMAIN
-> >
-> > IIRC, Grant has a patch cued up that enables IRQ_DOMAIN for all of MIPS.
-> >
+Em Fri, Mar 02, 2012 at 06:47:38PM +0100, Stephane Eranian escreveu:
+> Arnaldo,
 > 
-> Indeed, I now see it in linux-next.  I will remove this one.
-> 
-> >>   	help
-> >>   	  The Cavium Octeon processor is a highly integrated chip containing
-> >>   	  many ethernet hardware widgets for networking tasks. The processor
-> >> diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-> >> index bdcedd3..e9f2f6c 100644
-> >> --- a/arch/mips/cavium-octeon/octeon-irq.c
-> >> +++ b/arch/mips/cavium-octeon/octeon-irq.c
-> [...]
-> >> +static void __init octeon_irq_set_ciu_mapping(unsigned int irq,
-> >> +					      unsigned int line,
-> >> +					      unsigned int bit,
-> >> +					      struct irq_domain *domain,
-> >>   					      struct irq_chip *chip,
-> >>   					      irq_flow_handler_t handler)
-> >>   {
-> >> +	struct irq_data *irqd;
-> >>   	union octeon_ciu_chip_data cd;
-> >>
-> >>   	irq_set_chip_and_handler(irq, chip, handler);
-> >> -
-> >>   	cd.l = 0;
-> >>   	cd.s.line = line;
-> >>   	cd.s.bit = bit;
-> >>
-> >>   	irq_set_chip_data(irq, cd.p);
-> >>   	octeon_irq_ciu_to_irq[line][bit] = irq;
-> >> +
-> >> +	irqd = irq_get_irq_data(irq);
-> >> +	irqd->hwirq = line<<  6 | bit;
-> >> +	irqd->domain = domain;
-> >
-> > I think the domain code will set these.
-> 
-> It is my understanding that the domain code only does this for:
-> 
-> o irq_domain_add_legacy()
-> 
-> o irq_create_direct_mapping()
-> 
-> o irq_create_mapping()
-> 
-> We use none of those.  So I do it here.
-> 
-> If there is a better way, I am open to suggestions.
+> What do you think about this patch?
 
-irq_create_mapping is called by irq_create_of_mapping() which is
-in turn called by irq_of_parse_and-map().  irq_domain always
-manages the hwirq and domain values.  Driver code cannot manipulate
-them manually.
+I'm processing perf/core patches today, will get to this one and merge
+or let you know objections,
 
-g.
+- Arnaldo
+ 
+> 
+> On Fri, Feb 24, 2012 at 4:51 PM, Stephane Eranian <eranian@google.com> wrote:
+> > On Fri, Feb 24, 2012 at 4:49 PM, David Ahern <dsahern@gmail.com> wrote:
+> >> On 2/24/12 8:40 AM, Stephane Eranian wrote:
+> >>>
+> >>> No, I don't. Read the code carefully. The for loop sets all known feature
+> >>> bits.
+> >>> Then, the ones not necessary or unused are turned off individually.
+> >>
+> >>
+> >> Ok, I see now. The __set_feat loop is earlier in builtin-record.c, not the
+> >> util code.
+> >>
+> > Yeah. Arnaldo simplified the original code in builtin-record.c to have the loop
+> > instead of individual set_feat().
+> >
+> >> David
