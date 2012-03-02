@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab2CBJO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 04:14:26 -0500
-Received: from mail.southpole.se ([193.12.106.18]:39334 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab2CBJOW (ORCPT
+	id S1758564Ab2CBJQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 04:16:30 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:50851 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757836Ab2CBJQ0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 04:14:22 -0500
-Message-ID: <1330679663.32213.62.camel@crucifix>
-Subject: Re: [PATCH 3/5] OpenRISC: Export memory_start and memory_end
-From: Jonas Bonn <jonas@southpole.se>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org
-Date: Fri, 02 Mar 2012 10:14:23 +0100
-In-Reply-To: <4F508962.1070108@nod.at>
-References: <1330649715-32438-1-git-send-email-richard@nod.at>
-	  <1330649715-32438-3-git-send-email-richard@nod.at>
-	 <1330671102.19557.100.camel@satguru> <4F508962.1070108@nod.at>
-Organization: South Pole AB
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 79660-10333
+	Fri, 2 Mar 2012 04:16:26 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] Bluetooth: Silence static checker warning.
+Date: Fri, 2 Mar 2012 09:15:37 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E88@saturn3.aculab.com>
+In-Reply-To: <1330537602.3392.101.camel@aeonflux>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] Bluetooth: Silence static checker warning.
+Thread-Index: Acz3CgiybSRic4PYSrewGorzQNz0AwBSp+ig
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Marcel Holtmann" <marcel@holtmann.org>,
+        "santosh nayak" <santoshprasadnayak@gmail.com>
+Cc: <padovan@profusion.mobi>, <davem@davemloft.net>,
+        <linux-bluetooth@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>
+X-OriginalArrivalTime: 02 Mar 2012 09:15:37.0243 (UTC) FILETIME=[07B9D6B0:01CCF855]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, 2012-03-02 at 09:48 +0100, Richard Weinberger wrote:
-> Am 02.03.2012 07:51, schrieb Jonas Bonn:
-> > On Fri, 2012-03-02 at 01:55 +0100, Richard Weinberger wrote:
-> >> At least virt_addr_valid() makes use of memory_end.
+ 
+> > > diff --git a/net/bluetooth/l2cap_sock.c
+b/net/bluetooth/l2cap_sock.c
+> > > index 401d942..d206321 100644
+> > > --- a/net/bluetooth/l2cap_sock.c
+> > > +++ b/net/bluetooth/l2cap_sock.c
+> > > @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock,
+struct sockaddr *addr, int alen)
+> > >  	}
+> > >  
+> > >  	if (la.l2_cid)
+> > > -		err = l2cap_add_scid(chan, la.l2_cid);
+> > > +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+> > >  	else
+> > >  		err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
+> > >  
+> > > @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket
+*sock, struct sockaddr *addr, int al
+> > >  	if (la.l2_cid && la.l2_psm)
+> > >  		return -EINVAL;
+> > >  
+> > > -	err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid,
+&la.l2_bdaddr);
+> > > +	err = l2cap_chan_connect(chan, la.l2_psm,
+__le16_to_cpu(la.l2_cid),
+> > > +				&la.l2_bdaddr);
+> > >  	if (err)
+> > >  		goto done;
 > > 
-> > virt_addr_valid looks broken... it shouldn't be comparing a virtual
-> > address against memory_end which is phys_addr_t.
+> > I am not sure about this one. Need to go back and read through the
+> > source code. The value provided from userspace is already in the
+right
+> > host endian. Could be that we mess up our internal classification.
+And
+> > instead of adding __le16_to_cpu we should fix its classification.
 > 
-> Then it's time to implement it correctly and match OpenRISC's
-> semantics.
-> 
+> I confused myself here, so the provided PSM and CID values coming from
+> userspace are little endian. Patch is correct.
 
-Give this a try...
+How long has this code been in tree?
+It isn't obvious to me that this change won't break code on BE systems
+where the application code is already fixing the endianness.
 
-http://git.openrisc.net/cgit.cgi/jonas/linux/commit/?id=30fbeb350cd26dc87477b9cadf0bfe132dcf5119
+	David
 
-/Jonas
 
