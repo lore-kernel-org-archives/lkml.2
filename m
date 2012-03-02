@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030191Ab2CBOsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:48:20 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49575 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2CBOsS (ORCPT
+	id S965243Ab2CBOwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:52:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:43185 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010Ab2CBOwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:48:18 -0500
-Date: Fri, 2 Mar 2012 15:48:00 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -v2 PATCH 0/3] RAS: Use MCE tracepoint for decoded MCEs
-Message-ID: <20120302144800.GA10004@aftab>
-References: <1330698314-9863-1-git-send-email-bp@amd64.org>
- <4F50DC32.10400@redhat.com>
+	Fri, 2 Mar 2012 09:52:09 -0500
+Date: Fri, 2 Mar 2012 15:52:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
+ PREEMPT_RT
+In-Reply-To: <20120301190346.172835662@goodmis.org>
+Message-ID: <alpine.LFD.2.02.1203021518501.2742@ionos>
+References: <20120301185527.064629423@goodmis.org> <20120301190346.172835662@goodmis.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F50DC32.10400@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 11:41:54AM -0300, Mauro Carvalho Chehab wrote:
-> It is premature to add patch 2 for -next, as there was no agreement about
-> the fields to be added for the tracepoint.
+On Thu, 1 Mar 2012, Steven Rostedt wrote:
+> Bringing a CPU down is a pain with the PREEMPT_RT kernel because
+> tasks can be preempted in many more places than in non-RT. In
+> order to handle per_cpu variables, tasks may be pinned to a CPU
+> for a while, and even sleep. But these tasks need to be off the CPU
+> if that CPU is going down.
+> 
+> Several synchronization methods have been tried, but when stressed
+> they failed. This is a new approach.
 
-This is yet another proof that you're not really reading my emails:
+OMG! That hotplug stuff has been ugly as hell already, but you managed
+to make it exponentially worse. That's really an achievement.
+ 
+Instead of adding more mess, we should simply fix hotplug. 
 
-> > 1/4 in the series could go in independently since it is a cleanup,
-> > I'll add it to a for-next testing branch if there are no objections.
+We can migrate away all tasks _before_ we run stomp-machine and
+prevent that any new tasks go on the cpu which is about to be taken
+down. Once all migratable tasks are gone, we only have to deal with
+the cpu bound ones, which is not causing such headaches.
 
-This sentence clearly refers to patch 1/4, i.e. the first patch in the
-series. So either make sure you've really understood what you've read
-before replying or don't reply at all.
+So no, I rather keep the current problem than applying that insanity.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+	tglx
