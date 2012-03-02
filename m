@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965314Ab2CBBpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:45:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39248 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965234Ab2CBBpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:45:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.15.231 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
-Date: Fri, 2 Mar 2012 09:45:31 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: spock@gentoo.org
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video:uvesafb: notice user when we failed to save hardware
- state
-Message-ID: <20120302014531.GA3597@udknight>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>, spock@gentoo.org,
-	FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	id S965278Ab2CBBs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:48:56 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40183 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753475Ab2CBBsx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:48:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of amluto@gmail.com designates 10.182.1.4 as permitted sender) smtp.mail=amluto@gmail.com; dkim=pass header.i=amluto@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+ <20120301233712.GS3990@outflux.net> <20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+ <CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 1 Mar 2012 17:48:32 -0800
+X-Google-Sender-Auth: ycBRu7Qsdy56CjmuhvPnD3PsLKo
+Message-ID: <CAObL_7H5i_oU2NORmV4TC3X2p3kUeN_ekBcd7PTDf0MuGOuGcQ@mail.gmail.com>
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
+To: Kees Cook <keescook@chromium.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm@linux-foundation.org,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 1, 2012 at 4:57 PM, Kees Cook <keescook@chromium.org> wrote:
+> Hi,
+>
+> On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Kees,
+>>
+>> On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
+>>>
+>>> Is it time to pull this into -next so more people can feel it? I brought
+>>> Andy Lutomirski's patches forward (needed to bump the prctl values), and
+>>> updated my git tree. If we're ready, here it is in all its request-pull
+>>> format glory:
+>>>
+>>> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
+>>>   Stephen Rothwell (1):
+>>>         Add linux-next specific files for 20120301
+>>
+>> OK, not commenting on anything else, but I cannot merge that into
+>> linux-next because it is based on yesterday's linux-next release and
+>> linux-next (effectively) rebases every day ...
+>>
+>> Does this work depend on anything in linux-next?  Or could it be just
+>> based off Linus' tree.  If it depends on other tree(s) merged into
+>> linux-next, then you should base your tree on those tree(s) as long as
+>> they never get rebased ...
+>
+> Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
+>
+> And at least the ptrace changes are, IIRC, in -mm, which has no tree.
+> :P Given that, what's the best thing for me to do for this to be easy
+> for you to pull?
+>
 
-uvesafb_open may failed to save hardware state when kmalloc failed
-in uvesafb_vbe_state_save, we should check this and notice user.
+IIRC the prctl changes are in -linus.  I can rebase my part onto them.
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/video/uvesafb.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index e7f69ef..9db3de3 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -362,7 +362,7 @@ static u8 *uvesafb_vbe_state_save(struct uvesafb_par *par)
- 
- 	state = kmalloc(par->vbe_state_size, GFP_KERNEL);
- 	if (!state)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	task = uvesafb_prep();
- 	if (!task) {
-@@ -1172,9 +1172,17 @@ static int uvesafb_open(struct fb_info *info, int user)
- {
- 	struct uvesafb_par *par = info->par;
- 	int cnt = atomic_read(&par->ref_count);
-+	u8 *buf = NULL;
- 
--	if (!cnt && par->vbe_state_size)
--		par->vbe_state_orig = uvesafb_vbe_state_save(par);
-+	if (!cnt && par->vbe_state_size) {
-+		buf =  uvesafb_vbe_state_save(par);
-+		if (IS_ERR(buf)) {
-+			printk(KERN_WARNING "uvesafb: save hardware state"
-+				"failed, error code is %ld!\n", PTR_ERR(buf));
-+		} else {
-+			par->vbe_state_orig = buf;
-+		}
-+	}
- 
- 	atomic_inc(&par->ref_count);
- 	return 0;
--- 
-1.7.9.2.315.g25a78
+--Andy
