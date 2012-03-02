@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab2CBCAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 21:00:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40660 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab2CBCAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 21:00:52 -0500
+	id S1756133Ab2CBCkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 21:40:05 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55613 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755711Ab2CBCjo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 21:39:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of wad@chromium.org designates 10.152.130.98 as permitted sender) smtp.mail=wad@chromium.org; dkim=pass header.i=wad@chromium.org
 MIME-Version: 1.0
-In-Reply-To: <1330652258.30167.70.camel@sbsiddha-desk.sc.intel.com>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
-	<20120223075027.GB15306@elte.hu>
-	<CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
-	<1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
-	<CABeCy1btewB-oTgyL06qvebLLXTqareYNy-wdNZ3oiHR3KPwEw@mail.gmail.com>
-	<1330652258.30167.70.camel@sbsiddha-desk.sc.intel.com>
-Date: Thu, 1 Mar 2012 18:00:51 -0800
-Message-ID: <CABeCy1a7RszUWBV10tVbdsxAdPpQAMSQXw-pMG2znTqYb5WN5A@mail.gmail.com>
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES interrupts
- to an idle CPU -v1
-From: Venki Pallipadi <venki@google.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
-        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120301171914.7c64f095.akpm@linux-foundation.org>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	<20120301233712.GS3990@outflux.net>
+	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
+	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
+	<20120301171914.7c64f095.akpm@linux-foundation.org>
+Date: Thu, 1 Mar 2012 20:39:40 -0600
+Message-ID: <CABqD9ha4ACGaVt_VDY9LFJKW1dJ3LrRm=pDyTCQwupLZQ0Ovhg@mail.gmail.com>
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 5:37 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> On Thu, 2012-03-01 at 17:35 -0800, Venki Pallipadi wrote:
->> On Thu, Mar 1, 2012 at 5:28 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
->> > On Thu, 2012-03-01 at 16:33 -0800, Venki Pallipadi wrote:
->> >> >
->> >> > fork_idle() should also make sure it does not schedule the child
->> >> > thread: thus we'd also be able to further simplify smpboot.c and
->> >> > get rid of all that extremely ugly 'struct create_idle'
->> >> > gymnastics in smpboot.c.
+On Thu, Mar 1, 2012 at 7:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 1 Mar 2012 16:57:49 -0800 Kees Cook <keescook@chromium.org> wrote:
+>
+>> On Thu, Mar 1, 2012 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > Hi Kees,
+>> >
+>> > On Thu, 1 Mar 2012 15:37:12 -0800 Kees Cook <keescook@chromium.org> wrote:
 >> >>
->> >> But not this. I am not sure where fork_idle results in resched of the child.
->> >> As I saw it, fork_idle calls init_idle and that sets the affinity of
->> >> idle_task to target CPU. So, reschedule should not be a problem. What
->> >> am I missing here?
->> >
->> > I think Ingo is referring to the fact that we can't use kthread_create()
->> > here and hence we were relying on fork_idle().
->> >
->> >> Also, I tried this silly test patch (Cut and paste... Sorry) and it
->> >> seemed to work fine both with and without CPU hotplug.
+>> >> Is it time to pull this into -next so more people can feel it? I brought
+>> >> Andy Lutomirski's patches forward (needed to bump the prctl values), and
+>> >> updated my git tree. If we're ready, here it is in all its request-pull
+>> >> format glory:
 >> >>
+>> >> The following changes since commit 2422c8368337196594265d52cad7316c9404bfcf:
+>> >> __ Stephen Rothwell (1):
+>> >> __ __ __ __ Add linux-next specific files for 20120301
 >> >
->> > I don't think we can do this today, as we need to make sure we have the
->> > correct current context. With dynamic cpu hotplug, current context can
->> > be any process and hence we were depending on the schedule_work()
->> > context.
+>> > OK, not commenting on anything else, but I cannot merge that into
+>> > linux-next because it is based on yesterday's linux-next release and
+>> > linux-next (effectively) rebases every day ...
 >> >
+>> > Does this work depend on anything in linux-next? __Or could it be just
+>> > based off Linus' tree. __If it depends on other tree(s) merged into
+>> > linux-next, then you should base your tree on those tree(s) as long as
+>> > they never get rebased ...
 >>
->> schedule_work() is only done at boot time. In case of dynamic cpu
->> hotplug, we skip the whole fork_idle as we already have the task
->> struct and just do init_idle().
+>> Unfortunately, yes, it does -- there were both ptrace changes and prctl changes.
 >>
+>> And at least the ptrace changes are, IIRC, in -mm, which has no tree.
+>> :P Given that, what's the best thing for me to do for this to be easy
+>> for you to pull?
 >
-> What happens if we boot with "maxcpus=" and later online the remaining
-> cpu's?
-
-Yes. This case will be problematic. So, we still need struct
-create_idle work stuff even after percpu idle_task. Or was Ingo's
-suggestion to do something along the lines of - init any CPU's idle
-task from CPU 0's idle task?
-
-> same issue with the physical cpu-online case too right?
-Any fresh online at runtime. Yes.
-
+> Base the tree on mainline and wreck the -mm patches I guess.  I'm good
+> at unwrecking patches.
 >
-> thanks,
-> suresh
+> That assumes that we're going to merge this stuff into 3.4 - if we
+> don't, unwrecker gets rewrecked and grumpy.
 >
+> I don't know if we're going to merge it into 3.4?  I haven't been
+> paying a lot of attention and haven't looked at the patches in a while.
+>
+
+I'll roll a v13 which is just a rebase back onto mainline and see if I
+can just stage it in kees's tree.
+
+Thanks!
+will
