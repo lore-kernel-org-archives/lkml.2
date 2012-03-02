@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965109Ab2CBVWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:22:51 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:27744
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757889Ab2CBVWt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:22:49 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275bhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Index: AQHM+LUYOjJW5Du7G0WJSaUrHj4mnJZXgVQAgAABJ6A=
-Date: Fri, 2 Mar 2012 21:22:38 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
- <20120302211354.GB6008@kroah.com>
-In-Reply-To: <20120302211354.GB6008@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1758579Ab2CBVXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:23:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37474 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757763Ab2CBVXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:23:34 -0500
+Date: Fri, 2 Mar 2012 13:23:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: ODEBUG: selftest warnings failed 4 != 5 (WARNING: at
+ lib/debugobjects.c:908 check_results.constprop.9)
+Message-Id: <20120302132332.f5d28264.akpm@linux-foundation.org>
+In-Reply-To: <4F513995.6050509@codeaurora.org>
+References: <20120218023521.GB13538@smp.if.uj.edu.pl>
+	<CAFLxGvy0yWe2utG-+vFw4BhfH-i0vfjNy3k6kUsxkN7M4BSWQg@mail.gmail.com>
+	<20120302131756.32e7f788.akpm@linux-foundation.org>
+	<4F513995.6050509@codeaurora.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 02 Mar 2012 13:20:21 -0800
+Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, March 02, 2012 4:14 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
-> hch@infradead.org; linux-scsi@vger.kernel.org; Haiyang Zhang
-> Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> the host
+> > Dunno, sorry.  There are only two patches to bisect through - try
+> > reverting b84d435cc228e ("debugobjects: Extend to assert that an object
+> > is initialized") and then feac18dda25134 ("debugobjects: Be smarter
+> > about static objects")?  
 > 
-> On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
-> > Windows hosts don't handle the ATA_16 command; don't pass it to the host.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/scsi/storvsc_drv.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> Should this go to older kernel versions as well?
+> The fix is in -mm. Can we send the patch to Linus directly? Or perhaps
+> go through Ingo since he sent the pull request in the first place?
 
-I think it should. Do you want me to resend this patch with the correct tag?
-Also, given that storvsc has changed so much over the last several months,
-this patch may or may not apply to earlier versions of this driver even though
-this patch itself is quite trivial.
+Oh, OK, I had that queued for Thomas to mull over.  I'll send it in
+for 3.3.
 
-Regards,
 
-K. Y
+From: Stephen Boyd <sboyd@codeaurora.org>
+Subject: debugobjects: Fix selftest for static warnings
 
+debugobjects is now printing a warning when a fixup for a NOTAVAILABLE
+object is run.  This causes the selftest to fail like:
+
+[    0.000000] ODEBUG: selftest warnings failed 4 != 5
+
+We could just increase the number of warnings that the selftest is
+expecting to see because that is actually what has changed.  But, it turns
+out that fixup_activate() was written with inverted logic and thus a fixup
+for a static object returned 1 indicating the object had been fixed, and 0
+otherwise.  Fix the logic to be correct and update the counts to reflect
+that nothing needed fixing for a static object.
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ lib/debugobjects.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
+
+diff -puN lib/debugobjects.c~debugobjects-fix-selftest-for-static-warnings lib/debugobjects.c
+--- a/lib/debugobjects.c~debugobjects-fix-selftest-for-static-warnings
++++ a/lib/debugobjects.c
+@@ -818,17 +818,9 @@ static int __init fixup_activate(void *a
+ 		if (obj->static_init == 1) {
+ 			debug_object_init(obj, &descr_type_test);
+ 			debug_object_activate(obj, &descr_type_test);
+-			/*
+-			 * Real code should return 0 here ! This is
+-			 * not a fixup of some bad behaviour. We
+-			 * merily call the debug_init function to keep
+-			 * track of the object.
+-			 */
+-			return 1;
+-		} else {
+-			/* Real code needs to emit a warning here */
++			return 0;
+ 		}
+-		return 0;
++		return 1;
+ 
+ 	case ODEBUG_STATE_ACTIVE:
+ 		debug_object_deactivate(obj, &descr_type_test);
+@@ -967,7 +959,7 @@ static void __init debug_objects_selftes
+ 
+ 	obj.static_init = 1;
+ 	debug_object_activate(&obj, &descr_type_test);
+-	if (check_results(&obj, ODEBUG_STATE_ACTIVE, ++fixups, warnings))
++	if (check_results(&obj, ODEBUG_STATE_ACTIVE, fixups, warnings))
+ 		goto out;
+ 	debug_object_init(&obj, &descr_type_test);
+ 	if (check_results(&obj, ODEBUG_STATE_INIT, ++fixups, ++warnings))
+_
 
