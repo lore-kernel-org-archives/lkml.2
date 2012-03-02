@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab2CBIDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:03:11 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5543 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2CBIDJ (ORCPT
+	id S1758328Ab2CBIFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:05:06 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58667 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2CBIFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:03:09 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 02 Mar 2012 00:02:37 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Date: Fri, 2 Mar 2012 13:32:34 +0530
-Subject: RE: [PATCH v6 1/2] mfd: Add anatop mfd driver
-Thread-Topic: [PATCH v6 1/2] mfd: Add anatop mfd driver
-Thread-Index: Acz4SWAmZswewnW7RAu9KRXg6gueLgAAVmFg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD2912265@BGMAIL02.nvidia.com>
-References: <1330593052-15184-1-git-send-email-paul.liu@linaro.org>
- <1330671641-6439-1-git-send-email-paul.liu@linaro.org>
- <D958900912E20642BCBC71664EFECE3E6DD2912252@BGMAIL02.nvidia.com>
- <4F507C1B.1050909@linaro.org>
-In-Reply-To: <4F507C1B.1050909@linaro.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 2 Mar 2012 03:05:04 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 2 Mar 2012 17:03:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7] mm: rework reclaim_stat counters
+Message-Id: <20120302170328.37f42337.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F506486.4090204@openvz.org>
+References: <20120229090748.29236.35489.stgit@zurg>
+	<20120229091556.29236.96896.stgit@zurg>
+	<20120302142825.cd583b59.kamezawa.hiroyu@jp.fujitsu.com>
+	<4F506486.4090204@openvz.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2283vS3015793
 
-> I cannot fully understand. Anatop is not SPI or I2C device. It is
-> internally embedded into the SoC. It is directly accessed by memory I/O.
+On Fri, 02 Mar 2012 10:11:18 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Sorry, I missed this.
-
-> Do you mean I should implement a regmap_bus which uses memory I/O and
-> then use regmap?
+> KAMEZAWA Hiroyuki wrote:
+> > On Wed, 29 Feb 2012 13:15:56 +0400
+> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+> >
+> >> Currently there is two types of reclaim-stat counters:
+> >> recent_scanned (pages picked from from lru),
+> >> recent_rotated (pages putted back to active lru).
+> >> Reclaimer uses ratio recent_rotated / recent_scanned
+> >> for balancing pressure between file and anon pages.
+> >>
+> >> But if we pick page from lru we can either reclaim it or put it back to lru, thus:
+> >> recent_scanned == recent_rotated[inactive] + recent_rotated[active] + reclaimed
+> >> This can be called "The Law of Conservation of Memory" =)
+> >>
+> > I'm sorry....where is the count for active->incative ?
 > 
-> Regards,
-> Paul
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> If reclaimer deactivates page it will bump recent_rotated[LRU_INACTIVE_ANON/FILE],
+> (if I understand your question right) recent_rotated[] now count each evictable lru independently
+> 
+
+Hm, then
+
+	active -> active   : recent_rotated[active]   += 1 
+	active -> inactive : recent_rotated[inacitve] += 1
+	inactive->inactive : recent_rotated[inactive] += 1
+	inactive->active   : recent_rotated[active]   += 1 ?
+
+Ok, it seems rotated[active] + rotated[inactive] == scan.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
