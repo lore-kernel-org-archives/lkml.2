@@ -1,110 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab2CBWrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:47:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846Ab2CBWry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:47:54 -0500
-Message-ID: <4F514E09.5060801@redhat.com>
-Date: Fri, 02 Mar 2012 17:47:37 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S965418Ab2CBWtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:49:55 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13805 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964821Ab2CBWty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 17:49:54 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 02 Mar 2012 14:49:36 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 2 Mar 2012 14:49:35 -0800
+Subject: RE: [PATCH V2 5/6] pinctrl: Enhance mapping table to support pin
+ config operations
+Thread-Topic: [PATCH V2 5/6] pinctrl: Enhance mapping table to support pin
+ config operations
+Thread-Index: Acz4Jle8S4nFB79STQ6UpvmK1EvilwAnmfkw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861ABD@HQMAIL01.nvidia.com>
+References: <1330460852-23486-1-git-send-email-swarren@nvidia.com>
+ <1330460852-23486-6-git-send-email-swarren@nvidia.com>
+ <20120301084617.GB14703@shlinux2.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BE86167D@HQMAIL01.nvidia.com>
+ <20120302034645.GA19342@shlinux2.ap.freescale.net>
+In-Reply-To: <20120302034645.GA19342@shlinux2.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Satoru Moriya <satoru.moriya@hds.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 12:36 PM, Satoru Moriya wrote:
-> Sometimes we'd like to avoid swapping out anonymous memory
-> in particular, avoid swapping out pages of important process or
-> process groups while there is a reasonable amount of pagecache
-> on RAM so that we can satisfy our customers' requirements.
->
-> OTOH, we can control how aggressive the kernel will swap memory pages
-> with /proc/sys/vm/swappiness for global and
-> /sys/fs/cgroup/memory/memory.swappiness for each memcg.
->
-> But with current reclaim implementation, the kernel may swap out
-> even if we set swappiness==0 and there is pagecache on RAM.
->
-> This patch changes the behavior with swappiness==0. If we set
-> swappiness==0, the kernel does not swap out completely
-> (for global reclaim until the amount of free pages and filebacked
-> pages in a zone has been reduced to something very very small
-> (nr_free + nr_filebacked<  high watermark)).
->
-> Any comments are welcome.
->
-> Regards,
-> Satoru Moriya
->
-> Signed-off-by: Satoru Moriya<satoru.moriya@hds.com>
-> ---
->   mm/vmscan.c |    6 +++---
->   1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c52b235..27dc3e8 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1983,10 +1983,10 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
->   	 * proportional to the fraction of recently scanned pages on
->   	 * each list that were recently referenced and in active use.
->   	 */
-> -	ap = (anon_prio + 1) * (reclaim_stat->recent_scanned[0] + 1);
-> +	ap = anon_prio * (reclaim_stat->recent_scanned[0] + 1);
->   	ap /= reclaim_stat->recent_rotated[0] + 1;
->
-> -	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
-> +	fp = file_prio * (reclaim_stat->recent_scanned[1] + 1);
->   	fp /= reclaim_stat->recent_rotated[1] + 1;
->   	spin_unlock_irq(&mz->zone->lru_lock);
+Dong Aisheng wrote at Thursday, March 01, 2012 8:47 PM:
+> On Thu, Mar 01, 2012 at 08:52:12AM -0800, Stephen Warren wrote:
+> > Dong Aisheng wrote at Thursday, March 01, 2012 1:46 AM:
+> > > On Tue, Feb 28, 2012 at 01:27:31PM -0700, Stephen Warren wrote:
+...
+> > > > diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+...
+> > > > +	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "power"),
+> > > > +	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "emif0"),
+> > > > +	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "emif1"),
+...
+> > > > +	PIN_MAP_MUX_GROUP_DEFAULT("mmci",  "pinctrl-u300", NULL, "mmc0"),
+> > > > +	PIN_MAP_MUX_GROUP_DEFAULT("pl022", "pinctrl-u300", NULL, "spi0"),
+> > > > +	PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-u300", NULL, "uart0"),
+> > >
+> > > Although not big issue, but i'm a bit more intended to the original way that
+> > > for the NULL group name using:
+> > > PIN_MAP_MUX_DEFAULT("mmci",  "pinctrl-u300", "mmc0"),
+> > > Or using PIN_MAP_MUX_GROUP_DEFAULT, but just totally remove the optional NULL
+> > > group name support to keep consistence and avoid confusing.
+> >
+> > The group parameter can't be removed, since in general, the mapping table
+> > needs some way to indicate which group to activate the function on. For
+> > example, consider an I2C controller that can be muxed onto two different
+> > sets of pins based on the board layout - you need to specify which to use.
+> >
+> 
+> I did not mean remove the group parameter support, i meant remove the optinal NULL
+> group name support to avoid using the macro like:
+> PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-u300", NULL, "uart0")
+> User should be better to specify a group name for this macro to avoid misleading.
 
-ACK on this bit of the patch.
+Ah right.
 
-> @@ -1999,7 +1999,7 @@ out:
->   		unsigned long scan;
+Yes, I'd be perfectly happy removing support for not specifying group
+as NULL, and requiring a specific group name to be provided in all cases.
+I like being specific:-)
+
+Linus,
+
+What are your thoughts here? IIRC, you were the one who wanted to be
+able to specify group==NULL, and have the pinctrl core use the "first"
+supported group for the function.
+
+Either way, I think that if we did require non-NULL group, this should
+be a separate patch we can introduce after merging my series, to avoid
+feature creep.
+
+...
+> > > > +		.data.configs = {					\
+> > > > +			.group_or_pin = grp,				\
+> > > > +			.configs = cfgs,				\
+> > > > +			.num_configs = ARRAY_SIZE(cfgs),		\
+> > > > +		},							\
+> > > > +	}
+> > >
+> > > It seems you separate the pin mux setting and pin config setting in
+> > > different maps.
+> > > Can we merge them into one map?
+> > > That will save a lot of map entries and improve searching performance.
+> >
+> > Well, it's technically possible.
+> >
+> > But then, you'll need macros that just define a mux setting, just configs
+> > for groups, or both mux setting and config settings. Then, cross-product
+> > that with whether the state name is default or not, and cross-product that
+> > with whether the macro should hard-code group to NULL or not etc. etc...
 >
->   		scan = zone_nr_lru_pages(mz, lru);
-> -		if (priority || noswap) {
-> +		if (priority || noswap || !vmscan_swappiness(mz, sc)) {
->   			scan>>= priority;
->   			if (!scan&&  force_scan)
->   				scan = SWAP_CLUSTER_MAX;
+> Well, they're indeed a lot.
+> But it seems they're not related to whether merging config and mux into one
+> map, right?
 
-However, I do not understand why we fail to scale
-the number of pages we want to scan with priority
-if "noswap".
+There's certainly some relationship; see my explanation above re: why
+you'd end up with a lot more macros. Of course, if we didn't create all
+the special-case macros, this problem wouldn't exist, so I don't think
+there would be a problem...
 
-For that matter, surely if we do not want to swap
-out anonymous pages, we WANT to go into this if
-branch, in order to make sure we set "scan" to 0?
+> > It seems like somewhat of a nightmare. Parsing this table is in the slow-
+> > path of pinctrl_get() anyway, so I don't think it's an enormous deal.
+> >
+> > One alternative might be to represent mux settings as just another config
+> > on the group though. But that'd require the pin config namespace to have
+> > some standardized values and some driver-specific values.
+>
+> Do you mean treat them all(mux and config) as a config setting?
+> Then what benefits can we get?
+> Does it have any difference from separate them but still in one map?
 
-scan = div64_u64(scan * fraction[file], denominator);
+I was thinking that we could put the mux values into the config array,
+so instead of the mapping table for a combined mux+config entry having
+specific fields for:
 
-With your patch and swappiness=0, or no swap space, it
-looks like we do not zero out "scan" and may end up
-scanning anonymous pages.
+* pin group to configure
+* mux function to set (or set to NULL/-1/... if not used)
+* list of config options to set (or NULL if not used)
 
-Am I overlooking something?  Is this correct?
+We could put the mux function into the config array. That way, instead
+of having two optional mux and config fields, we'd have 1 mandatory
+config field, and the config array may-or-may-not have a mux entry in
+it, e.g.:
 
-I mean, it is Friday and my brain is very full...
+unsigned long tegra_config_ata[] = {
+      TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_MUX, TEGRA_MUX_FUNCTION_SPI1),
+	TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_PULL, TEGRA_PINCONFIG_PULL_NONE),
+	TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_TRISTATE, TEGRA_PINCONFIG_DRIVEN),
+};
+
+However, upon further reflection, that might be a bad idea, because then
+there would be no way to share common sets of pin config entries between
+multiple mapping table entries, since every pin/group would differ in
+their mux setting, i.e. the following couldn't share anything:
+
+unsigned long tegra_config_atb[] = {
+      TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_MUX, TEGRA_MUX_FUNCTION_SPI2),
+	TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_PULL, TEGRA_PINCONFIG_PULL_NONE),
+	TEGRA_PINCONF_PACK(TEGRA_PINCONF_PARAM_TRISTATE, TEGRA_PINCONFIG_DRIVEN),
+};
+
+But with the current scheme the mux setting isn't there, so the two arrays
+would be the same and could be shared.
 
 -- 
-All rights reversed
+nvpublic
+
