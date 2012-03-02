@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab2CBOWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:22:08 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33116 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab2CBOWG (ORCPT
+	id S1757510Ab2CBOWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:22:25 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:58612 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757359Ab2CBOWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:22:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.231.228 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
-Message-ID: <4F50D784.7020101@gmail.com>
-Date: Fri, 02 Mar 2012 07:21:56 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 2 Mar 2012 09:22:23 -0500
+Message-ID: <4F50D78A.1020209@windriver.com>
+Date: Fri, 2 Mar 2012 09:22:02 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
-        peterz@infradead.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [tip:perf/core] perf tools: Allow multiple threads or processes
- in record, stat, top
-References: <1328718772-16688-1-git-send-email-dsahern@gmail.com> <tip-b52956c961be3a04182ae7b776623531601e0fb7@git.kernel.org> <20120302105620.GA21762@elte.hu>
-In-Reply-To: <20120302105620.GA21762@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Fabio Estevam <festevam@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <linux@arm.linux.org.uk>, <sam@ravnborg.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH v2] compiler.h: Include <linux/bug.h> to avoid build breakage
+ with ARRAY_SIZE()
+References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>	<1330650922-24143-1-git-send-email-festevam@gmail.com>	<CAP=VYLpd5EFmD+8Yo_jm-9N7O5zkLTsTwGjgmxG4u_G6t=4fag@mail.gmail.com> <CAOMZO5DYNdp=1h9WJ7QRBJSAe-pJEerVZmA0tro+7brhZi6PxQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5DYNdp=1h9WJ7QRBJSAe-pJEerVZmA0tro+7brhZi6PxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/2/12 3:56 AM, Ingo Molnar wrote:
-> I have a bigger NUMA testbox where perf sampling (perf top, perf
-> record, etc.) stopped working (perf stat is fine), and I've
-> bisected it back to the above commit.
->
->   b52956c961be3a04182ae7b776623531601e0fb7 is the first bad commit
->
-> Checking out eca1c3e3f937 works fine, b52956c961b is broken,
-> repeatedly - so the bisection is reliable.
->
-> One symptom is no sampling records in the perf.data:
->
-> phoenix:~>  perf record -a sleep 1
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.023 MB perf.data (~988 samples) ]
-> phoenix:~>  perf report --stdio
-> Warning:
-> The perf.data file has no samples!
-> # ========
-> # captured on: Fri Mar  2 12:01:41 2012
-> # hostname : phoenix
-> # os release : 3.3.0-rc5+
-> # perf version : 3.3.rc5.1698.g68a63a.dirty
-> # arch : x86_64
-> # nrcpus online : 16
-> # nrcpus avail : 16
-> # cpudesc : Quad-Core AMD Opteron(tm) Processor 8356
-> # cpuid : AuthenticAMD,16,2,3
-> # total memory : 33012240 kB
-> # cmdline : /home/mingo/bin/perf record -a sleep 1
-> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_k
-> # HEADER_CPU_TOPOLOGY info available, use -I to display
-> # HEADER_NUMA_TOPOLOGY info available, use -I to display
-> # ========
-> phoenix:~>  perf --version
-> perf version 3.3.rc5.1698.g68a63a.dirty
-> phoenix:~>
->
-> The later fixes to b52956c9, such as:
->
->    6b1bee9035d4: perf tools: fix broken perf record -a mode
->
-> did not fix this system - it's still broken as of today's -tip.
->
-> Another system running the same kernel does not exhibit this
-> problem, so it's somehow specific to this system.
->
-> I have not looked deep into this, let me know if you need more
-> data.
->
-> Thanks,
->
-> 	Ingo
+On 12-03-01 10:13 PM, Fabio Estevam wrote:
+> On Thu, Mar 1, 2012 at 11:49 PM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+> 
+>> Thanks, but no.
+>>
+>> You missed the whole point of my previous comments -- that being
+>> that we don't want to just jam headers into always-used headers.
+> 
+> Yes, it is not clear for me how to fix this build error. I got
+> different feedbacks from you, Russell and Sam.
 
+Understood, there was some discussion there.  Anyways it is already
+dealt with in yesterday's linux-next tree, so you won't have the
+build failure anymore.
 
-Ok. I have a similar Intel based box - 2 socket, E5540 with 24G; this is 
-the box I typically use for testing. I'll take a look at this later 
-today and see what I can find.
+Thanks,
+Paul.
 
-David
-
+> 
+>> The compiler.h is going to be an "always used" header.  So if we
+>> can avoid stuffing it full of extra crap, we need to really try.
+> 
+> So let me ask you: how do you want me to fix the build error I am seeing?
