@@ -1,107 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab2CBIQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:16:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38776 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2CBIQG (ORCPT
+	id S1758349Ab2CBISl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:18:41 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39020 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab2CBISk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:16:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120229235147.GM8295@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
-	<20120229235147.GM8295@opensource.wolfsonmicro.com>
-Date: Fri, 2 Mar 2012 17:16:04 +0900
-Message-ID: <CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>
-Subject: Re: [PATCH v6] sound/soc/codecs: add LAPIS Semiconductor ML26124
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-2022-JP
+	Fri, 2 Mar 2012 03:18:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 2 Mar 2012 17:17:08 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
+Message-Id: <20120302171708.6f206bde.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F505FDF.80003@openvz.org>
+References: <20120229090748.29236.35489.stgit@zurg>
+	<20120229091547.29236.28230.stgit@zurg>
+	<20120302141739.b63677ad.kamezawa.hiroyu@jp.fujitsu.com>
+	<4F505FDF.80003@openvz.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012年3月1日8:51 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->> +     SOC_SINGLE("Digital Switch", ML26124_DVOL_CTL, 4, 1, 0),
->
-> This should probably be Digital Playback Switch so it lines up with the
-> volume control in the UIs (and the Volume controls should be Digital X
-> Volume).
+On Fri, 02 Mar 2012 09:51:27 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-No, not only Playback but also for both Playback and Capture.
+> KAMEZAWA Hiroyuki wrote:
+> > On Wed, 29 Feb 2012 13:15:47 +0400
+> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+> >
+> >> This patch adds file/anon filter bits into isolate_mode_t,
+> >> this allows to simplify checks in __isolate_lru_page().
+> >>
+> >> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> >
+> > Hmm.. I like idea but..
+> >
+> >> ---
+> >>   include/linux/mmzone.h |    4 ++++
+> >>   include/linux/swap.h   |    2 +-
+> >>   mm/compaction.c        |    5 +++--
+> >>   mm/vmscan.c            |   27 +++++++++++++--------------
+> >>   4 files changed, 21 insertions(+), 17 deletions(-)
+> >>
+> >> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> >> index eff4918..2fed935 100644
+> >> --- a/include/linux/mmzone.h
+> >> +++ b/include/linux/mmzone.h
+> >> @@ -193,6 +193,10 @@ struct lruvec {
+> >>   #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+> >>   /* Isolate for asynchronous migration */
+> >>   #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+> >> +/* Isolate swap-backed pages */
+> >> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
+> >> +/* Isolate file-backed pages */
+> >> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
+> >>
+> >>   /* LRU Isolation modes. */
+> >>   typedef unsigned __bitwise__ isolate_mode_t;
+> >> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> >> index ba2c8d7..dc6e6a3 100644
+> >> --- a/include/linux/swap.h
+> >> +++ b/include/linux/swap.h
+> >> @@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
+> >>   /* linux/mm/vmscan.c */
+> >>   extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> >>   					gfp_t gfp_mask, nodemask_t *mask);
+> >> -extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
+> >> +extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+> >>   extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+> >>   						  gfp_t gfp_mask, bool noswap);
+> >>   extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >> diff --git a/mm/compaction.c b/mm/compaction.c
+> >> index 74a8c82..cc054f7 100644
+> >> --- a/mm/compaction.c
+> >> +++ b/mm/compaction.c
+> >> @@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+> >>   	unsigned long last_pageblock_nr = 0, pageblock_nr;
+> >>   	unsigned long nr_scanned = 0, nr_isolated = 0;
+> >>   	struct list_head *migratelist =&cc->migratepages;
+> >> -	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+> >> +	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
+> >> +			      ISOLATE_FILE | ISOLATE_ANON;
+> >>
+> >>   	/* Do not scan outside zone boundaries */
+> >>   	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+> >> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+> >>   			mode |= ISOLATE_ASYNC_MIGRATE;
+> >>
+> >>   		/* Try isolate the page */
+> >> -		if (__isolate_lru_page(page, mode, 0) != 0)
+> >> +		if (__isolate_lru_page(page, mode) != 0)
+> >>   			continue;
+> >>
+> >>   		VM_BUG_ON(PageTransCompound(page));
+> >> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >> index af6cfe7..1b70338 100644
+> >> --- a/mm/vmscan.c
+> >> +++ b/mm/vmscan.c
+> >> @@ -1029,27 +1029,18 @@ keep_lumpy:
+> >>    *
+> >>    * returns 0 on success, -ve errno on failure.
+> >>    */
+> >> -int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+> >> +int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+> >>   {
+> >> -	bool all_lru_mode;
+> >>   	int ret = -EINVAL;
+> >>
+> >>   	/* Only take pages on the LRU. */
+> >>   	if (!PageLRU(page))
+> >>   		return ret;
+> >>
+> >> -	all_lru_mode = (mode&  (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
+> >> -		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+> >> -
+> >> -	/*
+> >> -	 * When checking the active state, we need to be sure we are
+> >> -	 * dealing with comparible boolean values.  Take the logical not
+> >> -	 * of each.
+> >> -	 */
+> >> -	if (!all_lru_mode&&  !PageActive(page) != !(mode&  ISOLATE_ACTIVE))
+> >> +	if (!(mode&  (PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE)))
+> >>   		return ret;
+> >
+> > Isn't this complicated ?
+> 
+> But it doesn't blows my mind as old code does =)
+> 
+> Maybe someone can propose more clear variant?
+> 
 
->> +static int ml26124_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
->> +                               int div_id, int div)
->> +{
->> +     struct snd_soc_codec *codec = codec_dai->codec;
->> +
->> +     switch (div_id) {
->> +     case ML26124_MCLK:
->> +             ml26124_update_bits(codec, ML26124_CLK_CTL,
->> +                                   BIT(0) | BIT(1), div);
->> +             break;
->
-> Why can't the driver calculate this automatically given the MCLK?
-Sorry, I can't understand your saying.
-Why does this driver need to calculate ?
-I think this driver can use "div" value directly.
+switch (mode & (ISOLATE_ACTIVE | ISOLATE_INACTIVE)) {
+	case ISOLATE_ACTIVE :
+		if (!PageActive(page))
+			return ret;
+	case ISOLATE_INACTIVE :
+		if (PageActive(page))
+			return ret;
+	default:
+		break;
+	}
+}
 
->> +static int ml26124_pcm_trigger(struct snd_pcm_substream *substream,
->> +                           int cmd, struct snd_soc_dai *codec_dai)
->> +{
->> +     struct snd_soc_codec *codec = codec_dai->codec;
->> +
->> +     switch (cmd) {
->> +     case SNDRV_PCM_TRIGGER_STOP:
->> +     case SNDRV_PCM_TRIGGER_SUSPEND:
->> +     case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
->> +             ml26124_update_bits(codec, ML26124_REC_PLYBAK_RUN, 0x3,
->> +                                 0);
->
-> I'm not sure you've tested this, you can't do I2C I/O from atomic
-> context and trigger is atomic.  What does this control actually do?
+?
 
-This control starts ether Recording or Playing or both.
-Anyway, this processing must be moved somewhere.
+Thanks,
+-Kame
 
->
->> +static int ml26124_probe(struct snd_soc_codec *codec)
->> +{
->> +     int ret;
->> +     struct ml26124_priv *priv = snd_soc_codec_get_drvdata(codec);
->> +     codec->control_data = priv->regmap;
->> +
->> +     ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_I2C);
->> +     if (ret < 0) {
->> +             dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
->> +             return ret;
->> +     }
->
-> You're mixing regmap API usage and ASoC level I2C, this should be
-> _REGMAP.
->
+> >
+> >>
+> >> -	if (!all_lru_mode&&  !!page_is_file_cache(page) != file)
+> >> +	if (!(mode&  (page_is_file_cache(page) ? ISOLATE_FILE : ISOLATE_ANON)))
+> >>   		return ret;
+> >>
+> >>   	/*
+> >
+> > ditto.
+> >
+> > Where is simple  ?
+> >
+> > Thanks,
+> > -Kame
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-Currently, it seems codec control via i2c works well.
-Let me know why I should  use SND_SOC_REGMAP not _I2C.
-
-
->> +static int __init ml26124_modinit(void)
->> +{
->> +     int ret;
->> +
->> +     ret = i2c_add_driver(&ml26124_i2c_driver);
->> +     if (ret != 0)
->
-> module_i2c_driver().
-
-Sorry, I can't understand your saying.
-
-thanks.
--- 
-ROHM Co., Ltd.
-tomoya
