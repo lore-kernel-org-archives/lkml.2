@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2CBIM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 03:12:26 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43493 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab2CBIMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 03:12:25 -0500
-Date: Fri, 2 Mar 2012 09:12:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alex Shi <alex.shi@intel.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, asit.k.mallick@intel.com
-Subject: Re: change last level cache alignment on x86?
-Message-ID: <20120302081208.GA24504@elte.hu>
-References: <1330590816.21053.1336.camel@debian>
- <1330673425.21053.1503.camel@debian>
+	id S1757265Ab2CBINT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 03:13:19 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:58912 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2CBINP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 03:13:15 -0500
+Message-ID: <5e22306601c1718407f477e64d2e75b9.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F506EE2.1050705@zytor.com>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+    <1330559620-23543-6-git-send-email-wad@chromium.org>
+    <a6fdbe9d1daf6864589c9affc7048965.squirrel@webmail.greenhost.nl>
+    <4F50603B.7040505@zytor.com>
+    <bc1b4ec8fbad5a5931a928f108a6095f.squirrel@webmail.greenhost.nl>
+    <4F506EE2.1050705@zytor.com>
+Date: Fri, 2 Mar 2012 09:12:58 +0100
+Subject: Re: [PATCH v12 06/13] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330673425.21053.1503.camel@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 2ecd0b53b7de9511489f92806276a3d7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, March 2, 2012 07:55, H. Peter Anvin wrote:
+> On 03/01/2012 10:43 PM, Indan Zupancic wrote:
+> Ok, fail on my part - I misread the above to refer to @arch, not
+> @instruction_pointer.
 
-* Alex Shi <alex.shi@intel.com> wrote:
+Ah, that explains a lot.
 
-> On Thu, 2012-03-01 at 16:33 +0800, Alex,Shi wrote:
-> > Currently last level defined in kernel is still 128 bytes, but actually
-> > I checked intel's core2, NHM, SNB, atom, serial platforms, all of them
-> > are using 64 bytes. 
-> > I did not get detailed info on AMD platforms. Guess someone like to give
-> > the info here. So, Is if it possible to do the similar following changes
-> > to use 64 byte cache alignment in kernel?
-> > 
-> > ===
-> > diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-> > index 3c57033..f342a5a 100644
-> > --- a/arch/x86/Kconfig.cpu
-> > +++ b/arch/x86/Kconfig.cpu
-> > @@ -303,7 +303,7 @@ config X86_GENERIC
-> >  config X86_INTERNODE_CACHE_SHIFT
-> >  	int
-> >  	default "12" if X86_VSMP
-> > -	default "7" if NUMA
-> > +	default "7" if NUMA && (MPENTIUM4)
-> >  	default X86_L1_CACHE_SHIFT
-> >  
-> >  config X86_CMPXCHG
-> 
-> In arch/x86/include/asm/cache.h, the INTERNODE_CACHE_SHIFT macro will
-> transfer to '__cacheline_aligned_in_smp' finally. 
-> 
-> #ifdef CONFIG_X86_VSMP
-> #ifdef CONFIG_SMP
-> #define __cacheline_aligned_in_smp                                      \
->         __attribute__((__aligned__(INTERNODE_CACHE_BYTES)))             \
->         __page_aligned_data
-> #endif
-> #endif
+>>> -- Pin is a great example.
+>> Is that http://www.pintool.org/?
+>>
+>> Can you explain how knowing the IP is useful for Pin?
+>>
+>> All I am asking for is just one use case for providing the IP. Is that
+>> asking for too much?
+>
+> However, it still applies.  For something like Pin, Pin may want to trap
+> on all or a subset from the instrumented program, while the
+> instrumentation code -- which lives in the same address space -- needs
+> to execute those same instructions.
+>
+> Yes, it's useless for *security* (unless perhaps if you keep very strict
+> tabs on the flow of control by using debug registers, dynamic
+> translation or whatnot), but it can be highly useful for
+> *instrumentation*, where you want to analyze the behavior of a
+> non-malicious program.
 
-Note the #ifdef CONFIG_X86_VSMP - so the 128 bytes does not 
-actually transform into __cacheline_aligned_in_smp.
-
-> look at the following contents in Kconfig.cpu, I wondering if 
-> it is possible to remove 'default "7" if NUMA' line. Then a 
-> thin and fit cache alignment will be potential helpful on 
-> performance. Anyone like to give some comments?
-
->  config X86_INTERNODE_CACHE_SHIFT
->         int
->         default "12" if X86_VSMP
-> -       default "7" if NUMA
->         default X86_L1_CACHE_SHIFT
-
-Yes, removing that line would be fine I think - I think it was 
-copied from the old L1 alignment of 128 bytes (which was a P4 
-artifact when that CPU was the dominant platform - that's not 
-been the case for a long time already).
-
-Could you please also do a before/after build of an x86 
-defconfig with NUMA enabled and see what the alignments in the 
-before/after System.map are?
+That is a good use case indeed, I'm convinced.
 
 Thanks,
 
-	Ingo
+Indan
+
+
