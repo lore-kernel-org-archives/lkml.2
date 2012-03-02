@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030256Ab2CBTOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:14:32 -0500
-Received: from 177.16.140.54.static.host.gvt.net.br ([177.16.140.54]:56642
-	"EHLO sandy.ghostprotocols.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751634Ab2CBTOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:14:31 -0500
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Mar 2012 14:14:31 EST
-Date: Fri, 2 Mar 2012 16:08:22 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, ravitillo@lbl.gov,
-        khandual@linux.vnet.ibm.com, asharma@fb.com, robert.richter@amd.com,
-        ming.m.lin@intel.com, vweaver1@eecs.utk.edu, andi@firstfloor.org
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-Message-ID: <20120302190822.GA12431@infradead.org>
-References: <20120224094048.GA7952@quad>
- <4F47ABAD.9080408@gmail.com>
- <CABPqkBT1R_SJiQkjujS4dN5yQZPakjOmmCLNR3DmNxTmVT_p9A@mail.gmail.com>
- <4F47AD6A.6080609@gmail.com>
- <CABPqkBQyBtxO3ytcZKHyGNAiwYzmqODy+C-EY5gQTENKtngBFw@mail.gmail.com>
- <4F47B1A3.6050503@gmail.com>
- <CABPqkBT=po0=-oi0GgGEVCNCxuSMwMyh5vPz=sWcNrqSZDc68Q@mail.gmail.com>
- <CABPqkBTBkrA5qdeyhznr48Pqa9L-EX-LABypX55f_GoMRk-hDg@mail.gmail.com>
+	id S932503Ab2CBTVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:21:04 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:32147 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753130Ab2CBTVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 14:21:02 -0500
+Message-ID: <4F511D9B.10401@bfs.de>
+Date: Fri, 02 Mar 2012 20:20:59 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTBkrA5qdeyhznr48Pqa9L-EX-LABypX55f_GoMRk-hDg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] edac i5000: fix pointer math in i5000_get_mc_regs()
+References: <20120302065441.GB24508@elgon.mountain> <4F508C16.30900@bfs.de> <20120302190932.GI22598@mwanda>
+In-Reply-To: <20120302190932.GI22598@mwanda>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Mar 02, 2012 at 06:47:38PM +0100, Stephane Eranian escreveu:
-> Arnaldo,
-> 
-> What do you think about this patch?
 
-I'm processing perf/core patches today, will get to this one and merge
-or let you know objections,
 
-- Arnaldo
- 
+Am 02.03.2012 20:09, schrieb Dan Carpenter:
+> On Fri, Mar 02, 2012 at 10:00:06AM +0100, walter harms wrote:
+>>> diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+>>> index 4dc3ac2..fcdc4ab 100644
+>>> --- a/drivers/edac/i5000_edac.c
+>>> +++ b/drivers/edac/i5000_edac.c
+>>> @@ -1130,7 +1130,7 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mci)
+>>>  	pci_read_config_dword(pvt->system_address, AMBASE,
+>>>  			(u32 *) & pvt->ambase);
+>>>  	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
+>>> -			((u32 *) & pvt->ambase) + sizeof(u32));
+>>> +			(u32 *)((char *) &pvt->ambase + sizeof(u32)));
+>>>  
+>>>  	maxdimmperch = pvt->maxdimmperch;
+>>>  	maxch = pvt->maxch;
+>>
+>> i think this is hard to understand. personally i would prefer a union or other
+>> more obvious solutions. my suggestion would be to get rid of this.
+>>
+>> u32 bottom,top;
+>>  	pci_read_config_dword(pvt->system_address, AMBASE,
+>>   			&bottom);
+>> 	pci_read_config_dword(pvt->system_address, AMBASE+ sizeof(u32),
+>>   			&top);
+>> 	maxdimmperch=(u64)top<<32|bottom;
+>> 	
+>> you can find this pattern in other parts of the kernel also.
+>>
 > 
-> On Fri, Feb 24, 2012 at 4:51 PM, Stephane Eranian <eranian@google.com> wrote:
-> > On Fri, Feb 24, 2012 at 4:49 PM, David Ahern <dsahern@gmail.com> wrote:
-> >> On 2/24/12 8:40 AM, Stephane Eranian wrote:
-> >>>
-> >>> No, I don't. Read the code carefully. The for loop sets all known feature
-> >>> bits.
-> >>> Then, the ones not necessary or unused are turned off individually.
-> >>
-> >>
-> >> Ok, I see now. The __set_feat loop is earlier in builtin-record.c, not the
-> >> util code.
-> >>
-> > Yeah. Arnaldo simplified the original code in builtin-record.c to have the loop
-> > instead of individual set_feat().
-> >
-> >> David
+> Sure.  I want to do this again anyway because I see I've missed some
+> other parts which have the same bug.  I'll resend a patch later.
+> 
+> regards,
+> dan carpenter
+
+I have no idea how ofter a64bit value is need but perhaps is pci_read_config_qword()
+an option ?
+
+re,
+ wh
