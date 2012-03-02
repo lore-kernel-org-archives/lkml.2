@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030381Ab2CBR5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 12:57:21 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:56513 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756512Ab2CBR5T (ORCPT
+	id S1030451Ab2CBR53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 12:57:29 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:51080 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758689Ab2CBR5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 12:57:19 -0500
-Message-ID: <1330711026.3392.126.camel@aeonflux>
-Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        santosh nayak <santoshprasadnayak@gmail.com>, padovan@profusion.mobi,
-        davem@davemloft.net, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Ville Tervo <ville.tervo@nokia.com>
-Date: Fri, 02 Mar 2012 09:57:06 -0800
-In-Reply-To: <20120302110420.GH22598@mwanda>
-References: <1330537602.3392.101.camel@aeonflux>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B6E88@saturn3.aculab.com>
-	 <20120302110420.GH22598@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Mar 2012 12:57:24 -0500
+Date: Fri, 2 Mar 2012 18:57:19 +0100
+From: Bastian Blank <waldi@debian.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, xen-devel@lists.xensource.com,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Dave Jiang <dave.jiang@intel.com>
+Subject: Re: [Pkg-xen-devel] ioatdma: Boot process hangs then reboots when
+ using Xen + Linux 3.2
+Message-ID: <20120302175719.GA1468@wavehammer.waldi.eu.org>
+Mail-Followup-To: Dan Williams <dan.j.williams@intel.com>,
+	Jonathan Nieder <jrnieder@gmail.com>, xen-devel@lists.xensource.com,
+	pkg-xen-devel@lists.alioth.debian.org,
+	Maciej Sosnowski <maciej.sosnowski@intel.com>,
+	linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
+	Konrad Rzeszutek Wilk <konrad@darnok.org>,
+	Dave Jiang <dave.jiang@intel.com>
+References: <CAJ75kXZ-2vWZpG7Uz3firg6ew4y_DdorXotkAkUGSK0GWLMUQQ@mail.gmail.com>
+ <20120127144737.GA27750@andromeda.dapyr.net>
+ <20120219223125.GA820@burratino>
+ <20120220181618.GD17566@burratino>
+ <4F4891B8.9050008@goirand.fr>
+ <20120302055715.GA692@burratino>
+ <CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+ <20120302162159.GB31683@wavehammer.waldi.eu.org>
+ <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Fri, Mar 02, 2012 at 08:44:00AM -0800, Dan Williams wrote:
+> On Fri, Mar 2, 2012 at 8:21 AM, Bastian Blank <waldi@debian.org> wrote:
+> > On Thu, Mar 01, 2012 at 10:42:44PM -0800, Dan Williams wrote:
+> >> WARN_ON may work, but then kernel may be subject random hangs from missed
+> >> i/o completions.
+> ...actually descriptors completing too early.
 
-> > How long has this code been in tree?
-> > It isn't obvious to me that this change won't break code on BE systems
-> > where the application code is already fixing the endianness.
-> > 
-> 
-> It looks like we've had an endian bug since last February.
-> 
-> b62f328b8f20a "Bluetooth: Add server socket support for LE
-> connection"
-> 
-> +               l2cap_pi(sk)->scid = la.l2_cid;
-> 
-> ->scid was cpu endian.
+The interrupt happens while the module is still loading, so most likely
+directly after enabling them. There should be no request in flight yet.
 
-this is a bug. No questions asked.
+What puzzles me is the mix of different data types in the ioatdma
+driver:
 
-However you can only exercise this code if you work with Bluetooth Low
-Energy and that is not enabled by default since it is not fully finished
-yet. CID is only used by Low Energy.
+| u64 completion = *chan->completion;
+| unsigned long phys_complete = completion & ~0x3f;
 
-Bluetooth BR/EDR only uses PSM part of the socket address and that has
-been endian safe.
+The state is 64bit long, but is down converted to a 32bit value without
+anything.
 
-Regards
+phys_complete (a 32 bit value) gets compared to struct
+dma_async_tx_descriptor.phys, which is defined as dma_addr_t, a _64_ bit
+value.
 
-Marcel
+Bastian
 
-
+-- 
+... The prejudices people feel about each other disappear when they get
+to know each other.
+		-- Kirk, "Elaan of Troyius", stardate 4372.5
