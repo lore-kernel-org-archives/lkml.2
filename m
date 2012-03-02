@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756978Ab2CBD6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 22:58:06 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52059 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2CBD6D (ORCPT
+	id S1756701Ab2CBEDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 23:03:10 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49178 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab2CBEDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 22:58:03 -0500
-Date: Fri, 2 Mar 2012 14:57:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Will Drewry <wad@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
- load_pointer
-Message-Id: <20120302145750.41b96e8be011a9a73c4fedf7@canb.auug.org.au>
-In-Reply-To: <CABmXcB83uFMUFUuRKCtkMjU2KLv7N4JB08qzZLVDdT=CStmQjw@mail.gmail.com>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-	<20120302141038.aaafc42b59ac7cf95d3553ed@canb.auug.org.au>
-	<CABmXcB83uFMUFUuRKCtkMjU2KLv7N4JB08qzZLVDdT=CStmQjw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9"
+	Thu, 1 Mar 2012 23:03:07 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4F504645.5040708@jp.fujitsu.com>
+Date: Fri, 02 Mar 2012 13:02:13 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
+References: <1330445487-15020-1-git-send-email-bp@amd64.org> <1330445487-15020-2-git-send-email-bp@amd64.org> <4F4D7BF9.9070104@jp.fujitsu.com> <20120229101047.GA21224@aftab> <4F4E145E.4040901@redhat.com> <20120229121914.GD21224@aftab> <4F4E22B1.6020505@redhat.com> <20120229133741.GF21224@aftab> <4F4EDD9A.4050900@jp.fujitsu.com> <20120301114023.GB32410@aftab> <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F040ACC@ORSMSX104.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2012/03/02 3:28), Luck, Tony wrote:
+>>> My concern is; on Sandy Bridge, is it safe to gather info about the DIMM
+>>> location in/from machine check context in a reasonable time span?
+>>
+>> Well, what amd64_edac does is "buffer" the required lookup info so
+>> whenever you get an error, you simply lookup the channel and chip select
+>> - all ops which can be done in atomic context.
+> 
+> Yes - we could pre-read all the config space registers ahead of time and
+> save them in memory (none of the values should change - except if the platform
+> supports hot-plug for memory). Total is only a few Kbytes. Then decode in
+> machine check context is both safe, and fast.
 
-On Thu, 1 Mar 2012 21:41:51 -0600 Will Drewry <wad@chromium.org> wrote:
->
-> No explicit dependency.   It's just a conflict in how ptrace options
-> are set, defined, and masked (and STOP being renumbered).  Other than
-> the ptrace changes, the whole series patches cleanly onto both trees.
-> The resolved version is less code and easier to read, so I don't
-> suspect it'll be a challenge at all.
+To sort out my thought:
 
-OK, so we need a tree based on Linus' (like v3.3-rc5 or something - and
-preferably tested ;-)) and an explicit request to me to include that tree.
+ - First of all, OS gathers info about physical location of DIMMs from
+   DMI/ACPI/PCI etc., before enabling MCE mechanism.
+ - Make a kind of "physical memory location table" on memory buffer,
+   to ease mapping a physical address to the location of a DIMM module
+   and/or chip which have the memory cell pointed by the address.
+    - It would be better to have a well organized table rather than
+      having a raw copy of config space etc.
+    - Likewise it will also nice if we can map logical processor numbers
+      to the location of physical sockets on motherboard.
+    - Happy if user can refer the table via sysfs.
+    - Allow updating the table if the platform supports hot-plug.
+ - Once MCE is enabled, handler can refer the table on memory to
+   determine an erroneous device which should be replaced.
 
-I will sort out any conflicts with Andrews's tree and post the fixups I
-make so others can correct me if necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This storyline up to here is reasonable and acceptable, I think.
 
---Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9
-Content-Type: application/pgp-signature
+Then now it is clear that the last point where I feel uneasy about is
+putting a string into the ring buffer instead of binary bits like index
+of location table.  Please use binary (or "binary + string") to tell
+the error location to userland.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPUEU+AAoJEECxmPOUX5FEpwAP/REQHzmhoCTZS02bUk+qc0AP
-V99l9dTuhNEgQsDW23aMXy26Q6yUkoNJcsaOzcp8zxTcxLySKy8I9KYCld52fjcm
-JFdPpYR/cHUsSb0tbfDwnFEXDGHUh1OqGWp1GmS/6WoZWLd0mWioVm6FBgiDVr0k
-aj9SZmjeHzyEZco/XLaty3eA+5jRHfFLC0n9d1g2C57P8LrPzns7MfHQdXclgulm
-P4/E1AEewbx7nYwDdtzcupSWOSDPanppgqT7942uty1qSmMI/8QuqDiZFiDSGFU3
-EYzbso5Y5N2FI01ic/z0HL25jiVoO19GIS1IYRr5M0DslNxtdxTpnkXVVdcPdTXm
-IymIIN6fjQ1X7uAWRoS4ES9oHDbgUaHwkiM1KoJPCtF4k/tp7gH1W34GpCIolapt
-4hr9NiPs5MED30n/q2M6hwWFnnX6DrdgfAzgFLyHnwkoeDvJ/47Ygpf3kKE+99hk
-9JRORvSDI4pMKAig8CZmS8WOXgaRkOYrTTuJ6+fJWjBS/HMFWgY6ZwYJxX+VzRjW
-939edFtsuy+lwk1V5hUrO4PSv2KrdFBgr5fRbmEib80FMOouCRzp4oc9SOB9Cz28
-RTevmY88HpiqSFALRBaf5V9BkLbPvh1F6nfL26ASjJUjzRxWcUTBnNWBC2eqOYS4
-1avPUU5cukzYPgzs3KWK
-=g1Ug
------END PGP SIGNATURE-----
+Thanks,
+H.Seto
 
---Signature=_Fri__2_Mar_2012_14_57_50_+1100_eKb16QfO7sCCyQX9--
