@@ -1,155 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab2CBKrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:47:22 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45267 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461Ab2CBKrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:47:20 -0500
-Date: Fri, 2 Mar 2012 11:47:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20120302104708.GA20012@elte.hu>
+	id S932176Ab2CBKvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:51:46 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:51713 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752705Ab2CBKvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 05:51:44 -0500
+Message-ID: <4F50A620.1080808@stericsson.com>
+Date: Fri, 2 Mar 2012 11:51:12 +0100
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFC [PATCH] SMP: Don't schedule tasks on inactive cpu(s)
+References: <1330512150-20727-1-git-send-email-jonas.aberg@stericsson.com>  <1330513384.11248.129.camel@twins> <1330516117.11248.138.camel@twins>
+In-Reply-To: <1330516117.11248.138.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+Thanks Peter for having a look. I will try to come up with a way to
+trigger this issue more easily. 
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+If I find a way, I will test with your original patch, 
+https://lkml.org/lkml/2011/12/15/255, and tell you the result.
 
-   HEAD: 5d85d97c9f6973ba854f35a2d5e80fe68272143e Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
+Best regards,
+ Jonas Aaberg
 
- Thanks,
+On 02/29/2012 12:48 PM, Peter Zijlstra wrote:
+> On Wed, 2012-02-29 at 12:03 +0100, Peter Zijlstra wrote:
+>> On Wed, 2012-02-29 at 11:42 +0100, Jonas Aaberg wrote:
+>>> This patch removes the ability to schedule tasks on cpus that are online,
+>>> but not active.  The reason for this patch is that during cpu hotplug
+>>> on ARM (atleast) there is a short window where cpuX (X > 0) is online, but
+>>> busy-waiting on cpu0 to put it active, meanwhile cpu0 can be interrupted
+>>> and try to schedule something on the cpu that is busy checking its active bit.
+>>
+>> https://lkml.org/lkml/2011/12/15/255
+>>
+>> that one?
+>>
+>> I _think_ its correct, but it would be so good if someone else could
+>> verify.
+> 
+> Relevant patches to consider are: e761b772 and 3a101d05.
+> 
+> Having looked at this again, I think we lost something in 3a101d05 since
+> it moves cpuset_update_active_cpus() from CPU_DEAD to CPU_DOWN_PREPARE
+> (and DOWN_FAILED) -- not that it matters that much. Also this patch does
+> leaves me somewhat puzzled as to what cpu_active_mask is for now..
+> 
+> The suggested patch linked above moves setting active to CPU_STARTING
+> which is _before_ online. It looks like some parts of the scheduler
+> don't look at online at all anymore so that opens a 'window' where we
+> could select a cpu that isn't part of the sched_domain nor online
+> (select_fallback_rq and cpuset_cpus_allowed_fallback).
+> 
+> Now this isn't really a problem because of stop-machine, by the time
+> anybody gets to run again both online and active are set and we should
+> be good to go. The bad part is of course us relying on this silly
+> stop-machine semantic.
+> 
+> Bah, hotplug is such a pain.. 
 
-	Ingo
-
------------------->
-David Ahern (1):
-      perf tools: Ensure comm string is properly terminated
-
-Namhyung Kim (2):
-      perf/hwbp: Fix a possible memory leak
-      perf evlist: Return first evsel for non-sample event on old kernel
-
-Prashanth Nageshappa (2):
-      perf probe: Ensure offset provided is not greater than function length
-      perf probe: Ensure offset provided is not greater than function length without DWARF info too
-
-
- kernel/events/hw_breakpoint.c  |    4 ++--
- tools/perf/util/event.c        |    1 +
- tools/perf/util/evlist.c       |    4 ++++
- tools/perf/util/probe-event.c  |    6 ++++++
- tools/perf/util/probe-finder.c |   12 +++++++++++-
- 5 files changed, 24 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index b7971d6..ee706ce 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -651,10 +651,10 @@ int __init init_hw_breakpoint(void)
- 
-  err_alloc:
- 	for_each_possible_cpu(err_cpu) {
--		if (err_cpu == cpu)
--			break;
- 		for (i = 0; i < TYPE_MAX; i++)
- 			kfree(per_cpu(nr_task_bp_pinned[i], cpu));
-+		if (err_cpu == cpu)
-+			break;
- 	}
- 
- 	return -ENOMEM;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 2044324..2a6f33c 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -74,6 +74,7 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
- 			if (size >= len)
- 				size = len - 1;
- 			memcpy(comm, name, size);
-+			comm[size] = '\0';
- 
- 		} else if (memcmp(bf, "Tgid:", 5) == 0) {
- 			char *tgids = bf + 5;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 3f16e08..ea32a06 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -349,6 +349,10 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
- 	hlist_for_each_entry(sid, pos, head, node)
- 		if (sid->id == id)
- 			return sid->evsel;
-+
-+	if (!perf_evlist__sample_id_all(evlist))
-+		return list_entry(evlist->entries.next, struct perf_evsel, node);
-+
- 	return NULL;
- }
- 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 29cb654..e33554a 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1867,6 +1867,12 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 			   tev->point.symbol);
- 		ret = -ENOENT;
- 		goto error;
-+	} else if (tev->point.offset > sym->end - sym->start) {
-+		pr_warning("Offset specified is greater than size of %s\n",
-+			   tev->point.symbol);
-+		ret = -ENOENT;
-+		goto error;
-+
- 	}
- 
- 	return 1;
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 5d73262..74bd2e6 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -672,7 +672,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
- 				  bool retprobe, struct probe_trace_point *tp)
- {
--	Dwarf_Addr eaddr;
-+	Dwarf_Addr eaddr, highaddr;
- 	const char *name;
- 
- 	/* Copy the name of probe point */
-@@ -683,6 +683,16 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
- 				   dwarf_diename(sp_die));
- 			return -ENOENT;
- 		}
-+		if (dwarf_highpc(sp_die, &highaddr) != 0) {
-+			pr_warning("Failed to get end address of %s\n",
-+				   dwarf_diename(sp_die));
-+			return -ENOENT;
-+		}
-+		if (paddr > highaddr) {
-+			pr_warning("Offset specified is greater than size of %s\n",
-+				   dwarf_diename(sp_die));
-+			return -EINVAL;
-+		}
- 		tp->symbol = strdup(name);
- 		if (tp->symbol == NULL)
- 			return -ENOMEM;
