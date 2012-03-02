@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2CBA4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:56:16 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47837 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757559Ab2CBAzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:55:24 -0500
-From: Richard Weinberger <richard@nod.at>
-To: jonas@southpole.se
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 4/5] OpenRISC: Include export.h
-Date: Fri,  2 Mar 2012 01:55:14 +0100
-Message-Id: <1330649715-32438-4-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1330649715-32438-1-git-send-email-richard@nod.at>
-References: <1330649715-32438-1-git-send-email-richard@nod.at>
+	id S1758029Ab2CBA4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 19:56:24 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:56030 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757767Ab2CBA4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 19:56:21 -0500
+Message-ID: <1330649779.23314.80.camel@joe2Laptop>
+Subject: Re: [PATCH] net: add QCA alx Ethernet driver
+From: Joe Perches <joe@perches.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+        "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mcgrof@frijolero.org, qca-linux-team@qualcomm.com,
+        nic-devel@qualcomm.com, kgiori@qca.qualcomm.com, chris.snook@gmail.com,
+        mathieu@qca.qualcomm.com, bryanh@quicinc.com
+Date: Thu, 01 Mar 2012 16:56:19 -0800
+In-Reply-To: <20120301234007.GA18488@electric-eye.fr.zoreil.com>
+References: <1330480210-30470-1-git-send-email-rodrigue@qca.qualcomm.com>
+	 <20120228193237.2d56f2b8@nehalam.linuxnetplumber.net>
+	 <20120301234007.GA18488@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXPORT_SYMBOL* needs export.h.
+On Fri, 2012-03-02 at 00:40 +0100, Francois Romieu wrote:
+> Stephen Hemminger <shemminger@vyatta.com> :
+> [...]
+> > Evolution is better. The new driver has lots of new callbacks to handle
+> > the fact it is dealing with two different chipsets. Not only that your callbacks
+> > are built at runtime which leads to security concerns.
+> > 
+> > There is a reason the two Marvell based drivers (skge and sky2) are
+> > different drivers. Having to do extra per-chip callbacks is a clear sign
+> > the driver should be split in two.
+> 
+> (arguable)
+[]
+> > +void alx_hw_printk(const char *level, const struct alx_hw *hw,
+> > +		   const char *fmt, ...)
+> > +{
+> > +	struct va_format vaf;
+> > +	va_list args;
+> > +
+> > +	va_start(args, fmt);
+> > +	vaf.fmt = fmt;
+> > +	vaf.va = &args;
+> > +
+> > +	if (hw && hw->adpt && hw->adpt->netdev)
+> > +		__netdev_printk(level, hw->adpt->netdev, &vaf);
+> > +	else
+> > +		printk("%salx_hw: %pV", level, &vaf);
+> > +
+> > +	va_end(args);
+> > +}
+> 
+> Designing a new logging facility smells like being unable to figure
+> the current context.
+> 
+> And the printk does not even use KERN_... :o(
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/openrisc/kernel/init_task.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Sure it does.
 
-diff --git a/arch/openrisc/kernel/init_task.c b/arch/openrisc/kernel/init_task.c
-index 45744a38..70381d4 100644
---- a/arch/openrisc/kernel/init_task.c
-+++ b/arch/openrisc/kernel/init_task.c
-@@ -15,6 +15,7 @@
-  *      2 of the License, or (at your option) any later version.
-  */
- 
-+#include <linux/export.h>
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
- 
--- 
-1.7.7.3
+level is the first argument and is emitted as %s
+
+> > +/*
+> > + *  alx_validate_mac_addr - Validate MAC address
+> > + */
+> > +static int alx_validate_mac_addr(u8 *mac_addr)
+> > +{
+> > +	int retval = 0;
+> > +
+> > +	if (mac_addr[0] & 0x01) {
+> > +		printk(KERN_DEBUG "MAC address is multicast\n");
+> > +		retval = -EADDRNOTAVAIL;
+> > +	} else if (mac_addr[0] == 0xff && mac_addr[1] == 0xff) {
+> > +		printk(KERN_DEBUG "MAC address is broadcast\n");
+> > +		retval = -EADDRNOTAVAIL;
+> > +	} else if (mac_addr[0] == 0 && mac_addr[1] == 0 &&
+> > +		   mac_addr[2] == 0 && mac_addr[3] == 0 &&
+> > +		   mac_addr[4] == 0 && mac_addr[5] == 0) {
+> > +		printk(KERN_DEBUG "MAC address is all zeros\n");
+> > +		retval = -EADDRNOTAVAIL;
+> > +	}
+> > +	return retval;
+> > +}
+> 
+> Bloat. It should use is_valid_ether_addr.
+
+I sent patches already.
+It's also out of order, testing multicast then broadcast
+instead of the reverse.
+
 
