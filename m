@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2CBVML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:12:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756152Ab2CBVMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:12:09 -0500
-Date: Fri, 2 Mar 2012 16:11:56 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mjg@redhat.com" <mjg@redhat.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
-Subject: Re: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
- with NMI fallback
-Message-ID: <20120302211156.GM3083@redhat.com>
-References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
- <1329164860-668-2-git-send-email-dzickus@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA8F@USINDEVS01.corp.hds.com>
+	id S932580Ab2CBVN3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:13:29 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:27756 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757142Ab2CBVN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:13:28 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: yObizVEVM1l.4la84sP825o_APR6rt2mpgZ_FQX7Pz1_jf6
+ r1qRat0zfo6cBQdYajGj2iYUEacfL7j4vVWps1mbSZeLLv7fxSNJoZeK0S6s
+ xXJilymsHHBXZgWHHDfGycS1XeaLyZ0.OBzGEqJflUs7VQ9KHVEF3bg_Nmvy
+ WWFxnJl7sSN97e027pdjhFmD2QGurJEvip2ZY4aVrv3263IRAPK5ucoOyLc4
+ 4YSfJ2CAcd1EVRAv_HZCHE6I7OdYlkKhGzK_hK_mB5ErQuFcIJAaJZYa5g6g
+ 5OxJRqs8mzbAuEyYk8US7q263NKTRFUAn.juB.8gZ959.e_dR_KQrNSaZxl2
+ V7j243L1s3bDcxQhKgggRmB6Y6Gs5i9VYfcZvXNrgGzVJ27jYhRywAWB1vnc
+ -
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 2 Mar 2012 15:13:25 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: John Stultz <john.stultz@linaro.org>
+cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 1/9] time: Condense timekeeper.xtime into xtime_sec
+In-Reply-To: <1330672368-32290-2-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.DEB.2.00.1203021510540.20257@router.home>
+References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org> <1330672368-32290-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA8F@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 03:41:57PM -0500, Seiji Aguchi wrote:
-> 
-> > +	/* if the REBOOT_VECTOR didn't work, try with the NMI */
-> > +	if ((num_online_cpus() > 1) && (!smp_no_nmi_ipi))  {
-> > +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> > +					 NMI_FLAG_FIRST, "smp_stop"))
-> 
-> register_nmi_handler() doesn't work if kernel panics in nmi context because kzalloc() is called in register_nmi_handler() and 
-> it may sleep.
-> 
-> register_nmi_handler() should be replaced with notifier_chain like kdump does.
+On Thu, 1 Mar 2012, John Stultz wrote:
 
-I don't think kdump uses the notifier_chain.
+> +static inline void tk_normalize_xtime(struct timekeeper *tk)
+> +{
+> +	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
+> +		tk->xtime_nsec -= (u64)NSEC_PER_SEC << tk->shift;
+> +		tk->xtime_sec++;
+> +	}
+> +}
 
-Cheers,
-Don
+Could we avoid the loop?
+
+y = ((u64)NSEC_PER_SEC << tk->shift));
+tk->xtime_sec += tk->xtime_nsec / y;
+tk->xtime_nsec %= y;
+
