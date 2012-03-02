@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712Ab2CBM2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 07:28:20 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64785 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab2CBM2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 07:28:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eric.dumazet@gmail.com designates 10.68.130.72 as permitted sender) smtp.mail=eric.dumazet@gmail.com; dkim=pass header.i=eric.dumazet@gmail.com
-Message-ID: <1330691295.2469.1.camel@edumazet-laptop>
-Subject: Re: TCP_STREAM performance regression on commit b3613118
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: David Miller <davem@davemloft.net>, feng.tang@intel.com,
-        linux-kernel@vger.kernel.org, tim.c.chen@intel.com,
-        ying.huang@intel.com, netdev@vger.kernel.org
-Date: Fri, 02 Mar 2012 04:28:15 -0800
-In-Reply-To: <1330670277.21053.1448.camel@debian>
-References: <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20120217.133327.1178765872497293871.davem@davemloft.net>
-	 <1330656317.21053.1411.camel@debian>
-	 <20120301.220743.2174015405223036036.davem@davemloft.net>
-	 <1330670277.21053.1448.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S965236Ab2CBMdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 07:33:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19648 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756115Ab2CBMdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 07:33:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="113815062"
+Date: Fri, 2 Mar 2012 14:32:15 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
+Message-ID: <20120302123210.GA4741@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	santosh prasad nayak <santoshprasadnayak@gmail.com>,
+	marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1330599561-20392-1-git-send-email-santoshprasadnayak@gmail.com>
+ <20120301123540.GE25627@aemeltch-MOBL1>
+ <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+In-Reply-To: <CAOD=uF4LSS8nuKMNHGEH2JsVZHU0rntSxZjvNaa4oZrey1macw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 02 mars 2012 Ã  14:37 +0800, Alex Shi a Ã©crit :
-> On Thu, 2012-03-01 at 22:07 -0500, David Miller wrote:
-> > From: Alex Shi <alex.shi@intel.com>
-> > Date: Fri, 02 Mar 2012 10:45:17 +0800
-> > 
-> > > Add CC to tang feng, He is working on this issue. 
-> > 
-> > Is he?  I'm pretty sure this is due to the TCP receive window growing
-> > issue Eric Dumazet, Neal Cardwell and I are discussing in the thread
-> > starting at:
-> > 
-> > http://marc.info/?l=linux-netdev&m=132916352815286&w=2
+Hi Santosh,
+
+On Thu, Mar 01, 2012 at 07:34:58PM +0530, santosh prasad nayak wrote:
+> Andrei,
 > 
-> That's great! 
-> May my language make you confusing. Actually, Feng is doing
-> investigation on this issue. Since you fund out the reason, it saved his
-> work. :) 
+> I could not get you.
 > 
+> Do you want me to resend the patch with subject,
+>   "[PATCH] Bluetooth: Fix network to host endian conversion for L2CAP
+> chan id."  ?
 
-Actually it would be great if you or Feng could post the exact tests
-done and numbers so that we can make sure this is the tracked issue.
+No, the main concern was your commit message which is changelog and should
+come after "---" as it is shown in the example below.
 
-Thanks
+> > On Thu, Mar 01, 2012 at 04:29:21PM +0530, santosh nayak wrote:
+> >> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> >>
+> >> Fix for endian bug.
+> >>
+> >> Fix for null dereferenced removed as it is already
+> >> submitted by Andrei.
+> >>
+> >> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> >> ---
+> >>  net/bluetooth/l2cap_sock.c |    5 +++--
+> >>  1 files changed, 3 insertions(+), 2 deletions(-)
+> >
+> > We prefer following commit log (this is the example)
+> >
+> > <------8<----------------------------------------------------------
+> > |  From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> > |
+> > |  Fix network to host endian conversion for L2CAP chan id.
+> > |
+> > |  Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> > |
+> > |  ---
+> > |          * v2 Fix for null dereferenced removed as it is already
+> > |          submitted by Andrei.
+> > |
+> > |    net/bluetooth/l2cap_sock.c |    5 +++--
+> > |    1 files changed, 3 insertions(+), 2 deletions(-)
+> > |
+> > <------8<----------------------------------------------------------
 
-
+Best regards 
+Andrei Emeltchenko 
