@@ -1,249 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab2CBSYz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 13:24:55 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:49925 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759015Ab2CBSYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 13:24:25 -0500
-Date: Fri, 2 Mar 2012 18:24:55 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Subject: Re: [PATCH v12 07/13] seccomp: add SECCOMP_RET_ERRNO
-Message-ID: <20120302182455.GA11308@mail.hallyn.com>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
- <1330559620-23543-7-git-send-email-wad@chromium.org>
+	id S1030438Ab2CBS24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 13:28:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46535 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab2CBS2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 13:28:55 -0500
+Message-ID: <4F51114D.80704@zytor.com>
+Date: Fri, 02 Mar 2012 10:28:29 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330559620-23543-7-git-send-email-wad@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Joshua C." <joshuacov@googlemail.com>
+CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <4F4BF11E.4090000@zytor.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com> <4F4EC19F.4050002@zytor.com> <CAKL7Q7rZyUNNP+jy5ajL2KSbC8S4LEQZWG3vuPVSvSOCd_ZGQg@mail.gmail.com> <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com> <4F4FE1FA.1040008@zytor.com> <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com>
+In-Reply-To: <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Will Drewry (wad@chromium.org):
-> This change adds the SECCOMP_RET_ERRNO as a valid return value from a
-> seccomp filter.  Additionally, it makes the first use of the lower
-> 16-bits for storing a filter-supplied errno.  16-bits is more than
-> enough for the errno-base.h calls.
+On 03/02/2012 09:53 AM, Joshua C. wrote:
 > 
-> Returning errors instead of immediately terminating processes that
-> violate seccomp policy allow for broader use of this functionality
-> for kernel attack surface reduction.  For example, a linux container
-> could maintain a whitelist of pre-existing system calls but drop
-> all new ones with errnos.  This would keep a logically static attack
-> surface while providing errnos that may allow for graceful failure
-> without the downside of do_exit() on a bad call.
+> I thought about your idea for separating the platform specific code in
+> another file. It will make the code more modular but at the end we're
+> talking about a single function that flips a single bit. I really
+> don't see any real benefit from defining it in a separate file. It
+> makes (from my point of view) reading the file just more difficult.
+> That's why I decided to return the platform specific code back where
+> it originally was and only modifiy the x86 code. So I can keep the
+> changes at minimum. I'll post the patch later today and cc the tty
+> maintainer. Thanks for the help and the ideas.
 > 
-> v12: - move to WARN_ON if filter is NULL
->        (oleg@redhat.com, luto@mit.edu, keescook@chromium.org)
->      - return immediately for filter==NULL (keescook@chromium.org)
->      - change evaluation to only compare the ACTION so that layered
->        errnos don't result in the lowest one being returned.
->        (keeschook@chromium.org)
-> v11: - check for NULL filter (keescook@chromium.org)
-> v10: - change loaders to fn
->  v9: - n/a
->  v8: - update Kconfig to note new need for syscall_set_return_value.
->      - reordered such that TRAP behavior follows on later.
->      - made the for loop a little less indent-y
->  v7: - introduced
-> 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Will Drewry <wad@chromium.org>
 
-Clever :)
+Yeah, it seems a bit excessive in this case.
 
-Thanks, Will.
+	-hpa
 
-For patches 1-7,
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-
-The -1 return value from __secure_computing_int() seems like it
-could stand  #define, like
-
-#define SECCOMP_DONTRUN -1
-#define SECCOMP_RUN 0
-
-or something Maybe not, but -1 always scares me and I had to look back
-and forth a few times to make sure it was doing what I would want.
-
-(I've only quickly looked at the following ones.   I had no
-objection, but didn't seriously review them.)
-
-> ---
->  arch/Kconfig            |    6 ++++--
->  include/linux/seccomp.h |   15 +++++++++++----
->  kernel/seccomp.c        |   43 ++++++++++++++++++++++++++++++++++---------
->  3 files changed, 49 insertions(+), 15 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 7a696a9..1350d07 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -237,8 +237,10 @@ config HAVE_ARCH_SECCOMP_FILTER
->  	bool
->  	help
->  	  This symbol should be selected by an architecure if it provides
-> -	  asm/syscall.h, specifically syscall_get_arguments() and
-> -	  syscall_get_arch().
-> +	  asm/syscall.h, specifically syscall_get_arguments(),
-> +	  syscall_get_arch(), and syscall_set_return_value().  Additionally,
-> +	  its system call entry path must respect a return value of -1 from
-> +	  __secure_computing_int() and/or secure_computing().
->  
->  config SECCOMP_FILTER
->  	def_bool y
-> diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
-> index 6ef133c..a81fccd 100644
-> --- a/include/linux/seccomp.h
-> +++ b/include/linux/seccomp.h
-> @@ -12,13 +12,14 @@
->  
->  /*
->   * All BPF programs must return a 32-bit value.
-> - * The bottom 16-bits are reserved for future use.
-> + * The bottom 16-bits are for optional return data.
->   * The upper 16-bits are ordered from least permissive values to most.
->   *
->   * The ordering ensures that a min_t() over composed return values always
->   * selects the least permissive choice.
->   */
->  #define SECCOMP_RET_KILL	0x00000000U /* kill the task immediately */
-> +#define SECCOMP_RET_ERRNO	0x00030000U /* returns an errno */
->  #define SECCOMP_RET_ALLOW	0x7fff0000U /* allow */
->  
->  /* Masks for the return value sections. */
-> @@ -64,11 +65,17 @@ struct seccomp {
->  	struct seccomp_filter *filter;
->  };
->  
-> -extern void __secure_computing(int);
-> -static inline void secure_computing(int this_syscall)
-> +/*
-> + * Direct callers to __secure_computing should be updated as
-> + * CONFIG_HAVE_ARCH_SECCOMP_FILTER propagates.
-> + */
-> +extern void __secure_computing(int) __deprecated;
-> +extern int __secure_computing_int(int);
-> +static inline int secure_computing(int this_syscall)
->  {
->  	if (unlikely(test_thread_flag(TIF_SECCOMP)))
-> -		__secure_computing(this_syscall);
-> +		return  __secure_computing_int(this_syscall);
-> +	return 0;
->  }
->  
->  extern long prctl_get_seccomp(void);
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index 71df324..88dd568 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -137,21 +137,25 @@ static void *bpf_load(const void *nr, int off, unsigned int size, void *buf)
->  static u32 seccomp_run_filters(int syscall)
->  {
->  	struct seccomp_filter *f;
-> -	u32 ret = SECCOMP_RET_KILL;
->  	static const struct bpf_load_fn fns = {
->  		bpf_load,
->  		sizeof(struct seccomp_data),
->  	};
-> +	u32 ret = SECCOMP_RET_ALLOW;
->  	const void *sc_ptr = (const void *)(uintptr_t)syscall;
->  
-> +	/* Ensure unexpected behavior doesn't result in failing open. */
-> +	if (WARN_ON(current->seccomp.filter == NULL))
-> +		return SECCOMP_RET_KILL;
-> +
->  	/*
->  	 * All filters are evaluated in order of youngest to oldest. The lowest
-> -	 * BPF return value always takes priority.
-> +	 * BPF return value (ignoring the DATA) always takes priority.
->  	 */
->  	for (f = current->seccomp.filter; f; f = f->prev) {
-> -		ret = bpf_run_filter(sc_ptr, f->insns, &fns);
-> -		if (ret != SECCOMP_RET_ALLOW)
-> -			break;
-> +		u32 cur_ret = bpf_run_filter(sc_ptr, f->insns, &fns);
-> +		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
-> +			ret = cur_ret;
->  	}
->  	return ret;
->  }
-> @@ -289,6 +293,13 @@ static int mode1_syscalls_32[] = {
->  
->  void __secure_computing(int this_syscall)
->  {
-> +	/* Filter calls should never use this function. */
-> +	BUG_ON(current->seccomp.mode == SECCOMP_MODE_FILTER);
-> +	__secure_computing_int(this_syscall);
-> +}
-> +
-> +int __secure_computing_int(int this_syscall)
-> +{
->  	int mode = current->seccomp.mode;
->  	int exit_code = SIGKILL;
->  	int *syscall;
-> @@ -302,16 +313,29 @@ void __secure_computing(int this_syscall)
->  #endif
->  		do {
->  			if (*syscall == this_syscall)
-> -				return;
-> +				return 0;
->  		} while (*++syscall);
->  		break;
->  #ifdef CONFIG_SECCOMP_FILTER
-> -	case SECCOMP_MODE_FILTER:
-> -		if (seccomp_run_filters(this_syscall) == SECCOMP_RET_ALLOW)
-> -			return;
-> +	case SECCOMP_MODE_FILTER: {
-> +		u32 action = seccomp_run_filters(this_syscall);
-> +		switch (action & SECCOMP_RET_ACTION) {
-> +		case SECCOMP_RET_ERRNO:
-> +			/* Set the low-order 16-bits as a errno. */
-> +			syscall_set_return_value(current, task_pt_regs(current),
-> +						 -(action & SECCOMP_RET_DATA),
-> +						 0);
-> +			return -1;
-> +		case SECCOMP_RET_ALLOW:
-> +			return 0;
-> +		case SECCOMP_RET_KILL:
-> +		default:
-> +			break;
-> +		}
->  		seccomp_filter_log_failure(this_syscall);
->  		exit_code = SIGSYS;
->  		break;
-> +	}
->  #endif
->  	default:
->  		BUG();
-> @@ -322,6 +346,7 @@ void __secure_computing(int this_syscall)
->  #endif
->  	audit_seccomp(this_syscall);
->  	do_exit(exit_code);
-> +	return -1;	/* never reached */
->  }
->  
->  long prctl_get_seccomp(void)
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
