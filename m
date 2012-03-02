@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab2CBBMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:12:05 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757942Ab2CBBMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:12:03 -0500
-Message-ID: <4F501E60.3090701@nod.at>
-Date: Fri, 02 Mar 2012 02:12:00 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: OpenRISC: BUG: failure at mm/page_alloc.c:2467/free_pages()!
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigAD10C4B40BCF779998401382"
+	id S1758176Ab2CBBPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:15:36 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52324 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758070Ab2CBBPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:15:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of festevam@gmail.com designates 10.236.72.230 as permitted sender) smtp.mail=festevam@gmail.com; dkim=pass header.i=festevam@gmail.com
+From: Fabio Estevam <festevam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        linux@arm.linux.org.uk, sam@ravnborg.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2] compiler.h: Include <linux/bug.h> to avoid build breakage with ARRAY_SIZE()
+Date: Thu,  1 Mar 2012 22:15:22 -0300
+Message-Id: <1330650922-24143-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
+References: <1330436499-17190-1-git-send-email-fabio.estevam@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigAD10C4B40BCF779998401382
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Building imx_v6_v7_defconfig generated the following build error:
 
-Hi!
+arch/arm/mach-imx/cpu_op-mx51.c: In function 'mx51_get_cpu_op':
+arch/arm/mach-imx/cpu_op-mx51.c:27: error: implicit declaration of function 'BUILD_BUG_ON_ZERO'
 
-CONFIG_DEBUG_VM exposes this splat:
-BUG: failure at mm/page_alloc.c:2467/free_pages()!
+commit 6f863554 (kernel.h: doesn't explicitly use bug.h, so don't include it.)
+has removed asm/debug.h from linux/kernel.h.
 
-addr is 0xc100c000, but memory_end is 0x02000000.
+Quoting Russell King (http://www.spinics.net/lists/arm-kernel/msg161916.html)
 
-Thanks,
-//richard
+"linux/kernel.h _does_ use bug stuff - in ARRAY_SIZE().
 
+ARRAY_SIZE() uses __must_be_array(), which is defined in linux/compiler-gcc.h,
+which is obtained via linux/compiler.h and linux/linkage.h.
 
---------------enigAD10C4B40BCF779998401382
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+linux/compiler-gcc.h defines __must_be_array() to be:
+#define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+and BUILD_BUG_ON_ZERO used to be in linux/kernel.h but got moved to
+linux/bug.h.
 
-iQEcBAEBAgAGBQJPUB5gAAoJEN9758yqZn9e4EAH/Rnxm8InPqpPyF4ZmV5P1yWq
-Xet4sispDVLDKKDOye93qSO4GVtu0IeZzDx7SNu3uCk8C7c9m7cTUKbkbyluY79J
-/YQv9y2neLwuGGY5sWYbeTz7jzfmxeZZ64YMZrn0Kh4rpPRNbQCZk3UegrSLETDh
-TQ3Ug6WrcAmLwQ/bd1rAmQem7ROWst8eXaR+2K/cZPp0lnd2nxKGkjObeU7ycuA1
-Cw5p0d8E2HwoGmi9yo1+GqidPyDsQcKmytqGhiVWpQ0mC8xTbznufK/o4ZPEJBYL
-umGeYP70vWrWrdQ1VYEReGv688IP3qloE1IkNSLNE7nN4n6eGSJhumxX15/QCd4=
-=M5uW
------END PGP SIGNATURE-----
+Hence why people are seeing build breakage with ARRAY_SIZE()."
 
---------------enigAD10C4B40BCF779998401382--
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Move linux/bug.h to linux/compiler.h
+
+ include/linux/compiler.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 4a24354..0300fb7 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -46,6 +46,7 @@ extern void __chk_io_ptr(const volatile void __iomem *);
+ 
+ #ifdef __GNUC__
+ #include <linux/compiler-gcc.h>
++#include <linux/bug.h>
+ #endif
+ 
+ #define notrace __attribute__((no_instrument_function))
+-- 
+1.7.1
+
