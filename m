@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab2CBKGC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:06:02 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54829 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab2CBKF7 convert rfc822-to-8bit (ORCPT
+	id S1758702Ab2CBKHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:07:32 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48274 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab2CBKHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:05:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.120.210 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <20120301143859.GX5054@shiny>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
-	<20120301143859.GX5054@shiny>
-Date: Fri, 2 Mar 2012 11:05:56 +0100
-Message-ID: <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>, Theodore Tso <tytso@mit.edu>,
-        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 05:07:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.224.9 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330682841.4191.1.camel@phoenix>
+Subject: [PATCH RFC/RFT] regulator: Fix mask parameter in da9052_reg_update
+ calls
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Fri, 02 Mar 2012 18:07:21 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/1 Chris Mason <chris.mason@oracle.com>:
-> On Wed, Feb 29, 2012 at 11:44:31PM -0500, Theodore Tso wrote:
->> You might try sorting the entries returned by readdir by inode number before you stat them.    This is a long-standing weakness in ext3/ext4, and it has to do with how we added hashed tree indexes to directories in (a) a backwards compatible way, that (b) was POSIX compliant with respect to adding and removing directory entries concurrently with reading all of the directory entries using readdir.
->>
->> You might try compiling spd_readdir from the e2fsprogs source tree (in the contrib directory):
->>
->> http://git.kernel.org/?p=fs/ext2/e2fsprogs.git;a=blob;f=contrib/spd_readdir.c;h=f89832cd7146a6f5313162255f057c5a754a4b84;hb=d9a5d37535794842358e1cfe4faa4a89804ed209
->>
->> … and then using that as a LD_PRELOAD, and see how that changes things.
->>
->> The short version is that we can't easily do this in the kernel since it's a problem that primarily shows up with very big directories, and using non-swappable kernel memory to store all of the directory entries and then sort them so they can be returned in inode number just isn't practical.   It is something which can be easily done in userspace, though, and a number of programs (including mutt for its Maildir support) does do, and it helps greatly for workloads where you are calling readdir() followed by something that needs to access the inode (i.e., stat, unlink, etc.)
->>
->
-> For reading the files, the acp program I sent him tries to do something
-> similar.  I had forgotten about spd_readdir though, we should consider
-> hacking that into cp and tar.
->
-> One interesting note is the page cache used to help here.  Picture two
-> tests:
->
-> A) time tar cf /dev/zero /home
->
-> and
->
-> cp -a /home /new_dir_in_new_fs
-> unmount / flush caches
-> B) time tar cf /dev/zero /new_dir_in_new_fs
->
-> On ext, The time for B used to be much faster than the time for A
-> because the files would get written back to disk in roughly htree order.
-> Based on Jacek's data, that isn't true anymore.
+If the mask parameter is 0, info->activate_bit bit won't be set by
+calling da9052_reg_update.
 
-I've took both on tests. The subject is acp and spd_readdir used with
-tar, all on ext4:
-1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
-2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
-3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Hi,
+I cannot find the datasheet, but current code looks does not make sense.
+Can someone confirm if this is a correct fix?
 
-The acp looks much better than spd_readdir but directory copy with
-spd_readdir decreased to 52m 39sec (30 min less).
+Regards,
+Axel
 
--Jacek
+ drivers/regulator/da9052-regulator.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/regulator/da9052-regulator.c b/drivers/regulator/da9052-regulator.c
+index 3767364..ea4d8f5 100644
+--- a/drivers/regulator/da9052-regulator.c
++++ b/drivers/regulator/da9052-regulator.c
+@@ -260,8 +260,8 @@ static int da9052_set_ldo5_6_voltage(struct regulator_dev *rdev,
+ 	 * the LDO activate bit to implment the changes on the
+ 	 * LDO output.
+ 	*/
+-	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
+-				 info->activate_bit);
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
++				 info->activate_bit, info->activate_bit);
+ }
+ 
+ static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
+@@ -280,8 +280,8 @@ static int da9052_set_dcdc_voltage(struct regulator_dev *rdev,
+ 	 * the DCDC activate bit to implment the changes on the
+ 	 * DCDC output.
+ 	*/
+-	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG, 0,
+-				 info->activate_bit);
++	return da9052_reg_update(regulator->da9052, DA9052_SUPPLY_REG,
++				 info->activate_bit, info->activate_bit);
+ }
+ 
+ static int da9052_get_regulator_voltage_sel(struct regulator_dev *rdev)
+-- 
+1.7.5.4
+
+
+
