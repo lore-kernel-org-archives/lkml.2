@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965042Ab2CBSsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 13:48:38 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33507 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab2CBSsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 13:48:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of grant.likely@secretlab.ca designates 10.68.212.232 as permitted sender) smtp.mail=grant.likely@secretlab.ca
+	id S965205Ab2CBSvy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 13:51:54 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:26495
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750757Ab2CBSvw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 13:51:52 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zcb8kz9371I542Mzz1202hzz8275bhz2ei2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+CC: Ron Mercer <ron.mercer@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Fri, 2 Mar 2012 10:51:42 -0800
+Subject: RE: [PATCH 1/3] qla3xxx: ethernet: Fix bogus interrupt state flag.
+Thread-Topic: [PATCH 1/3] qla3xxx: ethernet: Fix bogus interrupt state flag.
+Thread-Index: Acz4ho2dCRBYcdn8SXmZttD2jNiTVQAHtcKg
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA8743804E40F@AVEXMB1.qlogic.org>
+References: <1330700945-18195-1-git-send-email-santoshprasadnayak@gmail.com>
+In-Reply-To: <1330700945-18195-1-git-send-email-santoshprasadnayak@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/4] gpiolib: Add gpiochip_find_by_name() and gpio_find_by_chip_name()
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rajendra Nayak <rnayak@ti.com>,
-        linux-mmc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20120302180848.GM18901@atomide.com>
-References: <20120301185044.29210.44521.stgit@kaulin.local> <20120301185524.29210.60381.stgit@kaulin.local> <20120302075804.F28DB3E2DB4@localhost> <20120302170327.GF18901@atomide.com> <20120302180848.GM18901@atomide.com>
-Date: Fri, 02 Mar 2012 11:48:33 -0700
-Message-Id: <20120302184833.C296A3E1C63@localhost>
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012 10:08:48 -0800, Tony Lindgren <tony@atomide.com> wrote:
-> * Tony Lindgren <tony@atomide.com> [120302 08:31]:
-> > * Grant Likely <grant.likely@secretlab.ca> [120302 01:00]:
-> > > On Thu, 01 Mar 2012 10:55:24 -0800, Tony Lindgren <tony@atomide.com> wrote:
-> > > > +
-> > > > +/**
-> > > > + * gpiochip_find_by_name() - iterator for locating a gpio_chip by name
-> > > > + * @name: name of the gpio_chip
-> > > > + *
-> > > > + * Similar to bus_find_device_by_name. It returns a reference to the
-> > > > + * first gpio_chip with matching name. It ignores NULL and empty names.
-> > > > + * If you need to do something more complex, then use gpiochip_find.
-> > > > + */
-> > > > +struct gpio_chip *gpiochip_find_by_name(const char *name)
-> > > > +{
-> > > > +	if (!name || !strcmp(name, ""))
-> > > > +		return NULL;
-> > > > +
-> > > > +	return gpiochip_find((void *)name, match_name);
-> > > 
-> > > Nasty cast.  Can the signature for gpiochip_find be changed to accept
-> > > a (const void *)?
-> > 
-> > I think so, this too comes from the bus code.
-> 
-> Looks like it can't be const as of_node_to_gpiochip uses it with
-> a struct device_node * that for of_get_named_gpio_flags comes from
-> of_parse_phandle_with_args.
+We will review your patch and get back to you.
 
-Really? It sees to work fine here:
+-----Original Message-----
+From: santosh nayak [mailto:santoshprasadnayak@gmail.com] 
+Sent: Friday, March 02, 2012 7:09 AM
+To: Jitendra Kalsaria
+Cc: Ron Mercer; Dept-Eng Linux Driver; netdev; linux-kernel; kernel-janitors@vger.kernel.org; Santosh Nayak
+Subject: [PATCH 1/3] qla3xxx: ethernet: Fix bogus interrupt state flag.
 
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
+
+In 'ql_adapter_initialize'
+the first call for 'spin_unlock_irqrestore()' is with hw_flags = 0,
+which is as good as 'spin_unlock_irq()' (unconditional interrupt
+enabling). If this is intended, then for better performance
+'spin_unlock_irqrestore()' can be replaced with 'spin_unlock_irq()'
+and 'spin_lock_irqsave()' can be replaced by 'spin_lock_irq()
+
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 ---
+ drivers/net/ethernet/qlogic/qla3xxx.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index d773540..e633a2a 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1152,8 +1152,9 @@ EXPORT_SYMBOL_GPL(gpiochip_remove);
-  * non-zero, this function will return to the caller and not iterate over any
-  * more gpio_chips.
-  */
--struct gpio_chip *gpiochip_find(void *data,
--				int (*match)(struct gpio_chip *chip, void *data))
-+struct gpio_chip *gpiochip_find(const void *data,
-+				int (*match)(struct gpio_chip *chip,
-+					     const void *data))
- {
- 	struct gpio_chip *chip = NULL;
- 	unsigned long flags;
-diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
-index e034b38..bba8121 100644
---- a/drivers/of/gpio.c
-+++ b/drivers/of/gpio.c
-@@ -229,7 +229,7 @@ void of_gpiochip_remove(struct gpio_chip *chip)
- }
+diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+index d49f6da..8da3e41 100644
+--- a/drivers/net/ethernet/qlogic/qla3xxx.c
++++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+@@ -3017,7 +3017,6 @@ static int ql_adapter_initialize(struct ql3_adapter *qdev)
+ 		(void __iomem *)port_regs;
+ 	u32 delay = 10;
+ 	int status = 0;
+-	unsigned long hw_flags = 0;
  
- /* Private function for resolving node pointer to gpio_chip */
--static int of_gpiochip_is_match(struct gpio_chip *chip, void *data)
-+static int of_gpiochip_is_match(struct gpio_chip *chip, const void *data)
- {
- 	return chip->of_node == data;
- }
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 1ff4e22..5f52690 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -142,9 +142,9 @@ extern int __must_check gpiochip_reserve(int start, int ngpio);
- /* add/remove chips */
- extern int gpiochip_add(struct gpio_chip *chip);
- extern int __must_check gpiochip_remove(struct gpio_chip *chip);
--extern struct gpio_chip *gpiochip_find(void *data,
-+extern struct gpio_chip *gpiochip_find(const void *data,
- 					int (*match)(struct gpio_chip *chip,
--						     void *data));
-+						     const void *data));
+ 	if (ql_mii_setup(qdev))
+ 		return -1;
+@@ -3228,9 +3227,9 @@ static int ql_adapter_initialize(struct ql3_adapter *qdev)
+ 		value = ql_read_page0_reg(qdev, &port_regs->portStatus);
+ 		if (value & PORT_STATUS_IC)
+ 			break;
+-		spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
++		spin_unlock_irq(&qdev->hw_lock);
+ 		msleep(500);
+-		spin_lock_irqsave(&qdev->hw_lock, hw_flags);
++		spin_lock_irq(&qdev->hw_lock);
+ 	} while (--delay);
  
- 
- /* Always use the library code for GPIO management calls,
+ 	if (delay == 0) {
+-- 
+1.7.4.4
+
+
 
