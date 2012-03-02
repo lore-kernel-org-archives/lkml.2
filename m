@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab2CBV5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:57:13 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:46055 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757253Ab2CBV5M convert rfc822-to-8bit (ORCPT
+	id S1758728Ab2CBWJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:09:12 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56681 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757089Ab2CBWJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:57:12 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mjg@redhat.com" <mjg@redhat.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
-Date: Fri, 2 Mar 2012 16:55:56 -0500
-Subject: RE: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
- with NMI fallback
-Thread-Topic: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
- with NMI fallback
-Thread-Index: Acz4uR7a6dfHO5KsS9KW3BbyDKPlSQABfMjQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DACAECAE4@USINDEVS01.corp.hds.com>
-References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
- <1329164860-668-2-git-send-email-dzickus@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA8F@USINDEVS01.corp.hds.com>
- <20120302211156.GM3083@redhat.com>
-In-Reply-To: <20120302211156.GM3083@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 17:09:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH v2 0/6] ARM: Tegra: cleanup patches from Arnd Bergmann
+Date: Fri, 2 Mar 2012 22:09:04 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Alan Ott <alan@signal11.us>, Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+References: <1330721884-8495-1-git-send-email-alan@signal11.us> <4F513DE3.9020707@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE861A73@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE861A73@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1203020202
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203022209.04419.arnd@arndb.de>
+X-Provags-ID: V02:K0:rfsGbcBT+cLroMgTWaRo4/Ml3DsG3qkvV0ELok0E+jW
+ NHt95i3XjkpTXTsdomNhoWxW/7YFdRWxtxh+mXADEbOPLKvsk1
+ RDjezx0Yq9hgPBzvEbTZlTALWghtLnxGEXmLXAIatuAOb63cCS
+ 47gFwCTIwTCcY0Sp7gXEb4avNhu1hCuyixqZUt5ycgk0IUe8BG
+ NyK5kaya89GEw/6Y5CvTa9QNh1SSrMyDR23nQx56EvOkXTil4t
+ kC4WND3O2mD54PDb2EMmAT45tAMptD3UoK13qHYI77yiflfBRv
+ ijrYwgNBlWeos6P3NRTZE4azOaCDLZaeprJlHeDyFrDzWjdgU1
+ xCwDTqJyluVtwSE1dQVY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On Friday 02 March 2012, Stephen Warren wrote:
+> > For patch #5 (ARM: tegra: USB_ULPI needs USB), it didn't look to me like
+> > there was a resolution on that thread yesterday. On reading it again, if
+> > we change
+> >     select USB_ULPI if USB_SUPPORT
+> > to:
+> >     select USB_ULPI if USB
+> > for both Tegra 2 and 3, does that satisfy you and Arnd?
 > 
-> I don't think kdump uses the notifier_chain.
+> I believe so yes. Thanks.
 
-Sorry about that. I looked at old kernel.
-Currently, kdump uses register_nmi_handler() as well.
+Agreed.
 
-Seiji
-
-
+	Arnd
