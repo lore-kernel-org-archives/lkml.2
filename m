@@ -1,190 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964969Ab2CBWeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:34:13 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33914 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941Ab2CBWeL convert rfc822-to-8bit (ORCPT
+	id S1758316Ab2CBWgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:36:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38200 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758099Ab2CBWgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:34:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of robdclark@gmail.com designates 10.52.68.206 as permitted sender) smtp.mail=robdclark@gmail.com; dkim=pass header.i=robdclark@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
-References: <1330616161-1937-1-git-send-email-daniel.vetter@ffwll.ch>
-	<1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
-Date: Fri, 2 Mar 2012 16:34:10 -0600
-X-Google-Sender-Auth: 16LRUdgvipvGdal9hMQ_F6pGpbw
-Message-ID: <CAF6AEGsOLcfMa4PKj0f8uhaEHSczpH0323xVhL41WAnaqAHfRw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] dma_buf: Add documentation for the new cpu access support
-From: Rob Clark <rob.clark@linaro.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 17:36:17 -0500
+Date: Fri, 2 Mar 2012 14:36:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Richard Henderson <rth@twiddle.net>, Michel Lespinasse <walken@google.com>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>
+Subject: Re: alpha: futex regression bisected
+Message-Id: <20120302143615.2a272976.akpm@linux-foundation.org>
+In-Reply-To: <4F4B273C.9080506@orcon.net.nz>
+References: <4F420256.2090600@orcon.net.nz>
+	<4F4282CA.5010502@twiddle.net>
+	<4F4B273C.9080506@orcon.net.nz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-minor comments from the typo-police..
+On Mon, 27 Feb 2012 19:48:28 +1300
+Michael Cree <mcree@orcon.net.nz> wrote:
 
-On Thu, Mar 1, 2012 at 9:36 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  Documentation/dma-buf-sharing.txt |  102 +++++++++++++++++++++++++++++++++++-
->  1 files changed, 99 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-> index 225f96d..f12542b 100644
-> --- a/Documentation/dma-buf-sharing.txt
-> +++ b/Documentation/dma-buf-sharing.txt
-> @@ -32,8 +32,12 @@ The buffer-user
->  *IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
->  For this first version, A buffer shared using the dma_buf sharing API:
->  - *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
-> -   this framework.
-> -- may be used *ONLY* by importers that do not need CPU access to the buffer.
-> +  this framework.
-> +- with this new iteration of the dma-buf api cpu access from the kernel has been
-> +  enable, see below for the details.
-> +
-> +dma-buf operations for device dma only
-> +--------------------------------------
->
->  The dma_buf buffer sharing API usage contains the following steps:
->
-> @@ -219,7 +223,99 @@ NOTES:
->    If the exporter chooses not to allow an attach() operation once a
->    map_dma_buf() API has been called, it simply returns an error.
->
-> -Miscellaneous notes:
-> +Kernel cpu access to a dma-buf buffer object
-> +--------------------------------------------
-> +
-> +The motivation to allow cpu access from the kernel to a dma-buf object from the
-> +importers side are:
-> +- fallback operations, e.g. if the devices is connected to a usb bus and the
-> +  kernel needs to shuffle the data around first before sending it away.
-> +- full transperancy for existing users on the importer side, i.e. userspace
+> > There is no 32-bit compare instruction.  These are implemented by
+> > consistently extending the values to a 64-bit type.  Since the
+> > load instruction sign-extends, we want to sign-extend the other
+> > quantity as well (despite the fact it's logically unsigned).
+> > 
+> > So:
+> > 
+> > -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
+> > +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
+> > 
+> > should do the trick.
+> 
+> Thanks, that fixes it.  Will you formally submit a patch with commit
+> message or should I?
+> 
+> You can have at least a Reviewed-by, or even an
+> Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+> who correctly analysed the problem in response to when I suggested the
+> fix on the debian-alpha email list without explanation.
 
-s/transperancy/transparency/
+Seems that I am an alpha hacker!  This?
 
-> +  should not notice the difference between a normal object from that subsystem
-> +  and an imported one backed by a dma-buf. This is really important for drm
-> +  opengl drivers that expect to still use all the existing upload/download
-> +  paths.
-> +
-> +Access to a dma_buf from the kernel context involves three steps:
-> +
-> +1. Prepare access, which invalidate any necessary caches and make the object
-> +   available for cpu access.
-> +2. Access the object page-by-page with the dma_buf map apis
-> +3. Finish access, which will flush any necessary cpu caches and free reserved
-> +   resources.
-> +
-> +1. Prepare acces
-> +
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: alpha: fix 32/64-bit bug in futex support
 
-s/acces/access/
+Michael Cree said:
 
-> +   Before an importer can acces a dma_buf object with the cpu from the kernel
+: : I have noticed some user space problems (pulseaudio crashes in pthread
+: : code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
+: : systems) that arise when using a 2.6.39 or later kernel on Alpha.
+: : Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
+: : criterion for good/bad kernel) eventually leads to:
+: : 
+: : 8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
+: : commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
+: : Author: Michel Lespinasse <walken@google.com>
+: : Date:   Thu Mar 10 18:50:58 2011 -0800
+: : 
+: :     futex: Sanitize futex ops argument types
+: : 
+: :     Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
+: :     prototypes to use u32 types for the futex as this is the data type the
+: :     futex core code uses all over the place.
+: : 
+: : Looking at the commit I see there is a change of the uaddr argument in
+: : the Alpha architecture specific code for futexes from int to u32, but I
+: : don't see why this should cause a problem.
 
-s/acces/access/
+Richard Henderson said:
 
-> +   context, it needs to notice the exporter of the access that is about to
+: futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+:                               u32 oldval, u32 newval)
+: ...
+:         :       "r"(uaddr), "r"((long)oldval), "r"(newval)
+: 
+: 
+: There is no 32-bit compare instruction.  These are implemented by
+: consistently extending the values to a 64-bit type.  Since the
+: load instruction sign-extends, we want to sign-extend the other
+: quantity as well (despite the fact it's logically unsigned).
+: 
+: So:
+: 
+: -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
+: +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
+: 
+: should do the trick.
 
-s/notice/notify/ (I assume?)
+Reported-by: Michael Cree <mcree@orcon.net.nz>
+Tested-by: Michael Cree <mcree@orcon.net.nz>
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-> +   happen.
-> +
-> +   Interface:
-> +      int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
-> +                                  size_t start, size_t len,
-> +                                  enum dma_data_direction direction)
-> +
-> +   This allows the exporter to ensure that the memory is actually available for
-> +   cpu access - the exporter might need to allocate or swap-in and pin the
-> +   backing storage. The exporter also needs to ensure that cpu access is
-> +   coherent for the given range and access direction. The range and access
-> +   direction can be used by the exporter to optimize the cache flushing, i.e.
-> +   access outside of the range or with a different direction (read instead of
-> +   write) might return stale or even bogus data (e.g. when the exporter needs to
-> +   copy the data to temporaray storage).
+ arch/alpha/include/asm/futex.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-s/temporaray/temporary/
+diff -puN arch/alpha/include/asm/futex.h~alpha-fix-32-64-bit-bug-in-futex-support arch/alpha/include/asm/futex.h
+--- a/arch/alpha/include/asm/futex.h~alpha-fix-32-64-bit-bug-in-futex-support
++++ a/arch/alpha/include/asm/futex.h
+@@ -108,7 +108,7 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
+ 	"	lda	$31,3b-2b(%0)\n"
+ 	"	.previous\n"
+ 	:	"+r"(ret), "=&r"(prev), "=&r"(cmp)
+-	:	"r"(uaddr), "r"((long)oldval), "r"(newval)
++	:	"r"(uaddr), "r"((long)(int)oldval), "r"(newval)
+ 	:	"memory");
+ 
+ 	*uval = prev;
+_
 
-> +
-> +   This step might fail, e.g. in oom conditions.
-> +
-> +2. Accessing the buffer
-> +
-> +   To support dma_buf objects residing in highmem cpu access is page-based using
-> +   an api similar to kmap. Accessing a dma_buf is done in aligned chunks of
-> +   PAGE_SIZE size. Before accessing a chunk it needs to be mapped, which returns
-> +   a pointer in kernel virtual address space. Afterwards the chunk needs to be
-> +   unmapped again. There is no limit on how often a given chunk can be mapped
-> +   and unmmapped, i.e. the importer does not need to call begin_cpu_access again
-
-s/unmmapped/unmapped/
-
-> +   before mapping the same chunk again.
-> +
-> +   Interfaces:
-> +      void *dma_buf_kmap(struct dma_buf *, unsigned long);
-> +      void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
-> +
-> +   There are also atomic variants of these interfaces. Like for kmap they
-> +   facilitate non-blocking fast-paths. Neither the importer nor the exporter (in
-> +   the callback) is allowed to block when using these.
-> +
-> +   Interfaces:
-> +      void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
-> +      void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
-> +
-> +   For importers all the restrictions of using kmap apply, like the limited
-> +   supply of kmap_atomic slots. Hence an importer shall only hold onto at most 2
-> +   atomic dma_buf kmaps at the same time (in any given process context).
-> +
-> +   dma_buf kmap calls outside of the range specified in begin_cpu_access are
-> +   undefined. If the range is not PAGE_SIZE aligned, kmap needs to succeed on
-> +   the partial chunks at the beginning and end but may return stale or bogus
-> +   data outside of the range (in these partial chunks).
-> +
-> +   Note that these calls need to always succeed. The exporter needs to complete
-> +   any preparations that might fail in begin_cpu_access.
-> +
-> +3. Finish access
-> +
-> +   When the importer is done accessing the range specified in begin_cpu_acces,
-
-s/begin_cpu_acces/begin_cpu_access/
-
-
-BR,
--R
-
-
-> +   it needs to announce this to the exporter (to facilitate cache flushing and
-> +   unpinning of any pinned resources). The result of of any dma_buf kmap calls
-> +   after end_cpu_access is undefined.
-> +
-> +   Interface:
-> +      void dma_buf_end_cpu_access(struct dma_buf *dma_buf,
-> +                                 size_t start, size_t len,
-> +                                 enum dma_data_direction dir);
-> +
-> +
-> +Miscellaneous notes
-> +-------------------
-> +
->  - Any exporters or users of the dma-buf buffer sharing framework must have
->   a 'select DMA_SHARED_BUFFER' in their respective Kconfigs.
->
-> --
-> 1.7.7.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
