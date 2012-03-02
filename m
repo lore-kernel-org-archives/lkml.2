@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964994Ab2CBHVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:21:31 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35687 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964803Ab2CBHVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:21:30 -0500
-Date: Fri, 2 Mar 2012 08:21:22 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        vinod.koul@intel.com, kernel@pengutronix.de, shawn.guo@freescale.com,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH 1/2] dma: imx-sdma: Let the driver be probed even if no
- firware is found
-Message-ID: <20120302072122.GF3852@pengutronix.de>
-References: <1330525238-25420-1-git-send-email-festevam@gmail.com>
+	id S965105Ab2CBHWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:22:17 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50114 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964803Ab2CBHWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 02:22:16 -0500
+Date: Fri, 2 Mar 2012 08:21:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Venki Pallipadi <venki@google.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
+ interrupts to an idle CPU -v1
+Message-ID: <20120302072147.GA32401@elte.hu>
+References: <1329957415-15239-1-git-send-email-venki@google.com>
+ <20120223075027.GB15306@elte.hu>
+ <CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
+ <1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
+ <CABeCy1btewB-oTgyL06qvebLLXTqareYNy-wdNZ3oiHR3KPwEw@mail.gmail.com>
+ <1330652258.30167.70.camel@sbsiddha-desk.sc.intel.com>
+ <CABeCy1a7RszUWBV10tVbdsxAdPpQAMSQXw-pMG2znTqYb5WN5A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330525238-25420-1-git-send-email-festevam@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:20:57 up 110 days, 15:08, 26 users,  load average: 0.00, 0.01,
- 0.05
+In-Reply-To: <CABeCy1a7RszUWBV10tVbdsxAdPpQAMSQXw-pMG2znTqYb5WN5A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 11:20:37AM -0300, Fabio Estevam wrote:
-> On the device tree case the code bails out when the firmware name cannot be found
-> or if the firmware fails to be requested.
-> 
-> Fix this behaviour as the SDMA engine can still operate with the built-in
-> ROM scripts.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Both patches:
+* Venki Pallipadi <venki@google.com> wrote:
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-
-> ---
->  drivers/dma/imx-sdma.c |   13 +++++--------
->  1 files changed, 5 insertions(+), 8 deletions(-)
+> On Thu, Mar 1, 2012 at 5:37 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> > On Thu, 2012-03-01 at 17:35 -0800, Venki Pallipadi wrote:
+> >> On Thu, Mar 1, 2012 at 5:28 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> >> > On Thu, 2012-03-01 at 16:33 -0800, Venki Pallipadi wrote:
+> >> >> >
+> >> >> > fork_idle() should also make sure it does not schedule the child
+> >> >> > thread: thus we'd also be able to further simplify smpboot.c and
+> >> >> > get rid of all that extremely ugly 'struct create_idle'
+> >> >> > gymnastics in smpboot.c.
+> >> >>
+> >> >> But not this. I am not sure where fork_idle results in resched of the child.
+> >> >> As I saw it, fork_idle calls init_idle and that sets the affinity of
+> >> >> idle_task to target CPU. So, reschedule should not be a problem. What
+> >> >> am I missing here?
+> >> >
+> >> > I think Ingo is referring to the fact that we can't use kthread_create()
+> >> > here and hence we were relying on fork_idle().
+> >> >
+> >> >> Also, I tried this silly test patch (Cut and paste... Sorry) and it
+> >> >> seemed to work fine both with and without CPU hotplug.
+> >> >>
+> >> >
+> >> > I don't think we can do this today, as we need to make 
+> >> > sure we have the correct current context. With dynamic 
+> >> > cpu hotplug, current context can be any process and hence 
+> >> > we were depending on the schedule_work() context.
+> >>
+> >> schedule_work() is only done at boot time. In case of 
+> >> dynamic cpu hotplug, we skip the whole fork_idle as we 
+> >> already have the task struct and just do init_idle().
+> >>
+> >
+> > What happens if we boot with "maxcpus=" and later online the 
+> > remaining cpu's?
 > 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index bf736ad..130b994 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -1397,15 +1397,12 @@ static int __init sdma_probe(struct platform_device *pdev)
->  		 */
->  		ret = of_property_read_string(np, "fsl,sdma-ram-script-name",
->  					      &fw_name);
-> -		if (ret) {
-> +		if (ret)
->  			dev_err(&pdev->dev, "failed to get firmware name\n");
-> -			goto err_init;
-> -		}
-> -
-> -		ret = sdma_get_firmware(sdma, fw_name);
-> -		if (ret) {
-> -			dev_err(&pdev->dev, "failed to get firmware\n");
-> -			goto err_init;
-> +		else {
-> +			ret = sdma_get_firmware(sdma, fw_name);
-> +			if (ret)
-> +				dev_err(&pdev->dev, "failed to get firmware\n");
->  		}
->  	}
->  
-> -- 
-> 1.7.1
-> 
-> 
+> Yes. This case will be problematic. So, we still need struct 
+> create_idle work stuff even after percpu idle_task. Or was 
+> Ingo's suggestion to do something along the lines of - init 
+> any CPU's idle task from CPU 0's idle task?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+If the percpu area of possible CPUs is already allocated at this 
+point then we should probably do that.
+
+If not then what is the problem with doing fork_idle() from the 
+hotplug process context? Where does the assymetry in the dynamic 
+case come from?
+
+Thanks,
+
+	Ingo
