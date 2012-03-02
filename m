@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965421Ab2CBNFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 08:05:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33415 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754761Ab2CBNFL (ORCPT
+	id S1758741Ab2CBNN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 08:13:56 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56628 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757510Ab2CBNNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 08:05:11 -0500
-Date: Fri, 2 Mar 2012 13:05:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v5] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120302130509.GF3230@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
- <1329976011-2251-3-git-send-email-tomoya.rohm@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eDB11BtaWSyaBkpc"
-Content-Disposition: inline
-In-Reply-To: <1329976011-2251-3-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: Chicken Little was right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Mar 2012 08:13:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of eric.dumazet@gmail.com designates 10.68.232.42 as permitted sender) smtp.mail=eric.dumazet@gmail.com; dkim=pass header.i=eric.dumazet@gmail.com
+Message-ID: <1330694031.2469.15.camel@edumazet-laptop>
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        ying.xue@windriver.com, luiz.dentz@gmail.com,
+        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
+        lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 02 Mar 2012 05:13:51 -0800
+In-Reply-To: <4F509274.9060302@collabora.co.uk>
+References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
+	 <20120301.170848.432407217191581288.davem@davemloft.net>
+	 <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
+	 <20120302.035509.1994457175982020283.davem@davemloft.net>
+	 <4F509274.9060302@collabora.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le vendredi 02 mars 2012 à 10:27 +0100, Javier Martinez Canillas a
+écrit :
 
---eDB11BtaWSyaBkpc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> We are the most interested in using a facility already found in the
+> kernel, we will try ZeroMQ as Stephen suggested and TIPC but really
+> didn't find an IPC mechanism that fits our needs. The most important
+> issue right now is the fd passing for D-bus application doing
+> out-of-band communication.
 
-On Thu, Feb 23, 2012 at 02:46:51PM +0900, Tomoya MORINAGA wrote:
+Why on earth the needed D-Bus IPC should use a single kernel mechanism ?
 
->  	  This option enables support for the AC Link Controllers in ML7213 IOH SoC.
-> +config SND_SOC_ML7213_MACHINE
-> +	tristate "ML7213 IOH ASoC machine driver"
-> +	select SND_SOC_ML7213_PLATFORM
-> +	help
-> +	  This is ASoC machine driver for ML7213 IOH
+I mean, of course AF_INET cannot pass fd around and never will.
+Of course AF_UNIX cannot use multicast and never will.
+Of course shared memory wont pass fds around and never will.
+... Add other impossible combinations as you want.
 
-This needs to depend on the CODEC as well, how have you tested?
+There are reasons fd passing is hard to implement. I find stuffing this
+functionality in AF_UNIX was a bad design choice from the very
+beginning.
 
-You're also missing a blank line between this and the previous stanza.
+Instead of pushing extra complexity to a single kernel component, why
+not trying to use a combination of existing, well designed and supported
+ones ?
 
-> +	default:
-> +		pr_err("%s: Failed not support format\n", __func__);
-> +		return -EINVAL;
-> +		break;
 
-return followed by break isn't entirely sensible.
 
-> +static struct platform_device *ioh_snd_device;
-> +
-> +
-> +static int __init ioh_i2s_init(void)
-> +{
-> +	int ret;
-> +	ioh_snd_device = platform_device_alloc("soc-audio", -1);
-> +	if (!ioh_snd_device)
-> +		return -ENOMEM;
-
-Use snd_soc_register_card() and a real device.
-
---eDB11BtaWSyaBkpc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPUMV8AAoJEBus8iNuMP3dxr0P/2ki+DkK5jq8Bc3havD9b4X0
-nbx4Gdv/y+G9hXM2Coe3y7SYwW0QUNFwbYvcSOJ7EPZQ5H5N4da/BC1EuMcmBoEZ
-zrKVwpqSiZ157m0Q/pvoqXQh8EnSlepjoI91rwRDKpIKPGOSpWZQW2D+AZ7GjCxr
-QLZnxxpvkFUot5OItPh+2S5stU+5QWZxXPRYSeg8EF4b+3LqnS7uLEtdCiiFSJY1
-SPqGz6TrEQ/oi0F6zvb0737moQTNkP95Zo4Xz54bmZQ30pBBxUE3dfmucyCUl8Cd
-estVPnSswPiSxubvSxYjLukCyTGK8zQVkGwknBcTKD0Zz9WRQPWQpfmGlLg41cfK
-Uny0n2A76xxFpR5aspDHpdJ7/OUz8ACCFa7KjGtfZ3P2S+Lh/IqMK2T+quwo2Of/
-yxUDdA592LZqhUSL67ow9YKI/tt/k2jGOZkVXb+xjmo8rndz8NsIkiA9z8cWoQTm
-KezAC7685iElsMhevNYgSgAHSeKR9g7A0RLMpLj0v17x+x4kQgeQagSZ+Efkl7vf
-AQnseFKSv4xHEJ88ZPgWeZ7vae1Ohfsf6iPn8dYU/5e3/jURptTlMJzF4SXsOl3j
-FEG4NByyeoYpUR4kFGDPawhs3Wygb4YlbY0bOOxtcFPn3ol28WwccufoiTviUN7D
-2kvGVQXC4AAu8GGRs0d+
-=+zo8
------END PGP SIGNATURE-----
-
---eDB11BtaWSyaBkpc--
