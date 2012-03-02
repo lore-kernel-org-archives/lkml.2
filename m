@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030639Ab2CBUp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:45:26 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:34185 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030614Ab2CBUpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:45:24 -0500
-Date: Fri, 2 Mar 2012 15:45:21 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Neil Clarkson <neilaclarkson@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ext4 bug? last write time precedes last mount time on a
- writable volume!
-Message-ID: <20120302204521.GD22215@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Neil Clarkson <neilaclarkson@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
+	id S1030650Ab2CBUqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:46:54 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50885 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030608Ab2CBUqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 15:46:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jgpobox@gmail.com designates 10.52.68.48 as permitted sender) smtp.mail=jgpobox@gmail.com; dkim=pass header.i=jgpobox@gmail.com
+Message-ID: <4F5131B9.6010803@pobox.com>
+Date: Fri, 02 Mar 2012 15:46:49 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Liu Qiang-B32616 <B32616@freescale.com>
+CC: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+Subject: Re: [PATCH V3] fsl-sata: add support for interrupt coalsecing feature
+References: <1329291634-883-1-git-send-email-qiang.liu@freescale.com> <CADRPPNTmRvPVymJmW4vagU+2M4DmqeDSEj=4=R_=YDJekOTccQ@mail.gmail.com> <BCB48C05FCE8BC4D9E61E841ECBE6DB70424A8@039-SN2MPN1-012.039d.mgd.msft.net>
+In-Reply-To: <BCB48C05FCE8BC4D9E61E841ECBE6DB70424A8@039-SN2MPN1-012.039d.mgd.msft.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 12:39:57PM +0000, Neil Clarkson wrote:
-> Isn't the s_wtime field of the ext4 superblock supposed to show the
-> time, in seconds since the epoch, of the last write? It isn't
-> happening!
+On 02/28/2012 09:54 PM, Liu Qiang-B32616 wrote:
+> Hi Jeff,
+>
+> Do you plan to apply it to upstream, or any suggestions? Thanks.
 
-It shows the last time the superblock has been modified, and one of
-the things that we've been doing lately has been to optimize ext4 so
-that it writes to the superblock *much* less often.  It was a
-performance bottleneck to be constantly updating the number of free
-blocks in the superblock each time we write to a new block, for
-example --- or update the superblock to update the number of free
-inodes each time we allocate a new inode.
+This patch has been in libata-dev (and thus linux-next) for about 2 weeks...
 
-Is there a reason why you particularly care about s_wtime being
-updated?
 
-					- Ted
+
