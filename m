@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030628Ab2CBUoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:44:34 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:43010 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030592Ab2CBUod convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:44:33 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mjg@redhat.com" <mjg@redhat.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
-Date: Fri, 2 Mar 2012 15:41:57 -0500
-Subject: RE: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
- with NMI fallback
-Thread-Topic: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ
- with NMI fallback
-Thread-Index: AczqjfUU6EsxAI9JSFSCvpiWtjNVHwOJmcgg
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA8F@USINDEVS01.corp.hds.com>
-References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
- <1329164860-668-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1329164860-668-2-git-send-email-dzickus@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1030639Ab2CBUp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:45:26 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:34185 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030614Ab2CBUpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 15:45:24 -0500
+Date: Fri, 2 Mar 2012 15:45:21 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Neil Clarkson <neilaclarkson@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ext4 bug? last write time precedes last mount time on a
+ writable volume!
+Message-ID: <20120302204521.GD22215@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Neil Clarkson <neilaclarkson@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1203020180
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 02, 2012 at 12:39:57PM +0000, Neil Clarkson wrote:
+> Isn't the s_wtime field of the ext4 superblock supposed to show the
+> time, in seconds since the epoch, of the last write? It isn't
+> happening!
 
-> +	/* if the REBOOT_VECTOR didn't work, try with the NMI */
-> +	if ((num_online_cpus() > 1) && (!smp_no_nmi_ipi))  {
-> +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> +					 NMI_FLAG_FIRST, "smp_stop"))
+It shows the last time the superblock has been modified, and one of
+the things that we've been doing lately has been to optimize ext4 so
+that it writes to the superblock *much* less often.  It was a
+performance bottleneck to be constantly updating the number of free
+blocks in the superblock each time we write to a new block, for
+example --- or update the superblock to update the number of free
+inodes each time we allocate a new inode.
 
-register_nmi_handler() doesn't work if kernel panics in nmi context because kzalloc() is called in register_nmi_handler() and 
-it may sleep.
+Is there a reason why you particularly care about s_wtime being
+updated?
 
-register_nmi_handler() should be replaced with notifier_chain like kdump does.
-
-Seiji
+					- Ted
