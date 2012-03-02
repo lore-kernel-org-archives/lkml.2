@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965031Ab2CBB2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 20:28:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56490 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091Ab2CBB2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 20:28:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="132033287"
-Subject: Re: [PATCH] Extend mwait idle to optimize away CAL and RES
- interrupts to an idle CPU -v1
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
-        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 01 Mar 2012 17:28:52 -0800
-In-Reply-To: <CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
-References: <1329957415-15239-1-git-send-email-venki@google.com>
-	 <20120223075027.GB15306@elte.hu>
-	 <CABeCy1YeGjTAGKRwwaryY9bx9UwMq9nhGAsVV-o2QEjPH=4ErA@mail.gmail.com>
-Organization: Intel Corp
+	id S965200Ab2CBB3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 20:29:06 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48102 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965070Ab2CBB2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 20:28:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.225.39 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330651724.6247.3.camel@phoenix>
+Subject: [PATCH] regulator: Add a pointer to aat2870_data in struct
+ aat2870_regulator
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jin Park <jinyoungp@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 02 Mar 2012 09:28:44 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1330651732.30167.63.camel@sbsiddha-desk.sc.intel.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-01 at 16:33 -0800, Venki Pallipadi wrote:
-> >
-> > fork_idle() should also make sure it does not schedule the child
-> > thread: thus we'd also be able to further simplify smpboot.c and
-> > get rid of all that extremely ugly 'struct create_idle'
-> > gymnastics in smpboot.c.
-> 
-> But not this. I am not sure where fork_idle results in resched of the child.
-> As I saw it, fork_idle calls init_idle and that sets the affinity of
-> idle_task to target CPU. So, reschedule should not be a problem. What
-> am I missing here?
+The reason we add *pdev in struct aat2870_regulator is to use it
+to get a pointer to struct aat2870_data.
+Save a pointer to struct aat2870_data instead of pdev in struct
+aat2870_regulator, this change makes the intention more clear.
 
-I think Ingo is referring to the fact that we can't use kthread_create()
-here and hence we were relying on fork_idle().
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/aat2870-regulator.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-> Also, I tried this silly test patch (Cut and paste... Sorry) and it
-> seemed to work fine both with and without CPU hotplug.
-> 
+diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
+index 685ad43..9ed5c5d 100644
+--- a/drivers/regulator/aat2870-regulator.c
++++ b/drivers/regulator/aat2870-regulator.c
+@@ -31,7 +31,7 @@
+ #include <linux/mfd/aat2870.h>
+ 
+ struct aat2870_regulator {
+-	struct platform_device *pdev;
++	struct aat2870_data *aat2870;
+ 	struct regulator_desc desc;
+ 
+ 	const int *voltages; /* uV */
+@@ -60,7 +60,7 @@ static int aat2870_ldo_set_voltage_sel(struct regulator_dev *rdev,
+ 				       unsigned selector)
+ {
+ 	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
+-	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
++	struct aat2870_data *aat2870 = ri->aat2870;
+ 
+ 	return aat2870->update(aat2870, ri->voltage_addr, ri->voltage_mask,
+ 			       selector << ri->voltage_shift);
+@@ -69,7 +69,7 @@ static int aat2870_ldo_set_voltage_sel(struct regulator_dev *rdev,
+ static int aat2870_ldo_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
+-	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
++	struct aat2870_data *aat2870 = ri->aat2870;
+ 	u8 val;
+ 	int ret;
+ 
+@@ -83,7 +83,7 @@ static int aat2870_ldo_get_voltage_sel(struct regulator_dev *rdev)
+ static int aat2870_ldo_enable(struct regulator_dev *rdev)
+ {
+ 	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
+-	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
++	struct aat2870_data *aat2870 = ri->aat2870;
+ 
+ 	return aat2870->update(aat2870, ri->enable_addr, ri->enable_mask,
+ 			       ri->enable_mask);
+@@ -92,7 +92,7 @@ static int aat2870_ldo_enable(struct regulator_dev *rdev)
+ static int aat2870_ldo_disable(struct regulator_dev *rdev)
+ {
+ 	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
+-	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
++	struct aat2870_data *aat2870 = ri->aat2870;
+ 
+ 	return aat2870->update(aat2870, ri->enable_addr, ri->enable_mask, 0);
+ }
+@@ -100,7 +100,7 @@ static int aat2870_ldo_disable(struct regulator_dev *rdev)
+ static int aat2870_ldo_is_enabled(struct regulator_dev *rdev)
+ {
+ 	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
+-	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
++	struct aat2870_data *aat2870 = ri->aat2870;
+ 	u8 val;
+ 	int ret;
+ 
+@@ -185,7 +185,7 @@ static int aat2870_regulator_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "Invalid device ID, %d\n", pdev->id);
+ 		return -EINVAL;
+ 	}
+-	ri->pdev = pdev;
++	ri->aat2870 = dev_get_drvdata(pdev->dev.parent);
+ 
+ 	rdev = regulator_register(&ri->desc, &pdev->dev,
+ 				  pdev->dev.platform_data, ri, NULL);
+-- 
+1.7.5.4
 
-I don't think we can do this today, as we need to make sure we have the
-correct current context. With dynamic cpu hotplug, current context can
-be any process and hence we were depending on the schedule_work()
-context.
-
-thanks,
-suresh
-
-> Thanks,
-> Venki
-> 
-> ---
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 66d250c..36b80ef 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -686,7 +686,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
->                 .done   = COMPLETION_INITIALIZER_ONSTACK(c_idle.done),
->         };
-> 
-> -       INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
-> +       // INIT_WORK_ONSTACK(&c_idle.work, do_fork_idle);
-> 
->         alternatives_smp_switch(1);
-> 
-> @@ -703,12 +703,13 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu)
->                 goto do_rest;
->         }
-> 
-> -       schedule_work(&c_idle.work);
-> -       wait_for_completion(&c_idle.done);
-> +       // schedule_work(&c_idle.work);
-> +       // wait_for_completion(&c_idle.done);
-> +       c_idle.idle = fork_idle(cpu);
-> 
->         if (IS_ERR(c_idle.idle)) {
->                 printk("failed fork for CPU %d\n", cpu);
-> -               destroy_work_on_stack(&c_idle.work);
-> +               // destroy_work_on_stack(&c_idle.work);
->                 return PTR_ERR(c_idle.idle);
->         }
-> 
-> @@ -831,7 +832,7 @@ do_rest:
->                 smpboot_restore_warm_reset_vector();
->         }
-> 
-> -       destroy_work_on_stack(&c_idle.work);
-> +       // destroy_work_on_stack(&c_idle.work);
->         return boot_error;
->  }
-> 
-> ---
-> 
-> >
-> > Thanks,
-> >
-> >        Ingo
 
 
