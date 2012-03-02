@@ -1,86 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2CBF0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 00:26:31 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61041 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752123Ab2CBF01 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 00:26:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.47.37 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
-MIME-Version: 1.0
-In-Reply-To: <eba2ab81bc32f208b8b94fd959fd7f2f.squirrel@webmail.greenhost.nl>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-	<20120301233712.GS3990@outflux.net>
-	<20120302114705.0a9542e138927897f16282ca@canb.auug.org.au>
-	<CAGXu5jL0OXR5MOePFe=GT4_X5rdH8RNjQPqYXdbqsqfijUsEqA@mail.gmail.com>
-	<20120301171914.7c64f095.akpm@linux-foundation.org>
-	<eba2ab81bc32f208b8b94fd959fd7f2f.squirrel@webmail.greenhost.nl>
-Date: Thu, 1 Mar 2012 21:26:23 -0800
-X-Google-Sender-Auth: cvhSgCl3LmyHUHEI4-SRu60MoLw
-Message-ID: <CAGXu5j+kbqc4GtAypj08T78LjK-OLuo+iudjrctcE0r+GOUDMA@mail.gmail.com>
-Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom load_pointer
-From: Kees Cook <keescook@chromium.org>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754075Ab2CBF3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 00:29:55 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58563 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2CBF3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 00:29:54 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 2 Mar 2012 14:28:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] mm: rework reclaim_stat counters
+Message-Id: <20120302142825.cd583b59.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120229091556.29236.96896.stgit@zurg>
+References: <20120229090748.29236.35489.stgit@zurg>
+	<20120229091556.29236.96896.stgit@zurg>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 8:04 PM, Indan Zupancic <indan@nul.nu> wrote:
-> On Fri, March 2, 2012 02:19, Andrew Morton wrote:
->> That assumes that we're going to merge this stuff into 3.4 - if we
->> don't, unwrecker gets rewrecked and grumpy.
->>
->> I don't know if we're going to merge it into 3.4?  I haven't been
->> paying a lot of attention and haven't looked at the patches in a while.
->
-> I think it should be merged, but I think 3.5 is probably better.
->
-> This because we haven't heard anything from the networking people
-> about the BPF changes, and I'm also unsure if the current approach
-> is the best one: It both increases the filter.o size significantly
-> while slowing down sk_run_filter, while the point was to avoid both.
-> I'm trying to think of an alternative approach with lower impact.
->
-> The ptrace integration may need some more time to settle too, even
-> just to make sure the latest version does what needs to be done.
->
-> Both directly affect the user space ABI, so I think it's best to
-> not be too hasty with pushing this upstream. Waiting one release
-> while having a stable final patch gives people the chance to go
-> and try to use it for their purposes and thus both test the code
-> more and get experience with the ABI.
+On Wed, 29 Feb 2012 13:15:56 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Well, IIUC, Eric Dumazet Acked the BPF changes. While I see what
-you're saying about waiting for 3.5, it seems like the best way to
-really see this stabilize is to get this into 3.4. The various
-approaches have been discussed for a while now. Having that wider
-testing sooner rather than later seems like the better approach to me.
-Waiting for 3.5 just means we'll be waiting until then to do that same
-testing. Perhaps Andrew Morton can decide?
+> Currently there is two types of reclaim-stat counters:
+> recent_scanned (pages picked from from lru),
+> recent_rotated (pages putted back to active lru).
+> Reclaimer uses ratio recent_rotated / recent_scanned
+> for balancing pressure between file and anon pages.
+> 
+> But if we pick page from lru we can either reclaim it or put it back to lru, thus:
+> recent_scanned == recent_rotated[inactive] + recent_rotated[active] + reclaimed
+> This can be called "The Law of Conservation of Memory" =)
+> 
+I'm sorry....where is the count for active->incative ?
 
-Regardless, I've updated my seccomp tree with Will's rebase to Linus's
-tree so people can pull from it as need be:
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git seccomp
 
--Kees
+> Thus recent_rotated counters for each lru list is enough, reclaimed pages can be
+> counted as rotatation into inactive lru. After that reclaimer can use this ratio:
+> recent_rotated[active] / (recent_rotated[active] + recent_rotated[inactive])
+> 
+> After this patch struct zone_reclaimer_stat has only one array: recent_rotated,
+> which is directly indexed by lru list index.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
--- 
-Kees Cook
-ChromeOS Security
+I'm sorry if I misunderstand..
+Recent_scanned can be update by some logics other than vmscan..
+
+For example, how lru_deactivate_fn() is handled ?
+
+Thanks,
+-Kame
+
+
+
+
+> ---
+>  include/linux/mmzone.h |   11 +++++------
+>  mm/memcontrol.c        |   29 +++++++++++++++++------------
+>  mm/page_alloc.c        |    6 ++----
+>  mm/swap.c              |   26 ++++++++------------------
+>  mm/vmscan.c            |   42 ++++++++++++++++++++++--------------------
+>  5 files changed, 54 insertions(+), 60 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 2fed935..fdcd683 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -137,12 +137,14 @@ enum lru_list {
+>  	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
+>  	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
+>  	LRU_UNEVICTABLE,
+> -	NR_LRU_LISTS
+> +	NR_LRU_LISTS,
+> +	NR_EVICTABLE_LRU_LISTS = LRU_UNEVICTABLE,
+>  };
+>  
+>  #define for_each_lru(lru) for (lru = 0; lru < NR_LRU_LISTS; lru++)
+>  
+> -#define for_each_evictable_lru(lru) for (lru = 0; lru <= LRU_ACTIVE_FILE; lru++)
+> +#define for_each_evictable_lru(lru) \
+> +	for (lru = 0; lru < NR_EVICTABLE_LRU_LISTS; lru++)
+>  
+>  static inline int is_file_lru(enum lru_list lru)
+>  {
+> @@ -165,11 +167,8 @@ struct zone_reclaim_stat {
+>  	 * mem/swap backed and file backed pages are refeferenced.
+>  	 * The higher the rotated/scanned ratio, the more valuable
+>  	 * that cache is.
+> -	 *
+> -	 * The anon LRU stats live in [0], file LRU stats in [1]
+>  	 */
+> -	unsigned long		recent_rotated[2];
+> -	unsigned long		recent_scanned[2];
+> +	unsigned long		recent_rotated[NR_EVICTABLE_LRU_LISTS];
+>  };
+>  
+>  struct lruvec {
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index aeebb9e..2809531 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4189,26 +4189,31 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+>  
+>  #ifdef CONFIG_DEBUG_VM
+>  	{
+> -		int nid, zid;
+> +		int nid, zid, lru;
+>  		struct mem_cgroup_per_zone *mz;
+>  		struct zone_reclaim_stat *rstat;
+> -		unsigned long recent_rotated[2] = {0, 0};
+> -		unsigned long recent_scanned[2] = {0, 0};
+> +		unsigned long recent_rotated[NR_EVICTABLE_LRU_LISTS];
+>  
+> +		memset(recent_rotated, 0, sizeof(recent_rotated));
+>  		for_each_online_node(nid)
+>  			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+>  				mz = mem_cgroup_zoneinfo(memcg, nid, zid);
+>  				rstat = &mz->lruvec.reclaim_stat;
+> -
+> -				recent_rotated[0] += rstat->recent_rotated[0];
+> -				recent_rotated[1] += rstat->recent_rotated[1];
+> -				recent_scanned[0] += rstat->recent_scanned[0];
+> -				recent_scanned[1] += rstat->recent_scanned[1];
+> +				for_each_evictable_lru(lru)
+> +					recent_rotated[lru] +=
+> +						rstat->recent_rotated[lru];
+>  			}
+> -		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
+> -		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
+> -		cb->fill(cb, "recent_scanned_anon", recent_scanned[0]);
+> -		cb->fill(cb, "recent_scanned_file", recent_scanned[1]);
+> +
+> +		cb->fill(cb, "recent_rotated_anon",
+> +				recent_rotated[LRU_ACTIVE_ANON]);
+> +		cb->fill(cb, "recent_rotated_file",
+> +				recent_rotated[LRU_ACTIVE_FILE]);
+> +		cb->fill(cb, "recent_scanned_anon",
+> +				recent_rotated[LRU_ACTIVE_ANON] +
+> +				recent_rotated[LRU_INACTIVE_ANON]);
+> +		cb->fill(cb, "recent_scanned_file",
+> +				recent_rotated[LRU_ACTIVE_FILE] +
+> +				recent_rotated[LRU_INACTIVE_FILE]);
+>  	}
+>  #endif
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ab2d210..ea40034 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4365,10 +4365,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+>  		zone_pcp_init(zone);
+>  		for_each_lru(lru)
+>  			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
+> -		zone->lruvec.reclaim_stat.recent_rotated[0] = 0;
+> -		zone->lruvec.reclaim_stat.recent_rotated[1] = 0;
+> -		zone->lruvec.reclaim_stat.recent_scanned[0] = 0;
+> -		zone->lruvec.reclaim_stat.recent_scanned[1] = 0;
+> +		memset(&zone->lruvec.reclaim_stat, 0,
+> +				sizeof(struct zone_reclaim_stat));
+>  		zap_zone_vm_stats(zone);
+>  		zone->flags = 0;
+>  		if (!size)
+> diff --git a/mm/swap.c b/mm/swap.c
+> index 9a6850b..c7bcde7 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -277,7 +277,7 @@ void rotate_reclaimable_page(struct page *page)
+>  }
+>  
+>  static void update_page_reclaim_stat(struct zone *zone, struct page *page,
+> -				     int file, int rotated)
+> +				     enum lru_list lru)
+>  {
+>  	struct zone_reclaim_stat *reclaim_stat;
+>  
+> @@ -285,9 +285,7 @@ static void update_page_reclaim_stat(struct zone *zone, struct page *page,
+>  	if (!reclaim_stat)
+>  		reclaim_stat = &zone->lruvec.reclaim_stat;
+>  
+> -	reclaim_stat->recent_scanned[file]++;
+> -	if (rotated)
+> -		reclaim_stat->recent_rotated[file]++;
+> +	reclaim_stat->recent_rotated[lru]++;
+>  }
+>  
+>  static void __activate_page(struct page *page, void *arg)
+> @@ -295,7 +293,6 @@ static void __activate_page(struct page *page, void *arg)
+>  	struct zone *zone = page_zone(page);
+>  
+>  	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
+> -		int file = page_is_file_cache(page);
+>  		int lru = page_lru_base_type(page);
+>  		del_page_from_lru_list(zone, page, lru);
+>  
+> @@ -304,7 +301,7 @@ static void __activate_page(struct page *page, void *arg)
+>  		add_page_to_lru_list(zone, page, lru);
+>  		__count_vm_event(PGACTIVATE);
+>  
+> -		update_page_reclaim_stat(zone, page, file, 1);
+> +		update_page_reclaim_stat(zone, page, lru);
+>  	}
+>  }
+>  
+> @@ -482,7 +479,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+>  
+>  	if (active)
+>  		__count_vm_event(PGDEACTIVATE);
+> -	update_page_reclaim_stat(zone, page, file, 0);
+> +	update_page_reclaim_stat(zone, page, lru);
+>  }
+>  
+>  /*
+> @@ -646,9 +643,7 @@ EXPORT_SYMBOL(__pagevec_release);
+>  void lru_add_page_tail(struct zone* zone,
+>  		       struct page *page, struct page *page_tail)
+>  {
+> -	int active;
+>  	enum lru_list lru;
+> -	const int file = 0;
+>  
+>  	VM_BUG_ON(!PageHead(page));
+>  	VM_BUG_ON(PageCompound(page_tail));
+> @@ -660,13 +655,10 @@ void lru_add_page_tail(struct zone* zone,
+>  	if (page_evictable(page_tail, NULL)) {
+>  		if (PageActive(page)) {
+>  			SetPageActive(page_tail);
+> -			active = 1;
+>  			lru = LRU_ACTIVE_ANON;
+> -		} else {
+> -			active = 0;
+> +		} else
+>  			lru = LRU_INACTIVE_ANON;
+> -		}
+> -		update_page_reclaim_stat(zone, page_tail, file, active);
+> +		update_page_reclaim_stat(zone, page_tail, lru);
+>  	} else {
+>  		SetPageUnevictable(page_tail);
+>  		lru = LRU_UNEVICTABLE;
+> @@ -694,17 +686,15 @@ static void __pagevec_lru_add_fn(struct page *page, void *arg)
+>  {
+>  	enum lru_list lru = (enum lru_list)arg;
+>  	struct zone *zone = page_zone(page);
+> -	int file = is_file_lru(lru);
+> -	int active = is_active_lru(lru);
+>  
+>  	VM_BUG_ON(PageActive(page));
+>  	VM_BUG_ON(PageUnevictable(page));
+>  	VM_BUG_ON(PageLRU(page));
+>  
+>  	SetPageLRU(page);
+> -	if (active)
+> +	if (is_active_lru(lru))
+>  		SetPageActive(page);
+> -	update_page_reclaim_stat(zone, page, file, active);
+> +	update_page_reclaim_stat(zone, page, lru);
+>  	add_page_to_lru_list(zone, page, lru);
+>  }
+>  
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 483b98e..fe00a22 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1355,11 +1355,7 @@ putback_inactive_pages(struct mem_cgroup_zone *mz,
+>  		SetPageLRU(page);
+>  		lru = page_lru(page);
+>  		add_page_to_lru_list(zone, page, lru);
+> -		if (is_active_lru(lru)) {
+> -			int file = is_file_lru(lru);
+> -			int numpages = hpage_nr_pages(page);
+> -			reclaim_stat->recent_rotated[file] += numpages;
+> -		}
+> +		reclaim_stat->recent_rotated[lru] += hpage_nr_pages(page);
+>  		if (put_page_testzero(page)) {
+>  			__ClearPageLRU(page);
+>  			__ClearPageActive(page);
+> @@ -1543,8 +1539,11 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+>  
+>  	spin_lock_irq(&zone->lru_lock);
+>  
+> -	reclaim_stat->recent_scanned[0] += nr_anon;
+> -	reclaim_stat->recent_scanned[1] += nr_file;
+> +	/*
+> +	 * Count reclaimed pages as rotated, this helps balance scan pressure
+> +	 * between file and anonymous pages in get_scan_ratio.
+> +	 */
+> +	reclaim_stat->recent_rotated[lru] += nr_reclaimed;
+>  
+>  	if (current_is_kswapd())
+>  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+> @@ -1685,8 +1684,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
+>  	if (global_reclaim(sc))
+>  		zone->pages_scanned += nr_scanned;
+>  
+> -	reclaim_stat->recent_scanned[file] += nr_taken;
+> -
+>  	__count_zone_vm_events(PGREFILL, zone, nr_scanned);
+>  	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -nr_taken);
+>  	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
+> @@ -1742,7 +1739,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+>  	 * helps balance scan pressure between file and anonymous pages in
+>  	 * get_scan_ratio.
+>  	 */
+> -	reclaim_stat->recent_rotated[file] += nr_rotated;
+> +	reclaim_stat->recent_rotated[lru] += nr_rotated;
+>  
+>  	move_active_pages_to_lru(zone, &l_active, &l_hold, lru);
+>  	move_active_pages_to_lru(zone, &l_inactive, &l_hold, lru - LRU_ACTIVE);
+> @@ -1875,6 +1872,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+>  	unsigned long anon_prio, file_prio;
+>  	unsigned long ap, fp;
+>  	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+> +	unsigned long *recent_rotated = reclaim_stat->recent_rotated;
+>  	u64 fraction[2], denominator;
+>  	enum lru_list lru;
+>  	int noswap = 0;
+> @@ -1940,14 +1938,16 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+>  	 * anon in [0], file in [1]
+>  	 */
+>  	spin_lock_irq(&mz->zone->lru_lock);
+> -	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
+> -		reclaim_stat->recent_scanned[0] /= 2;
+> -		reclaim_stat->recent_rotated[0] /= 2;
+> +	if (unlikely(recent_rotated[LRU_INACTIVE_ANON] +
+> +		     recent_rotated[LRU_ACTIVE_ANON] > anon / 4)) {
+> +		recent_rotated[LRU_INACTIVE_ANON] /= 2;
+> +		recent_rotated[LRU_ACTIVE_ANON] /= 2;
+>  	}
+>  
+> -	if (unlikely(reclaim_stat->recent_scanned[1] > file / 4)) {
+> -		reclaim_stat->recent_scanned[1] /= 2;
+> -		reclaim_stat->recent_rotated[1] /= 2;
+> +	if (unlikely(recent_rotated[LRU_INACTIVE_FILE] +
+> +		     recent_rotated[LRU_ACTIVE_FILE] > file / 4)) {
+> +		recent_rotated[LRU_INACTIVE_FILE] /= 2;
+> +		recent_rotated[LRU_ACTIVE_FILE] /= 2;
+>  	}
+>  
+>  	/*
+> @@ -1955,11 +1955,13 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
+>  	 * proportional to the fraction of recently scanned pages on
+>  	 * each list that were recently referenced and in active use.
+>  	 */
+> -	ap = (anon_prio + 1) * (reclaim_stat->recent_scanned[0] + 1);
+> -	ap /= reclaim_stat->recent_rotated[0] + 1;
+> +	ap = (anon_prio + 1) * (recent_rotated[LRU_INACTIVE_ANON] +
+> +				recent_rotated[LRU_ACTIVE_ANON] + 1);
+> +	ap /= recent_rotated[LRU_ACTIVE_ANON] + 1;
+>  
+> -	fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
+> -	fp /= reclaim_stat->recent_rotated[1] + 1;
+> +	fp = (file_prio + 1) * (recent_rotated[LRU_INACTIVE_FILE] +
+> +				recent_rotated[LRU_ACTIVE_FILE] + 1);
+> +	fp /= recent_rotated[LRU_ACTIVE_FILE] + 1;
+>  	spin_unlock_irq(&mz->zone->lru_lock);
+>  
+>  	fraction[0] = ap;
+> 
+> 
+
