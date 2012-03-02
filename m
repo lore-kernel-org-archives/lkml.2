@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759134Ab2CBTcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:32:18 -0500
-Received: from mga12.intel.com ([143.182.124.36]:20112 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752319Ab2CBTcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:32:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dan.j.williams@intel.com designates 10.60.20.6 as permitted sender) smtp.mail=dan.j.williams@intel.com
+	id S1759208Ab2CBTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:32:26 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:52403 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759155Ab2CBTcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 14:32:20 -0500
+Date: Fri, 2 Mar 2012 14:32:15 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120302193215.GB22215@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Chris Mason <chris.mason@oracle.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+ <20120301143859.GX5054@shiny>
+ <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+ <20120302140038.GD5054@shiny>
+ <CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
+ <20120302142651.GH5054@shiny>
 MIME-Version: 1.0
-In-Reply-To: <20120302175719.GA1468@wavehammer.waldi.eu.org>
-References: <CAJ75kXZ-2vWZpG7Uz3firg6ew4y_DdorXotkAkUGSK0GWLMUQQ@mail.gmail.com>
-	<20120127144737.GA27750@andromeda.dapyr.net>
-	<20120219223125.GA820@burratino>
-	<20120220181618.GD17566@burratino>
-	<4F4891B8.9050008@goirand.fr>
-	<20120302055715.GA692@burratino>
-	<CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
-	<20120302162159.GB31683@wavehammer.waldi.eu.org>
-	<CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
-	<20120302175719.GA1468@wavehammer.waldi.eu.org>
-Date: Fri, 2 Mar 2012 11:31:56 -0800
-Message-ID: <CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
-Subject: Re: [Pkg-xen-devel] ioatdma: Boot process hangs then reboots when
- using Xen + Linux 3.2
-From: Dan Williams <dan.j.williams@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, xen-devel@lists.xensource.com,
-        pkg-xen-devel@lists.alioth.debian.org,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302142651.GH5054@shiny>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 9:57 AM, Bastian Blank <waldi@debian.org> wrote:
-> On Fri, Mar 02, 2012 at 08:44:00AM -0800, Dan Williams wrote:
->> On Fri, Mar 2, 2012 at 8:21 AM, Bastian Blank <waldi@debian.org> wrote:
->> > On Thu, Mar 01, 2012 at 10:42:44PM -0800, Dan Williams wrote:
->> >> WARN_ON may work, but then kernel may be subject random hangs from missed
->> >> i/o completions.
->> ...actually descriptors completing too early.
->
-> The interrupt happens while the module is still loading, so most likely
-> directly after enabling them. There should be no request in flight yet.
->
-> What puzzles me is the mix of different data types in the ioatdma
-> driver:
->
-> | u64 completion = *chan->completion;
-> | unsigned long phys_complete = completion & ~0x3f;
->
-> The state is 64bit long, but is down converted to a 32bit value without
-> anything.
->
-> phys_complete (a 32 bit value) gets compared to struct
-> dma_async_tx_descriptor.phys, which is defined as dma_addr_t, a _64_ bit
-> value.
+On Fri, Mar 02, 2012 at 09:26:51AM -0500, Chris Mason wrote:
+> 
+> filefrag will tell you how many extents each file has, any file with
+> more than one extent is interesting.  (The ext4 crowd may have better
+> suggestions on measuring fragmentation).
 
-The assumption is that the driver's control structures are not in high
-memory so all address values will only have 32-bits of valid data, but
-maybe xen32 changes that assumption?
+You can get a *huge* amount of information (probably more than you'll
+want to analyze) by doing this:
 
-Can you send the log of the driver load with debug enabled?
+     e2fsck -nf -E fragcheck /dev/XXXX >& /tmp/fragcheck.out
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index a4d6cb0..82472de 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -24,7 +24,7 @@
-  * This driver supports an Intel I/OAT DMA engine, which does asynchronous
-  * copy operations.
-  */
--
-+#define DEBUG
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index 5d65f83..da337e7 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -24,7 +24,7 @@
-  * This driver supports an Intel I/OAT DMA engine (versions >= 2), which
-  * does asynchronous data movement and checksumming operations.
-  */
--
-+#define DEBUG
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/slab.h>
+I haven't had time to do this in a while, but a while back I used this
+to debug the writeback code with an eye towards reducing
+fragmentation.  At the time I was trying to optimize the case of
+reducing fragmentation in the easist case possible, where you start
+with an empty file system, and then copy all of the data from another
+file system onto it using rsync -avH.
+
+It would be worth while to see what happens with files written by the
+compiler and linker.  Given that libelf tends to write .o files
+non-sequentially, and without telling us how big the space is in
+advance, I could well imagine that we're not doing the best job
+avoiding free space fragmentation, which eventually leads to extra
+file system aging.
+
+It would be interesting to have a project where someone added
+fallocate() support into libelf, and then added some hueristics into
+ext4 so that if a file is fallocated to a precise size, or if the file
+is fully written and closed before writeback begins, that we use this
+to more efficiently pack the space used by the files by the block
+allocator.  This is a place where I would not be surprised that XFS
+has some better code to avoid accelerated file system aging, and where
+we could do better with ext4 with some development effort.
+
+Of course, it might also be possible to hack around this by simply
+using VPATH and dropping your build files in a separate place from
+your source files, and periodically reformatting the file system where
+your build tree lives.  (As a side note, something that works well for
+me is to use an SSD for my source files, and a separate 5400rpm HDD
+for my build tree.  That allows me to use a smaller and more
+affordable SSD, and since the object files can be written
+asynchronously by the writeback threads, but the compiler can't move
+forward until it gets file data from the .c or .h file, it gets me the
+best price/performance for a laptop build environment.)
+
+BTW, I suspect we could make acp even more efficient by teaching it to
+use FIEMAP ioctl to map out the data blocks for all of the files in
+the source file system, and then copied the files (or perhaps even
+parts of files) in a read order which reduced seeking on the source
+drive.
+
+						- Ted
