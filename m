@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2CBVff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:35:35 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58826 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab2CBVfe convert rfc822-to-8bit (ORCPT
+	id S1757437Ab2CBVir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:38:47 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:42688 "EHLO
+	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756893Ab2CBVip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:35:34 -0500
+	Fri, 2 Mar 2012 16:38:45 -0500
+X-Sasl-enc: C1pwEMLA+ekPJ/obu3z/2DSm5oxfR4jeQGcsaq7SMi5V 1330724324
+Message-ID: <4F513DE3.9020707@signal11.us>
+Date: Fri, 02 Mar 2012 16:38:43 -0500
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20120302204521.GD22215@thunk.org>
-References: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
-	<20120302204521.GD22215@thunk.org>
-Date: Fri, 2 Mar 2012 21:35:33 +0000
-Message-ID: <CADzG2TC-AiUBgwu-s64A7PGch4qnto4avFmQtBzL9Dc7+6CKWQ@mail.gmail.com>
-Subject: Re: ext4 bug? last write time precedes last mount time on a writable volume!
-From: Neil Clarkson <neilaclarkson@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Neil Clarkson <neilaclarkson@gmail.com>,
-        linux-kernel@vger.kernel.org
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 0/6] ARM: Tegra: cleanup patches from Arnd Bergmann
+References: <1330721884-8495-1-git-send-email-alan@signal11.us> <74CDBE0F657A3D45AFBB94109FB122FF17BE861A54@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE861A54@HQMAIL01.nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for responding Ted.
+On 03/02/2012 04:04 PM, Stephen Warren wrote:
+> Alan Ott wrote at Friday, March 02, 2012 1:58 PM:
+>> Sorry for the mess yesterday....
+>> This is V2 of Arnd's Patch series from yesterday. Hopefully this one will be
+>> smoother.
+> There was feedback on at least patches 4 and 5 that doesn't appear to
+> have been incorporated into this updated version.
 
-That would all make sense, if it weren't for the last write time on
-the Ubuntu box being earlier than the last mount time, when clearly
-the superblock *must* have got modified. Clearly that isn't what
-Ubuntu is doing with it. But I guess, given that Ubuntu is different
-from OpenSuse and Fedora in this regard, perhaps that's just something
-Canonical have changed, intentionally or otherwise.
+Hi Stephen,
 
-Andi Kleen was right then, when he offered much the same explanation
-to me last week on the list.
+For patch #4 (ARM: tegra: work around tegra THUMB2_KERNEL bug) I missed
+the last email in that series. I'm sorry, I'll drop this patch from v3.
 
-> Is there a reason why you particularly care about s_wtime being updated?
+For patch #5 (ARM: tegra: USB_ULPI needs USB), it didn't look to me like
+there was a resolution on that thread yesterday. On reading it again, if
+we change
+    select USB_ULPI if USB_SUPPORT
+to:
+    select USB_ULPI if USB
+for both Tegra 2 and 3, does that satisfy you and Arnd?
 
-Yes and no ;)
+Thanks for catching these Stephen.
 
-It was interesting to me when it seemed like it might be a way to find
-the time of the last write to the file system, bugs notwithstanding. A
-few public domain info sources suggest this is what it is. I could
-have made good use of that in some work I'm doing. But if its not
-meant to do that, which certainly makes sense from a performance
-perspective, then no.
+Alan.
 
 
-On 2 March 2012 20:45, Ted Ts'o <tytso@mit.edu> wrote:
 
-> It shows the last time the superblock has been modified, and one of
-> the things that we've been doing lately has been to optimize ext4 so
-> that it writes to the superblock *much* less often.  It was a
-> performance bottleneck to be constantly updating the number of free
-> blocks in the superblock each time we write to a new block, for
-> example --- or update the superblock to update the number of free
-> inodes each time we allocate a new inode.
->
-> Is there a reason why you particularly care about s_wtime being
-> updated?
->
->                                        - Ted
