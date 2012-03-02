@@ -1,126 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab2CBW0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:26:14 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52487 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab2CBW0K (ORCPT
+	id S932653Ab2CBW0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:26:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56007 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab2CBW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:26:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.185.4 as permitted sender) smtp.mail=alan@signal11.us
-MIME-Version: 1.0
-From: Alan Ott <alan@signal11.us>
-To: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Ott <alan@signal11.us>
-Subject: [PATCH v3 5/5] ARM: tegra: export usb phy symbols
-Date: Fri,  2 Mar 2012 17:26:08 -0500
-Message-Id: <1330727168-11304-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1330727075-10974-1-git-send-email-alan@signal11.us>
-References: <1330727075-10974-1-git-send-email-alan@signal11.us>
+	Fri, 2 Mar 2012 17:26:31 -0500
+Date: Sat, 3 Mar 2012 09:26:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: linux-next: boot failure for next-20120227 and later (pci tree
+ related)
+Message-Id: <20120303092620.ab0f7379afac65413ef5264e@canb.auug.org.au>
+In-Reply-To: <CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
+References: <20120302170638.3d172369d04335d9b921a28c@canb.auug.org.au>
+	<CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__3_Mar_2012_09_26_20_+1100_hRmsrGX2SL+pqi1b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+--Signature=_Sat__3_Mar_2012_09_26_20_+1100_hRmsrGX2SL+pqi1b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The ehci driver can be a module, so the functions provided
-by the tegra platform code used by ehci-tegra need to
-be exported.
+Hi Bjorn,
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- arch/arm/mach-tegra/usb_phy.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+On Fri, 2 Mar 2012 10:10:02 -0700 Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> Thanks a lot for the test report and the bisection.  I wish I had a
+> machine to test on so I wouldn't have to bother you about it.
 
-diff --git a/arch/arm/mach-tegra/usb_phy.c b/arch/arm/mach-tegra/usb_phy.c
-index 37576a7..6091cf3 100644
---- a/arch/arm/mach-tegra/usb_phy.c
-+++ b/arch/arm/mach-tegra/usb_phy.c
-@@ -22,6 +22,7 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/err.h>
-+#include <linux/export.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/gpio.h>
-@@ -730,6 +731,7 @@ err0:
- 	kfree(phy);
- 	return ERR_PTR(err);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_open);
- 
- int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
- {
-@@ -738,6 +740,7 @@ int tegra_usb_phy_power_on(struct tegra_usb_phy *phy)
- 	else
- 		return utmi_phy_power_on(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_power_on);
- 
- void tegra_usb_phy_power_off(struct tegra_usb_phy *phy)
- {
-@@ -746,18 +749,21 @@ void tegra_usb_phy_power_off(struct tegra_usb_phy *phy)
- 	else
- 		utmi_phy_power_off(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_power_off);
- 
- void tegra_usb_phy_preresume(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_preresume(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_preresume);
- 
- void tegra_usb_phy_postresume(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_postresume(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_postresume);
- 
- void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
- 				 enum tegra_usb_phy_port_speed port_speed)
-@@ -765,24 +771,28 @@ void tegra_ehci_phy_restore_start(struct tegra_usb_phy *phy,
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_restore_start(phy, port_speed);
- }
-+EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_start);
- 
- void tegra_ehci_phy_restore_end(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_restore_end(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_ehci_phy_restore_end);
- 
- void tegra_usb_phy_clk_disable(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_clk_disable(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_disable);
- 
- void tegra_usb_phy_clk_enable(struct tegra_usb_phy *phy)
- {
- 	if (!phy_is_ulpi(phy))
- 		utmi_phy_clk_enable(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_clk_enable);
- 
- void tegra_usb_phy_close(struct tegra_usb_phy *phy)
- {
-@@ -794,3 +804,4 @@ void tegra_usb_phy_close(struct tegra_usb_phy *phy)
- 	clk_put(phy->pll_u);
- 	kfree(phy);
- }
-+EXPORT_SYMBOL_GPL(tegra_usb_phy_close);
--- 
-1.7.0.4
+That's OK.
 
+> Any chance you could point me at the complete before/after dmesg logs?
+>  There should be information about the PCI host bridge apertures and
+> offsets in the "after" log.
+
+I have put the logs up at http://ozlabs.org/~sfr/console-bad.log and
+console-good.log.  They have been editted to set the initcall return
+timings to "x" usecs just for ease of diffing, otherwise verbatim.
+
+>  If that's not enough, we might need to
+> collect new before/after logs with something like this
+> (whitespace-mangled):
+
+I'll defer to Ben as to whether that would help as I don't have easy
+access to the machine until Monday anyway.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sat__3_Mar_2012_09_26_20_+1100_hRmsrGX2SL+pqi1b
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPUUkMAAoJEECxmPOUX5FEEA4P/R8hQpYip0koii300ZCcuonq
+3eg4ex1dCQg7hj/Bl+oVk+hEEiH/gnmz4Oqrhpl0fsmtAf9jt+MfguyR9gVCyvXJ
+2ap2/XInpiMjj62LLLqHQ+orcfxIGnWuT5Wuh68TT81W6d536IdWWMhHHl/LJb/q
+aR9ohvEv0Q4re5lPJeYuFL5wO0rCcdpdB3ZQP7S+u75xgMvDXZ/IrTE7TFUGmEwU
+Egqm+kkiylNR+TtemaCa5YYiLcKFWHaK3oLGqaguCUPd7rAO2qKWrQDIvJiUTaAr
+upl51Vycc2b7/46kS0LzVah6poNQmSiHnEIC2cq2PAMPui46x8ZqgE3OkpnFX3j2
+xhM7pCVlBONH53NNsQhzmwFjUvdwAYqFVHSchpx7oF+5cWp7o7Z0PowbleQYa2Ps
+iPvgNp23YUbw0B80B3YnIsOqWC7PVJVDEksWLBPJdRZXPHDM2ZMf0BIm75hW5CSD
+mqaCS/pOLfRT9ghs1eGtfWnjxi0/msdGijsJdCR7GqB61XHKoAyWsDBR5RDwN8cd
+n4ypm6mzBJzbRVXMdZGPR9Ki4dVvEOF4k8mGLOBEb/tB7Ege1fTS/svQXUqtCus5
++ZOFS8btoIJ/tFlCKkJNRYUb15hQRT+ki6lDz2MeG6eKMsLOxKDtfOZkXQ13fFn9
+pY1pabiPsEIb+/aUOVue
+=0TEB
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__3_Mar_2012_09_26_20_+1100_hRmsrGX2SL+pqi1b--
