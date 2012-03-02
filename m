@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758004Ab2CBVno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:43:44 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16586 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab2CBVnn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:43:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 02 Mar 2012 13:43:24 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Alan Ott <alan@signal11.us>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 2 Mar 2012 13:43:23 -0800
-Subject: RE: [PATCH v2 0/6] ARM: Tegra: cleanup patches from Arnd Bergmann
-Thread-Topic: [PATCH v2 0/6] ARM: Tegra: cleanup patches from Arnd Bergmann
-Thread-Index: Acz4vNkqO3W2f142RrCzdtfaFYLZHgAAJWPg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861A73@HQMAIL01.nvidia.com>
-References: <1330721884-8495-1-git-send-email-alan@signal11.us>
- <74CDBE0F657A3D45AFBB94109FB122FF17BE861A54@HQMAIL01.nvidia.com>
- <4F513DE3.9020707@signal11.us>
-In-Reply-To: <4F513DE3.9020707@signal11.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758283Ab2CBVrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:47:08 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:59735 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753912Ab2CBVrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:47:06 -0500
+Date: Fri, 2 Mar 2012 13:45:00 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.3-rc6
+Message-ID: <20120302214459.GA25716@ericsson.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Ott wrote at Friday, March 02, 2012 2:39 PM:
-> On 03/02/2012 04:04 PM, Stephen Warren wrote:
-> > Alan Ott wrote at Friday, March 02, 2012 1:58 PM:
-> >> Sorry for the mess yesterday....
-> >> This is V2 of Arnd's Patch series from yesterday. Hopefully this one will be
-> >> smoother.
-> > There was feedback on at least patches 4 and 5 that doesn't appear to
-> > have been incorporated into this updated version.
-...
-> For patch #5 (ARM: tegra: USB_ULPI needs USB), it didn't look to me like
-> there was a resolution on that thread yesterday. On reading it again, if
-> we change
->     select USB_ULPI if USB_SUPPORT
-> to:
->     select USB_ULPI if USB
-> for both Tegra 2 and 3, does that satisfy you and Arnd?
+--FL5UXtIhxfXey3p5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I believe so yes. Thanks.
+Hi Linus,
 
--- 
-nvpublic
+Please pull hwmon fixes for Linux 3.3-rc6 from tag:
 
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+These patches are necessary for correct operation and management of F75387.
+
+Thanks,
+Guenter
+
+------
+
+The following changes since commit 6b21d18ed50c7d145220b0724ea7f2613abf0f95:
+
+  Linux 3.3-rc5 (2012-02-25 12:18:16 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Nikolaus Schulz (4):
+      hwmon: (f75375s) Fix writes to the pwm* attribute for the F75387
+      hwmon: (f75375s) Make pwm*_mode writable for the F75387
+      hwmon: (f75375s) Properly map the F75387 automatic modes to pwm_enable
+      hwmon: (f75375s) Catch some attempts to write to r/o registers
+
+ drivers/hwmon/f75375s.c |   89 +++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 75 insertions(+), 14 deletions(-)
+
+--FL5UXtIhxfXey3p5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPUT9bAAoJEMsfJm/On5mBVN0P/Rw7msLmnTYOkrAQaLdy1FX4
+rDhTNF008T9+2FrnKpANy+PfTb6rIQ+I7WSRYqTUewxnavHmqFEaB18dDe1yxdgq
+3kytmK+GNIWMdhlSLaKJ1rILbDNfZYvI1Lu1wKq7qRhx8bwTC12hevvUpNp0zdC8
+hv8uEmgj41dRHYRaIxd59MQ94AdXwpmRMvDa2c4NvsxpBXf2n8V7MYKtet31+T1s
+VzcqmMQuJzFaa7BmABvE1mkmpTegWXdC90J1LkcVsI0LibsiN5mQIJ591XANgpI6
+12GyFEnaYKGww0PoOgLlSBmlCYhtsPGwMOuV3wZp2VCCfSFaGwi/8rIFFY1bEl7l
+Clx3IIKzp84GaIkUh+8rXxBasw4VSPyriRnjKdUMYe+/pL26HtNArr9AChSnl8tm
+gM4I4IEMYRsPKVxbsVIPTXTzlsLKeNSVJRiDtzVFps47b4opSiS6pXFrNLyLCpWy
+yBrdI1TwjSsGgCvB6McrJnBj3XEDiT2e3f37pLCFfm/8iDuTaoY434NiwYDwK0ME
+eA9Uf0qk8q7Q3bqMPlKFsw34B0dPlvsaVtpJnumYU3uHohM8m1Byk/LCKxsJBMpk
+xD3VOtKo5ADU7GSnYVEeQm/YwjTYCjvpN7RbkW7oinA/YpDJT9vvZLo/XTdBZ7vu
+UTagy8rI5KgqkaYjjppq
+=Ttqq
+-----END PGP SIGNATURE-----
+
+--FL5UXtIhxfXey3p5--
