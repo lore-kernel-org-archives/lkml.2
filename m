@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab2CBOAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 09:00:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37935 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab2CBOAV (ORCPT
+	id S1756681Ab2CBOAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 09:00:47 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:21491 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab2CBOAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 09:00:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jacmet@gmail.com designates 10.216.137.147 as permitted sender) smtp.mail=jacmet@gmail.com; dkim=pass header.i=jacmet@gmail.com
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: "Ying-Chun Liu \(PaulLiu\)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/2] mfd: Add anatop mfd driver
-References: <1330593052-15184-1-git-send-email-paul.liu@linaro.org>
-	<1330671641-6439-1-git-send-email-paul.liu@linaro.org>
-Date: Fri, 02 Mar 2012 15:00:04 +0100
-In-Reply-To: <1330671641-6439-1-git-send-email-paul.liu@linaro.org> (Ying-Chun
-	Liu's message of "Fri, 2 Mar 2012 15:00:40 +0800")
-Message-ID: <87fwdrhzmj.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	Fri, 2 Mar 2012 09:00:44 -0500
+Date: Fri, 2 Mar 2012 09:00:38 -0500
+From: Chris Mason <chris.mason@oracle.com>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+Cc: Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120302140038.GD5054@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+ <20120301143859.GX5054@shiny>
+ <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F50D28A.00A5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Y" == Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org> writes:
+On Fri, Mar 02, 2012 at 11:05:56AM +0100, Jacek Luczak wrote:
+> 
+> I've took both on tests. The subject is acp and spd_readdir used with
+> tar, all on ext4:
+> 1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
+> 2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
+> 3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
+> 
+> The acp looks much better than spd_readdir but directory copy with
+> spd_readdir decreased to 52m 39sec (30 min less).
 
-Hi,
+Do you have stats on how big these files are, and how fragmented they
+are?  For acp and spd to give us this, I think something has gone wrong
+at writeback time (creating individual fragmented files).
 
- Y> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
- Y> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
- Y> Anatop provides regulators and thermal.
- Y> This driver handles the address space and the operation of the mfd device.
+-chris
 
- Y> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
- Y> Cc: Samuel Ortiz <sameo@linux.intel.com>
- Y> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
- Y> Cc: Shawn Guo <shawn.guo@linaro.org>
- Y> ---
- Y>  drivers/mfd/Kconfig        |    6 ++
- Y>  drivers/mfd/Makefile       |    1 +
- Y>  drivers/mfd/anatop-mfd.c   |  142 ++++++++++++++++++++++++++++++++++++++++++++
- Y>  include/linux/mfd/anatop.h |   40 ++++++++++++
- Y>  4 files changed, 189 insertions(+), 0 deletions(-)
- Y>  create mode 100644 drivers/mfd/anatop-mfd.c
- Y>  create mode 100644 include/linux/mfd/anatop.h
-
- Y> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
- Y> index f147395..f787d17 100644
- Y> --- a/drivers/mfd/Kconfig
- Y> +++ b/drivers/mfd/Kconfig
- Y> @@ -830,6 +830,12 @@ config MFD_INTEL_MSIC
- Y>  	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
- Y>  	  devices used in Intel Medfield platforms.
- 
- Y> +config MFD_ANATOP
- Y> +        bool "Support for Anatop"
- Y> +	depends on SOC_IMX6Q
-
-The bool line should be indented with a <tab>, not spaces.
-
--- 
-Bye, Peter Korsgaard
