@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030234Ab2CBPLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:11:41 -0500
-Received: from gate.crashing.org ([63.228.1.57]:54656 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030183Ab2CBPLj convert rfc822-to-8bit (ORCPT
+	id S1030259Ab2CBPL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:11:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6447 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030201Ab2CBPLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:11:39 -0500
-Subject: Re: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
-Date: Fri, 2 Mar 2012 09:11:00 -0600
-Cc: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>, <r61911@freescale.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6BFCD6C7-7675-4A99-9C4C-4E86FA5642A4@kernel.crashing.org>
-References: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
-To: Liu Gang <Gang.Liu@freescale.com>
-X-Mailer: Apple Mail (2.1257)
+	Fri, 2 Mar 2012 10:11:53 -0500
+X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=iqH1YQEIiWMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=qaujsk1Uvohx5Fsot8MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1330701112.25686.257.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH RT 7/9][RFC] [PATCH 7/9] cpu/rt: Rework cpu down for
+ PREEMPT_RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>
+Date: Fri, 02 Mar 2012 10:11:52 -0500
+In-Reply-To: <alpine.LFD.2.02.1203021518501.2742@ionos>
+References: <20120301185527.064629423@goodmis.org>
+	 <20120301190346.172835662@goodmis.org>
+	 <alpine.LFD.2.02.1203021518501.2742@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-03-02 at 15:52 +0100, Thomas Gleixner wrote:
+> On Thu, 1 Mar 2012, Steven Rostedt wrote:
+> > Bringing a CPU down is a pain with the PREEMPT_RT kernel because
+> > tasks can be preempted in many more places than in non-RT. In
+> > order to handle per_cpu variables, tasks may be pinned to a CPU
+> > for a while, and even sleep. But these tasks need to be off the CPU
+> > if that CPU is going down.
+> > 
+> > Several synchronization methods have been tried, but when stressed
+> > they failed. This is a new approach.
+> 
+> OMG! That hotplug stuff has been ugly as hell already, but you managed
+> to make it exponentially worse. That's really an achievement.
 
-On Mar 2, 2012, at 1:08 AM, Liu Gang wrote:
+*Blush*  Oh no, I don't deserve the credit for that. Adding the
+migrate_disable() and friends in -rt did most the work for me.
 
-> For the file "arch/powerpc/sysdev/fsl_rmu.c", there will be some compile
-> errors while using the corenet64_smp_defconfig:
-> 
-> .../fsl_rmu.c:315: error: cast from pointer to integer of different size
-> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:330: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:332: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:339: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:340: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:341: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
-> .../fsl_rmu.c:659: error: cast from pointer to integer of different size
-> .../fsl_rmu.c:659: error: format '%8.8x' expects type 'unsigned int',
-> 		   but argument 5 has type 'size_t'
-> .../fsl_rmu.c:985: error: cast from pointer to integer of different size
-> .../fsl_rmu.c:997: error: cast to pointer from integer of different size
-> 
-> Rewrote the corresponding code with the support of 64bit building.
-> 
-> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
-> arch/powerpc/sysdev/fsl_rmu.c |   11 ++++++-----
-> 1 files changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/fsl_rmu.c b/arch/powerpc/sysdev/fsl_rmu.c
-> index 1548578..468011e 100644
-> --- a/arch/powerpc/sysdev/fsl_rmu.c
-> +++ b/arch/powerpc/sysdev/fsl_rmu.c
-> @@ -311,8 +311,8 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
-> 
-> 	/* XXX Need to check/dispatch until queue empty */
-> 	if (dsr & DOORBELL_DSR_DIQI) {
-> -		u32 dmsg =
-> -			(u32) fsl_dbell->dbell_ring.virt +
-> +		unsigned long dmsg =
-> +			(unsigned long) fsl_dbell->dbell_ring.virt +
-> 			(in_be32(&fsl_dbell->dbell_regs->dqdpar) & 0xfff);
-> 		struct rio_dbell *dbell;
-> 		int found = 0;
-> @@ -657,7 +657,8 @@ fsl_add_outb_message(struct rio_mport *mport, struct rio_dev *rdev, int mbox,
-> 	int ret = 0;
-> 
-> 	pr_debug("RIO: fsl_add_outb_message(): destid %4.4x mbox %d buffer " \
-> -		 "%8.8x len %8.8x\n", rdev->destid, mbox, (int)buffer, len);
-> +		 "%8.8lx len %8.8zx\n", rdev->destid, mbox,
-> +		(unsigned long)buffer, len);
-> 	if ((len < 8) || (len > RIO_MAX_MSG_SIZE)) {
-> 		ret = -EINVAL;
-> 		goto out;
 
-For this case it seems as if some cast should be added to DBELL_* macros
-
-> @@ -972,7 +973,7 @@ out:
-> void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
-> {
-> 	struct fsl_rmu *rmu = GET_RMM_HANDLE(mport);
-> -	u32 phys_buf, virt_buf;
-> +	unsigned long phys_buf, virt_buf;
-
-Do you really want to change phys_buf to an 'unsigned long'?
-
-Should virt_buf really be void * here?
-
-> 	void *buf = NULL;
-> 	int buf_idx;
+>  
+> Instead of adding more mess, we should simply fix hotplug. 
 > 
-> @@ -982,7 +983,7 @@ void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
-> 	if (phys_buf == in_be32(&rmu->msg_regs->ifqepar))
-> 		goto out2;
-> 
-> -	virt_buf = (u32) rmu->msg_rx_ring.virt + (phys_buf
-> +	virt_buf = (unsigned long) rmu->msg_rx_ring.virt + (phys_buf
-> 						- rmu->msg_rx_ring.phys);
-> 	buf_idx = (phys_buf - rmu->msg_rx_ring.phys) / RIO_MAX_MSG_SIZE;
-> 	buf = rmu->msg_rx_ring.virt_buffer[buf_idx];
+> We can migrate away all tasks _before_ we run stomp-machine and
 
-The memcpy later could remove a cast if you make virt_buf a void *.
+Well, that's what this patch pretty much tried to do. But I agree, not
+so nicely.
 
-> -- 
-> 1.7.0.4
+Should we call into the scheduler and tell it to do the migrate all
+tasks off and add no new ones? But note, the migrate is done with
+stomp_machine too. (per cpu, and on the CPU that's going down). Then we
+need to let the scheduler allow stomp_machine to enter the CPU, which
+shouldn't be that hard.
+
+
+> prevent that any new tasks go on the cpu which is about to be taken
+> down. Once all migratable tasks are gone, we only have to deal with
+> the cpu bound ones, which is not causing such headaches.
+
+Also, the headaches came mostly from the tasks that were bound to the
+CPU. Moving everything off after the notifiers is what's best. I may be
+able to have that happen. We need a way to call into the scheduler and
+tell it to migrate everything off then.
+
+
 > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> So no, I rather keep the current problem than applying that insanity.
+
+Note, the sync daemon was already added in -rt, I just modified it to be
+a little different. What is currently there introduced lots of races
+(especially that grabbing of the mutex). And is completely broken.
+
+I'm willing to take another shot at it, but I'm burnt out from this
+hotplug crap and I'm way behind in my other duties because of it. As for
+now we have a fix (yes it's crappy), for those that need hotplug
+working, they can use this mess.
+
+I'm going to go off and catch up on my other work and when I get time
+again I'll take another shot at it. Unless someone else beats me to it
+(I can only hope so).
+
+-- Steve
+
+
+
 
