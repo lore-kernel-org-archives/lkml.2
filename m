@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab2CBWac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:30:32 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11851 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2CBWaa convert rfc822-to-8bit (ORCPT
+	id S932617Ab2CBWdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:33:18 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63127 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab2CBWdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:30:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 02 Mar 2012 14:30:15 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Alan Ott <alan@signal11.us>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 2 Mar 2012 14:30:14 -0800
-Subject: RE: [PATCH v3 0/5] ARM: Tegra: cleanup patches from Arnd Bergmann
-Thread-Topic: [PATCH v3 0/5] ARM: Tegra: cleanup patches from Arnd Bergmann
-Thread-Index: Acz4w0X0QiqxAp6EQeOr1PUzmM9FlQAAKakw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861AAB@HQMAIL01.nvidia.com>
-References: <1330721884-8495-1-git-send-email-alan@signal11.us>
- <1330727075-10974-1-git-send-email-alan@signal11.us>
-In-Reply-To: <1330727075-10974-1-git-send-email-alan@signal11.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 17:33:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.190.134 as permitted sender) smtp.mail=alan@signal11.us
 MIME-Version: 1.0
+From: Alan Ott <alan@signal11.us>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Ott <alan@signal11.us>
+Subject: [PATCH v2] ARM: tegra: export tegra_gpio_{en,dis}able
+Date: Fri,  2 Mar 2012 17:32:24 -0500
+Message-Id: <1330727544-11617-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1330630010-11241-2-git-send-email-alan@signal11.us>
+References: <1330630010-11241-2-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Ott wrote at Friday, March 02, 2012 3:25 PM:
-> Version 3 of the patch set.
-> 
-> Changes:
-> 	* change of logic (and commit message change) for
-> 	  "select USB_ULPI if USB is selected"
-> 	* dropped THUMB2 patch
-> 
-> Arnd Bergmann (5):
->   ARM: tegra: do not hide dma declarations
->   ARM: tegra: select CPU_FREQ_TABLE
->   ARM: tegra: build localtimer support only when needed
->   ARM: tegra: select USB_ULPI if USB is selected
->   ARM: tegra: export usb phy symbols
+From: Arnd Bergmann <arnd@arndb.de>
 
-The series,
+These two functions are used in drivers that can be
+modules, so they need to be exported.
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Olof Johansson <olof@lixom.net>
 
-Thanks Arnd and Alan for cleaning Tegra up!
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ drivers/gpio/gpio-tegra.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index bdc2937..96662cc 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -107,11 +107,13 @@ void tegra_gpio_enable(int gpio)
+ {
+ 	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 1);
+ }
++EXPORT_SYMBOL_GPL(tegra_gpio_enable);
+ 
+ void tegra_gpio_disable(int gpio)
+ {
+ 	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 0);
+ }
++EXPORT_SYMBOL_GPL(tegra_gpio_disable);
+ 
+ static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
 -- 
-nvpublic
+1.7.0.4
 
