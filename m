@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030582Ab2CBUhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:37:09 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60269 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759230Ab2CBUhI (ORCPT
+	id S1030605Ab2CBUmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:42:08 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57869 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756401Ab2CBUmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:37:08 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX193qi5V8Lt3Arag5/yLG+TMoEduQc7UPUZlUJ4b05
-	+JE/q3XlPqDrF8
-Message-ID: <4F512F59.9080901@gmx.de>
-Date: Fri, 02 Mar 2012 20:36:41 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Fri, 2 Mar 2012 15:42:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.232.162 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Fri, 2 Mar 2012 12:41:36 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/PCI: add spinlock held check to
+ 'pcibios_fwaddrmap_lookup()'
+Message-ID: <20120302204136.GB24752@kroah.com>
+References: <20120302194501.26152.22845.stgit@amt.stowe>
+ <20120302200027.GA4817@kroah.com>
+ <20120302122405.050ab634@jbarnes-desktop>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes#2 for 3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302122405.050ab634@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Mar 02, 2012 at 12:24:05PM -0800, Jesse Barnes wrote:
+> On Fri, 2 Mar 2012 12:00:27 -0800
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Fri, Mar 02, 2012 at 12:45:01PM -0700, Myron Stowe wrote:
+> > > 'pcibios_fwaddrmap_lookup()' is used to maintain FW-assigned BIOS BAR
+> > > values for reinstatement when normal resource assignment attempts
+> > > fail and must be called with the 'pcibios_fwaddrmap_lock' spinlock
+> > > held.
+> > > 
+> > > This patch adds a WARN_ON notification if the spinlock is not currently
+> > > held by the caller.
+> > > 
+> > > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> > > ---
+> > > 
+> > >  arch/x86/pci/i386.c |    2 ++
+> > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+> > > index 33e6a0b..831971e 100644
+> > > --- a/arch/x86/pci/i386.c
+> > > +++ b/arch/x86/pci/i386.c
+> > > @@ -57,6 +57,8 @@ static struct pcibios_fwaddrmap *pcibios_fwaddrmap_lookup(struct pci_dev *dev)
+> > >  {
+> > >  	struct pcibios_fwaddrmap *map;
+> > >  
+> > > +	WARN_ON(!spin_is_locked(&pcibios_fwaddrmap_lock));
+> > > +
+> > 
+> > What is this going to help with?  How can someone then recover from this
+> > issue?  Just adding a warning message isn't going to fix any problems
+> > here, why not fix the root cause?
+> 
+> It's just a self-documenting assert; doesn't trigger anything and has
+> more functionality than
+>   /* Must hold the fwaddrmap_lock here */
 
-please pull these fixes for OMAP and viafb.
+Don't we have sparse markups that we can use to verify this instead
+somehow?  Adding asserts isn't the nicest, as what will a user really do
+about this if it ever gets hit?  And if a user isn't supposed to do
+anything, then yes, a comment would be best I would think.
 
+But I didn't realize you had asked for this, so no big deal, I'll go
+back to lurking :)
 
-Thanks,
-
-Florian Tobias Schandinat
-
-
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
-
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
-
-are available in the git repository at:
-
-  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.3-2
-
-for you to fetch changes up to a3d0e4aecaa32001e02d5ce860d38f14095d06d2:
-
-  OMAPDSS: APPLY: make ovl_enable/disable synchronous (2012-02-29 22:42:28 +0000)
-
-----------------------------------------------------------------
-fbdev fixes for 3.3
-
-It includes:
-- two fixes for OMAP HDMI
-- one fix to make new OMAP functions behave as they are supposed to
-- one Kconfig dependency fix
-- two fixes for viafb for modesetting on VX900 hardware
-
-----------------------------------------------------------------
-Archit Taneja (1):
-      OMAPDSS: HACK: Ensure DSS clock domain gets out of idle when HDMI is enabled
-
-Florian Tobias Schandinat (3):
-      Merge branch 'for-3.3-rc' of git://gitorious.org/linux-omap-dss2/linux
-into fbdev-for-linus
-      viafb: select HW scaling on VX900 for IGA2
-      viafb: fix IGA1 modesetting on VX900
-
-Rob Clark (1):
-      OMAPDSS: HDMI: hot plug detect fix
-
-Tomi Valkeinen (2):
-      OMAPDSS: panel-dvi: Add Kconfig dependency on I2C
-      OMAPDSS: APPLY: make ovl_enable/disable synchronous
-
- drivers/video/omap2/displays/Kconfig      |    2 +-
- drivers/video/omap2/dss/apply.c           |    6 ++++++
- drivers/video/omap2/dss/hdmi.c            |   24 +++++++++++++++++++++++-
- drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c |    9 +--------
- drivers/video/via/hw.c                    |    4 ++++
- 5 files changed, 35 insertions(+), 10 deletions(-)
+greg k-h
