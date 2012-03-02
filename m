@@ -1,49 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030221Ab2CBPKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 10:10:34 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45493 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758538Ab2CBPKb (ORCPT
+	id S1030234Ab2CBPLl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 10:11:41 -0500
+Received: from gate.crashing.org ([63.228.1.57]:54656 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030183Ab2CBPLj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 10:10:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.73.138 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: jitendra.kalsaria@qlogic.com
-Cc: ron.mercer@qlogic.com, linux-driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH 2/3] qla3xxx: ethernet: Silence static checker warning.
-Date: Fri,  2 Mar 2012 20:39:39 +0530
-Message-Id: <1330700979-18231-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 2 Mar 2012 10:11:39 -0500
+Subject: Re: [PATCH] powerpc/srio: Fix the compile errors when building with 64bit
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
+Date: Fri, 2 Mar 2012 09:11:00 -0600
+Cc: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <r61911@freescale.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6BFCD6C7-7675-4A99-9C4C-4E86FA5642A4@kernel.crashing.org>
+References: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
+To: Liu Gang <Gang.Liu@freescale.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-Silence the following warning:
-"warn: returning -1 instead of -ENOMEM is sloppy".
+On Mar 2, 2012, at 1:08 AM, Liu Gang wrote:
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/net/ethernet/qlogic/qla3xxx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> For the file "arch/powerpc/sysdev/fsl_rmu.c", there will be some compile
+> errors while using the corenet64_smp_defconfig:
+> 
+> .../fsl_rmu.c:315: error: cast from pointer to integer of different size
+> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:320: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:330: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:332: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:339: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:340: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:341: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:348: error: cast to pointer from integer of different size
+> .../fsl_rmu.c:659: error: cast from pointer to integer of different size
+> .../fsl_rmu.c:659: error: format '%8.8x' expects type 'unsigned int',
+> 		   but argument 5 has type 'size_t'
+> .../fsl_rmu.c:985: error: cast from pointer to integer of different size
+> .../fsl_rmu.c:997: error: cast to pointer from integer of different size
+> 
+> Rewrote the corresponding code with the support of 64bit building.
+> 
+> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+> Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+> arch/powerpc/sysdev/fsl_rmu.c |   11 ++++++-----
+> 1 files changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/powerpc/sysdev/fsl_rmu.c b/arch/powerpc/sysdev/fsl_rmu.c
+> index 1548578..468011e 100644
+> --- a/arch/powerpc/sysdev/fsl_rmu.c
+> +++ b/arch/powerpc/sysdev/fsl_rmu.c
+> @@ -311,8 +311,8 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
+> 
+> 	/* XXX Need to check/dispatch until queue empty */
+> 	if (dsr & DOORBELL_DSR_DIQI) {
+> -		u32 dmsg =
+> -			(u32) fsl_dbell->dbell_ring.virt +
+> +		unsigned long dmsg =
+> +			(unsigned long) fsl_dbell->dbell_ring.virt +
+> 			(in_be32(&fsl_dbell->dbell_regs->dqdpar) & 0xfff);
+> 		struct rio_dbell *dbell;
+> 		int found = 0;
+> @@ -657,7 +657,8 @@ fsl_add_outb_message(struct rio_mport *mport, struct rio_dev *rdev, int mbox,
+> 	int ret = 0;
+> 
+> 	pr_debug("RIO: fsl_add_outb_message(): destid %4.4x mbox %d buffer " \
+> -		 "%8.8x len %8.8x\n", rdev->destid, mbox, (int)buffer, len);
+> +		 "%8.8lx len %8.8zx\n", rdev->destid, mbox,
+> +		(unsigned long)buffer, len);
+> 	if ((len < 8) || (len > RIO_MAX_MSG_SIZE)) {
+> 		ret = -EINVAL;
+> 		goto out;
 
-diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
-index 8da3e41..df09b1c 100644
---- a/drivers/net/ethernet/qlogic/qla3xxx.c
-+++ b/drivers/net/ethernet/qlogic/qla3xxx.c
-@@ -2836,7 +2836,7 @@ static int ql_create_send_free_list(struct ql3_adapter *qdev)
- 		req_q_curr++;
- 		tx_cb->oal = kmalloc(512, GFP_KERNEL);
- 		if (tx_cb->oal == NULL)
--			return -1;
-+			return -ENOMEM;
- 	}
- 	return 0;
- }
--- 
-1.7.4.4
+For this case it seems as if some cast should be added to DBELL_* macros
+
+> @@ -972,7 +973,7 @@ out:
+> void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
+> {
+> 	struct fsl_rmu *rmu = GET_RMM_HANDLE(mport);
+> -	u32 phys_buf, virt_buf;
+> +	unsigned long phys_buf, virt_buf;
+
+Do you really want to change phys_buf to an 'unsigned long'?
+
+Should virt_buf really be void * here?
+
+> 	void *buf = NULL;
+> 	int buf_idx;
+> 
+> @@ -982,7 +983,7 @@ void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
+> 	if (phys_buf == in_be32(&rmu->msg_regs->ifqepar))
+> 		goto out2;
+> 
+> -	virt_buf = (u32) rmu->msg_rx_ring.virt + (phys_buf
+> +	virt_buf = (unsigned long) rmu->msg_rx_ring.virt + (phys_buf
+> 						- rmu->msg_rx_ring.phys);
+> 	buf_idx = (phys_buf - rmu->msg_rx_ring.phys) / RIO_MAX_MSG_SIZE;
+> 	buf = rmu->msg_rx_ring.virt_buffer[buf_idx];
+
+The memcpy later could remove a cast if you make virt_buf a void *.
+
+> -- 
+> 1.7.0.4
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
