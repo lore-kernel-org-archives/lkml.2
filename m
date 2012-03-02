@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab2CBHM5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 02:12:57 -0500
-Received: from mail.southpole.se ([193.12.106.18]:41284 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654Ab2CBHM4 (ORCPT
+	id S964860Ab2CBHNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 02:13:01 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54549 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756654Ab2CBHM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 02:12:56 -0500
-Message-ID: <1330672347.19557.107.camel@satguru>
-Subject: Re: [PATCH 5/5] OpenRISC: Export dump_stack()
-From: Jonas Bonn <jonas@southpole.se>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org
-Date: Fri, 02 Mar 2012 08:12:27 +0100
-In-Reply-To: <1330649715-32438-5-git-send-email-richard@nod.at>
-References: <1330649715-32438-1-git-send-email-richard@nod.at>
-	 <1330649715-32438-5-git-send-email-richard@nod.at>
-Organization: South Pole Consulting AB
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-8RW2RStjHwSwE7SBaDUC"
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 72374-08440
+	Fri, 2 Mar 2012 02:12:58 -0500
+X-AuditID: 9c930179-b7c4fae0000073fb-70-4f5072f7d22f
+Message-ID: <4F5072F4.3030505@lge.com>
+Date: Fri, 02 Mar 2012 16:12:52 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.mm
+To: Christoph Lameter <cl@gentwo.org>
+CC: Namhyung Kim <namhyung@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
+References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>  <alpine.DEB.2.00.1202290922210.32268@router.home> <1330587031.1762.46.camel@leonhard> <alpine.DEB.2.00.1203010901020.5004@router.home>
+In-Reply-To: <alpine.DEB.2.00.1203010901020.5004@router.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012-03-02 12:03 AM, Christoph Lameter wrote:
+> On Thu, 1 Mar 2012, Namhyung Kim wrote:
+>
+>>> You cannot free a tail page of a compound higher order page independently.
+>>> You must free the whole compound.
+>>>
+>>
+>> I meant freeing a *slab object* resides in a compound page using buddy
+>> system API (e.g. free_pages). I know it's definitely a programming
+>> error. However there's no safety net to protect and/or warn such a
+>> misbehavior AFAICS - except for head page which has PG_slab set - when
+>> it happened by any chance.
+>
+> ?? One generally passed a struct page pointer to the page allocator. Slab
+> allocator takes pointers to object. The calls that take a pointer to an
+> object must have a page aligned value.
+>
+
+Please see free_pages(). It converts the pointer using virt_to_page().
 
 
---=-8RW2RStjHwSwE7SBaDUC
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+>> Without it, it might be possible to free part of tail pages silently,
+>> and cause unexpected not-so-funny results some time later. It should be
+>> hard to find out.
+>
+> Ok then fix the page allocator to BUG() on tail pages. That is an issue
+> with the page allocator not the slab allocator.
+>
+> Adding PG_tail to the flags checked on free should do the trick (at least
+> for 64 bit).
+>
 
-Thanks.  Patches 1 and 5 from your series applied.
+Yeah, but doing it requires to change free path of compound pages. It seems 
+freeing normal compound pages would not clear PG_head/tail bits before 
+free_pages_check() called. I guess moving destroy_compound_page() into 
+free_pages_prepare() will solved this issue but I want to make sure it's the 
+right approach since I have no idea how it affects huge page behaviors.
 
-I already had patch 4, and comments have been sent for the others.
-
-/Jonas
-
-On Fri, 2012-03-02 at 01:55 +0100, Richard Weinberger wrote:
-> dump_stack() is used by modules and needs to be exported.
->=20
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/openrisc/kernel/traps.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->=20
-> diff --git a/arch/openrisc/kernel/traps.c b/arch/openrisc/kernel/traps.c
-> index a4ec44a..ab68ffc 100644
-> --- a/arch/openrisc/kernel/traps.c
-> +++ b/arch/openrisc/kernel/traps.c
-> @@ -115,6 +115,7 @@ void dump_stack(void)
-> =20
->  	show_stack(current, &stack);
->  }
-> +EXPORT_SYMBOL(dump_stack);
-> =20
->  void show_registers(struct pt_regs *regs)
->  {
+Besides, as it has no effect on 32 bit kernels I still want add the PG_slab 
+flag to those pages. If you care about the performance of hot path, how about 
+adding it under debug configurations at least?
 
 
---=-8RW2RStjHwSwE7SBaDUC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk9QctsACgkQ70gcjN2673OQVACgkpAl+QHUfiRmvn6O6FNnb/pr
-vzYAn36N1FfB3ALjShGD8OgKsx/JKnlT
-=FGRD
------END PGP SIGNATURE-----
-
---=-8RW2RStjHwSwE7SBaDUC--
-
+Thanks,
+Namhyung Kim
