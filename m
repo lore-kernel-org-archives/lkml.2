@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030668Ab2CBVbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:31:40 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:38188 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758293Ab2CBVbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:31:32 -0500
-Message-ID: <4F513C2B.6030604@pandora.be>
-Date: Fri, 02 Mar 2012 22:31:23 +0100
-From: Bart De Schuymer <bdschuym@pandora.be>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1755563Ab2CBVdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:33:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47510 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577Ab2CBVc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 16:32:59 -0500
+Message-ID: <4F513C80.2090709@zytor.com>
+Date: Fri, 02 Mar 2012 13:32:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: santosh nayak <santoshprasadnayak@gmail.com>, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        bart.de.schuymer@pandora.be, netfilter-devel@vger.kernel.org,
-        shemminger@vyatta.com
-Subject: Re: [Bridge] [PATCH 2/3] netfilter: potential null derefence.
-References: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com> <20120301123004.GA7250@1984>
-In-Reply-To: <20120301123004.GA7250@1984>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Joshua C." <joshuacov@googlemail.com>
+CC: Bodo Eggert <7eggert@gmx.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [RESUBMIT] [PATCH] Use BIOS Keyboard variable to set Numlock
+References: <CAKL7Q7qU0OKzqC-XnM1mY7YWs1SstayqH-8P-5MY3Yg7_wrQZw@mail.gmail.com> <CAKL7Q7pK_jacfk9shdNootT46AihgABZkN54sbP-SnhA6-1F8Q@mail.gmail.com> <4F4C1F76.70403@zytor.com> <alpine.DEB.2.00.1202281927130.24649@be10.lrz> <4F4D1E6A.5000200@zytor.com> <CAKL7Q7oxYvkgvHgqejzRn+OQqCVg2NOqPPs+T_jBvKAigNKCjQ@mail.gmail.com> <4F4E6B98.2090306@zytor.com> <CAKL7Q7o7udqrvKou=CSxuzJOuAJfemU4bizSsAtaebJZbBMRFQ@mail.gmail.com> <4F4EB0B9.2080906@zytor.com> <CAKL7Q7pq5BTax4odM5YuzR4TsoU5CV59341LziR9c=Yjnia4gQ@mail.gmail.com> <4F4EBF44.60208@zytor.com> <CAKL7Q7qBOe70D80wOqLnnPLQaaVWbb2KB5P5p252oyPS4YgD1Q@mail.gmail.com> <4F4EC19F.4050002@zytor.com> <CAKL7Q7rZyUNNP+jy5ajL2KSbC8S4LEQZWG3vuPVSvSOCd_ZGQg@mail.gmail.com> <CAKL7Q7q9r0mCoGWOFamHUG6ujfs=voyAZBZHChXVO34cjCbZbw@mail.gmail.com> <4F4FE1FA.1040008@zytor.com> <CAKL7Q7owDCs0=RyhY7gLpyYgOJ9gisdH=p2+qvZ043dDFMN76Q@mail.gmail.com> <4F51114D.80704@zytor.com> <CAKL7Q7rKVu-5OkKWoO3ZiCakiKsC=MAugRTXWB+rnudqUzvPvw@mail.gmail.com>
+In-Reply-To: <CAKL7Q7rKVu-5OkKWoO3ZiCakiKsC=MAugRTXWB+rnudqUzvPvw@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 120302-1, 02/03/2012), Outbound message
-X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 1/03/2012 13:30, Pablo Neira Ayuso schreef:
-> On Thu, Mar 01, 2012 at 02:47:14PM +0530, santosh nayak wrote:
->> From: Santosh Nayak<santoshprasadnayak@gmail.com>
+On 03/02/2012 01:21 PM, Joshua C. wrote:
+> 2012/3/2 H. Peter Anvin <hpa@zytor.com>:
 >>
->> I am getting following error.
->> " net/bridge/netfilter/ebtables.c:269 ebt_do_table()
->>    error: potential null derefence 'cs'"
+>> Yeah, it seems a bit excessive in this case.
 >>
->>      i = cs[sp].n;  // If cs == Null then this will cause problem.
->
-> Very sorry, I didn't see the out label.
->
-> I'll apply this to my nf [1] once David takes my previous request for
-> pulling.
->
+>>        -hpa
+>>
+>> --
+>> H. Peter Anvin, Intel Open Source Technology Center
+>> I work for Intel.  I don't speak on their behalf.
+>>
+> 
+> This is the final version. It works fine here on one laptop and a desktop.
+> 
+> @Alan
+> Can you, please, queue this for the mainline and also push it to
+> stable? The patch is straight forward and set the NumLock on a
+> keyboard according to the data in the BIOS.
+> 
 
-Hi,
+I still prefer the inline function instead of a macro for KBD_DEFLEDS,
+but this is in deep nitpick territory at this point, and the macro is
+already there.
 
-Has this patch been tested? Really, that code in the core firewall 
-function is there for a reason, wouldn't you think?
-The chainstack is only allocated when user-defined chains are used (see 
-translate_table).
-Never blindly trust a tool.
+Reviewed-by: H. Peter Anvin <hpa@zytor.com>
 
-Bart
+
+	-hpa
