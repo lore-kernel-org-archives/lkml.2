@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030643Ab2CBVb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 16:31:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36022 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab2CBVb1 (ORCPT
+	id S1030668Ab2CBVbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 16:31:40 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:38188 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758293Ab2CBVbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 16:31:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.133 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Fri, 2 Mar 2012 13:31:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
- the host
-Message-ID: <20120302213116.GA23443@kroah.com>
-References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
- <20120302211354.GB6008@kroah.com>
- <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	Fri, 2 Mar 2012 16:31:32 -0500
+Message-ID: <4F513C2B.6030604@pandora.be>
+Date: Fri, 02 Mar 2012 22:31:23 +0100
+From: Bart De Schuymer <bdschuym@pandora.be>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B736783@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: santosh nayak <santoshprasadnayak@gmail.com>, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        bridge@lists.linux-foundation.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        bart.de.schuymer@pandora.be, netfilter-devel@vger.kernel.org,
+        shemminger@vyatta.com
+Subject: Re: [Bridge] [PATCH 2/3] netfilter: potential null derefence.
+References: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com> <20120301123004.GA7250@1984>
+In-Reply-To: <20120301123004.GA7250@1984>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Antivirus: avast! (VPS 120302-1, 02/03/2012), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 09:22:38PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: Friday, March 02, 2012 4:14 PM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > virtualization@lists.osdl.org; ohering@suse.com; jbottomley@parallels.com;
-> > hch@infradead.org; linux-scsi@vger.kernel.org; Haiyang Zhang
-> > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> > the host
-> > 
-> > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
-> > > Windows hosts don't handle the ATA_16 command; don't pass it to the host.
-> > >
-> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > ---
-> > >  drivers/scsi/storvsc_drv.c |    2 ++
-> > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > Should this go to older kernel versions as well?
-> 
-> I think it should. Do you want me to resend this patch with the correct tag?
-> Also, given that storvsc has changed so much over the last several months,
-> this patch may or may not apply to earlier versions of this driver even though
-> this patch itself is quite trivial.
+Op 1/03/2012 13:30, Pablo Neira Ayuso schreef:
+> On Thu, Mar 01, 2012 at 02:47:14PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak<santoshprasadnayak@gmail.com>
+>>
+>> I am getting following error.
+>> " net/bridge/netfilter/ebtables.c:269 ebt_do_table()
+>>    error: potential null derefence 'cs'"
+>>
+>>      i = cs[sp].n;  // If cs == Null then this will cause problem.
+>
+> Very sorry, I didn't see the out label.
+>
+> I'll apply this to my nf [1] once David takes my previous request for
+> pulling.
+>
 
-I'll tag it for the stable tree, then when it doesn't apply, you will
-get an email saying it didn't, so you can then send me the correct one
-:)
+Hi,
 
-thanks,
+Has this patch been tested? Really, that code in the core firewall 
+function is there for a reason, wouldn't you think?
+The chainstack is only allocated when user-defined chains are used (see 
+translate_table).
+Never blindly trust a tool.
 
-greg k-h
+Bart
