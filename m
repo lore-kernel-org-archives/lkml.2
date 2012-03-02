@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab2CBU0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 15:26:39 -0500
-Received: from correio5.ufc.br ([200.19.190.13]:43432 "EHLO correio5.ufc.br"
+	id S1759313Ab2CBUfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:35:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030462Ab2CBU0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 15:26:38 -0500
-X-Greylist: delayed 1599 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Mar 2012 15:26:37 EST
-Message-ID: <9343b6cbde85169b3a13908d102765ce.squirrel@correio1.ufc.br>
-Date: Fri, 2 Mar 2012 16:34:20 -0300 (BRT)
-Subject: =?utf-8?B?RnJvbSB0aGUgR29vZ2xlIFVLIE9mZmljZSwgdGhlIDEzdGggQW5uaXZlcnNh?= 
- =?utf-8?B?cnkgR2l2ZWF3YXlzIMKpMjAxMg==?=
-From: =?utf-8?B?R29vZ2xlIEFsZXJ0wq4gVUs=?= 
-	<googleuk13.anniversarydraws@shqiptar.eu>
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1757116Ab2CBUfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 15:35:41 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH] memcg: fix mapcount check in move charge code for anonymous page
+Date: Fri,  2 Mar 2012 15:35:08 -0500
+Message-Id: <1330720508-21019-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently charge on shared anonyous pages is supposed not to moved
+in task migration. To implement this, we need to check that mapcount > 1,
+instread of > 2. So this patch fixes it.
 
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/memcontrol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-The owner of this email acct. has w o n £850,000 UK Pounds (with C.G.P.N :
-AS/MY/0010/011|  T I C K E T# : 899-633/UK-11-001).
-
-As indicated in your coupon, your C.G.P.N and T I C K E T # falls under
-our Asia Zone Disbursement booklet/Payout Center.
-
-For full info, Please verify this email acct. is Still in Use.
-E-mail: googleuk13.anniversarydraws@shqiptar.eu
-
-Mr Benard, Announcer
-(Inq.#: 00447 031 857 528)
+diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+index b6d1bab..785f6d3 100644
+--- linux-next-20120228.orig/mm/memcontrol.c
++++ linux-next-20120228/mm/memcontrol.c
+@@ -5102,7 +5102,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
+ 		return NULL;
+ 	if (PageAnon(page)) {
+ 		/* we don't move shared anon */
+-		if (!move_anon() || page_mapcount(page) > 2)
++		if (!move_anon() || page_mapcount(page) > 1)
+ 			return NULL;
+ 	} else if (!move_file())
+ 		/* we ignore mapcount for file pages */
+-- 
+1.7.7.6
 
