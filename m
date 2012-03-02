@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab2CBMfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 07:35:23 -0500
-Received: from mail-pw0-f66.google.com ([209.85.160.66]:50049 "EHLO
-	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115Ab2CBMfW (ORCPT
+	id S1758723Ab2CBMj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 07:39:59 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40213 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755528Ab2CBMj6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 07:35:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of lighthorsenetworks@gmail.com designates 10.68.216.132 as permitted sender) smtp.mail=lighthorsenetworks@gmail.com; dkim=pass header.i=lighthorsenetworks@gmail.com
+	Fri, 2 Mar 2012 07:39:58 -0500
 MIME-Version: 1.0
-Date: Fri, 2 Mar 2012 05:35:21 -0700
-Message-ID: <CAPVG_r26QSxAEaQ6ajpp7_kORFguNX+CnSn-ESt-wwtt_iMJig@mail.gmail.com>
-Subject: [ANNOUNCE] Cloudstream Kernel Source and Patches Posted 2.6.18-194.26.1
-From: jeff merkey <lighthorsenetworks@gmail.com>
+Date: Fri, 2 Mar 2012 12:39:57 +0000
+Message-ID: <CADzG2TC8y=sYVYx0rVLAo_o6Mo2tjMOJYAw97ZhKAmNX555a6w@mail.gmail.com>
+Subject: ext4 bug? last write time precedes last mount time on a writable volume!
+From: Neil Clarkson <neilaclarkson@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pursuant to the GPL, the following source trees are posted on Google
-Code for the Cloudstream Linux kernel with all patches and
-configuration files for the base kernel used to support Cloudstream
-Network Forensics Appliances.
+Isn't the s_wtime field of the ext4 superblock supposed to show the
+time, in seconds since the epoch, of the last write? It isn't
+happening!
 
-http://cloudstream-linux.googlecode.com/files/linux-2.6.18-194.26.1-el5.x86_64.tar.gz
-http://cloudstream-linux.googlecode.com/files/cs--10-22-2011.patch
-http://cloudstream-linux.googlecode.com/files/cs-2.6.18-194.26.1.x86_64.config
-http://cloudstream-linux.googlecode.com/files/cs-2.6.18-194.26.1.i386.config
-http://cloudstream-linux.googlecode.com/files/parted-1.8.8.4-cloudstream.tar.gz
-http://cloudstream-linux.googlecode.com/files/cslinux-2.6.18.194.26.1.cloudstream.11.15.2011.1321409549-1.src.rpm
-http://cloudstream-linux.googlecode.com/files/csheaders-2.6.18.194.26.1.cloudstream.11.15.2011.1321409239-1.src.rpm
+This line suggests the s_wtime is updated on a superblock commit
+unless the volume is read only.
 
-For additional information, please visit
+static int ext4_commit_super(struct super_block *sb, int sync)'
 
-http://www.lighthorsenetworks.com
+        /*
+         * If the file system is mounted read-only, don't update the
+         * superblock write time.  This avoids updating the superblock
+         * write time when we are mounting the root file system
+         * read/only but we need to replay the journal; at that point,
+         * for people who are east of GMT and who make their clock
+         * tick in localtime for Windows bug-for-bug compatibility,
+         * the clock is set in the future, and this will cause e2fsck
+         * to complain and force a full file system check.
+         */
+        if (!(sb->s_flags & MS_RDONLY))
+                es->s_wtime = cpu_to_le32(get_seconds());
 
-Lighthorse Networks
+Yet a dumpe2fs on my ubuntu box gives the output below. Last write
+time just a half hour after the volume was created!
+
+ Filesystem created:       Wed Nov 23 13:42:18 2011
+ Last mount time:          Tue Feb 21 09:07:54 2012
+ Last write time:          Wed Nov 23 14:12:57 2011
+
+/dev/sda1 on / type ext4 (rw,errors=remount-ro,commit=0)
+
+Linux Wallace 3.0.0-16-generic #28-Ubuntu SMP Fri Jan 27 17:44:39 UTC
+2012 x86_64 x86_64 x86_64 GNU/Linux (Ubuntu 11.10)
+
+OpenSuse and Fedora show something slightly different, but still
+wrong: last write time same as last mount time.
+
+Linux VM-OpenSUSE2 2.6.37.1-1.2-desktop #1 SMP PREEMPT 2011-02-21
+10:34:10 +0100 x86_64 x86_64 x86_64 GNU/Linux (Open SUSE 11.4)
+
+ Filesystem created:       Fri Sep 23 18:04:27 2011
+ Last mount time:          Fri Jan 27 09:34:55 2012
+ Last write time:          Fri Jan 27 09:34:55 2012
+
+Linux fedoraVM 2.6.35.6-45.fc14.i686 #1 SMP Mon Oct 18 23:56:17 UTC
+2010 i686 i686 i386 GNU/Linux (Fedora 14)
+
+Filesystem created:       Wed Nov  3 07:24:17 2010
+Last mount time:          Fri Feb  3 13:04:41 2012
+Last write time:          Fri Feb  3 13:04:41 2012
+
+Could someone please help me understand this? If this isn't the
+correct forum to be querying apparently wayward ext4  functionality,
+please point me at a better one.
+
+Neil Clarkson
