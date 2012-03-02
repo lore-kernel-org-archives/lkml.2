@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab2CBTc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:32:26 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:52403 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759155Ab2CBTcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:32:20 -0500
-Date: Fri, 2 Mar 2012 14:32:15 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Chris Mason <chris.mason@oracle.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120302193215.GB22215@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Chris Mason <chris.mason@oracle.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
- <20120301143859.GX5054@shiny>
- <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
- <20120302140038.GD5054@shiny>
- <CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
- <20120302142651.GH5054@shiny>
+	id S1759158Ab2CBTeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 14:34:31 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60680 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab2CBTe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 14:34:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.50.186.198 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
+Date: Fri, 2 Mar 2012 13:34:16 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: acme@redhat.com, roel.kluin@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Mason Loring Bliss <mason@blisses.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH] [NET]: da.s_net not copied but assigned to itself in
+ aarp_rcv()
+Message-ID: <20120302193416.GA22055@burratino>
+References: <4B4F7F4B.8000302@gmail.com>
+ <20100114210001.GE20221@ghostprotocols.net>
+ <20100115.014943.39860500.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120302142651.GH5054@shiny>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20100115.014943.39860500.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 09:26:51AM -0500, Chris Mason wrote:
-> 
-> filefrag will tell you how many extents each file has, any file with
-> more than one extent is interesting.  (The ext4 crowd may have better
-> suggestions on measuring fragmentation).
+Hi Dave,
 
-You can get a *huge* amount of information (probably more than you'll
-want to analyze) by doing this:
+David Miller wrote:
+>> Em Thu, Jan 14, 2010 at 09:32:11PM +0100, Roel Kluin escreveu:
 
-     e2fsck -nf -E fragcheck /dev/XXXX >& /tmp/fragcheck.out
+>>> da.s_net was not copied but assigned to itself.
+>>> 
+>>> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+[...]
+> Applied, please always CC: on networking patches.
 
-I haven't had time to do this in a while, but a while back I used this
-to debug the writeback code with an eye towards reducing
-fragmentation.  At the time I was trying to optimize the case of
-reducing fragmentation in the easist case possible, where you start
-with an empty file system, and then copy all of the data from another
-file system onto it using rsync -avH.
+Thanks.
 
-It would be worth while to see what happens with files written by the
-compiler and linker.  Given that libelf tends to write .o files
-non-sequentially, and without telling us how big the space is in
-advance, I could well imagine that we're not doing the best job
-avoiding free space fragmentation, which eventually leads to extra
-file system aging.
+Without this patch (commit 2a04cd4c7 aka v2.6.33-rc6~29^2~33), Mason
+(cc-ed) is not able to use appletalk[1]:
 
-It would be interesting to have a project where someone added
-fallocate() support into libelf, and then added some hueristics into
-ext4 so that if a file is fallocated to a precise size, or if the file
-is fully written and closed before writeback begins, that we use this
-to more efficiently pack the space used by the files by the block
-allocator.  This is a place where I would not be surprised that XFS
-has some better code to avoid accelerated file system aging, and where
-we could do better with ext4 with some development effort.
+| With Linux 2.6.32 as supplied with Debian Squeeze, Netatalk is unable
+| to thrive. Connections made to afpd will open, but attempting to transfer
+| files will take a very long time and/or eventually time out.
+|
+| I've noted this with both Netatalk as supplied with Squeeze and with
+| Netatalk 2.2.1 built from the Wheezy source package, which I evidently
+| need for AFP 3 support.
+|
+| Installing Linux 3.2 from backports, with no other changes to the system,
+| allows afpd to work correctly.
 
-Of course, it might also be possible to hack around this by simply
-using VPATH and dropping your build files in a separate place from
-your source files, and periodically reformatting the file system where
-your build tree lives.  (As a side note, something that works well for
-me is to use an SSD for my source files, and a separate 5400rpm HDD
-for my build tree.  That allows me to use a smaller and more
-affordable SSD, and since the object files can be written
-asynchronously by the writeback threads, but the compiler can't move
-forward until it gets file data from the .c or .h file, it gets me the
-best price/performance for a laptop build environment.)
+Ben sent a copy of this patch to try against 2.6.32.y and it worked.
+Would it be possible to include this in the 2.6.32.y-longterm tree?
 
-BTW, I suspect we could make acp even more efficient by teaching it to
-use FIEMAP ioctl to map out the data blocks for all of the files in
-the source file system, and then copied the files (or perhaps even
-parts of files) in a read order which reduced seeking on the source
-drive.
+Sincerely,
+Jonathan
 
-						- Ted
+[1] http://bugs.debian.org/660902
