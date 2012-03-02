@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab2CBWYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 17:24:24 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:48555 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757646Ab2CBWYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 17:24:19 -0500
+	id S965059Ab2CBWYs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 17:24:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38171 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964787Ab2CBWYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 17:24:45 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of alan@signal11.us designates 10.236.185.42 as permitted sender) smtp.mail=alan@signal11.us
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 02 Mar 2012 14:23:55 -0800
-From: Eric B Munson <emunson@mgebm.net>
-To: <avi@redhat.com>
-Cc: <mingo@redhat.com>, <hpa@zytor.com>, <ryanh@linux.vnet.ibm.com>,
-        <aliguori@us.ibm.com>, <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4 V15] Avoid soft lockup message when KVM is stopped
- by host
-In-Reply-To: <1329704577-6329-1-git-send-email-emunson@mgebm.net>
-References: <1329704577-6329-1-git-send-email-emunson@mgebm.net>
-Message-ID: <efc139eb139354cdc086c994e18e4a7f@mgebm.net>
-User-Agent: Roundcube Webmail/0.5.3
+From: Alan Ott <alan@signal11.us>
+To: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, Alan Ott <alan@signal11.us>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v3 0/5] ARM: Tegra: cleanup patches from Arnd Bergmann
+Date: Fri,  2 Mar 2012 17:24:35 -0500
+Message-Id: <1330727075-10974-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1330721884-8495-1-git-send-email-alan@signal11.us>
+References: <1330721884-8495-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Feb 2012 21:22:53 -0500, Eric B Munson wrote:
-> Changes from V14:
-> Update documentation for the pvclock api
+Version 3 of the patch set.
 
-... snip
+Changes:
+	* change of logic (and commit message change) for
+	  "select USB_ULPI if USB is selected"
+	* dropped THUMB2 patch
 
->
-> When a guest kernel is stopped by the host hypervisor it can look 
-> like a soft
-> lockup to the guest kernel.  This false warning can mask later soft 
-> lockup
-> warnings which may be real.  This patch series adds a method for a 
-> host
-> hypervisor to communicate to a guest kernel that it is being stopped. 
-> The
-> final patch in the series has the watchdog check this flag when it 
-> goes to
-> issue a soft lockup warning and skip the warning if the guest knows 
-> it was
-> stopped.
->
-> It was attempted to solve this in Qemu, but the side effects of 
-> saving and
-> restoring the clock and tsc for each vcpu put the wall clock of the
-> guest behind
-> by the amount of time of the pause.  This forces a guest to have ntp 
-> running
-> in order to keep the wall clock accurate.
+Arnd Bergmann (5):
+  ARM: tegra: do not hide dma declarations
+  ARM: tegra: select CPU_FREQ_TABLE
+  ARM: tegra: build localtimer support only when needed
+  ARM: tegra: select USB_ULPI if USB is selected
+  ARM: tegra: export usb phy symbols
 
-Avi,
-
-Is this version acceptable for merging?  I'd really like this to go in 
-for the 3.4 merge window.
-
-Thanks,
-Eric
-
->
-> Cc: mingo@redhat.com
-> Cc: hpa@zytor.com
-> Cc: ryanh@linux.vnet.ibm.com
-> Cc: aliguori@us.ibm.com
-> Cc: mtosatti@redhat.com
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
->
-> Eric B Munson (4):
->   Add flag to indicate that a vm was stopped by the host
->   Add functions to check if the host has stopped the vm
->   Add ioctl for KVM_KVMCLOCK_CTRL
->   Add check for suspended vm in softlockup detector
->
->  Documentation/virtual/kvm/api.txt   |   20 ++++++++++++++++++++
->  Documentation/virtual/kvm/msr.txt   |    4 ++++
->  arch/ia64/include/asm/kvm_para.h    |    5 +++++
->  arch/powerpc/include/asm/kvm_para.h |    5 +++++
->  arch/s390/include/asm/kvm_para.h    |    5 +++++
->  arch/x86/include/asm/kvm_para.h     |    8 ++++++++
->  arch/x86/include/asm/pvclock-abi.h  |    1 +
->  arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
->  arch/x86/kvm/x86.c                  |   22 ++++++++++++++++++++++
->  include/asm-generic/kvm_para.h      |   14 ++++++++++++++
->  include/linux/kvm.h                 |    3 +++
->  kernel/watchdog.c                   |   12 ++++++++++++
->  12 files changed, 120 insertions(+), 0 deletions(-)
->  create mode 100644 include/asm-generic/kvm_para.h
+ arch/arm/mach-tegra/Kconfig            |    6 ++++--
+ arch/arm/mach-tegra/Makefile           |    3 ++-
+ arch/arm/mach-tegra/include/mach/dma.h |    4 ----
+ arch/arm/mach-tegra/usb_phy.c          |   11 +++++++++++
+ 4 files changed, 17 insertions(+), 7 deletions(-)
 
