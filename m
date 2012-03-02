@@ -1,44 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab2CBAb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Mar 2012 19:31:28 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:64739 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab2CBAb1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Mar 2012 19:31:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.133.93 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F501282.8050408@teksavvy.com>
-References: <CA+55aFytp=ZT++sj_P7nw9mNSKjPaqjB4srgSB6HYAAJW04-Pw@mail.gmail.com>
- <4F4B9FFE.5050709@teksavvy.com> <CA+55aFxMPOAdvu-iFL8vDzC=d1osVD91RfksLiE4sAP5Lf5oNQ@mail.gmail.com>
- <4F4F8BEE.3040806@teksavvy.com> <CA+55aFyij_ORw+BE-Sbkt9Y9qcUQSmW_4e-r7p3t0DNA4Sg9pA@mail.gmail.com>
- <4F5011AC.2020909@teksavvy.com> <4F501282.8050408@teksavvy.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Mar 2012 16:31:05 -0800
-X-Google-Sender-Auth: OjYsHp5_Tt1GWLVp5bC62ApqFJI
-Message-ID: <CA+55aFw8GLGtQ+rVi6eqbgyd+qKc3CszMkGv8L+2MC28K61O5Q@mail.gmail.com>
-Subject: Re: Linux 3.3-rc5
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757009Ab2CBAcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Mar 2012 19:32:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756889Ab2CBAcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Mar 2012 19:32:15 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v2 2/2] memcg: avoid THP split in task migration
+Date: Thu,  1 Mar 2012 19:31:53 -0500
+Message-Id: <1330648313-32593-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1330648313-32593-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1330648313-32593-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 4:21 PM, Mark Lord <kernel@teksavvy.com> wrote:
->
-> Here's the promised strace from 64/32 mode:
+Currently we can't do task migration among memory cgroups without THP split,
+which means processes heavily using THP experience large overhead in task
+migration. This patch introduce the code for moving charge of THP and makes
+THP more valuable.
 
-This is odd.
+Changes from v1:
+- rename is_target_huge_pmd_for_mc() to is_target_thp_for_mc()
+- remove pmd_present() check (it's buggy when pmd_trans_huge(pmd) is true)
+- is_target_thp_for_mc() calls get_page() only when checks are passed
+- unlock page table lock if !mc.precharge
+- compare return value of is_target_thp_for_mc() explicitly to MC_TARGET_TYPE
+- clean up &walk->mm->page_table_lock to &vma->vm_mm->page_table_lock
+- add comment about why race with split_huge_page() does not happen
 
-> ioctl(0x3, 0xc0046986, 0xffc06dcc)      = -1 (errno 22)
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+---
+ mm/memcontrol.c |   87 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 81 insertions(+), 6 deletions(-)
 
-When I do a "make drivers/char/i8k.s" (with my patch), I can see that
-constant in the resulting code. It's right there. It doesn't return
-EINVAL.
+diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+index c83aeb5..d45b21c 100644
+--- linux-next-20120228.orig/mm/memcontrol.c
++++ linux-next-20120228/mm/memcontrol.c
+@@ -5211,6 +5211,39 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++/*
++ * We don't consider swapping or file mapped pages because THP does not
++ * support them for now.
++ * Caller should make sure that pmd_trans_huge(pmd) is true.
++ */
++static int is_target_thp_for_mc(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t pmd, union mc_target *target)
++{
++	struct page *page = NULL;
++	struct page_cgroup *pc;
++	int ret = 0;
++
++	page = pmd_page(pmd);
++	VM_BUG_ON(!page || !PageHead(page));
++	pc = lookup_page_cgroup(page);
++	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		ret = MC_TARGET_PAGE;
++		if (target) {
++			get_page(page);
++			target->page = page;
++		}
++	}
++	return ret;
++}
++#else
++static inline int is_target_thp_for_mc(struct vm_area_struct *vma,
++		unsigned long addr, pmd_t pmd, union mc_target *target)
++{
++	return 0;
++}
++#endif
++
+ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+ 					unsigned long addr, unsigned long end,
+ 					struct mm_walk *walk)
+@@ -5219,7 +5252,14 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+-	split_huge_page_pmd(walk->mm, pmd);
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		if (is_target_thp_for_mc(vma, addr, *pmd, NULL)
++		    == MC_TARGET_PAGE)
++			mc.precharge += HPAGE_PMD_NR;
++		spin_unlock(&vma->vm_mm->page_table_lock);
++		cond_resched();
++		return 0;
++	}
+ 
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE)
+@@ -5378,16 +5418,51 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 	struct vm_area_struct *vma = walk->private;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
++	int type;
++	union mc_target target;
++	struct page *page;
++	struct page_cgroup *pc;
++
++	/*
++	 * We don't take compound_lock() here but no race with splitting thp
++	 * happens because:
++	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
++	 *    under splitting, which means there's no concurrent thp split,
++	 *  - if another thread runs into split_huge_page() just after we
++	 *    entered this if-block, the thread must wait for page table lock
++	 *    to be unlocked in __split_huge_page_splitting(), where the main
++	 *    part of thp split is not executed yet.
++	 */
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
++		if (!mc.precharge) {
++			spin_unlock(&vma->vm_mm->page_table_lock);
++			cond_resched();
++			return 0;
++		}
++		type = is_target_thp_for_mc(vma, addr, *pmd, &target);
++		if (type == MC_TARGET_PAGE) {
++			page = target.page;
++			if (!isolate_lru_page(page)) {
++				pc = lookup_page_cgroup(page);
++				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
++							     pc, mc.from, mc.to,
++							     false)) {
++					mc.precharge -= HPAGE_PMD_NR;
++					mc.moved_charge += HPAGE_PMD_NR;
++				}
++				putback_lru_page(page);
++			}
++			put_page(page);
++		}
++		spin_unlock(&vma->vm_mm->page_table_lock);
++		cond_resched();
++		return 0;
++	}
+ 
+-	split_huge_page_pmd(walk->mm, pmd);
+ retry:
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		pte_t ptent = *(pte++);
+-		union mc_target target;
+-		int type;
+-		struct page *page;
+-		struct page_cgroup *pc;
+ 		swp_entry_t ent;
+ 
+ 		if (!mc.precharge)
+-- 
+1.7.7.6
 
-Can you send me the patch you are using with the compat_ioctl thing added?
-
-               Linus
