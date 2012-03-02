@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965599Ab2CBXkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 18:40:31 -0500
-Received: from nctlincom02.orcon.net.nz ([60.234.4.75]:58712 "EHLO
-	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab2CBXk3 (ORCPT
+	id S965609Ab2CBXn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 18:43:26 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:52717 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873Ab2CBXnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 18:40:29 -0500
-Message-ID: <4F515A68.7040602@orcon.net.nz>
-Date: Sat, 03 Mar 2012 12:40:24 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	Fri, 2 Mar 2012 18:43:25 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Rik van Riel <riel@redhat.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Fri, 2 Mar 2012 18:43:01 -0500
+Subject: RE: [RFC][PATCH] avoid swapping out with swappiness==0
+Thread-Topic: [RFC][PATCH] avoid swapping out with swappiness==0
+Thread-Index: Acz4xn5SAjgXOus7RFGcNtjskfzr0wAB1qTA
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB945618C@USINDEVS02.corp.hds.com>
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
+ <4F514E09.5060801@redhat.com>
+In-Reply-To: <4F514E09.5060801@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Richard Henderson <rth@twiddle.net>, Michel Lespinasse <walken@google.com>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Turner <mattst88@gmail.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>
-Subject: Re: alpha: futex regression bisected
-References: <4F420256.2090600@orcon.net.nz>	<4F4282CA.5010502@twiddle.net>	<4F4B273C.9080506@orcon.net.nz> <20120302143615.2a272976.akpm@linux-foundation.org>
-In-Reply-To: <20120302143615.2a272976.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx6.orcon.net.nz on Sat, 03 Mar 2012 12:40:25 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sat Mar  3 12:40:26 2012
-X-DSPAM-Confidence: 0.7005
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: 0.00 () [Hold at 5.00] 
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 05GELEExM - 4bf2601d651d - 20120303
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1203020230
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q22NhZeK021210
 
-On 03/03/12 11:36, Andrew Morton wrote:
-> On Mon, 27 Feb 2012 19:48:28 +1300
-> Michael Cree <mcree@orcon.net.nz> wrote:
-> 
->>> There is no 32-bit compare instruction.  These are implemented by
->>> consistently extending the values to a 64-bit type.  Since the
->>> load instruction sign-extends, we want to sign-extend the other
->>> quantity as well (despite the fact it's logically unsigned).
->>>
->>> So:
->>>
->>> -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
->>> +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
->>>
->>> should do the trick.
+Hi Rik,
+
+Thank you for reviewing.
+
+On 03/02/2012 05:47 PM, Rik van Riel wrote:
+> On 03/02/2012 12:36 PM, Satoru Moriya wrote:
+>> @@ -1999,7 +1999,7 @@ out:
+>>           unsigned long scan;
 >>
->> Thanks, that fixes it.  Will you formally submit a patch with commit
->> message or should I?
->>
->> You can have at least a Reviewed-by, or even an
->> Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
->> who correctly analysed the problem in response to when I suggested the
->> fix on the debian-alpha email list without explanation.
+>>           scan = zone_nr_lru_pages(mz, lru);
+>> -        if (priority || noswap) {
+>> +        if (priority || noswap || !vmscan_swappiness(mz, sc)) {
+>>               scan>>= priority;
+>>               if (!scan&&  force_scan)
+>>                   scan = SWAP_CLUSTER_MAX;
 > 
-> Seems that I am an alpha hacker!  This?
+> However, I do not understand why we fail to scale the number of pages 
+> we want to scan with priority if "noswap".
 > 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: alpha: fix 32/64-bit bug in futex support
+> For that matter, surely if we do not want to swap out anonymous pages, 
+> we WANT to go into this if branch, in order to make sure we set "scan" 
+> to 0?
+> 
+> scan = div64_u64(scan * fraction[file], denominator);
+> 
+> With your patch and swappiness=0, or no swap space, it looks like we 
+> do not zero out "scan" and may end up scanning anonymous pages.
 
-Thanks for attending to this!  Matt advises that he is still working on
-getting his alpha-next queue back into action since the big kernel.org
-hack so you picking it up is just the ticket.
+With my patch, if swappiness==0 or noswap==1, fraction[file] is
+set to 0. As a result, scan will be set to 0, too.
 
-Just to note that the futex fix fixes the glibc test suite failures and
-the pulseaudio related crashes, but it does not fix the java compiiler
-lockups that I was (and are still) observing. That is some other problem.
+> Am I overlooking something?  Is this correct?
+> 
+> I mean, it is Friday and my brain is very full...
 
-Cheers
-Michael.
+Have a nice weekend ;)
+
+Regards,
+Satoru
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
