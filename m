@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030499Ab2CBT6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 14:58:23 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:33442 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030456Ab2CBT6V convert rfc822-to-8bit (ORCPT
+	id S1759246Ab2CBUEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 15:04:22 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49002 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756423Ab2CBUEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 14:58:21 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Fri, 2 Mar 2012 14:58:15 -0500
-Subject: kernel 3.3.0-rc5 bug
-Thread-Topic: kernel 3.3.0-rc5 bug
-Thread-Index: Acz4ro4OfBpphwBkSsm/ZOA5MD3AfA==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DACAECA75@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1203020167
+	Fri, 2 Mar 2012 15:04:20 -0500
+Date: Fri, 2 Mar 2012 12:04:10 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/PCI: add spinlock held check to
+ 'pcibios_fwaddrmap_lookup()'
+Message-ID: <20120302120410.27cea21c@jbarnes-desktop>
+In-Reply-To: <20120302194501.26152.22845.stgit@amt.stowe>
+References: <20120302194501.26152.22845.stgit@amt.stowe>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/MCYpBC5OYh8763MegqY=qNS"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
+--Sig_/MCYpBC5OYh8763MegqY=qNS
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I found a bug of your patch switching from IPI to NMI while testing upstream kernel, 3.3.0-rc5.
+On Fri, 02 Mar 2012 12:45:01 -0700
+Myron Stowe <myron.stowe@redhat.com> wrote:
 
-I made kernel panic with NMI switch by setting unknown_nmi_panic=1.
-And following call trace happened.
+> 'pcibios_fwaddrmap_lookup()' is used to maintain FW-assigned BIOS BAR
+> values for reinstatement when normal resource assignment attempts
+> fail and must be called with the 'pcibios_fwaddrmap_lock' spinlock
+> held.
+>=20
+> This patch adds a WARN_ON notification if the spinlock is not currently
+> held by the caller.
+>=20
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> ---
+>=20
+>  arch/x86/pci/i386.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+> index 33e6a0b..831971e 100644
+> --- a/arch/x86/pci/i386.c
+> +++ b/arch/x86/pci/i386.c
+> @@ -57,6 +57,8 @@ static struct pcibios_fwaddrmap *pcibios_fwaddrmap_look=
+up(struct pci_dev *dev)
+>  {
+>  	struct pcibios_fwaddrmap *map;
+> =20
+> +	WARN_ON(!spin_is_locked(&pcibios_fwaddrmap_lock));
+> +
+>  	list_for_each_entry(map, &pcibios_fwaddrmappings, list)
+>  		if (map->dev =3D=3D dev)
+>  			return map;
+>=20
+>=20
 
-<snip>
-	<4> <EOI>  <NMI>  [<ffffffff814fbf70>] ? __schedule+0x660/0x730 
-	<4> [<ffffffff814fbee7>] ? __schedule+0x5d7/0x730 
-	<4> [<ffffffff81081c0a>] __cond_resched+0x2a/0x40 
-	<4> [<ffffffff814fc0d0>] _cond_resched+0x30/0x40 
-	<4> [<ffffffff81154bc5>] kmem_cache_alloc_trace+0xe5/0x190 
-	<4> [<ffffffff81031830>] ? native_smp_send_reschedule+0x60/0x60
-	<4> [<ffffffff81016dda>] register_nmi_handler+0x6a/0x170 
-	<4> [<ffffffff81031b9a>] native_nmi_stop_other_cpus+0x8a/0x110
-<snip>
+Applied, thanks.
 
-Currently, kzalloc() is called in register_nmi_handler().
-We have to remove kzalloc() from register_nmi_handler() because kzalloc() may sleep.
- It should not call in nmi.
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-I think going back to notifier_chain is reasonable.
-Notifier_chain has worked in kdump path reliably.
+--Sig_/MCYpBC5OYh8763MegqY=qNS
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Seiji
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPUSe6AAoJEIEoDkX4Qk9hzokP/R0b2ld/PC5EKBHQHGPiQc1D
+SkVv+W9pLmXFI3zmO1FzBLfvqY8NDjqrBYDH+AxbWT+Cyrk6GH8Lr01OjfcqBJei
+jHgZ/xc9HSXUpjzxYq1cKHP/a5chyl1Swx7p8Pye7jxID+GodRfh/eMJxWmjoGaK
+wMKvhQme8s2CrwuSrFQZFuZrEwM/8GoWcZMZObsT0NsGK4Shy48KnSztd7LN4hUY
+2GILGm05kso3qMJVD7dx2K0kxk8morI6t2XRBBLdC50Wkw+0s3vhoBZ4t0n3Wfes
+wB4+fcbV3ENObaUnUyiJdm5Cyl5D0TDVlv8LjAFvxD40MPJLQFw8ITBnTpqoy580
+/uU6TLfyuUl+eclP919fJWYb+lPChtmqYkb+YWA3NM9xhzCOn/kaBZ4XprKfVGdC
+4PLh1t0KUuk+KwhNcm7RlOW9ohgKCWt9Adunt2EWa5N5DcuELPmHaEj63RWshupC
+LkGkkXb/c/bNOQ1U/iikp3zuIKAf4W6x+uH/VjpZR3qHFu8/xeeTLlVhoc7T0/oS
+gXt8PULqusRFqi0zimsTNN6v55jkmC4Yfn9CEcD1vR7jhf3MQplZXzrN00Uid+l7
+2HH10OoY7Ncdiayzoh4Wx4eZqRH46tyd4OjC6V4IgbOIPhofVxhsomYeAcEfZ4uP
+S7ApAig5SveTqNIT2MPP
+=k1wN
+-----END PGP SIGNATURE-----
 
-
- * all call trace
-
-<snip>
-<4> [<ffffffff814e2d85>] rest_init+0x75/0x80 <4> [<ffffffff81affe49>] start_kernel+0x3e5/0x3f0 <4> [<ffffffff81aff346>] x86_64_start_reservations+0x131/0x136
-<4> [<ffffffff81aff44e>] x86_64_start_kernel+0x103/0x112 <4>---[ end trace 360b93c08d22ad1c ]--- <4>------------[ cut here ]------------
-<4>WARNING: at kernel/rcutree.c:368 rcu_idle_enter_common+0xd9/0xf0() <4>Hardware name: PowerEdge T310 <4>Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat dm_mirror dm_region_hash dm_log dm_mod vhost_net macvtap macvlan tun kvm_intel kvm uinput sg hed dcdbas microcode pcspkr i7core_edac edac_core iTCO_wdt iTCO_vendor_support bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix [last unloaded: scsi_wait_scan]
-<4>Pid: 0, comm: swapper/0 Tainted: G        W    3.3.0-rc5+ #2
-<4>Call Trace:
-<4> <IRQ>  [<ffffffff8104d77f>] warn_slowpath_common+0x7f/0xc0 <4> [<ffffffff8104d7da>] warn_slowpath_null+0x1a/0x20 <4> [<ffffffff810d4a79>] rcu_idle_enter_common+0xd9/0xf0 <4> [<ffffffff810d4b0b>] rcu_irq_exit+0x7b/0xb0 <4> [<ffffffff81054379>] irq_exit+0x79/0xe0 <4> [<ffffffff81507086>] do_IRQ+0x66/0xePoweroff#2 Part24
-0
-<4> [<ffffffff814fd22e>] common_interrupt+0x6e/0x6e <4> <EOI>  <NMI>  [<ffffffff814fbf70>] ? __schedule+0x660/0x730 <4> [<ffffffff814fbee7>] ? __schedule+0x5d7/0x730 <4> [<ffffffff81081c0a>] __cond_resched+0x2a/0x40 <4> [<ffffffff814fc0d0>] _cond_resched+0x30/0x40 <4> [<ffffffff81154bc5>] kmem_cache_alloc_trace+0xe5/0x190 <4> [<ffffffff81031830>] ? native_smp_send_reschedule+0x60/0x60
-<4> [<ffffffff81016dda>] register_nmi_handler+0x6a/0x170 <4> [<ffffffff81031b9a>] native_nmi_stop_other_cpus+0x8a/0x110
-<4> [<ffffffff814fa2f6>] panic+0xc8/0x1cf <4> [<ffffffff814fa43e>] ? printk+0x41/0x43 <4> [<ffffffff814fe27f>] unknown_nmi_error+0xdf/0xe0 <4> [<ffffffff814fe3b9>] default_do_nmi+0x139/0x220 <4> [<ffffffff814fe548>] do_nmi+0xa8/0xf0 <4> [<ffffffff814fd844>] restart_nmi+0x1a/0x1e <4> [<ffffffff812a5b0f>] ? intel_idle+0xaf/0x150 <4> [<ffffffff812a5b0f>] ? intel_idle+0xaf/0x150 <4> [<ffffffff812a5b0f>] ? intel_idle+0xaf/0x150 <4> <<EOE>>  [<ffffffff813f85e2>] ? menu_select+0x182/0x390 <4> [<ffffffff813f738d>] cpuidle_idle_call+0xdd/0x220 <4> [<ffffffff8101319f>] cpu_idle+0xcf/0x120 <4> [<ffffffff814e2d85>] rest_init+0x75/0x80 <4> [<ffffffff81affe49>] start_kernel+0x3e5/0x3f0Poweroff#2 Part19
-
-<4> [<ffffffff81aff346>] x86_64_start_reservations+0x131/0x136
-<4> [<ffffffff81aff44e>] x86_64_start_kernel+0x103/0x112 <4>---[ end trace 360b93c08d22ad1d ]--- <0>Dumping ftrace buffer:
-<0>   (ftrace buffer empty)
-<4>------------[ cut here ]------------
-<4>WARNING: at kernel/rcutree.c:455 rcu_idle_exit_common+0xa5/0xe0() <4>Hardware name: PowerEdge T310 <4>Current pid: 1824 comm: rsyslogd / Idle pid: 0 comm: swapper/0 <4>Modules linked in: ebtable_nat ebtables ipt_MASQUEPRADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat dm_mirror dm_region_hash dm_log dm_mod vhost_net macvtap macvlan tun kvm_intel kvm uinput sg hed dcdbas microcode pcspkr i7core_edac edac_core iTCO_wdt iTCO_vendor_support bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix [last unloaded: scsi_wait_scan]
-<4>Pid: 1824, comm: rsyslogd Tainted: G        W    3.3.0-rc5+ #2
-<4>Call Trace:
-<4> <IRQ>  [<ffffffff8104d77f>] warn_slowpath_common+0x7f/0xc0 <4> [<ffffffff8104d876>] warn_slowpath_fmt+0x46/0x50 <4> [<ffffffff810d4825>] rcu_idle_exit_common+0xa5/0xe0 <4> [<ffffffff810d48da>] rcu_irq_enter+0x7a/0xa0 <4> [<ffffffff8105449b>] irq_enter+0x1b/0x80 <4> [<ffffffff8150705e>] do_IRQ+0x3e/0xe0 <4> [<ffffffff814fd22e>] common_interrupt+0x6e/0x6e <4> <EOI>  [<ffffffff81258109>] ? flex_array_get_ptr+0x9/0x20 <4> [<ffffffff812064c4>] ? ebitmap_get_bit+0x34/0x70 <4> [<ffffffff8120f434>] constraint_expr_eval+0x444/0x460 <4> [<ffffffff8120ff1e>] context_struct_compute_av+0x2ee/0x420
-<4> [<ffffffff81210545>] security_compute_av+0xf5/0x2c0 <4> [<ffffffff811fa138>] avc_has_perm_noaudit+0xd8/0x140 <4> [<ffffffff811fa1eb>] avc_has_perm_flags+0x4b/0xa0 <4> [<ffffffff811fc8c0>] current_has_perm+0x40/0x50 <4> [<ffffffff811fc9ec>] selinux_task_create+0x1c/0x20 <4> [<ffffffff811f7246>] security_task_create+0x16/0x20 <4> [<ffffffff8104bc48>] copy_process+0x98/0xf10 <4> [<ffffffff8104cd24>] do_fork+0x54/0x310 <4> [<ffffffff8101bfb8>] sys_clone+0x28/0x30 <4> [<ffffffff81505673>] stub_clone+0x13/0x20 <4> [<ffffffff81505369>] ? system_call_fastpath+0x16/0x1b <4>---[ end trace 360b93c08d22ad1e ]--- <4>------------[ cut here ]------------
-<4>WARNING: at kernel/rcutree.c:361 rcu_idle_enter_common+0xaf/0xf0() <4>Hardware name: PowerEdge T310 <4>Current pid: 1824 comm: rsyslogd / Idle pid: 0 comm: swapper/0 <4>Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat dm_mirror dm_region_hash dm_log dm_mod vhost_net macvtap macvlan tun kvm_intel kvm uinput sg hed dcdbas microcode pcspkr i7core_edac edac_core iTCO_wdt iTCO_vendor_support bnx2 ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix [last unloaded: scsi_wait_scan]
-<4>Pid: 1824, comm: rsyslogd Tainted: G        W    3.3.0-rc5+ #2
-<4>Call Trace:
-<4> <IRQ>  [<ffffffff8104d77f>] warn_slowpath_common+0x7f/0xc0 <4> [<ffffffff8104d876>] warn_slowpath_fmt+0x46/0x50 <4> [<ffffffff810d4a4f>] rcu_idle_enter_common+0xaf/0xf0 <4> [<ffffffff810d4b0b>] rcu_irq_exit+0x7b/0xb0 <4> [<ffffffff81054379>] irq_exit+0x79/0xe0 <4> [<ffffffff81507086>] do_IRQ+0x66/0xe0 <4> [<ffffffff814fd22e>] common_interrupt+0x6e/0x6e <4> <EOI>  [<ffffffff81258109>] ? flex_array_get_ptr+0x9/0x20 <4> [<ffffffff812064c4>] ? ebitmap_get_bit+0x34/0x70 <4> [<ffffffff8120f434>] constraint_expr_eval+0x444/0x460 <4> [<ffffffff8120ff1e>] context_struct_compute_av+0x2ee/0x420
-<4> [<ffffffff81210545>] security_compute_av+0xf5/0x2c0 <4> [<ffffffff811fa138>] avc_has_perm_noaudit+0xd8/0x140 <4> [<ffffffff811fa1eb>] avc_has_perm_flags+0x4b/0xa0 <4> [<ffffffff811fc8c0>] current_has_perm+0x40/0x50 <4> [<ffffffff811fc9ec>] selinux_task_create+0x1c/0x20 <4> [<ffffffff811f7246>] security_task_create+0x16/0x20 <4> [<ffffffff8104bc48>] copy_process+0x98/0xf10 <4> [<ffffffff8104cd24>] do_fork+0x54/0x310 <4> [<ffffffff8101bfb8>] sys_clone+0x28/0x30 <4> [<ffffffff81505673>] stub_clone+0x13/0x20 <4> [<ffffffff81505369>] ? system_call_fastpath+0x16/0x1b <4>---[ end trace 360b93c08d22ad1f ]--- <0>Rebooting in 10 seconds..
-<snip>
+--Sig_/MCYpBC5OYh8763MegqY=qNS--
