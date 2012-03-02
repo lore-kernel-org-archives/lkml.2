@@ -1,66 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab2CBKQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 05:16:04 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55945 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757476Ab2CBKP7 (ORCPT
+	id S1754976Ab2CBKkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 05:40:35 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:33064 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab2CBKkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 05:15:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of federico.vaga@gmail.com designates 10.204.154.139 as permitted sender) smtp.mail=federico.vaga@gmail.com; dkim=pass header.i=federico.vaga@gmail.com
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org
-Subject: Re: How to make a bus with heterogeneous devices?
-Date: Fri, 02 Mar 2012 11:18:59 +0100
-Message-ID: <1380686.VGpImaUmFA@harkonnen>
-User-Agent: KMail/4.7.4 (Linux/3.2.7-1.fc16.x86_64; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <20120225004008.GA3973@kroah.com>
-References: <20120224152051.GA23232@mail.gnudd.com> <20120225004008.GA3973@kroah.com>
+	Fri, 2 Mar 2012 05:40:32 -0500
+Message-ID: <26411fc25ada53b95e90b6a5fa85ad44.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1330559620-23543-1-git-send-email-wad@chromium.org>
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+Date: Fri, 2 Mar 2012 11:40:14 +0100
+Subject: Re: [PATCH v12 01/13] sk_run_filter: add support for custom
+ load_pointer
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, "Will Drewry" <wad@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 92147cc26b2e14e0b1010f762ef587ae
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That's fine, it is what happens with lots of drivers, you can do this
-> with the default attribute group assigned to that driver, right?
+Hello,
 
-We can't because a driver can handle devices with different set of 
-attributes. We  can't use device->groups because only if match succeed 
-we know which attributes add to the device.
-That's because the same driver handles several similar devices, to avoid 
-proliferation of almost-identical drivers. So the drivers attaches 
-attributes to the device after match succeeds.
+On Thu, March 1, 2012 00:53, Will Drewry wrote:
+>  include/linux/filter.h |   46 +++++++++++++++++++
+>  net/core/filter.c      |  117 +++++++++++++++++++++++++++++++++++++++++++++---
+>  2 files changed, 157 insertions(+), 6 deletions(-)
 
-The solution that I temporarily  implemented is the following:
+I propose a slightly different approach:
 
-> > [...]
-> > 3- Attributes may be added after match succeeds, before calling
-> > probe.
-> > This cam be done with a "raw" call to sysfs_create_group(); then
-> > groups cna be added to dev->groups so they will be removed on
-> > device_unregister().
-> > [...]
+Instead of more or less allowing generic load instructions, do the
+same as the ancillary data functions and only allow BPF_S_LD_W_ABS.
+In addition to that, rewrite and check the functions ourself after
+sk_chk_filter() has done its checks.
 
-(with calling probe I mean calling "my" driver probe)
+Diff for filter.c:
 
-I know it's not a nice solution and I know it's not nice add groups to 
-device->groups after registration. I can use sysfs_create_group() and 
-sysfs_remove_group() without touching the device.
- 
-> I think you need to look at how the system bus is handled.  It just 
-> went into 3.3-rc and allows for "different" types of devices to all be 
-> on the same bus, with different drivers and attributes.  Let me know if 
-> how that works does not work out for you.
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 8eeb205..63b728c 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -228,6 +228,7 @@ enum {
+ 	BPF_S_ANC_HATYPE,
+ 	BPF_S_ANC_RXHASH,
+ 	BPF_S_ANC_CPU,
++	BPF_S_LD_W_SECCOMP,
+ };
 
-(thank you for the reference to the patches)
+ #endif /* __KERNEL__ */
+diff --git a/net/core/filter.c b/net/core/filter.c
+index 5dea452..7e338d6 100644
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -350,6 +350,9 @@ load_b:
+ 				A = 0;
+ 			continue;
+ 		}
++		case BPF_S_LD_W_SECCOMP:
++			A = seccomp_load(fentry->k);
++			continue;
+ 		default:
+ 			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
+ 				       fentry->code, fentry->jt,
+---
 
-I think it doesn't work in our case for the same reason we can't use 
-device_driver->groups: we know too late in the register process which 
-attributes add to a device, practically at the end of the registration.
-Maybe I'm missing something.
+And in seccomp add something like:
 
--- 
-Federico Vaga
+/*
+ * Does SECCOMP specific checks.
+ * Should be called after sk_chk_filter(), as it assumes all instructions
+ * are rewritten to the kernel enum format.
+ * No SKB touching instructions are allowed. Only data LD instruction allowed
+ * is BPF_S_LD_W_ABS, which will be handled by seccomp_load().
+ */
+int seccomp_check_filter(const struct sock_filter *filter, unsigned int flen)
+{
+	int pc;
+
+	/* Make sure there are no SKB using instructions */
+	for (pc = 0; pc < flen; pc++) {
+		u16 code = filter->code;
+		unsigned int k = filter->k;
+
+		if (code <= BPF_S_ALU_NEG)
+			continue;
+		if (code >= BPF_S_LDX_IMM && code < BPF_S_ANC_PROTOCOL)
+			continue;
+		switch (code) {
+		case BPF_S_LD_W_ABS:
+			filter->code = BPF_S_LD_W_SECCOMP;
+			if (k >= sizeof(struct seccomp_data) || k & 3)
+				return -EINVAL;
+			continue;
+		case BPF_S_LD_W_LEN:
+			filter->code = BPF_S_LD_IMM;
+			filter->k = sizeof(struct seccomp_data);
+			continue;
+		case BPF_S_LD_IMM:
+			continue;
+		case BPF_S_LDX_W_LEN:
+			filter->code = BPF_S_LDX_IMM;
+			filter->k = sizeof(struct seccomp_data);
+			continue;
+		default:
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
+u32 seccomp_load(int off)
+{
+	u32 A;
+	struct pt_regs *regs = task_pt_regs(current);
+
+	if (off >= BPF_DATA(args[0]) && off < BPF_DATA(args[6])) {
+		int arg = (off - BPF_DATA(args[0])) / sizeof(u64);
+		int index = (off % sizeof(u64)) ? 1 : 0;
+		syscall_get_arguments(current, regs, arg, 1, &value);
+		A = get_u32(value, index);
+	} else if (off == BPF_DATA(nr)) {
+		A = syscall_get_nr(current, regs);
+	} else if (off == BPF_DATA(arch)) {
+		A = syscall_get_arch(current, regs);
+	} else if (off == BPF_DATA(instruction_pointer)) {
+		A = get_u32(KSTK_EIP(current), 0);
+	} else if (off == BPF_DATA(instruction_pointer) + sizeof(u32)) {
+		A = get_u32(KSTK_EIP(current), 1);
+	}
+	return A;
+}
+
+This way you can even add SECCOMP specific functions in the future by using
+special offsets. (E.g. 64-bit compare between an arg and scratch memory.)
+
+Greetings,
+
+Indan
+
+
