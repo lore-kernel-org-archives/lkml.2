@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab2CBGn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 01:43:58 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:37515 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab2CBGnz (ORCPT
+	id S1756523Ab2CBGtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 01:49:21 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:47526 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab2CBGtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 01:43:55 -0500
-Message-ID: <bc1b4ec8fbad5a5931a928f108a6095f.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4F50603B.7040505@zytor.com>
-References: <1330559620-23543-1-git-send-email-wad@chromium.org>
-    <1330559620-23543-6-git-send-email-wad@chromium.org>
-    <a6fdbe9d1daf6864589c9affc7048965.squirrel@webmail.greenhost.nl>
-    <4F50603B.7040505@zytor.com>
-Date: Fri, 2 Mar 2012 07:43:50 +0100
-Subject: Re: [PATCH v12 06/13] seccomp: add system call filtering using BPF
-From: "Indan Zupancic" <indan@nul.nu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Fri, 2 Mar 2012 01:49:19 -0500
+Date: Fri, 2 Mar 2012 09:49:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] tty: cyclades: clean up a type issue
+Message-ID: <20120302064908.GA24508@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 40b81d93390a3dca3ee709c9c36a2335
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090207.4F506D6C.0090,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, March 2, 2012 06:52, H. Peter Anvin wrote:
-> On 03/01/2012 09:45 PM, Indan Zupancic wrote:
->>
->>> + * @nr: the system call number
->>> + * @arch: indicates system call convention as an AUDIT_ARCH_* value
->>> + *        as defined in <linux/audit.h>.
->>> + * @instruction_pointer: at the time of the system call.
->>
->> If the vDSO is used this will always be the same, so what good is this?
->> I haven't gotten an answer to this yet.
->>
->
-> And if it isn't, or you're on an architecture which doesn't use the vdso
-> as the launching point, it's not.
+Instead of casting value to unsigned long when we use it, we can just
+declare it that way at the start.
 
-True, but then what?
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-> You seem to be unable to look outside
-> your own particular use cases, but it is very likely that the same
-> oddball cases which do mixed-mode programming are ones for which this
-> kind of filtering facility would be extremely useful
-
-The filtering code has no way of reading the instruction, so it can't
-know if it's a good or bad one. And the mode is passed via 'arch' already,
-which is the proper way of checking this.
-
-To properly protect the ptrace user against unexpected modes it's better
-to provide a way to the filter to know the task mode instead of trying
-to figure it out from IP.
-
-I'm not saying having the IP is never useful, I actually use it in my
-ptrace code (and have to add IP checks to handle those odd mixed mode
-cases). I just don't see how it can be used by a BPF filter.
-
-> -- Pin is a great example.
-
-Is that http://www.pintool.org/?
-
-Can you explain how knowing the IP is useful for Pin?
-
-All I am asking for is just one use case for providing the IP. Is that
-asking for too much?
-
-Because the only one I can think of creates a false sense of security:
-
-"Oh, the IP comes from a trusted code area, so it must be fine."
-
-And the problem with that is that the IP doesn't say anything about the
-call path, only where the last instruction was. Address randomization
-helps a little bit, but it's not a guarantee.
-
-Greetings,
-
-Indan
-
-
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index c9bf779..fbca4ee 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -2397,7 +2397,7 @@ check_and_exit:
+  *	    transmit holding register is empty.  This functionality
+  *	    allows an RS485 driver to be written in user space.
+  */
+-static int get_lsr_info(struct cyclades_port *info, unsigned int __user *value)
++static int get_lsr_info(struct cyclades_port *info, unsigned long __user *value)
+ {
+ 	struct cyclades_card *card = info->card;
+ 	unsigned int result;
+@@ -2413,7 +2413,7 @@ static int get_lsr_info(struct cyclades_port *info, unsigned int __user *value)
+ 		/* Not supported yet */
+ 		return -EINVAL;
+ 	}
+-	return put_user(result, (unsigned long __user *)value);
++	return put_user(result, value);
+ }
+ 
+ static int cy_tiocmget(struct tty_struct *tty)
