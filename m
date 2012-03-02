@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2CBGhF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 01:37:05 -0500
-Received: from mail.southpole.se ([193.12.106.18]:49857 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab2CBGhD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 01:37:03 -0500
-Message-ID: <1330670192.19557.96.camel@satguru>
-Subject: Re: OpenRISC: BUG: failure at mm/page_alloc.c:2467/free_pages()!
-From: Jonas Bonn <jonas@southpole.se>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux@openrisc.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Mar 2012 07:36:32 +0100
-In-Reply-To: <4F501E60.3090701@nod.at>
-References: <4F501E60.3090701@nod.at>
-Organization: South Pole Consulting AB
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-OTxQtBG54KpfOy6ukqlA"
-X-Mailer: Evolution 3.2.1- 
+	id S1756294Ab2CBGib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 01:38:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12683 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076Ab2CBGia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 01:38:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="113736311"
+Subject: Re: TCP_STREAM performance regression on commit b3613118
+From: Alex Shi <alex.shi@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: feng.tang@intel.com, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        tim.c.chen@intel.com, ying.huang@intel.com, netdev@vger.kernel.org
+In-Reply-To: <20120301.220743.2174015405223036036.davem@davemloft.net>
+References: <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20120217.133327.1178765872497293871.davem@davemloft.net>
+	 <1330656317.21053.1411.camel@debian>
+	 <20120301.220743.2174015405223036036.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Mar 2012 14:37:57 +0800
+Message-ID: <1330670277.21053.1448.camel@debian>
 Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 70219-12260
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-03-01 at 22:07 -0500, David Miller wrote:
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Fri, 02 Mar 2012 10:45:17 +0800
+> 
+> > Add CC to tang feng, He is working on this issue. 
+> 
+> Is he?  I'm pretty sure this is due to the TCP receive window growing
+> issue Eric Dumazet, Neal Cardwell and I are discussing in the thread
+> starting at:
+> 
+> http://marc.info/?l=linux-netdev&m=132916352815286&w=2
+
+That's great! 
+May my language make you confusing. Actually, Feng is doing
+investigation on this issue. Since you fund out the reason, it saved his
+work. :) 
 
 
---=-OTxQtBG54KpfOy6ukqlA
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2012-03-02 at 02:12 +0100, Richard Weinberger wrote:
-> Hi!
->=20
-> CONFIG_DEBUG_VM exposes this splat:
-> BUG: failure at mm/page_alloc.c:2467/free_pages()!
->=20
-> addr is 0xc100c000, but memory_end is 0x02000000.
-
-virt_addr_valid() is broken (asm/page.h) as it's trying to compare to a
-phys_addr_t.
-
-Something like the following looks better:
-
-diff --git a/arch/openrisc/include/asm/page.h
-b/arch/openrisc/include/asm/page.h
-index b041b34..c4ffaee 100644
---- a/arch/openrisc/include/asm/page.h
-+++ b/arch/openrisc/include/asm/page.h
-@@ -94,8 +94,7 @@ extern unsigned long memory_end;
-=20
- #define pfn_valid(pfn)          ((pfn) < max_mapnr)
-=20
--#define virt_addr_valid(kaddr)  (((void *)(kaddr) >=3D (void
-*)PAGE_OFFSET) && \
--                               ((void *)(kaddr) < (void *)memory_end))
-+#define virt_addr_valid(kaddr) (pfn_valid(virt_to_pfn(kaddr)))
-=20
- #endif /* __ASSEMBLY__ */
-
-
---=-OTxQtBG54KpfOy6ukqlA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk9QanAACgkQ70gcjN2673MBqwCfUfPt8nkDJsuYQkDFbS/Eogro
-ij8An3ZNjA97v89OMRbYsTIUPoWSqeKh
-=Yy8S
------END PGP SIGNATURE-----
-
---=-OTxQtBG54KpfOy6ukqlA--
 
