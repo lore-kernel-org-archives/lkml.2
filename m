@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2CBLCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 06:02:34 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26182 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab2CBLCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 06:02:31 -0500
-Date: Fri, 2 Mar 2012 14:04:20 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        santosh nayak <santoshprasadnayak@gmail.com>, padovan@profusion.mobi,
-        davem@davemloft.net, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Ville Tervo <ville.tervo@nokia.com>
-Subject: Re: [PATCH] Bluetooth: Silence static checker warning.
-Message-ID: <20120302110420.GH22598@mwanda>
-References: <1330537602.3392.101.camel@aeonflux>
- <AE90C24D6B3A694183C094C60CF0A2F6026B6E88@saturn3.aculab.com>
+	id S932250Ab2CBLE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 06:04:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51007 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932070Ab2CBLE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 06:04:56 -0500
+Date: Fri, 2 Mar 2012 12:04:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andreas.herrmann3@amd.com, sp@numascale.com, bp@amd64.org,
+        tglx@linutronix.de, borislav.petkov@amd.com, daniel@numascale-asia.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/platform: Remove incorrect error message in
+ x86_default_fixup_cpu_id()
+Message-ID: <20120302110440.GA24019@elte.hu>
+References: <20120224153127.GD28921@alberich.amd.com>
+ <tip-20b25f03fbd17b4e32b786024a5f9c6306795411@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cfJ13FhsvNR/yOpm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E88@saturn3.aculab.com>
+In-Reply-To: <tip-20b25f03fbd17b4e32b786024a5f9c6306795411@git.kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F50A8BB.0036,ss=1,re=0.000,fgs=0
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cfJ13FhsvNR/yOpm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com> wrote:
 
-On Fri, Mar 02, 2012 at 09:15:37AM -0000, David Laight wrote:
-> How long has this code been in tree?
-> It isn't obvious to me that this change won't break code on BE systems
-> where the application code is already fixing the endianness.
->=20
+> +++ b/arch/x86/kernel/cpu/common.c
+> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> index 947a06c..67cf78a 100644
+> --- a/arch/x86/kernel/x86_init.c
+> +++ b/arch/x86/kernel/x86_init.c
+> @@ -90,6 +90,7 @@ struct x86_init_ops x86_init __initdata = {
+>  	},
+>  };
+>  
+> +void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int n) { }
+>  struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
 
-It looks like we've had an endian bug since last February.
+Hm, I missed this first time around:
 
-b62f328b8f20a "Bluetooth: Add server socket support for LE
-connection"
+ - why is this function global? It's not used by anything else.
 
-+               l2cap_pi(sk)->scid =3D la.l2_cid;
+ - why is it squeezed before a structure without any vertical 
+   separation?
 
-->scid was cpu endian.
+ - why does it have the body as { }, as if it were an inline 
+   function?
 
-regards,
-dan carpenter
+Really, this should either be a short static function, with a 
+proper body, or we should accept a NULL pointer there and check 
+for it before calling it - there's a single usage site right 
+now.
 
---cfJ13FhsvNR/yOpm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The latter looks like the cleanest solution to me.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJPUKkzAAoJEOnZkXI/YHqRADkP/217s0ztGrn66LSv/c5F1A4k
-6cBasjmCmLkN/AE/BMwu6lQoSh/U+flf2SIgxT1ULuyni/FpJ+bVwn6flrOPaRzB
-D+JPi5T3vEMnM6s8P2C6gVrwvCEPvzUhvgaCXgh6rmQO/OKq5H49RjyRuhWUb/jG
-puXy4pFxr4AfLYuSS4I5xNfSPAec9dSX2q8a1PZnvlOkc/zj2uLeJh5dyFwDQWIc
-RA31sMNUF6x1nLJ91HYfXuu9kJynQQeX8HCtxBU1Vn7Inc1EQ4HrqPkOgTaFBbo9
-tL0i9uGcWGbzZYbZp5K6yPZyaY4M+fxjQNGMO+P14AKIZwJWNKkIiusNEasC18ea
-gnm/SO+VNl8xLsAjJDcgyFmudGvFMgqkxY+vDK8Q2MP2qymJLigLzNkEUTq1c4Wx
-X47Pob9mFSLZARCKE+FEIOInLcJjTnJzTNBYcS1s35wWJ7a8IZ94JheT6gEL+0xP
-tmz3jdvOBHPzG+wkID31/JyTjRqERb749i9aiGF1Wy2pXSvwa8uKE47nDDw7zt4r
-hjbsft9ubm+W0lt3ofw0TkL97A1wBLebTV/ZT/FDtBflyNYFmjXq/oEyqyF+vH1i
-USciqxB3mp9znqp13k9ADR4OKzqJ15uk9LgT/jjHmXFgnOC7/3iALpSXfTHCqupA
-woGcH+1N1MOFEKlxdzPP
-=nrfy
------END PGP SIGNATURE-----
-
---cfJ13FhsvNR/yOpm--
+	Ingo
