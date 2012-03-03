@@ -1,104 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab2CCNbI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 08:31:08 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8149 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab2CCNbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 08:31:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114222857"
-Date: Sat, 3 Mar 2012 21:25:55 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120303132555.GA6312@localhost>
-References: <20120228140022.614718843@intel.com>
- <20120228144747.198713792@intel.com>
- <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
- <20120301110404.GC4385@quack.suse.cz>
- <20120301114151.GA19049@localhost>
- <20120301114634.957da8d2.akpm@linux-foundation.org>
+	id S1753274Ab2CCNc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 08:32:26 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37231 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab2CCNcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 08:32:25 -0500
+Date: Sat, 3 Mar 2012 14:31:58 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        linaro-dev@lists.linaro.org, Grant Likely <grant.likely@secretlab.ca>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Mike Turquette <mturquette@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+Message-ID: <20120303133158.GA26882@pengutronix.de>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120301114634.957da8d2.akpm@linux-foundation.org>
+In-Reply-To: <1330763341-3437-4-git-send-email-mturquette@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:13:49 up 111 days, 21:00, 15 users,  load average: 0.00, 0.02,
+ 0.05
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 11:46:34AM -0800, Andrew Morton wrote:
-> On Thu, 1 Mar 2012 19:41:51 +0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
+On Sat, Mar 03, 2012 at 12:29:00AM -0800, Mike Turquette wrote:
+> The common clock framework defines a common struct clk useful across
+> most platforms as well as an implementation of the clk api that drivers
+> can use safely for managing clocks.
 > 
-> > >   I think using get_page() might be a good way to go. Naive implementation:
-> > > If we need to write a page from kswapd, we do get_page(), attach page to
-> > > wb_writeback_work and push it to flusher thread to deal with it.
-> > > Flusher thread sees the work, takes a page lock, verifies the page is still
-> > > attached to some inode & dirty (it could have been truncated / cleaned by
-> > > someone else) and if yes, it submits page for IO (possibly with some
-> > > writearound). This scheme won't have problems with iput() and won't have
-> > > problems with umount. Also we guarantee some progress - either flusher
-> > > thread does it, or some else must have done the work before flusher thread
-> > > got to it.
-> > 
-> > I like this idea.
-> > 
-> > get_page() looks the perfect solution to verify if the struct inode
-> > pointer (w/o igrab) is still live and valid.
-> > 
-> > [...upon rethinking...] Oh but still we need to lock some page to pin
-> > the inode during the writeout. Then there is the dilemma: if the page
-> > is locked, we effectively keep it from being written out...
+> The net result is consolidation of many different struct clk definitions
+> and platform-specific clock framework implementations.
 > 
-> No, all you need to do is to structure the code so that after the page
-> gets unlocked, the kernel thread does not touch the address_space.  So
-> the processing within the kthread is along the lines of
+> This patch introduces the common struct clk, struct clk_ops and an
+> implementation of the well-known clock api in include/clk/clk.h.
+> Platforms may define their own hardware-specific clock structure and
+> their own clock operation callbacks, so long as it wraps an instance of
+> struct clk_hw.
 > 
-> writearound(locked_page)
-> {
-> 	write some pages preceding locked_page;	/* touches address_space */
+> See Documentation/clk.txt for more details.
+> 
+> This patch is based on the work of Jeremy Kerr, which in turn was based
+> on the work of Ben Herrenschmidt.
+> 
+> +
+> +/**
+> + * struct clk_hw - handle for traversing from a struct clk to its corresponding
+> + * hardware-specific structure.  struct clk_hw should be declared within struct
+> + * clk_foo and then referenced by the struct clk instance that uses struct
+> + * clk_foo's clk_ops
+> + *
+> + * clk: pointer to the struct clk instance that points back to this struct
+> + * clk_hw instance
+> + */
+> +struct clk_hw {
+> +	struct clk *clk;
+> +};
 
-It seems the above line will lead to ABBA deadlock.
+The reason for doing this is that struct clk should be an opaque cookie
+for both drivers and implementers of clocks. I recently had the idea whether
+the roles of these two structs could be swapped. So instead of the above we
+could do:
 
-At least btrfs will lock a number of pages in lock_delalloc_pages().
-This demands that all page locks be taken in ascending order of the
-file offset. Otherwise it's possible some task doing
-__filemap_fdatawrite_range() which in turn call into
-lock_delalloc_pages() deadlock with the writearound() here, which is
-taking some page in the middle first. The fix is to only do
-"write ahead" which will obviously lead to more smaller I/Os.
+struct clk {
+	struct clk_hw *hw;
+}
 
-> 	write locked_page;
-> 	write pages following locked_page;	/* touches address_space */
-> 	unlock_page(locked_page);
-> }
+The effect would be the same, but this version would make the struct clk
+pointer known at compile time thus making it possible for static
+initializers to specify their parent clock.
 
-As it is in general a lock, which implies danger of deadlocks. If some
-filesystem do smart things like piggy backing more pages than we
-asked, it may try to lock the locked_page in writearound() and block
-the flusher for ever.
+I just saw that clk_register now takes a parent name array, that may
+make this change unnecessary anyway.
 
-Grabbing the page lock at work enqueue time is particular problematic.
-It's susceptible to the above ABBA deadlock scheme because we will be
-taking one page lock per pageout work and the pages are likely in
-_random_ order. Another scheme is, when the flusher is running sync
-work (or running some final iput() and therefore truncate),  and the
-vmscan is queuing a pageout work with one page locked. The flusher
-will then go deadlock on that page: the current sync/truncate is
-trying to lock a page that can only be unlocked when the flusher goes
-forward to execute the pageout work. The fix is to do get_page() at
-work enqueue time and only take the page lock at work execution time.
+Sascha
 
-Thanks,
-Fengguang
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
