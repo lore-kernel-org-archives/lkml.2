@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2CCXzL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 18:55:11 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41591 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab2CCXzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 18:55:10 -0500
-Date: Sat, 3 Mar 2012 23:57:04 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christian Lamparter <chunkeey@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper
- is not yet available
-Message-ID: <20120303235704.2df2b040@pyramind.ukuu.org.uk>
-In-Reply-To: <201203032122.36745.chunkeey@googlemail.com>
-References: <201203032122.36745.chunkeey@googlemail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753707Ab2CCX5b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 18:57:31 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:44451 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752797Ab2CCX5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 18:57:30 -0500
+Date: Sat, 3 Mar 2012 17:01:11 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "John G. Heim" <jheim@math.wisc.edu>, linux-kernel@vger.kernel.org
+Subject: Re: speakup bug
+Message-ID: <20120303220111.GB6117@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	"John G. Heim" <jheim@math.wisc.edu>, linux-kernel@vger.kernel.org
+References: <BFFDBC9B6BA14BE1AC8E266A3A456A63@hinkle>
+ <20120303173916.7eca9391@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120303173916.7eca9391@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Mar 2012 21:22:36 +0100
-Christian Lamparter <chunkeey@googlemail.com> wrote:
+On Sat, Mar 03, 2012 at 05:39:16PM +0000, Alan Cox wrote:
+> On Sat, 3 Mar 2012 11:18:12 -0600
+> "John G. Heim" <jheim@math.wisc.edu> wrote:
+> 
+> > I need help fixing a bug in the driver for serial hardware  speech synths in 
+> > the speakup screen reader. According to the comments in the code, it is in a 
+> > part of the code that is trying to "steal" the serial port.
+> 
+> Yes - and the code is broken. To start with it's assumig a legacy PC
+> serial port at 0x3F8 and that it can beat the serial layer to it.
 
-> During resume, the userhelper might not be available. However for
-> drivers which use the request_firmware_nowait interface, this will
-> only lead to a pointless WARNING and a device which no longer works
-> after the resume [since it couldn't get the firmware, because the
-> userhelper was not available to take the request].
+Worse yet, it busy waits when sending characters to the UART.  Ugh...
 
-Can you not load the firmware on the suspend path ?
+> The proper fix is to make the drivers work via the serial layer properly.
+> The speakup people have been told this repeatedly for years and years
+> which is why their drivers work on less and less systems and won't run
+> with things PCI or USB serial ports, and why they are forever buried in
+> staging.
 
-Alan
+The driver desperately needs to be rewritten to attach to the serial
+layer via a tty line discpline.  That way it will work on other types
+of serial ports (i.e., PCI bus attached and USB devices).
+
+   	  	       	       		    - Ted
