@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2CCLbN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 06:31:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30708 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201Ab2CCLbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 06:31:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="114107167"
-Message-ID: <4F5200BB.5090505@intel.com>
-Date: Sat, 03 Mar 2012 19:30:03 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, asit.k.mallick@intel.com
-Subject: Re: change last level cache alignment on x86?
-References: <1330590816.21053.1336.camel@debian> <1330673425.21053.1503.camel@debian> <20120302081208.GA24504@elte.hu> <4F50DC42.3090300@intel.com> <20120302152506.GA14487@elte.hu>
-In-Reply-To: <20120302152506.GA14487@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753612Ab2CCLkP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 06:40:15 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50106 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358Ab2CCLkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 06:40:11 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        Estevam Fabio-R49496 <r49496@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/4] ARM i.MX pcm037: register a dummy regulator for the smsc911x device
+Date: Sat,  3 Mar 2012 12:40:03 +0100
+Message-Id: <1330774804-7310-4-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
+References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 11:25 PM, Ingo Molnar wrote:
-> * Alex Shi <alex.shi@intel.com> wrote:
->
->> So, with defconfig on x86_64, I saw much changes in System.map:
->> 	before patched			after patched
->>   ...
->>   000000000000b000 d tlb_vector_|  000000000000b000 d tlb_vector
->>   000000000000b080 d cpu_loops_p|  000000000000b040 d cpu_loops_
->>   ...
-> Ok, mind sending a patch, changelogged, with a SOB?
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ arch/arm/mach-imx/mach-pcm037.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Thanks a lot for review! A patch was sent to you.
-> Thanks,
->
-> 	Ingo
+diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
+index e48854b..5fddf94 100644
+--- a/arch/arm/mach-imx/mach-pcm037.c
++++ b/arch/arm/mach-imx/mach-pcm037.c
+@@ -32,6 +32,8 @@
+ #include <linux/usb/ulpi.h>
+ #include <linux/gfp.h>
+ #include <linux/memblock.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/fixed.h>
+ 
+ #include <media/soc_camera.h>
+ 
+@@ -570,6 +572,11 @@ static int __init pcm037_otg_mode(char *options)
+ }
+ __setup("otg_mode=", pcm037_otg_mode);
+ 
++static struct regulator_consumer_supply dummy_supplies[] = {
++	REGULATOR_SUPPLY("vdd33a", "smsc911x"),
++	REGULATOR_SUPPLY("vddvario", "smsc911x"),
++};
++
+ /*
+  * Board specific initialization.
+  */
+@@ -579,6 +586,8 @@ static void __init pcm037_init(void)
+ 
+ 	imx31_soc_init();
+ 
++	regulator_register_fixed(0, dummy_supplies, ARRAY_SIZE(dummy_supplies));
++
+ 	mxc_iomux_set_gpr(MUX_PGP_UH2, 1);
+ 
+ 	mxc_iomux_setup_multiple_pins(pcm037_pins, ARRAY_SIZE(pcm037_pins),
+-- 
+1.7.9.1
 
