@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab2CCM45 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 07:56:57 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49229 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750789Ab2CCM44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 07:56:56 -0500
-Date: Sat, 3 Mar 2012 12:56:53 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Estevam Fabio-R49496 <r49496@freescale.com>
-Subject: Re: [PATCH 1/4] regulator fixed: Do not report enumaratable voltages
- if there are none
-Message-ID: <20120303125652.GA16289@opensource.wolfsonmicro.com>
-References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
- <1330774804-7310-2-git-send-email-s.hauer@pengutronix.de>
+	id S1752983Ab2CCNbI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 08:31:08 -0500
+Received: from mga03.intel.com ([143.182.124.21]:8149 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab2CCNbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 08:31:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114222857"
+Date: Sat, 3 Mar 2012 21:25:55 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-ID: <20120303132555.GA6312@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+ <20120301110404.GC4385@quack.suse.cz>
+ <20120301114151.GA19049@localhost>
+ <20120301114634.957da8d2.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330774804-7310-2-git-send-email-s.hauer@pengutronix.de>
-X-Cookie: Your love life will be... interesting.
+In-Reply-To: <20120301114634.957da8d2.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 01, 2012 at 11:46:34AM -0800, Andrew Morton wrote:
+> On Thu, 1 Mar 2012 19:41:51 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > >   I think using get_page() might be a good way to go. Naive implementation:
+> > > If we need to write a page from kswapd, we do get_page(), attach page to
+> > > wb_writeback_work and push it to flusher thread to deal with it.
+> > > Flusher thread sees the work, takes a page lock, verifies the page is still
+> > > attached to some inode & dirty (it could have been truncated / cleaned by
+> > > someone else) and if yes, it submits page for IO (possibly with some
+> > > writearound). This scheme won't have problems with iput() and won't have
+> > > problems with umount. Also we guarantee some progress - either flusher
+> > > thread does it, or some else must have done the work before flusher thread
+> > > got to it.
+> > 
+> > I like this idea.
+> > 
+> > get_page() looks the perfect solution to verify if the struct inode
+> > pointer (w/o igrab) is still live and valid.
+> > 
+> > [...upon rethinking...] Oh but still we need to lock some page to pin
+> > the inode during the writeout. Then there is the dilemma: if the page
+> > is locked, we effectively keep it from being written out...
+> 
+> No, all you need to do is to structure the code so that after the page
+> gets unlocked, the kernel thread does not touch the address_space.  So
+> the processing within the kthread is along the lines of
+> 
+> writearound(locked_page)
+> {
+> 	write some pages preceding locked_page;	/* touches address_space */
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It seems the above line will lead to ABBA deadlock.
 
-On Sat, Mar 03, 2012 at 12:40:01PM +0100, Sascha Hauer wrote:
-> If used as a dummy voltage provider the fixed regulator should
-> not set n_voltages to make the core accept the device.
+At least btrfs will lock a number of pages in lock_delalloc_pages().
+This demands that all page locks be taken in ascending order of the
+file offset. Otherwise it's possible some task doing
+__filemap_fdatawrite_range() which in turn call into
+lock_delalloc_pages() deadlock with the writearound() here, which is
+taking some page in the middle first. The fix is to only do
+"write ahead" which will obviously lead to more smaller I/Os.
 
-Applied, thanks.
+> 	write locked_page;
+> 	write pages following locked_page;	/* touches address_space */
+> 	unlock_page(locked_page);
+> }
 
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+As it is in general a lock, which implies danger of deadlocks. If some
+filesystem do smart things like piggy backing more pages than we
+asked, it may try to lock the locked_page in writearound() and block
+the flusher for ever.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Grabbing the page lock at work enqueue time is particular problematic.
+It's susceptible to the above ABBA deadlock scheme because we will be
+taking one page lock per pageout work and the pages are likely in
+_random_ order. Another scheme is, when the flusher is running sync
+work (or running some final iput() and therefore truncate),  and the
+vmscan is queuing a pageout work with one page locked. The flusher
+will then go deadlock on that page: the current sync/truncate is
+trying to lock a page that can only be unlocked when the flusher goes
+forward to execute the pageout work. The fix is to do get_page() at
+work enqueue time and only take the page lock at work execution time.
 
-iQIcBAEBAgAGBQJPUhUNAAoJEBus8iNuMP3d5Q0QAIcI/P8vSz7ERJmDVG+kZjGm
-Yn86aYoXSS6uYpeYdZdXoHqw6BdSsBFuvyN5FED+Hg8Jo3fe8c2sPrfsu84ymVTe
-X72DIU3BVA6fPIeu7Tc7W5n25T5pKwxy+E5gZ9CzN4w33PRAruDJ/PxYG6ZkKo5O
-X+c5iMC+GcF4l6fsTgRoAzXifO6Y1pQQa2fj69hBgXDFXxinPPwPuQHmJimNpxEt
-NlFl826qk890NhmGmBJoWrRTc7WLAv3nP3c03NhKKiRWIA+w72bNWlOmKgJjtQat
-4pGLGBlEgXpOcqhhcjeETimgimKKv9k5AkZbUyTS+DeOYyXZE7p9GYEazV5bxHoc
-5VCnM8dKwtHf2/Nv3TMzmefdHX1hpfrtupaKc20FC7AbZ6sWTeu8ZQ3GwSGEpOCM
-ajjF9uvSKP3AWAGfDHPLgCA3Wf/sB+J7cRjrnYvDQhC9+TsrsQeyxAEibR4iCKfU
-dQL6Jcy3Q2AOhV5pMahJg47D72sIUwI13zEEFCt9JWH1rmTLIuJn4iciaf4lEgJh
-+5jh1gW9tufBGWYC6mkl3ryzh/m9HbjWN1QT1EBSgVpq/7dar9cNZ2zTDVFpvJF0
-K2xetxXiJYWNHAHJD6erzRS4HNBMMikwUl6DtuN3+50p2CNz+k5F5aznQhfFfJWg
-MX/uZMir4BgT6a3zx4qU
-=SQRE
------END PGP SIGNATURE-----
-
---ReaqsoxgOBHFXBhH--
+Thanks,
+Fengguang
