@@ -1,166 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab2CCRPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 12:15:10 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:38334 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753357Ab2CCRPI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 12:15:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.213.13.205 as permitted sender) smtp.mail=mturquette@ti.com
+	id S1753931Ab2CCRSR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 12:18:17 -0500
+Received: from mta1.math.wisc.edu ([144.92.166.194]:48059 "EHLO
+	mta1.math.wisc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab2CCRSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 12:18:16 -0500
+Message-ID: <BFFDBC9B6BA14BE1AC8E266A3A456A63@hinkle>
+From: "John G. Heim" <jheim@math.wisc.edu>
+To: <linux-kernel@vger.kernel.org>
+Subject: speakup bug
+Date: Sat, 3 Mar 2012 11:18:12 -0600
 MIME-Version: 1.0
-In-Reply-To: <20120303133158.GA26882@pengutronix.de>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Sat, 3 Mar 2012 09:14:43 -0800
-Message-ID: <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        linaro-dev@lists.linaro.org, Grant Likely <grant.likely@secretlab.ca>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 15.4.3538.513
+X-MimeOLE: Produced By Microsoft MimeOLE V15.4.3538.513
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 3, 2012 at 5:31 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Sat, Mar 03, 2012 at 12:29:00AM -0800, Mike Turquette wrote:
->> The common clock framework defines a common struct clk useful across
->> most platforms as well as an implementation of the clk api that drivers
->> can use safely for managing clocks.
->>
->> The net result is consolidation of many different struct clk definitions
->> and platform-specific clock framework implementations.
->>
->> This patch introduces the common struct clk, struct clk_ops and an
->> implementation of the well-known clock api in include/clk/clk.h.
->> Platforms may define their own hardware-specific clock structure and
->> their own clock operation callbacks, so long as it wraps an instance of
->> struct clk_hw.
->>
->> See Documentation/clk.txt for more details.
->>
->> This patch is based on the work of Jeremy Kerr, which in turn was based
->> on the work of Ben Herrenschmidt.
->>
->> +
->> +/**
->> + * struct clk_hw - handle for traversing from a struct clk to its corresponding
->> + * hardware-specific structure.  struct clk_hw should be declared within struct
->> + * clk_foo and then referenced by the struct clk instance that uses struct
->> + * clk_foo's clk_ops
->> + *
->> + * clk: pointer to the struct clk instance that points back to this struct
->> + * clk_hw instance
->> + */
->> +struct clk_hw {
->> +     struct clk *clk;
->> +};
->
-> The reason for doing this is that struct clk should be an opaque cookie
-> for both drivers and implementers of clocks. I recently had the idea whether
-> the roles of these two structs could be swapped. So instead of the above we
-> could do:
->
-> struct clk {
->        struct clk_hw *hw;
-> }
+I need help fixing a bug in the driver for serial hardware  speech synths in 
+the speakup screen reader. According to the comments in the code, it is in a 
+part of the code that is trying to "steal" the serial port.
 
-Firstly, struct clk is an opaque cookie for both drivers and
-implementers of clocks with this patchset.
+First it calls request_region and when that fails (it always fails), it 
+calls         __release_region(&then it calls release_region again to see if 
+__release_region worked. But it never works because the region being 
+requested is already taken.
 
-Secondly, struct clk does indeed have a pointer to struct clk_hw.
-Refer to include/linux/clk-private.h in this patch.
+The code in question is in 2 source code files in drivers/staging/speakup. 
+It starts in serialio.c on line 38. Here it calls a function named 
+synth_request_region which in turn, calls request_region. On line 41 it 
+calls __release_region, and on line 42 it calls synth_request_region again. 
+The function synth_request_region (which calls request_region) is in a file 
+named synth.c. But this code always fails.  Here is a kind of simplified 
+version of it...
 
-The reference is cyclical.  A reference to struct clk can navigate to
-struct clk_foo via container_of (usually something like "#define
-to_clk_foo(_hw) container_of(_hw, struct clk_foo, hw)" where struct
-clk's pointer to it's .hw member is passed into one of the struct
-clk_ops callbacks.
+int error;
+struct resource tmp;
+tmp .name = "ltlk";
+tmps.start = 0x3F8;
+tmp.end = 0x3FF;
+tmp.flags = IORESOURCE_BUSY;
+error = request_resource (&ioport_resource, &tmp);
 
-Likewise if struct clk_foo needs the struct clk ptr for any reason
-then it can get it from foo->hw->clk.
+The error returned is always -16. I looked at the code in kernel/resource.c 
+where the request_region function is  defined. It builds a linked list of 
+resources with start & end addresses. If you request a region that is 
+already within the start-end range of a resource already in the list, it 
+returns an error code. But it looks as if the region for a serial port, 
+0x3f8 - 0x3ff,  in ioport_resource cannot be reserved because the entire 
+range from 0x000 through 0xcf7 is already taken by something named "PCI Bus 
+0000:00".  Therefore calling request_resource always fails and the driver 
+for the speech synth errors out.
 
-I believe this patch already does what you suggest, but I might be
-missing your point.
+And therefore I can't use my hardware speech synth without modifying the 
+kernel code.  If you comment out the line that checks the return code from 
+request_region, it works. So you have to modify  the kernel code and compile 
+a custom kernel to use a hardware speech synth. That's not such a problem 
+for me but it is for a lot of people. Plus, the grml live CD doesn't work 
+with hardware speech.  That is a problem for me.
 
->
-> The effect would be the same, but this version would make the struct clk
-> pointer known at compile time thus making it possible for static
-> initializers to specify their parent clock.
+Can anyone tell me how to fix this so it can be patched in the official 
+kernel code?
 
-This series achieves this goal also.  include/linux/clk-private.h
-defines struct clk as well as macros for statically initializing the
-basic clock types.  Pointers to the struct clk of a parent clock can
-and are pre-populated in these macros, along with the mandatory array
-of parent string names.  (note that parent pointer initialization is
-optional and you can always pass in NULL into that specific field of
-the macro)
 
->
-> I just saw that clk_register now takes a parent name array, that may
-> make this change unnecessary anyway.
-
-clk_register exists for dynamic allocation and solves a different
-problem from what you describe above.  For statically initialized
-clocks the following is sufficient:
-
-#include <linux/clk-private.h>
-
-static char *abe_dpll_refclk_mux_ck_parent_names[] = {
-        "sys_clkin_ck",
-        "sys_32k_ck",
-};
-
-static struct clk *abe_dpll_refclk_mux_ck_parents[] = {
-        &sys_clkin_ck,
-        &sys_32k_ck,
-};
-
-DEFINE_CLK_MUX(abe_dpll_refclk_mux_ck,
-        abe_dpll_refclk_mux_ck_parent_names,
-        abe_dpll_refclk_mux_ck_parents,
-        0x0,
-        OMAP4430_CM_ABE_PLL_REF_CLKSEL,
-        OMAP4430_CLKSEL_0_0_SHIFT,
-        OMAP4430_CLKSEL_0_0_WIDTH,
-        0x0,
-        NULL);
-
-__clk_init(NULL, &abe_dpll_refclk_mux_ck);
-
-You might find it helpful to see how I've handled statically
-initialized clocks for OMAP4.  These patches are a work in progress
-but I'll send an RFC to the list very soon since others might find it
-useful.  For now the above example can be seen in more detail at:
-http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=blob;f=arch/arm/mach-omap2/clock44xx_data.c;h=7f833a7b2dca84a52c2bd1e7c8d9cfe560771258;hb=v3.3-rc5-clkv5-omap#l205
-
-Let me know if I've missed your point somehow.
-
-Thanks for the review,
-Mike
-
->
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
