@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab2CCPlH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 10:41:07 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53358 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab2CCPlF (ORCPT
+	id S1752747Ab2CCPsq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 10:48:46 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34242 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2CCPso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 10:41:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of federico.vaga@gmail.com designates 10.213.20.201 as permitted sender) smtp.mail=federico.vaga@gmail.com; dkim=pass header.i=federico.vaga@gmail.com
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org
-Subject: Re: How to make a bus with heterogeneous devices?
-Date: Sat, 03 Mar 2012 16:44:05 +0100
-Message-ID: <14955578.F1pbkdA1CJ@harkonnen>
-User-Agent: KMail/4.7.4 (Linux/3.2.7-1.fc16.x86_64; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <CAPXgP13-5URbxH9u344CnreRP2v9VR-ADcQRUBA5AdNj26P+LA@mail.gmail.com>
-References: <20120224152051.GA23232@mail.gnudd.com> <20120302223853.GA24929@kroah.com> <CAPXgP13-5URbxH9u344CnreRP2v9VR-ADcQRUBA5AdNj26P+LA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sat, 3 Mar 2012 10:48:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.225.194 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: sony.chacko@qlogic.com
+Cc: rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+Date: Sat,  3 Mar 2012 21:17:43 +0530
+Message-Id: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maybe I miss something but it sounds not that different from USB.
-> 
-> You have a bus that enumerates devices and a "bus driver" creates a
-> generic device on that bus for everything it finds. These devices stay
-> generic, do not have type-specific attributes, but export matches
-> again to bind other device-specific drivers, which create _new_ child
-> devices below the generic ones with the proper attributes matching
-> their individual type of devices. So every "logical" device is always
-> represented by one generic device and one type-specific child device.
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-It sounds like our option 5:
+Fix endian bug.
 
-> 5- The real attributes may live in another device, which is a child of
-> the one used within the bus abstraction.  Here the drawback is using
-> an additional device and directory level for no reason.
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   12 +++++++-----
+ .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
+ 3 files changed, 10 insertions(+), 8 deletions(-)
 
-- I register the generic (empty) device on the bus
-- when the device match with a driver 
-  - I register a new device child of the matched one but without connect     
-    it directly on the bus.
-
-The result will be something like (zio is our bus):
-
-/sys/bus/zio/devices/<generic-dev1>/<real-device1>/<attributes>
-/sys/bus/zio/devices/<generic-dev2>/<real-device2>/<attributes>
-/sys/bus/zio/devices/<generic-devN>/<real-deviceN>/<attributes>
-
-When there is not a driver:
-
-/sys/bus/zio/devices/<generic-dev1>/<device-stuff>
-/sys/bus/zio/devices/<generic-devN>/<device-stuff>
-
-Where the generic-dev is an empty device used to make the bus work. Is 
-it correct?
-
-> All these devices, the generic ones and the type-specific ones can be
-> on the same bus (struct bus_type) when they get a "struct device_type"
-> assigned which carries the device-type specific set of attributes.
-
-But if all devices can live on the bus (set device->bus for all 
-devices), when I register the "real-device" (type-specific)  the bus try 
-to match it with a driver (again); but we already matched the device 
-with its driver. it is better if the type-specific devices are not 
-directly on the bus but only a child of a device on the bus.
-
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+index 2eeac32..b5de8a7 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+@@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
+ 
+ struct nx_vlan_ip_list {
+ 	struct list_head list;
+-	u32 ip_addr;
++	__be32 ip_addr;
+ };
+ 
+ /*
+@@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct nx_host_sds_ring *sds_ring, int max);
+ void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
+ int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
+ int netxen_config_rss(struct netxen_adapter *adapter, int enable);
+-int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd);
++int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd);
+ int netxen_linkevent_request(struct netxen_adapter *adapter, int enable);
+ void netxen_advert_link_change(struct netxen_adapter *adapter, int linkup);
+ void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+index 6f37470..0f81287 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+@@ -909,10 +909,11 @@ int netxen_config_rss(struct netxen_adapter *adapter, int enable)
+ 	return rv;
+ }
+ 
+-int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
++int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd)
+ {
+ 	nx_nic_req_t req;
+ 	u64 word;
++	u64 ip_addr;
+ 	int rv;
+ 
+ 	memset(&req, 0, sizeof(nx_nic_req_t));
+@@ -922,7 +923,8 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
+ 	req.req_hdr = cpu_to_le64(word);
+ 
+ 	req.words[0] = cpu_to_le64(cmd);
+-	req.words[1] = cpu_to_le64(ip);
++	ip_addr = be32_to_cpu(ip);
++	*(__be64 *)&req.words[1] = cpu_to_be64(ip_addr);
+ 
+ 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
+ 	if (rv != 0) {
+@@ -1050,7 +1052,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 	if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac) == -1)
+ 		return -1;
+ 
+-	if (*mac == cpu_to_le64(~0ULL)) {
++	if (*mac == ~0ULL) {
+ 
+ 		offset = NX_OLD_MAC_ADDR_OFFSET +
+ 			(adapter->portnum * sizeof(u64));
+@@ -1059,7 +1061,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 					offset, sizeof(u64), pmac) == -1)
+ 			return -1;
+ 
+-		if (*mac == cpu_to_le64(~0ULL))
++		if (*mac == ~0ULL)
+ 			return -1;
+ 	}
+ 	return 0;
+@@ -2178,7 +2180,7 @@ lock_try:
+ 		NX_WR_DUMP_REG(FLASH_ROM_WINDOW, adapter->ahw.pci_base0, waddr);
+ 		raddr = FLASH_ROM_DATA + (fl_addr & 0x0000FFFF);
+ 		NX_RD_DUMP_REG(raddr, adapter->ahw.pci_base0, &val);
+-		*data_buff++ = cpu_to_le32(val);
++		*data_buff++ = val;
+ 		fl_addr += sizeof(val);
+ 	}
+ 	readl((void __iomem *)(adapter->ahw.pci_base0 + NX_FLASH_SEM2_ULK));
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+index 8dc4a134..70783b4 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+@@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter *adapter)
+ 			adapter->driver_mismatch = 1;
+ 			return;
+ 		}
+-		ptr32[i] = cpu_to_le32(val);
++		ptr32[i] = val;
+ 		offset += sizeof(u32);
+ 	}
+ 
 -- 
-Federico Vaga
+1.7.4.4
+
