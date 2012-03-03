@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab2CCBDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 20:03:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48270 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab2CCBDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 20:03:03 -0500
-Message-ID: <4F516DBA.2030809@zytor.com>
-Date: Fri, 02 Mar 2012 17:02:50 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know
- of any filesystems that depend on the exact VFS 'namehash' implementation?)
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org> <4F516811.8060800@zytor.com> <CA+55aFzoOOCOU-N6Zaq8Dd+U0no0a9U5ndU-LA_TrctM5tPP2Q@mail.gmail.com>
-In-Reply-To: <CA+55aFzoOOCOU-N6Zaq8Dd+U0no0a9U5ndU-LA_TrctM5tPP2Q@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1756307Ab2CCBHS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 20:07:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38873 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2CCBHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 20:07:17 -0500
+Date: Fri, 2 Mar 2012 17:07:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] devicetree: Add empty of_platform_populate() for
+ !CONFIG_OF_ADDRESS (sparc)
+Message-Id: <20120302170715.9f0a67ef.akpm@linux-foundation.org>
+In-Reply-To: <4F513990.1030401@ti.com>
+References: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca>
+	<4F513990.1030401@ti.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 04:57 PM, Linus Torvalds wrote:
-> On Fri, Mar 2, 2012 at 4:38 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> My biggest concern is what happens when this happens to be at the end of
->> mapped kernel memory and we overrun the page?
+On Fri, 2 Mar 2012 22:20:16 +0100
+"Cousson, Benoit" <b-cousson@ti.com> wrote:
+
+> Hi Grant,
 > 
-> Yes. It's very unlikely, and it never happens with the dentry data
-> itself (the name is always aligned for those).
+> In fact this patch is not working for build without CONFIG_OF like x86.
 > 
-> But it *can* happen if:
+> On 2/24/2012 11:06 PM, Grant Likely wrote:
+> > --- a/include/linux/of_platform.h
+> > +++ b/include/linux/of_platform.h
+> > @@ -81,7 +81,7 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
+> >   					 struct device *parent);
+> >   extern struct platform_device *of_find_device_by_node(struct device_node *np);
+> >
+> > -#if !defined(CONFIG_SPARC) /* SPARC has its own device registration method */
+> > +#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
+> >   /* Platform devices and busses creation */
+> >   extern struct platform_device *of_platform_device_create(struct device_node *np,
+> >   						   const char *bus_id,
+> > @@ -94,7 +94,15 @@ extern int of_platform_populate(struct device_node *root,
+> >   				const struct of_device_id *matches,
+> >   				const struct of_dev_auxdata *lookup,
+> >   				struct device *parent);
+> > -#endif /* !CONFIG_SPARC */
+> > +#else
+> > +static inline int of_platform_populate(struct device_node *root,
+> > +					const struct of_device_id *matches,
+> > +					const struct of_dev_auxdata *lookup,
+> > +					struct device *parent)
+> > +{
+> > +	return -ENODEV;
+> > +}
+> > +#endif /* !CONFIG_OF_ADDRESS */
+> >
+> >   #endif /* CONFIG_OF_DEVICE */
 > 
->  - the page contains the filename we copied from user space
+> Because if CONFIG_OF_DEVICE is not defined, then the stub for 
+> of_platform_populate will not be defined either. It should exist for any 
+> config without CONFIG_OF.
 > 
->  - the page is the last page mapped
-> 
->  - the filename is PATH_MAX in size (or very close)
-> 
->  - the last component is sufficiently unaligned
-> 
-> but I was thinking we'd just make sure not to free the last page, and
-> just solve it that way.
-> 
-> I was playing around with other ideas (take the page fault and fix it
-> up), but those are all really complicated when the notion of "don't
-> use the last page" is so much simpler.
+> Building twl4030 for x86 is actually broken.
 > 
 
-Note that does mean we need a guard page after each and every
-discontiguous RAM range, not just the last one.  Raising that issue
-since we have had serious bugs in that area in the past.
+All twl is broken.  i386 allmodconfig with this monring's linux-next:
 
-	-hpa
-
+drivers/mfd/twl-core.c: In function 'twl_probe':
+drivers/mfd/twl-core.c:1357: error: implicit declaration of function 'of_platform_populate'
 
