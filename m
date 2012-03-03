@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab2CCIjK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 03:39:10 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46621 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab2CCIjG (ORCPT
+	id S1753158Ab2CCIso (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 03:48:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50033 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab2CCIsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 03:39:06 -0500
-Date: Sat, 3 Mar 2012 00:39:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Andrzej Jakowski <andrzej.jakowski@intel.com>
-Subject: Re: [RFC PATCH] kick ksoftirqd more often to please soft lockup
- detector
-Message-ID: <20120303083902.GC8270@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120227203847.22153.62468.stgit@dwillia2-linux.jf.intel.com>
- <1330422535.11248.78.camel@twins>
- <alpine.LFD.2.02.1202282240340.2794@ionos>
- <CABE8wwsmWqDddMqgQ6HvMPkbK+Vu7G7GOY-VO_Tru2JV2NUUcw@mail.gmail.com>
- <1330507023.11248.113.camel@twins>
+	Sat, 3 Mar 2012 03:48:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of maciej.rutecki@gmail.com designates 10.213.33.13 as permitted sender) smtp.mail=maciej.rutecki@gmail.com; dkim=pass header.i=maciej.rutecki@gmail.com
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
+Subject: Re: Error compiling autofs4 with 3.3-rc4
+Date: Sat, 3 Mar 2012 09:48:37 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.6.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <1330216608.19195.3.camel@firefly>
+In-Reply-To: <1330216608.19195.3.camel@firefly>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330507023.11248.113.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030308-5518-0000-0000-000002B3A0E0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203030948.37833.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 10:17:03AM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-02-28 at 14:16 -0800, Dan Williams wrote:
-> > Looks like everyone is guilty:
-> > 
-> > [  422.765336] softirq took longer than 1/4 tick: 3 NET_RX ffffffff813f0aa0
-> > ...
-> > [  423.971878] softirq took longer than 1/4 tick: 4 BLOCK ffffffff812519c8
-> > [  423.985093] softirq took longer than 1/4 tick: 6 TASKLET ffffffff8103422e
-> > [  423.993157] softirq took longer than 1/4 tick: 7 SCHED ffffffff8105e2e1
-> > [  424.001018] softirq took longer than 1/4 tick: 9 RCU ffffffff810a0fed
-> > [  424.008691] softirq loop took longer than 1/2 tick need_resched:
+On niedziela, 26 lutego 2012 o 01:36:48 Nathan A. Mourey II wrote:
+> I got this error while compiling the 3.3-rc5 kernel:
 > 
-> /me kicks himself for not printing the actual duration.. :-)
+> peach linux-3.3-rc5 # make bzImage
 > 
-> > As expected whenever that 1/2 tick message gets emitted the softirq
-> > handler is almost running in a need_resched() context.
+> make[1]: Nothing to be done for `all'.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   CC      fs/autofs4/inode.o
+> fs/autofs4/inode.c: In function 'autofs4_fill_super':
+> fs/autofs4/inode.c:228:2: error: implicit declaration of function
+> 'is_compat_task'
+> make[2]: *** [fs/autofs4/inode.o] Error 1
+> make[1]: *** [fs/autofs4] Error 2
+> make: *** [fs] Error 2
 > 
-> Yeah.. that's quite expected.
-> 
-> > So is it a good idea to get more aggressive about scheduling ksoftrrqd? 
-> 
-> Nah, moving away from softirq more like. I'll put moving the
-> load-balancer into a kthread on the todo list. And it looks like
-> everybody else should move to kthreads too.
+[...]
 
-Last year when I tried that, things got a bit ugly.  I guess I don't need
-the kthreads to be realtime unless CONFIG_RCU_BOOST=y, maybe that will
-help.  Also IIRC Steven Rostedt made some real-time changes that might
-help as well for my case, which would have a per-CPU RT kthread.
+Please add your email to:
+https://bugzilla.kernel.org/show_bug.cgi?id=42851
 
-							Thanx, Paul
+for regression tracking.
 
+Regards
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
