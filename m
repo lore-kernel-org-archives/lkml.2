@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2CCQhh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 11:37:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56136 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753022Ab2CCQhg (ORCPT
+	id S1753498Ab2CCQoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 11:44:17 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40328 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab2CCQoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 11:37:36 -0500
-Date: Sat, 3 Mar 2012 16:37:34 +0000
+	Sat, 3 Mar 2012 11:44:15 -0500
+Date: Sat, 3 Mar 2012 16:44:10 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Estevam Fabio-R49496 <r49496@freescale.com>
-Subject: Re: [PATCH 4/4] ARM i.MX 3ds debugboard: register a dummy regulator
- for the smsc911x device
-Message-ID: <20120303163733.GC3071@opensource.wolfsonmicro.com>
-References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
- <1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal sensor
+ driver to driver/mfd directory
+Message-ID: <20120303164410.GB1495@sirena.org.uk>
+References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+ <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m51xatjYGsM+13rf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
+> This movement is needed because the hwmon entries and corresponding
+> sysfs interface is a duplicate of utilities already provided by
+> driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
+> and add necessary calls to get the temperature information.
 
---m51xatjYGsM+13rf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> --- a/Documentation/hwmon/exynos4_tmu
+> +++ /dev/null
 
-On Sat, Mar 03, 2012 at 12:40:04PM +0100, Sascha Hauer wrote:
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  arch/arm/plat-mxc/3ds_debugboard.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
+Moving this seems to be a failure, the device is exposing a hwmon
+interface even if you've moved the code to mfd (though it doesn't
+actually look like a multi-function device at all as far as I can see -
+usually a MFD would have a bunch of unrelated functionality while this
+has one function used by two subsystems).
 
-applied, though with at least this board you clearly do have a sensible
-regulator setup already and are just adding in a few extra regulators to
-fill out things which for some reason aren't supplied by the PMIC.  It's
-quite surprising that things like what look like the I/O reference
-voltage are supplied elsewhere.
-
---m51xatjYGsM+13rf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPUkiQAAoJEBus8iNuMP3deWUP/12MYvwtHRXGmjd31hsBd6jF
-gvnBY3sFbSy7KBzXrzIn7vpJHEDKFLsHXdme2lrq8Qzcu01mQfjbUetKANQ/anoj
-Sk6N+lBhyFS343YHfFyOMQWZ3gHcfZYOR+5Mhj6nD74sS+NoUIZic/dUzAkP4VZS
-rBftzuZgWyB3YUD2If7R1SBzIg3yWSLFwpgrC2ws80PqU8OkI+PT1JqxubM5exfg
-wnB/6Art45I3BvhmYuF0Sy4YWPvADgUhNNFMH5SNqqvqAwxtkrQ6QgxcvqZ5tgwE
-WGCt5IsVxx7jAP0TMhCmBqLwXc8JapyTPaTm2DUcs8MOt1kuV3/MQZUYdN9hwBo1
-yNvppDavhEakfM1GNQJB0o8Fwc5RQX8kjNzujRrXz/RB72tultEZ4AY45C9jOQLV
-6lo35R9XH9EOzC3xGE7p7klC1M+QMSl4pJU+O6Z6mjRizvXCGpWO/9GzxAeyUGwy
-fnInPqNPxo1hdrdMpc/0PEMnZJmkp9GhQpdjMulZCH3Jn6kXTnUk7hdsQvTkDocE
-TUAPe+f8YYXKk/dw8Vg/+lS7q7/wsFwsyL1mfcCnqTrm1hVxOYvKg+hcYq5VIMkr
-pluuk7VhE0uc46XcziNN/5OkTE4ToldGlfm8LNGCGXLeBs6Bdbh8onJmCzdD8O+Q
-EZv+uq3OtN0KIWxIwZTI
-=sKo8
------END PGP SIGNATURE-----
-
---m51xatjYGsM+13rf--
+If anything it looks like the ADC driver ought to be moved into IIO with
+either generic or Exynos specific function drivers layered on top of it
+in hwmon and thermal making use of the values that are read.
