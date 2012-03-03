@@ -1,176 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965677Ab2CCAXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 19:23:49 -0500
-Received: from smtp-68.nebula.fi ([83.145.220.68]:35741 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965130Ab2CCAXr (ORCPT
+	id S1758572Ab2CCAYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 19:24:34 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34880 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758405Ab2CCAYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 19:23:47 -0500
-Date: Sat, 3 Mar 2012 02:23:42 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 3/3] dma_buf: Add documentation for the new cpu access
- support
-Message-ID: <20120303002342.GI15695@valkosipuli.localdomain>
-References: <1330616161-1937-1-git-send-email-daniel.vetter@ffwll.ch>
- <1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
+	Fri, 2 Mar 2012 19:24:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.133.96 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1203021616040.23477@asgard.lang.hm>
+References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
+ <20120303000203.GH22215@thunk.org> <alpine.DEB.2.02.1203021616040.23477@asgard.lang.hm>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 2 Mar 2012 16:24:11 -0800
+X-Google-Sender-Auth: i7-4rjIIOEARZOyMzZ5sMFFnGBo
+Message-ID: <CA+55aFw7C3XYzwZ8F31EA4Svj1WZ8O--HV82qVg3t=JpxRy1Ww@mail.gmail.com>
+Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
+ any filesystems that depend on the exact VFS 'namehash' implementation?)
+To: david@lang.hm
+Cc: "Ted Ts'o" <tytso@mit.edu>, Andi Kleen <andi@firstfloor.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Fri, Mar 2, 2012 at 4:17 PM,  <david@lang.hm> wrote:
+>
+> or did some CPUs have efficient char access, but inefficient unaligned word
+> access?
 
-Thanks for the patch.
+Tons of CPU's have efficient char accesses but horrible unaligned word
+accesses. Some are even outright buggy (ie at least some ARM cores)
+and load crap. Others take a fault.
 
-On Thu, Mar 01, 2012 at 04:36:01PM +0100, Daniel Vetter wrote:
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  Documentation/dma-buf-sharing.txt |  102 +++++++++++++++++++++++++++++++++++-
->  1 files changed, 99 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-> index 225f96d..f12542b 100644
-> --- a/Documentation/dma-buf-sharing.txt
-> +++ b/Documentation/dma-buf-sharing.txt
-> @@ -32,8 +32,12 @@ The buffer-user
->  *IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
->  For this first version, A buffer shared using the dma_buf sharing API:
->  - *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
-> -   this framework.
-> -- may be used *ONLY* by importers that do not need CPU access to the buffer.
-> +  this framework.
-> +- with this new iteration of the dma-buf api cpu access from the kernel has been
-> +  enable, see below for the details.
-> +
-> +dma-buf operations for device dma only
-> +--------------------------------------
->  
->  The dma_buf buffer sharing API usage contains the following steps:
->  
-> @@ -219,7 +223,99 @@ NOTES:
->     If the exporter chooses not to allow an attach() operation once a
->     map_dma_buf() API has been called, it simply returns an error.
->  
-> -Miscellaneous notes:
-> +Kernel cpu access to a dma-buf buffer object
-> +--------------------------------------------
-> +
-> +The motivation to allow cpu access from the kernel to a dma-buf object from the
-> +importers side are:
-> +- fallback operations, e.g. if the devices is connected to a usb bus and the
-> +  kernel needs to shuffle the data around first before sending it away.
-> +- full transperancy for existing users on the importer side, i.e. userspace
-> +  should not notice the difference between a normal object from that subsystem
-> +  and an imported one backed by a dma-buf. This is really important for drm
-> +  opengl drivers that expect to still use all the existing upload/download
-> +  paths.
-> +
-> +Access to a dma_buf from the kernel context involves three steps:
-> +
-> +1. Prepare access, which invalidate any necessary caches and make the object
-> +   available for cpu access.
-> +2. Access the object page-by-page with the dma_buf map apis
-> +3. Finish access, which will flush any necessary cpu caches and free reserved
-> +   resources.
+They just aren't x86, because x86 has traditionally had code with a
+fair amount of unaligned loads and stores (and not just for historical
+reasons either: even modern code replaces constant-sized memcpy() etc
+with direct loads and stores)
 
-Where it should be decided which operations are being done to the buffer
-when it is passed to user space and back to kernel space?
+For some other architectures, we could just use "get_unaligned()",
+which fixes things up for them. I could have made that explicit, even
+if it doesn't matter on x86.
 
-How about spliting these operations to those done on the first time the
-buffer is passed to the user space (mapping to kernel address space, for
-example) and those required every time buffer is passed from kernel to user
-and back (cache flusing)?
+So the bigger portability problem to some degree is the fact that it
+is limited to little-endian, so even if you have a CPU with good
+unaligned accesses (some POWER chips do ok, for example, although not
+all), you'd have to also do something with the mask generation (which
+currently uses the "(x-1)&~x" trick that means that it generates the
+mask of the *low bits* - and then assumes that "low bits" means "first
+bytes" - ie little endian).
 
-I'm asking since any unnecessary time-consuming operations, especially as
-heavy as mapping the buffer, should be avoidable in subsystems dealing
-with streaming video, cameras etc., i.e. non-GPU users.
-
-> +1. Prepare acces
-> +
-> +   Before an importer can acces a dma_buf object with the cpu from the kernel
-> +   context, it needs to notice the exporter of the access that is about to
-> +   happen.
-> +
-> +   Interface:
-> +      int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
-> +				   size_t start, size_t len,
-> +				   enum dma_data_direction direction)
-> +
-> +   This allows the exporter to ensure that the memory is actually available for
-> +   cpu access - the exporter might need to allocate or swap-in and pin the
-> +   backing storage. The exporter also needs to ensure that cpu access is
-> +   coherent for the given range and access direction. The range and access
-> +   direction can be used by the exporter to optimize the cache flushing, i.e.
-> +   access outside of the range or with a different direction (read instead of
-> +   write) might return stale or even bogus data (e.g. when the exporter needs to
-> +   copy the data to temporaray storage).
-> +
-> +   This step might fail, e.g. in oom conditions.
-> +
-> +2. Accessing the buffer
-> +
-> +   To support dma_buf objects residing in highmem cpu access is page-based using
-> +   an api similar to kmap. Accessing a dma_buf is done in aligned chunks of
-> +   PAGE_SIZE size. Before accessing a chunk it needs to be mapped, which returns
-> +   a pointer in kernel virtual address space. Afterwards the chunk needs to be
-> +   unmapped again. There is no limit on how often a given chunk can be mapped
-> +   and unmmapped, i.e. the importer does not need to call begin_cpu_access again
-> +   before mapping the same chunk again.
-> +
-> +   Interfaces:
-> +      void *dma_buf_kmap(struct dma_buf *, unsigned long);
-> +      void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
-> +
-> +   There are also atomic variants of these interfaces. Like for kmap they
-> +   facilitate non-blocking fast-paths. Neither the importer nor the exporter (in
-> +   the callback) is allowed to block when using these.
-> +
-> +   Interfaces:
-> +      void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
-> +      void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
-> +
-> +   For importers all the restrictions of using kmap apply, like the limited
-> +   supply of kmap_atomic slots. Hence an importer shall only hold onto at most 2
-> +   atomic dma_buf kmaps at the same time (in any given process context).
-> +
-> +   dma_buf kmap calls outside of the range specified in begin_cpu_access are
-> +   undefined. If the range is not PAGE_SIZE aligned, kmap needs to succeed on
-> +   the partial chunks at the beginning and end but may return stale or bogus
-> +   data outside of the range (in these partial chunks).
-> +
-> +   Note that these calls need to always succeed. The exporter needs to complete
-> +   any preparations that might fail in begin_cpu_access.
-> +
-> +3. Finish access
-> +
-> +   When the importer is done accessing the range specified in begin_cpu_acces,
-> +   it needs to announce this to the exporter (to facilitate cache flushing and
-> +   unpinning of any pinned resources). The result of of any dma_buf kmap calls
-> +   after end_cpu_access is undefined.
-> +
-> +   Interface:
-> +      void dma_buf_end_cpu_access(struct dma_buf *dma_buf,
-> +				  size_t start, size_t len,
-> +				  enum dma_data_direction dir);
-> +
-> +
-> +Miscellaneous notes
-> +-------------------
-> +
->  - Any exporters or users of the dma-buf buffer sharing framework must have
->    a 'select DMA_SHARED_BUFFER' in their respective Kconfigs.
-
-Kind regards,
-
--- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	jabber/XMPP/Gmail: sailus@retiisi.org.uk
+                       Linus
