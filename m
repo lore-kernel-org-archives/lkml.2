@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2CCSOm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 13:14:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55131 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab2CCSOk (ORCPT
+	id S1754017Ab2CCSff (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 13:35:35 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51665 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2CCSfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 13:14:40 -0500
-Date: Sat, 3 Mar 2012 19:14:37 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Estevam Fabio-R49496 <r49496@freescale.com>
-Subject: Re: [PATCH 4/4] ARM i.MX 3ds debugboard: register a dummy regulator
- for the smsc911x device
-Message-ID: <20120303181437.GJ26642@pengutronix.de>
-References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
- <1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
- <20120303163733.GC3071@opensource.wolfsonmicro.com>
+	Sat, 3 Mar 2012 13:35:33 -0500
+Date: Sat, 3 Mar 2012 21:35:38 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dhananjay Phadke <dhananjay@netxen.com>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] netxen: memory corruption by netxen_p3_get_mac_addr.
+Message-ID: <20120303183538.GZ1003@mwanda>
+References: <1330794087-19248-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E0GpUEom8qu4+vDz"
 Content-Disposition: inline
-In-Reply-To: <20120303163733.GC3071@opensource.wolfsonmicro.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 19:05:30 up 112 days,  1:52, 15 users,  load average: 0.00, 0.01,
- 0.05
+In-Reply-To: <1330794087-19248-1-git-send-email-santoshprasadnayak@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090206.4F5263FA.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 04:37:34PM +0000, Mark Brown wrote:
-> On Sat, Mar 03, 2012 at 12:40:04PM +0100, Sascha Hauer wrote:
-> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > ---
-> >  arch/arm/plat-mxc/3ds_debugboard.c |    9 +++++++++
-> >  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> applied, though with at least this board you clearly do have a sensible
-> regulator setup already and are just adding in a few extra regulators to
-> fill out things which for some reason aren't supplied by the PMIC.  It's
-> quite surprising that things like what look like the I/O reference
-> voltage are supplied elsewhere.
 
-This debug board is used with four different baseboards and one of them
-indeed has regulator support in mainline. The regulator for the smsc911x
-though is not software controllable on any of these boards. In the end
-it's a debug board, energy efficiency might not be really important in
-such a case.
+--E0GpUEom8qu4+vDz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sascha
+On Sat, Mar 03, 2012 at 10:31:27PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>=20
+> 'mac_hi' and 'mac_lo' are 32 bit unsinged int but we are modifing
+> 64 bit of memory during mac calculation. To fix this issue define
+> a local variable of 64 bit and do mac calculation.
+>=20
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I'm not seeing any memory corruption.  How do you figure?
+
+> Remove 'le64_to_cpu' to fix endian issue.
+
+I've add Dhananjay to the CC list to comment on the endian change.
+
+regards,
+dan carpenter
+
+>=20
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers=
+/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> index 0f81287..7ea930b 100644
+> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> @@ -1069,7 +1069,8 @@ int netxen_get_flash_mac_addr(struct netxen_adapter=
+ *adapter, u64 *mac)
+> =20
+>  int netxen_p3_get_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+>  {
+> -	uint32_t crbaddr, mac_hi, mac_lo;
+> +	uint32_t crbaddr;
+> +	u64 mac_hi, mac_lo;
+>  	int pci_func =3D adapter->ahw.pci_func;
+> =20
+>  	crbaddr =3D CRB_MAC_BLOCK_START +
+> @@ -1079,9 +1080,9 @@ int netxen_p3_get_mac_addr(struct netxen_adapter *a=
+dapter, u64 *mac)
+>  	mac_hi =3D NXRD32(adapter, crbaddr+4);
+> =20
+>  	if (pci_func & 1)
+> -		*mac =3D le64_to_cpu((mac_lo >> 16) | ((u64)mac_hi << 16));
+> +		*mac =3D (mac_lo >> 16) | (mac_hi << 16);
+>  	else
+> -		*mac =3D le64_to_cpu((u64)mac_lo | ((u64)mac_hi << 32));
+> +		*mac =3D mac_lo | (mac_hi << 32);
+> =20
+>  	return 0;
+>  }
+> --=20
+> 1.7.4.4
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors=
+" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--E0GpUEom8qu4+vDz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPUmR5AAoJEOnZkXI/YHqR8SYQALLawwJENBtjKAU0BpLniTUn
+c8gp5A59k5lwgq9848ZubgGeA/IU0SBAafgka9l3jh5yd+4OeeXSxvttrv+l4IdS
+WUWSXnJbcSW6XcUN+DOx+CADh1YibC2Dm+jlhLSSqbLkXj6Qr2bgWOr5bUwNvzlA
+wO+Bu+0gycwBmu3ZKnc4JpQPFTWa9vjtqGNEoox6SySggcHIvOJ0XCkBrG2XY7SN
+j6uJuB40sXOAXqR2IokOMa4uFoPNWcFhZkLq/SqxnabD93Ne83Fdll994v0XQNmm
+Gc1BUvDJEZSwsxZWKL0257hQ4m6XDLhroVTlkXhPiImvWoEz2ceKgUr2d3VEQfPA
+hLKc1fUmTvk77C6Py/N4Nt3vDJqfyBSQi4JAXYfigz0NEw74o7ZRL0vAITBAsa0o
+59VRU8NqjxvzZJPQLDWof91Tb69koPg0iGSnG7W6BMM1dJV1b4DWSRb9d0HoFodf
+KLKEo1J8hV6b1/BZZdPujzTR+qyC4NXTs1n7viqxmNhEdjhZmbMhvrxUWkgBWvyx
+ELK1CIiat2I/7SXwROwfeH/jLNGSlozEg5uybVhndJVsiEk2M7NK54CI01spc+5A
+1Sg16McyMfxPZk2bJ4mBshyPn77Bk+FkPquIKFfeOvdqKhS2VmJeRt1LBAMfMCwC
+O3GvXqgTPDpaV7siU4nT
+=lRRn
+-----END PGP SIGNATURE-----
+
+--E0GpUEom8qu4+vDz--
