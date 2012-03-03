@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab2CCQoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 11:44:17 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40328 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab2CCQoP (ORCPT
+	id S1753961Ab2CCRCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 12:02:33 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:62984 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab2CCRCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 11:44:15 -0500
-Date: Sat, 3 Mar 2012 16:44:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal sensor
- driver to driver/mfd directory
-Message-ID: <20120303164410.GB1495@sirena.org.uk>
-References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
- <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Sat, 3 Mar 2012 12:02:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.130.72 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: sony.chacko@qlogic.com
+Cc: rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] netxen: memory corruption by netxen_p3_get_mac_addr.
+Date: Sat,  3 Mar 2012 22:31:27 +0530
+Message-Id: <1330794087-19248-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
-> This movement is needed because the hwmon entries and corresponding
-> sysfs interface is a duplicate of utilities already provided by
-> driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
-> and add necessary calls to get the temperature information.
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-> --- a/Documentation/hwmon/exynos4_tmu
-> +++ /dev/null
+'mac_hi' and 'mac_lo' are 32 bit unsinged int but we are modifing
+64 bit of memory during mac calculation. To fix this issue define
+a local variable of 64 bit and do mac calculation.
 
-Moving this seems to be a failure, the device is exposing a hwmon
-interface even if you've moved the code to mfd (though it doesn't
-actually look like a multi-function device at all as far as I can see -
-usually a MFD would have a bunch of unrelated functionality while this
-has one function used by two subsystems).
+Remove 'le64_to_cpu' to fix endian issue.
 
-If anything it looks like the ADC driver ought to be moved into IIO with
-either generic or Exynos specific function drivers layered on top of it
-in hwmon and thermal making use of the values that are read.
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+index 0f81287..7ea930b 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+@@ -1069,7 +1069,8 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 
+ int netxen_p3_get_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ {
+-	uint32_t crbaddr, mac_hi, mac_lo;
++	uint32_t crbaddr;
++	u64 mac_hi, mac_lo;
+ 	int pci_func = adapter->ahw.pci_func;
+ 
+ 	crbaddr = CRB_MAC_BLOCK_START +
+@@ -1079,9 +1080,9 @@ int netxen_p3_get_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 	mac_hi = NXRD32(adapter, crbaddr+4);
+ 
+ 	if (pci_func & 1)
+-		*mac = le64_to_cpu((mac_lo >> 16) | ((u64)mac_hi << 16));
++		*mac = (mac_lo >> 16) | (mac_hi << 16);
+ 	else
+-		*mac = le64_to_cpu((u64)mac_lo | ((u64)mac_hi << 32));
++		*mac = mac_lo | (mac_hi << 32);
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.4
+
