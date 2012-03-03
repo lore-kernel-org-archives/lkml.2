@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2CCHzD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 02:55:03 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43960 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752557Ab2CCHzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 02:55:01 -0500
-Date: Sat, 3 Mar 2012 08:54:43 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+	id S1753048Ab2CCICu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 03:02:50 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:19672 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2CCICs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 03:02:48 -0500
+Date: Sat, 3 Mar 2012 11:04:49 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] x86, efi: fix pointer math issue in handle_ramdisks()
-Message-ID: <20120303075443.GC16816@elte.hu>
-References: <20120302190128.GC3951@elgon.mountain>
+Subject: Re: [patch] block, sx8: fix pointer math issue getting fw version
+Message-ID: <20120303080449.GK22598@mwanda>
+References: <20120302190042.GB3951@elgon.mountain>
+ <4F51C103.507@kernel.dk>
+ <4F51C18C.5080903@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wIc/V6YLA2QdyfT4"
 Content-Disposition: inline
-In-Reply-To: <20120302190128.GC3951@elgon.mountain>
+In-Reply-To: <4F51C18C.5080903@kernel.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F51D023.0003,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dan Carpenter <dan.carpenter@oracle.com> wrote:
+--wIc/V6YLA2QdyfT4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> "filename" is a efi_char16_t string so this check for reaching 
-> the end of the array doesn't work.  We need to cast it to char 
-> pointer before doing the math.
+On Sat, Mar 03, 2012 at 08:00:28AM +0100, Jens Axboe wrote:
+> On 2012-03-03 07:58, Jens Axboe wrote:
+> > On 2012-03-02 20:00, Dan Carpenter wrote:
+> >> "mem" is type u8.  We need parenthesis here or it screws up the pointer
+> >> math probably leading to an oops.
+> >=20
+> > Applied, thanks Dan. I have marked it stable, too.
+>=20
+> Hmm wait Dan, seems to me that u8 pointer math should be equiv to char *
+> pointer math and hence it'd work just fine. Are you sure this is a bug?
 
-That name should really be changed, 'filename' is a char * by 
-convention pretty much everywhere in the kernel - so the current 
-naming is highly misleading and results in bugs like this.
+It's the cast on the line before is what breaks it.  We need the
+parentheses so we add first then cast the result.
 
-filename_16, filename_2byte or filename_UTF or so would be 
-suggestive enough to avoid such mishaps in the future.
+regards,
+dan carpenter
 
-> @@ -559,7 +559,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
->  			str++;
->  
->  		while (*str && *str != ' ' && *str != '\n') {
-> -			if (p >= filename + sizeof(filename))
-> +			if ((char *)p >= (char *)filename + sizeof(filename))
->  				break;
 
-I'd also make that void *, because this isnt really a C 
-character string anymore.
+--wIc/V6YLA2QdyfT4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJPUdChAAoJEOnZkXI/YHqROGAP/RawaZtVRHdRTGrnJmNPRr9m
++r/JdjPDJQBUC/azTE4QXBvW4rmlIwkPLaAnuh+FS6vyp2kc+plvZFYAMdTjth3n
+8uFY+FR7qIDcpxfKSBQYZxMuepmGoPCUgFPTKaLKaed2G5aXi8UXwXhoS2CSnqag
+x09+NSSAqndgRoEPKRK/+0LmtiDAkbPTHgTpkZ/OmdpGnaHIIuThLudDCuL1B9Dz
+8QhTUrmKAjDhbRSjvupsZqjLqXj7+QI87f/fpbCVtgvo61juPLDQXVjzQMDopXjD
+HUAmh2dkuEhKmBYSBFGtmgAMobBLE5UrNE4igqMVH3tUNiUIencEJylsz6NnFKwy
+/cd0batD6AoqbrOOcY2IAbPwvKumB7rzSsiIcH8VqBB+LYqgbp4/IUup3H/r0AVJ
+Td/ghGOS8EHpxh4TVZARHk0Ko2UMxkfK77Htf7D15rBfJlFbLK5YdMjJZFiKFfrZ
+iXEsK6ob4a4hh4M/1LFlsH1DfERtIrqKMyNtI7HWrf2ECB2bOm4yVDW8MvvpnYn7
+ZAIS7Vu11dTWkC79eqT2fzk95yv6AsntpfrXGVrLeBXcdMQgUNjXiK+Pkt9ZO6tX
+BDjmSaeDiGqfWas0741l2837yoD/TVYXXaaaE6GBR5pPWge3vQo8PAAhGZoUWrrk
+fSPobaOwdy27UC8YzUT4
+=DjZU
+-----END PGP SIGNATURE-----
+
+--wIc/V6YLA2QdyfT4--
