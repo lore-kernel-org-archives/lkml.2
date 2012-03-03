@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab2CCSGW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 13:06:22 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:40436 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434Ab2CCSGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 13:06:20 -0500
-Date: Sat, 3 Mar 2012 10:04:02 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+	id S1754000Ab2CCSOm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 13:14:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55131 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab2CCSOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 13:14:40 -0500
+Date: Sat, 3 Mar 2012 19:14:37 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Subject: Re: [lm-sensors] [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal
- sensor driver to driver/mfd directory
-Message-ID: <20120303180402.GA30062@ericsson.com>
-References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
- <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
- <20120303164410.GB1495@sirena.org.uk>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Estevam Fabio-R49496 <r49496@freescale.com>
+Subject: Re: [PATCH 4/4] ARM i.MX 3ds debugboard: register a dummy regulator
+ for the smsc911x device
+Message-ID: <20120303181437.GJ26642@pengutronix.de>
+References: <1330774804-7310-1-git-send-email-s.hauer@pengutronix.de>
+ <1330774804-7310-5-git-send-email-s.hauer@pengutronix.de>
+ <20120303163733.GC3071@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120303164410.GB1495@sirena.org.uk>
+In-Reply-To: <20120303163733.GC3071@opensource.wolfsonmicro.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 19:05:30 up 112 days,  1:52, 15 users,  load average: 0.00, 0.01,
+ 0.05
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 11:44:10AM -0500, Mark Brown wrote:
-> On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
-> > This movement is needed because the hwmon entries and corresponding
-> > sysfs interface is a duplicate of utilities already provided by
-> > driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
-> > and add necessary calls to get the temperature information.
+On Sat, Mar 03, 2012 at 04:37:34PM +0000, Mark Brown wrote:
+> On Sat, Mar 03, 2012 at 12:40:04PM +0100, Sascha Hauer wrote:
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > ---
+> >  arch/arm/plat-mxc/3ds_debugboard.c |    9 +++++++++
+> >  1 files changed, 9 insertions(+), 0 deletions(-)
 > 
-> > --- a/Documentation/hwmon/exynos4_tmu
-> > +++ /dev/null
-> 
-> Moving this seems to be a failure, the device is exposing a hwmon
-> interface even if you've moved the code to mfd (though it doesn't
-> actually look like a multi-function device at all as far as I can see -
-> usually a MFD would have a bunch of unrelated functionality while this
-> has one function used by two subsystems).
-> 
-> If anything it looks like the ADC driver ought to be moved into IIO with
-> either generic or Exynos specific function drivers layered on top of it
-> in hwmon and thermal making use of the values that are read.
-> 
-I would agree. Or maybe move it all to thermal, since thermal devices register
-the hwmon subsystem.
+> applied, though with at least this board you clearly do have a sensible
+> regulator setup already and are just adding in a few extra regulators to
+> fill out things which for some reason aren't supplied by the PMIC.  It's
+> quite surprising that things like what look like the I/O reference
+> voltage are supplied elsewhere.
 
-Guenter
+This debug board is used with four different baseboards and one of them
+indeed has regulator support in mainline. The regulator for the smsc911x
+though is not software controllable on any of these boards. In the end
+it's a debug board, energy efficiency might not be really important in
+such a case.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
