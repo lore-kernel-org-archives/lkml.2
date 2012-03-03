@@ -1,108 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030671Ab2CCAXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 19:23:04 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60165 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964778Ab2CCAXC (ORCPT
+	id S965677Ab2CCAXt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 19:23:49 -0500
+Received: from smtp-68.nebula.fi ([83.145.220.68]:35741 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965130Ab2CCAXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 19:23:02 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.129.136 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Fri, 2 Mar 2012 16:22:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
-In-Reply-To: <20120229091547.29236.28230.stgit@zurg>
-Message-ID: <alpine.LSU.2.00.1203021542560.3578@eggly.anvils>
-References: <20120229090748.29236.35489.stgit@zurg> <20120229091547.29236.28230.stgit@zurg>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 2 Mar 2012 19:23:47 -0500
+Date: Sat, 3 Mar 2012 02:23:42 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linaro-mm-sig@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 3/3] dma_buf: Add documentation for the new cpu access
+ support
+Message-ID: <20120303002342.GI15695@valkosipuli.localdomain>
+References: <1330616161-1937-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330616161-1937-4-git-send-email-daniel.vetter@ffwll.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012, Konstantin Khlebnikov wrote:
+Hi Daniel,
 
-> This patch adds file/anon filter bits into isolate_mode_t,
-> this allows to simplify checks in __isolate_lru_page().
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Thanks for the patch.
 
-Almost-Acked-by: Hugh Dickins <hughd@google.com>
-
-with one whitespace nit, and one functional addition requested.
-
-I'm perfectly happy with your :?s myself, but some people do dislike
-them.  I'm happy with the switch alternative if it's as efficient:
-something that surprised me very much when trying to get convincing
-performance numbers for per-memcg per-zone lru_lock at home...
-
-... __isolate_lru_page() featured astonishly high on the perf report
-of streaming from files on ext4 on /dev/ram0 to /dev/null, coming
-immediately below the obvious zeroing and copying: okay, the zeroing
-and copying were around 30% each, and __isolate_lru_page() down around
-2% or below, but even so it seemed very odd that it should feature so
-high, and any optimizations to it very welcome - unless it was purely
-some bogus result.
-
+On Thu, Mar 01, 2012 at 04:36:01PM +0100, Daniel Vetter wrote:
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 > ---
->  include/linux/mmzone.h |    4 ++++
->  include/linux/swap.h   |    2 +-
->  mm/compaction.c        |    5 +++--
->  mm/vmscan.c            |   27 +++++++++++++--------------
->  4 files changed, 21 insertions(+), 17 deletions(-)
+>  Documentation/dma-buf-sharing.txt |  102 +++++++++++++++++++++++++++++++++++-
+>  1 files changed, 99 insertions(+), 3 deletions(-)
 > 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index eff4918..2fed935 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -193,6 +193,10 @@ struct lruvec {
->  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
->  /* Isolate for asynchronous migration */
->  #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
-> +/* Isolate swap-backed pages */
-> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
-> +/* Isolate file-backed pages */
-> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
-
->From the patch you can see that the #defines above yours used a
-space where you have used a tab: better to use a space as above.
-
-> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  			mode |= ISOLATE_ASYNC_MIGRATE;
+> diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
+> index 225f96d..f12542b 100644
+> --- a/Documentation/dma-buf-sharing.txt
+> +++ b/Documentation/dma-buf-sharing.txt
+> @@ -32,8 +32,12 @@ The buffer-user
+>  *IMPORTANT*: [see https://lkml.org/lkml/2011/12/20/211 for more details]
+>  For this first version, A buffer shared using the dma_buf sharing API:
+>  - *may* be exported to user space using "mmap" *ONLY* by exporter, outside of
+> -   this framework.
+> -- may be used *ONLY* by importers that do not need CPU access to the buffer.
+> +  this framework.
+> +- with this new iteration of the dma-buf api cpu access from the kernel has been
+> +  enable, see below for the details.
+> +
+> +dma-buf operations for device dma only
+> +--------------------------------------
 >  
->  		/* Try isolate the page */
-> -		if (__isolate_lru_page(page, mode, 0) != 0)
-> +		if (__isolate_lru_page(page, mode) != 0)
->  			continue;
+>  The dma_buf buffer sharing API usage contains the following steps:
+>  
+> @@ -219,7 +223,99 @@ NOTES:
+>     If the exporter chooses not to allow an attach() operation once a
+>     map_dma_buf() API has been called, it simply returns an error.
+>  
+> -Miscellaneous notes:
+> +Kernel cpu access to a dma-buf buffer object
+> +--------------------------------------------
+> +
+> +The motivation to allow cpu access from the kernel to a dma-buf object from the
+> +importers side are:
+> +- fallback operations, e.g. if the devices is connected to a usb bus and the
+> +  kernel needs to shuffle the data around first before sending it away.
+> +- full transperancy for existing users on the importer side, i.e. userspace
+> +  should not notice the difference between a normal object from that subsystem
+> +  and an imported one backed by a dma-buf. This is really important for drm
+> +  opengl drivers that expect to still use all the existing upload/download
+> +  paths.
+> +
+> +Access to a dma_buf from the kernel context involves three steps:
+> +
+> +1. Prepare access, which invalidate any necessary caches and make the object
+> +   available for cpu access.
+> +2. Access the object page-by-page with the dma_buf map apis
+> +3. Finish access, which will flush any necessary cpu caches and free reserved
+> +   resources.
 
-I thought you were missing something there, but no, that's rather
-the case you are simplifying.  However...
+Where it should be decided which operations are being done to the buffer
+when it is passed to user space and back to kernel space?
 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index af6cfe7..1b70338 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1520,6 +1511,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->  		isolate_mode |= ISOLATE_UNMAPPED;
->  	if (!sc->may_writepage)
->  		isolate_mode |= ISOLATE_CLEAN;
-> +	if (file)
-> +		isolate_mode |= ISOLATE_FILE;
-> +	else
-> +		isolate_mode |= ISOLATE_ANON;
+How about spliting these operations to those done on the first time the
+buffer is passed to the user space (mapping to kernel address space, for
+example) and those required every time buffer is passed from kernel to user
+and back (cache flusing)?
 
-Above here, under "if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)",
-don't you need
+I'm asking since any unnecessary time-consuming operations, especially as
+heavy as mapping the buffer, should be avoidable in subsystems dealing
+with streaming video, cameras etc., i.e. non-GPU users.
 
-		isolate_mode |= ISOLATE_ACTIVE | ISOLATE_FILE | ISOLATE_ANON;
+> +1. Prepare acces
+> +
+> +   Before an importer can acces a dma_buf object with the cpu from the kernel
+> +   context, it needs to notice the exporter of the access that is about to
+> +   happen.
+> +
+> +   Interface:
+> +      int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
+> +				   size_t start, size_t len,
+> +				   enum dma_data_direction direction)
+> +
+> +   This allows the exporter to ensure that the memory is actually available for
+> +   cpu access - the exporter might need to allocate or swap-in and pin the
+> +   backing storage. The exporter also needs to ensure that cpu access is
+> +   coherent for the given range and access direction. The range and access
+> +   direction can be used by the exporter to optimize the cache flushing, i.e.
+> +   access outside of the range or with a different direction (read instead of
+> +   write) might return stale or even bogus data (e.g. when the exporter needs to
+> +   copy the data to temporaray storage).
+> +
+> +   This step might fail, e.g. in oom conditions.
+> +
+> +2. Accessing the buffer
+> +
+> +   To support dma_buf objects residing in highmem cpu access is page-based using
+> +   an api similar to kmap. Accessing a dma_buf is done in aligned chunks of
+> +   PAGE_SIZE size. Before accessing a chunk it needs to be mapped, which returns
+> +   a pointer in kernel virtual address space. Afterwards the chunk needs to be
+> +   unmapped again. There is no limit on how often a given chunk can be mapped
+> +   and unmmapped, i.e. the importer does not need to call begin_cpu_access again
+> +   before mapping the same chunk again.
+> +
+> +   Interfaces:
+> +      void *dma_buf_kmap(struct dma_buf *, unsigned long);
+> +      void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
+> +
+> +   There are also atomic variants of these interfaces. Like for kmap they
+> +   facilitate non-blocking fast-paths. Neither the importer nor the exporter (in
+> +   the callback) is allowed to block when using these.
+> +
+> +   Interfaces:
+> +      void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
+> +      void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
+> +
+> +   For importers all the restrictions of using kmap apply, like the limited
+> +   supply of kmap_atomic slots. Hence an importer shall only hold onto at most 2
+> +   atomic dma_buf kmaps at the same time (in any given process context).
+> +
+> +   dma_buf kmap calls outside of the range specified in begin_cpu_access are
+> +   undefined. If the range is not PAGE_SIZE aligned, kmap needs to succeed on
+> +   the partial chunks at the beginning and end but may return stale or bogus
+> +   data outside of the range (in these partial chunks).
+> +
+> +   Note that these calls need to always succeed. The exporter needs to complete
+> +   any preparations that might fail in begin_cpu_access.
+> +
+> +3. Finish access
+> +
+> +   When the importer is done accessing the range specified in begin_cpu_acces,
+> +   it needs to announce this to the exporter (to facilitate cache flushing and
+> +   unpinning of any pinned resources). The result of of any dma_buf kmap calls
+> +   after end_cpu_access is undefined.
+> +
+> +   Interface:
+> +      void dma_buf_end_cpu_access(struct dma_buf *dma_buf,
+> +				  size_t start, size_t len,
+> +				  enum dma_data_direction dir);
+> +
+> +
+> +Miscellaneous notes
+> +-------------------
+> +
+>  - Any exporters or users of the dma-buf buffer sharing framework must have
+>    a 'select DMA_SHARED_BUFFER' in their respective Kconfigs.
 
-now to reproduce the same "all_lru_mode" behaviour as before?
+Kind regards,
 
-Hugh
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	jabber/XMPP/Gmail: sailus@retiisi.org.uk
