@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2CCRhV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 12:37:21 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36396 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2CCRhU (ORCPT
+	id S1753948Ab2CCRhr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 12:37:47 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:35492 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab2CCRhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 12:37:20 -0500
-Date: Sat, 3 Mar 2012 17:39:16 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "John G. Heim" <jheim@math.wisc.edu>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: speakup bug
-Message-ID: <20120303173916.7eca9391@pyramind.ukuu.org.uk>
-In-Reply-To: <BFFDBC9B6BA14BE1AC8E266A3A456A63@hinkle>
-References: <BFFDBC9B6BA14BE1AC8E266A3A456A63@hinkle>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Sat, 3 Mar 2012 12:37:45 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 3 Mar 2012 18:37:22 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 08/11] firewire-sbp-target: Add sbp_login.{c,h}
+Message-ID: <20120303183722.04cdbfee@stein>
+In-Reply-To: <4F3CE6A1.9050602@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-9-git-send-email-bootc@bootc.net>
+	<20120215220052.040e680a@stein>
+	<4F3CE6A1.9050602@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,39 +30,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Mar 2012 11:18:12 -0600
-"John G. Heim" <jheim@math.wisc.edu> wrote:
+On Feb 16 Chris Boot wrote:
+> The session is only really inspected/maniuplated in the context of work 
+> items, so it's possible I could use mutexes - although in the target 
+> agent address handler I do check the node_id against the one in the 
+> session (and I should really check the generation too). Would memory 
+> barriers be enough for those or would locking be required?
 
-> I need help fixing a bug in the driver for serial hardware  speech synths in 
-> the speakup screen reader. According to the comments in the code, it is in a 
-> part of the code that is trying to "steal" the serial port.
+A node ID itself is an incomplete datum.  Only a card--generation--node_ID
+tuple is complete.
 
-Yes - and the code is broken. To start with it's assumig a legacy PC
-serial port at 0x3F8 and that it can beat the serial layer to it.
+If generation and node ID are written and read concurrently, you have a
+couple of choices to do this consistently:  You could atomically write and
+read an integer which contains 8 bits of generation and 16 bits of node
+ID.  Or you could serialize write and read accesses by a lock or mutex.
+Or you could force the write side to write node ID before generation
+(with an smp_wmb between to enforce order), and the read side to read
+generation before node ID (with an smp_rmb to enforce order).
 
-> returns an error code. But it looks as if the region for a serial port, 
-> 0x3f8 - 0x3ff,  in ioport_resource cannot be reserved because the entire 
-> range from 0x000 through 0xcf7 is already taken by something named "PCI Bus 
-> 0000:00".  Therefore calling request_resource always fails and the driver 
-> for the speech synth errors out.
+The latter method leaves a brief window in which a reader could pick up a
+current node ID together with an outdated generation.  This is harmless
+because the OHCI hardware and respective precautions in firewire-ohci
+prevents transaction subactions with outdated generation to go out to the
+wire.
 
-It's a heirarchical space, so you can allocate things within it. Look
-at /proc/ioports.
+It is generally recommended to implement such accesses in drivers with
+locks (spinlocks or mutexes).  Among the various means to deal with
+concurrency issues, locks seem to be best understood by us simple folk who
+hack on drivers. :-)
 
-> And therefore I can't use my hardware speech synth without modifying the 
-> kernel code.  If you comment out the line that checks the return code from 
-> request_region, it works. So you have to modify  the kernel code and compile 
-> a custom kernel to use a hardware speech synth. That's not such a problem 
-> for me but it is for a lot of people. Plus, the grml live CD doesn't work 
-> with hardware speech.  That is a problem for me.
-> 
-> Can anyone tell me how to fix this so it can be patched in the official 
-> kernel code?
+[...]
+> I guess I need to protect access to 
+> the entire session really. Possibly even rwlocks due to only the 
+> management processes ever changing anything, but lots of reads during 
+> command handling.
 
-The proper fix is to make the drivers work via the serial layer properly.
-The speakup people have been told this repeatedly for years and years
-which is why their drivers work on less and less systems and won't run
-with things PCI or USB serial ports, and why they are forever buried in
-staging.
+The use case for rwlocks is not really the case where infrequent write
+access meets frequent read access.  Rather, the use case is when it is
+important to reduce or prevent contention between readers.
 
-Alan
+Rwlocks come with their own downsides though.  I guess the somewhat
+costlier lock implementation could counter the benefit of allowing
+concurrent readers.  Or maybe latency spikes around a write access could be
+an issue.
+
+I believe I have read somewhere that one should rather use a simple
+spinlock unless exhaustive tests prove that an rwlock really performs
+better.  Furthermore, in many if not all use cases of rwlocks, RCU is
+available as another alternative.  RCU comes with its own set of downsides
+though, for example not being as well and widely understood by programmers
+compared to locking, being less easy to debug (may have improved
+recently), and posing some challenges to RT-PREEMPT kernels.
+
+AFAIU the above considerations cannot be applied 100 % to able-to-sleep
+reader-writer locks, i.e. the kernel's rwsem.  Still, the use case of an
+rwsem (in contrast to a mutex) is not particularly where a datum is rarely
+written and often read, but where it is desirable to let multiple readers
+not block each other.
+
+[Somebody correct me where I'm wrong.]
+
+PS, I cloned your git tree not long ago, but again various distractions
+kept me from having a broader look at your code...
+-- 
+Stefan Richter
+-=====-===-- --== ---==
+http://arcgraph.de/sr/
