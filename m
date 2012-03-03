@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab2CCOTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 09:19:10 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64897 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab2CCOTI (ORCPT
+	id S1753708Ab2CCO0W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 09:26:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59552 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab2CCO0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 09:19:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of luciarosculete@gmail.com designates 10.213.17.77 as permitted sender) smtp.mail=luciarosculete@gmail.com; dkim=pass header.i=luciarosculete@gmail.com
-From: Lucia Rosculete <luciarosculete@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, Lucia Rosculete <luciarosculete@gmail.com>
-Subject: [PATCH] semaphore: fix comment
-Date: Sat,  3 Mar 2012 16:18:47 +0200
-Message-Id: <1330784327-7172-1-git-send-email-luciarosculete@gmail.com>
-X-Mailer: git-send-email 1.7.9.1
+	Sat, 3 Mar 2012 09:26:20 -0500
+Date: Sat, 3 Mar 2012 08:26:04 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        containers@lists.linux-foundation.org,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Lennart Poettering <lennart@poettering.net>, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120303142604.GA13187@peqn>
+References: <20120221211938.GE12236@google.com>
+ <m162em2efy.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m162em2efy.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	 Replace "mutex" with "semaphore" in down_trylock comment
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 4.  Only allow a single controller per hierarchy.  So that we can
+> make reasonable choice points.  If the hierarchy is to be about
+> policy I am baffled by concept of putting multiple controllers in
+> a single hierarchy.  Because where you clump things together for
+> policy for one controller in general does not seem to be where you
+> want to clump things together for another controller.
 
-Signed-off-by: Lucia Rosculete <luciarosculete@gmail.com>
----
- kernel/semaphore.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This I agree with.  The only reasonably use I've seen for the
+composed hierarchies is the ns cgroup, which was the wrong tool
+for what it wanted to do anyway.  With ns cgroup deprecated, every
+modern setup I've seen mounts each cgroup separately.
 
-diff --git a/kernel/semaphore.c b/kernel/semaphore.c
-index 60636a4..4567fc0 100644
---- a/kernel/semaphore.c
-+++ b/kernel/semaphore.c
-@@ -118,7 +118,7 @@ EXPORT_SYMBOL(down_killable);
-  * down_trylock - try to acquire the semaphore, without waiting
-  * @sem: the semaphore to be acquired
-  *
-- * Try to acquire the semaphore atomically.  Returns 0 if the mutex has
-+ * Try to acquire the semaphore atomically.  Returns 0 if the semaphore has
-  * been acquired successfully or 1 if it it cannot be acquired.
-  *
-  * NOTE: This return value is inverted from both spin_trylock and
--- 
-1.7.6.3
+> > So, I mean, I don't know.  What do other people think?  Is this a
+> > unnecessary worry?  Are people generally happy with the way things
+> > are?  Lennart, Kay, what do you guys think?
+> 
+> I think the current situation is crazy.
+> 
+> I especially think it is crazy that inside a container I can't create
+> a fresh set of cgroup mounts, and establish a fresh "hierarchy" relative
+> to the process that created the cgroup mounts.  It sucks that
+> controllers may nest fine but hierarchies don't nest.
 
+Again I agree here.  In the past there has been brought up the idea
+of fake cgroup roots ( http://thread.gmane.org/gmane.linux.kernel/1197643 )
+I haven't looked in detail, but I know some people hated this particular
+idea.  But it tried to solve this problem.
+
+Perhaps we can attack this in two stages.
+
+1. get rid of the ability to compose cgroups.  See how much this
+simplifies the code.
+
+2. add the ability to somehow namespace the cgroup mounts to allow a
+container to freshly mount cgroups.
+
+-serge
