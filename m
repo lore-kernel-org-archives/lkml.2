@@ -1,41 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2CCWko (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 17:40:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55662 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab2CCWkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 17:40:43 -0500
-Date: Sat, 3 Mar 2012 23:40:41 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: memblock: move mem_hole_size() to .init
-In-Reply-To: <20120228200753.GA3252@dhcp-172-17-108-109.mtv.corp.google.com>
-Message-ID: <alpine.LNX.2.00.1203032339451.23367@pobox.suse.cz>
-References: <alpine.LNX.2.00.1202281614450.31150@pobox.suse.cz> <20120228200753.GA3252@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754048Ab2CCWlu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 17:41:50 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45066 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab2CCWls convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 17:41:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.213.22.146 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120302142651.GH5054@shiny>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+	<20120301143859.GX5054@shiny>
+	<CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+	<20120302140038.GD5054@shiny>
+	<CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
+	<20120302142651.GH5054@shiny>
+Date: Sat, 3 Mar 2012 23:41:46 +0100
+Message-ID: <CADDYkjRyQruZgFHDsyAgAV7J3yvunU5YuwmmbxK=1WXJLHw98Q@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>, Theodore Tso <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012, Tejun Heo wrote:
+2012/3/2 Chris Mason <chris.mason@oracle.com>:
+> On Fri, Mar 02, 2012 at 03:16:12PM +0100, Jacek Luczak wrote:
+>> 2012/3/2 Chris Mason <chris.mason@oracle.com>:
+>> > On Fri, Mar 02, 2012 at 11:05:56AM +0100, Jacek Luczak wrote:
+>> >>
+>> >> I've took both on tests. The subject is acp and spd_readdir used with
+>> >> tar, all on ext4:
+>> >> 1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
+>> >> 2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
+>> >> 3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
+>> >>
+>> >> The acp looks much better than spd_readdir but directory copy with
+>> >> spd_readdir decreased to 52m 39sec (30 min less).
+>> >
+>> > Do you have stats on how big these files are, and how fragmented they
+>> > are?  For acp and spd to give us this, I think something has gone wrong
+>> > at writeback time (creating individual fragmented files).
+>>
+>> How big? Which files?
+>
+> All the files you're reading ;)
+>
+> filefrag will tell you how many extents each file has, any file with
+> more than one extent is interesting.  (The ext4 crowd may have better
+> suggestions on measuring fragmentation).
+>
+> Since you mention this is a compile farm, I'm guessing there are a bunch
+> of .o files created by parallel builds.  There are a lot of chances for
+> delalloc and the kernel writeback code to do the wrong thing here.
+>
 
-> > mem_hole_size() is being called only from __init-marked functions, and as 
-> > such should be moved to .init section as well. Fixes this warning:
-> > 
-> > WARNING: vmlinux.o(.text+0x35511): Section mismatch in reference from the function mem_hole_size() to the function .init.text:absent_pages_in_range()
-> > 
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> Acked-by: Tejun Heo <tj@kernel.org>
+This took some time be here it goes ...
 
-Thanks. Doesn't seem to have been picked up ... Ingo/hpa, I guess it's 
-appropriate for -tip?
+* B size files - total: 1064462 (53.81%)
+| Size range    | File cnt      | Fragmented    | Fragmented %  |
+| [0,100)       | 288702        | 0             | 0             |
+| [100,200)     | 165997        | 0             | 0             |
+| [200,300)     | 45993         | 0             | 0             |
+| [300,400)     | 64883         | 0             | 0             |
+| [400,500)     | 39282         | 0             | 0             |
+| [500,600)     | 61612         | 0             | 0             |
+| [600,700)     | 208822        | 0             | 0             |
+| [700,800)     | 64016         | 0             | 0             |
+| [800,900)     | 58181         | 0             | 0             |
+| [900,1024)    | 66974         | 0             | 0             |
 
--- 
-Jiri Kosina
-SUSE Labs
+* K size files - total: 907375 (45.86%)
+| Size range    | File cnt      | Fragmented    | Fragmented %  |
+| [1,2)         | 285481        | 0             | 0             |
+| [2,3)         | 148461        | 0             | 0             |
+| [3,4)         | 102569        | 0             | 0             |
+| [4,5)         | 45089         | 0             | 0             |
+| [5,6)         | 44223         | 0             | 0             |
+| [6,10)        | 94202         | 0             | 0             |
+| [10,20)       | 83760         | 0             | 0             |
+| [20,30)       | 42548         | 0             | 0             |
+| [30,40)       | 15274         | 0             | 0             |
+| [40,50)       | 4060          | 0             | 0             |
+| [50,60)       | 3517          | 0             | 0             |
+| [60,100)      | 7834          | 0             | 0             |
+| [100,1024)    | 30357         | 0             | 0             |
+
+*M size files - total: 6312 (0.33%)
+| Size range    | File cnt      | Fragmented    | Fragmented %  |
+| [1.10)        | 5806          | 100           | 1.72          |
+| [10,100)      | 482           | 200           | 41.49         |
+| [100,1024)    | 24            | 13            | 54.16         |
+
+All files scanned: 1978149
+Files fragmented: 313 (0.015%) where 11 have 3+ extents
+Total size of fragmented files: 7GB (~13% of dir size)
+
+tar cf on fragmented files:
+1) time: 7sec
+2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_fragmented.png
+3) sw graph with spd_readdir:
+http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_spd.png
+4) both on one:
+http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_pure_spd.png
+
+tar cf of fragmented files disturbed with [40,50) K files (in total
+4373 files). K files before fragmented M files:
+1) size: 7.2GB
+2) time: 1m 14sec
+3) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_disturbed.png
+4) sw graph with spd_readdir:
+http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_spd.png
+5) both on one:
+http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_pure_spd.png
+
+I will perform same tests on btrfs tomorrow.
+
+-Jacek
