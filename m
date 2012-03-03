@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048Ab2CCICu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 03:02:50 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:19672 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2CCICs (ORCPT
+	id S1751329Ab2CCI1q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 03:27:46 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38039 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab2CCI1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 03:02:48 -0500
-Date: Sat, 3 Mar 2012 11:04:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] block, sx8: fix pointer math issue getting fw version
-Message-ID: <20120303080449.GK22598@mwanda>
-References: <20120302190042.GB3951@elgon.mountain>
- <4F51C103.507@kernel.dk>
- <4F51C18C.5080903@kernel.dk>
+	Sat, 3 Mar 2012 03:27:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.122.144 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F51D5FB.4050106@openvz.org>
+Date: Sat, 03 Mar 2012 12:27:39 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wIc/V6YLA2QdyfT4"
-Content-Disposition: inline
-In-Reply-To: <4F51C18C.5080903@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F51D023.0003,ss=1,re=0.000,fgs=0
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
+References: <20120229090748.29236.35489.stgit@zurg> <20120229091547.29236.28230.stgit@zurg> <alpine.LSU.2.00.1203021542560.3578@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1203021542560.3578@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hugh Dickins wrote:
+> On Wed, 29 Feb 2012, Konstantin Khlebnikov wrote:
+>
+>> This patch adds file/anon filter bits into isolate_mode_t,
+>> this allows to simplify checks in __isolate_lru_page().
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> Almost-Acked-by: Hugh Dickins<hughd@google.com>
+>
+> with one whitespace nit, and one functional addition requested.
+>
+> I'm perfectly happy with your :?s myself, but some people do dislike
+> them.  I'm happy with the switch alternative if it's as efficient:
+> something that surprised me very much when trying to get convincing
+> performance numbers for per-memcg per-zone lru_lock at home...
+>
+> ... __isolate_lru_page() featured astonishly high on the perf report
+> of streaming from files on ext4 on /dev/ram0 to /dev/null, coming
+> immediately below the obvious zeroing and copying: okay, the zeroing
+> and copying were around 30% each, and __isolate_lru_page() down around
+> 2% or below, but even so it seemed very odd that it should feature so
+> high, and any optimizations to it very welcome - unless it was purely
+> some bogus result.
 
---wIc/V6YLA2QdyfT4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually ANON/FILE ACTIVE/INACTIVE checks does not required at non-lumpy reclaim
+(all pages are picked from right lru list) and compaction (it does not care).
+But seems like removing these two bit-checks cannot give noticeable performance gain.
 
-On Sat, Mar 03, 2012 at 08:00:28AM +0100, Jens Axboe wrote:
-> On 2012-03-03 07:58, Jens Axboe wrote:
-> > On 2012-03-02 20:00, Dan Carpenter wrote:
-> >> "mem" is type u8.  We need parenthesis here or it screws up the pointer
-> >> math probably leading to an oops.
-> >=20
-> > Applied, thanks Dan. I have marked it stable, too.
->=20
-> Hmm wait Dan, seems to me that u8 pointer math should be equiv to char *
-> pointer math and hence it'd work just fine. Are you sure this is a bug?
+This patch can be postponed. It does not so important and
+it does not share context with other patches in this set.
 
-It's the cast on the line before is what breaks it.  We need the
-parentheses so we add first then cast the result.
+>
+>> ---
+>>   include/linux/mmzone.h |    4 ++++
+>>   include/linux/swap.h   |    2 +-
+>>   mm/compaction.c        |    5 +++--
+>>   mm/vmscan.c            |   27 +++++++++++++--------------
+>>   4 files changed, 21 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index eff4918..2fed935 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -193,6 +193,10 @@ struct lruvec {
+>>   #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+>>   /* Isolate for asynchronous migration */
+>>   #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+>> +/* Isolate swap-backed pages */
+>> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
+>> +/* Isolate file-backed pages */
+>> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
+>
+>  From the patch you can see that the #defines above yours used a
+> space where you have used a tab: better to use a space as above.
+>
+>> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>   			mode |= ISOLATE_ASYNC_MIGRATE;
+>>
+>>   		/* Try isolate the page */
+>> -		if (__isolate_lru_page(page, mode, 0) != 0)
+>> +		if (__isolate_lru_page(page, mode) != 0)
+>>   			continue;
+>
+> I thought you were missing something there, but no, that's rather
+> the case you are simplifying.  However...
+>
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index af6cfe7..1b70338 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1520,6 +1511,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+>>   		isolate_mode |= ISOLATE_UNMAPPED;
+>>   	if (!sc->may_writepage)
+>>   		isolate_mode |= ISOLATE_CLEAN;
+>> +	if (file)
+>> +		isolate_mode |= ISOLATE_FILE;
+>> +	else
+>> +		isolate_mode |= ISOLATE_ANON;
+>
+> Above here, under "if (sc->reclaim_mode&  RECLAIM_MODE_LUMPYRECLAIM)",
+> don't you need
+>
+> 		isolate_mode |= ISOLATE_ACTIVE | ISOLATE_FILE | ISOLATE_ANON;
+>
+> now to reproduce the same "all_lru_mode" behaviour as before?
 
-regards,
-dan carpenter
+Yes, I missed this. Thanks.
 
+>
+> Hugh
 
---wIc/V6YLA2QdyfT4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPUdChAAoJEOnZkXI/YHqROGAP/RawaZtVRHdRTGrnJmNPRr9m
-+r/JdjPDJQBUC/azTE4QXBvW4rmlIwkPLaAnuh+FS6vyp2kc+plvZFYAMdTjth3n
-8uFY+FR7qIDcpxfKSBQYZxMuepmGoPCUgFPTKaLKaed2G5aXi8UXwXhoS2CSnqag
-x09+NSSAqndgRoEPKRK/+0LmtiDAkbPTHgTpkZ/OmdpGnaHIIuThLudDCuL1B9Dz
-8QhTUrmKAjDhbRSjvupsZqjLqXj7+QI87f/fpbCVtgvo61juPLDQXVjzQMDopXjD
-HUAmh2dkuEhKmBYSBFGtmgAMobBLE5UrNE4igqMVH3tUNiUIencEJylsz6NnFKwy
-/cd0batD6AoqbrOOcY2IAbPwvKumB7rzSsiIcH8VqBB+LYqgbp4/IUup3H/r0AVJ
-Td/ghGOS8EHpxh4TVZARHk0Ko2UMxkfK77Htf7D15rBfJlFbLK5YdMjJZFiKFfrZ
-iXEsK6ob4a4hh4M/1LFlsH1DfERtIrqKMyNtI7HWrf2ECB2bOm4yVDW8MvvpnYn7
-ZAIS7Vu11dTWkC79eqT2fzk95yv6AsntpfrXGVrLeBXcdMQgUNjXiK+Pkt9ZO6tX
-BDjmSaeDiGqfWas0741l2837yoD/TVYXXaaaE6GBR5pPWge3vQo8PAAhGZoUWrrk
-fSPobaOwdy27UC8YzUT4
-=DjZU
------END PGP SIGNATURE-----
-
---wIc/V6YLA2QdyfT4--
