@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965647Ab2CBXrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 18:47:21 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44665 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965577Ab2CBXrU (ORCPT
+	id S1030408Ab2CCACJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 19:02:09 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:56048 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756383Ab2CCACI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 18:47:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rientjes@google.com designates 10.68.130.1 as permitted sender) smtp.mail=rientjes@google.com; dkim=pass header.i=rientjes@google.com
-Date: Fri, 2 Mar 2012 15:47:17 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miao Xie <miaox@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Remove memory barrier damage from the page
- allocator
-In-Reply-To: <1330723529.11248.237.camel@twins>
-Message-ID: <alpine.DEB.2.00.1203021540040.18377@chino.kir.corp.google.com>
-References: <20120302112358.GA3481@suse.de> <alpine.DEB.2.00.1203021018130.15125@router.home> <20120302174349.GB3481@suse.de> <1330723529.11248.237.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 2 Mar 2012 19:02:08 -0500
+Date: Fri, 2 Mar 2012 19:02:05 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: [RELEASE] LTTng 2.0 Release Candidate 2
+Message-ID: <20120303000205.GA18140@Krystal>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:57:50 up 465 days,  5:00,  5 users,  load average: 0.13, 0.03,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Peter Zijlstra wrote:
+LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
+full system tracing solution toolchain. It is composed of several
+components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming. LTTng is open source software.
 
-> Also, for the write side it doesn't really matter, changing mems_allowed
-> should be rare and is an 'expensive' operation anyway.
-> 
+* Important compatibility note:
 
-It's very expensive even without memory barriers since the page allocator 
-wraps itself in {get,put}_mems_allowed() until a page or NULL is returned 
-and an update to current's set of allowed mems can stall indefinitely 
-trying to change the nodemask during this time.  The thread changing 
-cpuset.mems is holding cgroup_mutex the entire time which locks out 
-changes, including adding additional nodes to current's set of allowed 
-mems.  If direct reclaim takes a long time or an oom killed task fails to 
-exit quickly (or the allocation is __GFP_NOFAIL and we just spin 
-indefinitely holding get_mems_allowed()), then it's not uncommon to see a 
-write to cpuset.mems taking minutes while holding the mutex, if it ever 
-actually returns at all.
+  In rc2, we had to add padding in the ABIs between applications
+  TRACEPOINT_EVENT providers and liblttng-ust, and in the ring buffer ABI
+  shared between lttng-ust and the lttng-tools consumer. Therefore,
+  users upgrading to rc2 should recompile their tracepoint providers and
+  upgrade both lttng-ust and lttng-tools to rc2.
+
+
+We plan to release LTTng 2.0 final on March 20, 2012.
+
+For the entire RC time-frame the latest packages under section "Download
+Toolchain Source Packages" from the following URL should be used:
+
+  http://lttng.org/lttng2.0
+
+Project website: http://lttng.org
+Download link: http://lttng.org/lttng2.0
+(please refer to the README files for installation instructions and
+lttng-tools doc/quickstart.txt for usage information)
+
+Key Features:
+
+- Efficient synchronized User-space and Kernel tracing using the same
+  time-source provides view of correlated kernel and user-space events.
+- LTTng 2.0 kernel modules build against a vanilla or distribution
+  kernel, without need for additional patches,
+- Tracepoints, detailed syscall tracing (fast strace replacement),
+  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
+  probing (kprobes) and function call/return tracing (kretprobes support),
+- Have the ability to attach "context" information to events in the
+  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
+  All the extra information fields to be collected with events are
+  optional, specified on a per-tracing-session basis (except for
+  timestamp and event id, which are mandatory).
+- Allows non-root users part of the "tracing" group to perform kernel
+  and userspace tracing.
+- Allows multiple tracing sessions to be active concurrently, each with
+  its own instrumentation set.
+- Integrated interface for both kernel and userspace tracing,
+- Produces CTF (Common Trace Format) natively,
+  (http://www.efficios.com/ctf)
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
