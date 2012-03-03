@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758457Ab2CCASV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 19:18:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:32915 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757139Ab2CCAST convert rfc822-to-8bit (ORCPT
+	id S1030671Ab2CCAXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 19:23:04 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60165 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964778Ab2CCAXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 19:18:19 -0500
+	Fri, 2 Mar 2012 19:23:02 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.129.136 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Fri, 2 Mar 2012 16:22:25 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
+In-Reply-To: <20120229091547.29236.28230.stgit@zurg>
+Message-ID: <alpine.LSU.2.00.1203021542560.3578@eggly.anvils>
+References: <20120229090748.29236.35489.stgit@zurg> <20120229091547.29236.28230.stgit@zurg>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120303000203.GH22215@thunk.org>
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org> <20120303000203.GH22215@thunk.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 2 Mar 2012 16:17:58 -0800
-X-Google-Sender-Auth: YbHnvr20RFrDLQND9ohozZ7KT3E
-Message-ID: <CA+55aFzp+VhnyLzafboy3ABSV5rTwktMTJthii-S_RT9Z75vKQ@mail.gmail.com>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
- any filesystems that depend on the exact VFS 'namehash' implementation?)
-To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 4:02 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> Stupid question.  Your patch requires unaligned accesses to not have a
-> heavy penalty, right?  Wasn't it the case that some generations of x86
-> had pretty large penalties for aligned accesses?  Is that something we
-> need to worry about?
+On Wed, 29 Feb 2012, Konstantin Khlebnikov wrote:
 
-There are basically no x86's with heavy penalties.
+> This patch adds file/anon filter bits into isolate_mode_t,
+> this allows to simplify checks in __isolate_lru_page().
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Sure, unaligned accesses are often *slightly* more expensive,
-especially if they cross the cache access boundary (which tends to be
-8 bytes on older 32-bit cpu's, and generally 16 bytes on more modern
-CPUs - so it's not that they are unaligned per se, but that they cross
-the bank size). But even then, it's usually not a huge deal (ie it
-takes up two read slots instead of just one).
+Almost-Acked-by: Hugh Dickins <hughd@google.com>
 
-There are x86 chips that are extremely bad at unaligned SSE/MMX
-accesses, but not regular words.
+with one whitespace nit, and one functional addition requested.
 
-                      Linus
+I'm perfectly happy with your :?s myself, but some people do dislike
+them.  I'm happy with the switch alternative if it's as efficient:
+something that surprised me very much when trying to get convincing
+performance numbers for per-memcg per-zone lru_lock at home...
+
+... __isolate_lru_page() featured astonishly high on the perf report
+of streaming from files on ext4 on /dev/ram0 to /dev/null, coming
+immediately below the obvious zeroing and copying: okay, the zeroing
+and copying were around 30% each, and __isolate_lru_page() down around
+2% or below, but even so it seemed very odd that it should feature so
+high, and any optimizations to it very welcome - unless it was purely
+some bogus result.
+
+> ---
+>  include/linux/mmzone.h |    4 ++++
+>  include/linux/swap.h   |    2 +-
+>  mm/compaction.c        |    5 +++--
+>  mm/vmscan.c            |   27 +++++++++++++--------------
+>  4 files changed, 21 insertions(+), 17 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index eff4918..2fed935 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -193,6 +193,10 @@ struct lruvec {
+>  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+>  /* Isolate for asynchronous migration */
+>  #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+> +/* Isolate swap-backed pages */
+> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
+> +/* Isolate file-backed pages */
+> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
+
+>From the patch you can see that the #defines above yours used a
+space where you have used a tab: better to use a space as above.
+
+> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  			mode |= ISOLATE_ASYNC_MIGRATE;
+>  
+>  		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, mode, 0) != 0)
+> +		if (__isolate_lru_page(page, mode) != 0)
+>  			continue;
+
+I thought you were missing something there, but no, that's rather
+the case you are simplifying.  However...
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index af6cfe7..1b70338 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1520,6 +1511,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+>  		isolate_mode |= ISOLATE_UNMAPPED;
+>  	if (!sc->may_writepage)
+>  		isolate_mode |= ISOLATE_CLEAN;
+> +	if (file)
+> +		isolate_mode |= ISOLATE_FILE;
+> +	else
+> +		isolate_mode |= ISOLATE_ANON;
+
+Above here, under "if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)",
+don't you need
+
+		isolate_mode |= ISOLATE_ACTIVE | ISOLATE_FILE | ISOLATE_ANON;
+
+now to reproduce the same "all_lru_mode" behaviour as before?
+
+Hugh
