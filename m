@@ -1,59 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2CCJMF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 04:12:05 -0500
-Received: from mail.us.es ([193.147.175.20]:39318 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752612Ab2CCJL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 04:11:59 -0500
-Date: Sat, 3 Mar 2012 10:11:53 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Bart De Schuymer <bdschuym@pandora.be>
-Cc: santosh nayak <santoshprasadnayak@gmail.com>, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        bart.de.schuymer@pandora.be, netfilter-devel@vger.kernel.org,
-        shemminger@vyatta.com
-Subject: Re: [Bridge] [PATCH 2/3] netfilter: potential null derefence.
-Message-ID: <20120303091153.GA17253@1984>
-References: <1330593434-19275-1-git-send-email-santoshprasadnayak@gmail.com>
- <20120301123004.GA7250@1984>
- <4F513C2B.6030604@pandora.be>
+	id S1753249Ab2CCJQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 04:16:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51161 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab2CCJQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 04:16:54 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.9.195 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon filter
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Sat, 03 Mar 2012 13:16:48 +0400
+Message-ID: <20120303091327.17599.80336.stgit@zurg>
+In-Reply-To: <20120229091547.29236.28230.stgit@zurg>
+References: <20120229091547.29236.28230.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F513C2B.6030604@pandora.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 10:31:23PM +0100, Bart De Schuymer wrote:
-> Op 1/03/2012 13:30, Pablo Neira Ayuso schreef:
-> >On Thu, Mar 01, 2012 at 02:47:14PM +0530, santosh nayak wrote:
-> >>From: Santosh Nayak<santoshprasadnayak@gmail.com>
-> >>
-> >>I am getting following error.
-> >>" net/bridge/netfilter/ebtables.c:269 ebt_do_table()
-> >>   error: potential null derefence 'cs'"
-> >>
-> >>     i = cs[sp].n;  // If cs == Null then this will cause problem.
-> >
-> >Very sorry, I didn't see the out label.
-> >
-> >I'll apply this to my nf [1] once David takes my previous request for
-> >pulling.
-> >
-> 
-> Hi,
-> 
-> Has this patch been tested? Really, that code in the core firewall
-> function is there for a reason, wouldn't you think?
-> The chainstack is only allocated when user-defined chains are used
-> (see translate_table).
-> Never blindly trust a tool.
+This patch adds file/anon filter bits into isolate_mode_t,
+this allows to simplify checks in __isolate_lru_page().
 
-I see, then that cs NULL dereference never happens.
+v2:
+* use switch () instead of if ()
+* fixed lumpy-reclaim isolation mode
 
-Thanks Bart, I'll drop this patch.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/mmzone.h |    4 ++++
+ include/linux/swap.h   |    2 +-
+ mm/compaction.c        |    5 +++--
+ mm/vmscan.c            |   49 +++++++++++++++++++++++++++++++-----------------
+ 4 files changed, 40 insertions(+), 20 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 5f1e4ee..e60dcbd 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -192,6 +192,10 @@ struct lruvec {
+ #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+ /* Isolate for asynchronous migration */
+ #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
++/* Isolate swap-backed pages */
++#define ISOLATE_ANON		((__force isolate_mode_t)0x20)
++/* Isolate file-backed pages */
++#define ISOLATE_FILE		((__force isolate_mode_t)0x40)
+ 
+ /* LRU Isolation modes. */
+ typedef unsigned __bitwise__ isolate_mode_t;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index ba2c8d7..dc6e6a3 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+-extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
++extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 74a8c82..cc054f7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	unsigned long last_pageblock_nr = 0, pageblock_nr;
+ 	unsigned long nr_scanned = 0, nr_isolated = 0;
+ 	struct list_head *migratelist = &cc->migratepages;
+-	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
++	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
++			      ISOLATE_FILE | ISOLATE_ANON;
+ 
+ 	/* Do not scan outside zone boundaries */
+ 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+@@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 			mode |= ISOLATE_ASYNC_MIGRATE;
+ 
+ 		/* Try isolate the page */
+-		if (__isolate_lru_page(page, mode, 0) != 0)
++		if (__isolate_lru_page(page, mode) != 0)
+ 			continue;
+ 
+ 		VM_BUG_ON(PageTransCompound(page));
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7de3acc..cce1e14 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1029,28 +1029,35 @@ keep_lumpy:
+  *
+  * returns 0 on success, -ve errno on failure.
+  */
+-int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
++int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+ {
+-	bool all_lru_mode;
+ 	int ret = -EINVAL;
+ 
+ 	/* Only take pages on the LRU. */
+ 	if (!PageLRU(page))
+ 		return ret;
+ 
+-	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
+-		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+-
+-	/*
+-	 * When checking the active state, we need to be sure we are
+-	 * dealing with comparible boolean values.  Take the logical not
+-	 * of each.
+-	 */
+-	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
+-		return ret;
++	switch (mode & (ISOLATE_ACTIVE | ISOLATE_INACTIVE)) {
++		case ISOLATE_ACTIVE:
++			if (!PageActive(page))
++				return ret;
++			break;
++		case ISOLATE_INACTIVE:
++			if (PageActive(page))
++				return ret;
++			break;
++	}
+ 
+-	if (!all_lru_mode && !!page_is_file_cache(page) != file)
+-		return ret;
++	switch (mode & (ISOLATE_FILE | ISOLATE_ANON)) {
++		case ISOLATE_FILE:
++			if (!page_is_file_cache(page))
++				return ret;
++			break;
++		case ISOLATE_ANON:
++			if (page_is_file_cache(page))
++				return ret;
++			break;
++	}
+ 
+ 	/*
+ 	 * When this function is being called for lumpy reclaim, we
+@@ -1160,7 +1167,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 
+ 		VM_BUG_ON(!PageLRU(page));
+ 
+-		switch (__isolate_lru_page(page, mode, file)) {
++		switch (__isolate_lru_page(page, mode)) {
+ 		case 0:
+ 			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+@@ -1218,7 +1225,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			    !PageSwapCache(cursor_page))
+ 				break;
+ 
+-			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
++			if (__isolate_lru_page(cursor_page, mode) == 0) {
+ 				unsigned int isolated_pages;
+ 
+ 				mem_cgroup_lru_del(cursor_page);
+@@ -1503,7 +1510,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 
+ 	set_reclaim_mode(priority, sc, false);
+ 	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
+-		isolate_mode |= ISOLATE_ACTIVE;
++		isolate_mode |= ISOLATE_ACTIVE | ISOLATE_FILE | ISOLATE_ANON;
+ 
+ 	lru_add_drain();
+ 
+@@ -1511,6 +1518,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+ 		isolate_mode |= ISOLATE_CLEAN;
++	if (file)
++		isolate_mode |= ISOLATE_FILE;
++	else
++		isolate_mode |= ISOLATE_ANON;
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1677,6 +1688,10 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+ 		isolate_mode |= ISOLATE_CLEAN;
++	if (file)
++		isolate_mode |= ISOLATE_FILE;
++	else
++		isolate_mode |= ISOLATE_ANON;
+ 
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+
