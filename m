@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2CCFyc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 00:54:32 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51929 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab2CCFyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 00:54:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of richardcochran@gmail.com designates 10.14.181.193 as permitted sender) smtp.mail=richardcochran@gmail.com; dkim=pass header.i=richardcochran@gmail.com
-Date: Sat, 3 Mar 2012 06:54:12 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 1/9] time: Condense timekeeper.xtime into xtime_sec
-Message-ID: <20120303055411.GA3835@netboy.at.omicron.at>
-References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org>
- <1330672368-32290-2-git-send-email-john.stultz@linaro.org>
- <alpine.DEB.2.00.1203021510540.20257@router.home>
+	id S1751976Ab2CCGD1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 01:03:27 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56927 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711Ab2CCGD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 01:03:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124500101"
+Message-ID: <4F51B425.7090805@intel.com>
+Date: Sat, 03 Mar 2012 14:03:17 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1203021510540.20257@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Beulich <JBeulich@suse.com>
+CC: jeremy@goop.org, "asit.k.mallick@intel.com" <asit.k.mallick@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, tglx@linutronix.de,
+        Andi Kleen <ak@linux.intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [RFC patch] cmpxchg_double: remove local variables to get better
+ performance
+References: <1330677063.21053.1532.camel@debian> <4F5098B80200007800075F33@nat28.tlf.novell.com> <1330678843.21053.1553.camel@debian> <4F509CE30200007800075F84@nat28.tlf.novell.com> <4F50E376.3030000@intel.com> <4F50F594020000780007612D@nat28.tlf.novell.com>
+In-Reply-To: <4F50F594020000780007612D@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 03:13:25PM -0600, Christoph Lameter wrote:
-> On Thu, 1 Mar 2012, John Stultz wrote:
-> 
-> > +static inline void tk_normalize_xtime(struct timekeeper *tk)
-> > +{
-> > +	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
-> > +		tk->xtime_nsec -= (u64)NSEC_PER_SEC << tk->shift;
-> > +		tk->xtime_sec++;
-> > +	}
-> > +}
-> 
-> Could we avoid the loop?
-> 
-> y = ((u64)NSEC_PER_SEC << tk->shift));
-> tk->xtime_sec += tk->xtime_nsec / y;
-> tk->xtime_nsec %= y;
+On 03/02/2012 11:30 PM, Jan Beulich wrote:
 
-But the two divisions are more costly than addition, substraction, and
-shift.
+>>>> On 02.03.12 at 16:12, Alex Shi <alex.shi@intel.com> wrote:
+>> On 03/02/2012 05:11 PM, Jan Beulich wrote:
+>>> In particular, requiring an L suffix here on literals should be avoided.
+>>
+>>
+>> Even the each macro may save 0x40 bytes text, and bring more 10%
+>> execution speed?
+> 
+> Again - if you see meaningful text size differences with optimization
+> properly enabled, this may need investigation at the compiler end.
 
-(Normally the code loops just once.)
 
-Richard
+Yes, you are right.
+I take back this patch.
+
+> 
+> Jan
+> 
+
+
