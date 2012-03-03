@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab2CCMVq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 07:21:46 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38259 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab2CCMVm (ORCPT
+	id S1752768Ab2CCMaH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 07:30:07 -0500
+Received: from jabberwock.ucw.cz ([46.255.230.98]:55463 "EHLO
+	jabberwock.ucw.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab2CCMaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 07:21:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of snjw23@gmail.com designates 10.213.113.20 as permitted sender) smtp.mail=snjw23@gmail.com; dkim=pass header.i=snjw23@gmail.com
-Message-ID: <4F520CCE.1030409@gmail.com>
-Date: Sat, 03 Mar 2012 13:21:34 +0100
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Sat, 3 Mar 2012 07:30:05 -0500
+Date: Sat, 3 Mar 2012 13:20:14 +0100
+From: Martin Mares <mj@ucw.cz>
+To: Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+Cc: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
+        javier.martinez@collabora.co.uk, rodrigo.moya@collabora.co.uk,
+        javier@collabora.co.uk, lennart@poettering.net, kay.sievers@vrfy.org,
+        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
+        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
+ AF_UNIX
+Message-ID: <mj+md-20120303.121749.5041.albireo@ucw.cz>
+References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
+ <20120301.170848.432407217191581288.davem@davemloft.net>
+ <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
+ <20120302.035509.1994457175982020283.davem@davemloft.net>
+ <CABBYNZJWKGpkK2mSbGCQ2KkE+jC3ih-wR3JQZSMgj7AYhbxeuw@mail.gmail.com>
 MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-CC: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linaro-dev@lists.linaro.org, lm-sensors@lm-sensors.org,
-        eduardo.valentin@ti.com, durgadoss.r@intel.com, patches@linaro.org
-Subject: Re: [PATCH 2/4] hwmon: exynos4: Move thermal sensor driver to driver/mfd
- directory
-References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org> <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
-In-Reply-To: <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABBYNZJWKGpkK2mSbGCQ2KkE+jC3ih-wR3JQZSMgj7AYhbxeuw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2012 12:06 PM, Amit Daniel Kachhap wrote:
-> This movement is needed because the hwmon entries and corresponding
-> sysfs interface is a duplicate of utilities already provided by
-> driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
-> and add necessary calls to get the temperature information.
->
-> Signed-off-by: Amit Daniel Kachhap<amit.kachhap@linaro.org>
-> Signed-off-by: Donggeun Kim<dg77.kim@samsung.com>
-> ---
->   Documentation/hwmon/exynos4_tmu |   81 ------
->   Documentation/mfd/exynos4_tmu   |   81 ++++++
->   drivers/hwmon/Kconfig           |   10 -
->   drivers/hwmon/Makefile          |    1 -
->   drivers/hwmon/exynos4_tmu.c     |  514 ---------------------------------------
->   drivers/mfd/Kconfig             |   10 +
->   drivers/mfd/Makefile            |    1 +
->   drivers/mfd/exynos4_tmu.c       |  514 +++++++++++++++++++++++++++++++++++++++
->   8 files changed, 606 insertions(+), 606 deletions(-)
->   delete mode 100644 Documentation/hwmon/exynos4_tmu
->   create mode 100644 Documentation/mfd/exynos4_tmu
->   delete mode 100644 drivers/hwmon/exynos4_tmu.c
->   create mode 100644 drivers/mfd/exynos4_tmu.c
+Hello!
 
-Please consider adding -M option to git format-patch next time, which
-would make the patch smaller and would let to see clearly what's moved
-and what has changed.
+> Instead we should add many times that into dbus-daemon and do IP
+> multicast, am I missing something?
 
---
-Thanks,
-Sylwester
+I completely agree with Alan that if routing all messages through
+DBUS daemon is a bottleneck, then something is seriously wrong with
+the way the applications use the message bus.
+
+Also, you mentioned the need of passing fd's between applications.
+If I understand correctly, it is a rare case and if you handle such
+messages in the same way as before, it won't hurt performance.
+
+				Have a nice fortnight
+-- 
+Martin `MJ' Mares                          <mj@ucw.cz>   http://mj.ucw.cz/
+Faculty of Math and Physics, Charles University, Prague, Czech Rep., Earth
+Even nostalgia isn't what it used to be.
