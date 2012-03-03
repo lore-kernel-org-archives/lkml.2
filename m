@@ -1,110 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2CCXo7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 18:44:59 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36938 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752407Ab2CCXo6 (ORCPT
+	id S1753430Ab2CCXzL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 18:55:11 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41591 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab2CCXzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 18:44:58 -0500
-Message-ID: <1330818296.15243.1.camel@dabdike.int.hansenpartnership.com>
-Subject: [GIT PULL] parisc fixes for 3.3-rc5
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Parisc List <linux-parisc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 03 Mar 2012 17:44:56 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Mar 2012 18:55:10 -0500
+Date: Sat, 3 Mar 2012 23:57:04 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper
+ is not yet available
+Message-ID: <20120303235704.2df2b040@pyramind.ukuu.org.uk>
+In-Reply-To: <201203032122.36745.chunkeey@googlemail.com>
+References: <201203032122.36745.chunkeey@googlemail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of build fixes to get the cross compiled architecture
-testbeds building again
+On Sat, 3 Mar 2012 21:22:36 +0100
+Christian Lamparter <chunkeey@googlemail.com> wrote:
 
-The patches are here:
+> During resume, the userhelper might not be available. However for
+> drivers which use the request_firmware_nowait interface, this will
+> only lead to a pointless WARNING and a device which no longer works
+> after the resume [since it couldn't get the firmware, because the
+> userhelper was not available to take the request].
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git parisc-fixes
+Can you not load the firmware on the suspend path ?
 
-The short changelog is:
-
-Cong Wang (1):
-      [PARISC] include <linux/prefetch.h> in drivers/parisc/iommu-helpers.h
-
-James Bottomley (2):
-      [PARISC] don't unconditionally override CROSS_COMPILE for 64 bit.
-      [PARISC] fix compile break caused by iomap: make IOPORT/PCI mapping functions conditional
-
-And the diffstat
-
- arch/parisc/Makefile            |    4 ++++
- drivers/parisc/iommu-helpers.h  |    2 ++
- include/asm-generic/iomap.h     |    2 +-
- include/asm-generic/pci_iomap.h |    2 +-
- 4 files changed, 8 insertions(+), 2 deletions(-)
-
-With the full diffs below.
-
-James
-
----
-
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 55cca1d..19ab7b2 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -31,7 +31,11 @@ ifdef CONFIG_64BIT
- UTS_MACHINE	:= parisc64
- CHECKFLAGS	+= -D__LP64__=1 -m64
- WIDTH		:= 64
-+
-+# FIXME: if no default set, should really try to locate dynamically
-+ifeq ($(CROSS_COMPILE),)
- CROSS_COMPILE	:= hppa64-linux-gnu-
-+endif
- else # 32-bit
- WIDTH		:=
- endif
-diff --git a/drivers/parisc/iommu-helpers.h b/drivers/parisc/iommu-helpers.h
-index a9c46cc..8c33491 100644
---- a/drivers/parisc/iommu-helpers.h
-+++ b/drivers/parisc/iommu-helpers.h
-@@ -1,3 +1,5 @@
-+#include <linux/prefetch.h>
-+
- /**
-  * iommu_fill_pdir - Insert coalesced scatter/gather chunks into the I/O Pdir.
-  * @ioc: The I/O Controller.
-diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
-index 8a3d4fd..6afd7d6 100644
---- a/include/asm-generic/iomap.h
-+++ b/include/asm-generic/iomap.h
-@@ -70,7 +70,7 @@ extern void ioport_unmap(void __iomem *);
- /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
--#else
-+#elif defined(CONFIG_GENERIC_IOMAP)
- struct pci_dev;
- static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
- { }
-diff --git a/include/asm-generic/pci_iomap.h b/include/asm-generic/pci_iomap.h
-index e58fcf8..ce37349 100644
---- a/include/asm-generic/pci_iomap.h
-+++ b/include/asm-generic/pci_iomap.h
-@@ -25,7 +25,7 @@ extern void __iomem *__pci_ioport_map(struct pci_dev *dev, unsigned long port,
- #define __pci_ioport_map(dev, port, nr) ioport_map((port), (nr))
- #endif
- 
--#else
-+#elif defined(CONFIG_GENERIC_PCI_IOMAP)
- static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
- {
- 	return NULL;
-
-
-
+Alan
