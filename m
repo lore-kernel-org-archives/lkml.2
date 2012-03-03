@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2CCQMj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 11:12:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44659 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab2CCQMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 11:12:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124619141"
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Word-at-a-time dcache name accesses
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
-	<4F516811.8060800@zytor.com>
-Date: Sat, 03 Mar 2012 08:12:42 -0800
-In-Reply-To: <4F516811.8060800@zytor.com> (H. Peter Anvin's message of "Fri,
-	02 Mar 2012 16:38:41 -0800")
-Message-ID: <m2eht964ud.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753208Ab2CCQNm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 11:13:42 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42973 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2CCQNk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 11:13:40 -0500
+Date: Sat, 3 Mar 2012 16:15:37 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Arend van Spriel" <arend@broadcom.com>
+Cc: "Luis R. Rodriguez" <mcgrof@frijolero.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] compat: makes all compat symbols EXPORT_SYMBOL_GPL()
+Message-ID: <20120303161537.0b4ac739@pyramind.ukuu.org.uk>
+In-Reply-To: <4F52141C.2050808@broadcom.com>
+References: <1330729706-11113-1-git-send-email-mcgrof@frijolero.org>
+	<4F52141C.2050808@broadcom.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+> Some of the modules in this patch are dual-licensed. I was under the 
+> impression that EXPORT_SYMBOL_GPL was specifically for GPL-only code 
+> although I could not find any specifics in the Documentation folder. Do 
+> you (or someone else) have a reference on this topic?
 
-> On 03/02/2012 03:46 PM, Linus Torvalds wrote:
->> 
->> Comments?
->> 
->
-> My biggest concern is what happens when this happens to be at the end of
-> mapped kernel memory and we overrun the page?
+If your code is licensed GPL or greater rights then you shouldn't have a
+problem. The module loader recognizes
 
-A long time ago (AMD K7ish) we had hardware bugs to work around in
-this area. Overlapping into some PCI hole MMIO areas could cause obscure
-hangs.  That is why I was always careful to not do that in any x86
-library code.
+	"GPL"
+	"GPL v2"
+	"GPL and additional rights"
+	"Dual BSD/GPL"
+	"Dual MIT/GPL"
+	"DUal MPL/GPL"
 
--Andi
+as legitimate users of _GPL. Any work which is derivative of the kernel
+(which in practise I suspect means almost any module) will need a GPL
+compatible licence anyway.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
