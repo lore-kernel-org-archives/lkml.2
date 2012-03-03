@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab2CCBMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 20:12:05 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62411 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab2CCBMD convert rfc822-to-8bit (ORCPT
+	id S1757150Ab2CCBQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 20:16:09 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57819 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab2CCBQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 20:12:03 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.8.164 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F516DBA.2030809@zytor.com>
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
- <4F516811.8060800@zytor.com> <CA+55aFzoOOCOU-N6Zaq8Dd+U0no0a9U5ndU-LA_TrctM5tPP2Q@mail.gmail.com>
- <4F516DBA.2030809@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 2 Mar 2012 17:11:41 -0800
-X-Google-Sender-Auth: ysZA_hYRzmZODAG21TtkgBl0UMc
-Message-ID: <CA+55aFwoifDB9YPC53KrFm1DZNVEzYL4+dfP96GE3rz8YCVaMg@mail.gmail.com>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
- any filesystems that depend on the exact VFS 'namehash' implementation?)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Mar 2012 20:16:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.68.134.102 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Ravishankar N <cyberax82@gmail.com>
+Subject: [PATCH 1/2] fat: Clean up xlate_to_uni.
+Date: Fri,  2 Mar 2012 20:15:56 -0500
+Message-Id: <1330737356-7092-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 5:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Note that does mean we need a guard page after each and every
-> discontiguous RAM range, not just the last one.  Raising that issue
-> since we have had serious bugs in that area in the past.
+ The xlate_to_uni is called by vfat_build_slots with sbi->nls_io as the final
+ argument. nls_io can never be null at this point because the check is already being done in fat_fill_super wherein the mount fails if it is null.
 
-Are you sure? I didn't think we even *mapped* things at that granularity.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Ravishankar N <cyberax82@gmail.com>
+---
+ fs/fat/namei_vfat.c |   83 ++++++++++++++++++++++-----------------------------
+ 1 files changed, 36 insertions(+), 47 deletions(-)
 
-We only really need a guard page at the end of an actual end-of-ram
-where we no longer have page tables and/or could hit device space.
+diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+index a81eb23..aae3b4e 100644
+--- a/fs/fat/namei_vfat.c
++++ b/fs/fat/namei_vfat.c
+@@ -521,57 +521,46 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+ 
+ 		op = &outname[*outlen * sizeof(wchar_t)];
+ 	} else {
+-		if (nls) {
+-			for (i = 0, ip = name, op = outname, *outlen = 0;
+-			     i < len && *outlen <= FAT_LFN_LEN;
+-			     *outlen += 1)
+-			{
+-				if (escape && (*ip == ':')) {
+-					if (i > len - 5)
+-						return -EINVAL;
+-					ec = 0;
+-					for (k = 1; k < 5; k++) {
+-						nc = ip[k];
+-						ec <<= 4;
+-						if (nc >= '0' && nc <= '9') {
+-							ec |= nc - '0';
+-							continue;
+-						}
+-						if (nc >= 'a' && nc <= 'f') {
+-							ec |= nc - ('a' - 10);
+-							continue;
+-						}
+-						if (nc >= 'A' && nc <= 'F') {
+-							ec |= nc - ('A' - 10);
+-							continue;
+-						}
+-						return -EINVAL;
++		for (i = 0, ip = name, op = outname, *outlen = 0;
++			 i < len && *outlen <= FAT_LFN_LEN;
++			 *outlen += 1) {
++			if (escape && (*ip == ':')) {
++				if (i > len - 5)
++					return -EINVAL;
++				ec = 0;
++				for (k = 1; k < 5; k++) {
++					nc = ip[k];
++					ec <<= 4;
++					if (nc >= '0' && nc <= '9') {
++						ec |= nc - '0';
++						continue;
+ 					}
+-					*op++ = ec & 0xFF;
+-					*op++ = ec >> 8;
+-					ip += 5;
+-					i += 5;
+-				} else {
+-					if ((charlen = nls->char2uni(ip, len - i, (wchar_t *)op)) < 0)
+-						return -EINVAL;
+-					ip += charlen;
+-					i += charlen;
+-					op += 2;
++					if (nc >= 'a' && nc <= 'f') {
++						ec |= nc - ('a' - 10);
++						continue;
++					}
++					if (nc >= 'A' && nc <= 'F') {
++						ec |= nc - ('A' - 10);
++						continue;
++					}
++					return -EINVAL;
+ 				}
++				*op++ = ec & 0xFF;
++				*op++ = ec >> 8;
++				ip += 5;
++				i += 5;
++			} else {
++				charlen = nls->char2uni(ip, len - i,
++									(wchar_t *)op);
++				if (charlen < 0)
++					return -EINVAL;
++				ip += charlen;
++				i += charlen;
++				op += 2;
+ 			}
+-			if (i < len)
+-				return -ENAMETOOLONG;
+-		} else {
+-			for (i = 0, ip = name, op = outname, *outlen = 0;
+-			     i < len && *outlen <= FAT_LFN_LEN;
+-			     i++, *outlen += 1)
+-			{
+-				*op++ = *ip++;
+-				*op++ = 0;
+-			}
+-			if (i < len)
+-				return -ENAMETOOLONG;
+ 		}
++		if (i < len)
++			return -ENAMETOOLONG;
+ 	}
+ 
+ 	*longlen = *outlen;
+-- 
+1.7.5.4
 
-Which in practice never actually is an issue on PC's - we already
-guard against BIOS usage just under the 0xA0000 address, and in
-practice there are always ACPI tables at the end of RAM (and on x86-32
-we can't use highmem for filenames anyway, so that takes away *those*
-cases).
-
-Which is why I think that for testing purposes we don't even need to
-care - it's basically a "can't happen" (not to mention that nobody
-actually uses PATH_MAX pathames).
-
-For robustness and actual deployment, I do think that yes, we do want
-to make it an explicit rule.
-
-                    Linus
