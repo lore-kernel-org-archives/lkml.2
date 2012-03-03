@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2CCFgW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 00:36:22 -0500
-Received: from sting.hengli.com.au ([178.18.18.71]:50604 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751366Ab2CCFgS (ORCPT
+	id S1752707Ab2CCFyc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 00:54:32 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51929 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab2CCFyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 00:36:18 -0500
-Date: Sat, 3 Mar 2012 16:36:09 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 3.3
-Message-ID: <20120303053609.GA7867@gondor.apana.org.au>
-References: <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au> <20120214033504.GA26895@gondor.apana.org.au> <20120216053200.GA20581@gondor.apana.org.au>
+	Sat, 3 Mar 2012 00:54:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of richardcochran@gmail.com designates 10.14.181.193 as permitted sender) smtp.mail=richardcochran@gmail.com; dkim=pass header.i=richardcochran@gmail.com
+Date: Sat, 3 Mar 2012 06:54:12 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 1/9] time: Condense timekeeper.xtime into xtime_sec
+Message-ID: <20120303055411.GA3835@netboy.at.omicron.at>
+References: <1330672368-32290-1-git-send-email-john.stultz@linaro.org>
+ <1330672368-32290-2-git-send-email-john.stultz@linaro.org>
+ <alpine.DEB.2.00.1203021510540.20257@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120216053200.GA20581@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1203021510540.20257@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Fri, Mar 02, 2012 at 03:13:25PM -0600, Christoph Lameter wrote:
+> On Thu, 1 Mar 2012, John Stultz wrote:
+> 
+> > +static inline void tk_normalize_xtime(struct timekeeper *tk)
+> > +{
+> > +	while (tk->xtime_nsec >= ((u64)NSEC_PER_SEC << tk->shift)) {
+> > +		tk->xtime_nsec -= (u64)NSEC_PER_SEC << tk->shift;
+> > +		tk->xtime_sec++;
+> > +	}
+> > +}
+> 
+> Could we avoid the loop?
+> 
+> y = ((u64)NSEC_PER_SEC << tk->shift));
+> tk->xtime_sec += tk->xtime_nsec / y;
+> tk->xtime_nsec %= y;
 
-This push fixes a bug in mv_cesa that causes all hash operations
-that supply data on a final operation to fail.
+But the two divisions are more costly than addition, substraction, and
+shift.
 
-Please pull from
+(Normally the code loops just once.)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Phil Sutter (1):
-      crypto: mv_cesa - fix final callback not ignoring input data
-
- drivers/crypto/mv_cesa.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Richard
