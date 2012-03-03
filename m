@@ -1,150 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab2CCC3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 21:29:08 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58928 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab2CCC3F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 21:29:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.28.167 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F514E09.5060801@redhat.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
-	<4F514E09.5060801@redhat.com>
-Date: Sat, 3 Mar 2012 10:29:04 +0800
-Message-ID: <CAJd=RBBdnA-gCXo8w5afng_v+AgfQF797pKW0eDdVJbszULvhg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
-From: Hillf Danton <dhillf@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Satoru Moriya <satoru.moriya@hds.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752077Ab2CCDGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 22:06:01 -0500
+Received: from mga03.intel.com ([143.182.124.21]:33031 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab2CCDFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 22:05:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114096765"
+Subject: Re: [RFC PATCH v2 8/8] [SCSI] sr: check and enable Zero-power ODD
+ support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Aaron Lu <aaron.lu@amd.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+In-Reply-To: <CAOzJMDRTbq5o+jCyTtaAW_RPysfY3LhQ9gFC-tsvM8bsnh=rxQ@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1203011059230.9392-100000@netrider.rowland.org>
+	 <1330671765.3412.7.camel@minggr>
+	 <CAOzJMDRTbq5o+jCyTtaAW_RPysfY3LhQ9gFC-tsvM8bsnh=rxQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 03 Mar 2012 11:05:21 +0800
+Message-ID: <1330743921.6369.2.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 3, 2012 at 6:47 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 03/02/2012 12:36 PM, Satoru Moriya wrote:
->>
->> Sometimes we'd like to avoid swapping out anonymous memory
->> in particular, avoid swapping out pages of important process or
->> process groups while there is a reasonable amount of pagecache
->> on RAM so that we can satisfy our customers' requirements.
->>
->> OTOH, we can control how aggressive the kernel will swap memory pages
->> with /proc/sys/vm/swappiness for global and
->> /sys/fs/cgroup/memory/memory.swappiness for each memcg.
->>
->> But with current reclaim implementation, the kernel may swap out
->> even if we set swappiness==0 and there is pagecache on RAM.
->>
->> This patch changes the behavior with swappiness==0. If we set
->> swappiness==0, the kernel does not swap out completely
->> (for global reclaim until the amount of free pages and filebacked
->> pages in a zone has been reduced to something very very small
->> (nr_free + nr_filebacked<  high watermark)).
->>
->> Any comments are welcome.
->>
->> Regards,
->> Satoru Moriya
->>
->> Signed-off-by: Satoru Moriya<satoru.moriya@hds.com>
->> ---
->>  mm/vmscan.c |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index c52b235..27dc3e8 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1983,10 +1983,10 @@ static void get_scan_count(struct mem_cgroup_zone
->> *mz, struct scan_control *sc,
->>         * proportional to the fraction of recently scanned pages on
->>         * each list that were recently referenced and in active use.
->>         */
->> -       ap = (anon_prio + 1) * (reclaim_stat->recent_scanned[0] + 1);
->> +       ap = anon_prio * (reclaim_stat->recent_scanned[0] + 1);
->>        ap /= reclaim_stat->recent_rotated[0] + 1;
->>
->> -       fp = (file_prio + 1) * (reclaim_stat->recent_scanned[1] + 1);
->> +       fp = file_prio * (reclaim_stat->recent_scanned[1] + 1);
->>        fp /= reclaim_stat->recent_rotated[1] + 1;
->>        spin_unlock_irq(&mz->zone->lru_lock);
->
->
-> ACK on this bit of the patch.
->
->> @@ -1999,7 +1999,7 @@ out:
->>                unsigned long scan;
->>
->>                scan = zone_nr_lru_pages(mz, lru);
->> -               if (priority || noswap) {
->> +               if (priority || noswap || !vmscan_swappiness(mz, sc)) {
->>                        scan>>= priority;
->>                        if (!scan&&  force_scan)
->>                                scan = SWAP_CLUSTER_MAX;
->
->
-> However, I do not understand why we fail to scale
-> the number of pages we want to scan with priority
-> if "noswap".
->
-> For that matter, surely if we do not want to swap
-> out anonymous pages, we WANT to go into this if
-> branch, in order to make sure we set "scan" to 0?
->
-> scan = div64_u64(scan * fraction[file], denominator);
->
-> With your patch and swappiness=0, or no swap space, it
-> looks like we do not zero out "scan" and may end up
-> scanning anonymous pages.
->
-> Am I overlooking something?  Is this correct?
->
+On Fri, 2012-03-02 at 23:08 +0800, Aaron Lu wrote:
+> Hi,
+> 
+> On Fri, Mar 2, 2012 at 3:02 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > On Thu, 2012-03-01 at 11:02 -0500, Alan Stern wrote:
+> >> On Thu, 1 Mar 2012, Lin Ming wrote:
+> >>
+> >> > ZPODD(Zero Power Optical Disk Drive) is a new feature in
+> >> > SATA 3.1 specification. It provides a way to power off unused ODD.
+> >> >
+> >> > ZPODD support is checked in in sr_probe().
+> >> > can_power_off flag is set during suspend if ZPODD is supported.
+> >> >
+> >> > ATA port's runtime suspend callback will actually power off the ODD
+> >> > and its runtime resume callback will actually power on the ODD.
+> >> >
+> >> > When ODD is powered off(D3Cold state), inserting disk will trigger a
+> >> > wakeup event(GPE). GPE AML handler notifies the associated device. Then
+> >> > ODD is resumed in the notify handler.
+> >>
+> >> I have one stylistic comment on this patch...
+> >>
+> >> > diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+> >> > index 37c8f6b..39b3d8c 100644
+> >> > --- a/drivers/scsi/sr.h
+> >> > +++ b/drivers/scsi/sr.h
+> >> > @@ -42,6 +42,9 @@ typedef struct scsi_cd {
+> >> >     unsigned readcd_cdda:1; /* reading audio data using READ_CD */
+> >> >     unsigned media_present:1;       /* media is present */
+> >> >
+> >> > +   unsigned zpodd:1;       /* is ZPODD supported */
+> >> > +   unsigned zpodd_event:1;
+> >> > +
+> >>
+> >> You should not expect your readers to understand what "ZPODD" means.
+> >> drivers/scsi/sr.h is used by lots of different people, many of whom
+> >> will have no idea what it refers to, especially since it is part of
+> >> the SATA spec and not the SCSI spec.  You should provide a brief
+> >> explanation.
+> >
+> > I'll add some explanation.
+> >
+> > But I'm thinking maybe it's better to move this flag to ata layer, for
+> 
+> Agree.
+> 
+> > example, adding a flag to libata.h
+> >
+> > ATA_DFLAG_ZPODD
+> >
+> 
+> How about ATA_DFLAG_DA(device attention)?
 
-Try to simplify the complex a bit :)
+Yes, it's better.
 
-Good weekend
--hd
+> It follows the name used in the sata spec and this feature might have
+> other uses in the future in addition to zero power odd(just my wild guess).
+> 
+> > sr runtime pm is only enabled when ZPODD(or more general, power off) is
+> > supported.
+> > So the problem is how will sr driver know this flag?
+> >
+> 
+> What about adding a new field to scsi_device to reflect this capability of
+> the underlying sata device? We can then set this field in ata_scsi_scan_host.
 
---- a/mm/vmscan.c	Wed Feb  8 20:10:14 2012
-+++ b/mm/vmscan.c	Sat Mar  3 10:02:10 2012
-@@ -1997,15 +1997,23 @@ static void get_scan_count(struct mem_cg
- out:
- 	for_each_evictable_lru(lru) {
- 		int file = is_file_lru(lru);
--		unsigned long scan;
-+		unsigned long scan = 0;
+Nice idea.
 
--		scan = zone_nr_lru_pages(mz, lru);
--		if (priority || noswap) {
--			scan >>= priority;
--			if (!scan && force_scan)
--				scan = SWAP_CLUSTER_MAX;
-+		/* First, check noswap */
-+		if (noswap && !file)
-+			goto set;
-+
-+		/* Second, apply priority */
-+		scan = zone_nr_lru_pages(mz, lru) >> priority;
-+
-+		/* Third, check force */
-+		if (!scan && force_scan)
-+			scan = SWAP_CLUSTER_MAX;
-+
-+		/* Finally, try to avoid div64 */
-+		if (scan)
- 			scan = div64_u64(scan * fraction[file], denominator);
--		}
-+set:
- 		nr[lru] = scan;
- 	}
- }
---
+I'll refresh this patch.
+
+Thanks,
+Lin Ming
+
