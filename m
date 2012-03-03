@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2CCLNY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 06:13:24 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:60137 "EHLO smtp1-g21.free.fr"
+	id S1753394Ab2CCL1u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 06:27:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12539 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab2CCLNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 06:13:23 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 2/3] regulator: max1586: Use DIV_ROUND_UP macro to calculate selector
-References: <1330676454.31023.0.camel@phoenix>
-	<1330676521.31023.1.camel@phoenix>
-X-URL: http://belgarath.falguerolles.org/
-Date: Sat, 03 Mar 2012 12:13:10 +0100
-In-Reply-To: <1330676521.31023.1.camel@phoenix> (Axel Lin's message of "Fri,
-	02 Mar 2012 16:22:01 +0800")
-Message-ID: <87ipimszsp.fsf@free.fr>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/24.0.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752690Ab2CCL1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 06:27:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124566185"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com
+Cc: tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, asit.k.mallick@intel.com
+Subject: [PATCH] x86: correct internode cache alignment
+Date: Sat,  3 Mar 2012 19:27:27 +0800
+Message-Id: <1330774047-18597-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin <axel.lin@gmail.com> writes:
+Currently cache alignment among nodes in kernel is still 128 bytes on
+NUMA machine, that get from old P4 processors. But now most of modern
+CPU use the same size: 64 bytes from L1 to last level L3. so let's
+remove the incorrect setting, and directly use the L1 cache size to do
+SMP cache line alignment.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/max1586.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+This patch save some memory space on kernel data. The System.map is
+quite different with/without this change:
 
-Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+	before patched			after patched
+  ...
+  000000000000b000 d tlb_vector_|  000000000000b000 d tlb_vector
+  000000000000b080 d cpu_loops_p|  000000000000b040 d cpu_loops_
+  ...
 
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/Kconfig.cpu |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 3c57033..6443c6f 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -303,7 +303,6 @@ config X86_GENERIC
+ config X86_INTERNODE_CACHE_SHIFT
+ 	int
+ 	default "12" if X86_VSMP
+-	default "7" if NUMA
+ 	default X86_L1_CACHE_SHIFT
+ 
+ config X86_CMPXCHG
 -- 
-Robert
+1.6.3.3
+
