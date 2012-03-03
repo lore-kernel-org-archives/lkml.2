@@ -1,128 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab2CCOdC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 09:33:02 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47520 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753588Ab2CCOdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 09:33:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114238286"
-Date: Sat, 3 Mar 2012 22:27:45 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120303142745.GA17789@localhost>
-References: <20120228140022.614718843@intel.com>
- <20120228144747.198713792@intel.com>
- <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
- <20120301123640.GA30369@localhost>
- <20120301163837.GA13104@quack.suse.cz>
- <20120302044858.GA14802@localhost>
- <20120302095910.GB1744@quack.suse.cz>
- <20120302103951.GA13378@localhost>
- <20120302115700.7d970497.akpm@linux-foundation.org>
- <20120303135558.GA9869@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120303135558.GA9869@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753781Ab2CCOjC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 09:39:02 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35016 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab2CCOjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 09:39:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of slyich@gmail.com designates 10.213.9.8 as permitted sender) smtp.mail=slyich@gmail.com; dkim=pass header.i=slyich@gmail.com
+Date: Sat, 3 Mar 2012 17:43:22 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Jason Wang <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+Message-ID: <20120303174322.7e920bc5@sf.home>
+In-Reply-To: <4F5227C9.7060209@parallels.com>
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com>
+	<4F509150.5060904@redhat.com>
+	<20120302202421.753b36bc@sf.home>
+	<20120302205000.088bf231@sf.home>
+	<4F5227C9.7060209@parallels.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/g=oQQ04CBUNKqm8mTdjuPu."; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[correct email addresses for Artem and Adrian]
+--Sig_/g=oQQ04CBUNKqm8mTdjuPu.
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 03, 2012 at 09:55:58PM +0800, Fengguang Wu wrote:
-> On Fri, Mar 02, 2012 at 11:57:00AM -0800, Andrew Morton wrote:
-> > On Fri, 2 Mar 2012 18:39:51 +0800
-> > Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > 
-> > > > And I agree it's unlikely but given enough time and people, I
-> > > > believe someone finds a way to (inadvertedly) trigger this.
-> > > 
-> > > Right. The pageout works could add lots more iput() to the flusher
-> > > and turn some hidden statistical impossible bugs into real ones.
-> > > 
-> > > Fortunately the "flusher deadlocks itself" case is easy to detect and
-> > > prevent as illustrated in another email.
-> > 
-> > It would be a heck of a lot safer and saner to avoid the iput().  We
-> > know how to do this, so why not do it?
-> 
-> My concern about the page lock is, it costs more code and sounds like
-> hacking around something. It seems we (including me) have been trying
-> to shun away from the iput() problem. Since it's unlikely we are to
-> get rid of the already existing iput() calls from the flusher context,
-> why not face the problem, sort it out and use it with confident in new
-> code?
-> 
-> Let me try it now. The only scheme iput() can deadlock the flusher is
-> for the iput() path to come back to queue some work and wait for it.
-> Here are the exhaust list of the queue+wait paths:
-> 
-> writeback_inodes_sb_nr_if_idle
->   ext4_nonda_switch
->     ext4_page_mkwrite                   # from page fault
->     ext4_da_write_begin                 # from user writes
-> 
-> writeback_inodes_sb_nr
->   quotactl syscall                      # from syscall
->   __sync_filesystem                     # from sync/umount
->   shrink_liability                      # ubifs
->     make_free_space
->       ubifs_budget_space                # from all over ubifs:
-> 
->    2    274  /c/linux/fs/ubifs/dir.c <<ubifs_create>>
->    3    531  /c/linux/fs/ubifs/dir.c <<ubifs_link>>
->    4    586  /c/linux/fs/ubifs/dir.c <<ubifs_unlink>>
->    5    675  /c/linux/fs/ubifs/dir.c <<ubifs_rmdir>>
->    6    731  /c/linux/fs/ubifs/dir.c <<ubifs_mkdir>>
->    7    803  /c/linux/fs/ubifs/dir.c <<ubifs_mknod>>
->    8    871  /c/linux/fs/ubifs/dir.c <<ubifs_symlink>>
->    9   1006  /c/linux/fs/ubifs/dir.c <<ubifs_rename>>
->   10   1009  /c/linux/fs/ubifs/dir.c <<ubifs_rename>>
->   11    246  /c/linux/fs/ubifs/file.c <<write_begin_slow>>
->   12    388  /c/linux/fs/ubifs/file.c <<allocate_budget>>
->   13   1125  /c/linux/fs/ubifs/file.c <<do_truncation>>   <===== deadlockable
->   14   1217  /c/linux/fs/ubifs/file.c <<do_setattr>>
->   15   1381  /c/linux/fs/ubifs/file.c <<update_mctime>>
->   16   1486  /c/linux/fs/ubifs/file.c <<ubifs_vm_page_mkwrite>>
->   17    110  /c/linux/fs/ubifs/ioctl.c <<setflags>>
->   19    122  /c/linux/fs/ubifs/xattr.c <<create_xattr>>
->   20    201  /c/linux/fs/ubifs/xattr.c <<change_xattr>>
->   21    494  /c/linux/fs/ubifs/xattr.c <<remove_xattr>>
-> 
-> It seems they are all safe except for ubifs. ubifs may actually
-> deadlock from the above do_truncation() caller. However it should be
+On Sat, 3 Mar 2012 11:16:41 -0300
+Glauber Costa <glommer@parallels.com> wrote:
 
-Sorry that do_truncation() is actually called from ubifs_setattr()
-which is not related to iput().
+> On 03/02/2012 02:50 PM, Sergei Trofimovich wrote:
+> >>>> The change looks like a typo (division flipped to multiplication):
+> >>>>> limit =3D nr_free_buffer_pages() / 8;
+> >>>>> limit =3D nr_free_buffer_pages()<<   (PAGE_SHIFT - 10);
+> >>>
+> >>> Hi, thanks for the reporting. It's not a typo. It was previously:
+> >>> sysctl_tcp_mem[1]<<  (PAGE_SHIFT -  7). Looks like we need to do the
+> >>> limit check before shift the value. Please try the following patch, t=
+hanks.
+> >>
+> >> Still does not help. I test it by checking sha1sum of a large file ove=
+r NFS
+> >> (small files seem to work simetimes):
+> >>
+> >>      $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2
+> >>      ...
+> >>      open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+> >>      <HUNG>
+> >> After a certain timeout dmesg gets odd spam:
+> >> [  314.848094] nfs: server vmhost not responding, still trying
+> >> [  314.848134] nfs: server vmhost not responding, still trying
+> >> [  314.848145] nfs: server vmhost not responding, still trying
+> >> [  314.957047] nfs: server vmhost not responding, still trying
+> >> [  314.957066] nfs: server vmhost not responding, still trying
+> >> [  314.957075] nfs: server vmhost not responding, still trying
+> >> [  314.957085] nfs: server vmhost not responding, still trying
+> >> [  314.957100] nfs: server vmhost not responding, still trying
+> >> [  314.958023] nfs: server vmhost not responding, still trying
+> >> [  314.958035] nfs: server vmhost not responding, still trying
+> >> [  314.958044] nfs: server vmhost not responding, still trying
+> >> [  314.958054] nfs: server vmhost not responding, still trying
+> >>
+> >> looks like bogus messages. Might be relevant to mishandled timings
+> >> somewhere else or a bug in nfs code.
+> >
+> > And after 120 seconds hung tasks shows it might be an OOM issue
+> > Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
+> > not running anything heavy:
+>=20
+> That is a bit weird.
+>=20
+> First because with Jason's patch, we should end up with the very same=20
+> calculation, at the same exact order, as it was in older kernels.
+> Second, because by shifting << 10, you should be ending up with very=20
+> small numbers, effectively having tcp_rmem[1] =3D=3D tcp_rmem[2], and the=
+=20
+> same for wmem.
+>=20
+> Can you share which numbers you end up with at=20
+> /proc/sys/net/ipv4/tcp_{r,w}mem ?
+>=20
 
-Are there other possibilities for iput() to call into the above list
-of ubifs functions, then start writeback work and wait for it which
-will deadlock the flusher? ubifs_unlink() and perhaps remove_xattr()?
+Sure:
 
-> fixable because the ubifs call for writeback_inodes_sb_nr() sounds
-> very brute force writeback and wait and there may well be better way
-> out.
-> 
-> CCing ubifs developers for possible thoughts..
-> 
-> Thanks,
-> Fengguang
-> 
-> PS. I'll be on travel in the following week and won't have much time
-> for replying emails. Sorry about that.
+    $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+    4096    87380   1999072
+    4096    16384   1999072
+
+Nothing special with NFS nere, so I guess it uses UDP.
+TCP works fine on machine (I do everything via SSH).
+
+--=20
+
+  Sergei
+
+--Sig_/g=oQQ04CBUNKqm8mTdjuPu.
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk9SLhEACgkQcaHudmEf86ojDACcDmBU8I7749gXsjc4faM9lvne
+d/4AnipiQieUwkwzXCZHp+hWU/ii4jpb
+=G2bR
+-----END PGP SIGNATURE-----
+
+--Sig_/g=oQQ04CBUNKqm8mTdjuPu.--
