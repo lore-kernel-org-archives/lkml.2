@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2CCOjC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 09:39:02 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35016 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab2CCOjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 09:39:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of slyich@gmail.com designates 10.213.9.8 as permitted sender) smtp.mail=slyich@gmail.com; dkim=pass header.i=slyich@gmail.com
-Date: Sat, 3 Mar 2012 17:43:22 +0300
-From: Sergei Trofimovich <slyich@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Jason Wang <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
- (fix nfs regression)
-Message-ID: <20120303174322.7e920bc5@sf.home>
-In-Reply-To: <4F5227C9.7060209@parallels.com>
-References: <1330675173-18968-1-git-send-email-slyich@gmail.com>
-	<4F509150.5060904@redhat.com>
-	<20120302202421.753b36bc@sf.home>
-	<20120302205000.088bf231@sf.home>
-	<4F5227C9.7060209@parallels.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/g=oQQ04CBUNKqm8mTdjuPu."; protocol="application/pgp-signature"
+	id S1753828Ab2CCO4I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 09:56:08 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:45606 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753762Ab2CCO4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 09:56:05 -0500
+Date: Sat, 3 Mar 2012 06:52:20 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+CC: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [lm-sensors] [PATCH 2/4] hwmon: exynos4: Move thermal sensor
+ driver to driver/mfd directory
+Message-ID: <20120303145220.GA29335@ericsson.com>
+References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+ <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/g=oQQ04CBUNKqm8mTdjuPu.
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, Mar 03, 2012 at 06:06:05AM -0500, Amit Daniel Kachhap wrote:
+> This movement is needed because the hwmon entries and corresponding
+> sysfs interface is a duplicate of utilities already provided by
+> driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
+> and add necessary calls to get the temperature information.
+> 
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> ---
+>  Documentation/hwmon/exynos4_tmu |   81 ------
+>  Documentation/mfd/exynos4_tmu   |   81 ++++++
+>  drivers/hwmon/Kconfig           |   10 -
+>  drivers/hwmon/Makefile          |    1 -
+>  drivers/hwmon/exynos4_tmu.c     |  514 ---------------------------------------
+>  drivers/mfd/Kconfig             |   10 +
+>  drivers/mfd/Makefile            |    1 +
+>  drivers/mfd/exynos4_tmu.c       |  514 +++++++++++++++++++++++++++++++++++++++
+>  8 files changed, 606 insertions(+), 606 deletions(-)
+>  delete mode 100644 Documentation/hwmon/exynos4_tmu
+>  create mode 100644 Documentation/mfd/exynos4_tmu
+>  delete mode 100644 drivers/hwmon/exynos4_tmu.c
+>  create mode 100644 drivers/mfd/exynos4_tmu.c
+> 
 
-On Sat, 3 Mar 2012 11:16:41 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+You are just moving the driver from hwmon to mfd. It is still a hwmon driver
+and registers itself as hwmon driver. That does not make sense. If you want it
+as mfd driver, it should not register itself as hwmon driver. It might have sub-devices
+which are thermal and/or hwmon devices in the respective trees, or it might just be
+a thermal driver (which then registers itself as hwmon device automatically).
 
-> On 03/02/2012 02:50 PM, Sergei Trofimovich wrote:
-> >>>> The change looks like a typo (division flipped to multiplication):
-> >>>>> limit =3D nr_free_buffer_pages() / 8;
-> >>>>> limit =3D nr_free_buffer_pages()<<   (PAGE_SHIFT - 10);
-> >>>
-> >>> Hi, thanks for the reporting. It's not a typo. It was previously:
-> >>> sysctl_tcp_mem[1]<<  (PAGE_SHIFT -  7). Looks like we need to do the
-> >>> limit check before shift the value. Please try the following patch, t=
-hanks.
-> >>
-> >> Still does not help. I test it by checking sha1sum of a large file ove=
-r NFS
-> >> (small files seem to work simetimes):
-> >>
-> >>      $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2
-> >>      ...
-> >>      open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
-> >>      <HUNG>
-> >> After a certain timeout dmesg gets odd spam:
-> >> [  314.848094] nfs: server vmhost not responding, still trying
-> >> [  314.848134] nfs: server vmhost not responding, still trying
-> >> [  314.848145] nfs: server vmhost not responding, still trying
-> >> [  314.957047] nfs: server vmhost not responding, still trying
-> >> [  314.957066] nfs: server vmhost not responding, still trying
-> >> [  314.957075] nfs: server vmhost not responding, still trying
-> >> [  314.957085] nfs: server vmhost not responding, still trying
-> >> [  314.957100] nfs: server vmhost not responding, still trying
-> >> [  314.958023] nfs: server vmhost not responding, still trying
-> >> [  314.958035] nfs: server vmhost not responding, still trying
-> >> [  314.958044] nfs: server vmhost not responding, still trying
-> >> [  314.958054] nfs: server vmhost not responding, still trying
-> >>
-> >> looks like bogus messages. Might be relevant to mishandled timings
-> >> somewhere else or a bug in nfs code.
-> >
-> > And after 120 seconds hung tasks shows it might be an OOM issue
-> > Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
-> > not running anything heavy:
->=20
-> That is a bit weird.
->=20
-> First because with Jason's patch, we should end up with the very same=20
-> calculation, at the same exact order, as it was in older kernels.
-> Second, because by shifting << 10, you should be ending up with very=20
-> small numbers, effectively having tcp_rmem[1] =3D=3D tcp_rmem[2], and the=
-=20
-> same for wmem.
->=20
-> Can you share which numbers you end up with at=20
-> /proc/sys/net/ipv4/tcp_{r,w}mem ?
->=20
-
-Sure:
-
-    $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
-    4096    87380   1999072
-    4096    16384   1999072
-
-Nothing special with NFS nere, so I guess it uses UDP.
-TCP works fine on machine (I do everything via SSH).
-
---=20
-
-  Sergei
-
---Sig_/g=oQQ04CBUNKqm8mTdjuPu.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iEYEARECAAYFAk9SLhEACgkQcaHudmEf86ojDACcDmBU8I7749gXsjc4faM9lvne
-d/4AnipiQieUwkwzXCZHp+hWU/ii4jpb
-=G2bR
------END PGP SIGNATURE-----
-
---Sig_/g=oQQ04CBUNKqm8mTdjuPu.--
+Guenter
