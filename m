@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab2CCKow (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 05:44:52 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37230 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880Ab2CCKov convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 05:44:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of kernel.org.gnu@gmail.com designates 10.112.101.40 as permitted sender) smtp.mail=kernel.org.gnu@gmail.com; dkim=pass header.i=kernel.org.gnu@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <201203021522.10518.arnd@arndb.de>
-References: <CA+U0gVhRUv_dWkO2yntsLvG_L727c=0zrVRkN_ceiPUwoAGbBg@mail.gmail.com>
-	<201203021522.10518.arnd@arndb.de>
-Date: Sat, 3 Mar 2012 18:44:49 +0800
-Message-ID: <CA+U0gVjpRBVc_wPVJsdCY6H-A2wVkQxj66TUxfOJmjB3hdcVBQ@mail.gmail.com>
-Subject: Re: [PATCH] <down,down_interruptible...>, kernel <3.2.9>
-From: Dennis Chen <kernel.org.gnu@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753245Ab2CCLIY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 06:08:24 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:33277 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2CCLIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 06:08:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of amitdanielk@gmail.com designates 10.68.240.164 as permitted sender) smtp.mail=amitdanielk@gmail.com; dkim=pass header.i=amitdanielk@gmail.com
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, lm-sensors@lm-sensors.org,
+        amit.kachhap@linaro.org, eduardo.valentin@ti.com,
+        durgadoss.r@intel.com, patches@linaro.org
+Subject: [PATCH 0/4] thermal: exynos: Add kernel thermal support for exynos platform
+Date: Sat,  3 Mar 2012 16:36:03 +0530
+Message-Id: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 11:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 02 March 2012, Dennis Chen wrote:
->> Current down family functions use mismatch spin_lock pairs, this will
->> incur some interrupt state chaos, for example,
->> down_interruptible --
->>      spin_lock_irqsave(&sem->lock, flags);              P1
->>            __down_common--
->>                  spin_unlock_irq(&sem->lock);              P2
->>                 timeout = schedule_timeout(timeout);
->>                 spin_lock_irq(&sem->lock);                  P3
->>
->>      spin_unlock_irqrestore(&sem->lock, flags);       P4
->>
->> Suppose 2 kernel thread A and B in an UP system call
->> down_interruptible to get the semaphore, if the irq is OFF before A
->> calls, in the section between P2 and P3,  the irq will be turned _ON_,
->> then B begins to call down_interruptible, it will save a flag
->> indicating irq is _ON_. So after A finish the path of
->> down_interruptible, the irq is still _OFF_, but when B wakes up and
->> finish the path, the irq will be _ON_. Actually, irq should be in on
->> state before any down_interruptible calling, so
->> spin_lock_irqsave/irqrestore is not necessary. Given it will make
->> confusion for the reason of unmatched spin_lock pairs between
->> down_interruptible and __down_common, so it's reason for the patch.
->> Any comments?
->
-> You are right that the spin_lock_irqsave is unnecessary because
-> down() can only be called in non-atomic state with interrupts enabled.
-> Your patch will be tiny performance improvement on architectures where
-> saving the interrupt state does not come for free.
->
-> However, there is nothing in the code where we can end up with an
-> unexpected state, because both threads have their own copy of the
-> 'flags' variable, which always contains the enabled state that gets
-> restored upon leaving the functions.
->
->        Arnd
+Changes since RFC:
+*Moved the Temperature sensor driver from driver/hwmon/ to driver/mfd
+ as discussed with Guenter Roeck <guenter.roeck@ericsson.com> and 
+ Donggeun Kim <dg77.kim@samsung.com> (https://lkml.org/lkml/2012/1/5/7)
+*Some changes according to the changes in common cpu cooling APIs
 
-Arnd, thanks for the clarification. It's the truth that every thread
-has its own copy of 'flags', so if the down() can only be called with
-interrupts enabled, that's ok for the code as the way.
+All the patchset based on Kernel version 3.3-rc5 and uses the cpufreq
+cooling registration APIs implemented in earlier patchset 
+https://lkml.org/lkml/2012/2/22/123
 
-        Dennis
+The code added in this patchset adds a thermal interface layer for samsung
+exynos platforms. This layer is registered from the temperature sensor driver 
+and recieves/monitor the temperature from the sensor and informs the
+generic thermal layer to take the necessary cooling action. Currently, this
+layer can be used to create only one thermal zone and hence only one
+temperature sensor can register. The future goal is to make this handle
+multiple thermal zones.
+
+Some modifications are done in the temperature sensor driver to export the
+information needed for the thermal interface to register with the core linux
+thermal framework and with the cpu frequency based cooling devices.
+
+A simple data/control flow diagrams to illustrate this,
+
+Core Linux thermal <------->  Exynos thermal  <-------- Temperature Sensor
+	  |                             |
+	 \|/                            |
+  Cpufreq cooling device <-----
+
+
+Amit Daniel Kachhap (4):
+  thermal: exynos: Add thermal interface support for linux thermal
+    layer
+  hwmon: exynos4: Move thermal sensor driver to driver/mfd directory
+  thermal: exynos4: Register the tmu sensor with the thermal interface
+    layer
+  ARM: exynos4: Add thermal sensor driver platform device support
+
+ Documentation/hwmon/exynos4_tmu           |   81 -----
+ Documentation/mfd/exynos4_tmu             |   52 +++
+ arch/arm/mach-exynos/Kconfig              |   11 +
+ arch/arm/mach-exynos/Makefile             |    1 +
+ arch/arm/mach-exynos/clock.c              |    4 +
+ arch/arm/mach-exynos/dev-tmu.c            |   64 ++++
+ arch/arm/mach-exynos/include/mach/irqs.h  |    2 +
+ arch/arm/mach-exynos/include/mach/map.h   |    1 +
+ arch/arm/mach-exynos/mach-origen.c        |    1 +
+ arch/arm/plat-samsung/include/plat/devs.h |    1 +
+ drivers/hwmon/Kconfig                     |   10 -
+ drivers/hwmon/Makefile                    |    1 -
+ drivers/hwmon/exynos4_tmu.c               |  514 -----------------------------
+ drivers/mfd/Kconfig                       |   10 +
+ drivers/mfd/Makefile                      |    1 +
+ drivers/mfd/exynos4_tmu.c                 |  443 +++++++++++++++++++++++++
+ drivers/thermal/Kconfig                   |    8 +
+ drivers/thermal/Makefile                  |    1 +
+ drivers/thermal/exynos_thermal.c          |  272 +++++++++++++++
+ include/linux/exynos_thermal.h            |   72 ++++
+ include/linux/platform_data/exynos4_tmu.h |    7 +
+ 21 files changed, 951 insertions(+), 606 deletions(-)
+ delete mode 100644 Documentation/hwmon/exynos4_tmu
+ create mode 100644 Documentation/mfd/exynos4_tmu
+ create mode 100644 arch/arm/mach-exynos/dev-tmu.c
+ delete mode 100644 drivers/hwmon/exynos4_tmu.c
+ create mode 100644 drivers/mfd/exynos4_tmu.c
+ create mode 100644 drivers/thermal/exynos_thermal.c
+ create mode 100644 include/linux/exynos_thermal.h
+
