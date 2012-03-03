@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2CCON7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 09:13:59 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37632 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab2CCON6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 09:13:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of alex.mihai.c@gmail.com designates 10.213.12.211 as permitted sender) smtp.mail=alex.mihai.c@gmail.com; dkim=pass header.i=alex.mihai.c@gmail.com
-From: Copot Alexandru <alex.mihai.c@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Copot Alexandru <alex.mihai.c@gmail.com>
-Subject: [PATCH] mm: fix spelling error
-Date: Sat,  3 Mar 2012 16:13:16 +0200
-Message-Id: <1330783996-7955-1-git-send-email-alex.mihai.c@gmail.com>
-X-Mailer: git-send-email 1.7.9
+	id S1753583Ab2CCOR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 09:17:57 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:60790 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254Ab2CCORz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 09:17:55 -0500
+Message-ID: <4F5227C9.7060209@parallels.com>
+Date: Sat, 3 Mar 2012 11:16:41 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Sergei Trofimovich <slyich@gmail.com>
+CC: Jason Wang <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com> <4F509150.5060904@redhat.com> <20120302202421.753b36bc@sf.home> <20120302205000.088bf231@sf.home>
+In-Reply-To: <20120302205000.088bf231@sf.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.131.123]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Copot Alexandru <alex.mihai.c@gmail.com>
----
- mm/vmscan.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+On 03/02/2012 02:50 PM, Sergei Trofimovich wrote:
+>>>> The change looks like a typo (division flipped to multiplication):
+>>>>> limit = nr_free_buffer_pages() / 8;
+>>>>> limit = nr_free_buffer_pages()<<   (PAGE_SHIFT - 10);
+>>>
+>>> Hi, thanks for the reporting. It's not a typo. It was previously:
+>>> sysctl_tcp_mem[1]<<  (PAGE_SHIFT -  7). Looks like we need to do the
+>>> limit check before shift the value. Please try the following patch, thanks.
+>>
+>> Still does not help. I test it by checking sha1sum of a large file over NFS
+>> (small files seem to work simetimes):
+>>
+>>      $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2
+>>      ...
+>>      open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+>>      <HUNG>
+>> After a certain timeout dmesg gets odd spam:
+>> [  314.848094] nfs: server vmhost not responding, still trying
+>> [  314.848134] nfs: server vmhost not responding, still trying
+>> [  314.848145] nfs: server vmhost not responding, still trying
+>> [  314.957047] nfs: server vmhost not responding, still trying
+>> [  314.957066] nfs: server vmhost not responding, still trying
+>> [  314.957075] nfs: server vmhost not responding, still trying
+>> [  314.957085] nfs: server vmhost not responding, still trying
+>> [  314.957100] nfs: server vmhost not responding, still trying
+>> [  314.958023] nfs: server vmhost not responding, still trying
+>> [  314.958035] nfs: server vmhost not responding, still trying
+>> [  314.958044] nfs: server vmhost not responding, still trying
+>> [  314.958054] nfs: server vmhost not responding, still trying
+>>
+>> looks like bogus messages. Might be relevant to mishandled timings
+>> somewhere else or a bug in nfs code.
+>
+> And after 120 seconds hung tasks shows it might be an OOM issue
+> Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
+> not running anything heavy:
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c52b235..8a7c989 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2250,13 +2250,13 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				continue;	/* Let kswapd poll it */
- 			if (COMPACTION_BUILD) {
- 				/*
--				 * If we already have plenty of memory free for
--				 * compaction in this zone, don't free any more.
--				 * Even though compaction is invoked for any
--				 * non-zero order, only frequent costly order
--				 * reclamation is disruptive enough to become a
--				 * noticable problem, like transparent huge page
--				 * allocations.
-+				 * If we already have plenty of memory free
-+				 * for compaction in this zone, don't free any
-+				 * more.  Even though compaction is invoked
-+				 * for any non-zero order, only frequent
-+				 * costly order reclamation is disruptive
-+				 * enough to become a noticeable problem, like
-+				 * transparent huge page allocations.
- 				 */
- 				if (compaction_ready(zone, sc)) {
- 					aborted_reclaim = true;
--- 
-1.7.6.3
+That is a bit weird.
+
+First because with Jason's patch, we should end up with the very same 
+calculation, at the same exact order, as it was in older kernels.
+Second, because by shifting << 10, you should be ending up with very 
+small numbers, effectively having tcp_rmem[1] == tcp_rmem[2], and the 
+same for wmem.
+
+Can you share which numbers you end up with at 
+/proc/sys/net/ipv4/tcp_{r,w}mem ?
 
