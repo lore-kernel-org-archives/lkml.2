@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab2CCR6l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 12:58:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52844 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752120Ab2CCR6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 12:58:41 -0500
-Date: Sat, 3 Mar 2012 17:58:38 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: Re: [PATCH v7 1/2] mfd: Add anatop mfd driver
-Message-ID: <20120303175838.GA14833@opensource.wolfsonmicro.com>
-References: <1330671641-6439-1-git-send-email-paul.liu@linaro.org>
- <1330796352-6884-1-git-send-email-paul.liu@linaro.org>
+	id S1754006Ab2CCSGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 13:06:22 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:40436 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab2CCSGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 13:06:20 -0500
+Date: Sat, 3 Mar 2012 10:04:02 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [lm-sensors] [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal
+ sensor driver to driver/mfd directory
+Message-ID: <20120303180402.GA30062@ericsson.com>
+References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+ <1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
+ <20120303164410.GB1495@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1330796352-6884-1-git-send-email-paul.liu@linaro.org>
-X-Cookie: You are standing on my toes.
+In-Reply-To: <20120303164410.GB1495@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 03, 2012 at 11:44:10AM -0500, Mark Brown wrote:
+> On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
+> > This movement is needed because the hwmon entries and corresponding
+> > sysfs interface is a duplicate of utilities already provided by
+> > driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
+> > and add necessary calls to get the temperature information.
+> 
+> > --- a/Documentation/hwmon/exynos4_tmu
+> > +++ /dev/null
+> 
+> Moving this seems to be a failure, the device is exposing a hwmon
+> interface even if you've moved the code to mfd (though it doesn't
+> actually look like a multi-function device at all as far as I can see -
+> usually a MFD would have a bunch of unrelated functionality while this
+> has one function used by two subsystems).
+> 
+> If anything it looks like the ADC driver ought to be moved into IIO with
+> either generic or Exynos specific function drivers layered on top of it
+> in hwmon and thermal making use of the values that are read.
+> 
+I would agree. Or maybe move it all to thermal, since thermal devices register
+the hwmon subsystem.
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Mar 04, 2012 at 01:39:12AM +0800, Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
->=20
-> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
-> Anatop provides regulators and thermal.
-> This driver handles the address space and the operation of the mfd device.
-
-Please stop sending new patches as followups to old versions, it tends
-not to do the right thing in mail software.
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPUlvHAAoJEBus8iNuMP3drrYP/2xE7EAjhVP6oixGKarCF8xI
-OHfyRuUJzw7I7QWwdfUBqQyKSqWgLpSpDd3b1ugkQFxUNo+06IfEIRtJv2Rz3wFL
-ZyoLrmmwbD/D08fkqFdqdeU6hledkXooS/l7YtpIUoGDfNsOoPYicLx+I9OS+9DQ
-GJPigrBgziPRymIaJC3FYwL5vKNUz1a5z3g93UeRB3+VvbTejczENhRY6XRWBS9f
-RTbo2eEGyDofFkfxNbDs7c9GDdFSBXOVGfpLUZQFTFEp3pnVvSn123ifoaU4rCSh
-t1jC8NcSp88Hf07sD0UCV9+L1JdbDyQqYS+u7laCMDlBtR2LJ6e3e477lx8VLK0S
-7d1Qkx/9lKfSMC3Kn049HQ56iVsz1096WaB8zUyzcGXj/hhgzFM+iU2rk+2K21tI
-jeggNYXc0/L2NkqVq9vZNJrZZaT/W18zDOKitDR8Wu8u7IFlzFWtHslgLZ2r6PAq
-4CoShFsGoZLHrD25iiCqiP7yH2UDCsSw1ql/2tD82HihO1p06xQB2eWiO1cviW42
-NUVlaevhymv6d/8uR5TkKcunqFu86HFjnWBdAgw7Ui7lgpE5TC10S3MN/CzTWK8O
-Si3mVDHnts/DpCWG/imd3PQ0m4dVFsDe+5iIox3eTa3CZHVO2HDohkZWO297E2ob
-S6Gw0qfpJr/09zmXPXvj
-=b5GB
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+Guenter
