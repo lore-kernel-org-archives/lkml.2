@@ -1,411 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab2CCD4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Mar 2012 22:56:21 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:45753 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180Ab2CCD4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Mar 2012 22:56:20 -0500
-Date: Fri, 2 Mar 2012 19:56:13 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: [RFC v2] ext4: Rework metadata_csum/gdt_csum flag handling in
-	kernel
-Message-ID: <20120303035613.GG15164@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com> <20120107082919.21970.99182.stgit@elm3c44.beaverton.ibm.com> <8ED6E1F9-DB56-4D31-BCA8-2A3A8D514BD5@dilger.ca> <20120213222828.GF21641@thunk.org> <20120229013242.GE15164@tux1.beaverton.ibm.com> <69128C20-0575-4906-B599-DE1895ADF9FF@dilger.ca>
+	id S1752561Ab2CCEJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Mar 2012 23:09:34 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47879 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2CCEJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Mar 2012 23:09:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of grant.likely@secretlab.ca designates 10.68.190.42 as permitted sender) smtp.mail=grant.likely@secretlab.ca
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <69128C20-0575-4906-B599-DE1895ADF9FF@dilger.ca>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030303-5112-0000-0000-000005CE9D8B
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] devicetree: Add empty of_platform_populate() for !CONFIG_OF_ADDRESS (sparc)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+In-Reply-To: <20120302170715.9f0a67ef.akpm@linux-foundation.org>
+References: <1330121218-10442-1-git-send-email-grant.likely@secretlab.ca> <4F513990.1030401@ti.com> <20120302170715.9f0a67ef.akpm@linux-foundation.org>
+Date: Fri, 02 Mar 2012 21:09:30 -0700
+Message-Id: <20120303040930.1E9283E190C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 28, 2012 at 10:48:16PM -0700, Andreas Dilger wrote:
-> On 2012-02-28, at 6:32 PM, Darrick J. Wong wrote:
-> > Ok, I've reworked the block group descriptor checksum handling code per this
-> > email thread.  INCOMPAT_BG_USE_META_CSUM is gone.  METADATA_CSUM implies (and
-> > in fact overrides) GDT_CSUM, though the group descriptor checksum uses the same
-> > function as all other metadata blocks' checksums (by default crc32c).  I
-> > created a helper function to determine if group descriptor checksums are
-> > enabled, and the actual gdt checksum verify/set functions are smart enough to
-> > use the correct function.
+On Fri, 2 Mar 2012 17:07:15 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 2 Mar 2012 22:20:16 +0100
+> "Cousson, Benoit" <b-cousson@ti.com> wrote:
+> 
+> > Hi Grant,
 > > 
-> > Below are the changes that I intend to make to the kernel.  I'll integrate these
-> > changes into the (huge) kernel patchset, but wanted to aggregate the changes
-> > here first to avoid overwhelming reviewers.
+> > In fact this patch is not working for build without CONFIG_OF like x86.
 > > 
-> > Question: What will happen to old kernels when METADATA_CSUM and GDT_CSUM are
-> > set?  Should the kernel reject the combination and ask for fsck?  I think it
-> > will be ok, but older kernels might not be...?
+> > On 2/24/2012 11:06 PM, Grant Likely wrote:
+> > > --- a/include/linux/of_platform.h
+> > > +++ b/include/linux/of_platform.h
+> > > @@ -81,7 +81,7 @@ extern struct platform_device *of_device_alloc(struct device_node *np,
+> > >   					 struct device *parent);
+> > >   extern struct platform_device *of_find_device_by_node(struct device_node *np);
+> > >
+> > > -#if !defined(CONFIG_SPARC) /* SPARC has its own device registration method */
+> > > +#ifdef CONFIG_OF_ADDRESS /* device reg helpers depend on OF_ADDRESS */
+> > >   /* Platform devices and busses creation */
+> > >   extern struct platform_device *of_platform_device_create(struct device_node *np,
+> > >   						   const char *bus_id,
+> > > @@ -94,7 +94,15 @@ extern int of_platform_populate(struct device_node *root,
+> > >   				const struct of_device_id *matches,
+> > >   				const struct of_dev_auxdata *lookup,
+> > >   				struct device *parent);
+> > > -#endif /* !CONFIG_SPARC */
+> > > +#else
+> > > +static inline int of_platform_populate(struct device_node *root,
+> > > +					const struct of_device_id *matches,
+> > > +					const struct of_dev_auxdata *lookup,
+> > > +					struct device *parent)
+> > > +{
+> > > +	return -ENODEV;
+> > > +}
+> > > +#endif /* !CONFIG_OF_ADDRESS */
+> > >
+> > >   #endif /* CONFIG_OF_DEVICE */
+> > 
+> > Because if CONFIG_OF_DEVICE is not defined, then the stub for 
+> > of_platform_populate will not be defined either. It should exist for any 
+> > config without CONFIG_OF.
+> > 
+> > Building twl4030 for x86 is actually broken.
+> > 
 > 
-> As with the e2fsprogs patch, I think METADATA_CSUM should override GDT_CSUM
-> completely.  If both are set, then the kernel should ignore GDT_CSUM entirely
-> and just use the new checksum algorithm for the group descriptors.  It is up
-> to the user tools not to allow this combination of features to be set, and
-> there is no value in adding an extra failure case if they are (though if the
-> superblock checksum is also incorrect, that means the superblock is broken
-> and a backup should be used and/or the mount failed).
+> All twl is broken.  i386 allmodconfig with this monring's linux-next:
 > 
-> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> > ---
+> drivers/mfd/twl-core.c: In function 'twl_probe':
+> drivers/mfd/twl-core.c:1357: error: implicit declaration of function 'of_platform_populate'
 > 
-> One minor comment below, but I think this patch is the right approach.  I was
-> also going to proffer my Acked-by: for this patch, but I now recall that this
-> patch is itself short lived and will be merged into the patch series.
 
-I merged that comment into the kernel patch, along with an extra hunk to warn
-if metadata_csum and uninit_bg feature bits are both set.  I wonder if the
-kernel should react more forcefully to this supposedly "impossible" situation?
-But then I might just be unnecessarily paranoid.  At worst, I suppose, the
-checksums on all the group descriptors will be "wrong" and the fs simply won't
-allow writes.
+This patch seems to solve it finally against irqdomain/next.  Benoit, with
+your ack I'll push it out.
 
-(Hm, maybe it should unclear the clean flag?)
+g.
 
-Here's v2, to go with the e2fsprogs v2 patch.
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
 
- fs/ext4/balloc.c  |    4 ++--
- fs/ext4/ext4.h    |   21 ++++++++++++++++-----
- fs/ext4/ialloc.c  |   19 ++++++++-----------
- fs/ext4/inode.c   |    3 +--
- fs/ext4/mballoc.c |    6 +++---
- fs/ext4/resize.c  |    9 +++------
- fs/ext4/super.c   |   30 +++++++++++++++++-------------
- 7 files changed, 50 insertions(+), 42 deletions(-)
+commit 679946dfdbf990d3e75418fdaf92f3981ff1f4db
+Author: Grant Likely <grant.likely@secretlab.ca>
+Date:   Fri Mar 2 21:05:31 2012 -0700
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index 6eee0e6..b5a7951 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -168,7 +168,7 @@ void ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
- 
- 	/* If checksum is bad mark all blocks used to prevent allocation
- 	 * essentially implementing a per-group read-only flag. */
--	if (!ext4_group_desc_csum_verify(sbi, block_group, gdp)) {
-+	if (!ext4_group_desc_csum_verify(sb, block_group, gdp)) {
- 		ext4_error(sb, "Checksum bad for group %u", block_group);
- 		ext4_free_group_clusters_set(sb, gdp, 0);
- 		ext4_free_inodes_set(sb, gdp, 0);
-@@ -214,7 +214,7 @@ void ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
- 			     sb->s_blocksize * 8, bh->b_data);
- 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sb, block_group, gdp);
- }
- 
- /* Return the number of free blocks in a block group.  It is used when
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 70bd236..dd75078 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1434,6 +1434,12 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
- #define EXT4_FEATURE_RO_COMPAT_QUOTA		0x0100
- #define EXT4_FEATURE_RO_COMPAT_BIGALLOC		0x0200
-+/*
-+ * METADATA_CSUM also enables group descriptor checksums (GDT_CSUM).  When
-+ * METADATA_CSUM is set, group descriptor checksums use the same algorithm as
-+ * all other data structures' checksums.  However, the METADATA_CSUM and
-+ * GDT_CSUM bits are mutually exclusive.
-+ */
- #define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
- 
- #define EXT4_FEATURE_INCOMPAT_COMPRESSION	0x0001
-@@ -1449,7 +1455,6 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- #define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000 /* data in dirent */
- #define EXT4_FEATURE_INCOMPAT_INLINEDATA	0x2000 /* data in inode */
- #define EXT4_FEATURE_INCOMPAT_LARGEDIR		0x4000 /* >2GB or 3-lvl htree */
--#define EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM	0x8000
- 
- #define EXT2_FEATURE_COMPAT_SUPP	EXT4_FEATURE_COMPAT_EXT_ATTR
- #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT4_FEATURE_INCOMPAT_FILETYPE| \
-@@ -1473,8 +1478,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- 					 EXT4_FEATURE_INCOMPAT_EXTENTS| \
- 					 EXT4_FEATURE_INCOMPAT_64BIT| \
- 					 EXT4_FEATURE_INCOMPAT_FLEX_BG| \
--					 EXT4_FEATURE_INCOMPAT_MMP| \
--					 EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM)
-+					 EXT4_FEATURE_INCOMPAT_MMP)
- #define EXT4_FEATURE_RO_COMPAT_SUPP	(EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER| \
- 					 EXT4_FEATURE_RO_COMPAT_LARGE_FILE| \
- 					 EXT4_FEATURE_RO_COMPAT_GDT_CSUM| \
-@@ -2092,11 +2096,18 @@ extern void ext4_used_dirs_set(struct super_block *sb,
- 				struct ext4_group_desc *bg, __u32 count);
- extern void ext4_itable_unused_set(struct super_block *sb,
- 				   struct ext4_group_desc *bg, __u32 count);
--extern int ext4_group_desc_csum_verify(struct ext4_sb_info *sbi, __u32 group,
-+extern int ext4_group_desc_csum_verify(struct super_block *sb, __u32 group,
- 				       struct ext4_group_desc *gdp);
--extern void ext4_group_desc_csum_set(struct ext4_sb_info *sbi, __u32 group,
-+extern void ext4_group_desc_csum_set(struct super_block *sb, __u32 group,
- 				     struct ext4_group_desc *gdp);
- 
-+static inline int ext4_has_group_desc_csum(struct super_block *sb)
-+{
-+	return EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+					  EXT4_FEATURE_RO_COMPAT_GDT_CSUM |
-+					  EXT4_FEATURE_RO_COMPAT_METADATA_CSUM);
-+}
-+
- static inline ext4_fsblk_t ext4_blocks_count(struct ext4_super_block *es)
- {
- 	return ((ext4_fsblk_t)le32_to_cpu(es->s_blocks_count_hi) << 32) |
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index b9b6b27..1ade34d 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -70,13 +70,11 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
- 				       ext4_group_t block_group,
- 				       struct ext4_group_desc *gdp)
- {
--	struct ext4_sb_info *sbi = EXT4_SB(sb);
--
- 	J_ASSERT_BH(bh, buffer_locked(bh));
- 
- 	/* If checksum is bad mark all blocks and inodes use to prevent
- 	 * allocation, essentially implementing a per-group read-only flag. */
--	if (!ext4_group_desc_csum_verify(sbi, block_group, gdp)) {
-+	if (!ext4_group_desc_csum_verify(sb, block_group, gdp)) {
- 		ext4_error(sb, "Checksum bad for group %u", block_group);
- 		ext4_free_group_clusters_set(sb, gdp, 0);
- 		ext4_free_inodes_set(sb, gdp, 0);
-@@ -92,7 +90,7 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
- 			bh->b_data);
- 	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sb, block_group, gdp);
- 
- 	return EXT4_INODES_PER_GROUP(sb);
- }
-@@ -287,7 +285,7 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
- 	}
- 	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sb, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
- 
- 	percpu_counter_inc(&sbi->s_freeinodes_counter);
-@@ -657,8 +655,7 @@ static int ext4_claim_inode(struct super_block *sb,
- 	}
- 	/* If we didn't allocate from within the initialized part of the inode
- 	 * table then we need to initialize up to this inode. */
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
--
-+	if (ext4_has_group_desc_csum(sb)) {
- 		if (gdp->bg_flags & cpu_to_le16(EXT4_BG_INODE_UNINIT)) {
- 			gdp->bg_flags &= cpu_to_le16(~EXT4_BG_INODE_UNINIT);
- 			/* When marking the block group with
-@@ -697,7 +694,7 @@ static int ext4_claim_inode(struct super_block *sb,
- 	}
- 	ext4_inode_bitmap_csum_set(sb, group, gdp, inode_bitmap_bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, group, gdp);
-+	ext4_group_desc_csum_set(sb, group, gdp);
- err_ret:
- 	ext4_unlock_group(sb, group);
- 	up_read(&grp->alloc_sem);
-@@ -832,7 +829,7 @@ repeat_in_this_group:
- 
- got:
- 	/* We may have to initialize the block bitmap if it isn't already */
--	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
-+	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
- 		struct buffer_head *block_bitmap_bh;
- 
-@@ -858,7 +855,7 @@ got:
- 						   block_bitmap_bh,
- 						   EXT4_BLOCKS_PER_GROUP(sb) /
- 						   8);
--			ext4_group_desc_csum_set(sbi, group, gdp);
-+			ext4_group_desc_csum_set(sb, group, gdp);
- 		}
- 		ext4_unlock_group(sb, group);
- 
-@@ -1226,7 +1223,7 @@ int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
- skip_zeroout:
- 	ext4_lock_group(sb, group);
- 	gdp->bg_flags |= cpu_to_le16(EXT4_BG_INODE_ZEROED);
--	ext4_group_desc_csum_set(sbi, group, gdp);
-+	ext4_group_desc_csum_set(sb, group, gdp);
- 	ext4_unlock_group(sb, group);
- 
- 	BUFFER_TRACE(group_desc_bh,
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index c0200cf..e94ac91 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3573,8 +3573,7 @@ make_io:
- 				b = table;
- 			end = b + EXT4_SB(sb)->s_inode_readahead_blks;
- 			num = EXT4_INODES_PER_GROUP(sb);
--			if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_GDT_CSUM))
-+			if (ext4_has_group_desc_csum(sb))
- 				num -= ext4_itable_unused_count(sb, gdp);
- 			table += num / inodes_per_block;
- 			if (end > table)
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 5f2e2ed..d6062e7 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2919,7 +2919,7 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	ext4_free_group_clusters_set(sb, gdp, len);
- 	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, ac->ac_b_ex.fe_group, gdp);
-+	ext4_group_desc_csum_set(sb, ac->ac_b_ex.fe_group, gdp);
- 
- 	ext4_unlock_group(sb, ac->ac_b_ex.fe_group);
- 	percpu_counter_sub(&sbi->s_freeclusters_counter, ac->ac_b_ex.fe_len);
-@@ -4787,7 +4787,7 @@ do_more:
- 	ext4_free_group_clusters_set(sb, gdp, ret);
- 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sb, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
- 
-@@ -4933,7 +4933,7 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
- 	ext4_free_group_clusters_set(sb, desc, blk_free_count);
- 	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	ext4_group_desc_csum_set(sbi, block_group, desc);
-+	ext4_group_desc_csum_set(sb, block_group, desc);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeclusters_counter,
- 			   EXT4_B2C(sbi, blocks_freed));
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 2363532..21ace95 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1106,7 +1106,7 @@ static int ext4_setup_new_descs(handle_t *handle, struct super_block *sb,
- 					     EXT4_B2C(sbi, group_data->free_blocks_count));
- 		ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
- 		gdp->bg_flags = cpu_to_le16(*bg_flags);
--		ext4_group_desc_csum_set(sbi, group, gdp);
-+		ext4_group_desc_csum_set(sb, group, gdp);
- 
- 		err = ext4_handle_dirty_metadata(handle, NULL, gdb_bh);
- 		if (unlikely(err)) {
-@@ -1342,17 +1342,14 @@ static int ext4_setup_next_flex_gd(struct super_block *sb,
- 			   (1 + ext4_bg_num_gdb(sb, group + i) +
- 			    le16_to_cpu(es->s_reserved_gdt_blocks)) : 0;
- 		group_data[i].free_blocks_count = blocks_per_group - overhead;
--		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
--					       EXT4_FEATURE_RO_COMPAT_GDT_CSUM))
-+		if (ext4_has_group_desc_csum(sb))
- 			flex_gd->bg_flags[i] = EXT4_BG_BLOCK_UNINIT |
- 					       EXT4_BG_INODE_UNINIT;
- 		else
- 			flex_gd->bg_flags[i] = EXT4_BG_INODE_ZEROED;
- 	}
- 
--	if (last_group == n_group &&
--	    EXT4_HAS_RO_COMPAT_FEATURE(sb,
--				       EXT4_FEATURE_RO_COMPAT_GDT_CSUM))
-+	if (last_group == n_group && ext4_has_group_desc_csum(sb))
- 		/* We need to initialize block bitmap of last group. */
- 		flex_gd->bg_flags[i - 1] &= ~EXT4_BG_BLOCK_UNINIT;
- 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 2190044..e9b01e4 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2097,9 +2097,7 @@ static __le16 ext4_group_desc_csum(struct ext4_sb_info *sbi, __u32 block_group,
- 	__le32 le_group = cpu_to_le32(block_group);
- 
- 	if ((sbi->s_es->s_feature_ro_compat &
--	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) &&
--	    (sbi->s_es->s_feature_incompat &
--	     cpu_to_le32(EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM))) {
-+	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))) {
- 		/* Use new metadata_csum algorithm */
- 		__u16 old_csum;
- 		__u32 csum32;
-@@ -2135,24 +2133,23 @@ out:
- 	return cpu_to_le16(crc);
- }
- 
--int ext4_group_desc_csum_verify(struct ext4_sb_info *sbi, __u32 block_group,
-+int ext4_group_desc_csum_verify(struct super_block *sb, __u32 block_group,
- 				struct ext4_group_desc *gdp)
- {
--	if ((sbi->s_es->s_feature_ro_compat &
--	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) &&
--	    (gdp->bg_checksum != ext4_group_desc_csum(sbi, block_group, gdp)))
-+	if (ext4_has_group_desc_csum(sb) &&
-+	    (gdp->bg_checksum != ext4_group_desc_csum(EXT4_SB(sb),
-+						      block_group, gdp)))
- 		return 0;
- 
- 	return 1;
- }
- 
--void ext4_group_desc_csum_set(struct ext4_sb_info *sbi, __u32 block_group,
-+void ext4_group_desc_csum_set(struct super_block *sb, __u32 block_group,
- 			      struct ext4_group_desc *gdp)
- {
--	if (!(sbi->s_es->s_feature_ro_compat &
--	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
-+	if (!ext4_has_group_desc_csum(sb))
- 		return;
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
-+	gdp->bg_checksum = ext4_group_desc_csum(EXT4_SB(sb), block_group, gdp);
- }
- 
- /* Called at mount-time, super-block is locked */
-@@ -2209,7 +2206,7 @@ static int ext4_check_descriptors(struct super_block *sb,
- 			return 0;
- 		}
- 		ext4_lock_group(sb, i);
--		if (!ext4_group_desc_csum_verify(sbi, i, gdp)) {
-+		if (!ext4_group_desc_csum_verify(sb, i, gdp)) {
- 			ext4_msg(sb, KERN_ERR, "ext4_check_descriptors: "
- 				 "Checksum for group %u failed (%u!=%u)",
- 				 i, le16_to_cpu(ext4_group_desc_csum(sbi, i,
-@@ -3289,6 +3286,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		goto cantfind_ext4;
- 	sbi->s_kbytes_written = le64_to_cpu(es->s_kbytes_written);
- 
-+	/* Warn if metadata_csum and gdt_csum are both set. */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
-+	    EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM))
-+		ext4_warning(sb, KERN_INFO "metadata_csum and uninit_bg are "
-+			     "redundant flags; please run fsck.");
-+
- 	/* Check for a known checksum algorithm */
- 	if (!ext4_verify_csum_type(sb, es)) {
- 		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
-@@ -4620,7 +4624,7 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
- 				struct ext4_group_desc *gdp =
- 					ext4_get_group_desc(sb, g, NULL);
- 
--				if (!ext4_group_desc_csum_verify(sbi, g, gdp)) {
-+				if (!ext4_group_desc_csum_verify(sb, g, gdp)) {
- 					ext4_msg(sb, KERN_ERR,
- 	       "ext4_remount: Checksum for group %u failed (%u!=%u)",
- 		g, le16_to_cpu(ext4_group_desc_csum(sbi, g, gdp)),
+    dt: fix twl4030 for non-dt compile on x86
+    
+    twl4030 still doesn't build correctly for x86 allmodconfig.  This
+    fix solves the missing symbol errors.
+    
+    Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 4970d43..54727ef 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -38,6 +38,7 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/irq.h>
+ #include <linux/irqdomain.h>
+ 
+ #include <linux/regulator/machine.h>
+diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
+index 242fa35..b47d204 100644
+--- a/include/linux/of_platform.h
++++ b/include/linux/of_platform.h
+@@ -94,7 +94,12 @@ extern int of_platform_populate(struct device_node *root,
+ 				const struct of_device_id *matches,
+ 				const struct of_dev_auxdata *lookup,
+ 				struct device *parent);
+-#else
++#endif /* CONFIG_OF_ADDRESS */
++
++#endif /* CONFIG_OF_DEVICE */
++
++#if !defined(CONFIG_OF_ADDRESS)
++struct of_dev_auxdata;
+ static inline int of_platform_populate(struct device_node *root,
+ 					const struct of_device_id *matches,
+ 					const struct of_dev_auxdata *lookup,
+@@ -104,6 +109,4 @@ static inline int of_platform_populate(struct device_node *root,
+ }
+ #endif /* !CONFIG_OF_ADDRESS */
+ 
+-#endif /* CONFIG_OF_DEVICE */
+-
+ #endif	/* _LINUX_OF_PLATFORM_H */
+-- 
+email sent from notmuch.vim plugin
