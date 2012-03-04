@@ -1,133 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2CDDui (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 22:50:38 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36170 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab2CDDuh convert rfc822-to-8bit (ORCPT
+	id S1754380Ab2CDEbX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 23:31:23 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:60374 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab2CDEbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 22:50:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.70.209 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <1330657121-18692-1-git-send-email-steven.truelove@utoronto.ca>
-References: <1330657121-18692-1-git-send-email-steven.truelove@utoronto.ca>
-Date: Sun, 4 Mar 2012 11:50:36 +0800
-Message-ID: <CAJd=RBBXExVfnHnqWL8Q2zAU5qPCc-qZFKpXPLc+47ey5g_Ukw@mail.gmail.com>
-Subject: Re: [PATCH] Correct alignment of huge page requests.
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Truelove <steven.truelove@utoronto.ca>
-Cc: wli@holomorphy.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 3 Mar 2012 23:31:08 -0500
+Date: Sun, 4 Mar 2012 05:31:07 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: torvalds@linux-foundation.org, andi@firstfloor.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know ofany filesystems that depend on the exact VFS 'namehash' implementation?)
+Message-ID: <20120304043107.GC22197@one.firstfloor.org>
+References: <CA+55aFyMn+gYh2uRPJSAS5n4UbQoY2iqe3peYjVosrP-73oQVA@mail.gmail.com> <201203041127.IDI56216.FHOQMOVLtOFSJF@I-love.SAKURA.ne.jp>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201203041127.IDI56216.FHOQMOVLtOFSJF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 10:58 AM, Steven Truelove
-<steven.truelove@utoronto.ca> wrote:
-> When calling shmget() with SHM_HUGETLB, shmget aligns the request size to PAGE_SIZE, but this is not sufficient.  Modified hugetlb_file_setup() to align requests to the huge page size, and to accept an address argument so that all alignment checks can be performed in hugetlb_file_setup(), rather than in its callers.  Changed newseg and mmap_pgoff to match new prototype and eliminated a now redundant alignment check.
->
-> Signed-off-by: Steven Truelove <steven.truelove@utoronto.ca>
+On Sun, Mar 04, 2012 at 11:27:01AM +0900, Tetsuo Handa wrote:
+> A passer-by's mumble.
+> 
+> We are discussing about systems with huge "struct dentry" instances where
+> selecting a hash list based on "struct qstr"->hash cannot effectively narrow
+> down candidates to compare, aren't we?
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+This is effectively a simple bloom filter. 
 
-> ---
->  fs/hugetlbfs/inode.c    |   12 ++++++++----
->  include/linux/hugetlb.h |    3 ++-
->  ipc/shm.c               |    2 +-
->  mm/mmap.c               |    6 +++---
->  4 files changed, 14 insertions(+), 9 deletions(-)
->
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index 1e85a7a..a97b7cc 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -928,7 +928,7 @@ static int can_do_hugetlb_shm(void)
->        return capable(CAP_IPC_LOCK) || in_group_p(sysctl_hugetlb_shm_group);
->  }
->
-> -struct file *hugetlb_file_setup(const char *name, size_t size,
-> +struct file *hugetlb_file_setup(const char *name, unsigned long addr, size_t size,
->                                vm_flags_t acctflag,
->                                struct user_struct **user, int creat_flags)
->  {
-> @@ -938,6 +938,8 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->        struct path path;
->        struct dentry *root;
->        struct qstr quick_string;
-> +       struct hstate *hstate;
-> +       int num_pages;
->
->        *user = NULL;
->        if (!hugetlbfs_vfsmount)
-> @@ -967,10 +969,12 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->        if (!inode)
->                goto out_dentry;
->
-> +       hstate = hstate_inode(inode);
-> +       size += addr & ~huge_page_mask(hstate);
-> +       num_pages = ALIGN(size, huge_page_size(hstate)) >>
-> +                       huge_page_shift(hstate);
->        error = -ENOMEM;
-> -       if (hugetlb_reserve_pages(inode, 0,
-> -                       size >> huge_page_shift(hstate_inode(inode)), NULL,
-> -                       acctflag))
-> +       if (hugetlb_reserve_pages(inode, 0, num_pages, NULL, acctflag))
->                goto out_inode;
->
->        d_instantiate(path.dentry, inode);
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index d9d6c86..4b9e59d 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -164,7 +164,8 @@ static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
->
->  extern const struct file_operations hugetlbfs_file_operations;
->  extern const struct vm_operations_struct hugetlb_vm_ops;
-> -struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
-> +struct file *hugetlb_file_setup(const char *name, unsigned long addr,
-> +                               size_t size, vm_flags_t acct,
->                                struct user_struct **user, int creat_flags);
->  int hugetlb_get_quota(struct address_space *mapping, long delta);
->  void hugetlb_put_quota(struct address_space *mapping, long delta);
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index b76be5b..406c5b2 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -482,7 +482,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
->                /* hugetlb_file_setup applies strict accounting */
->                if (shmflg & SHM_NORESERVE)
->                        acctflag = VM_NORESERVE;
-> -               file = hugetlb_file_setup(name, size, acctflag,
-> +               file = hugetlb_file_setup(name, 0, size, acctflag,
->                                        &shp->mlock_user, HUGETLB_SHMFS_INODE);
->        } else {
->                /*
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 3f758c7..4bf211a 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1099,9 +1099,9 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
->                 * A dummy user value is used because we are not locking
->                 * memory so no accounting is necessary
->                 */
-> -               len = ALIGN(len, huge_page_size(&default_hstate));
-> -               file = hugetlb_file_setup(HUGETLB_ANON_FILE, len, VM_NORESERVE,
-> -                                               &user, HUGETLB_ANONHUGE_INODE);
-> +               file = hugetlb_file_setup(HUGETLB_ANON_FILE, addr, len,
-> +                                               VM_NORESERVE, &user,
-> +                                               HUGETLB_ANONHUGE_INODE);
->                if (IS_ERR(file))
->                        return PTR_ERR(file);
->        }
-> --
-> 1.7.3.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+Would be only worth it if longer hash chains are common. And if that's the case
+we should probably have either a larger table or a better hash (or both)
+
+-Andi
