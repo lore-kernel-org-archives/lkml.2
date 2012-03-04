@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab2CDWK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 17:10:58 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:46055 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2CDWJs (ORCPT
+	id S1755677Ab2CDWRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 17:17:09 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:9346 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751168Ab2CDWRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 17:09:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dmitry.torokhov@gmail.com designates 10.68.225.231 as permitted sender) smtp.mail=dmitry.torokhov@gmail.com; dkim=pass header.i=dmitry.torokhov@gmail.com
-Date: Sun, 4 Mar 2012 10:42:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Ritz <daniel.ritz@gmx.ch>
-Cc: Viresh Kumar <viresh.kumar@st.com>, linux-input@vger.kernel.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, bhavna.yadav@st.com, vincenzo.frascino@st.com,
-        mirko.gardi@st.com, salvatore.dedominicis@st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] Input: usbtouchscreen: add support for Data Modul
- EasyTouch TP 72037
-Message-ID: <20120304184223.GG27647@core.coreip.homeip.net>
-References: <ef63b19a6f667b4ffc22f0bacfda60d9e53fcba1.1330505561.git.viresh.kumar@st.com>
- <4F4E828F.2060105@gmx.ch>
+	Sun, 4 Mar 2012 17:17:08 -0500
+X-IronPort-AV: E=Sophos;i="4.73,531,1325458800"; 
+   d="scan'208";a="147476417"
+Date: Sun, 4 Mar 2012 23:17:04 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] edac: move const pci_device_id tables from __devinitdata
+ to __devinitconst.
+In-Reply-To: <20120227061300.GC4763@mwanda>
+Message-ID: <alpine.DEB.2.02.1203042310100.2919@hadrien>
+References: <791782.71473.bm@smtp128.mail.ukl.yahoo.com> <20120227061300.GC4763@mwanda>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F4E828F.2060105@gmx.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 29, 2012 at 08:54:55PM +0100, Daniel Ritz wrote:
-> On 2012-02-29 11:07 , Viresh Kumar wrote:
-> > From: Armando Visconti <armando.visconti@st.com>
-> > 
-> > The Data Modul TP 72037 EasyTouch controller is derived from EGALAX
-> > controller and is capable of detecting dual contacts. Packets can be 5
-> > bytes or 10 bytes long, depending whether one or two contacts are
-> > detected. Format is same as EGALAX touch controller, but with x and y
-> > coordinates inverted.
-> > 
-> > Signed-off-by: Armando Visconti <armando.visconti@st.com>
-> > Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+I also looked at whether PCI_DEVICE and PCI_DEVICE_CLASS could be used 
+more often, and came up with the semantic patch shown below.  This should 
+work with the current release of Coccinelle.  This affects 40 files, only 
+one of which can use PCI_DEVICE_CLASS.  Perhaps it could be useful to 
+generalize it.  Again, I don't have time now to look into it in more 
+detail, but can provide the results if somone is interested.
 
-...
+julia
 
-> 
-> Looks good, thanks.
-> 
-> Signed-off-by: Daniel Ritz <daniel.ritz@gmx.ch>
-> 
+@@
+identifier id;
+expression dev_class, dev_class_mask;
+@@
 
-Applied, thanks everyone.
+struct pci_device_id id[] = {
+   ...,
+   {
+-   .class = (dev_class), .class_mask = (dev_class_mask),
+-   .vendor = PCI_ANY_ID, .device = PCI_ANY_ID,
+-   .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID,
++   PCI_DEVICE_CLASS(dev_class,dev_class_mask),
+   },
+   ...
+};
 
--- 
-Dmitry
+@@
+identifier id;
+declarer name DEFINE_PCI_DEVICE_TABLE;
+expression dev_class, dev_class_mask;
+@@
+
+DEFINE_PCI_DEVICE_TABLE(id) = {
+   ...,
+   {
+-   .class = (dev_class), .class_mask = (dev_class_mask),
+-   .vendor = PCI_ANY_ID, .device = PCI_ANY_ID,
+-   .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID,
++   PCI_DEVICE_CLASS(dev_class,dev_class_mask),
+   },
+   ...
+};
+
+@@
+identifier id;
+expression vend, dev;
+@@
+
+struct pci_device_id id[] = {
+   ...,
+   {
+-   .vendor = (vend), .device = (dev),
+-   .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID,
++   PCI_DEVICE(vend,dev),
+   },
+   ...
+};
+
+@@
+identifier id;
+expression vend, dev;
+@@
+
+DEFINE_PCI_DEVICE_TABLE(id) = {
+   ...,
+   {
+-   .vendor = (vend), .device = (dev),
+-   .subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID,
++   PCI_DEVICE(vend,dev),
+   },
+   ...
+};
