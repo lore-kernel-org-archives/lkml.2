@@ -1,83 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2CDRGa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 12:06:30 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:53872 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754558Ab2CDRG2 (ORCPT
+	id S1754553Ab2CDRhO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 12:37:14 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64950 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab2CDRhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 12:06:28 -0500
-Message-ID: <4F53A11E.2020806@xenotime.net>
-Date: Sun, 04 Mar 2012 09:06:38 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 4 Mar 2012 12:37:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.224.230 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Sun, 4 Mar 2012 09:37:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org,
+        Torsten Kaiser <just.for.lkml@googlemail.com>
+Subject: Re: [PATCH] percpu: fix __this_cpu_{sub,inc,dec}_return()
+ definition
+Message-ID: <20120304173702.GA20787@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120228204112.7816.24302.stgit@zurg>
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-doc@vger.kernel.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial] Documentation: Fix multiple typo in Documentation
-References: <1330870571-23424-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1330870571-23424-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120228204112.7816.24302.stgit@zurg>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2012 06:16 AM, Masanari Iida wrote:
-
-> Correct following typo within 17 files in Documentation. 
+On Wed, Feb 29, 2012 at 12:41:12AM +0400, Konstantin Khlebnikov wrote:
+> This patch adds missed "__" prefixes, otherwise these functions
+> works as irq/preemption safe.
 > 
-> "specifing" to "specifying" in vm/unevictable-lru.txt
-> "subjet" to "subject" in security/Smack.txt
-> "fulfil" to "fulfill" in security/keys.txt
-> "symmetic" to "symmetric" in security/keys-trusted-encrypted.txt
-> "Refererence" to "Reference" in device-mapper/dm-raid.txt
-> "strutures" to "structures" in device-mapper/persistent-data.txt
-> "attribude" to "attribute" in kbuild/kconfig-language.txt
-> "satisified" to "satisfied" in virtual/kvm/mmu.txt
-> "artificically" to "artificially" in virtual/kvm/mmu.txt
-> "hierarhical" to "hierarchical" in cgroups/blkio-controller.txt
-> "hierarhcy" to "hierarchy" in cgroups/blkio-controller.txt
-> "exising" to "existing" in cgroups/blkio-controller.txt
-> "deivce" to "device" in cgroups/blkio-controller.txt
-> "subjectd" to "subjected" in cgroups/blkio-contoller.txt
-> "Priorty" to "Priority" in filesystem/ext4.txt
-> "systme" to "system" in filesystem/ext4.txt
-> "fileystem" to "filesystem" in filesystem/gfs2-uevents.txt
-> "returing" to "returning" in filesystem/vfs.txt
-> "practise" to "practice" in devicetree/booting-without-of.txt
-> "evalutation" to "evaluation" in devicetree/bindings/arm/sirf.txt
-> "adresse" to "address" in devicetree/bindings/arm/omap/omap.txt
-> "shedule" to "schedule" in ABI/obsolete/sysfs-class-rfkill
-> "dyanmic" to "dynamic" in ABI/stable/sysfs-module
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
+Applied to for-3.3-fixes.  Thank you.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-> ---
->  Documentation/ABI/obsolete/sysfs-class-rfkill      |    2 +-
->  Documentation/ABI/stable/sysfs-module              |    2 +-
->  Documentation/cgroups/blkio-controller.txt         |   18 +++++++++---------
->  Documentation/device-mapper/dm-raid.txt            |    2 +-
->  Documentation/device-mapper/persistent-data.txt    |    2 +-
->  .../devicetree/bindings/arm/omap/omap.txt          |    2 +-
->  Documentation/devicetree/bindings/arm/sirf.txt     |    2 +-
->  Documentation/devicetree/booting-without-of.txt    |    2 +-
->  Documentation/filesystems/ext4.txt                 |    4 ++--
->  Documentation/filesystems/gfs2-uevents.txt         |    2 +-
->  Documentation/filesystems/vfs.txt                  |    2 +-
->  Documentation/kbuild/kconfig-language.txt          |    2 +-
->  Documentation/security/Smack.txt                   |    2 +-
->  Documentation/security/keys-trusted-encrypted.txt  |    2 +-
->  Documentation/security/keys.txt                    |    2 +-
->  Documentation/virtual/kvm/mmu.txt                  |    4 ++--
->  Documentation/vm/unevictable-lru.txt               |    2 +-
->  17 files changed, 27 insertions(+), 27 deletions(-)
-
-
+-- 
+tejun
