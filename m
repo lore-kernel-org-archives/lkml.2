@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2CDWh6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 17:37:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61355 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab2CDWh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 17:37:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of shawnlandden@gmail.com designates 10.68.240.135 as permitted sender) smtp.mail=shawnlandden@gmail.com; dkim=pass header.i=shawnlandden@gmail.com
-Subject: Re: Mimo 720 input 180 deg off, e2i Re: [PATCH] Input:
- usbtouchscreen: add support for Data Modul EasyTouch TP 72037
-From: shawn <shawnlandden@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20120304190659.GB22602@core.coreip.homeip.net>
-References: <1df92b173fb58c4b6d3091c3eb94d53bf03cfa9e.1330061754.git.viresh.kumar@st.com>
-	 <1330064583.2154.340.camel@ssd-ubuntu>
-	 <20120224083311.GC18291@core.coreip.homeip.net>
-	 <CAJusiZULYGmVCjz_bt4mXB5fbVZZApH1QiCA3F-gjeU-J1tBuA@mail.gmail.com>
-	 <20120304190659.GB22602@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Mar 2012 14:37:49 -0800
-Message-ID: <1330900669.2452.21.camel@ssd-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755505Ab2CDWrE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 17:47:04 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54809 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2CDWrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 17:47:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] [Patch] JBD and JBD2 missing set_freezable()
+Date: Sun, 4 Mar 2012 23:51:07 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
+Cc: Nigel Cunningham <nigel@tuxonice.net>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+References: <4F2BA1FD.3030302@tuxonice.net>
+In-Reply-To: <4F2BA1FD.3030302@tuxonice.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203042351.07405.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-03-04 at 11:06 -0800, Dmitry Torokhov wrote: 
-> On Fri, Feb 24, 2012 at 10:16:40AM -0800, Shawn wrote:
-> > Why does the usbtouchscreen.c module have a swap_xy parameter?
-> > 
+On Friday, February 03, 2012, Nigel Cunningham wrote:
+> Hi all.
 > 
-> Historical reasons...
+> With the latest and greatest changes to the freezer, I started seeing
+> panics that were caused by jbd2 running post-process freezing and
+> hitting the canary BUG_ON for non-TuxOnIce I/O submission. I've traced
+> this back to a lack of set_freezable calls in both jbd and jbd2. Since
+> they're clearly meant to be frozen (there are tests for freezing()), I
+> submit the following patch to add the missing calls.
 > 
-Maybe this, along with the fact that tslib is recommended over
-server-xorg-input-evdev should be mentioned in the documentation. That
-way others wont try to do the same thing I did, or get confused by the
-existance of the swap_xy parameter. Also, if swap_xy is historical than
-maybe it should be deprecated, and documented as such.
-> 
-> And please do not top post.
-> 
+> Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 
-Shawn
+Well, I wonder what the filesystems people think about that.
+
+Thanks,
+Rafael
+
+
+> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> index 59c09f9..89cd985 100644
+> --- a/fs/jbd/journal.c
+> +++ b/fs/jbd/journal.c
+> @@ -129,6 +129,8 @@ static int kjournald(void *arg)
+>  	setup_timer(&journal->j_commit_timer, commit_timeout,
+>  			(unsigned long)current);
+> 
+> +	set_freezable();
+> +
+>  	/* Record that the journal thread is running */
+>  	journal->j_task = current;
+>  	wake_up(&journal->j_wait_done_commit);
+> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> index c0a5f9f..663e47c 100644
+> --- a/fs/jbd2/journal.c
+> +++ b/fs/jbd2/journal.c
+> @@ -139,6 +139,8 @@ static int kjournald2(void *arg)
+>  	setup_timer(&journal->j_commit_timer, commit_timeout,
+>  			(unsigned long)current);
+> 
+> +	set_freezable();
+> +
+>  	/* Record that the journal thread is running */
+>  	journal->j_task = current;
+>  	wake_up(&journal->j_wait_done_commit);
+> 
 
