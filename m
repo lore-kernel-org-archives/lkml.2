@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab2CDRvh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 12:51:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49517 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab2CDRvf (ORCPT
+	id S1754629Ab2CDSCo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 13:02:44 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23539 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569Ab2CDSCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 12:51:35 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.221.73 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Sun, 4 Mar 2012 09:51:01 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Hillf Danton <dhillf@gmail.com>
-cc: Linux-MM <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: shmem: unlock valid page
-In-Reply-To: <CAJd=RBBYdY1rgoW+0bgKh6Cn8n=guB2_zq2nzaMr8-arqNkr_A@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1203040943240.18498@eggly.anvils>
-References: <CAJd=RBBYdY1rgoW+0bgKh6Cn8n=guB2_zq2nzaMr8-arqNkr_A@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sun, 4 Mar 2012 13:02:43 -0500
+Date: Sun, 4 Mar 2012 21:04:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: linux-kernel@vger.kernel.org, smatch@vger.kernel.org
+Subject: Smatch v1.56 released
+Message-ID: <20120304180455.GA1003@mwanda>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="livrSZtJkVq9DDdS"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090201.4F53AE42.00B4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Mar 2012, Hillf Danton wrote:
-> In shmem_read_mapping_page_gfp() page is unlocked if no error returned,
-> so the unlocked page has to valid.
-> 
-> To guarantee that validity, when getting page, success result is feed
-> back to caller only when page is valid.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-I don't understand your description, nor its relation to the patch.
+--livrSZtJkVq9DDdS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-NAK to the patch: when no page has previously been allocated, the
-SGP_READ case avoids allocation and returns NULL - do_shmem_file_read
-then copies the ZERO_PAGE instead, avoiding lots of unnecessary memory
-allocation when reading a large sparse file.
+It's been almost two years since the last Smatch release so probably
+it's time for another one.
 
-Hugh
+Smatch is a static analysis tool for C which has a lot of kernel
+specific checks.
 
-> ---
-> 
-> --- a/mm/shmem.c	Sun Mar  4 12:17:42 2012
-> +++ b/mm/shmem.c	Sun Mar  4 12:26:56 2012
-> @@ -889,13 +889,13 @@ repeat:
->  		goto failed;
->  	}
-> 
-> -	if (page || (sgp == SGP_READ && !swap.val)) {
-> +	if (page) {
->  		/*
->  		 * Once we can get the page lock, it must be uptodate:
->  		 * if there were an error in reading back from swap,
->  		 * the page would not be inserted into the filecache.
->  		 */
-> -		BUG_ON(page && !PageUptodate(page));
-> +		BUG_ON(!PageUptodate(page));
->  		*pagep = page;
->  		return 0;
->  	}
-> --
-> 
+To run Smatch over the entire kernel use:
+	smatch_scripts/test_kernel.sh
+
+To run Smatch over just one .c file, start at the base of the kernel
+tree and use:
+	smatch_scripts/kchecker path/to/file.c
+
+The main new thing, is the new cross function database work.  You
+build a database on the first run and then use the information on
+the second run.  The script for to build the database is:
+	smatch_scripts/build_kernel_data.sh
+
+Smatch still produces a lot of false positives.  Also as bugs get
+fixed in the kernel, the false positive to real bug ratio gets
+worse and worse.  But it does find real bugs as well.
+
+There is a mailing list smatch@vger.kernel.org.
+
+regards,
+dan carpenter
+
+--livrSZtJkVq9DDdS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPU67HAAoJEOnZkXI/YHqR1n4P/13+XbV8ElBMFtjwFg3kP5e3
+LABlVEGvUGYiKo+4JeZcuve0QCM/Ike3tLLHx8DH1YLcwgIn7OzOyM/SOJJcjcst
+VLeDjnm7wHVJU9PI3NtODQh0USY4sqkUsZrZubGqiUvn7gD4KRvjbjUIVgGGbh8J
+gP4H4XPL12srX2ZdBgB5iFfczabl2Z+yN/uCRLKHRTJwjDPX4MlqQLyq6gpQbQXo
+bGzn00CKslmFJ3PvnrZucBVGnFTssQIe/XnQXcmlGoEBrD1f3mU+d5gDlLG8obF3
+sUFt2SKcHy+SfMEsfHj4pc5tA9tAxtT5YA6jEf1MBuPXsEbkRHmLaV7nGsc2Ml0W
+BP1zo5A/Cq+EhhssEMFdggkFbR78Rxs93/2rGAi7vw7VKm/WTd+d3WjYwShOSeMd
+GRXdkEMhDADfGn79xCxOEKobFqyOHnskMI/gOvnBK/oG7C7J35OdHSJ3LCU5gKzJ
+93fzeWjkaZH/+KarLWBkfFjyXyNQUeTdqeVnQywlIVLpejAVittL7MgPSX64RTGC
+bSC4vQmUapQ35YPJozz04wOeZrb/ioywmnOpdt1ldEmp7x97V4EAJQVzUPF52UF7
+EPuMcrgJoA9TPQiBL9dZeOzv24Plce6PCnThRSihkFUfgddg80Z94PAWyjC59NXS
+x373y9XzZTS18LQj7SWQ
+=fjCs
+-----END PGP SIGNATURE-----
+
+--livrSZtJkVq9DDdS--
