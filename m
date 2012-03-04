@@ -1,117 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab2CDJvU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 04:51:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44105 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2CDJvS (ORCPT
+	id S1752623Ab2CDKZO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 05:25:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63065 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab2CDKZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 04:51:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mtk.manpages@gmail.com designates 10.50.207.99 as permitted sender) smtp.mail=mtk.manpages@gmail.com; dkim=pass header.i=mtk.manpages@gmail.com
+	Sun, 4 Mar 2012 05:25:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.14.182.2 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sun, 4 Mar 2012 22:50:58 +1300
-Message-ID: <CAKgNAki1w3d_CXsF6ZXxKFGnjp3SgyaFDLgFBBOzZUf31wsNkw@mail.gmail.com>
-Subject: man-pages-3.36 is released
-To: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <CADDYkjRyQruZgFHDsyAgAV7J3yvunU5YuwmmbxK=1WXJLHw98Q@mail.gmail.com>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+	<E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+	<20120301143859.GX5054@shiny>
+	<CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+	<20120302140038.GD5054@shiny>
+	<CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
+	<20120302142651.GH5054@shiny>
+	<CADDYkjRyQruZgFHDsyAgAV7J3yvunU5YuwmmbxK=1WXJLHw98Q@mail.gmail.com>
+Date: Sun, 4 Mar 2012 11:25:08 +0100
+Message-ID: <CADDYkjSWpWAW0dxmMEWjHaRV=jS+U5obeau_GPEgwnJuPBLe3w@mail.gmail.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>, Theodore Tso <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+2012/3/3 Jacek Luczak <difrost.kernel@gmail.com>:
+> 2012/3/2 Chris Mason <chris.mason@oracle.com>:
+>> On Fri, Mar 02, 2012 at 03:16:12PM +0100, Jacek Luczak wrote:
+>>> 2012/3/2 Chris Mason <chris.mason@oracle.com>:
+>>> > On Fri, Mar 02, 2012 at 11:05:56AM +0100, Jacek Luczak wrote:
+>>> >>
+>>> >> I've took both on tests. The subject is acp and spd_readdir used with
+>>> >> tar, all on ext4:
+>>> >> 1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
+>>> >> 2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
+>>> >> 3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
+>>> >>
+>>> >> The acp looks much better than spd_readdir but directory copy with
+>>> >> spd_readdir decreased to 52m 39sec (30 min less).
+>>> >
+>>> > Do you have stats on how big these files are, and how fragmented they
+>>> > are?  For acp and spd to give us this, I think something has gone wrong
+>>> > at writeback time (creating individual fragmented files).
+>>>
+>>> How big? Which files?
+>>
+>> All the files you're reading ;)
+>>
+>> filefrag will tell you how many extents each file has, any file with
+>> more than one extent is interesting.  (The ext4 crowd may have better
+>> suggestions on measuring fragmentation).
+>>
+>> Since you mention this is a compile farm, I'm guessing there are a bunch
+>> of .o files created by parallel builds.  There are a lot of chances for
+>> delalloc and the kernel writeback code to do the wrong thing here.
+>>
+>
+[Most of files are B and K size]
+>
+> All files scanned: 1978149
+> Files fragmented: 313 (0.015%) where 11 have 3+ extents
+> Total size of fragmented files: 7GB (~13% of dir size)
 
-I've released man-pages-3.36.tar.gz - man pages for Linux.
+BTRFS: Non of files according to filefrag are fragmented - all fit
+into one extent.
 
-Now that I've sorted out kernel.org access, many of the release
-artifacts are in the traditional locations, but there are a few
-changes that are likely permanent as well. Details below.
+> tar cf on fragmented files:
+> 1) time: 7sec
+> 2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_fragmented.png
+> 3) sw graph with spd_readdir:
+> http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_spd.png
+> 4) both on one:
+> http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_pure_spd.png
 
-Tarball download:
-    http://www.kernel.org/pub/linux/docs/man-pages/
-Git repository:
-    http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.36
+BTRFS: tar on ext4 fragmented files
+1) time: 6sec
+2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_btrfs.png
 
-A short summary of the release is blogged at:
-http://linux-man-pages.blogspot.com/2012/03/man-pages-336-is-released.html
+> tar cf of fragmented files disturbed with [40,50) K files (in total
+> 4373 files). K files before fragmented M files:
+> 1) size: 7.2GB
+> 2) time: 1m 14sec
+> 3) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_disturbed.png
+> 4) sw graph with spd_readdir:
+> http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_spd.png
+> 5) both on one:
+> http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_pure_spd.png
 
-The current version of the pages is browsable at:
-http://man7.org/linux/man-pages/
+BTRFS: tar on [40,50) K and ext4 fragmented
+1) time: 56sec
+2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_btrfs.png
 
-A few changes in this release that may be of interest to readers of
-this list are given below.
+New test I've included - randomly selected files:
+- size 240MB
+1) ext4 (time: 34sec) sw graph:
+http://91.234.146.107/~difrost/seekwatcher/tar_random_ext4.png
+2) btrfs (time: 55sec) sw graph:
+http://91.234.146.107/~difrost/seekwatcher/tar_random_btrfs.png
 
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.36 ====================
-
-New and rewritten pages
------------------------
-
-sendmmsg.2
-    Michael Kerrisk  [Stephan Mueller]
-        New page for sendmmsg(2)
-            Some pieces inspired by an initial attempt by Stephan Mueller.
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-fallocate.2
-    Lucian Adrian Grijincu
-        Document FALLOC_FL_PUNCH_HOLE
-            FALLOC_FL_PUNCH_HOLE was added in Linux 2.6.38,
-            for punching holes in the allocated space in a file.
-
-
-Changes to individual pages
----------------------------
-
-fsync.2
-    Christoph Hellwig
-        Various improvements
-            - explain the situation with disk caches better
-            - remove the duplicate fdatasync() explanation in the NOTES
-              section
-            - remove an incorrect note about fsync() generally requiring two
-              writes
-            - remove an obsolete ext2 example note
-            - fsync() works on any file descriptor (doesn't need to be
-              writable); correct the EBADF error code explanation
-
-sched_rr_get_interval.2
-    Clemens Ladisch
-        Update notes on modifying quantum
-            Since Linux 2.6.24, it is no longer possible to
-            modify the SCHED_RR quantum using setpriority(2).
-            (Slight edits to Clemens' patch by mtk.)
-
-vfork.2
-    Michael Kerrisk  [starlight@binnacle.cx]
-        Clarify what is duplicated in the child
-            Add some words to make it clear to the reader that vfork(),
-            like fork(), creates duplicates of process attributes
-            in the child.
-    Michae Kerrisk
-        Note clone() flags equivalent to vfork()
-        Add some notes on reasons why vfork() still exists
-        Clarify that calling *thread* is suspended during vfork()
-        CONFORMING TO: Note that POSIX.1-2001 marked vfork() obsolete
-
-core.5
-    Michael Kerrisk  [Junjiro Okajima]
-        Document %E specifier for core_pattern
-
-feature_test_macros.7
-    Michael Kerrisk
-        Document _ISOC11_SOURCE
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+-Jacek
