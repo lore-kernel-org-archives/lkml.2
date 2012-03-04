@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab2CDRmt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 12:42:49 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:52855 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457Ab2CDRms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 12:42:48 -0500
-Date: Sun, 4 Mar 2012 18:42:29 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
-Message-ID: <20120304174229.GD11546@lunn.ch>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-5-git-send-email-mturquette@linaro.org>
+	id S1754597Ab2CDRvh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 12:51:37 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49517 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab2CDRvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 12:51:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.221.73 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Sun, 4 Mar 2012 09:51:01 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Hillf Danton <dhillf@gmail.com>
+cc: Linux-MM <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: shmem: unlock valid page
+In-Reply-To: <CAJd=RBBYdY1rgoW+0bgKh6Cn8n=guB2_zq2nzaMr8-arqNkr_A@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1203040943240.18498@eggly.anvils>
+References: <CAJd=RBBYdY1rgoW+0bgKh6Cn8n=guB2_zq2nzaMr8-arqNkr_A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330763341-3437-5-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 12:29:01AM -0800, Mike Turquette wrote:
-> Many platforms support simple gateable clocks, fixed-rate clocks,
-> adjustable divider clocks and multi-parent multiplexer clocks.
+On Sun, 4 Mar 2012, Hillf Danton wrote:
+> In shmem_read_mapping_page_gfp() page is unlocked if no error returned,
+> so the unlocked page has to valid.
 > 
-> This patch introduces basic clock types for the above-mentioned hardware
-> which share some common characteristics.
+> To guarantee that validity, when getting page, success result is feed
+> back to caller only when page is valid.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 
-Hi Mike
+I don't understand your description, nor its relation to the patch.
 
-These basic clocks don't allow the use of prepare/unprepare, from the
-side of the clock provider. I think i need this.
+NAK to the patch: when no page has previously been allocated, the
+SGP_READ case avoids allocation and returns NULL - do_shmem_file_read
+then copies the ZERO_PAGE instead, avoiding lots of unnecessary memory
+allocation when reading a large sparse file.
 
-The Orion Kirkwood SoC has clock gating for most of its on chip
-peripherals, which the other older Orion devices don't have. The SATA
-and PCIe also allows the PHY to be shut down, again which older Orion
-devices don't have. The current code links the clock and the PHY
-together, shutting both down are the same time. So i would like to
-perform the PHY shutdown in the unprepare() function of the clk
-driver.
+Hugh
 
-Is allowing to pass prepare/unprepare functions to basic clocks
-something you want to support? If i prepare a patch would you consider
-it?
-
-	Thanks
-		Andrew
+> ---
+> 
+> --- a/mm/shmem.c	Sun Mar  4 12:17:42 2012
+> +++ b/mm/shmem.c	Sun Mar  4 12:26:56 2012
+> @@ -889,13 +889,13 @@ repeat:
+>  		goto failed;
+>  	}
+> 
+> -	if (page || (sgp == SGP_READ && !swap.val)) {
+> +	if (page) {
+>  		/*
+>  		 * Once we can get the page lock, it must be uptodate:
+>  		 * if there were an error in reading back from swap,
+>  		 * the page would not be inserted into the filecache.
+>  		 */
+> -		BUG_ON(page && !PageUptodate(page));
+> +		BUG_ON(!PageUptodate(page));
+>  		*pagep = page;
+>  		return 0;
+>  	}
+> --
+> 
