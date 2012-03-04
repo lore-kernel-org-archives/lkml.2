@@ -1,132 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab2CDVGj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 16:06:39 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:59399 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754888Ab2CDVGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 16:06:38 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/Y5lhB62XYcgdrM96+jwY+i/KqEInTQ0rriNohD1
-	XibfIAJsvzwCEk
-From: Sven Joachim <svenjoac@gmx.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
-References: <20120228010511.GA8453@kroah.com>
-	<20120228010434.412979550@linuxfoundation.org>
-Date: Sun, 04 Mar 2012 22:06:32 +0100
-In-Reply-To: <20120228010434.412979550@linuxfoundation.org> (Greg KH's message
-	of "Mon, 27 Feb 2012 17:05:26 -0800")
-Message-ID: <87hay4dqjr.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
+	id S1755544Ab2CDVQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 16:16:37 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755194Ab2CDVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 16:16:36 -0500
+Message-ID: <4F53DB99.8040503@nod.at>
+Date: Sun, 04 Mar 2012 22:16:09 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org, basti@b-bl.de
+Subject: Re: [PATCH 1/2] Netfilter: xt_LOG: Implement ring buffer support
+References: <1329348480-11147-1-git-send-email-richard@nod.at> <20120304190438.GA24722@1984>
+In-Reply-To: <20120304190438.GA24722@1984>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-28 02:05 +0100, Greg KH wrote:
-
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-
-Alas, the commit below broke the WiFi on my laptop, where
-"iwlist wlan0 scan" now just reports: " wlan0     No scan results".
-
-This is not specific to 3.2, the same problem exists in 3.0.23 and
-3.3-rc6 while previous releases worked.
-
-The laptop is an Acer TravelMate 2490 with a Broadcom chip:
-
-,----
-| 06:02.0 Network controller: Broadcom Corporation BCM4318 [AirForce One 54g] 802.11g Wireless LAN Controller (rev 02)
-| 	Subsystem: AMBIT Microsystem Corp. TravelMate 2410
-| 	Flags: bus master, fast devsel, latency 64, IRQ 10
-| 	Memory at d0002000 (32-bit, non-prefetchable) [size=8K]
-| 	Kernel driver in use: b43-pci-bridge
-`----
-
-I'll be happy to give more information when needed.
-
-Cheers,
-       Sven
-
-
-> From: Thomas Gleixner <tglx@linutronix.de>
+Am 04.03.2012 20:04, schrieb Pablo Neira Ayuso:
+> Hi Richard,
 >
-> commit ac5637611150281f398bb7a47e3fcb69a09e7803 upstream.
+> Several comments:
 >
-> When the primary handler of an interrupt which is marked IRQ_ONESHOT
-> returns IRQ_HANDLED or IRQ_NONE, then the interrupt thread is not
-> woken and the unmask logic of the interrupt line is never
-> invoked. This keeps the interrupt masked forever.
+> On Thu, Feb 16, 2012 at 12:27:59AM +0100, Richard Weinberger wrote:
+>> This patch introduces NETFILTER_XT_TARGET_LOG_RING.
+>> It allows logging into various ring buffers which are
+>> represented as pipe-like files in /proc/net/netfilter/xt_LOG_ring/.
 >
-> This was not noticed as most IRQ_ONESHOT users wake the thread
-> unconditionally (usually because they cannot access the underlying
-> device from hard interrupt context). Though this behaviour was nowhere
-> documented and not necessarily intentional. Some drivers can avoid the
-> thread wakeup in certain cases and run into the situation where the
-> interrupt line s kept masked.
+> I prefer /proc/net/netfilter/nf_log_ring instead.
+
+Okay.
+
+> Please, add some short example usage, it can be of help for others.
+
+I'll add one to the manpage and Kconfig.
+
+>> Signed-off-by: Richard Weinberger<richard@nod.at>
+>> ---
+>>   include/linux/netfilter/xt_LOG.h |   12 +-
+>>   include/net/netfilter/nf_log.h   |    1 +
+>>   include/net/netfilter/xt_log.h   |   22 ++
+>>   net/netfilter/Kconfig            |   13 +
+>>   net/netfilter/xt_LOG.c           |  631 ++++++++++++++++++++++++++++++++++++-
+>>   5 files changed, 660 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/include/linux/netfilter/xt_LOG.h b/include/linux/netfilter/xt_LOG.h
+>> index cac0790..e4b1177 100644
+>> --- a/include/linux/netfilter/xt_LOG.h
+>> +++ b/include/linux/netfilter/xt_LOG.h
+>> @@ -8,7 +8,7 @@
+>>   #define XT_LOG_UID		0x08	/* Log UID owning local socket */
+>>   #define XT_LOG_NFLOG		0x10	/* Unsupported, don't reuse */
+>>   #define XT_LOG_MACDECODE	0x20	/* Decode MAC header */
+>> -#define XT_LOG_MASK		0x2f
+>> +#define XT_LOG_MASK		0x6f
 >
-> Handle it gracefully.
+> Not directly related to this but, would you send me the timestamp
+> patch before this one?
+
+Sure.
+
+>>   struct xt_log_info {
+>>   	unsigned char level;
+>> @@ -16,4 +16,14 @@ struct xt_log_info {
+>>   	char prefix[30];
+>>   };
+>>
+>> +struct xt_log_info_v1 {
+>> +	unsigned char level;
+>> +	unsigned char logflags;
+>> +	char prefix[30];
+>> +
+>> +	char ring_name[30];
+>> +	__aligned_u64 ring_size;
+>> +	struct xt_LOG_ring_ctx *rctx __attribute__((aligned(8)));
+>> +};
+>> +
+>>   #endif /* _XT_LOG_H */
+>> diff --git a/include/net/netfilter/nf_log.h b/include/net/netfilter/nf_log.h
+>> index e991bd0..18a94f9 100644
+>> --- a/include/net/netfilter/nf_log.h
+>> +++ b/include/net/netfilter/nf_log.h
+>> @@ -14,6 +14,7 @@
+>>
+>>   #define NF_LOG_TYPE_LOG		0x01
+>>   #define NF_LOG_TYPE_ULOG	0x02
+>> +#define NF_LOG_TYPE_RING	0x04
+>>
+>>   struct nf_loginfo {
+>>   	u_int8_t type;
+>> diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
+>> index 767e08d..c9a3718 100644
+>> --- a/include/net/netfilter/xt_log.h
+>> +++ b/include/net/netfilter/xt_log.h
+>> @@ -55,3 +55,25 @@ static void __sb_close(struct sbuff *m, int print)
+>>   }
+>>
+>>   #define sb_close(m)	__sb_close(m, 1)
+>> +
+>> +#ifdef CONFIG_NETFILTER_XT_TARGET_LOG_RING
+>> +struct xt_LOG_ring_ctx;
+>> +struct xt_LOG_ring_ctx *xt_LOG_ring_new_ctx(const char *name, size_t rb_size);
+>> +int xt_LOG_ring_add_record(const struct xt_LOG_ring_ctx *rctx, const char *buf, \
+>> +	unsigned int len);
+>> +void xt_LOG_ring_get(struct xt_LOG_ring_ctx *ctx);
+>> +void xt_LOG_ring_put(struct xt_LOG_ring_ctx *ctx);
+>> +struct xt_LOG_ring_ctx *xt_LOG_ring_find_ctx(const char *name);
+>> +
+>> +void xt_LOG_ring_exit(void);
+>> +int xt_LOG_ring_init(void);
+>> +#else
+>> +static inline void xt_LOG_ring_exit(void)
+>> +{
+>> +}
+>> +
+>> +static inline int xt_LOG_ring_init(void)
+>> +{
+>> +	return 0;
+>> +}
+>> +#endif
 >
-> Reported-and-tested-by: Lothar Wassmann <lw@karo-electronics.de>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> I think this modification for the .h file is not required anymore,
+> you don't need it anymore.
+
+AFAIK I did not remove this to reduce the #ifdefs in the .c file.
+Will recheck...
+
+>> diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+>> index b895d8b..ac62599 100644
+>> --- a/net/netfilter/Kconfig
+>> +++ b/net/netfilter/Kconfig
+>> @@ -533,6 +533,19 @@ config NETFILTER_XT_TARGET_LOG
+>>
+>>   	  To compile it as a module, choose M here.  If unsure, say N.
+>>
+>> +if NETFILTER_XT_TARGET_LOG
+>> +
+>> +config NETFILTER_XT_TARGET_LOG_RING
+>> +	bool  'Ring buffer support'
+>> +	default y
+>> +	select RING_BUFFER
 >
-> ---
->  kernel/irq/chip.c |   25 +++++++++++++++++++++++--
->  1 file changed, 23 insertions(+), 2 deletions(-)
+> Please, CC the ring buffer author, I'm not familar with that code and
+> I'll be happy to have an acknowledgment from him stating that the ring
+> buffer bits are OK.
 >
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -330,6 +330,24 @@ out_unlock:
->  }
->  EXPORT_SYMBOL_GPL(handle_simple_irq);
->  
-> +/*
-> + * Called unconditionally from handle_level_irq() and only for oneshot
-> + * interrupts from handle_fasteoi_irq()
-> + */
-> +static void cond_unmask_irq(struct irq_desc *desc)
-> +{
-> +	/*
-> +	 * We need to unmask in the following cases:
-> +	 * - Standard level irq (IRQF_ONESHOT is not set)
-> +	 * - Oneshot irq which did not wake the thread (caused by a
-> +	 *   spurious interrupt or a primary handler handling it
-> +	 *   completely).
-> +	 */
-> +	if (!irqd_irq_disabled(&desc->irq_data) &&
-> +	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot)
-> +		unmask_irq(desc);
-> +}
-> +
->  /**
->   *	handle_level_irq - Level type irq handler
->   *	@irq:	the interrupt number
-> @@ -362,8 +380,8 @@ handle_level_irq(unsigned int irq, struc
->  
->  	handle_irq_event(desc);
->  
-> -	if (!irqd_irq_disabled(&desc->irq_data) && !(desc->istate & IRQS_ONESHOT))
-> -		unmask_irq(desc);
-> +	cond_unmask_irq(desc);
-> +
->  out_unlock:
->  	raw_spin_unlock(&desc->lock);
->  }
-> @@ -417,6 +435,9 @@ handle_fasteoi_irq(unsigned int irq, str
->  	preflow_handler(desc);
->  	handle_irq_event(desc);
->  
-> +	if (desc->istate & IRQS_ONESHOT)
-> +		cond_unmask_irq(desc);
-> +
->  out_eoi:
->  	desc->irq_data.chip->irq_eoi(&desc->irq_data);
->  out_unlock:
+
+Steve is already CC'ed. Steve, can you please review and ack this patch?
+So far I have only an ack for the newly exported ring_buffer symbol.
+
+Thanks,
+//richrd
