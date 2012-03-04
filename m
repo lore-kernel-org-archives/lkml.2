@@ -1,68 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab2CEExp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 23:53:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39552 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab2CEExn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 23:53:43 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.50.46.136 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
-Date: Sun, 4 Mar 2012 22:53:35 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, 651199@bugs.debian.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Gustafsson <olangu@impressions.se>,
-        "Marco d'Itri" <md@Linux.IT>, Gabriel Kerneis <kerneis@pps.jussieu.fr>,
-        Shawn Thompson <shawn@projektenterprises.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: iwlwifi WPA-TKIP crypto failure after group rekeying
-Message-ID: <20120305045334.GF30344@burratino>
-References: <1330320802.8460.105.camel@deadeye>
- <1330333354.3483.6.camel@jlt3.sipsolutions.net>
+	id S1751258Ab2CEFGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 00:06:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:51938 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab2CEFGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 00:06:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114636572"
+Date: Sun, 4 Mar 2012 09:29:52 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Jan Kara <jack@suse.cz>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Andrea Righi <andrea@betterlinux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/9] memcg: add page_cgroup flags for dirty page tracking
+Message-ID: <20120304012952.GA22066@localhost>
+References: <20120228140022.614718843@intel.com>
+ <20120228144746.900395448@intel.com>
+ <20120229095051.739bb363.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330333354.3483.6.camel@jlt3.sipsolutions.net>
+In-Reply-To: <20120229095051.739bb363.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Feb 29, 2012 at 09:50:51AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 28 Feb 2012 22:00:23 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > From: Greg Thelen <gthelen@google.com>
+> > 
+> > Add additional flags to page_cgroup to track dirty pages
+> > within a mem_cgroup.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+> > Signed-off-by: Greg Thelen <gthelen@google.com>
+> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> 
+> I'm sorry but I changed the design of page_cgroup's flags update
+> and never want to add new flags (I'd like to remove page_cgroup->flags.)
 
-Johannes Berg wrote:
-> On Mon, 2012-02-27 at 05:33 +0000, Ben Hutchings wrote:
+No sorry - it makes good sense to reuse the native page flags :)
 
->> To summarise, a WPA-TKIP managed connection stops passing traffic and
->> the kernel log shows the message "WPA: Group rekeying".  This apparently
->> doesn't happen if the connection is in heavy use at the time or with
->> module parameter swcrypto=1.  WPA2 is not affected either.
->
-> I think this is due to my patch "iwlagn: rewrite HW crypto" which
-> accidentally broke key *removal* (of all things), which causes issues
-> when the first GTK is removed on the second rekeying.
->
-> This patch
-> [...]h=5dcbf480473f6c3f06ad2426b7517038a2a18911
->
-> should fix it. Wey has sent it to John
-[...]
-> it's also marked for stable.
+> Please see linux-next.
+> 
+> A good example is PCG_FILE_MAPPED, which I removed.
+> 
+> memcg: use new logic for page stat accounting
+> memcg: remove PCG_FILE_MAPPED
+> 
+> You can make use of PageDirty() and PageWriteback() instead of new flags.. (I hope.)
 
-Shawn Thompson (cc-ed) tested the patch against 3.2.9 and 3.3-rc6 and
-found it to work[1].  What can interested people do to help usher this
-into mainline?
+The dirty page accounting is currently done in account_page_dirtied()
+which is called from
 
-(To recap, this was a regression introduced between 3.0 and 3.1,
-presumably by v3.1-rc1~24^2~10^2^2~37.)
+__set_page_dirty <= __set_page_dirty_buffers
+__set_page_dirty_nobuffers
+ceph_set_page_dirty
+
+inside &mapping->tree_lock. TestSetPageDirty() is also called inside
+&mapping->private_lock. So we'll be including the two mapping locks
+and possibly &ci->i_ceph_lock if doing
+
+         move_lock_mem_cgroup(page) # may take &memcg->move_lock
+         TestSetPageDirty(page)
+         update page stats (without any checks)
+         move_unlock_mem_cgroup(page)
+
+It should be feasible if that lock dependency is fine.
+
+The PG_writeback accounting is very similar to the PG_dirty accounting
+and can be handled in the same way.
 
 Thanks,
-Jonathan
+Fengguang
 
-[1] http://bugs.debian.org/651199#147
+> > ---
+> >  include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
+> >  1 file changed, 23 insertions(+)
+> > 
+> > --- linux.orig/include/linux/page_cgroup.h	2012-02-19 10:53:14.000000000 +0800
+> > +++ linux/include/linux/page_cgroup.h	2012-02-19 10:53:16.000000000 +0800
+> > @@ -10,6 +10,9 @@ enum {
+> >  	/* flags for mem_cgroup and file and I/O status */
+> >  	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+> >  	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
+> > +	PCG_FILE_DIRTY, /* page is dirty */
+> > +	PCG_FILE_WRITEBACK, /* page is under writeback */
+> > +	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
+> >  	__NR_PCG_FLAGS,
+> >  };
+> >  
+> > @@ -64,6 +67,10 @@ static inline void ClearPageCgroup##unam
+> >  static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+> >  	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+> >  
+> > +#define TESTSETPCGFLAG(uname, lname)			\
+> > +static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
+> > +	{ return test_and_set_bit(PCG_##lname, &pc->flags); }
+> > +
+> >  /* Cache flag is set only once (at allocation) */
+> >  TESTPCGFLAG(Cache, CACHE)
+> >  CLEARPCGFLAG(Cache, CACHE)
+> > @@ -77,6 +84,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
+> >  CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+> >  TESTPCGFLAG(FileMapped, FILE_MAPPED)
+> >  
+> > +SETPCGFLAG(FileDirty, FILE_DIRTY)
+> > +CLEARPCGFLAG(FileDirty, FILE_DIRTY)
+> > +TESTPCGFLAG(FileDirty, FILE_DIRTY)
+> > +TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
+> > +TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
+> > +
+> > +SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
+> > +CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
+> > +TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
+> > +
+> > +SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
+> > +CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
+> > +TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
+> > +TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
+> > +TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
+> > +
+> >  SETPCGFLAG(Migration, MIGRATION)
+> >  CLEARPCGFLAG(Migration, MIGRATION)
+> >  TESTPCGFLAG(Migration, MIGRATION)
+> > 
+> > 
+> > 
