@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2CDTrp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 14:47:45 -0500
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:52902 "EHLO
-	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754336Ab2CDTrn (ORCPT
+	id S1754856Ab2CDTxW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 14:53:22 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:17450 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754812Ab2CDTxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 14:47:43 -0500
-X-Sasl-enc: L4kSidJjVaoqGW3ZtmY5Rc0Nnb/aeaeaaNAH+ILcHoxF 1330890462
-Message-ID: <4F53C6D3.2060404@signal11.us>
-Date: Sun, 04 Mar 2012 14:47:31 -0500
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 2/6] ARM: tegra: select CPU_FREQ_TABLE
-References: <1330721908-8633-1-git-send-email-alan@signal11.us> <20120304183710.GB31064@quad.lixom.net>
-In-Reply-To: <20120304183710.GB31064@quad.lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 4 Mar 2012 14:53:16 -0500
+Date: Sun, 4 Mar 2012 20:52:59 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: Guenter Roeck <guenter@roeck-us.net>, Peter Tyser <ptyser@xes-inc.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V5 1/3] mfd: Add LPC driver for Intel ICH chipsets
+Message-ID: <20120304205259.266bc636@endymion.delvare>
+In-Reply-To: <9e456f42-7eee-4b36-bf8e-f8095619382c@zimbra>
+References: <e6719b9b-0b6d-49b4-a5eb-16b04d25a719@zimbra>
+	<9e456f42-7eee-4b36-bf8e-f8095619382c@zimbra>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/4/12 1:37 PM, Olof Johansson wrote:
-> On Fri, Mar 02, 2012 at 03:58:28PM -0500, Alan Ott wrote:
->> From: Arnd Bergmann<arnd@arndb.de>
->>
->> The tegra cpufreq implementation relies on the cpu_freq_table
->> code, so make sure that this is always there when needed.
->>
->> Signed-off-by: Arnd Bergmann<arnd@arndb.de>
->> Signed-off-by: Alan Ott<alan@signal11.us>
->
-> This didn't apply cleanly to the tegra tree (what was it based on?), but
-> I fixed it up manually and applied to for-3.4/cleanups-and-fixes.
->
+Aaron, Grant,
 
-These were based on mainline.
+On Mon, 20 Feb 2012 19:10:41 -0600 (CST), Aaron Sierra wrote:
+> This driver currently creates resources for use by a forthcoming ICH
+> chipset GPIO driver. It could be expanded to create the resources for
+> converting the esb2rom (mtd) and iTCO_wdt (wdt), and potentially more,
+> drivers to use the mfd model.
+> 
+> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/mfd/Kconfig         |    9 +
+>  drivers/mfd/Makefile        |    1 +
+>  drivers/mfd/lpc_ich.c       |  717 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/lpc_ich.h |   41 +++
+>  4 files changed, 768 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/mfd/lpc_ich.c
+>  create mode 100644 include/linux/mfd/lpc_ich.h
+> (...)
 
-Alan.
+What's the current state of this patch set ? It works fine for me after
+applying Guenter's fix and passing acpi_enforce_resources=lax at boot
+time. It would be great if these patches could be scheduled for merge
+in kernel 3.4, if they haven't already.
+
+Thanks,
+-- 
+Jean Delvare
