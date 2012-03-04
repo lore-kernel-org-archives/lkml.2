@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab2CDOfQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 09:35:16 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:52430 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab2CDOfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 09:35:14 -0500
-Date: Sun, 4 Mar 2012 15:35:02 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
-Message-ID: <20120304143502.GC11546@lunn.ch>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-5-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330763341-3437-5-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754500Ab2CDOsi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 09:48:38 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37749 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752933Ab2CDOsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 09:48:37 -0500
+Message-ID: <1330872513.2858.14.camel@dabdike.int.hansenpartnership.com>
+Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
+ to the host
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Date: Sun, 04 Mar 2012 08:48:33 -0600
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B74886F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
+	 <20120304091225.GA27297@infradead.org>
+	 <6E21E5352C11B742B20C142EB499E0481B74886F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +#define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,	\
-> +				_flags, _reg, _bit_idx,		\
-> +				_gate_flags, _lock)		\
-> +	static struct clk _name;				\
-> +	static char *_name##_parent_names[] = {			\
-> +		_parent_name,					\
-> +	};							\
-> +	static struct clk *_name##_parents[] = {		\
-> +		_parent_ptr,					\
-> +	};							\
-> +	static struct clk_gate _name##_hw = {			\
-> +		.hw = {						\
-> +			.clk = &_name,				\
-> +		},						\
-> +		.reg = _reg,					\
-> +		.bit_idx = _bit_idx,				\
-> +		.flags = _gate_flags				\
-> +		.lock = _lock,					\
-> +	};							\
-> +	static struct clk _name = {				\
-> +		.name = #_name,					\
-> +		.ops = &clk_gate_ops,				\
-> +		.hw = &_name##_hw.hw,				\
-> +		.parent_names = _name##_parent_names,		\
-> +		.num_parents =					\
-> +			ARRAY_SIZE(_name##parent_names),	\
+On Sun, 2012-03-04 at 14:23 +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > Sent: Sunday, March 04, 2012 4:12 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> > jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org;
+> > Haiyang Zhang
+> > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
+> > the host
+> > 
+> > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
+> > > Windows hosts don't handle the ATA_16 command; don't pass it to the host.
+> > 
+> > Most devices don't handle it, and answer with and unsupported opcode
+> > sense reason.  If hyperv iis buggy enough to crap out on it please add
+> > a comment explaining that.
+> 
+> The host does not "crap out", it does return an error code but it is not "unsupported opcode".
+> The sense reason that comes back is a generic error SRB_STATUS code. It is easier for me to filter the
+> command on the outgoing side as opposed to dealing with a generic error code that is coming back from
+> the host.
 
-Hi Mike
+That's the wrong thing to do ... you need to unwrap the error code.
+The reason being I presume it's not impossible for Windows to host a
+device supporting ATA_16 and there are signs that this is going to be
+necessary to prevent data corruption on some USB devices ... if you just
+filter the command without checking if the host supports it, you're
+going to end up perpetuating the corruption problem.
 
-This should be _name##_parent_names, i.e. you are missing a _.
+The general rule of thumb for avoiding this is to let the lower layers
+handle as much as possible, and only begin behaviour alterations in the
+upper layers if the lower layers have a provable and usually fatal
+failure.
 
-With this and the previous change, i get something which at least
-compiles...
+James
 
-	Andrew
+
