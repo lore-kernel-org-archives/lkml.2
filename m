@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2CDAKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 19:10:48 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:31117 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753273Ab2CDAKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 19:10:47 -0500
-Message-ID: <1330819855.8460.291.camel@deadeye>
-Subject: Re: How do I know my driver support RSS?
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Yuehai Xu <yuehaixu@gmail.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, <yhxu@wayne.edu>, <sbw@mit.edu>
-Date: Sun, 4 Mar 2012 00:10:55 +0000
-In-Reply-To: <CAEc1PS1j2DL4m7B1Rp9nseqLWsxaXXY+ZJDHra+99c5-WPgYcQ@mail.gmail.com>
-References: <CAEc1PS1j2DL4m7B1Rp9nseqLWsxaXXY+ZJDHra+99c5-WPgYcQ@mail.gmail.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1754027Ab2CDAND (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 19:13:03 -0500
+Received: from home.keithp.com ([63.227.221.253]:54059 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617Ab2CDANB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 19:13:01 -0500
+From: Keith Packard <keithp@keithp.com>
+To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        matt.fleming@intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, rui.zhang@intel.com, stable@vger.kernel.org,
+        huang.ying.caritas@gmail.com, matt.fleming@intel.com,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
+In-Reply-To: <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org> <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sat, 03 Mar 2012 16:12:53 -0800
+Message-ID: <86zkbxusu2.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-X-Originating-IP: [78.32.9.209]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18748.005
-X-TM-AS-Result: No--18.232200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-03 at 16:25 -0500, Yuehai Xu wrote:
-[...]
-> Since I read the following statements from a paper, "we use a separate
-> hardware receive and transmit queue for each core and configure the
-> IXGBE to inspect the port number in each incoming packet header, place
-> the packet on the queue dedicated to the associated memcached's core,
-> and deliver the receive interrupt to that core." and the background of
-> this configuration is that each memcached is pinned to a separate core
-> and has its own UDP port. It seems that IXGBE's driver can detect UDP
-> packets according to their port numbers and put these packets into
-> corresponding receive queues in the hardware, is this achieved by
-> configuring RSS in IXGBE? If it is, I am wondering whether bnx2
-> supports RSS and whether it can configure in the same way.
-> 
-> I appreciate any help for this.
+<#part sign=pgpmime>
+On Wed, 22 Feb 2012 17:16:49 -0800, tip-bot for Matt Fleming <matt.fleming@intel.com> wrote:
 
-You're confusing RSS (flow hashing) with flow steering.  These are both
-explained in Documentation/network/scaling.txt.
+> x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
 
-Ben.
+This seems no different from the old fix -- I get 'Loading ...' and then
+a nice black screen on my MacBook Air.
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+keith.packard@intel.com
