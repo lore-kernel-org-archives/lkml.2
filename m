@@ -1,114 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab2CDKe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 05:34:56 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:57665 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab2CDKey (ORCPT
+	id S1752936Ab2CDKwv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 05:52:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52922 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab2CDKwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 05:34:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of minchan.kim@gmail.com designates 10.68.223.138 as permitted sender) smtp.mail=minchan.kim@gmail.com; dkim=pass header.i=minchan.kim@gmail.com
-Date: Sun, 4 Mar 2012 19:34:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
-Message-ID: <20120304103446.GA9267@barrios>
-References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>
+	Sun, 4 Mar 2012 05:52:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.204.143.151 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA7=rMwMdvL+jY6nXS-RD8CCTTug6XZ6fmdzwHeksi79aw@mail.gmail.com>
+References: <1330714505-13170-1-git-send-email-jslaby@suse.cz>
+	<CA+5PVA7=rMwMdvL+jY6nXS-RD8CCTTug6XZ6fmdzwHeksi79aw@mail.gmail.com>
+Date: Sun, 4 Mar 2012 11:52:47 +0100
+Message-ID: <CAHR064gbNSwHc=GVfm1R7LAmswJg_o7eW33cQ=JZHMJ8PMoVNw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] samsung-laptop: add N230 to supported models
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, mjg@redhat.com,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namhyung,
+On Fri, Mar 2, 2012 at 8:06 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Fri, Mar 2, 2012 at 1:55 PM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> There is a version of N230 which has only this in product and board
+>> names. See dmidecode in the bugzilla entry.
+>>
+>> Without this patch, one has to pass the force module parameter to have
+>> rfkill working.
+>>
+>> References: https://bugzilla.novell.com/show_bug.cgi?id=746695
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>
+> I think Corey has patches queued up in Matthew's git tree that drop the DMI
+> checks in this driver entirely.  If so, this probably isn't needed.
 
-On Wed, Feb 29, 2012 at 05:54:34PM +0900, Namhyung Kim wrote:
-> Unlike SLAB, SLUB doesn't set PG_slab on tail pages, so if a user would
-> call free_pages() incorrectly on a object in a tail page, she will get
->i confused with the undefined result. Setting the flag would help her by
-> emitting a warning on bad_page() in such a case.
-> 
-> Reported-by: Sangseok Lee <sangseok.lee@lge.com>
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Right. You can try the out-of-tree module using this repository
+https://github.com/iksaif/samsung-laptop-dkms . The patchs are in
+Matthew queue and they should be merged in 3.4.
 
-I read this thread and I feel the we don't reach right point.
-I think it's not a compound page problem.
-We can face above problem where we allocates big order page without __GFP_COMP
-and free middle page of it.
-
-Fortunately, We can catch such a problem by put_page_testzero in __free_pages
-if you enable CONFIG_DEBUG_VM.
-
-Did you tried that with CONFIG_DEBUG_VM?
-
-> ---
->  mm/slub.c |   12 ++++++++++--
->  1 files changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 33bab2aca882..575baacbec9b 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1287,6 +1287,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  	struct page *page;
->  	struct kmem_cache_order_objects oo = s->oo;
->  	gfp_t alloc_gfp;
-> +	int i;
->  
->  	flags &= gfp_allowed_mask;
->  
-> @@ -1320,6 +1321,9 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  	if (!page)
->  		return NULL;
->  
-> +	for (i = 0; i < 1 << oo_order(oo); i++)
-> +		__SetPageSlab(page + i);
-> +
->  	if (kmemcheck_enabled
->  		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
->  		int pages = 1 << oo_order(oo);
-> @@ -1369,7 +1373,6 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
->  
->  	inc_slabs_node(s, page_to_nid(page), page->objects);
->  	page->slab = s;
-> -	page->flags |= 1 << PG_slab;
->  
->  	start = page_address(page);
->  
-> @@ -1396,6 +1399,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
->  {
->  	int order = compound_order(page);
->  	int pages = 1 << order;
-> +	int i;
->  
->  	if (kmem_cache_debug(s)) {
->  		void *p;
-> @@ -1413,7 +1417,11 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
->  		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE,
->  		-pages);
->  
-> -	__ClearPageSlab(page);
-> +	for (i = 0; i < pages; i++) {
-> +		BUG_ON(!PageSlab(page + i));
-> +		__ClearPageSlab(page + i);
-> +	}
-> +
->  	reset_page_mapcount(page);
->  	if (current->reclaim_state)
->  		current->reclaim_state->reclaimed_slab += pages;
-> -- 
-> 1.7.9
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-- 
+Corentin Chary
+http://xf.iksaif.net
