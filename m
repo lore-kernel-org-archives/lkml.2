@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab2CDSv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 13:51:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43444 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab2CDSv5 (ORCPT
+	id S1754738Ab2CDS7o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 13:59:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53562 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab2CDS7n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 13:51:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of olof@lixom.net designates 10.68.225.164 as permitted sender) smtp.mail=olof@lixom.net
-Date: Sun, 4 Mar 2012 10:51:55 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Nicolas Pitre (nico@fluxnic.net)" <nico@fluxnic.net>,
-        "Russell King - ARM Linux (linux@arm.linux.org.uk)" 
-	<linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: Enable CPUIdle on Tegra20
-Message-ID: <20120304185155.GA363@quad.lixom.net>
-References: <1330014056-26125-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC9AB@HQMAIL01.nvidia.com>
+	Sun, 4 Mar 2012 13:59:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kay.sievers@vrfy.org designates 10.50.178.6 as permitted sender) smtp.mail=kay.sievers@vrfy.org; dkim=pass header.i=kay.sievers@vrfy.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC9AB@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <14955578.F1pbkdA1CJ@harkonnen>
+References: <20120224152051.GA23232@mail.gnudd.com> <20120302223853.GA24929@kroah.com>
+ <CAPXgP13-5URbxH9u344CnreRP2v9VR-ADcQRUBA5AdNj26P+LA@mail.gmail.com> <14955578.F1pbkdA1CJ@harkonnen>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sun, 4 Mar 2012 19:59:23 +0100
+Message-ID: <CAPXgP10__1iCP8yCbfg7fJpK85_7C=P2MdP78b-1UwmOOt4OFA@mail.gmail.com>
+Subject: Re: How to make a bus with heterogeneous devices?
+To: Federico Vaga <federico.vaga@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 23, 2012 at 09:25:34AM -0800, Stephen Warren wrote:
-> Peter De Schrijver wrote at Thursday, February 23, 2012 9:21 AM:
-> > As the LP3 code also works for Tegra20, we can enable cpuidle for Tegra20.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> 
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Note that the commit which added this line appears to have been made in
-> Nicolas's idle branch, which was merged into Russell's for-armsoc branch.
-> This presumably impacts the path through which this fix should get merged.
-> 
-> (hence leaving the patch below for Nicolas/Russell to see)
+On Sat, Mar 3, 2012 at 16:44, Federico Vaga <federico.vaga@gmail.com> wrote:
+>> Maybe I miss something but it sounds not that different from USB.
+>>
+>> You have a bus that enumerates devices and a "bus driver" creates a
+>> generic device on that bus for everything it finds. These devices stay
+>> generic, do not have type-specific attributes, but export matches
+>> again to bind other device-specific drivers, which create _new_ child
+>> devices below the generic ones with the proper attributes matching
+>> their individual type of devices. So every "logical" device is always
+>> represented by one generic device and one type-specific child device.
 
-Thanks, applied.
+>> 5- The real attributes may live in another device, which is a child of
+>> the one used within the bus abstraction.  Here the drawback is using
+>> an additional device and directory level for no reason.
+>
+> - I register the generic (empty) device on the bus
 
+You can always add some generic, no-type specific attributes there, if
+that fits in your model.
 
--Olof
+> - when the device match with a driver
+>  - I register a new device child of the matched one but without connect
+>    it directly on the bus.
+
+You can assign all these devices to the same bus (see details below).
+
+> The result will be something like (zio is our bus):
+>
+> /sys/bus/zio/devices/<generic-dev1>/<real-device1>/<attributes>
+> /sys/bus/zio/devices/<generic-dev2>/<real-device2>/<attributes>
+> /sys/bus/zio/devices/<generic-devN>/<real-deviceN>/<attributes>
+>
+> When there is not a driver:
+>
+> /sys/bus/zio/devices/<generic-dev1>/<device-stuff>
+> /sys/bus/zio/devices/<generic-devN>/<device-stuff>
+>
+> Where the generic-dev is an empty device used to make the bus work. Is
+> it correct?
+
+All buses have have a 'subsystem directory' at:
+  /sys/bus/
+This location exposes the 'device tree classification', like the
+'collection of devices by subsystem'
+
+The bus "zio" has its directory at:
+  /sys/bus/zio/
+
+All devices known to the bus "zio" are referenced at:
+  /sys/bus/zio/devices/*
+
+Which is a bunch of symlinks pointing into the:
+  /sys/devices/
+directory, which is the tree of all devices from all subsystems. This
+tree exposes the 'device tree hierarchy'.
+
+So your registered devices would all show up in:
+  /sys/bus/zio/devices/generic0 --> ../../../devices/.../generic0
+  /sys/bus/zio/devices/generic1 --> ../../../devices/.../generic1
+ /sys/bus/zio/devices/generic2 --> ../../../devices/.../generic2
+  /sys/bus/zio/devices/type-a0 --> ../../../devices/.../generic0/type-a0
+  /sys/bus/zio/devices/type-a1 --> ../../../devices/.../generic1/type-a1
+  /sys/bus/zio/devices/type-b0 --> ../../../devices/.../generic2/type-b0
+
+They all show up on the same bus, but the type-specific devices are
+child devices of the generic ones.
+
+>> All these devices, the generic ones and the type-specific ones can be
+>> on the same bus (struct bus_type) when they get a "struct device_type"
+>> assigned which carries the device-type specific set of attributes.
+>
+> But if all devices can live on the bus (set device->bus for all
+> devices), when I register the "real-device" (type-specific)  the bus try
+> to match it with a driver (again); but we already matched the device
+> with its driver. it is better if the type-specific devices are not
+> directly on the bus but only a child of a device on the bus.
+
+You can sort them out by 'struct device_type' in your probe functions,
+that should  not be a problem.
+
+We generally do not like devices which do not belong to a bus or
+class, they are kind of 'invisible' to userspace, and udev can not use
+them directly, it sees them only as a parent device of a device with a
+bus or class.
+
+Kay
