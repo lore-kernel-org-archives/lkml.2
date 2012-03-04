@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab2CDAND (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Mar 2012 19:13:03 -0500
-Received: from home.keithp.com ([63.227.221.253]:54059 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617Ab2CDANB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Mar 2012 19:13:01 -0500
-From: Keith Packard <keithp@keithp.com>
-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, rui.zhang@intel.com,
-        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
-        matt.fleming@intel.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, rui.zhang@intel.com, stable@vger.kernel.org,
-        huang.ying.caritas@gmail.com, matt.fleming@intel.com,
-        tglx@linutronix.de
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
-In-Reply-To: <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org> <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sat, 03 Mar 2012 16:12:53 -0800
-Message-ID: <86zkbxusu2.fsf@sumi.keithp.com>
+	id S1753895Ab2CDAR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Mar 2012 19:17:57 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64414 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab2CDARz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Mar 2012 19:17:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.107.68 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1330818296.15243.1.camel@dabdike.int.hansenpartnership.com>
+References: <1330818296.15243.1.camel@dabdike.int.hansenpartnership.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 3 Mar 2012 16:17:34 -0800
+X-Google-Sender-Auth: 5zzCErpwNJTxpGyYS0wUuBKjRWE
+Message-ID: <CA+55aFybqMz-6K9S-tt=vLoinaSsCFHewwLR=orCNNWzW0vs1Q@mail.gmail.com>
+Subject: Re: [GIT PULL] parisc fixes for 3.3-rc5
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<#part sign=pgpmime>
-On Wed, 22 Feb 2012 17:16:49 -0800, tip-bot for Matt Fleming <matt.fleming@intel.com> wrote:
+On Sat, Mar 3, 2012 at 3:44 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git parisc-fixes
 
-> x86, efi: Delete efi_ioremap() and fix CONFIG_X86_32 oops
+"fatal: Couldn't find remote ref parisc-fixes"
 
-This seems no different from the old fix -- I get 'Loading ...' and then
-a nice black screen on my MacBook Air.
+Forgot to push?
 
--- 
-keith.packard@intel.com
+                Linus
