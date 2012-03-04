@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab2CDWIh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 17:08:37 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:41010 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755138Ab2CDWIf (ORCPT
+	id S1755803Ab2CDWJq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 17:09:46 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:46055 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab2CDWJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 17:08:35 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX199lGQG9FV9FMtvSADOUjZzxYnCa2iiBwJL4mJkvy
-	gkrINSmnXVSaUx
-From: Sven Joachim <svenjoac@gmx.de>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
-References: <20120228010511.GA8453@kroah.com>
-	<20120228010434.412979550@linuxfoundation.org>
-	<87hay4dqjr.fsf@turtle.gmx.de> <20120304215307.GA27157@burratino>
-Date: Sun, 04 Mar 2012 23:08:32 +0100
-In-Reply-To: <20120304215307.GA27157@burratino> (Jonathan Nieder's message of
-	"Sun, 4 Mar 2012 15:53:07 -0600")
-Message-ID: <87sjhoc93z.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
+	Sun, 4 Mar 2012 17:09:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dmitry.torokhov@gmail.com designates 10.68.219.130 as permitted sender) smtp.mail=dmitry.torokhov@gmail.com; dkim=pass header.i=dmitry.torokhov@gmail.com
+Date: Sun, 4 Mar 2012 08:34:44 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun Chen <dchen@diasemi.com>, sameo@linux.intel.com
+Subject: Re: [PATCH 03/03] ONKEY: OnKey module for DA9052/53 PMIC
+Message-ID: <20120304163444.GE27647@core.coreip.homeip.net>
+References: <1330698594.21817.32.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330698594.21817.32.camel@dhruva>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-04 22:53 +0100, Jonathan Nieder wrote:
+On Fri, Mar 02, 2012 at 07:59:54PM +0530, Ashish Jangam wrote:
+> On-key Driver for Dialog Semiconductor DA9052/53 PMICs.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
-> Sven Joachim wrote:
->
->> The laptop is an Acer TravelMate 2490 with a Broadcom chip:
->>
->> ,----
->> | 06:02.0 Network controller: Broadcom Corporation BCM4318 [AirForce One 54g] 802.11g Wireless LAN Controller (rev 02)
->> | 	Subsystem: AMBIT Microsystem Corp. TravelMate 2410
->> | 	Flags: bus master, fast devsel, latency 64, IRQ 10
->> | 	Memory at d0002000 (32-bit, non-prefetchable) [size=8K]
->> | 	Kernel driver in use: b43-pci-bridge
->> `----
->
-> Odd.  Does it use that driver with both working and non-working
-> kernels?
+Applied with minor edits; thanks Ashish.
 
-Yes, although lsmod just tells me that "b43" is loaded.  And
-"dmesg | grep b43" shows this:
-
-,----
-| [    0.628622] b43-pci-bridge 0000:06:02.0: enabling device (0000 -> 0002)
-| [    0.628780] b43-pci-bridge 0000:06:02.0: PCI INT A -> Link[LNKG] -> GSI 10 (level, low) -> IRQ 10
-| [    0.628795] b43-pci-bridge 0000:06:02.0: setting latency timer to 64
-| [    5.648519] b43-phy0: Broadcom 4318 WLAN found (core revision 9)
-| [   36.267694] b43-phy0: Loading firmware version 410.2160 (2007-05-26 15:32:10)
-`----
-
-The kernel configuration has these b43 related parameters:
-
-CONFIG_B43=m
-CONFIG_B43_SSB=y
-CONFIG_B43_PCI_AUTOSELECT=y
-CONFIG_B43_PCICORE_AUTOSELECT=y
-# CONFIG_B43_PCMCIA is not set
-# CONFIG_B43_SDIO is not set
-CONFIG_B43_PIO=y
-# CONFIG_B43_PHY_N is not set
-CONFIG_B43_PHY_LP=y
-# CONFIG_B43_PHY_HT is not set
-CONFIG_B43_HWRNG=y
-# CONFIG_B43_DEBUG is not set
-# CONFIG_B43LEGACY is not set
-CONFIG_SSB_B43_PCI_BRIDGE=y
-
-
-Cheers,
-       Sven
+-- 
+Dmitry
