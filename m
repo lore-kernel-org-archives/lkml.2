@@ -1,160 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab2CDVQh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 16:16:37 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194Ab2CDVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 16:16:36 -0500
-Message-ID: <4F53DB99.8040503@nod.at>
-Date: Sun, 04 Mar 2012 22:16:09 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	id S1755573Ab2CDVd2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 16:33:28 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43722 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755230Ab2CDVd1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 16:33:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of karbiru014@franbf.net designates 10.182.51.73 as permitted sender) smtp.mail=karbiru014@franbf.net
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org, basti@b-bl.de
-Subject: Re: [PATCH 1/2] Netfilter: xt_LOG: Implement ring buffer support
-References: <1329348480-11147-1-git-send-email-richard@nod.at> <20120304190438.GA24722@1984>
-In-Reply-To: <20120304190438.GA24722@1984>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [212.52.159.74]
+Reply-To: karbiruahmed30@gmail.com
+Date: Sun, 4 Mar 2012 22:33:17 +0100
+Message-ID: <CAGbc4L8vFmkF=Yzt-JrMvD7Urn6pPM7Tx278U2vh3M9vQab5rw@mail.gmail.com>
+Subject: REPLY URGENTLY
+From: karbiru ahmed <karbiru014@franbf.net>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.03.2012 20:04, schrieb Pablo Neira Ayuso:
-> Hi Richard,
->
-> Several comments:
->
-> On Thu, Feb 16, 2012 at 12:27:59AM +0100, Richard Weinberger wrote:
->> This patch introduces NETFILTER_XT_TARGET_LOG_RING.
->> It allows logging into various ring buffers which are
->> represented as pipe-like files in /proc/net/netfilter/xt_LOG_ring/.
->
-> I prefer /proc/net/netfilter/nf_log_ring instead.
+REPLY URGENTLY
 
-Okay.
+Dear Friend,
 
-> Please, add some short example usage, it can be of help for others.
+I'm happy to inform you about my success in getting the fund
+transferred under the cooperation of a new partner from london.
+Presently I’m in london for investment projects with my own share of
+the total sum. Meanwhile, I didn't forget your past efforts and
+attempts to assist me in transferring those funds despite that it
+failed us some how.
 
-I'll add one to the manpage and Kconfig.
+Now contact my secretary, his name is John Smith and his Email Address
+secretary email:( johnsimth36@gmail.com )ask him to send you the total
+$7,000.000.00 which i kept for your compensation for all the past
+efforts and attempts to assist me in this matter. I appreciated your
+efforts at that time very much. so feel free and get in touched with
+my secretary Mr John Smith and instruct him where to send the amount
+to you.
 
->> Signed-off-by: Richard Weinberger<richard@nod.at>
->> ---
->>   include/linux/netfilter/xt_LOG.h |   12 +-
->>   include/net/netfilter/nf_log.h   |    1 +
->>   include/net/netfilter/xt_log.h   |   22 ++
->>   net/netfilter/Kconfig            |   13 +
->>   net/netfilter/xt_LOG.c           |  631 ++++++++++++++++++++++++++++++++++++-
->>   5 files changed, 660 insertions(+), 19 deletions(-)
->>
->> diff --git a/include/linux/netfilter/xt_LOG.h b/include/linux/netfilter/xt_LOG.h
->> index cac0790..e4b1177 100644
->> --- a/include/linux/netfilter/xt_LOG.h
->> +++ b/include/linux/netfilter/xt_LOG.h
->> @@ -8,7 +8,7 @@
->>   #define XT_LOG_UID		0x08	/* Log UID owning local socket */
->>   #define XT_LOG_NFLOG		0x10	/* Unsupported, don't reuse */
->>   #define XT_LOG_MACDECODE	0x20	/* Decode MAC header */
->> -#define XT_LOG_MASK		0x2f
->> +#define XT_LOG_MASK		0x6f
->
-> Not directly related to this but, would you send me the timestamp
-> patch before this one?
+Please do let me know immediately you receive it so that we can share
+the joy after all the sufferness at that time. In the moment, i am
+very busy here because of the investment projects which me and the new
+partner are having at hand, finally, remember that I had forwarded
+instruction to the secretary on your behalf to receive that money, so
+feel free to get in touch with Mr John Smith and he will send the
+amount to you without any delay.
 
-Sure.
-
->>   struct xt_log_info {
->>   	unsigned char level;
->> @@ -16,4 +16,14 @@ struct xt_log_info {
->>   	char prefix[30];
->>   };
->>
->> +struct xt_log_info_v1 {
->> +	unsigned char level;
->> +	unsigned char logflags;
->> +	char prefix[30];
->> +
->> +	char ring_name[30];
->> +	__aligned_u64 ring_size;
->> +	struct xt_LOG_ring_ctx *rctx __attribute__((aligned(8)));
->> +};
->> +
->>   #endif /* _XT_LOG_H */
->> diff --git a/include/net/netfilter/nf_log.h b/include/net/netfilter/nf_log.h
->> index e991bd0..18a94f9 100644
->> --- a/include/net/netfilter/nf_log.h
->> +++ b/include/net/netfilter/nf_log.h
->> @@ -14,6 +14,7 @@
->>
->>   #define NF_LOG_TYPE_LOG		0x01
->>   #define NF_LOG_TYPE_ULOG	0x02
->> +#define NF_LOG_TYPE_RING	0x04
->>
->>   struct nf_loginfo {
->>   	u_int8_t type;
->> diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
->> index 767e08d..c9a3718 100644
->> --- a/include/net/netfilter/xt_log.h
->> +++ b/include/net/netfilter/xt_log.h
->> @@ -55,3 +55,25 @@ static void __sb_close(struct sbuff *m, int print)
->>   }
->>
->>   #define sb_close(m)	__sb_close(m, 1)
->> +
->> +#ifdef CONFIG_NETFILTER_XT_TARGET_LOG_RING
->> +struct xt_LOG_ring_ctx;
->> +struct xt_LOG_ring_ctx *xt_LOG_ring_new_ctx(const char *name, size_t rb_size);
->> +int xt_LOG_ring_add_record(const struct xt_LOG_ring_ctx *rctx, const char *buf, \
->> +	unsigned int len);
->> +void xt_LOG_ring_get(struct xt_LOG_ring_ctx *ctx);
->> +void xt_LOG_ring_put(struct xt_LOG_ring_ctx *ctx);
->> +struct xt_LOG_ring_ctx *xt_LOG_ring_find_ctx(const char *name);
->> +
->> +void xt_LOG_ring_exit(void);
->> +int xt_LOG_ring_init(void);
->> +#else
->> +static inline void xt_LOG_ring_exit(void)
->> +{
->> +}
->> +
->> +static inline int xt_LOG_ring_init(void)
->> +{
->> +	return 0;
->> +}
->> +#endif
->
-> I think this modification for the .h file is not required anymore,
-> you don't need it anymore.
-
-AFAIK I did not remove this to reduce the #ifdefs in the .c file.
-Will recheck...
-
->> diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
->> index b895d8b..ac62599 100644
->> --- a/net/netfilter/Kconfig
->> +++ b/net/netfilter/Kconfig
->> @@ -533,6 +533,19 @@ config NETFILTER_XT_TARGET_LOG
->>
->>   	  To compile it as a module, choose M here.  If unsure, say N.
->>
->> +if NETFILTER_XT_TARGET_LOG
->> +
->> +config NETFILTER_XT_TARGET_LOG_RING
->> +	bool  'Ring buffer support'
->> +	default y
->> +	select RING_BUFFER
->
-> Please, CC the ring buffer author, I'm not familar with that code and
-> I'll be happy to have an acknowledgment from him stating that the ring
-> buffer bits are OK.
->
-
-Steve is already CC'ed. Steve, can you please review and ack this patch?
-So far I have only an ack for the newly exported ring_buffer symbol.
-
-Thanks,
-//richrd
+with best regards
+Mr Karbiru Ahmed
