@@ -1,190 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab2CDIZK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 03:25:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64081 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2CDIZI convert rfc822-to-8bit (ORCPT
+	id S1752064Ab2CDJJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 04:09:57 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46421 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab2CDJJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 03:25:08 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.204.155.154 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
-References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
-	<CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
-	<6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
-Date: Sun, 4 Mar 2012 17:25:06 +0900
-Message-ID: <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
-Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: merez@codeaurora.org
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 4 Mar 2012 04:09:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of slyich@gmail.com designates 10.14.27.142 as permitted sender) smtp.mail=slyich@gmail.com; dkim=pass header.i=slyich@gmail.com
+Date: Sun, 4 Mar 2012 12:14:00 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Jason Wang <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+Message-ID: <20120304121400.4d756e55@sf.home>
+In-Reply-To: <4F52A8D5.9090703@parallels.com>
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com>
+	<4F509150.5060904@redhat.com>
+	<20120302202421.753b36bc@sf.home>
+	<20120302205000.088bf231@sf.home>
+	<4F5227C9.7060209@parallels.com>
+	<20120303174322.7e920bc5@sf.home>
+	<4F52A8D5.9090703@parallels.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/AvFhPCRpjL0hQgXXMYT/6gL"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Merez.
+--Sig_/AvFhPCRpjL0hQgXXMYT/6gL
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks a lot about your performance measurement.
+On Sat, 3 Mar 2012 20:27:17 -0300
+Glauber Costa <glommer@parallels.com> wrote:
 
-I think that your measurement is enough and correct and the firmware
-of mmc vender should be optimized or change properly rather than
-modifying the current patch.
+> On 03/03/2012 11:43 AM, Sergei Trofimovich wrote:
+> > On Sat, 3 Mar 2012 11:16:41 -0300
+> > Glauber Costa<glommer@parallels.com>  wrote:
+> >
+> >> On 03/02/2012 02:50 PM, Sergei Trofimovich wrote:
+> >>>>>> The change looks like a typo (division flipped to multiplication):
+> >>>>>>> limit =3D nr_free_buffer_pages() / 8;
+> >>>>>>> limit =3D nr_free_buffer_pages()<<    (PAGE_SHIFT - 10);
+> >>>>>
+> >>>>> Hi, thanks for the reporting. It's not a typo. It was previously:
+> >>>>> sysctl_tcp_mem[1]<<   (PAGE_SHIFT -  7). Looks like we need to do t=
+he
+> >>>>> limit check before shift the value. Please try the following patch,=
+ thanks.
+> >>>>
+> >>>> Still does not help. I test it by checking sha1sum of a large file o=
+ver NFS
+> >>>> (small files seem to work simetimes):
+> >>>>
+> >>>>       $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2
+> >>>>       ...
+> >>>>       open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+> >>>>       <HUNG>
+> >>>> After a certain timeout dmesg gets odd spam:
+> >>>> [  314.848094] nfs: server vmhost not responding, still trying
+> >>>> [  314.848134] nfs: server vmhost not responding, still trying
+> >>>> [  314.848145] nfs: server vmhost not responding, still trying
+> >>>> [  314.957047] nfs: server vmhost not responding, still trying
+> >>>> [  314.957066] nfs: server vmhost not responding, still trying
+> >>>> [  314.957075] nfs: server vmhost not responding, still trying
+> >>>> [  314.957085] nfs: server vmhost not responding, still trying
+> >>>> [  314.957100] nfs: server vmhost not responding, still trying
+> >>>> [  314.958023] nfs: server vmhost not responding, still trying
+> >>>> [  314.958035] nfs: server vmhost not responding, still trying
+> >>>> [  314.958044] nfs: server vmhost not responding, still trying
+> >>>> [  314.958054] nfs: server vmhost not responding, still trying
+> >>>>
+> >>>> looks like bogus messages. Might be relevant to mishandled timings
+> >>>> somewhere else or a bug in nfs code.
+> >>>
+> >>> And after 120 seconds hung tasks shows it might be an OOM issue
+> >>> Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
+> >>> not running anything heavy:
+> >>
+> >> That is a bit weird.
+> >>
+> >> First because with Jason's patch, we should end up with the very same
+> >> calculation, at the same exact order, as it was in older kernels.
+> >> Second, because by shifting<<  10, you should be ending up with very
+> >> small numbers, effectively having tcp_rmem[1] =3D=3D tcp_rmem[2], and =
+the
+> >> same for wmem.
+> >>
+> >> Can you share which numbers you end up with at
+> >> /proc/sys/net/ipv4/tcp_{r,w}mem ?
+> >>
+> >
+> > Sure:
+> >
+> >      $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+> >      4096    87380   1999072
+> >      4096    16384   1999072
+> >
+> Sergei,
+>=20
+> Sorry for not being clearer. I was expecting you'd post those values
+> both in the scenario in which you see the bug, and in the scenario you
+> don't.
 
-And currently we can use only write packed cmd by my suggestion.
+Ah, I see.  Sorry. Patches are on top of v3.3-rc5-166-g1f033c1. Buggy one:
+> -       limit =3D nr_free_buffer_pages() << (PAGE_SHIFT - 10);
+> -       limit =3D max(limit, 128UL);
+> +       limit =3D nr_free_buffer_pages() / 8;
+> +       limit =3D max(limit, 128UL) << (PAGE_SHIFT - 7);
+>         max_share =3D min(4UL*1024*1024, limit);
+> +       printk(KERN_INFO "TCP: max_share=3D%u\n", max_share);
+    $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+    4096    87380   1999072
+    4096    16384   1999072
 
-I would like to add my reviewd-by tag in updated patches also.
+Working one:
+> -       limit =3D nr_free_buffer_pages() << (PAGE_SHIFT - 10);
+> +       limit =3D nr_free_buffer_pages() >> (PAGE_SHIFT - 10);
+>         limit =3D max(limit, 128UL);
+>         max_share =3D min(4UL*1024*1024, limit);
+> +       printk(KERN_INFO "TCP: max_share=3D%u\n", max_share);
+    $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+    4096    87380   124942
+    4096    16384   124942
 
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> > Nothing special with NFS nere, so I guess it uses UDP.
+> > TCP works fine on machine (I do everything via SSH).
+>=20
+> Can you confirm that? If you're using nfs through udp, it makes
+> even less sense that the default values of tcp sock mem will harm
+> you. So it might be a bug somewhere else...
 
-Thanks.
+Rechecked with tcpdump. It uses TCP.
 
-2012/3/2  <merez@codeaurora.org>:
-> Hi,
->
-> Our tests showed that the write packing improved the performance of the
-> write sequential operations:
->
-> Long write operation:
-> ----------------------
-> no-packing: 15.8 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 23.3 MB/s
->
-> Several parallel write operations (sum of all the write throughputs):
-> ---------------------------
-> no-packing: 17.1 MB/s
-> packed commands patch(both READ and WRITE packing are enabled): 25 MB/s
->
-> Parallel long read and long write operations (write throughput):
-> -----------------------------------------------------------------
-> no-packing: 12.2 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 16.3 MB/s
->
-> Parallel short read and long write operations (write throughput):
-> -----------------------------------------------------------------
-> no-packing: 15.4 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 16.4 MB/s
->
-> Several Parallel short read and short write operations (sum of all the
-> write throughputs):
-> --------------------------------------------------------------------------
-> no-packing: 12.5 MB/s
-> packed commands patch (both READ and WRITE packing are enabled): 15.5 MB/s
->
->
-> Random read and random write:
-> ------------------------------
-> I checked the random read and random write IOPs by using the IOZONE
-> application. There was a slight degradation in the read results due to the
-> packing and no improvements in the write results.
->
-> The results are:
->
-> IOZONE file size of 100M:
-> no-packing: random read: 4675, random write: 729
-> packed commands patch (both READ and WRITE packing are enabled): random
-> read: 4557 random write: 723
->
-> IOZONE file size of 256M:
-> no-packing: random read: 4632, random write: 744
-> packed commands patch (both READ and WRITE packing are enabled): random
-> read: 4498, random write: 742
->
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->
->> Hi. merez.
->>
->> Would you share random read speed with us ?
->>
->> And Write speed also..
->>
->> Thanks.
->>
->> 2012/3/1  <merez@codeaurora.org>:
->>>> This patch supports packed command of eMMC4.5 device.
->>>> Several reads(or writes) can be grouped in packed command
->>>> and all data of the individual commands can be sent in a
->>>> single transfer on the bus.
->>>>
->>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->>>> ---
->>>>  drivers/mmc/card/block.c   |  496
->>>> +++++++++++++++++++++++++++++++++++++++++--
->>>>  drivers/mmc/card/queue.c   |   48 ++++-
->>>>  drivers/mmc/card/queue.h   |   13 ++
->>>>  drivers/mmc/core/mmc_ops.c |    1 +
->>>>  include/linux/mmc/core.h   |    4 +
->>>>  5 files changed, 535 insertions(+), 27 deletions(-)
->>>>
->>> Hi,
->>>
->>> We ran performance tests on the packed commands patch. We found out that
->>> enabling the read packing didn't improve the performance in any of the
->>> scenarios we ran (see the detailed results below).
->>> Therefore, we suggest to move the read packing code to a different patch
->>> and approve only the write packing code for now. The read packing adds
->>> complexity to the code and we don't see a point in adding it while the
->>> intention is to disable it.
->>>
->>> Test results:
->>>
->>> Long read operation:
->>> ----------------------
->>> no-packing: 39.5 MB/s
->>> packed commands patch (both READ and WRITE packing are enabled): 39.5
->>> MB/s
->>> packed commands patch + enabling only READ packing: 39.5 MB/s
->>>
->>> Several parallel read operations (sum of all the read throughputs):
->>> ---------------------------
->>> no-packing: 42.6 MB/s
->>> packed commands patch(both READ and WRITE packing are enabled): 38 MB/s
->>> packed commands patch + enabling only READ packing: 38.2 MB/s
->>>
->>> Parallel long read and long write operations (read throughput):
->>> -----------------------------------------------------------------
->>> no-packing: 23.8 MB/s
->>> packed commands patch (both READ and WRITE packing are enabled): 12.6
->>> MB/s
->>> packed commands patch + enabling only READ packing: 12.5 MB/s
->>>
->>> Parallel short read and long write operations (read throughput):
->>> -----------------------------------------------------------------
->>> no-packing: 22.9 MB/s
->>> packed commands patch (both READ and WRITE packing are enabled): 8.4
->>> MB/s
->>> packed commands patch + enabling only READ packing: 8.6 MB/s
->>>
->>> Several Parallel short read and short write operations (sum of all the
->>> read throughputs):
->>> --------------------------------------------------------------------------
->>> no-packing: 41.6 MB/s
->>> packed commands patch (both READ and WRITE packing are enabled): 35 MB/s
->>> packed commands patch + enabling only READ packing: 36 MB/s
->>>
->>> Thanks,
->>> Maya Erez
->>> Consultant for Qualcomm Innovation Center, Inc.
->>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->>>
->>>
->>>
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
->
+--=20
+
+  Sergei
+
+--Sig_/AvFhPCRpjL0hQgXXMYT/6gL
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk9TMl4ACgkQcaHudmEf86pMJACdGCV1wLb2lMEeJIyhhT12eK9Q
+2ZwAoIjk/gdv+ySnUBQ2wFxTjQTULsnj
+=n/D2
+-----END PGP SIGNATURE-----
+
+--Sig_/AvFhPCRpjL0hQgXXMYT/6gL--
