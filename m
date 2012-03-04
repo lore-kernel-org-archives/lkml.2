@@ -1,141 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2CDLcy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 06:32:54 -0500
-Received: from mail.us.es ([193.147.175.20]:49442 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab2CDLcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 06:32:52 -0500
-Date: Sun, 4 Mar 2012 12:32:50 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        jengelh@medozas.de, rostedt@goodmis.org
-Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-Message-ID: <20120304113250.GA22781@1984>
-References: <1328400892-22409-1-git-send-email-richard@nod.at>
- <1328400892-22409-3-git-send-email-richard@nod.at>
- <20120301112732.GA6806@1984>
- <4F4FEC83.6090504@nod.at>
- <20120302164945.GA13723@1984>
- <4F50FAE2.4080903@nod.at>
- <20120304111211.GA22592@1984>
- <4F535161.1010407@nod.at>
+	id S1753360Ab2CDLwS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 06:52:18 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54704 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab2CDLwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 06:52:16 -0500
+Date: Sun, 4 Mar 2012 12:52:01 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
+        linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+Message-ID: <20120304115201.GB26882@pengutronix.de>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org>
+ <20120303133158.GA26882@pengutronix.de>
+ <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="DKU6Jbt7q3WqK7+M"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4F535161.1010407@nod.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:01:10 up 112 days, 18:48, 17 users,  load average: 0.00, 0.01,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sun, Mar 04, 2012 at 12:26:25PM +0100, Richard Weinberger wrote:
-> Am 04.03.2012 12:12, schrieb Pablo Neira Ayuso:
-> > On Fri, Mar 02, 2012 at 05:52:50PM +0100, Richard Weinberger wrote:
-> >> Am 02.03.2012 17:49, schrieb Pablo Neira Ayuso:
-> >>> On Thu, Mar 01, 2012 at 10:39:15PM +0100, Richard Weinberger wrote:
-> >>>> Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
-> >>>>> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
-> >>>>> corrupts the log line. Note the extra PROTO=, I don't have any UDPLITE
-> >>>>> traffic here.
-> >>>>>
-> >>>>> Looks like a missing break in one switch.
-> >>>>
-> >>>> I got confused by my own logic. :-\
-> >>>> Does the attached patch fix the issue?
-> >>>> It's based on "Netfilter: xt_LOG: Add timestamp support"
-> >>>
-> >>> This patch lacks of description. If you don't make it myself, I have
-> >>> to do it for you :-(
-> >>>
-> >>> Please, send me patches following the standard format next time.
+On Sat, Mar 03, 2012 at 09:14:43AM -0800, Turquette, Mike wrote:
+> On Sat, Mar 3, 2012 at 5:31 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Sat, Mar 03, 2012 at 12:29:00AM -0800, Mike Turquette wrote:
+> >> The common clock framework defines a common struct clk useful across
+> >> most platforms as well as an implementation of the clk api that drivers
+> >> can use safely for managing clocks.
 > >>
-> >> It was a "does this patch solve the problem"-Patch.
-> >> Does it fix the problem?
+> >> The net result is consolidation of many different struct clk definitions
+> >> and platform-specific clock framework implementations.
 > >>
-> >> If so, I'll send an official one...
-> > 
-> > Sorry, that's too much overhead. I don't mind testing it, but I want
-> > to apply it as soon as it fixes the problem ;-)
-> > 
+> >> This patch introduces the common struct clk, struct clk_ops and an
+> >> implementation of the well-known clock api in include/clk/clk.h.
+> >> Platforms may define their own hardware-specific clock structure and
+> >> their own clock operation callbacks, so long as it wraps an instance of
+> >> struct clk_hw.
+> >>
+> >> See Documentation/clk.txt for more details.
+> >>
+> >> This patch is based on the work of Jeremy Kerr, which in turn was based
+> >> on the work of Ben Herrenschmidt.
+> >>
+> >> +
+> >> +/**
+> >> + * struct clk_hw - handle for traversing from a struct clk to its corresponding
+> >> + * hardware-specific structure.  struct clk_hw should be declared within struct
+> >> + * clk_foo and then referenced by the struct clk instance that uses struct
+> >> + * clk_foo's clk_ops
+> >> + *
+> >> + * clk: pointer to the struct clk instance that points back to this struct
+> >> + * clk_hw instance
+> >> + */
+> >> +struct clk_hw {
+> >> +     struct clk *clk;
+> >> +};
+> >
+> > The reason for doing this is that struct clk should be an opaque cookie
+> > for both drivers and implementers of clocks. I recently had the idea whether
+> > the roles of these two structs could be swapped. So instead of the above we
+> > could do:
+> >
+> > struct clk {
+> >        struct clk_hw *hw;
+> > }
 > 
-> I'll try to reproduce your problem and test the fix for my own.
+> Firstly, struct clk is an opaque cookie for both drivers and
+> implementers of clocks with this patchset.
+> 
+> Secondly, struct clk does indeed have a pointer to struct clk_hw.
+> Refer to include/linux/clk-private.h in this patch.
+> 
+> The reference is cyclical.  A reference to struct clk can navigate to
+> struct clk_foo via container_of (usually something like "#define
+> to_clk_foo(_hw) container_of(_hw, struct clk_foo, hw)" where struct
+> clk's pointer to it's .hw member is passed into one of the struct
+> clk_ops callbacks.
+> 
+> Likewise if struct clk_foo needs the struct clk ptr for any reason
+> then it can get it from foo->hw->clk.
+> 
+> I believe this patch already does what you suggest, but I might be
+> missing your point.
 
-Here it works fine, but double test it fine, thanks.
+In include/linux/clk-private.h you expose struct clk outside the core.
+This has to be done to make static initializers possible. There is a big
+warning in this file that it must not be included from files implementing
+struct clk_ops. You can simply avoid this warning by declaring struct clk
+with only a single member:
 
-Here's the patch, I added the description.
+include/linux/clk.h:
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-netfilter-xt_LOG-fix-bogus-extra-layer-4-logging-inf.patch"
+struct clk {
+	struct clk_internal *internal;
+};
 
->From 0bfff14a7d9b81dc2ddf5d7ea08d3fb11d0f67a9 Mon Sep 17 00:00:00 2001
-From: Richard Weinberger <richard@nod.at>
-Date: Thu, 1 Mar 2012 11:39:15 +0000
-Subject: [PATCH] netfilter: xt_LOG: fix bogus extra layer-4 logging
- information
+This way everybody knows struct clk (thus can embed it in their static
+initializers), but doesn't know anything about the internal members. Now
+in drivers/clk/clk.c you declare struct clk_internal exactly like struct
+clk was declared before:
 
-In 16059b5 netfilter: merge ipt_LOG and ip6_LOG into xt_LOG, we have
-merged ipt_LOG and ip6t_LOG.
+struct clk_internal {
+	const char		*name;
+	const struct clk_ops	*ops;
+	struct clk_hw		*hw;
+	struct clk		*parent;
+	char			**parent_names;
+	struct clk		**parents;
+	u8			num_parents;
+	unsigned long		rate;
+	unsigned long		flags;
+	unsigned int		enable_count;
+	unsigned int		prepare_count;
+	struct hlist_head	children;
+	struct hlist_node	child_node;
+	unsigned int		notifier_count;
+#ifdef CONFIG_COMMON_CLK_DEBUG
+	struct dentry		*dentry;
+#endif
+};
 
-However:
+An instance of struct clk_internal will be allocated in
+__clk_init/clk_register. Now the private data stays completely inside
+the core and noone can abuse it.
 
-IN=wlan0 OUT= MAC=xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
-SRC=213.150.61.61 DST=192.168.1.133 LEN=40 TOS=0x00 PREC=0x00 TTL=117
-ID=10539 DF PROTO=TCP SPT=80 DPT=49013 WINDOW=0 RES=0x00 ACK RST
-URGP=0 PROTO=UDPLITE SPT=80 DPT=49013 LEN=45843 PROTO=ICMP TYPE=0
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+With this __clk_init could be something like:
 
-Several missing break in the code led to including bogus layer-4
-information. This patch fixes this problem.
+struct clk_initializer {
+	const char		*name;
+	const struct clk_ops	*ops;
+	char			**parent_names;
+	u8			num_parents;
+	unsigned long		flags;
+	struct clk		*clk;
+};
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
----
- net/netfilter/xt_LOG.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+void __clk_init(struct device *dev, struct clk_initializer *init);
 
-diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-index 1595608..f99f8de 100644
---- a/net/netfilter/xt_LOG.c
-+++ b/net/netfilter/xt_LOG.c
-@@ -216,12 +216,14 @@ static void dump_ipv4_packet(struct sbuff *m,
- 				    ntohs(ih->frag_off) & IP_OFFSET,
- 				    iphoff+ih->ihl*4, logflags))
- 			return;
-+		break;
- 	case IPPROTO_UDP:
- 	case IPPROTO_UDPLITE:
- 		if (dump_udp_header(m, skb, ih->protocol,
- 				    ntohs(ih->frag_off) & IP_OFFSET,
- 				    iphoff+ih->ihl*4))
- 			return;
-+		break;
- 	case IPPROTO_ICMP: {
- 		struct icmphdr _icmph;
- 		const struct icmphdr *ich;
-@@ -649,10 +651,12 @@ static void dump_ipv6_packet(struct sbuff *m,
- 		if (dump_tcp_header(m, skb, currenthdr, fragment, ptr,
- 		    logflags))
- 			return;
-+		break;
- 	case IPPROTO_UDP:
- 	case IPPROTO_UDPLITE:
- 		if (dump_udp_header(m, skb, currenthdr, fragment, ptr))
- 			return;
-+		break;
- 	case IPPROTO_ICMPV6: {
- 		struct icmp6hdr _icmp6h;
- 		const struct icmp6hdr *ic;
+I hope I made my intention a bit clearer.
+
+Sascha
+
 -- 
-1.7.7.3
-
-
---DKU6Jbt7q3WqK7+M--
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
