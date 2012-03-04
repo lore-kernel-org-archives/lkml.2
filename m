@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab2CDTS5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 14:18:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29865 "EHLO mx1.redhat.com"
+	id S1754819Ab2CDTfn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 14:35:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28408 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709Ab2CDTSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 14:18:55 -0500
-Date: Sun, 4 Mar 2012 14:18:39 -0500 (EST)
+	id S1754797Ab2CDTfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 14:35:42 -0500
+Date: Sun, 4 Mar 2012 14:35:27 -0500 (EST)
 From: Mikulas Patocka <mpatocka@redhat.com>
 X-X-Sender: mpatocka@file.rdu.redhat.com
 To: Mandeep Singh Baines <msb@chromium.org>
@@ -16,1140 +16,536 @@ cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
         Olof Johansson <olofj@chromium.org>,
         Steffen Klassert <steffen.klassert@secunet.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] dm: remake of the verity target
-In-Reply-To: <1330648393-20692-1-git-send-email-msb@chromium.org>
-Message-ID: <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
+Subject: userspace hashing utility for dm-verity
+In-Reply-To: <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
+Message-ID: <Pine.LNX.4.64.1203041419180.22461@file.rdu.redhat.com>
 References: <1330648393-20692-1-git-send-email-msb@chromium.org>
+ <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This is an userspace utility that creates or verifies hashes for the 
+verity target.
 
-Here I'm posting remake of the dm-verity target originall developed by 
-Mandeep Singh Baines. It has a compatible target line syntax, so it can be 
-used as a drop-in replacement.
+The original utility was created by Google and it is located at 
+http://git.chromium.org/chromiumos/platform/dm-verity.git
 
-The major difference is that this driver uses dm-bufio to manage cache of 
-hash blocks in memory. We talked with Alasdair about using dm-bufio for 
-caching and I concluded that it is simpler to rewrite the code rather than 
-transform the original Google code with patches.
+The original utility has some problems:
+* the code is really overengineered, they took the kernel code and built 
+  an emulation layer in userspace that emulates some of the kernel 
+  functions
+* it dosn't use library implementations of hash functions, rather it 
+  provides its own md5, sha1, sha256 and sha512 implementation
+* it is not portable (produces bad result on big-endian machines)
 
-Because of dm-bufio, memory consumption is not dependent on device size 
-(if the system starts running out of memory, dm-bufio discards cached 
-blocks loaded in memory).
+This is much smaller implementation that is portable and uses the crypto 
+library.
 
-This implementation is smaller, because (unlike the original 
-implementation), it doesn't create persistent in-memory structures.
+This code creates compatible format with the original Google code under 
+these conditions:
+- data block size and hash block size are 4096
+- salt has exactly 32 bytes (64 hex digits)
 
-This implementation is faster than the original. It uses clustered 
-prefetch to prefetch several hash blocks at once, greatly improving 
-performance if the data partition and hash partition are located on the 
-same disk (the prefetch cluster can be set with prefetch_cluster module 
-parameter).
+Example use:
+Create filesystem on /dev/sdc2 and fill it with some data. Block size must 
+be 4096
+Unmount the filesystem
+
+Run: ./verity -c /dev/sdc2 /dev/sdc3 sha256 --salt
+1234000000000000000000000000000000000000000000000000000000000000
+- This creates hash tree on /dev/sdc3 and prints the root block hash
+
+Run: dmsetup -r create verity --table "0 `blockdev --getsize /dev/sdc2` 
+verity 0 /dev/sdc2 /dev/sdc3 0 4096 sha256 
+f4c97f1f2e6b6757d033b2062268e0b6b42cbe4ff5a5fcc0017305b145cae4de 
+1234000000000000000000000000000000000000000000000000000000000000 "
+(note: use the real hash reported by "verity" tool instead of f4c9...)
+
+mount -o ro -t ext2 /dev/mapper/verity /mnt/test
+
+Now, the device is mounted and dm-verity target is verifying the hashes.
+All data integrity depends only on the root hash 
+(f4c97f1f2e6b6757d033b2062268e0b6b42cbe4ff5a5fcc0017305b145cae4de) and 
+salt (1234000000000000000000000000000000000000000000000000000000000000). 
+If either the data or hash partitions become silently corrupted and 
+you read invalid data, dm-verity will return -EIO.
 
 Mikulas
 
 ---
 
-Disk: Maxtor Atlas 15k2 146GB, 3.8GB partition
+/* link with -lpopt -lcrypto */
 
-The following tests were made:
-dd if=/dev/mapper/verity of=/dev/null bs=1M
-fsck.ext2 -fn -C 0 /dev/mapper/verity
-fio --rw=randread --size=200M --bsrange=1k-128k --filename=/dev/mapper/verity --name=job1 --name=job2 --name=job3 --name=job4
+#define _FILE_OFFSET_BITS	64
 
-raw partition:
-dd:			42s
-fsck:			11s
-fio:			13s
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/mount.h>
+#include <popt.h>
+#include <openssl/evp.h>
 
-original google dm-verity implementation:
-dd (first time):	571s
-dd (next time):		46s
-fsck (first time):	39s
-fsck (next time):	10s
-fio (first time):	26s
-fio (next time):	24s
+#define DEFAULT_BLOCK_SIZE	4096
+#define DM_VERITY_MAX_LEVELS	63
 
-my vm-verity implementation:
-dd (first time):	45s
-dd (next time):		43s
-fsck (first time):	11s
-fsck (next time):	11s
-fio (first time):	14s
-fio (next time):	14s
+#define MODE_VERIFY	0
+#define MODE_CREATE	1
 
----
+static int mode = -1;
 
-Remake of the google dm-verity patch.
+static const char *data_device;
+static const char *hash_device;
+static const char *hash_algorithm;
+static const char *root_hash;
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+static int data_block_size = 0;
+static int hash_block_size = 0;
+static long long hash_start = 0;
+static long long data_blocks = 0;
+static const char *salt_string = NULL;
 
----
- drivers/md/Kconfig     |   17 +
- drivers/md/Makefile    |    1 
- drivers/md/dm-bufio.c  |   97 ++++--
- drivers/md/dm-bufio.h  |    8 
- drivers/md/dm-verity.c |  785 +++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 887 insertions(+), 21 deletions(-)
+static FILE *data_file;
+static FILE *hash_file;
 
-Index: linux-3.3-rc5-fast/drivers/md/Kconfig
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/Kconfig	2012-03-03 05:19:33.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/Kconfig	2012-03-03 19:39:30.000000000 +0100
-@@ -388,4 +388,21 @@ config DM_FLAKEY
-        ---help---
-          A target that intermittently fails I/O for debugging purposes.
- 
-+config DM_VERITY
-+	tristate "Verity target support"
-+	depends on BLK_DEV_DM
-+	select CRYPTO
-+	select CRYPTO_HASH
-+	select DM_BUFIO
-+	---help---
-+	  This device-mapper target allows you to create a device that
-+	  transparently integrity checks the data on it. You'll need to
-+	  activate the digests you're going to use in the cryptoapi
-+	  configuration.
-+
-+	  To compile this code as a module, choose M here: the module will
-+	  be called dm-verity.
-+
-+	  If unsure, say N.
-+
- endif # MD
-Index: linux-3.3-rc5-fast/drivers/md/Makefile
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/Makefile	2012-03-03 05:19:33.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/Makefile	2012-03-03 19:39:30.000000000 +0100
-@@ -29,6 +29,7 @@ obj-$(CONFIG_MD_FAULTY)		+= faulty.o
- obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
- obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
- obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
-+obj-$(CONFIG_DM_VERITY)		+= dm-verity.o
- obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
- obj-$(CONFIG_DM_DELAY)		+= dm-delay.o
- obj-$(CONFIG_DM_FLAKEY)		+= dm-flakey.o
-Index: linux-3.3-rc5-fast/drivers/md/dm-verity.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-3.3-rc5-fast/drivers/md/dm-verity.c	2012-03-03 05:51:10.000000000 +0100
-@@ -0,0 +1,785 @@
-+/*
-+ * Copyright (C) 2012 Red Hat, Inc.
-+ *
-+ * Author: Mikulas Patocka <mpatocka@redhat.com>
-+ *
-+ * Based on Chromium dm-verity driver (C) 2011 The Chromium OS Authors
-+ *
-+ * This file is released under the GPLv2.
-+ *
-+ * Device mapper target parameters:
-+ *	<version>	0
-+ *	<data device>
-+ *	<hash device>
-+ *	<hash start>	(typically 0)
-+ *	<block size>	(typically 4096)
-+ *	<algorithm>
-+ *	<digest>
-+ *	optional parameters:
-+ *		<salt> (should have 32 bytes for compatibility with Google code)
-+ *		<hash block size> (by default it is the same as data block size)
-+ *
-+ * In the file "/sys/module/dm_verity/parameters/prefetch_cluster" you can set
-+ * default prefetch value. Data are read in "prefetch_cluster" chunks from the
-+ * hash device. Prefetch cluster greatly improves performance when data and hash
-+ * are on the same disk on different partitions.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/device-mapper.h>
-+#include <crypto/hash.h>
-+#include "dm-bufio.h"
-+
-+#define DM_MSG_PREFIX			"verity"
-+
-+#define DM_VERITY_IO_VEC_INLINE		16
-+#define DM_VERITY_MEMPOOL_SIZE		4
-+#define DM_VERITY_PREFETCH_SIZE		262144
-+
-+#define DM_VERITY_MAX_LEVELS		63
-+
-+static unsigned prefetch_cluster = DM_VERITY_PREFETCH_SIZE;
-+
-+module_param_named(prefetch_cluster, prefetch_cluster, uint, S_IRUGO | S_IWUSR);
-+
-+struct dm_verity {
-+	struct dm_dev *data_dev;
-+	struct dm_dev *hash_dev;
-+	struct dm_target *ti;
-+	struct dm_bufio_client *bufio;
-+	char *alg_name;
-+	struct crypto_shash *tfm;
-+	u8 *root_digest;
-+	u8 *salt;
-+	unsigned salt_size;
-+	sector_t data_start;
-+	sector_t hash_start;
-+	sector_t data_blocks;
-+	sector_t hash_blocks;
-+	unsigned char data_dev_block_bits;
-+	unsigned char hash_dev_block_bits;
-+	unsigned char hash_per_block_bits;
-+	unsigned char levels;
-+	unsigned digest_size;
-+	unsigned shash_descsize;
-+
-+	mempool_t *io_mempool;
-+	mempool_t *vec_mempool;
-+
-+	struct workqueue_struct *verify_wq;
-+
-+	sector_t hash_level_block[DM_VERITY_MAX_LEVELS];
-+};
-+
-+struct dm_verity_io {
-+	struct dm_verity *v;
-+	struct bio *bio;
-+	bio_end_io_t *orig_bi_end_io;
-+	void *orig_bi_private;
-+	sector_t block;
-+	unsigned n_blocks;
-+	struct bio_vec *io_vec;
-+	unsigned io_vec_size;
-+	struct work_struct work;
-+	struct bio_vec io_vec_inline[DM_VERITY_IO_VEC_INLINE];
-+	/* u8 hash_desc[crypto_shash_descsize(v->tfm)]; */
-+	/* u8 real_digest[v->digest_size]; */
-+	/* u8 want_digest[v->digest_size]; */
-+};
-+
-+static struct shash_desc *io_hash_desc(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	return (struct shash_desc *)(io + 1);
-+}
-+
-+static u8 *io_real_digest(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	return (u8 *)(io + 1) + v->shash_descsize;
-+}
-+
-+static u8 *io_want_digest(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	return (u8 *)(io + 1) + v->shash_descsize + v->digest_size;
-+}
-+
-+struct buffer_aux {
-+	int hash_verified;
-+};
-+
-+static void dm_bufio_alloc_callback(struct dm_buffer *buf)
-+{
-+	struct buffer_aux *aux = dm_bufio_get_aux_data(buf);
-+	aux->hash_verified = 0;
-+}
-+
-+static sector_t verity_map_sector(struct dm_verity *v, sector_t bi_sector)
-+{
-+	return v->data_start + dm_target_offset(v->ti, bi_sector);
-+}
-+
-+static sector_t verity_position_at_level(struct dm_verity *v, sector_t block,
-+					 int level)
-+{
-+	return block >> (level * v->hash_per_block_bits);
-+}
-+
-+static void verity_hash_at_level(struct dm_verity *v, sector_t block, int level,
-+				 sector_t *hash_block, unsigned *offset)
-+{
-+	sector_t position = verity_position_at_level(v, block, level);
-+
-+	*hash_block = v->hash_level_block[level] + (position >> v->hash_per_block_bits);
-+	if (offset)
-+		*offset = v->digest_size * (position & ((1 << v->hash_per_block_bits) - 1));
-+}
-+
-+static int verity_verify_level(struct dm_verity_io *io, sector_t block,
-+			       int level, int skip_unverified)
-+{
-+	struct dm_verity *v = io->v;
-+	struct dm_buffer *buf;
-+	struct buffer_aux *aux;
-+	u8 *data;
-+	int r;
-+	sector_t hash_block;
-+	unsigned offset;
-+
-+	verity_hash_at_level(v, block, level, &hash_block, &offset);
-+
-+	data = dm_bufio_read(v->bufio, hash_block, &buf);
-+	if (unlikely(IS_ERR(data)))
-+		return PTR_ERR(data);
-+
-+	aux = dm_bufio_get_aux_data(buf);
-+
-+	if (!aux->hash_verified) {
-+		struct shash_desc *desc;
-+		u8 *result;
-+
-+		if (skip_unverified) {
-+			r = 1;
-+			goto release_ret_r;
-+		}
-+
-+		desc = io_hash_desc(v, io);
-+		desc->tfm = v->tfm;
-+		desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+		r = crypto_shash_init(desc);
-+		if (r < 0) {
-+			DMERR("crypto_shash_init failed: %d", r);
-+			goto release_ret_r;
-+		}
-+
-+		r = crypto_shash_update(desc, data, 1 << v->hash_dev_block_bits);
-+		if (r < 0) {
-+			DMERR("crypto_shash_update failed: %d", r);
-+			goto release_ret_r;
-+		}
-+
-+		r = crypto_shash_update(desc, v->salt, v->salt_size);
-+		if (r < 0) {
-+			DMERR("crypto_shash_update failed: %d", r);
-+			goto release_ret_r;
-+		}
-+
-+		result = io_real_digest(v, io);
-+		r = crypto_shash_final(desc, result);
-+		if (r < 0) {
-+			DMERR("crypto_shash_final failed: %d", r);
-+			goto release_ret_r;
-+		}
-+		if (unlikely(memcmp(result, io_want_digest(v, io), v->digest_size))) {
-+			DMERR_LIMIT("metadata block %llu is corrupted",
-+				(unsigned long long)hash_block);
-+			r = -EIO;
-+			goto release_ret_r;
-+		} else
-+			aux->hash_verified = 1;
-+	}
-+
-+	data += offset;
-+
-+	memcpy(io_want_digest(v, io), data, v->digest_size);
-+
-+	dm_bufio_release(buf);
-+	return 0;
-+
-+release_ret_r:
-+	dm_bufio_release(buf);
-+	return r;
-+}
-+
-+static int verity_verify_io(struct dm_verity_io *io)
-+{
-+	struct dm_verity *v = io->v;
-+	unsigned b;
-+	int i;
-+	unsigned vector = 0, offset = 0;
-+	for (b = 0; b < io->n_blocks; b++) {
-+		struct shash_desc *desc;
-+		u8 *result;
-+		int r;
-+		unsigned todo;
-+
-+		if (likely(v->levels)) {
-+			int r = verity_verify_level(io, io->block + b, 0, 1);
-+			if (likely(!r))
-+				goto test_block_hash;
-+			if (r < 0)
-+				return r;
-+		}
-+
-+		memcpy(io_want_digest(v, io), v->root_digest, v->digest_size);
-+
-+		for (i = v->levels - 1; i >= 0; i--) {
-+			int r = verity_verify_level(io, io->block + b, i, 0);
-+			if (unlikely(r))
-+				return r;
-+		}
-+
-+test_block_hash:
-+		desc = io_hash_desc(v, io);
-+		desc->tfm = v->tfm;
-+		desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+		r = crypto_shash_init(desc);
-+		if (r < 0) {
-+			DMERR("crypto_shash_init failed: %d", r);
-+			return r;
-+		}
-+
-+		todo = 1 << v->data_dev_block_bits;
-+		do {
-+			struct bio_vec *bv;
-+			u8 *page;
-+			unsigned len;
-+
-+			BUG_ON(vector >= io->io_vec_size);
-+			bv = &io->io_vec[vector];
-+			page = kmap_atomic(bv->bv_page, KM_USER0);
-+			len = bv->bv_len - offset;
-+			if (likely(len >= todo))
-+				len = todo;
-+			r = crypto_shash_update(desc,
-+					page + bv->bv_offset + offset, len);
-+			kunmap_atomic(page, KM_USER0);
-+			if (r < 0) {
-+				DMERR("crypto_shash_update failed: %d", r);
-+				return r;
-+			}
-+			offset += len;
-+			if (likely(offset == bv->bv_len)) {
-+				offset = 0;
-+				vector++;
-+			}
-+			todo -= len;
-+		} while (todo);
-+
-+		r = crypto_shash_update(desc, v->salt, v->salt_size);
-+		if (r < 0) {
-+			DMERR("crypto_shash_update failed: %d", r);
-+			return r;
-+		}
-+
-+		result = io_real_digest(v, io);
-+		r = crypto_shash_final(desc, result);
-+		if (r < 0) {
-+			DMERR("crypto_shash_final failed: %d", r);
-+			return r;
-+		}
-+		if (unlikely(memcmp(result, io_want_digest(v, io), v->digest_size))) {
-+			DMERR_LIMIT("data block %llu is corrupted",
-+				(unsigned long long)(io->block + b));
-+			return -EIO;
-+		}
-+	}
-+	BUG_ON(vector != io->io_vec_size);
-+	BUG_ON(offset);
-+	return 0;
-+}
-+
-+static void verity_finish_io(struct dm_verity_io *io, int error)
-+{
-+	struct bio *bio = io->bio;
-+	struct dm_verity *v = io->v;
-+
-+	bio->bi_end_io = io->orig_bi_end_io;
-+	bio->bi_private = io->orig_bi_private;
-+
-+	if (io->io_vec != io->io_vec_inline)
-+		mempool_free(io->io_vec, v->vec_mempool);
-+	mempool_free(io, v->io_mempool);
-+
-+	bio_endio(bio, error);
-+}
-+
-+static void verity_work(struct work_struct *w)
-+{
-+	struct dm_verity_io *io = container_of(w, struct dm_verity_io, work);
-+
-+	verity_finish_io(io, verity_verify_io(io));
-+}
-+
-+static void verity_end_io(struct bio *bio, int error)
-+{
-+	struct dm_verity_io *io = bio->bi_private;
-+	if (error) {
-+		verity_finish_io(io, error);
-+		return;
-+	}
-+
-+	INIT_WORK(&io->work, verity_work);
-+	queue_work(io->v->verify_wq, &io->work);
-+}
-+
-+static void verity_prefetch_io(struct dm_verity *v, struct dm_verity_io *io)
-+{
-+	int i;
-+	for (i = v->levels - 2; i >= 0; i--) {
-+		sector_t hash_block_start;
-+		sector_t hash_block_end;
-+		verity_hash_at_level(v, io->block, i, &hash_block_start, NULL);
-+		verity_hash_at_level(v, io->block + io->n_blocks - 1, i, &hash_block_end, NULL);
-+		if (!i) {
-+			unsigned cluster = prefetch_cluster;
-+	 /* barrier to stop GCC from re-reading prefetch_cluster again */
-+			barrier();
-+			cluster >>= v->data_dev_block_bits;
-+			if (unlikely(!cluster))
-+				goto no_prefetch_cluster;
-+			if (unlikely(cluster & (cluster - 1)))
-+				cluster = 1 << (fls(cluster) - 1);
-+
-+			hash_block_start &= ~(sector_t)(cluster - 1);
-+			hash_block_end |= cluster - 1;
-+			if (unlikely(hash_block_end >= v->hash_blocks))
-+				hash_block_end = v->hash_blocks - 1;
-+		}
-+no_prefetch_cluster:
-+		dm_bufio_prefetch(v->bufio, hash_block_start,
-+					hash_block_end - hash_block_start + 1);
-+	}
-+}
-+
-+static int verity_map(struct dm_target *ti, struct bio *bio,
-+		      union map_info *map_context)
-+{
-+	struct dm_verity *v = ti->private;
-+	struct dm_verity_io *io;
-+
-+	if (((unsigned)bio->bi_sector | bio_sectors(bio)) &
-+	    ((1 << (v->data_dev_block_bits - SECTOR_SHIFT)) - 1)) {
-+		DMERR_LIMIT("unaligned io");
-+		return -EIO;
-+	}
-+
-+	if ((bio->bi_sector + bio_sectors(bio)) >>
-+	    (v->data_dev_block_bits - SECTOR_SHIFT) > v->data_blocks) {
-+		DMERR_LIMIT("io out of range");
-+		return -EIO;
-+	}
-+
-+	if (bio_data_dir(bio) == WRITE)
-+		return -EIO;
-+
-+	io = mempool_alloc(v->io_mempool, GFP_NOIO);
-+	io->v = v;
-+	io->bio = bio;
-+	io->orig_bi_end_io = bio->bi_end_io;
-+	io->orig_bi_private = bio->bi_private;
-+	io->block = bio->bi_sector >> (v->data_dev_block_bits - SECTOR_SHIFT);
-+	io->n_blocks = bio->bi_size >> v->data_dev_block_bits;
-+
-+	bio->bi_end_io = verity_end_io;
-+	bio->bi_private = io;
-+	bio->bi_bdev = v->data_dev->bdev;
-+	bio->bi_sector = verity_map_sector(v, bio->bi_sector);
-+
-+	io->io_vec_size = bio->bi_vcnt - bio->bi_idx;
-+	if (io->io_vec_size < DM_VERITY_IO_VEC_INLINE)
-+		io->io_vec = io->io_vec_inline;
-+	else
-+		io->io_vec = mempool_alloc(v->vec_mempool, GFP_NOIO);
-+	memcpy(io->io_vec, bio_iovec(bio),
-+	       io->io_vec_size * sizeof(struct bio_vec));
-+
-+	verity_prefetch_io(v, io);
-+
-+	generic_make_request(bio);
-+
-+	return DM_MAPIO_SUBMITTED;
-+}
-+
-+static int verity_status(struct dm_target *ti, status_type_t type,
-+			 char *result, unsigned maxlen)
-+{
-+	struct dm_verity *v = ti->private;
-+	unsigned sz = 0;
-+	unsigned x;
-+
-+	switch (type) {
-+	case STATUSTYPE_INFO:
-+		result[0] = 0;
-+		break;
-+	case STATUSTYPE_TABLE:
-+		DMEMIT("%u %s %s %llu %u %s ",
-+			0,
-+			v->data_dev->name,
-+			v->hash_dev->name,
-+			(unsigned long long)v->hash_start << (v->hash_dev_block_bits - SECTOR_SHIFT),
-+			1 << v->data_dev_block_bits,
-+			v->alg_name
-+			);
-+		for (x = 0; x < v->digest_size; x++)
-+			DMEMIT("%02x", v->root_digest[x]);
-+		DMEMIT(" ");
-+		if (!v->salt_size)
-+			DMEMIT("-");
-+		else
-+			for (x = 0; x < v->salt_size; x++)
-+				DMEMIT("%02x", v->salt[x]);
-+		DMEMIT(" %u", 1 << v->hash_dev_block_bits);
-+		break;
-+	}
-+	return 0;
-+}
-+
-+static int verity_ioctl(struct dm_target *ti, unsigned cmd,
-+			unsigned long arg)
-+{
-+	struct dm_verity *v = ti->private;
-+	int r = 0;
-+
-+	if (v->data_start ||
-+	    ti->len != i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT)
-+		r = scsi_verify_blk_ioctl(NULL, cmd);
-+
-+	return r ? : __blkdev_driver_ioctl(v->data_dev->bdev, v->data_dev->mode,
-+				     cmd, arg);
-+}
-+
-+static int verity_merge(struct dm_target *ti, struct bvec_merge_data *bvm,
-+			struct bio_vec *biovec, int max_size)
-+{
-+	struct dm_verity *v = ti->private;
-+	struct request_queue *q = bdev_get_queue(v->data_dev->bdev);
-+
-+	if (!q->merge_bvec_fn)
-+		return max_size;
-+
-+	bvm->bi_bdev = v->data_dev->bdev;
-+	bvm->bi_sector = verity_map_sector(v, bvm->bi_sector);
-+
-+	return min(max_size, q->merge_bvec_fn(q, bvm, biovec));
-+}
-+
-+static int verity_iterate_devices(struct dm_target *ti,
-+				  iterate_devices_callout_fn fn, void *data)
-+{
-+	struct dm_verity *v = ti->private;
-+	return fn(ti, v->data_dev, v->data_start, ti->len, data);
-+}
-+
-+static void verity_io_hints(struct dm_target *ti, struct queue_limits *limits)
-+{
-+	struct dm_verity *v = ti->private;
-+
-+	if (limits->logical_block_size < 1 << v->data_dev_block_bits)
-+		limits->logical_block_size = 1 << v->data_dev_block_bits;
-+	if (limits->physical_block_size < 1 << v->data_dev_block_bits)
-+		limits->physical_block_size = 1 << v->data_dev_block_bits;
-+	blk_limits_io_min(limits, limits->logical_block_size);
-+}
-+
-+static void verity_dtr(struct dm_target *ti);
-+
-+static int verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
-+{
-+	struct dm_verity *v;
-+	unsigned num;
-+	unsigned long long hs;
-+	int r;
-+	int i;
-+	sector_t hash_position;
-+	char dummy;
-+
-+	v = kzalloc(sizeof(struct dm_verity), GFP_KERNEL);
-+	if (!v) {
-+		ti->error = "Cannot allocate verity structure";
-+		return -ENOMEM;
-+	}
-+	ti->private = v;
-+	v->ti = ti;
-+
-+	if ((dm_table_get_mode(ti->table) & ~FMODE_READ) != 0) {
-+		ti->error = "Device must be readonly";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	if (argc < 7) {
-+		ti->error = "Not enough arguments";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	if (sscanf(argv[0], "%d%c", &num, &dummy) != 1 ||
-+	    num != 0) {
-+		ti->error = "Invalid version";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	r = dm_get_device(ti, argv[1], FMODE_READ, &v->data_dev);
-+	if (r) {
-+		ti->error = "Data device lookup failed";
-+		goto bad;
-+	}
-+
-+	r = dm_get_device(ti, argv[2], FMODE_READ, &v->hash_dev);
-+	if (r) {
-+		ti->error = "Data device lookup failed";
-+		goto bad;
-+	}
-+
-+	if (sscanf(argv[3], "%llu%c", &hs, &dummy) != 1 ||
-+	    hs != (sector_t)hs) {
-+		ti->error = "Invalid hash start";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	if (sscanf(argv[4], "%u%c", &num, &dummy) != 1 ||
-+	    !num || (num & (num - 1)) ||
-+	    num < bdev_logical_block_size(v->data_dev->bdev) ||
-+	    num > PAGE_SIZE) {
-+		ti->error = "Invalid data device block size";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+	v->data_dev_block_bits = ffs(num) - 1;
-+	v->hash_dev_block_bits = ffs(num) - 1;
-+
-+	v->alg_name = kstrdup(argv[5], GFP_KERNEL);
-+	if (!v->alg_name) {
-+		ti->error = "Cannot allocate algorithm name";
-+		r = -ENOMEM;
-+		goto bad;
-+	}
-+
-+	v->tfm = crypto_alloc_shash(v->alg_name, 0, 0);
-+	if (IS_ERR(v->tfm)) {
-+		ti->error = "Cannot initialize hash function";
-+		r = PTR_ERR(v->tfm);
-+		v->tfm = NULL;
-+		goto bad;
-+	}
-+	v->digest_size = crypto_shash_digestsize(v->tfm);
-+	if ((1 << v->hash_dev_block_bits) < v->digest_size * 2) {
-+		ti->error = "Digest size too big";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+	v->shash_descsize =
-+		sizeof(struct shash_desc) + crypto_shash_descsize(v->tfm);
-+
-+	v->root_digest = kmalloc(v->digest_size, GFP_KERNEL);
-+	if (!v->root_digest) {
-+		ti->error = "Cannot allocate root digest";
-+		r = -ENOMEM;
-+		goto bad;
-+	}
-+	if (strlen(argv[6]) != v->digest_size * 2 ||
-+	    hex2bin(v->root_digest, argv[6], v->digest_size)) {
-+		ti->error = "Invalid root digest";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	if (argc > 7 && strcmp(argv[7], "-")) {
-+		v->salt_size = strlen(argv[7]) / 2;
-+		v->salt = kmalloc(v->salt_size, GFP_KERNEL);
-+		if (!v->salt) {
-+			ti->error = "Cannot allocate salt";
-+			r = -ENOMEM;
-+			goto bad;
-+		}
-+		if (strlen(argv[7]) != v->salt_size * 2 ||
-+		    hex2bin(v->salt, argv[7], v->salt_size)) {
-+			ti->error = "Invalid salt";
-+			r = -EINVAL;
-+			goto bad;
-+		}
-+	}
-+
-+	if (argc > 8) {
-+		if (sscanf(argv[8], "%u%c", &num, &dummy) != 1 ||
-+		    !num || (num & (num - 1)) ||
-+		    num < bdev_logical_block_size(v->hash_dev->bdev) ||
-+		    num > INT_MAX) {
-+			ti->error = "Invalid hash device block size";
-+			r = -EINVAL;
-+			goto bad;
-+		}
-+		v->hash_dev_block_bits = ffs(num) - 1;
-+	}
-+
-+	if (hs & ((1 << (v->hash_dev_block_bits - SECTOR_SHIFT)) - 1)) {
-+		ti->error = "Hash start not aligned on block boundary";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+	v->hash_start = hs >> (v->hash_dev_block_bits - SECTOR_SHIFT);
-+
-+	if (ti->len > i_size_read(v->data_dev->bdev->bd_inode) >> SECTOR_SHIFT) {
-+		ti->error = "Data device si too small";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	if (ti->len & ((1 << (v->data_dev_block_bits - SECTOR_SHIFT)) - 1)) {
-+		ti->error = "Data device length is not aligned to block size";
-+		r = -EINVAL;
-+		goto bad;
-+	}
-+
-+	v->data_blocks = ti->len >> (v->data_dev_block_bits - SECTOR_SHIFT);
-+
-+	v->hash_per_block_bits =
-+		fls((1 << v->hash_dev_block_bits) / v->digest_size) - 1;
-+
-+	v->levels = 0;
-+	if (v->data_blocks)
-+		while (v->hash_per_block_bits * v->levels < 64 &&
-+		       (unsigned long long)(v->data_blocks - 1) >>
-+		       (v->hash_per_block_bits * v->levels))
-+			v->levels++;
-+
-+	if (v->levels > DM_VERITY_MAX_LEVELS) {
-+		ti->error = "Too many tree levels";
-+		r = -E2BIG;
-+		goto bad;
-+	}
-+
-+	hash_position = v->hash_start;
-+	for (i = v->levels - 1; i >= 0; i--) {
-+		sector_t s;
-+		v->hash_level_block[i] = hash_position;
-+		s = verity_position_at_level(v, v->data_blocks, i);
-+		s = (s >> v->hash_per_block_bits) +
-+		    !!(s & ((1 << v->hash_per_block_bits) - 1));
-+		if (hash_position + s < hash_position) {
-+			ti->error = "Hash device offset overflow";
-+			r = -E2BIG;
-+			goto bad;
-+		}
-+		hash_position += s;
-+	}
-+	v->hash_blocks = hash_position;
-+
-+	v->bufio = dm_bufio_client_create(v->hash_dev->bdev,
-+		1 << v->hash_dev_block_bits, 1, sizeof(struct buffer_aux),
-+		dm_bufio_alloc_callback, NULL);
-+	if (IS_ERR(v->bufio)) {
-+		ti->error = "Cannot initialize dm-bufio";
-+		r = PTR_ERR(v->bufio);
-+		v->bufio = NULL;
-+		goto bad;
-+	}
-+
-+	if (dm_bufio_get_device_size(v->bufio) < v->hash_blocks) {
-+		ti->error = "Hash device is too small";
-+		r = -E2BIG;
-+		goto bad;
-+	}
-+
-+	v->io_mempool = mempool_create_kmalloc_pool(DM_VERITY_MEMPOOL_SIZE,
-+	  sizeof(struct dm_verity_io) + v->shash_descsize + v->digest_size * 2);
-+	if (!v->io_mempool) {
-+		ti->error = "Cannot allocate io mempool";
-+		r = -ENOMEM;
-+		goto bad;
-+	}
-+
-+	v->vec_mempool = mempool_create_kmalloc_pool(DM_VERITY_MEMPOOL_SIZE,
-+					BIO_MAX_PAGES * sizeof(struct bio_vec));
-+	if (!v->vec_mempool) {
-+		ti->error = "Cannot allocate vector mempool";
-+		r = -ENOMEM;
-+		goto bad;
-+	}
-+
-+	/*v->verify_wq = alloc_workqueue("verityd", WQ_CPU_INTENSIVE | WQ_MEM_RECLAIM, 1);*/
-+	/* WQ_UNBOUND greatly improves performance when running on ramdisk */
-+	v->verify_wq = alloc_workqueue("verityd", WQ_CPU_INTENSIVE | WQ_MEM_RECLAIM | WQ_UNBOUND, num_online_cpus());
-+	if (!v->verify_wq) {
-+		ti->error = "Cannot allocate workqueue";
-+		r = -ENOMEM;
-+		goto bad;
-+	}
-+
-+	return 0;
-+
-+bad:
-+	verity_dtr(ti);
-+	return r;
-+}
-+
-+static void verity_dtr(struct dm_target *ti)
-+{
-+	struct dm_verity *v = ti->private;
-+
-+	if (v->verify_wq)
-+		destroy_workqueue(v->verify_wq);
-+	if (v->vec_mempool)
-+		mempool_destroy(v->vec_mempool);
-+	if (v->io_mempool)
-+		mempool_destroy(v->io_mempool);
-+	if (v->bufio)
-+		dm_bufio_client_destroy(v->bufio);
-+	kfree(v->salt);
-+	kfree(v->root_digest);
-+	if (v->tfm)
-+		crypto_free_shash(v->tfm);
-+	kfree(v->alg_name);
-+	if (v->hash_dev)
-+		dm_put_device(ti, v->hash_dev);
-+	if (v->data_dev)
-+		dm_put_device(ti, v->data_dev);
-+	kfree(v);
-+}
-+
-+static struct target_type verity_target = {
-+	.name		= "verity",
-+	.version	= {1, 0, 0},
-+	.module		= THIS_MODULE,
-+	.ctr		= verity_ctr,
-+	.dtr		= verity_dtr,
-+	.map		= verity_map,
-+	.status		= verity_status,
-+	.ioctl		= verity_ioctl,
-+	.merge		= verity_merge,
-+	.iterate_devices = verity_iterate_devices,
-+	.io_hints	= verity_io_hints,
-+};
-+
-+static int __init dm_verity_init(void)
-+{
-+	int r;
-+	r = dm_register_target(&verity_target);
-+	if (r < 0)
-+		DMERR("register failed %d", r);
-+	return r;
-+}
-+
-+static void __exit dm_verity_exit(void)
-+{
-+	dm_unregister_target(&verity_target);
-+}
-+
-+module_init(dm_verity_init);
-+module_exit(dm_verity_exit);
-+
-+MODULE_AUTHOR("Mikulas Patocka <mpatocka@redhat.com>");
-+MODULE_DESCRIPTION(DM_NAME " target for transparent disk integrity checking");
-+MODULE_LICENSE("GPL");
-+
-Index: linux-3.3-rc5-fast/drivers/md/dm-bufio.c
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/dm-bufio.c	2012-03-03 05:19:33.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/dm-bufio.c	2012-03-03 05:19:35.000000000 +0100
-@@ -579,7 +579,7 @@ static void write_endio(struct bio *bio,
- 	struct dm_buffer *b = container_of(bio, struct dm_buffer, bio);
- 
- 	b->write_error = error;
--	if (error) {
-+	if (unlikely(error)) {
- 		struct dm_bufio_client *c = b->c;
- 		(void)cmpxchg(&c->async_write_error, 0, error);
- 	}
-@@ -698,13 +698,20 @@ static void __wait_for_free_buffer(struc
- 	dm_bufio_lock(c);
- }
- 
-+enum new_flag {
-+	NF_FRESH = 0,
-+	NF_READ = 1,
-+	NF_GET = 2,
-+	NF_PREFETCH = 3
-+};
-+
- /*
-  * Allocate a new buffer. If the allocation is not possible, wait until
-  * some other thread frees a buffer.
-  *
-  * May drop the lock and regain it.
-  */
--static struct dm_buffer *__alloc_buffer_wait_no_callback(struct dm_bufio_client *c)
-+static struct dm_buffer *__alloc_buffer_wait_no_callback(struct dm_bufio_client *c, enum new_flag nf)
- {
- 	struct dm_buffer *b;
- 
-@@ -727,6 +734,9 @@ static struct dm_buffer *__alloc_buffer_
- 				return b;
- 		}
- 
-+		if (nf == NF_PREFETCH)
-+			return NULL;
-+
- 		if (!list_empty(&c->reserved_buffers)) {
- 			b = list_entry(c->reserved_buffers.next,
- 				       struct dm_buffer, lru_list);
-@@ -744,9 +754,12 @@ static struct dm_buffer *__alloc_buffer_
- 	}
- }
- 
--static struct dm_buffer *__alloc_buffer_wait(struct dm_bufio_client *c)
-+static struct dm_buffer *__alloc_buffer_wait(struct dm_bufio_client *c, enum new_flag nf)
- {
--	struct dm_buffer *b = __alloc_buffer_wait_no_callback(c);
-+	struct dm_buffer *b = __alloc_buffer_wait_no_callback(c, nf);
-+
-+	if (!b)
-+		return NULL;
- 
- 	if (c->alloc_callback)
- 		c->alloc_callback(b);
-@@ -866,15 +879,8 @@ static struct dm_buffer *__find(struct d
-  * Getting a buffer
-  *--------------------------------------------------------------*/
- 
--enum new_flag {
--	NF_FRESH = 0,
--	NF_READ = 1,
--	NF_GET = 2
--};
--
- static struct dm_buffer *__bufio_new(struct dm_bufio_client *c, sector_t block,
--				     enum new_flag nf, struct dm_buffer **bp,
--				     int *need_submit)
-+				     enum new_flag nf, int *need_submit)
- {
- 	struct dm_buffer *b, *new_b = NULL;
- 
-@@ -882,6 +888,19 @@ static struct dm_buffer *__bufio_new(str
- 
- 	b = __find(c, block);
- 	if (b) {
-+found_buffer:
-+		if (nf == NF_PREFETCH)
-+			return NULL;
-+		/*
-+		 * Note: it is essential that we don't wait for the buffer to be
-+		 * read if dm_bufio_get function is used. Both dm_bufio_get and
-+		 * dm_bufio_prefetch can be used in the driver request routine.
-+		 * If the user called both dm_bufio_prefetch and dm_bufio_get on
-+		 * the same buffer, it would deadlock if we waited.
-+		 */
-+		if (nf == NF_GET && unlikely(test_bit(B_READING, &b->state)))
-+			return NULL;
-+
- 		b->hold_count++;
- 		__relink_lru(b, test_bit(B_DIRTY, &b->state) ||
- 			     test_bit(B_WRITING, &b->state));
-@@ -891,7 +910,9 @@ static struct dm_buffer *__bufio_new(str
- 	if (nf == NF_GET)
- 		return NULL;
- 
--	new_b = __alloc_buffer_wait(c);
-+	new_b = __alloc_buffer_wait(c, nf);
-+	if (!new_b)
-+		return NULL;
- 
- 	/*
- 	 * We've had a period where the mutex was unlocked, so need to
-@@ -900,10 +921,7 @@ static struct dm_buffer *__bufio_new(str
- 	b = __find(c, block);
- 	if (b) {
- 		__free_buffer_wake(new_b);
--		b->hold_count++;
--		__relink_lru(b, test_bit(B_DIRTY, &b->state) ||
--			     test_bit(B_WRITING, &b->state));
--		return b;
-+		goto found_buffer;
- 	}
- 
- 	__check_watermark(c);
-@@ -957,7 +975,7 @@ static void *new_read(struct dm_bufio_cl
- 	struct dm_buffer *b;
- 
- 	dm_bufio_lock(c);
--	b = __bufio_new(c, block, nf, bp, &need_submit);
-+	b = __bufio_new(c, block, nf, &need_submit);
- 	dm_bufio_unlock(c);
- 
- 	if (!b || IS_ERR(b))
-@@ -997,6 +1015,8 @@ void *dm_bufio_read(struct dm_bufio_clie
- }
- EXPORT_SYMBOL_GPL(dm_bufio_read);
- 
-+static void dm_bufio_release_unlocked(struct dm_buffer *b);
-+
- void *dm_bufio_new(struct dm_bufio_client *c, sector_t block,
- 		   struct dm_buffer **bp)
- {
-@@ -1006,13 +1026,35 @@ void *dm_bufio_new(struct dm_bufio_clien
- }
- EXPORT_SYMBOL_GPL(dm_bufio_new);
- 
--void dm_bufio_release(struct dm_buffer *b)
-+void dm_bufio_prefetch(struct dm_bufio_client *c,
-+		       sector_t block, unsigned n_blocks)
- {
--	struct dm_bufio_client *c = b->c;
-+	struct blk_plug plug;
- 
-+	blk_start_plug(&plug);
- 	dm_bufio_lock(c);
- 
--	BUG_ON(test_bit(B_READING, &b->state));
-+	for (; n_blocks--; block++) {
-+		int need_submit;
-+		struct dm_buffer *b;
-+		b = __bufio_new(c, block, NF_PREFETCH, &need_submit);
-+		if (unlikely(b != NULL)) {
-+			if (need_submit)
-+				submit_io(b, READ, b->block, read_endio);
-+			dm_bufio_release_unlocked(b);
-+		}
-+
-+	}
-+
-+	dm_bufio_unlock(c);
-+	blk_finish_plug(&plug);
-+}
-+EXPORT_SYMBOL(dm_bufio_prefetch);
-+
-+static void dm_bufio_release_unlocked(struct dm_buffer *b)
-+{
-+	struct dm_bufio_client *c = b->c;
-+
- 	BUG_ON(!b->hold_count);
- 
- 	b->hold_count--;
-@@ -1025,12 +1067,23 @@ void dm_bufio_release(struct dm_buffer *
- 		 * invalid buffer.
- 		 */
- 		if ((b->read_error || b->write_error) &&
-+		    !test_bit(B_READING, &b->state) &&
- 		    !test_bit(B_WRITING, &b->state) &&
- 		    !test_bit(B_DIRTY, &b->state)) {
- 			__unlink_buffer(b);
- 			__free_buffer_wake(b);
- 		}
- 	}
-+}
-+
-+void dm_bufio_release(struct dm_buffer *b)
-+{
-+	struct dm_bufio_client *c = b->c;
-+
-+	dm_bufio_lock(c);
-+
-+	BUG_ON(test_bit(B_READING, &b->state));
-+	dm_bufio_release_unlocked(b);
- 
- 	dm_bufio_unlock(c);
- }
-@@ -1042,6 +1095,8 @@ void dm_bufio_mark_buffer_dirty(struct d
- 
- 	dm_bufio_lock(c);
- 
-+	BUG_ON(test_bit(B_READING, &b->state));
-+
- 	if (!test_and_set_bit(B_DIRTY, &b->state))
- 		__relink_lru(b, LIST_DIRTY);
- 
-Index: linux-3.3-rc5-fast/drivers/md/dm-bufio.h
-===================================================================
---- linux-3.3-rc5-fast.orig/drivers/md/dm-bufio.h	2012-03-03 05:19:33.000000000 +0100
-+++ linux-3.3-rc5-fast/drivers/md/dm-bufio.h	2012-03-03 05:19:35.000000000 +0100
-@@ -63,6 +63,14 @@ void *dm_bufio_new(struct dm_bufio_clien
- 		   struct dm_buffer **bp);
- 
- /*
-+ * Prefetch the specified blocks to the cache.
-+ * The function starts to read the blocks and returns without waiting for
-+ * I/O to finish.
-+ */
-+void dm_bufio_prefetch(struct dm_bufio_client *c,
-+		       sector_t block, unsigned n_blocks);
-+
-+/*
-  * Release a reference obtained with dm_bufio_{read,get,new}. The data
-  * pointer and dm_buffer pointer is no longer valid after this call.
-  */
+static off_t data_file_blocks;
+static off_t hash_file_blocks;
+static off_t used_hash_blocks;
+
+static const EVP_MD *evp;
+
+static unsigned char *root_hash_bytes;
+static unsigned char *calculated_digest;
+
+static unsigned char *salt_bytes;
+static unsigned salt_size;
+
+static unsigned digest_size;
+static unsigned char levels;
+static unsigned char hash_per_block_bits;
+
+static off_t hash_level_block[DM_VERITY_MAX_LEVELS];
+static off_t hash_level_size[DM_VERITY_MAX_LEVELS];
+
+static int retval = 0;
+
+static void help(poptContext popt_context,
+		enum poptCallbackReason reason,
+		struct poptOption *key,
+		const char *arg,
+		void *data)
+{
+	poptPrintHelp(popt_context, stdout, 0);
+	exit(0);
+}
+
+static struct poptOption popt_help_options[] = {
+	{ NULL,			0,	POPT_ARG_CALLBACK, help, 0, NULL, NULL },
+	{ "help",		'?',	POPT_ARG_NONE, NULL, 0, "Show help", NULL },
+	POPT_TABLEEND
+};
+
+static struct poptOption popt_options[] = {
+	{ NULL,			'\0', POPT_ARG_INCLUDE_TABLE, popt_help_options, 0, NULL, NULL },
+	{ "create",		'c',	POPT_ARG_VAL, &mode, MODE_CREATE, "Create hash", NULL },
+	{ "verify",		'v',	POPT_ARG_VAL, &mode, MODE_VERIFY, "Verify integrity", NULL },
+	{ "data-block-size",	0, 	POPT_ARG_INT, &data_block_size, 0, "Block size on the data device", "bytes" },
+	{ "hash-block-size",	0, 	POPT_ARG_INT, &hash_block_size, 0, "Block size on the hash device", "bytes" },
+	{ "hash-start",		0,	POPT_ARG_LONGLONG, &hash_start, 0, "Starting sector on the hash device", "sectors" },
+	{ "data-blocks",	0,	POPT_ARG_LONGLONG, &data_blocks, 0, "The number of blocks in the data file", "blocks" },
+	{ "salt",		0,	POPT_ARG_STRING, &salt_string, 0, "Salt", "hex string" },
+	POPT_TABLEEND
+};
+
+static void exit_err(const char *msg, ...)
+{
+	va_list args;
+	va_start(args, msg);
+	vfprintf(stderr, msg, args);
+	va_end(args);
+	fputc('\n', stderr);
+	exit(2);
+}
+
+static void stream_err(FILE *f, const char *msg)
+{
+	if (ferror(f)) {
+		perror(msg);
+		exit(2);
+	} else if (feof(f)) {
+		exit_err("eof on %s", msg);
+	} else {
+		exit_err("unknown error on %s", msg);
+	}
+}
+
+static void *xmalloc(size_t s)
+{
+	void *ptr = malloc(s);
+	if (!ptr) exit_err("out of memory");
+	return ptr;
+}
+
+static off_t get_size(FILE *f, const char *name)
+{
+	struct stat st;
+	int h = fileno(f);
+	if (h < 0) {
+		perror("fileno");
+		exit(2);
+	}
+	if (fstat(h, &st)) {
+		perror("fstat");
+		exit(2);
+	}
+	if (S_ISREG(st.st_mode)) {
+		return st.st_size;
+	} else if (S_ISBLK(st.st_mode)) {
+		unsigned long long size64;
+		unsigned long sizeul;
+		if (!ioctl(h, BLKGETSIZE64, &size64)) {
+			return_size64:
+			if ((off_t)size64 < 0 || (off_t)size64 != size64) {
+				size_overflow:
+				exit_err("%s: device size overflow", name);
+			}
+			return size64;
+		}
+		if (!ioctl(h, BLKGETSIZE, &sizeul)) {
+			size64 = (unsigned long long)sizeul * 512;
+			if (size64 / 512 != sizeul) goto size_overflow;
+			goto return_size64;
+		}
+		perror("BLKGETSIZE");
+		exit(2);
+	} else {
+		exit_err("%s is not a file or a block device", name);
+	}
+	return -1;	/* never reached, shut up warning */
+}
+
+static void block_fseek(FILE *f, off_t block, int block_size)
+{
+	unsigned long long pos = (unsigned long long)block * block_size;
+	if (pos / block_size != block ||
+	    (off_t)pos < 0 ||
+	    (off_t)pos != pos)
+		exit_err("seek position overflow");
+	if (fseeko(f, pos, SEEK_SET)) {
+		perror("fseek");
+		exit(2);
+	}
+}
+
+static off_t verity_position_at_level(off_t block, int level)
+{
+	return block >> (level * hash_per_block_bits);
+}
+
+static void calculate_positions(void)
+{
+	unsigned long long hash_position;
+	int i;
+
+	hash_per_block_bits = 0;
+	while (((hash_block_size / digest_size) >> hash_per_block_bits) > 1)
+		hash_per_block_bits++;
+	if (!hash_per_block_bits)
+		exit_err("at least two hashes must fit in a hash file block");
+	levels = 0;
+
+	if (data_file_blocks) {
+		while (hash_per_block_bits * levels < 64 &&
+		       (unsigned long long)(data_file_blocks - 1) >>
+		       (hash_per_block_bits * levels))
+			levels++;
+	}
+
+	if (levels > DM_VERITY_MAX_LEVELS) exit_err("too many tree levels");
+
+	hash_position = hash_start * 512 / hash_block_size;
+	for (i = levels - 1; i >= 0; i--) {
+		off_t s;
+		hash_level_block[i] = hash_position;
+		s = verity_position_at_level(data_file_blocks, i);
+		s = (s >> hash_per_block_bits) +
+		    !!(s & ((1 << hash_per_block_bits) - 1));
+		hash_level_size[i] = s;
+		if (hash_position + s < hash_position ||
+		    (off_t)(hash_position + s) < 0 ||
+		    (off_t)(hash_position + s) != hash_position + s)
+			exit_err("hash device offset overflow");
+		hash_position += s;
+	}
+	used_hash_blocks = hash_position;
+}
+
+static void create_or_verify_stream(FILE *rd, FILE *wr, int block_size, off_t blocks)
+{
+	unsigned char *left_block = xmalloc(hash_block_size);
+	unsigned char *data_buffer = xmalloc(block_size);
+	unsigned char *read_digest = mode == MODE_VERIFY ? xmalloc(digest_size) : NULL;
+	off_t blocks_to_write = (blocks >> hash_per_block_bits) +
+				!!(blocks & ((1 << hash_per_block_bits) - 1));
+	EVP_MD_CTX ctx;
+	EVP_MD_CTX_init(&ctx);
+	memset(left_block, 0, hash_block_size);
+	while (blocks_to_write--) {
+		unsigned x;
+		unsigned left_bytes;
+		for (x = 0; x < 1 << hash_per_block_bits; x++) {
+			if (!blocks)
+				break;
+			blocks--;
+			if (fread(data_buffer, block_size, 1, rd) != 1)
+				stream_err(rd, "read");
+			if (EVP_DigestInit_ex(&ctx, evp, NULL) != 1)
+				exit_err("EVP_DigestInit_ex failed");
+			if (EVP_DigestUpdate(&ctx, data_buffer, block_size) != 1)
+				exit_err("EVP_DigestUpdate failed");
+			if (EVP_DigestUpdate(&ctx, salt_bytes, salt_size) != 1)
+				exit_err("EVP_DigestUpdate failed");
+			if (EVP_DigestFinal_ex(&ctx, calculated_digest, NULL) != 1)
+				exit_err("EVP_DigestFinal_ex failed");
+			if (!wr)
+				break;
+			if (mode == MODE_VERIFY) {
+				if (fread(read_digest, digest_size, 1, wr) != 1)
+					stream_err(wr, "read");
+				if (memcmp(read_digest, calculated_digest, digest_size)) {
+					retval = 1;
+					fprintf(stderr, "verification failed at position %lld in %s file\n", (long long)ftello(rd) - block_size, rd == data_file ? "data" : "metadata");
+				}
+			} else {
+				if (fwrite(calculated_digest, digest_size, 1, wr) != 1)
+					stream_err(wr, "write");
+			}
+		}
+		left_bytes = hash_block_size - x * digest_size;
+		if (left_bytes && wr) {
+			if (mode == MODE_VERIFY) {
+				if (fread(left_block, left_bytes, 1, wr) != 1)
+					stream_err(wr, "read");
+				for (x = 0; x < left_bytes; x++) if (left_block[x]) {
+					retval = 1;
+					fprintf(stderr, "spare area is not zeroed at position %lld\n", (long long)ftello(wr) - left_bytes);
+				}
+			} else {
+				if (fwrite(left_block, left_bytes, 1, wr) != 1)
+					stream_err(wr, "write");
+			}
+		}
+	}
+	if (mode != MODE_VERIFY && wr) {
+		if (fflush(wr)) {
+			perror("fflush");
+			exit(1);
+		}
+		if (ferror(wr)) {
+			stream_err(wr, "write");
+		}
+	}
+	if (EVP_MD_CTX_cleanup(&ctx) != 1)
+		exit_err("EVP_MD_CTX_cleanup failed");
+	free(left_block);
+	free(data_buffer);
+	if (mode == MODE_VERIFY) free(read_digest);
+}
+
+static void create_or_verify(void)
+{
+	int i;
+	for (i = 0; i < levels; i++) {
+		block_fseek(hash_file, hash_level_block[i], hash_block_size);
+		if (!i) {
+			block_fseek(data_file, 0, data_block_size);
+			create_or_verify_stream(data_file, hash_file, data_block_size, data_file_blocks);
+		} else {
+			FILE *hash_file_2 = fopen(hash_device, "r");
+			if (!hash_file_2) {
+				perror(hash_device);
+				exit(2);
+			}
+			block_fseek(hash_file_2, hash_level_block[i - 1], hash_block_size);
+			create_or_verify_stream(hash_file_2, hash_file, hash_block_size, hash_level_size[i - 1]);
+			fclose(hash_file_2);
+		}
+	}
+
+	if (levels) {
+		block_fseek(hash_file, hash_level_block[levels - 1], hash_block_size);
+		create_or_verify_stream(hash_file, NULL, hash_block_size, 1);
+	} else {
+		block_fseek(data_file, 0, data_block_size);
+		create_or_verify_stream(data_file, NULL, data_block_size, data_file_blocks);
+	}
+
+	if (mode == MODE_VERIFY) {
+		if (memcmp(calculated_digest, root_hash_bytes, digest_size)) {
+			fprintf(stderr, "verification failed in the root block\n");
+			retval = 1;
+		}
+		if (!retval)
+			fprintf(stderr, "hash successfully verified\n");
+	} else {
+		if (fsync(fileno(hash_file))) {
+			perror("fsync");
+			exit(1);
+		}
+		printf("hash device size: %llu\n", (unsigned long long)used_hash_blocks * hash_block_size);
+		printf("data block size %u, hash block size %u, %u tree levels\n", data_block_size, hash_block_size, levels);
+		printf("root hash: ");
+		for (i = 0; i < digest_size; i++) printf("%02x", calculated_digest[i]);
+		printf("\n");
+		printf("device mapper target line: 0 %llu verity 0 %s %s %llu %u %s ",
+			(unsigned long long)data_file_blocks * data_block_size / 512,
+			data_device,
+			hash_device,
+			hash_start,
+			data_block_size,
+			hash_algorithm
+			);
+		for (i = 0; i < digest_size; i++) printf("%02x", calculated_digest[i]);
+		printf(" ");
+		if (!salt_size) printf("-");
+		else for (i = 0; i < salt_size; i++) printf("%02x", salt_bytes[i]);
+		if (hash_block_size != data_block_size) printf(" %u", hash_block_size);
+		printf("\n");
+		if (data_block_size == 4096 && hash_block_size == 4096 && salt_size == 32)
+			printf("compatible with the original Google code\n");
+		else {
+			printf("incompatible with the original Google code:\n");
+			if (!(data_block_size == 4096 && hash_block_size == 4096)) printf("\tdata and hash block size must be 4096\n");
+			if (!(salt_size == 32)) printf("\tsalt must have exactly 32 bytes (64 hex digits)\n");
+		}
+	}
+}
+
+static void get_hex(const char *string, unsigned char **result, size_t len, const char *description)
+{
+	size_t rl = strlen(string);
+	unsigned u;
+	if (strspn(string, "0123456789ABCDEFabcdef") != rl)
+		exit_err("invalid %s", description);
+	if (rl != len * 2)
+		exit_err("invalid length of %s", description);
+	*result = xmalloc(len);
+	memset(*result, 0, len);
+	for (u = 0; u < rl; u++) {
+		unsigned char c = (string[u] & 15) + (string[u] > '9' ? 9 : 0);
+		(*result)[u / 2] |= c << (((u & 1) ^ 1) << 2);
+	}
+}
+
+int main(int argc, const char **argv)
+{
+	poptContext popt_context;
+	int r;
+	const char *s;
+
+	popt_context = poptGetContext("verity", argc, argv, popt_options, 0);
+
+	poptSetOtherOptionHelp(popt_context, "[-c | -v] <data device> <hash device> <algorithm> [<root hash> if verifying] [OPTION...]");
+
+	if (argc <= 1) {
+		poptPrintHelp(popt_context, stdout, 0);
+		exit(1);
+	}
+
+	r = poptGetNextOpt(popt_context);
+	if (r < -1) exit_err("bad option %s", poptBadOption(popt_context, 0));
+
+	if (mode < 0) exit_err("verify or create mode not specified");
+
+	if (!data_block_size) data_block_size = DEFAULT_BLOCK_SIZE;
+	if (!hash_block_size) hash_block_size = data_block_size;
+
+	if (data_block_size <= 0 || (data_block_size & (data_block_size - 1)))
+		exit_err("invalid data block size");
+
+	if (hash_block_size <= 0 || (hash_block_size & (hash_block_size - 1)))
+		exit_err("invalid hash block size");
+
+	if (hash_start < 0 ||
+	    (unsigned long long)hash_start * 512 / 512 != hash_start) exit_err("invalid hash start");
+	if (data_blocks < 0 || (off_t)data_blocks < 0 || (off_t)data_blocks != data_blocks) exit_err("invalid number of data blocks");
+
+	data_device = poptGetArg(popt_context);
+	if (!data_device) exit_err("data device is missing");
+
+	hash_device = poptGetArg(popt_context);
+	if (!hash_device) exit_err("metadata device is missing");
+
+	hash_algorithm = poptGetArg(popt_context);
+	if (!hash_algorithm) exit_err("hash algorithm not specified");
+
+	if (mode == MODE_VERIFY) {
+		root_hash = poptGetArg(popt_context);
+		if (!root_hash) exit_err("root hash not specified");
+	}
+
+	s = poptGetArg(popt_context);
+	if (s) exit_err("extra argument %s", s);
+
+	data_file = fopen(data_device, "r");
+	if (!data_file) {
+		perror(data_device);
+		exit(2);
+	}
+
+	hash_file = fopen(hash_device, mode == MODE_VERIFY ? "r" : "r+");
+	if (!hash_file && errno == ENOENT && mode != MODE_VERIFY)
+		hash_file = fopen(hash_device, "w+");
+	if (!hash_file) {
+		perror(hash_device);
+		exit(2);
+	}
+
+	data_file_blocks = get_size(data_file, data_device) / data_block_size;
+	hash_file_blocks = get_size(hash_file, hash_device) / hash_block_size;
+
+	if ((unsigned long long)hash_start * 512 % hash_block_size) exit_err("hash start not aligned on block size");
+	if (data_file_blocks < data_blocks) exit_err("data file is too small");
+	if (data_blocks) data_file_blocks = data_blocks;
+
+	OpenSSL_add_all_digests();
+	evp = EVP_get_digestbyname(hash_algorithm);
+	if (!evp) exit_err("hash algorithm %s not found", hash_algorithm);
+	digest_size = EVP_MD_size(evp);
+
+	salt_size = 0;
+	if (salt_string && *salt_string) {
+		salt_size = strlen(salt_string) / 2;
+		get_hex(salt_string, &salt_bytes, salt_size, "salt");
+	}
+
+	calculated_digest = xmalloc(digest_size);
+
+	if (mode == MODE_VERIFY) {
+		get_hex(root_hash, &root_hash_bytes, digest_size, "root_hash");
+	}
+
+	calculate_positions();
+
+	create_or_verify();
+
+	fclose(data_file);
+	fclose(hash_file);
+
+	if (salt_size)
+		free(salt_bytes);
+	free(calculated_digest);
+	if (mode == MODE_VERIFY)
+		free(root_hash_bytes);
+	poptFreeContext(popt_context);
+
+	return retval;
+}
