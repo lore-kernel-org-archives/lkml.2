@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab2CDGqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 01:46:09 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52487 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab2CDGqH (ORCPT
+	id S1751449Ab2CDG6K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 01:58:10 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:50412 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab2CDG6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 01:46:07 -0500
-Date: Sun, 4 Mar 2012 17:45:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.3-rc6
-Message-Id: <20120304174548.59272d44bc1eade1c9071606@canb.auug.org.au>
-In-Reply-To: <CA+55aFxHj-7fQ0+yJv4WaeKCGha5+a+J=gtHi6m6EWg58q7Ljw@mail.gmail.com>
-References: <CA+55aFxHj-7fQ0+yJv4WaeKCGha5+a+J=gtHi6m6EWg58q7Ljw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__4_Mar_2012_17_45_48_+1100_AyGS1+kQ0NimNTSQ"
+	Sun, 4 Mar 2012 01:58:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of minchan.kim@gmail.com designates 10.68.244.99 as permitted sender) smtp.mail=minchan.kim@gmail.com; dkim=pass header.i=minchan.kim@gmail.com
+Date: Sun, 4 Mar 2012 15:57:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Satoru Moriya <satoru.moriya@hds.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
+Message-ID: <20120304065759.GA7824@barrios>
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__4_Mar_2012_17_45_48_+1100_AyGS1+kQ0NimNTSQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Satoru,
 
-Hi all,
+On Fri, Mar 02, 2012 at 12:36:40PM -0500, Satoru Moriya wrote:
+> Sometimes we'd like to avoid swapping out anonymous memory
+> in particular, avoid swapping out pages of important process or
+> process groups while there is a reasonable amount of pagecache
+> on RAM so that we can satisfy our customers' requirements.
+> 
+> OTOH, we can control how aggressive the kernel will swap memory pages
+> with /proc/sys/vm/swappiness for global and
+> /sys/fs/cgroup/memory/memory.swappiness for each memcg.
+> 
+> But with current reclaim implementation, the kernel may swap out
+> even if we set swappiness==0 and there is pagecache on RAM.
+> 
+> This patch changes the behavior with swappiness==0. If we set
+> swappiness==0, the kernel does not swap out completely
+> (for global reclaim until the amount of free pages and filebacked
+> pages in a zone has been reduced to something very very small
+> (nr_free + nr_filebacked < high watermark)).
+> 
+> Any comments are welcome.
+> 
+> Regards,
+> Satoru Moriya
+> 
+> Signed-off-by: Satoru Moriya <satoru.moriya@hds.com>
 
-On Sat, 3 Mar 2012 18:57:31 -0800 Linus Torvalds <torvalds@linux-foundation=
-.org> wrote:
->
-> In fact, it's been calm enough that this *might* be the last -rc, but
-> we'll see how the upcoming week goes. If it stays calm (and hopefully
-> even calms down some more), there doesn't seem to be any major reason
-> to drag out the release cycle any more.
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-So everyone who has been holding off putting their wonderful new feature
-for v3.4 into linux-next should do so now.   And, of course, you should
-all rebase your git trees (*not*) :-)
+I agree this feature but current code is rather ugly on readbility.
+It's not your fault because it is caused by adding 'noswap' to avoid
+scanning of anon pages when priority is 0. You just used that code. :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Hillf's version looks to be much clean refactoring so after we merge
+your patch, we can tidy it up with Hillf's patch.
 
---Signature=_Sun__4_Mar_2012_17_45_48_+1100_AyGS1+kQ0NimNTSQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPUw+cAAoJEECxmPOUX5FEABMP/2E5TDMrcxj0a792T7QSjbdz
-d51T1Nj5ObTCRpg9i4BB1RyrVKvwOZOa+kf3jg1mxnlLsEV6UYPLolWh5CQJguxo
-uA/HvYkFb1cYFWBI03e0snlKiRV22S3KQdYFo9cU3HgLeCG3PU8uKiL+3WboJ+Cp
-PtrpxUGBl++UP0jsdEkADl+0CfpblXsxpKPIEgJ2kXqCoOigtKOmxz1zeg1Hk6+L
-oD0RmGmDSLGoI9mV6lsHUKlS0jv5R6A5ajk+0inJl5c3j60Fzm+yvanB8lPDHui4
-RDIkrB9Y5G+1IOzHF90ewiDw1x0QUhsMMmLbV1W5zNDep25THTFZEdrBLy+7V+WT
-gIzrQrd8WS9RB7KHVVEbYo3Pcc1nrJdiG70VI1qoLcKw8J/McMrYL2ZgGop+c6dQ
-K9dhrAMjm9E1cT65E9pEF5rWDrMIPim3QrZWqKWq9aOpI2ohVhL7yObvXboTUWE+
-BN8IqkCXn/qxC5nTVH1fCxEy1Kvuf6lApdlxIMjqkEPUumoup7umWn4dDHSzmxgu
-4xPJTUK+KJY3pS7dUBcfjpzjRRk4HNIJveyq3QnNcKYGx3R3cqQRZygGiGv+uerD
-30JeQD9qD+g7ht+4ysV8U8Gr+bIT8rvu86R/4/4nqpofHmyesnR/LaA50I4P4o2n
-6NyCuleeDpP7mla7xpvr
-=Ek0D
------END PGP SIGNATURE-----
-
---Signature=_Sun__4_Mar_2012_17_45_48_+1100_AyGS1+kQ0NimNTSQ--
