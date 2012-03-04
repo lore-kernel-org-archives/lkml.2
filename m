@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab2CDO1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 09:27:09 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:52404 "EHLO londo.lunn.ch"
+	id S1754477Ab2CDOfQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 09:35:16 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:52430 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969Ab2CDO1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 09:27:07 -0500
-Date: Sun, 4 Mar 2012 15:26:48 +0100
+	id S1753319Ab2CDOfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 09:35:14 -0500
+Date: Sun, 4 Mar 2012 15:35:02 +0100
 From: Andrew Lunn <andrew@lunn.ch>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
@@ -30,7 +30,7 @@ Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
         Deepak Saxena <dsaxena@linaro.org>,
         Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
 Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
-Message-ID: <20120304142648.GB11546@lunn.ch>
+Message-ID: <20120304143502.GC11546@lunn.ch>
 References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
  <1330763341-3437-5-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
@@ -59,9 +59,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > +		.reg = _reg,					\
 > +		.bit_idx = _bit_idx,				\
 > +		.flags = _gate_flags				\
+> +		.lock = _lock,					\
+> +	};							\
+> +	static struct clk _name = {				\
+> +		.name = #_name,					\
+> +		.ops = &clk_gate_ops,				\
+> +		.hw = &_name##_hw.hw,				\
+> +		.parent_names = _name##_parent_names,		\
+> +		.num_parents =					\
+> +			ARRAY_SIZE(_name##parent_names),	\
 
 Hi Mike
 
-Looks like a , is missing here after _gate_flags.
+This should be _name##_parent_names, i.e. you are missing a _.
 
-      Andrew
+With this and the previous change, i get something which at least
+compiles...
+
+	Andrew
