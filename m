@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab2CDIJT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 03:09:19 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58622 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2CDIJS convert rfc822-to-8bit (ORCPT
+	id S1751879Ab2CDIZK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 03:25:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64081 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab2CDIZI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 03:09:18 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of saugata.das@linaro.org designates 10.216.85.81 as permitted sender) smtp.mail=saugata.das@linaro.org
+	Sun, 4 Mar 2012 03:25:08 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.204.155.154 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
 MIME-Version: 1.0
 In-Reply-To: <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
 References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
 	<CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
 	<6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
-Date: Sun, 4 Mar 2012 13:39:16 +0530
-Message-ID: <CAKLKtzc68sa2df_vUquYdie0WpbckU0nci7rDc+rsESJ7YCLXw@mail.gmail.com>
+Date: Sun, 4 Mar 2012 17:25:06 +0900
+Message-ID: <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
 Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
-From: Saugata Das <saugata.das@linaro.org>
+From: Namjae Jeon <linkinjeon@gmail.com>
 To: merez@codeaurora.org
-Cc: Namjae Jeon <linkinjeon@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Merez
+Hi. Merez.
 
-On 2 March 2012 19:56,  <merez@codeaurora.org> wrote:
+Thanks a lot about your performance measurement.
+
+I think that your measurement is enough and correct and the firmware
+of mmc vender should be optimized or change properly rather than
+modifying the current patch.
+
+And currently we can use only write packed cmd by my suggestion.
+
+I would like to add my reviewd-by tag in updated patches also.
+
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+
+Thanks.
+
+2012/3/2  <merez@codeaurora.org>:
 > Hi,
 >
 > Our tests showed that the write packing improved the performance of the
@@ -61,9 +74,6 @@ On 2 March 2012 19:56,  <merez@codeaurora.org> wrote:
 > no-packing: 12.5 MB/s
 > packed commands patch (both READ and WRITE packing are enabled): 15.5 MB/s
 >
-
-How did you perform the above tests ?
-
 >
 > Random read and random write:
 > ------------------------------
@@ -96,7 +106,7 @@ How did you perform the above tests ?
 >>
 >> Thanks.
 >>
->> 2012/3/1  <merez@codeaurora.org>:
+>> 2012/3/1 Â <merez@codeaurora.org>:
 >>>> This patch supports packed command of eMMC4.5 device.
 >>>> Several reads(or writes) can be grouped in packed command
 >>>> and all data of the individual commands can be sent in a
@@ -104,13 +114,13 @@ How did you perform the above tests ?
 >>>>
 >>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
 >>>> ---
->>>>  drivers/mmc/card/block.c   |  496
+>>>> Â drivers/mmc/card/block.c Â  | Â 496
 >>>> +++++++++++++++++++++++++++++++++++++++++--
->>>>  drivers/mmc/card/queue.c   |   48 ++++-
->>>>  drivers/mmc/card/queue.h   |   13 ++
->>>>  drivers/mmc/core/mmc_ops.c |    1 +
->>>>  include/linux/mmc/core.h   |    4 +
->>>>  5 files changed, 535 insertions(+), 27 deletions(-)
+>>>> Â drivers/mmc/card/queue.c Â  | Â  48 ++++-
+>>>> Â drivers/mmc/card/queue.h Â  | Â  13 ++
+>>>> Â drivers/mmc/core/mmc_ops.c | Â  Â 1 +
+>>>> Â include/linux/mmc/core.h Â  | Â  Â 4 +
+>>>> Â 5 files changed, 535 insertions(+), 27 deletions(-)
 >>>>
 >>> Hi,
 >>>
@@ -170,15 +180,11 @@ How did you perform the above tests ?
 >>> --
 >>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 >>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
 >> --
 >> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 >> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
 >>
 >
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
