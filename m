@@ -1,126 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2CDSPU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 13:15:20 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39683 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab2CDSPS (ORCPT
+	id S1754656Ab2CDSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 13:25:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28066 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab2CDSZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 13:15:18 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V2 0/9] memcg: add HugeTLB resource tracking
-In-Reply-To: <20120302144828.e985c63a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120302144828.e985c63a.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 04 Mar 2012 23:44:58 +0530
-Message-ID: <87boocdyhp.fsf@linux.vnet.ibm.com>
+	Sun, 4 Mar 2012 13:25:26 -0500
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TtU46XPs5IkA:10 a=TRgVYD6ZyiEA:10 a=Zx2FLkwYMp0A:10 a=IkcTkHD0fZMA:10 a=yQdBAQUQAAAA:8 a=BM1Bk48kh9kfG9-z95YA:9 a=QEXdDO2ut3YA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 75.81.36.228
+Date: Sun, 04 Mar 2012 12:25:23 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: awalls@md.metrocast.net
+Cc: linux-media@vger.kernel.org, ivtv-devel@ivtvdriver.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ivtv: Fix build warning
+Message-ID: <4f53b393.cBPkBHEECVOO9Jzx%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12030408-6102-0000-0000-000000F9D810
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012 14:48:28 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Thu,  1 Mar 2012 14:46:11 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > Hi,
-> > 
-> > This patchset implements a memory controller extension to control
-> > HugeTLB allocations. It is similar to the existing hugetlb quota
-> > support in that, the limit is enforced at mmap(2) time and not at
-> > fault time. HugeTLB's quota mechanism limits the number of huge pages
-> > that can allocated per superblock.
-> > 
-> 
-> Thank you, I think memcg-extension is better than hugetlbfs cgroup.
-> 
-> 
-> > For shared mappings we track the regions mapped by a task along with the
-> > memcg. We keep the memory controller charged even after the task
-> > that did mmap(2) exits. Uncharge happens during truncate. For Private
-> > mappings we charge and uncharge from the current task cgroup.
-> > 
-> 
-> What "current" means here ? current task's cgroup ?
+In driver ivtv, there is a mismatch between the type of the radio module parameter
+and the storage variable, which leads to the following warning:
 
-yes. 
+  CC [M]  drivers/media/video/ivtv/ivtv-driver.o
+drivers/media/video/ivtv/ivtv-driver.c: In function ‘__check_radio’:
+drivers/media/video/ivtv/ivtv-driver.c:142: warning: return from incompatible pointer type
+drivers/media/video/ivtv/ivtv-driver.c: At top level:
+drivers/media/video/ivtv/ivtv-driver.c:142: warning: initialization from incompatible pointer type
 
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
-> 
-> 
-> > A sample strace output for an application doing malloc with hugectl is given
-> > below. libhugetlbfs will fall back to normal pagesize if the HugeTLB mmap fails.
-> > 
-> > open("/mnt/libhugetlbfs.tmp.uhLMgy", O_RDWR|O_CREAT|O_EXCL, 0600) = 3
-> > unlink("/mnt/libhugetlbfs.tmp.uhLMgy")  = 0
-> > 
-> > .........
-> > 
-> > mmap(0x20000000000, 50331648, PROT_READ|PROT_WRITE, MAP_PRIVATE, 3, 0) = -1 ENOMEM (Cannot allocate memory)
-> > write(2, "libhugetlbfs", 12libhugetlbfs)            = 12
-> > write(2, ": WARNING: New heap segment map" ....
-> > mmap(NULL, 42008576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xfff946c0000
-> > ....
-> > 
-> > 
-> > Goals:
-> > 
-> > 1) We want to keep the semantic closer to hugelb quota support. ie, we want
-> >    to extend quota semantics to a group of tasks. Currently hugetlb quota
-> >    mechanism allows one to control number of hugetlb pages allocated per
-> >    hugetlbfs superblock.
-> > 
-> > 2) Applications using hugetlbfs always fallback to normal page size allocation when they
-> >    fail to allocate huge pages. libhugetlbfs internally handles this for malloc(3). We
-> >    want to retain this behaviour when we enforce the controller limit. ie, when huge page
-> >    allocation fails due to controller limit, applications should fallback to
-> >    allocation using normal page size. The above implies that we need to enforce
-> >    limit at mmap(2).
-> > 
-> 
-> Hm, ok. 
-> 
-> > 3) HugeTLBfs doesn't support page reclaim. It also doesn't support write(2). Applications
-> >    use hugetlbfs via mmap(2) interface. Important point to note here is hugetlbfs
-> >    extends file size in mmap.
-> > 
-> >    With shared mappings, the file size gets extended in mmap and file will remain in hugetlbfs
-> >    consuming huge pages until it is truncated. We want to make sure we keep the controller
-> >    charged until the file is truncated. This implies, that the controller will be charged
-> >    even after the task that did mmap exit.
-> > 
-> 
-> O.K. hugetlbfs is charged until the file is removed.
-> Then, next question will be 'can we destory cgroup....'
-
-That is explained later. We don't allow cgroup removal if it's non
-reclaim resource usage is non zero. But that restriction should be remove
-before this can be merged. 
-
-> 
-> > Implementation details:
-> > 
-> > In order to achieve the above goals we need to track the cgroup information
-> > along with mmap range in a charge list in inode for shared mapping and in
-> > vm_area_struct for private mapping. We won't be using page to track cgroup
-> > information because with the above goals we are not really tracking the pages used.
-> > 
-> > Since we track cgroup in charge list, if we want to remove the cgroup, we need to update
-> > the charge list to point to the parent cgroup. Currently we take the easy route
-> > and prevent a cgroup removal if it's non reclaim resource usage is non zero.
-> > 
-> 
-> As Andrew pointed out, there are some ongoing works about page-range tracking.
-> Please check.
-
-Will do
-
-
--aneesh
-
+Index: linux-2.6/drivers/media/video/ivtv/ivtv-driver.c
+===================================================================
+--- linux-2.6.orig/drivers/media/video/ivtv/ivtv-driver.c
++++ linux-2.6/drivers/media/video/ivtv/ivtv-driver.c
+@@ -99,7 +99,7 @@ static int i2c_clock_period[IVTV_MAX_CAR
+ 
+ static unsigned int cardtype_c = 1;
+ static unsigned int tuner_c = 1;
+-static bool radio_c = 1;
++static int radio_c = 1;
+ static unsigned int i2c_clock_period_c = 1;
+ static char pal[] = "---";
+ static char secam[] = "--";
+@@ -139,7 +139,7 @@ static int tunertype = -1;
+ static int newi2c = -1;
+ 
+ module_param_array(tuner, int, &tuner_c, 0644);
+-module_param_array(radio, bool, &radio_c, 0644);
++module_param_array(radio, int, &radio_c, 0644);
+ module_param_array(cardtype, int, &cardtype_c, 0644);
+ module_param_string(pal, pal, sizeof(pal), 0644);
+ module_param_string(secam, secam, sizeof(secam), 0644);
