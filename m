@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2CDSCo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 13:02:44 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23539 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab2CDSCn (ORCPT
+	id S1754615Ab2CDSF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 13:05:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50145 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab2CDSF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 13:02:43 -0500
-Date: Sun, 4 Mar 2012 21:04:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: linux-kernel@vger.kernel.org, smatch@vger.kernel.org
-Subject: Smatch v1.56 released
-Message-ID: <20120304180455.GA1003@mwanda>
+	Sun, 4 Mar 2012 13:05:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.190.42 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Sun, 4 Mar 2012 10:05:16 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Hugh Dickins <hughd@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH v2 0/3] cgroup: add xattr support
+Message-ID: <20120304180516.GB20787@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <4F4F1459.4080300@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="livrSZtJkVq9DDdS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F53AE42.00B4,ss=1,re=0.000,fgs=0
+In-Reply-To: <4F4F1459.4080300@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Li.
 
---livrSZtJkVq9DDdS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry about the delay.  Was on vacation.
 
-It's been almost two years since the last Smatch release so probably
-it's time for another one.
+On Thu, Mar 01, 2012 at 02:16:57PM +0800, Li Zefan wrote:
+> This can be used to attach metadata to a cgroup, which is required
+> by systemd.
+> 
+> As lazy as I am, here just quoted from Lennart for the detailed use
+> cases:
 
-Smatch is a static analysis tool for C which has a lot of kernel
-specific checks.
+I much prefer this version but would prefer to deal with this in the
+next merge window as we're already on rc6.  On a cursory look...
 
-To run Smatch over the entire kernel use:
-	smatch_scripts/test_kernel.sh
+* I'm not sure kmem_ is a good prefix.  It sucks that xattr values are
+  stored in kmem w/o size limit and we probably want to improve on
+  both fronts in the future.  Wouldn't it be better to name them
+  simple_*() and put them in fs/libfs.c?
 
-To run Smatch over just one .c file, start at the base of the kernel
-tree and use:
-	smatch_scripts/kchecker path/to/file.c
+* I don't think we want CONFIG option for cgroupfs xattr.  Let's just
+  add a mount option.
 
-The main new thing, is the new cross function database work.  You
-build a database on the first run and then use the information on
-the second run.  The script for to build the database is:
-	smatch_scripts/build_kernel_data.sh
+Thanks.
 
-Smatch still produces a lot of false positives.  Also as bugs get
-fixed in the kernel, the false positive to real bug ratio gets
-worse and worse.  But it does find real bugs as well.
-
-There is a mailing list smatch@vger.kernel.org.
-
-regards,
-dan carpenter
-
---livrSZtJkVq9DDdS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPU67HAAoJEOnZkXI/YHqR1n4P/13+XbV8ElBMFtjwFg3kP5e3
-LABlVEGvUGYiKo+4JeZcuve0QCM/Ike3tLLHx8DH1YLcwgIn7OzOyM/SOJJcjcst
-VLeDjnm7wHVJU9PI3NtODQh0USY4sqkUsZrZubGqiUvn7gD4KRvjbjUIVgGGbh8J
-gP4H4XPL12srX2ZdBgB5iFfczabl2Z+yN/uCRLKHRTJwjDPX4MlqQLyq6gpQbQXo
-bGzn00CKslmFJ3PvnrZucBVGnFTssQIe/XnQXcmlGoEBrD1f3mU+d5gDlLG8obF3
-sUFt2SKcHy+SfMEsfHj4pc5tA9tAxtT5YA6jEf1MBuPXsEbkRHmLaV7nGsc2Ml0W
-BP1zo5A/Cq+EhhssEMFdggkFbR78Rxs93/2rGAi7vw7VKm/WTd+d3WjYwShOSeMd
-GRXdkEMhDADfGn79xCxOEKobFqyOHnskMI/gOvnBK/oG7C7J35OdHSJ3LCU5gKzJ
-93fzeWjkaZH/+KarLWBkfFjyXyNQUeTdqeVnQywlIVLpejAVittL7MgPSX64RTGC
-bSC4vQmUapQ35YPJozz04wOeZrb/ioywmnOpdt1ldEmp7x97V4EAJQVzUPF52UF7
-EPuMcrgJoA9TPQiBL9dZeOzv24Plce6PCnThRSihkFUfgddg80Z94PAWyjC59NXS
-x373y9XzZTS18LQj7SWQ
-=fjCs
------END PGP SIGNATURE-----
-
---livrSZtJkVq9DDdS--
+-- 
+tejun
