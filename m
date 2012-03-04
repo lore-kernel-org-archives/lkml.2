@@ -1,58 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab2CDX1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 18:27:24 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37954 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab2CDX1W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 18:27:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.79.229 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	id S1756070Ab2CDXef (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 18:34:35 -0500
+Received: from ozlabs.org ([203.10.76.45]:35344 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756006Ab2CDXec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 18:34:32 -0500
+Date: Mon, 5 Mar 2012 09:56:55 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: netdev@vger.kernel.org
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] ppp: Replace uses of <linux/if_ppp.h> with
+ <linux/ppp-ioctl.h>
+Message-ID: <20120304225655.GD10646@bloggs.ozlabs.ibm.com>
+References: <20120304225336.GA10646@bloggs.ozlabs.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120304221915.GA19570@parisc-linux.org>
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
- <20120303000203.GH22215@thunk.org> <alpine.DEB.2.02.1203021616040.23477@asgard.lang.hm>
- <CA+55aFw7C3XYzwZ8F31EA4Svj1WZ8O--HV82qVg3t=JpxRy1Ww@mail.gmail.com> <20120304221915.GA19570@parisc-linux.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 4 Mar 2012 15:27:01 -0800
-X-Google-Sender-Auth: W3Tk01LBeEDKc_KPYwdRlrUOLks
-Message-ID: <CA+55aFwCchGnXPsQEQLrdp1CBphwardJpVF57thjzDddvGxHUQ@mail.gmail.com>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
- any filesystems that depend on the exact VFS 'namehash' implementation?)
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: david@lang.hm, "Ted Ts'o" <tytso@mit.edu>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120304225336.GA10646@bloggs.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 4, 2012 at 2:19 PM, Matthew Wilcox <matthew@wil.cx> wrote:
->
-> To be fair, that wasn't the ARM core.  That was the MEMC chip (roughly
-> equivalent to a northbridge).  Also, there's no need for Linux to care
-> about that any more, since we removed the arm26 port in July 2007.  As far
-> as I know, all arm32 cores have been coupled with memory controllers
-> that are functional.
+Since all that include/linux/if_ppp.h does is #include <linux/ppp-ioctl.h>,
+this replaces the occurrences of #include <linux/if_ppp.h> with
+#include <linux/ppp-ioctl.h>.
 
-No, it wasn't just the memory controller.
+It also corrects an error in Documentation/networking/l2tp.txt, where
+it referenced include/linux/if_ppp.h as the source of some definitions
+that are actually now defined in include/linux/if_pppol2tp.h.
 
-The ARM cores really did some crazy stuff. Loading an unaligned
-pointer resulted in loading the value from the aligned pointer, and
-then doing a byte rotate on the result. And it did so silently without
-a trap. So you didn't get the right value, *and* you didn't even get a
-trap to tell you that the CPU couldn't do it. That's just pure
-garbage.
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+---
+ Documentation/networking/l2tp.txt |    2 +-
+ drivers/isdn/capi/capi.c          |    2 +-
+ drivers/net/ppp/ppp_async.c       |    2 +-
+ drivers/net/ppp/ppp_synctty.c     |    2 +-
+ drivers/net/ppp/pppoe.c           |    2 +-
+ drivers/net/ppp/pppox.c           |    2 +-
+ drivers/tty/ipwireless/network.c  |    2 +-
+ drivers/tty/ipwireless/tty.c      |    2 +-
+ fs/compat_ioctl.c                 |    2 +-
+ include/linux/isdn.h              |    2 +-
+ net/atm/pppoatm.c                 |    2 +-
+ net/irda/irnet/irnet.h            |    2 +-
+ net/l2tp/l2tp_ppp.c               |    2 +-
+ 13 files changed, 13 insertions(+), 13 deletions(-)
 
-You can call it a "feature", but sane people call it a bug. The fact
-that it was *designed* to do that doesn't make it less buggy, it just
-makes it sad.
+diff --git a/Documentation/networking/l2tp.txt b/Documentation/networking/l2tp.txt
+index e7bf397..e63fc1f 100644
+--- a/Documentation/networking/l2tp.txt
++++ b/Documentation/networking/l2tp.txt
+@@ -111,7 +111,7 @@ When creating PPPoL2TP sockets, the application provides information
+ to the driver about the socket in a socket connect() call. Source and
+ destination tunnel and session ids are provided, as well as the file
+ descriptor of a UDP socket. See struct pppol2tp_addr in
+-include/linux/if_ppp.h. Note that zero tunnel / session ids are
++include/linux/if_pppol2tp.h. Note that zero tunnel / session ids are
+ treated specially. When creating the per-tunnel PPPoL2TP management
+ socket in Step 2 above, zero source and destination session ids are
+ specified, which tells the driver to prepare the supplied UDP file
+diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
+index e44933d..e3dfbed 100644
+--- a/drivers/isdn/capi/capi.c
++++ b/drivers/isdn/capi/capi.c
+@@ -25,7 +25,7 @@
+ #include <linux/tty.h>
+ #include <linux/netdevice.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/skbuff.h>
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+diff --git a/drivers/net/ppp/ppp_async.c b/drivers/net/ppp/ppp_async.c
+index c6ba643..af95a98 100644
+--- a/drivers/net/ppp/ppp_async.c
++++ b/drivers/net/ppp/ppp_async.c
+@@ -26,7 +26,7 @@
+ #include <linux/poll.h>
+ #include <linux/crc-ccitt.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/spinlock.h>
+ #include <linux/init.h>
+diff --git a/drivers/net/ppp/ppp_synctty.c b/drivers/net/ppp/ppp_synctty.c
+index 736a39e..55e466c 100644
+--- a/drivers/net/ppp/ppp_synctty.c
++++ b/drivers/net/ppp/ppp_synctty.c
+@@ -39,7 +39,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/poll.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
+index bc9a4bb..2fa1a9b 100644
+--- a/drivers/net/ppp/pppoe.c
++++ b/drivers/net/ppp/pppoe.c
+@@ -72,7 +72,7 @@
+ #include <linux/if_pppox.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/notifier.h>
+ #include <linux/file.h>
+ #include <linux/proc_fs.h>
+diff --git a/drivers/net/ppp/pppox.c b/drivers/net/ppp/pppox.c
+index 8c0d170d..2940e9f 100644
+--- a/drivers/net/ppp/pppox.c
++++ b/drivers/net/ppp/pppox.c
+@@ -28,7 +28,7 @@
+ #include <linux/init.h>
+ #include <linux/if_pppox.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/kmod.h>
+ 
+diff --git a/drivers/tty/ipwireless/network.c b/drivers/tty/ipwireless/network.c
+index f7daeea..57c8b48 100644
+--- a/drivers/tty/ipwireless/network.c
++++ b/drivers/tty/ipwireless/network.c
+@@ -22,7 +22,7 @@
+ #include <linux/ppp_channel.h>
+ #include <linux/ppp_defs.h>
+ #include <linux/slab.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/skbuff.h>
+ 
+ #include "network.h"
+diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
+index ef92869..2ffa0b7 100644
+--- a/drivers/tty/ipwireless/tty.c
++++ b/drivers/tty/ipwireless/tty.c
+@@ -21,7 +21,7 @@
+ #include <linux/mutex.h>
+ #include <linux/ppp_defs.h>
+ #include <linux/if.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/sched.h>
+ #include <linux/serial.h>
+ #include <linux/slab.h>
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index a26bea1..10d8cd9 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -34,7 +34,7 @@
+ #include <linux/fs.h>
+ #include <linux/file.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/if_pppox.h>
+ #include <linux/mtio.h>
+ #include <linux/auto_fs.h>
+diff --git a/include/linux/isdn.h b/include/linux/isdn.h
+index 4ccf95d..292f27a 100644
+--- a/include/linux/isdn.h
++++ b/include/linux/isdn.h
+@@ -187,7 +187,7 @@ typedef struct {
+ #endif
+ 
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ 
+ #include <linux/isdn_ppp.h>
+ #endif
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index df35d9a..614d3fc 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -44,7 +44,7 @@
+ #include <linux/atmdev.h>
+ #include <linux/capability.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/atmppp.h>
+ 
+diff --git a/net/irda/irnet/irnet.h b/net/irda/irnet/irnet.h
+index 979ecb2..564eb0b 100644
+--- a/net/irda/irnet/irnet.h
++++ b/net/irda/irnet/irnet.h
+@@ -254,7 +254,7 @@
+ #include <linux/init.h>
+ 
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/ppp_channel.h>
+ 
+ #include <net/irda/irda.h>
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 8a90d75..96bc7a6 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -82,7 +82,7 @@
+ #include <net/sock.h>
+ #include <linux/ppp_channel.h>
+ #include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
++#include <linux/ppp-ioctl.h>
+ #include <linux/file.h>
+ #include <linux/hash.h>
+ #include <linux/sort.h>
+-- 
+1.7.9.1
 
-Now, the modern "bigger" ARM cores don't have that problem, but the
-small cores still do, afaik.
-
-                   Linus
