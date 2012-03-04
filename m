@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab2CDXnb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 18:43:31 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:57324 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab2CDXna (ORCPT
+	id S1755530Ab2CDX4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 18:56:25 -0500
+Received: from nm25-vm3.bullet.mail.sg3.yahoo.com ([106.10.151.98]:28112 "HELO
+	nm25-vm3.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751002Ab2CDX4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 18:43:30 -0500
-Date: Mon, 5 Mar 2012 10:43:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: another i2c/for-next branch
-Message-Id: <20120305104320.0bede668b3b054bea69b8f2a@canb.auug.org.au>
-In-Reply-To: <20120302134305.GA19451@pengutronix.de>
-References: <20120302134305.GA19451@pengutronix.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Mar_2012_10_43_20_+1100_Gwuzfncr9k3ligwx"
+	Sun, 4 Mar 2012 18:56:24 -0500
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Mar 2012 18:56:24 EST
+X-Yahoo-Newman-Id: 546007.30770.bm@omp1002.mail.cnh.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: oCQ63GIVM1lBEzq4qBNyQMfAfzjY1V11LmutbU85bZQh.to
+ 4l_yzNaeDAxxYgwLr_nM5ugeTsg7UkP_L6JbLsfPR7XZQ5BA1UCRupoJ9bLL
+ jYS6BQ5NlIM0wU_9lKUTudc3ryahCyQSPguH5.NKgLCUudq1zmrr0YuZgnoa
+ BdiQ3gx8uRnMrywZkg7nwqmXH9R.YukyChd76zcs6V6.Vq3.t_pG6f1DYWkf
+ L6nCEGyRhT.f6lj4JmWqkT72Nqy4nCkXEgXg0HeNrCqHtB4wvmZwSB9FmYVZ
+ qM34jd824M7qcHMqbqnvMoHNCPATaxeiquu8dpMVPjd3SRgvQ1.E4hE5vlt5
+ PgRbKuysVlqcnxvuydYCSl9TQ6VXkph.pA5_LOVo-
+X-Yahoo-SMTP: mw385NiswBCSuQ3x8xklattCxQmexuY5SZ3wKN3.w7E-
+Message-ID: <249B66E0224A647EEE43D9CABBD22C93@tqthumnhm>
+From: "qdwnvoajs" <zhutaijdwe@yahoo.cn>
+To: <linux123@online.sh.cn>
+Subject: =?utf-8?B?wrfCt8K36LWE77yI5paZ?=
+Date: Mon, 5 Mar 2012 07:49:49 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 1
+X-MSMail-Priority: High
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q24NvC9L028593
 
---Signature=_Mon__5_Mar_2012_10_43_20_+1100_Gwuzfncr9k3ligwx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Wolfram,
-
-On Fri, 2 Mar 2012 14:43:05 +0100 Wolfram Sang <w.sang@pengutronix.de> wrot=
-e:
->
-> I am also collecting patches for the i2c-subsystem. Can you add my branch=
- to
-> linux-next, please?
->=20
-> git://git.pengutronix.de/git/wsa/linux.git i2c-embedded/for-next
-
-I have added that from today with you as the contact.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Mon__5_Mar_2012_10_43_20_+1100_Gwuzfncr9k3ligwx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPU/4YAAoJEECxmPOUX5FEnwMQAILk5eL7g1RB1otkNJRSsPwV
-0ZbeTzcNjzYW9nkhmFPXZOnmR3N8o+asMVjqxR4WG6aYiVWkUACbuQL6/+vonYid
-2XjU5+fbH6t2sh1HdfuEw14prfu0T0QjzrPCmQIgNaWMh/panlgeODVSdKoFTP7U
-UjS4LdXhWGxyaRz1ly5Xoh17hefPlG++yTA3jUjHToyZ8KSG9JmH3JnDNzKlt/EC
-/za8MK3mDIVsIMjiVzvL35YBHTdbfU+3V5vTVkfIxLH1FnKxKUjoKfGIzpoJNipT
-NFthqVsgxYZsiRJJHhowXv2IWRzANRPzoBoiNXCR2JeBPesYEFMUF/BSOs1HZuVk
-YvLgyRdSaFvK44iQSpaekdc0HlSBS+UeFuRSknxs30V5HSt2ezj7XFi9zXmAbXJ+
-H0zCVvrF2OH8PuJc4IrjsWK7gnfzybOiHLORpbQKbYh4XW2FtlKtwqUarT3DQ2I6
-tev+y8M8YpXFYA2+aH/cA69xXaZRKvnpn06y3tov7pGxMMvu11eJ9ykzDbniMeU/
-j6Qx5DvkxvgZ2MEEv5uOsj6rokpslSskoeE7G0M1QZJRnZfDuuz/IB8vhI0htxuU
-vm6owCtaEUluuixUPUGTWbhEYn65TSPw6yom1FCO41HKkG0wp9we9E+tX+SCgm4X
-grIMJZt7LLeRU5Vhbnug
-=IEL0
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Mar_2012_10_43_20_+1100_Gwuzfncr9k3ligwx--
+linux123ï¼Œè²¡å‹™/æ‚¨å¥½ï¼
+      
+æœ¬å…¬å¸ä»£é–‹å„å¤§åŸå¸‚çš„æ™®é€šç™¼ç¥¨ï¼šå¦‚ï¼šè²¨ç‰©éŠ·å”®ï¼šæ©Ÿæ‰“é€šç”¨ç™¼ç¥¨ï¼š
+å»ºç¯‰å®‰è£ï¼šæœå‹™æ¥­ï¼šå»£å‘Šæ¥­ï¼šåœ‹éš›è²¨é‹ï¼šï¼ˆåœ‹ç¨…ã€åœ°ç¨…ï¼‰ç­‰ç­‰ç™¼ç¥¨:
+é»æ•¸å„ªæƒ ï¼Œå¯é©—è­‰å¾Œä»˜æ¬¾,è²´å…¬å¸å¦‚æœ‰éœ€è¦å¯ä¾†é›»è©³è«‡ï¼š
+      è”ç³»äººï¼šå‘¨ å…ˆç”Ÿ
+       ç”µè¯ï¼š13544094864 
+       Q Q: 5951 17162 
+   qdwnvoajs
+   2012-3-5ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
