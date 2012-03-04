@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2CDQOW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 11:14:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49299 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab2CDQOV (ORCPT
+	id S1753112Ab2CDQfW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 11:35:22 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57738 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751141Ab2CDQfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 11:14:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of maciej.rutecki@gmail.com designates 10.213.9.146 as permitted sender) smtp.mail=maciej.rutecki@gmail.com; dkim=pass header.i=maciej.rutecki@gmail.com
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Christoph Lameter <cl@gentwo.org>
-Subject: Re: 3.3.0-rc5: OOps in dql_completed (Broadcom tg3 driver)
-Date: Sun, 4 Mar 2012 17:14:15 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc4; KDE/4.6.5; x86_64; ; )
-Cc: mcarlson@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <alpine.DEB.2.00.1203011505510.6685@router.home>
-In-Reply-To: <alpine.DEB.2.00.1203011505510.6685@router.home>
+	Sun, 4 Mar 2012 11:35:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.112.85.136 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
+Date: Sun, 4 Mar 2012 18:35:13 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 1/3] vmevent: Fix build for SWAP=n case
+In-Reply-To: <20120303000909.GA30207@oksana.dev.rtsoft.ru>
+Message-ID: <alpine.LFD.2.02.1203041834180.1636@tux.localdomain>
+References: <20120303000909.GA30207@oksana.dev.rtsoft.ru>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203041714.15084.maciej.rutecki@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 1 marca 2012 o 22:13:25 Christoph Lameter wrote:
-> Dell R620. 2x 2.9Ghz Sandybridge
+On Sat, 3 Mar 2012, Anton Vorontsov wrote:
+> Caught this build failure:
 > 
-> Sadly I could only get a screenshot and the top of the dump has scrolled
-> off the system.
+>   CC      mm/vmevent.o
+> mm/vmevent.c:17:6: error: expected identifier or '(' before numeric constant
+> mm/vmevent.c:18:1: warning: no semicolon at end of struct or union [enabled by default]
+> mm/vmevent.c: In function 'vmevent_sample':
+> mm/vmevent.c:84:36: error: expected identifier before numeric constant
+> make[1]: *** [mm/vmevent.o] Error 1
+> make: *** [mm/] Error 2
+> 
+> This is because linux/swap.h defines nr_swap_pages to 0L, and so things
+> break.
+> 
+> Fix this by undefinding it back, as we don't use it anyway.
+> 
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42860
-for your bug/regression report, please add your address to the CC list in 
-there, thanks!
-
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+Applied, thanks!
