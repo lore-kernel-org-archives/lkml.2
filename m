@@ -1,495 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab2CDSHm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 13:07:42 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52301 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab2CDSHk (ORCPT
+	id S1754638Ab2CDSJa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 13:09:30 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:42876 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754518Ab2CDSJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 13:07:40 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to memcg
-In-Reply-To: <20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 04 Mar 2012 23:37:22 +0530
-Message-ID: <87ipikdyud.fsf@linux.vnet.ibm.com>
+	Sun, 4 Mar 2012 13:09:28 -0500
+X-Sasl-enc: sMhZXPBM8WYihMw7x/t9F1BOL0y9Jasa6+gw0mUVENe1 1330884567
+Date: Sun, 4 Mar 2012 10:09:11 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.58
+Message-ID: <20120304180911.GA7336@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12030418-3864-0000-0000-000001B0038C
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012 17:38:16 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Thu,  1 Mar 2012 14:46:15 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> > 
-> > Non reclaim resources include hugetlb pages or ramfs pages.
-> > Both these file systems are memory based and they don't support
-> > page reclaim. So enforcing memory controller limit during actual
-> > page allocation doesn't make sense for them. Instead we would
-> > enforce the limit during mmap and keep track of the mmap range
-> > along with memcg information in charge list.
-> > 
-> > We could have multiple non reclaim resources which we want to track
-> > indepedently, like huge pages with different huge page size.
-> > 
-> > Current code don't allow removal of memcg if they have any non
-> > reclaim resource charge.
-> 
-> Hmmm why ? The reason is from coding trouble ? Or it's the spec. ?
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 2.6.32.58 kernel.
+
+All users of the 2.6.32 kernel series must upgrade.
+
+************************************************************************
+Note:
+	This is the last 2.6.32 kernel I will be releasing.  The 2.6.32
+	kernel is now in "extended-longterm" maintenance, with no set
+	release schedule from now on.  I STRONGLY encourage any users of
+	the 2.6.32 kernel series to move to the 3.0 series at this point
+	in time.
+************************************************************************
+
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-2.6.32.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsh=
+ortlog;h=3Drefs/heads/linux-2.6.32.y
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                |    2=20
+ arch/arm/include/asm/assembler.h        |    5 +
+ arch/arm/mm/cache-v7.S                  |    6 +
+ arch/s390/include/asm/compat.h          |    7 --
+ arch/s390/kernel/process.c              |    1=20
+ arch/s390/kernel/ptrace.c               |    2=20
+ arch/s390/kernel/setup.c                |    2=20
+ arch/s390/mm/mmap.c                     |    2=20
+ crypto/sha512_generic.c                 |   83 +++++++++++--------------
+ drivers/base/firmware_class.c           |   12 +++
+ drivers/cdrom/cdrom.c                   |    8 --
+ drivers/gpu/drm/i915/intel_lvds.c       |    8 ++
+ drivers/gpu/drm/radeon/r100.c           |    4 -
+ drivers/gpu/drm/radeon/rs600.c          |    4 -
+ drivers/hwmon/f75375s.c                 |    4 -
+ drivers/media/video/hdpvr/hdpvr-video.c |    3=20
+ drivers/s390/block/dasd_eckd.c          |    1=20
+ drivers/s390/block/dasd_ioctl.c         |    1=20
+ drivers/s390/char/fs3270.c              |    1=20
+ drivers/s390/char/vmcp.c                |    1=20
+ drivers/s390/cio/chsc_sch.c             |    1=20
+ drivers/s390/scsi/zfcp_cfdc.c           |    1=20
+ drivers/scsi/3w-9xxx.c                  |   11 ++-
+ drivers/usb/host/pci-quirks.c           |   11 +++
+ drivers/usb/host/xhci-mem.c             |   32 +++++++--
+ drivers/usb/serial/cp210x.c             |    2=20
+ fs/autofs4/autofs_i.h                   |    1=20
+ fs/autofs4/dev-ioctl.c                  |    1=20
+ fs/autofs4/inode.c                      |    2=20
+ fs/autofs4/waitq.c                      |   22 +++++-
+ fs/ecryptfs/file.c                      |    2=20
+ fs/ecryptfs/inode.c                     |  103 +++++++++++++++++++++------=
+-----
+ fs/ecryptfs/main.c                      |   38 ++++++++++-
+ include/linux/bitops.h                  |   20 ++++++
+ include/linux/compat.h                  |    4 +
+ include/linux/kernel.h                  |   15 ++--
+ include/linux/kmod.h                    |    9 ++
+ include/linux/proportions.h             |    4 +
+ kernel/kmod.c                           |   33 +++++++++-
+ kernel/relay.c                          |   10 ++-
+ net/mac80211/rx.c                       |    2=20
+ 41 files changed, 338 insertions(+), 143 deletions(-)
+
+Adam Radford (1):
+      SCSI: 3w-9xxx fix bug in sgl loading
+
+Al Viro (1):
+      Ban ecryptfs over ecryptfs
+
+Alex Deucher (1):
+      drm/radeon/kms: fix MSI re-arm on rv370+
+
+Alexey Dobriyan (1):
+      crypto: sha512 - use standard ror64()
+
+Andy Whitcroft (1):
+      ecryptfs: read on a directory should return EISDIR if not supported
+
+Bruno Thomsen (1):
+      USB: Added Kamstrup VID/PIDs to cp210x serial driver.
+
+Dan Carpenter (2):
+      relay: prevent integer overflow in relay_open()
+      cdrom: use copy_to_user() without the underscores
+
+Daniel Vetter (1):
+      drm/i915: no lvds quirk for AOpen MP45
+
+Eliad Peller (1):
+      mac80211: timeout a single frame in the rx reorder buffer
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.58
+
+Heiko Carstens (1):
+      compat: fix compile breakage on s390
+
+Herbert Xu (2):
+      crypto: sha512 - Use binary and instead of modulus
+      crypto: sha512 - Avoid stack bloat on i386
+
+Ian Kent (1):
+      autofs: work around unhappy compat problem on x86-64
+
+Janne Grunau (1):
+      hdpvr: fix race conditon during start of streaming
+
+John Johansen (1):
+      Add mount option to check uid of device being mounted =3D expect uid,=
+ CVE-2011-1833
+
+Linus Torvalds (2):
+      Fix autofs compile without CONFIG_COMPAT
+      firmware loader: allow builtin firmware load even if usermodehelper i=
+s disabled
+
+Nikolaus Schulz (2):
+      hwmon: (f75375s) Fix bit shifting in f75375_write16
+      hwmon: (f75375s) Fix automatic pwm mode setting for F75373 & F75375
+
+OGAWA Hirofumi (1):
+      printk_ratelimited(): fix uninitialized spinlock
+
+Rabin Vincent (1):
+      ARM: 7325/1: fix v7 boot with lockdep enabled
+
+Rafael J. Wysocki (1):
+      PM: Print a warning if firmware is requested when tasks are frozen
+
+Sarah Sharp (2):
+      USB: Fix handoff when BIOS disables host PCI device.
+      xhci: Fix encoding for HS bulk/control NAK rate.
+
+Srivatsa S. Bhat (1):
+      PM / Sleep: Fix freezer failures due to racy usermodehelper_is_disabl=
+ed()
+
+Stephen Boyd (1):
+      ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR
+
+Tetsuo Handa (1):
+      PM / Sleep: Fix read_unlock_usermodehelper() call.
+
+Tyler Hicks (4):
+      eCryptfs: Remove mmap from directory operations
+      eCryptfs: Use notify_change for truncating lower inodes
+      eCryptfs: Remove extra d_delete in ecryptfs_rmdir
+      eCryptfs: Clear i_nlink in rmdir
+
+Wu Fengguang (1):
+      lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
+
+Yong Zhang (1):
+      kernel.h: fix wrong usage of __ratelimit()
 
 
-Not it is not the spec. It is just that I haven't got around
-implementing the needed changes. In order to be able to remove 
-cgroup with reclaim resource charges, we should be tracking all the
-charge list (which is currently attached to inode or to vm_area_struct)
-in struct mem_cgroup, so that on memcg removal, we move those regions in
-charge list to point to parent memcg. 
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature
 
-> 
-> 
-> > 
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  include/linux/memcontrol.h |   11 +++
-> >  init/Kconfig               |   11 +++
-> >  mm/memcontrol.c            |  198 +++++++++++++++++++++++++++++++++++++++++++-
-> >  3 files changed, 219 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > index 4d34356..59d93ee 100644
-> > --- a/include/linux/memcontrol.h
-> > +++ b/include/linux/memcontrol.h
-> > @@ -171,6 +171,17 @@ void mem_cgroup_split_huge_fixup(struct page *head);
-> >  bool mem_cgroup_bad_page_check(struct page *page);
-> >  void mem_cgroup_print_bad_page(struct page *page);
-> >  #endif
-> > +extern long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
-> > +					    unsigned long from,
-> > +					    unsigned long to, int idx);
-> > +extern void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
-> > +					  int idx, unsigned long nr_pages);
-> > +extern void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
-> > +					       unsigned long from,
-> > +					       unsigned long to);
-> > +extern long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
-> > +					      unsigned long from,
-> > +					      unsigned long to, int idx);
-> >  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
-> >  struct mem_cgroup;
-> >  
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 3f42cd6..c4306f7 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -673,6 +673,17 @@ config CGROUP_MEM_RES_CTLR
-> >  	  This config option also selects MM_OWNER config option, which
-> >  	  could in turn add some fork/exit overhead.
-> >  
-> > +config MEM_RES_CTLR_NORECLAIM
-> > +	bool "Memory Resource Controller non reclaim Extension"
-> > +	depends on CGROUP_MEM_RES_CTLR
-> 
-> EXPERIMENTAL please.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-Will do
+iQIcBAEBAgAGBQJPU6/HAAoJEDjbvchgkmk+KR0P/j4PCSxlYf6O1FTwPOvzNbSM
+D1gFaoq2OBh6qbZRQ6QkBPSmcnphBiOcmw9veBOJKOxvMmlvEDIi6CYqNQMl+qNC
+BS6/6aVHvMcsh/4bBLMKfcgl+lGQHipqlmULBhA6K7fBHKgzytcffSnCjjiFeOQO
+6PXsRoMEercaLgo2yR8A4VENImpOPtEmrAwKSGxFxabXkyNb7H2x2pNcH1WUKmt1
+MY/09/6q+n/nejWRmdnSU31PvXb1lfPLcCKNiiKrVQKQASlEQEDVTFhICxZ34Dlc
+XF/QP9D0WRj498eQjkBAeiyZM7Lmn7bNpOaUztqYPjct4IyaAhZ71G3gBC+PwRTW
+RKdHoOvJM0HwJTXPMNfi1M9oPoVbXBvp/6GdzcXbkYORfOyrQY/JOpfUALZfzj84
+BKrPXb2yiyf9u4aqfomyPuaQmT6p0rFN/W6K8vY36Rf6T5TeAnfu1STHA+Gcz2Y1
+qlEWmcZAUwFwPuO30bplqO3GFYZIHc380HziRCELIsYcaVkVGlsDebVzKfoO67z3
+Ye91NJSPkxylI7EA0JdLDuCyuowDHDNnpWdZaub9ULg4B/+n1rlec1kJI4iaVJlh
+1qEpjr/YRDfV7WQBF6E0/IRSvEWYrOwl5lxb4lzKZXIkE0ImFUJznEAhlIQWJAfX
+qj1x9b3PlWOvgx/OCX6V
+=Xv80
+-----END PGP SIGNATURE-----
 
-> 
-> > +	help
-> > +	  Add non reclaim resource management to memory resource controller.
-> > +	  Currently only HugeTLB pages will be managed using this extension.
-> > +	  The controller limit is enforced during mmap(2), so that
-> > +	  application can fall back to allocations using smaller page size
-> > +	  if the memory controller limit prevented them from allocating HugeTLB
-> > +	  pages.
-> > +
-> 
-> Hm. In other thread, KMEM accounting is discussed. There is 2 proposals and
->  - 1st is accounting only reclaimable slabs (as dcache etc.)
->  - 2nd is accounting all slab allocations.
-> 
-> Here, 2nd one includes NORECLAIM kmem cache. (Discussion is not ended.)
-> 
-> So, for your developments,  How about MEM_RES_CTLR_HUGEPAGE ?
-
-Frankly I didn't like the noreclaim name, I also didn't want to indicate
-HUGEPAGE, because the code doesn't make any huge page assumption.
-
-
-> 
-> With your design, memory.hugeltb.XX.xxxxxx files area added and
-> the interface is divided from other noreclaim mems. If necessary,
-> iwe can change the scope of config without affecting user space by refactoring
-> after having this features.
-> 
-> BTW, please set default n because this will forbid rmdir of cgroup.
-> 
-
-
-Will do
-
-> 
-> 
-> >  config CGROUP_MEM_RES_CTLR_SWAP
-> >  	bool "Memory Resource Controller Swap Extension"
-> >  	depends on CGROUP_MEM_RES_CTLR && SWAP
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 6728a7a..b00d028 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -49,6 +49,7 @@
-> >  #include <linux/page_cgroup.h>
-> >  #include <linux/cpu.h>
-> >  #include <linux/oom.h>
-> > +#include <linux/region.h>
-> >  #include "internal.h"
-> >  #include <net/sock.h>
-> >  #include <net/tcp_memcontrol.h>
-> > @@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
-> >  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
-> >  
-> >  /*
-> > + * Currently only hugetlbfs pages are tracked using no reclaim
-> > + * resource count. So we need only MAX_HSTATE res counter
-> > + */
-> > +#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
-> > +/*
-> >   * The memory controller data structure. The memory controller controls both
-> >   * page cache and RSS per cgroup. We would eventually like to provide
-> >   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
-> > @@ -235,6 +241,11 @@ struct mem_cgroup {
-> >  	 */
-> >  	struct res_counter memsw;
-> >  	/*
-> > +	 * the counter to account for non reclaim resources
-> > +	 * like hugetlb pages
-> > +	 */
-> > +	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
-> 
-> struct res_counter hugepages;
-> 
-> will be ok.
-> 
-
-My goal was to make this patch not to mention hugepages, because
-it doesn't really have any depedency on hugepages. That is one of the reason
-for adding MEMCG_MAX_NORECLAIM. Later if we want other in memory file system
-(shmemfs) to limit the resource usage in a similar fashion, we should be
-able to use this memcg changes.
-
-May be for this patchset I can make the changes you suggested and later
-when we want to reuse the code make it more generic ?
-
-
-> 
-> > +	/*
-> >  	 * Per cgroup active and inactive list, similar to the
-> >  	 * per zone LRU lists.
-> >  	 */
-> > @@ -4887,6 +4898,7 @@ err_cleanup:
-> >  static struct cgroup_subsys_state * __ref
-> >  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >  {
-> > +	int idx;
-> >  	struct mem_cgroup *memcg, *parent;
-> >  	long error = -ENOMEM;
-> >  	int node;
-> > @@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >  	if (parent && parent->use_hierarchy) {
-> >  		res_counter_init(&memcg->res, &parent->res);
-> >  		res_counter_init(&memcg->memsw, &parent->memsw);
-> > +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
-> > +			res_counter_init(&memcg->no_rcl_res[idx],
-> > +					 &parent->no_rcl_res[idx]);
-> > +		}
-> 
-> You can remove this kinds of loop and keep your implemenation simple.
-
-
-Can you explain this ? How can we remote the loop ?. We want to track
-each huge page size as a seperate resource. 
-
-> 
-> >  		/*
-> >  		 * We increment refcnt of the parent to ensure that we can
-> >  		 * safely access it on res_counter_charge/uncharge.
-> > @@ -4932,6 +4948,8 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> >  	} else {
-> >  		res_counter_init(&memcg->res, NULL);
-> >  		res_counter_init(&memcg->memsw, NULL);
-> > +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++)
-> > +			res_counter_init(&memcg->no_rcl_res[idx], NULL);
-> >  	}
-> >  	memcg->last_scanned_node = MAX_NUMNODES;
-> >  	INIT_LIST_HEAD(&memcg->oom_notify);
-> > @@ -4950,8 +4968,22 @@ free_out:
-> >  static int mem_cgroup_pre_destroy(struct cgroup_subsys *ss,
-> >  					struct cgroup *cont)
-> >  {
-> > +	int idx;
-> > +	u64 val;
-> >  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> > -
-> > +	/*
-> > +	 * We don't allow a cgroup deletion if it have some
-> > +	 * non reclaim resource charged against it. We can
-> > +	 * update the charge list to point to parent cgroup
-> > +	 * and allow this cgroup deletion here. But that
-> > +	 * involve tracking all the chg list which have this
-> > +	 * cgroup reference.
-> > +	 */
-> 
-> I don't like this..... until this is fixed, default should be "N".
-
-
-Yes. Will update Kconfig
-
-> 
-> 
-> 
-> > +	for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
-> > +		val = res_counter_read_u64(&memcg->no_rcl_res[idx], RES_USAGE);
-> > +		if (val)
-> > +			return -EBUSY;
-> > +	}
-> >  	return mem_cgroup_force_empty(memcg, false);
-> >  }
-> >  
-> > @@ -5489,6 +5521,170 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
-> >  }
-> >  #endif
-> >  
-> > +#ifdef CONFIG_MEM_RES_CTLR_NORECLAIM
-> > +/*
-> > + * For supporting resource control on non reclaim pages like hugetlbfs
-> > + * and ramfs, we enforce limit during mmap time. We also maintain
-> > + * a chg list for these resource, which track the range alog with
-> > + * memcg information. We need to have seperate chg_list for shared
-> > + * and private mapping. Shared mapping are mostly maintained in
-> > + * file inode and private mapping in vm_area_struct.
-> > + */
-> > +long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
-> > +				     unsigned long from, unsigned long to,
-> > +				     int idx)
-> > +{
-> > +	long chg;
-> > +	int ret = 0;
-> > +	unsigned long csize;
-> > +	struct mem_cgroup *memcg;
-> > +	struct res_counter *fail_res;
-> > +
-> > +	/*
-> > +	 * Get the task cgroup within rcu_readlock and also
-> > +	 * get cgroup reference to make sure cgroup destroy won't
-> > +	 * race with page_charge. We don't allow a cgroup destroy
-> > +	 * when the cgroup have some charge against it
-> > +	 */
-> > +	rcu_read_lock();
-> > +	memcg = mem_cgroup_from_task(current);
-> > +	css_get(&memcg->css);
-> 
-> css_tryget() ?
-> 
-
-
-Why ?
-
-> 
-> > +	rcu_read_unlock();
-> > +
-> > +	chg = region_chg(chg_list, from, to, (unsigned long)memcg);
-> > +	if (chg < 0)
-> > +		goto err_out;
-> 
-> I don't think all NORECLAIM objects has 'region' ;)
-> Makeing this dedicated for hugetlbfs will be good.
-> 
-> 
-
-Will do. This should be no reclaim fs objects. 
-
-
-> 
-> > +
-> > +	if (mem_cgroup_is_root(memcg))
-> > +		goto err_out;
-> > +
-> > +	csize = chg * PAGE_SIZE;
-> > +	ret = res_counter_charge(&memcg->no_rcl_res[idx], csize, &fail_res);
-> > +
-> > +err_out:
-> > +	/* Now that we have charged we can drop cgroup reference */
-> > +	css_put(&memcg->css);
-> > +	if (!ret)
-> > +		return chg;
-> > +
-> > +	/* We don't worry about region_uncharge */
-> > +	return ret;
-> > +}
-> > +
-> > +void mem_cgroup_noreclaim_uncharge(struct list_head *chg_list,
-> > +				   int idx, unsigned long nr_pages)
-> > +{
-> > +	struct mem_cgroup *memcg;
-> > +	unsigned long csize = nr_pages * PAGE_SIZE;
-> > +
-> > +	rcu_read_lock();
-> > +	memcg = mem_cgroup_from_task(current);
-> > +
-> > +	if (!mem_cgroup_is_root(memcg))
-> > +		res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
-> 
-> What happens a task using hugeltb is moved to root cgroup ?
-> 
-
-When task migrate we don't move the charge. So after the task get moved
-to root cgroup, the resource counter will not get charged. 
-
-
-
-> 
-> > +	rcu_read_unlock();
-> > +	/*
-> > +	 * We could ideally remove zero size regions from
-> > +	 * resv map hcg_regions here
-> > +	 */
-> > +	return;
-> > +}
-> > +
-> > +void mem_cgroup_commit_noreclaim_charge(struct list_head *chg_list,
-> > +					unsigned long from, unsigned long to)
-> > +{
-> > +	struct mem_cgroup *memcg;
-> > +
-> > +	rcu_read_lock();
-> > +	memcg = mem_cgroup_from_task(current);
-> > +	region_add(chg_list, from, to, (unsigned long)memcg);
-> > +	rcu_read_unlock();
-> > +	return;
-> > +}
-> 
-> Why we have both of try_charge() and charge ?
-> 
-> 
-
-try_charge and commit_charge ?. We do the below sequence:
-
-try_charge()
-alloc_page()
-commit_charge()
-
-We actually do memcg charging in try_charge, but the charge list won't
-be updated to indicate the region boundaries in try_charge. That is
-because, if alloc_page() failed, we will not be able to undo the region
-boundary update, because we don't have enough information there to find
-which region got added/updated by the previous try_charge(). Hence we split the
-charging into two steps: try_charge and commit_charge and update region
-boundaries in commit_charge()
-
-
-> > +
-> > +long mem_cgroup_truncate_chglist_range(struct list_head *chg_list,
-> > +				       unsigned long from, unsigned long to,
-> > +				       int idx)
-> > +{
-> > +	long chg = 0, csize;
-> > +	struct mem_cgroup *memcg;
-> > +	struct file_region *rg, *trg;
-> > +
-> > +	/* Locate the region we are either in or before. */
-> > +	list_for_each_entry(rg, chg_list, link)
-> > +		if (from <= rg->to)
-> > +			break;
-> > +	if (&rg->link == chg_list)
-> > +		return 0;
-> > +
-> > +	/* If we are in the middle of a region then adjust it. */
-> > +	if (from > rg->from) {
-> > +		if (to < rg->to) {
-> > +			struct file_region *nrg;
-> > +			/* rg->from from to rg->to */
-> > +			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> > +			/*
-> > +			 * If we fail to allocate we return the
-> > +			 * with the 0 charge . Later a complete
-> > +			 * truncate will reclaim the left over space
-> > +			 */
-> > +			if (!nrg)
-> > +				return 0;
-> > +			nrg->from = to;
-> > +			nrg->to = rg->to;
-> > +			nrg->data = rg->data;
-> > +			INIT_LIST_HEAD(&nrg->link);
-> > +			list_add(&nrg->link, &rg->link);
-> > +
-> > +			/* Adjust the rg entry */
-> > +			rg->to = from;
-> > +			chg = to - from;
-> > +			memcg = (struct mem_cgroup *)rg->data;
-> > +			if (!mem_cgroup_is_root(memcg)) {
-> > +				csize = chg * PAGE_SIZE;
-> > +				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
-> > +			}
-> > +			return chg;
-> > +		}
-> > +		chg = rg->to - from;
-> > +		rg->to = from;
-> > +		memcg = (struct mem_cgroup *)rg->data;
-> > +		if (!mem_cgroup_is_root(memcg)) {
-> > +			csize = chg * PAGE_SIZE;
-> > +			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
-> > +		}
-> > +		rg = list_entry(rg->link.next, typeof(*rg), link);
-> > +	}
-> > +	/* Drop any remaining regions till to */
-> > +	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-> > +		if (rg->from >= to)
-> > +			break;
-> > +		if (&rg->link == chg_list)
-> > +			break;
-> > +		if (rg->to > to) {
-> > +			/* rg->from to rg->to */
-> > +			chg += to - rg->from;
-> > +			rg->from = to;
-> > +			memcg = (struct mem_cgroup *)rg->data;
-> > +			if (!mem_cgroup_is_root(memcg)) {
-> > +				csize = (to - rg->from) * PAGE_SIZE;
-> > +				res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
-> > +			}
-> > +			return chg;
-> > +		}
-> > +		chg += rg->to - rg->from;
-> > +		memcg = (struct mem_cgroup *)rg->data;
-> > +		if (!mem_cgroup_is_root(memcg)) {
-> > +			csize = (rg->to - rg->from) * PAGE_SIZE;
-> > +			res_counter_uncharge(&memcg->no_rcl_res[idx], csize);
-> > +		}
-> > +		list_del(&rg->link);
-> > +		kfree(rg);
-> > +	}
-> > +	return chg;
-> > +}
-> > +#endif
-> > +
-> 
-> Can't we move most of this to region.c ?
-
-The difference between this and region_truncate_range is we do memcg
-uncharge here. I am not sure we can move this change to region.c
-because of struct mem_cgroup dependency here. What we can do is to
-update region_truncate to take a callback that will be called before
-destroying a region.
-
-
-Thanks for the review,
--aneesh
-
+--C7zPtVaVf+AK4Oqc--
