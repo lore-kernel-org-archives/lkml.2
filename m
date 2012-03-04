@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2CDKwv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 05:52:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52922 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab2CDKwt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 05:52:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.204.143.151 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
+	id S1752994Ab2CDLMS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 06:12:18 -0500
+Received: from mail.us.es ([193.147.175.20]:47518 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752839Ab2CDLMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 06:12:15 -0500
+Date: Sun, 4 Mar 2012 12:12:11 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org
+Subject: Re: [PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+Message-ID: <20120304111211.GA22592@1984>
+References: <1328400892-22409-1-git-send-email-richard@nod.at>
+ <1328400892-22409-3-git-send-email-richard@nod.at>
+ <20120301112732.GA6806@1984>
+ <4F4FEC83.6090504@nod.at>
+ <20120302164945.GA13723@1984>
+ <4F50FAE2.4080903@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA7=rMwMdvL+jY6nXS-RD8CCTTug6XZ6fmdzwHeksi79aw@mail.gmail.com>
-References: <1330714505-13170-1-git-send-email-jslaby@suse.cz>
-	<CA+5PVA7=rMwMdvL+jY6nXS-RD8CCTTug6XZ6fmdzwHeksi79aw@mail.gmail.com>
-Date: Sun, 4 Mar 2012 11:52:47 +0100
-Message-ID: <CAHR064gbNSwHc=GVfm1R7LAmswJg_o7eW33cQ=JZHMJ8PMoVNw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] samsung-laptop: add N230 to supported models
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, mjg@redhat.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F50FAE2.4080903@nod.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 8:06 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Fri, Mar 2, 2012 at 1:55 PM, Jiri Slaby <jslaby@suse.cz> wrote:
->> There is a version of N230 which has only this in product and board
->> names. See dmidecode in the bugzilla entry.
->>
->> Without this patch, one has to pass the force module parameter to have
->> rfkill working.
->>
->> References: https://bugzilla.novell.com/show_bug.cgi?id=746695
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->
-> I think Corey has patches queued up in Matthew's git tree that drop the DMI
-> checks in this driver entirely.  If so, this probably isn't needed.
+On Fri, Mar 02, 2012 at 05:52:50PM +0100, Richard Weinberger wrote:
+> Am 02.03.2012 17:49, schrieb Pablo Neira Ayuso:
+> > On Thu, Mar 01, 2012 at 10:39:15PM +0100, Richard Weinberger wrote:
+> >> Am 01.03.2012 12:27, schrieb Pablo Neira Ayuso:
+> >>> While merging ipt_LOG and ip6t_LOG, you introduced some bug that
+> >>> corrupts the log line. Note the extra PROTO=, I don't have any UDPLITE
+> >>> traffic here.
+> >>>
+> >>> Looks like a missing break in one switch.
+> >>
+> >> I got confused by my own logic. :-\
+> >> Does the attached patch fix the issue?
+> >> It's based on "Netfilter: xt_LOG: Add timestamp support"
+> > 
+> > This patch lacks of description. If you don't make it myself, I have
+> > to do it for you :-(
+> > 
+> > Please, send me patches following the standard format next time.
+> 
+> It was a "does this patch solve the problem"-Patch.
+> Does it fix the problem?
+> 
+> If so, I'll send an official one...
 
-Right. You can try the out-of-tree module using this repository
-https://github.com/iksaif/samsung-laptop-dkms . The patchs are in
-Matthew queue and they should be merged in 3.4.
+Sorry, that's too much overhead. I don't mind testing it, but I want
+to apply it as soon as it fixes the problem ;-)
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+It seems to fix the problem. I have added the description and will
+push to my git tree. Thanks.
