@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2CDRi3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 12:38:29 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44317 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab2CDRi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 12:38:27 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Andrea Righi <andrea@betterlinux.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH -V2 1/9] mm:  move hugetlbfs region tracking function to common code
-In-Reply-To: <20120301143345.7e928efe.akpm@linux-foundation.org>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1330593380-1361-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120301143345.7e928efe.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Sun, 04 Mar 2012 23:07:50 +0530
-Message-ID: <87linge07l.fsf@linux.vnet.ibm.com>
+	id S1754580Ab2CDRmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 12:42:49 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:52855 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457Ab2CDRms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 12:42:48 -0500
+Date: Sun, 4 Mar 2012 18:42:29 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@ti.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
+Message-ID: <20120304174229.GD11546@lunn.ch>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-5-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12030407-0260-0000-0000-000000A4AFD1
+Content-Disposition: inline
+In-Reply-To: <1330763341-3437-5-git-send-email-mturquette@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012 14:33:45 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu,  1 Mar 2012 14:46:12 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Sat, Mar 03, 2012 at 12:29:01AM -0800, Mike Turquette wrote:
+> Many platforms support simple gateable clocks, fixed-rate clocks,
+> adjustable divider clocks and multi-parent multiplexer clocks.
 > 
-> > This patch moves the hugetlbfs region tracking function to
-> > common code. We will be using this in later patches in the
-> > series.
-> > 
-> > ...
-> >
-> > +struct file_region {
-> > +	struct list_head link;
-> > +	long from;
-> > +	long to;
-> > +};
-> 
-> Both Andrea Righi and John Stultz are working on (more sophisticated)
-> versions of file region tracking code.  And we already have a (poor)
-> implementation in fs/locks.c.
-> 
-> That's four versions of the same thing floating around the place.  This
-> is nutty.
+> This patch introduces basic clock types for the above-mentioned hardware
+> which share some common characteristics.
 
+Hi Mike
 
-We should be able to remove region.c once other alternatives are in
-upstream. I will also look at the alternatives and see if it would need
-any change to make it usable for this work.
+These basic clocks don't allow the use of prepare/unprepare, from the
+side of the clock provider. I think i need this.
 
-Thanks,
--aneesh
+The Orion Kirkwood SoC has clock gating for most of its on chip
+peripherals, which the other older Orion devices don't have. The SATA
+and PCIe also allows the PHY to be shut down, again which older Orion
+devices don't have. The current code links the clock and the PHY
+together, shutting both down are the same time. So i would like to
+perform the PHY shutdown in the unprepare() function of the clk
+driver.
 
+Is allowing to pass prepare/unprepare functions to basic clocks
+something you want to support? If i prepare a patch would you consider
+it?
+
+	Thanks
+		Andrew
