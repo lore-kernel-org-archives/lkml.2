@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab2CEQpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:45:53 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55982 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2CEQpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:45:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.145.81 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Mon, 5 Mar 2012 20:45:47 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
-Message-ID: <20120305164547.GN7366@moon>
-References: <20120302142630.GK8681@moon>
- <20120302152621.GA29744@redhat.com>
- <20120302161247.GO8681@moon>
- <20120303223333.GB26846@moon>
- <20120305142130.GA9393@redhat.com>
- <20120305142655.GC9393@redhat.com>
- <20120305144648.GA12341@moon>
- <20120305154029.GB12427@redhat.com>
- <20120305160127.GM7366@moon>
- <20120305163130.GA13744@redhat.com>
+	id S1756023Ab2CEQqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:46:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755961Ab2CEQqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:46:06 -0500
+Message-ID: <4F54ED6C.4060600@redhat.com>
+Date: Mon, 05 Mar 2012 11:44:28 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305163130.GA13744@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Tim Hockin <thockin@hockin.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com> <20120201163126.GA19837@google.com> <20120201184959.GH6731@somewhere.redhat.com> <20120201115107.93e11471.akpm@linux-foundation.org>
+In-Reply-To: <20120201115107.93e11471.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 05:31:30PM +0100, Oleg Nesterov wrote:
-> 
-> User-space can be confused, yes, this is by design.
-> 
+On 02/01/2012 02:51 PM, Andrew Morton wrote:
+> On Wed, 1 Feb 2012 19:50:01 +0100
+> Frederic Weisbecker<fweisbec@gmail.com>  wrote:
+>
+>> On Wed, Feb 01, 2012 at 08:31:26AM -0800, Tejun Heo wrote:
+>>> On Wed, Feb 01, 2012 at 04:37:40AM +0100, Frederic Weisbecker wrote:
+>>>> Changes In this version:
+>>>>
+>>>> - Split 32/64 bits version of res_counter_write_u64() [1/10]
+>>>>    Courtesy of Kirill A. Shutemov
+>>>>
+>>>> - Added Kirill's ack [8/10]
+>>>>
+>>>> - Added selftests [9/10], [10/10]
+>>>>
+>>>> Please consider for merging. At least two users want this feature:
+>>>
+>>> Has there been further discussion about this approach?  IIRC, we
+>>> weren't sure whether this should be merged.
+>>
+>> The doubts I have noticed were:
+>>
+>> Q: Can't we rather focus on a global solution to fight forkbombs?
+>>
+>> If we can find a reliable solution that works in any case and that
+>> prevent from any forkbomb to impact the rest of the system then it
+>> may be an acceptable solution. But I'm not aware of such feature.
+>>
+>> Besides, another point in having this task counter is that we
+>> have a per container limit. Assuming all containers are running under
+>> the same user, we can protect against a container starving all others
+>> with a massive amount of processes close to the NR_PROC rlimit.
 
-OK ;)
+> What I struggle with is "is this feature useful enough to warrant
+> merging it"?
 
-	Cyrill
+I have seen thunderbird create as many child processes
+as it could (until I hit my rlimit NR_PROC), and have
+seen web servers go wrong under a combination of load
+and buggy scripts, forking as many processes as they
+could.
+
+Since we know rlimit NR_PROC is useful, having the
+equivalent per cgroup will be useful, too.
+
+What we need to lose is the focus on malicious
+forkbombs - buggy programs are a real issue, and
+protecting against them is useful.
