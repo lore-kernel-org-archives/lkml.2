@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab2CEWJe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:09:34 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57137 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609Ab2CEWJd (ORCPT
+	id S1756274Ab2CEWJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:09:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57761 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab2CEWJe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:09:33 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1//NSrCXWXitHTLOOSFIn3I
-Date: Mon, 5 Mar 2012 14:09:31 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH] [trivial] mach-omap1: Fix typo in lcd_dma.c
-Message-ID: <20120305220930.GY12083@atomide.com>
-References: <1328537804-1916-1-git-send-email-standby24x7@gmail.com>
+	Mon, 5 Mar 2012 17:09:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.100.33 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328537804-1916-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1203051856130.31585@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1203051856130.31585@skynet.skynet.ie>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 5 Mar 2012 14:09:13 -0800
+X-Google-Sender-Auth: waJyQW0ZyeCnEx-fY_SDN970c3c
+Message-ID: <CA+55aFw6w85_6wCTcB_AvXnRgFYhkB8rxpe9FOei3j0ZpGf0FQ@mail.gmail.com>
+Subject: Re: [git pull] drm gma500 fix
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Masanari Iida <standby24x7@gmail.com> [120206 05:46]:
-> Correct spelling "resulotion" to "resolution" in
-> arch/arm/mach-omap1/lcd_dma.c
+On Mon, Mar 5, 2012 at 10:57 AM, Dave Airlie <airlied@linux.ie> wrote:
+>
+>  git://people.freedesktop.org/~airlied/linux drm-fixes
 
-Thanks applying into fixes-non-critical-part2.
+Hmm. Is freedesktop.org having trouble?
 
-Regards,
+I got
 
-Tony
+  fatal: unable to connect to people.freedesktop.org:
+  people.freedesktop.org[0: 131.252.210.176]: errno=Connection refused
+
+and an the third try (I started stracing it to see what was up with
+that "0:" part) it just hung at the connect. And a couple of times it
+connected but then got reset.. So I perversely started trying to see
+if it's coming alive.
+
+And then it finally started working - but now I'm getting "Already up-to-date."
+
+                Linus
