@@ -1,149 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab2CEFQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 00:16:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7393 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab2CEFQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 00:16:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="114639041"
-Date: Sun, 4 Mar 2012 19:13:27 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120304111327.GA9255@localhost>
-References: <20120228144747.198713792@intel.com>
- <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
- <20120301123640.GA30369@localhost>
- <20120301163837.GA13104@quack.suse.cz>
- <20120302044858.GA14802@localhost>
- <20120302095910.GB1744@quack.suse.cz>
- <20120302103951.GA13378@localhost>
- <20120302115700.7d970497.akpm@linux-foundation.org>
- <20120303135558.GA9869@localhost>
- <20120303142745.GA17789@localhost>
+	id S1751549Ab2CEFRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 00:17:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40253 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2CEFRe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 00:17:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linkinjeon@gmail.com designates 10.204.145.85 as permitted sender) smtp.mail=linkinjeon@gmail.com; dkim=pass header.i=linkinjeon@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120303142745.GA17789@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFLxGvyt_-WFLe_WJGGz4oztSAiYoKk1+BD9_OsK4toSjP4V5Q@mail.gmail.com>
+References: <1330863026-2696-1-git-send-email-linkinjeon@gmail.com>
+	<CAFLxGvyt_-WFLe_WJGGz4oztSAiYoKk1+BD9_OsK4toSjP4V5Q@mail.gmail.com>
+Date: Mon, 5 Mar 2012 14:17:33 +0900
+Message-ID: <CAKYAXd_W5pf20eRybcCM0UHhm8eSHBpHmp3mZOXQ99XEfx60hw@mail.gmail.com>
+Subject: Re: [PATCH] cfq: fix NULL pointer dereference in cfq_choose_cfqg.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: axboe@kernel.dk, tj@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 10:27:45PM +0800, Fengguang Wu wrote:
-> [correct email addresses for Artem and Adrian]
-> 
-> On Sat, Mar 03, 2012 at 09:55:58PM +0800, Fengguang Wu wrote:
-> > On Fri, Mar 02, 2012 at 11:57:00AM -0800, Andrew Morton wrote:
-> > > On Fri, 2 Mar 2012 18:39:51 +0800
-> > > Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > > 
-> > > > > And I agree it's unlikely but given enough time and people, I
-> > > > > believe someone finds a way to (inadvertedly) trigger this.
-> > > > 
-> > > > Right. The pageout works could add lots more iput() to the flusher
-> > > > and turn some hidden statistical impossible bugs into real ones.
-> > > > 
-> > > > Fortunately the "flusher deadlocks itself" case is easy to detect and
-> > > > prevent as illustrated in another email.
-> > > 
-> > > It would be a heck of a lot safer and saner to avoid the iput().  We
-> > > know how to do this, so why not do it?
-> > 
-> > My concern about the page lock is, it costs more code and sounds like
-> > hacking around something. It seems we (including me) have been trying
-> > to shun away from the iput() problem. Since it's unlikely we are to
-> > get rid of the already existing iput() calls from the flusher context,
-> > why not face the problem, sort it out and use it with confident in new
-> > code?
-> > 
-> > Let me try it now. The only scheme iput() can deadlock the flusher is
-> > for the iput() path to come back to queue some work and wait for it.
-> > Here are the exhaust list of the queue+wait paths:
+Hi. Richard.
 
+You're right. need to add exception code more. I will look for more.
 
-> > writeback_inodes_sb_nr_if_idle
+Thanks.
 
-Sorry the above function is actually called from all over btrfs. ext4
-uses the much more heavy weight writeback_inodes_sb_if_idle(). I'm not
-sure if ext4/ubifs developers are fully aware that these functions may
-take seconds or even dozens of seconds to complete and show up as long
-delays to the users, because they write and wait ALL dirty pages on
-the superblock. Even w/o the iput() deadlock problem, it's still
-questionable to start and wait for such big writeback works from fs
-code.  If these waits could be turned into congestion_wait() style
-throttling, it should not only completely remove the possibility of
-iput() deadlock, but also make the delays much smaller.
-congestion_wait() is just an example and may not be a good fit, but
-the *_if_idle thing does indicate that the calling ext4/btrfs sites
-are pretty flexible (or careless) about the exact policy used.
-
-Thanks,
-Fengguang
-
-> >   ext4_nonda_switch
-> >     ext4_page_mkwrite                   # from page fault
-> >     ext4_da_write_begin                 # from user writes
-> > 
-> > writeback_inodes_sb_nr
-> >   quotactl syscall                      # from syscall
-> >   __sync_filesystem                     # from sync/umount
-> >   shrink_liability                      # ubifs
-> >     make_free_space
-> >       ubifs_budget_space                # from all over ubifs:
-> > 
-> >    2    274  /c/linux/fs/ubifs/dir.c <<ubifs_create>>
-> >    3    531  /c/linux/fs/ubifs/dir.c <<ubifs_link>>
-> >    4    586  /c/linux/fs/ubifs/dir.c <<ubifs_unlink>>
-> >    5    675  /c/linux/fs/ubifs/dir.c <<ubifs_rmdir>>
-> >    6    731  /c/linux/fs/ubifs/dir.c <<ubifs_mkdir>>
-> >    7    803  /c/linux/fs/ubifs/dir.c <<ubifs_mknod>>
-> >    8    871  /c/linux/fs/ubifs/dir.c <<ubifs_symlink>>
-> >    9   1006  /c/linux/fs/ubifs/dir.c <<ubifs_rename>>
-> >   10   1009  /c/linux/fs/ubifs/dir.c <<ubifs_rename>>
-> >   11    246  /c/linux/fs/ubifs/file.c <<write_begin_slow>>
-> >   12    388  /c/linux/fs/ubifs/file.c <<allocate_budget>>
-> >   13   1125  /c/linux/fs/ubifs/file.c <<do_truncation>>   <===== deadlockable
-> >   14   1217  /c/linux/fs/ubifs/file.c <<do_setattr>>
-> >   15   1381  /c/linux/fs/ubifs/file.c <<update_mctime>>
-> >   16   1486  /c/linux/fs/ubifs/file.c <<ubifs_vm_page_mkwrite>>
-> >   17    110  /c/linux/fs/ubifs/ioctl.c <<setflags>>
-> >   19    122  /c/linux/fs/ubifs/xattr.c <<create_xattr>>
-> >   20    201  /c/linux/fs/ubifs/xattr.c <<change_xattr>>
-> >   21    494  /c/linux/fs/ubifs/xattr.c <<remove_xattr>>
-> > 
-> > It seems they are all safe except for ubifs. ubifs may actually
-> > deadlock from the above do_truncation() caller. However it should be
-> 
-> Sorry that do_truncation() is actually called from ubifs_setattr()
-> which is not related to iput().
-> 
-> Are there other possibilities for iput() to call into the above list
-> of ubifs functions, then start writeback work and wait for it which
-> will deadlock the flusher? ubifs_unlink() and perhaps remove_xattr()?
-> 
-> > fixable because the ubifs call for writeback_inodes_sb_nr() sounds
-> > very brute force writeback and wait and there may well be better way
-> > out.
-> > 
-> > CCing ubifs developers for possible thoughts..
-> > 
-> > Thanks,
-> > Fengguang
-> > 
-> > PS. I'll be on travel in the following week and won't have much time
-> > for replying emails. Sorry about that.
+2012/3/4 richard -rw- weinberger <richard.weinberger@gmail.com>:
+> On Sun, Mar 4, 2012 at 1:10 PM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+>> I found null pointer dereferencing possibility while reviewing.
+>> If cfq_get_next_cfqg return null by RB_EMPTY_ROOT, null pointer dereferencing error can occur.
+>>
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> ---
+>>  block/cfq-iosched.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>> index d0ba505..d924272 100644
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -2306,7 +2306,7 @@ static void cfq_choose_cfqg(struct cfq_data *cfqd)
+>>        cfqd->serving_group = cfqg;
+>>
+>>        /* Restore the workload type data */
+>> -       if (cfqg->saved_workload_slice) {
+>> +       if (!cfqg && cfqg->saved_workload_slice) {
+>>                cfqd->workload_expires = jiffies + cfqg->saved_workload_slice;
+>>                cfqd->serving_type = cfqg->saved_workload;
+>>                cfqd->serving_prio = cfqg->saved_serving_prio;
+>
+> I don't think that this is a correct fix.
+>
+> 1. Can it really happen that cfq_get_next_cfqg() returns NULL at this point?
+>
+> 2. Adding a if(!cfgg ...) does not solve the problem, it ignores it.
+> After the if block we call choose_service_tree().
+> I'm sure choose_service_tree() it not happy when we pass a NULL pointer to it...
+>
+> --
+> Thanks,
+> //richard
