@@ -1,62 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab2CEXg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:36:27 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59901 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757799Ab2CEXgI (ORCPT
+	id S1757937Ab2CEXhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:37:24 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57305 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab2CEXhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:36:08 -0500
-Message-ID: <4F554DC7.8010504@fb.com>
-Date: Mon, 5 Mar 2012 15:35:35 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <dsahern@gmail.com>, <ravitillo@lbl.gov>,
-        <khandual@linux.vnet.ibm.com>, <robert.richter@amd.com>,
-        <ming.m.lin@intel.com>, <vweaver1@eecs.utk.edu>, <andi@firstfloor.org>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-References: <20120224094048.GA7952@quad> <20120305154753.GA14604@elte.hu> <20120305155011.GA32413@elte.hu> <20120305155642.GB32413@elte.hu> <1330965033.11248.240.camel@twins> <20120305203518.GA5656@infradead.org> <4F55337B.4080807@fb.com> <20120305222614.GB5656@infradead.org>
-In-Reply-To: <20120305222614.GB5656@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 5 Mar 2012 18:37:22 -0500
+Date: Mon, 5 Mar 2012 23:39:10 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com
+Subject: Re: [PATCH 01/68] USB: cdc-acm, use tty_standard_install
+Message-ID: <20120305233910.728e60d7@pyramind.ukuu.org.uk>
+In-Reply-To: <1330955575-26641-2-git-send-email-jslaby@suse.cz>
+References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
+	<1330955575-26641-2-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-05_07:2012-03-05,2012-03-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  5 Mar 2012 14:51:48 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-Like you probably figured from my other mail, we deal with deeply nested 
-callchains with unwieldy function names a lot -- thanks to C++ and 
-template programming. --tui's collapsing/expanding functionality is 
-quite useful to navigate that mess. I'm just taking this opportunity to 
-get some attention focused on improving it :)
+> This is a piece I missed the last time.
+> 
+> Do not copy the functionality all over the tree. Instead, use the
+> helper the tty layer provides us with.
 
-On 3/5/12 2:26 PM, Arnaldo Carvalho de Melo wrote:
-
->> Here's an example:
->>
->> # perf record -ag -- sleep 3
->> # perf report -G -s pid --tui # SIGSEGV
->
-> Ok, now this is a good report, I managed to reproduce and will work on a
-> fix, thanks,
-
-Something like this seems to do it for me.
-
-         offset = addr - sym->start;
-+       len = sym->end - sym->start;
-+       if (offset >= len)
-+               return 0;
-+
-
-The other problem area seems to be callchains when using -p regexp -x 
-options. I'll try to summarize problems there in a separate thread.
-
-  -Arun
+All looks sane to me
