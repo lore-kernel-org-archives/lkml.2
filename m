@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2CEGAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 01:00:16 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59465 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab2CEGAO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 01:00:14 -0500
-Date: Mon, 5 Mar 2012 17:00:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Subject: linux-next: manual merge of the usb tree with the usb.current tree
-Message-Id: <20120305170004.9c81f2d148cc179f42a39ade@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1753538Ab2CEGCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:02:22 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39178 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751873Ab2CEGCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 01:02:20 -0500
+Message-ID: <1330927336.3009.10.camel@joe2Laptop>
+Subject: Re: [PATCH] net/pch_gbe: supports eg20t ptp clock
+From: Joe Perches <joe@perches.com>
+To: Takahiro Shimizu <tshimizu818@gmail.com>
+Cc: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, toshiharu-linux@dsn.okisemi.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Date: Sun, 04 Mar 2012 22:02:16 -0800
+In-Reply-To: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
+References: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2012-03-05 at 14:46 +0900, Takahiro Shimizu wrote:
+> From: Takahiroi Shimizu <tshimizu818@gmail.com>
+> Supports EG20T ptp clock in the driver
 
-Hi Greg,
+just some trivial comments...
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/host/ehci-fsl.h between commit 71919403dc86 ("Revert
-"powerpc/usb: fix issue of CPU halt when missing USB PHY clock"") from
-the usb.current tree and commit 28c56ea14314 ("powerpc/usb: fix bug of
-kernel hang when initializing usb") from the usb tree.
+> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+> +/* 0x40 Time Synchronization Channel Control Register Bits */
+> +#define MASTER_MODE   (1<<0)
+> +#define SLAVE_MODE    (0<<0)
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> +#define V2_MODE       (1<<31)
+> +#define CAP_MODE0     (0<<16)
 
-diff --cc drivers/usb/host/ehci-fsl.h
-index 4918062,863fb0c..0000000
---- a/drivers/usb/host/ehci-fsl.h
-+++ b/drivers/usb/host/ehci-fsl.h
-@@@ -45,5 -47,7 +47,6 @@@
-  #define FSL_SOC_USB_PRICTRL	0x40c	/* NOTE: big-endian */
-  #define FSL_SOC_USB_SICTRL	0x410	/* NOTE: big-endian */
-  #define FSL_SOC_USB_CTRL	0x500	/* NOTE: big-endian */
-+ #define CTRL_UTMI_PHY_EN	(1<<9)
- -#define CTRL_PHY_CLK_VALID	(1 << 17)
-  #define SNOOP_SIZE_2GB		0x1e
-  #endif				/* _EHCI_FSL_H */
+0 << anything is pretty ugly.
 
---Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS
-Content-Type: application/pgp-signature
+[]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> +static void pch_rx_timestamp(
+> +			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
 
-iQIcBAEBCAAGBQJPVFZkAAoJEECxmPOUX5FEXtQP/3zMdpj+iFWTW1JoMrqpFBml
-lAIsQRanvuMHl33UhmuUY5Ahs92s4o3A+FQp9u69hoYDaFVMyPIs9OFd0zn2Cp5S
-WiiO9oYpOHsmqvIjnvYftE4tTRfmp9sEsLcteoztc1aP814mfiQ8uJSEbVMhD0MQ
-YmRQ09n29UrPerd03nm60/peRPjRMa4w7wWJvgd+xTPzSgHL/ptpt37cg2BY0xb/
-Fuhwwqop+RaabDYtCpatqFGIci2nX4dMH8znACX+uILFoPI9i3clsnUs4fmntDta
-e1POgZNv2g1UEKpBtFG8Yy58ngrxl/F34YJT8wchng3euiaHpU/FI2i0Tzz2PLbI
-pyWlH+OKlb4G375VwnNsVyPgamx3s/p+dbKtcRPd8Kpn/CYu+6fn0KiYayzN7Z3O
-D7qB1889pHq1MZBEzRolxkT+6ZsLFnKyJm+RsuP6iYPsbRev++oXY7WiCLoAmsJl
-S3Cd2GXDAWWtgK7fd6hpVgX9ox9vfx+zimr2i2wABxAROcdlgU+kN8pkSN8VIxgi
-LzW9iXtFoAm5mLyv3Oc2JcquTGQo8S+I7bNA4v7ZA+bkhzD3tu39O43R8e5PGseI
-w2y3PSZikHMSDRUJe8oL4+9hMcWLXcCZrNS61qzDuMbWZJ5/fy3gnGFHxnSUKGlh
-8afnslauY0UT1s7ZTL1F
-=37xw
------END PGP SIGNATURE-----
+Also not too pretty.
 
---Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS--
+Maybe
+
+static void
+pch_rx_timestamp(struct pch_gbe_adapter *adapter, struct sk_buff *skb)
+
+[]
+> +static void pch_tx_timestamp(
+> +			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
+
+here too.
+[]
+> +	shtx = skb_shinfo(skb);
+> +	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && adapter->hwts_tx_en))
+> +		shtx->tx_flags |= SKBTX_IN_PROGRESS;
+> +	else
+> +		return;
+
+probably better as
+
+	if (likely(!(shtx->tx_flags & SKBTX_HW_TSTAMP &&
+		     adapter->hwts_tx_en)))
+		return;
+
+	shtx->tx_flags |= etc...
+
+> +
+> +	/* Get ieee1588's dev information */
+> +	pdev = adapter->ptp_pdev;
+> +
+> +	/*
+> +	 * This really stinks, but we have to poll for the Tx time stamp.
+> +	 * Usually, the time stamp is ready after 4 to 6 microseconds.
+> +	 */
+> +	for (cnt = 0; cnt < 100; cnt++) {
+> +		val = pch_ch_event_read(pdev);
+> +		if (val & TX_SNAPSHOT_LOCKED)
+> +			break;
+> +		udelay(1);
+> +	}
+
+why not just continually poll instead of udelay?
+
+[]
+
+> +static int hwtstamp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
+[]
+> +	switch (cfg.rx_filter) {
+> +	case HWTSTAMP_FILTER_NONE:
+> +		adapter->hwts_rx_en = 0;
+> +		break;
+> +	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
+> +		adapter->hwts_rx_en = 0;
+> +		pch_ch_control_write(pdev, (SLAVE_MODE | CAP_MODE0));
+
+parentheses are not nececessary around SLAVE_MODE | CAP_MODE0
+
+> +		break;
+> +	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
+> +		adapter->hwts_rx_en = 1;
+> +		pch_ch_control_write(pdev, (MASTER_MODE | CAP_MODE0));
+
+here too.
+
+
