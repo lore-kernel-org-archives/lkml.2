@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2CESZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 13:25:52 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4160 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab2CESZv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 13:25:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 05 Mar 2012 10:25:15 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "B29396@freescale.com" <B29396@freescale.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Mar 2012 10:25:14 -0800
-Subject: RE: [PATCH V3 0/7] pinctrl: API rework, pinconfig in mapping table,
- ...
-Thread-Topic: [PATCH V3 0/7] pinctrl: API rework, pinconfig in mapping
- table, ...
-Thread-Index: Acz6vDnqxawzQ3UzT325RatLyylmNgAQKESg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861C68@HQMAIL01.nvidia.com>
-References: <1330718750-15217-1-git-send-email-swarren@nvidia.com>
- <CACRpkdaG=f_daGkXB56AxMOVej0gWj+cn6sjABLwOK17utQTaA@mail.gmail.com>
-In-Reply-To: <CACRpkdaG=f_daGkXB56AxMOVej0gWj+cn6sjABLwOK17utQTaA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757412Ab2CESf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:35:27 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:38101 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757082Ab2CESfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:35:25 -0500
+Message-ID: <1330972323.2191.74.camel@work-vm>
+Subject: Re: WARNING: Adjusting tsc more then 11%
+From: John Stultz <john.stultz@linaro.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 05 Mar 2012 10:32:03 -0800
+In-Reply-To: <20120305154411.GA29668@redhat.com>
+References: <20120305154411.GA29668@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030518-6078-0000-0000-000008BAD716
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Monday, March 05, 2012 3:39 AM:
-> On Fri, Mar 2, 2012 at 9:05 PM, Stephen Warren <swarren@nvidia.com> wrote:
-...
-> > The Tegra30 pinctrl driver fix should be OK to apply out-of-order if you
-> > want. I'd even be happy if you squashed it into the original commit that
-> > added the driver, if you branch doesn't need to be git-stable.
+On Mon, 2012-03-05 at 10:44 -0500, Dave Jones wrote:
+> John,
+> We've had a number of reports the last few weeks triggering
+> this warning that you added back in October.
 > 
-> Oh I asked about that a few seconds ago, splendid. I just want to
-> make sure that e.g. Olof has not pulled the branch into ARM-SoC or
-> so...?
+> https://bugzilla.redhat.com/show_bug.cgi?id=798600
+> https://bugzilla.redhat.com/show_bug.cgi?id=799215
+> https://bugzilla.redhat.com/show_bug.cgi?id=799745
+> https://bugzilla.redhat.com/show_bug.cgi?id=799872
+> 
+> any idea what could have changed to start tripping that up ?
+> 
+> The reports seem to have started around 3.3-rc4.
 
-Not pulled yet (I just confirmed in both repos).
+Huh. No I don't know what would have started causing such a warning. I
+had expected that there would be some edge hardware that might trip that
+warning, but I'd expect the noise to start there w/ 3.2 after it was
+introduced. There's only been spelling & comment changes to the
+timekeeping core in the 3.3-rc series.
 
-There was a plan to pull that branch into the Tegra tree to base some
-arch/arm/mach-tegra changes on it, but that got deferred while I redid
-those Tegra patches on top of latest pinctrl, and I haven't posted the
-updated Tegra patches yet, and hence your branch didn't get pulled in
-yet.
+Looking at the logs, I'm curious if maybe some of the nohz changes have
+tweaked us here. If we're hitting longer idle times, it might be
+possible the ntp error could accumulate to be larger, and then the
+kernel's frequency adjustments might end up trying to adjust for more
+then 11%. 
 
-At this point, we'll probably just wait for latest pinctrl to show up
-In 3.4 and apply the Tegra patches on top of that rather than merging
-your branch.
+Its also interesting its only popping up on hardware using the TSC.
+acpi_pm can only do short idle times, so it wouldn't show up here, but
+hpet could do reasonably long idles, so I'd think we'd also see some
+similar hpet warnings.
 
--- 
-nvpublic
+Do you know if this is an occasional thing on any of the affected
+hardware, or if it happens after every reboot?
+
+Are any of the reported boxes systems you have access to in order to
+reproduce?
+
+thanks
+-john
+
 
