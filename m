@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2CEOqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:46:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43983 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab2CEOqx (ORCPT
+	id S932583Ab2CEOsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:48:39 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:30036 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932379Ab2CEOsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 09:46:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.154.2 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Mon, 5 Mar 2012 18:46:48 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
-Message-ID: <20120305144648.GA12341@moon>
-References: <20120229200103.GJ11326@moon>
- <20120301180616.GA7652@redhat.com>
- <20120301191714.GF9930@moon>
- <20120301194120.GA11400@redhat.com>
- <20120302142630.GK8681@moon>
- <20120302152621.GA29744@redhat.com>
- <20120302161247.GO8681@moon>
- <20120303223333.GB26846@moon>
- <20120305142130.GA9393@redhat.com>
- <20120305142655.GC9393@redhat.com>
+	Mon, 5 Mar 2012 09:48:38 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 9.hMGdYVM1nPuf5E2dNrfbTnYZ78AMER0QMtmFZ7jnWJwEN
+ MIU.Nq63Ayn9kmOZZd.ogvOevCu5rXilNKus4TH32xtYDfRO4XySt3ugz5u5
+ CiXhQyAYLu.8Xy5eR2gd1LS1niQZBI1obg7x6MJqwP9CYKTHYaCtKCeIwpT4
+ eNg3BlQZivKpXUFK8VoyB5So9XTYyrWa0TMKFCRDxUZy9CNXJregJj3AYAtB
+ iUzsJ1uMWEIt1GoWyHYs4zlzB.rWUhxk5k_0myOaDInxdG_IFQdK24aoqtXN
+ gr6WW9kWTOyJKxu0esbi2pLaaRyt59ROc9jlUXyRs2yuY2ptelmsYb6YTnUs
+ 9odOH.Dc2qjbTSHCITvRHfyMG0Gi86jMfD5WXkzANLexm3Do40.ARWvvA3yG
+ 1cW.cr3JmRl9Oj_aaAKmW1hKr3P_9vFfQPbA8
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 5 Mar 2012 08:48:33 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan@kernel.org>
+cc: Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Namhyung Kim <namhyung@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
+In-Reply-To: <20120304103446.GA9267@barrios>
+Message-ID: <alpine.DEB.2.00.1203050845380.11722@router.home>
+References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com> <20120304103446.GA9267@barrios>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305142655.GC9393@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 03:26:55PM +0100, Oleg Nesterov wrote:
-> > OK, I won't argue, probably this makes sense to make sure that
-> > admin can't get a heart attack looking at /proc/pid/exe.
-> >
-> > But the O_RDONLY check looks strange. We are not going to write
-> > to this file, we only set the name (and that is why I think it
-> > should be mm->exe_path). What is the point to check that the file
-> > was opened without FMODE_WRITE? Even if there were any security
-> > risk the apllication can open this file again with the different
-> > flags.
->
+On Sun, 4 Mar 2012, Minchan Kim wrote:
 
-Hi Oleg!
+> I read this thread and I feel the we don't reach right point.
+> I think it's not a compound page problem.
+> We can face above problem where we allocates big order page without __GFP_COMP
+> and free middle page of it.
 
-Replying to both your email -- I wanted to be as close to open_exec
-as possible. This prctl does cheat the kernel but with this tests
-the cheating should be minimized (it's almost the same as open_exec
-does).
+Yes we can do that and doing such a thing seems to be more legitimate
+since one could argue that the user did not request an atomic allocation
+unit from the page allocator and therefore the freeing of individual
+pages in that group is permissible. If memory serves me right we do that
+sometimes.
 
-> Seriously, I think we should cleanup this before c/r adds more
-> ugliness. I'll try to make the patch today.
-> 
-
-Cleanup what? If you mean this patch -- just point me what
-should I do.
-
-> And with all these checks I am no longer sure that fd is better
-> than filename ;)
-
-This security tests was a reason why I've used open_exec in
-first version of the patch (and I still would prefer to
-have open_exec here instead of fd).
-
-As to allow-write-access -- it should be cleaned once process
-finished, no?
-
-	Cyrill
+However if compound pages are requested then such an atomic allocation
+unit *was* requested and the page allocator should not allow to free
+individual pages.
