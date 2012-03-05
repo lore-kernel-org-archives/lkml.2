@@ -1,40 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2CEQEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:04:42 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:54588 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755024Ab2CEQEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:04:39 -0500
-Date: Mon, 5 Mar 2012 11:04:38 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [linux-pm] 3.3-rc6: Reported regressions from 3.2
-In-Reply-To: <FNlNbnGKWLP.A.dME.3F9UPB@chimera>
-Message-ID: <Pine.LNX.4.44L0.1203051056560.1847-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755061Ab2CEQDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:03:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60109 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755065Ab2CEQBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:01:40 -0500
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
+        Jan Kara <jack@suse.cz>, linux-nilfs@vger.kernel.org,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [PATCH 16/19] nilfs2: Convert to new freezing mechanism
+Date: Mon,  5 Mar 2012 17:01:14 +0100
+Message-Id: <1330963277-26336-17-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Mar 2012, Rafael J. Wysocki wrote:
+We change nilfs_page_mkwrite() to provide proper freeze protection for
+writeable page faults (we must wait for frozen filesystem even if the
+page is fully mapped).
 
-> Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42683
-> Subject		: WARN... Device 'cpu1' does not have a release() function, it is broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
-> Submitter	: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date		: 2012-01-23 18:06 (42 days old)
-> Message-ID	: <20120123180601.GA24553@phenom.dumpdata.com>
-> References	: http://marc.info/?l=linux-kernel&m=132734233916154&w=2
+We remove all vfs_check_frozen() checks since they are now handled by
+the generic code.
 
-This has been fixed by commits 2885e25c422fb68208f677f944a45fce8eda2a3c
-and 29bb5d4fd3140a7d5d02d858118c74a45f15c296, plus probably one more
-that I can't identify.
+CC: linux-nilfs@vger.kernel.org
+CC: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/nilfs2/file.c    |   18 +++++++++++-------
+ fs/nilfs2/ioctl.c   |    2 --
+ fs/nilfs2/segment.c |    2 --
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-Alan Stern
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index 2660152..0cdd702 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -65,16 +65,18 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct page *page = vmf->page;
+ 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
+ 	struct nilfs_transaction_info ti;
+-	int ret;
++	int ret = 0;
+ 
+ 	if (unlikely(nilfs_near_disk_full(inode->i_sb->s_fs_info)))
+ 		return VM_FAULT_SIGBUS; /* -ENOSPC */
+ 
++	sb_start_pagefault(inode->i_sb);
+ 	lock_page(page);
+ 	if (page->mapping != inode->i_mapping ||
+ 	    page_offset(page) >= i_size_read(inode) || !PageUptodate(page)) {
+ 		unlock_page(page);
+-		return VM_FAULT_NOPAGE; /* make the VM retry the fault */
++		ret = -EFAULT;	/* make the VM retry the fault */
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -108,19 +110,21 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	ret = nilfs_transaction_begin(inode->i_sb, &ti, 1);
+ 	/* never returns -ENOMEM, but may return -ENOSPC */
+ 	if (unlikely(ret))
+-		return VM_FAULT_SIGBUS;
++		goto out;
+ 
+-	ret = block_page_mkwrite(vma, vmf, nilfs_get_block);
+-	if (ret != VM_FAULT_LOCKED) {
++	ret = __block_page_mkwrite(vma, vmf, nilfs_get_block);
++	if (ret) {
+ 		nilfs_transaction_abort(inode->i_sb);
+-		return ret;
++		goto out;
+ 	}
+ 	nilfs_set_file_dirty(inode, 1 << (PAGE_SHIFT - inode->i_blkbits));
+ 	nilfs_transaction_commit(inode->i_sb);
+ 
+  mapped:
+ 	wait_on_page_writeback(page);
+-	return VM_FAULT_LOCKED;
++ out:
++	sb_end_pagefault(inode->i_sb);
++	return block_page_mkwrite_return(ret);
+ }
+ 
+ static const struct vm_operations_struct nilfs_file_vm_ops = {
+diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+index 2a70fce..a2063c7 100644
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -660,8 +660,6 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
+ 		goto out_free;
+ 	}
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+-
+ 	ret = nilfs_ioctl_move_blocks(inode->i_sb, &argv[0], kbufs[0]);
+ 	if (ret < 0)
+ 		printk(KERN_ERR "NILFS: GC failed during preparation: "
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index 0e72ad6..0891cef 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -189,8 +189,6 @@ int nilfs_transaction_begin(struct super_block *sb,
+ 	if (ret > 0)
+ 		return 0;
+ 
+-	vfs_check_frozen(sb, SB_FREEZE_WRITE);
+-
+ 	nilfs = sb->s_fs_info;
+ 	down_read(&nilfs->ns_segctor_sem);
+ 	if (vacancy_check && nilfs_near_disk_full(nilfs)) {
+-- 
+1.7.1
 
