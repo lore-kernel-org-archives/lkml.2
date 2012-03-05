@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab2CEQta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:49:30 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:5898 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756729Ab2CEQt2 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Mon, 5 Mar 2012 11:49:28 -0500
-Message-Id: <4F54FCA402000078000766F1@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 05 Mar 2012 16:49:24 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <akpm@linux-foundation.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] vsprintf: make %pV handling compatible with
- kasprintf()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756855Ab2CEQxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:53:39 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41335 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab2CEQxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:53:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 08:40:43 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        konrad.wilk@oracle.com, yinghai@kernel.org, tglx@linutronix.de,
+        joe.jin@oracle.com, hpa@zytor.com
+Subject: Re: =?utf-8?B?562U5aSNOiBbUEFUQ0hdIEluaXRp?= =?utf-8?Q?alize?=
+ max_pfn_mapped as initial ident mapping size for x86_64
+Message-ID: <20120305164043.GB2459@kroah.com>
+References: <d493264b-7da0-41bd-b0bc-219b1a180f10@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <d493264b-7da0-41bd-b0bc-219b1a180f10@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kasprintf() (and potentially other functions that I didn't run across
-so far) want to evaluate argument lists twice. Caring to do so for the
-primary list is obviously their job, but they can't reasonably be
-expected to check the format string for instances of %pV, which however
-need special handling too: On architectures like x86-64 (as opposed to
-e.g. ix86), using the same argument list twice doesn't produce the
-expected results, as an internally managed cursor gets updated during
-the first run.
+On Sun, Mar 04, 2012 at 11:49:31PM -0800, Zhenzhong Duan wrote:
+> 
+> ----- zhenzhong.duan@oracle.com 写道：
 
-Fix the problem by always acting on a copy of the original list when
-handling %pV.
+<snip>
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+<formletter>
 
----
- lib/vsprintf.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
---- 3.3-rc6/lib/vsprintf.c
-+++ 3.3-rc6-kasprintf-pV/lib/vsprintf.c
-@@ -891,9 +891,15 @@ char *pointer(const char *fmt, char *buf
- 	case 'U':
- 		return uuid_string(buf, end, ptr, spec, fmt);
- 	case 'V':
--		return buf + vsnprintf(buf, end > buf ? end - buf : 0,
--				       ((struct va_format *)ptr)->fmt,
--				       *(((struct va_format *)ptr)->va));
-+		{
-+			va_list va;
-+
-+			va_copy(va, *((struct va_format *)ptr)->va);
-+			buf += vsnprintf(buf, end > buf ? end - buf : 0,
-+					 ((struct va_format *)ptr)->fmt, va);
-+			va_end(va);
-+			return buf;
-+		}
- 	case 'K':
- 		/*
- 		 * %pK cannot be used in IRQ context because its test
-
-
-
+</formletter>
