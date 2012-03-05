@@ -1,167 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab2CEWPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:15:39 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56923 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab2CEWPi convert rfc822-to-8bit (ORCPT
+	id S1757161Ab2CEWQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:16:23 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:49641 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab2CEWQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:15:38 -0500
-Date: Mon, 05 Mar 2012 17:15:32 -0500 (EST)
-Message-Id: <20120305.171532.1094926884019491898.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 05 Mar 2012 14:15:35 -0800 (PST)
+	Mon, 5 Mar 2012 17:16:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.216.4 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 14:15:28 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+Message-ID: <20120305221528.GA11935@kroah.com>
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+ <20120305214747.GA9425@kroah.com>
+ <CACxGe6samH6-o9Ye7h7Wpj8GztxvFpWDgcEvtx2ey+YRGYm_9g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6samH6-o9Ye7h7Wpj8GztxvFpWDgcEvtx2ey+YRGYm_9g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 05, 2012 at 03:09:27PM -0700, Grant Likely wrote:
+> On Mon, Mar 5, 2012 at 2:47 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
+> >> --- a/include/linux/device.h
+> >> +++ b/include/linux/device.h
+> >> @@ -587,6 +587,10 @@ struct device_dma_parameters {
+> >>   * @mutex:   Mutex to synchronize calls to its driver.
+> >>   * @bus:     Type of bus device is on.
+> >>   * @driver:  Which driver has allocated this
+> >> + * @deferred_probe: entry in deferred_probe_list which is used to retry the
+> >> + *           binding of drivers which were unable to get all the resources
+> >> + *           needed by the device; typically because it depends on another
+> >> + *           driver getting probed first.
+> >>   * @platform_data: Platform data specific to the device.
+> >>   *           Example: For devices on custom boards, as typical of embedded
+> >>   *           and SOC based hardware, Linux often uses platform_data to point
+> >> @@ -646,6 +650,7 @@ struct device {
+> >>       struct bus_type *bus;           /* type of bus device is on */
+> >>       struct device_driver *driver;   /* which driver has allocated this
+> >>                                          device */
+> >> +     struct list_head        deferred_probe;
+> >>       void            *platform_data; /* Platform specific data, device
+> >>                                          core doesn't touch it */
+> >>       struct dev_pm_info      power;
+> >
+> > This can go into the "struct device_private" structure instead, right?
+> > That would be better to ensure that no non-driver-core code ever touches
+> > this thing.
+> 
+> I don't see any reason why not.  I'll make the change and repost.
 
-1) TCP SACK processing can calculate an incorrect reordering value in
-   some cases, fix from Neal Cardwell.
+If you are going to repost, care to fix up your multi-line comment
+blocks to follow the "standard" way of doing it?
 
-2) tcp_mark_head_lost() can split SKBs in situations where it should
-   not, violating send queue invariants expected by other pieces of
-   code and thus resulting (eventually) in corrupted retransmit state
-   counters.  Also from Neal Cardwell.
+That saves me doing the follow-on patch to do it myself :)
 
-3) qla3xxx erroneously calls spin_lock_irqrestore() with constant
-   hw_flags of zero.  Fix from Santosh Nayak.
+thanks,
 
-4) Fix NULL deref in rt2x00, from Gabor Juhos.
-
-5) pch_gbe passes address of wrong typed object to pch_gbe_validate_option
-   thus corrupting part of the value.  From Dan Carpenter.
-
-6) We must check the return value of nlmsg_parse() before trying to use
-   the results.  From Eric Dumazet.
-
-7) Bridging code fails to check return value of ipv6_dev_get_saddr() thus
-   potentially leaving uninitialized garbage in the outgoing ipv6 header.
-   From Ulrich Weber.
-
-8) Due to rounding and a reversed operation on jiffies, bridge message
-   ages can go backwards instead of forwards, thus breaking STP.  Fixes
-   from Joakim Tjernlund.
-
-9) r8169 modifies Config* registers without properly holding the
-   Config9346 lock, resulting in corrupted IP fragments on some chips.
-   Fix from Francois Romieu.
-
-10) NET_PACKET_ENGINE default wan't set properly during the network
-    driver mega-move.  Fix from Stephen Hemminger.
-
-11) vmxnet3 uses TCP header size where it actually should use the UDP
-    header size, fix from Shreyas Bhatewara.
-
-12) Netfilter bridge module autoload is busted in the compat case, fix from
-    Florian Westphal.
-
-13) Wireless Key removal was not setting multicast bits correctly thus
-    accidently killing the unicast key 0 and thus all traffic stops.
-    Fix from Johannes Berg.
-
-14) Fix endless retries of A-MPDU transmissions in brcm80211 driver.
-
-Please pull, thanks a lot!
-
-The following changes since commit 550cf00dbc8ee402bef71628cb71246493dd4500:
-
-  Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2012-03-05 08:51:10 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Arend van Spriel (2):
-      brcm80211: smac: fix endless retry of A-MPDU transmissions
-      brcm80211: smac: only print block-ack timeout message at trace level
-
-Dan Carpenter (2):
-      pch_gbe: memory corruption calling pch_gbe_validate_option()
-      enic: fix an endian bug in enic_probe()
-
-David S. Miller (1):
-      Merge branch 'master' of git://1984.lsi.us.es/net
-
-Eric Dumazet (1):
-      rtnetlink: fix rtnl_calcit() and rtnl_dump_ifinfo()
-
-Felix Fietkau (1):
-      ath9k_hw: prevent writes to const data on AR9160
-
-Florian Westphal (1):
-      netfilter: bridge: fix module autoload in compat case
-
-Gabor Juhos (1):
-      rt2x00: fix a possible NULL pointer dereference
-
-Joakim Tjernlund (2):
-      bridge: Adjust min age inc for HZ > 256
-      bridge: message age needs to increase, not decrease.
-
-Johannes Berg (1):
-      iwlwifi: fix key removal
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Matt Carlson (1):
-      tg3: Fix tg3_get_stats64 for 5700 / 5701 devs
-
-Mohammed Shafi Shajakhan (2):
-      mac80211: zero initialize count field in ieee80211_tx_rate
-      mac80211: Fix a warning on changing to monitor mode from STA
-
-Neal Cardwell (3):
-      tcp: fix comment for tp->highest_sack
-      tcp: fix false reordering signal in tcp_shifted_skb
-      tcp: don't fragment SACKed skbs in tcp_mark_head_lost()
-
-Santosh Nayak (1):
-      qla3xxx: ethernet: Fix bogus interrupt state flag.
-
-Shreyas Bhatewara (1):
-      vmxnet3: Fix transport header size
-
-Ulrich Weber (1):
-      bridge: check return value of ipv6_dev_get_saddr()
-
-françois romieu (1):
-      r8169: corrupted IP fragments fix for large mtu.
-
-stephen hemminger (1):
-      packetengines: fix config default
-
- drivers/net/ethernet/broadcom/tg3.c                |   45 ++++++++++----------
- drivers/net/ethernet/cisco/enic/enic.h             |    2 +-
- drivers/net/ethernet/cisco/enic/enic_main.c        |    2 +-
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c  |   15 ++++---
- drivers/net/ethernet/packetengines/Kconfig         |    1 +
- drivers/net/ethernet/qlogic/qla3xxx.c              |    5 +-
- drivers/net/ethernet/realtek/r8169.c               |    8 ++++
- drivers/net/vmxnet3/vmxnet3_drv.c                  |    7 +---
- drivers/net/vmxnet3/vmxnet3_int.h                  |    4 +-
- drivers/net/wireless/ath/ath9k/ar5008_phy.c        |   25 +----------
- drivers/net/wireless/ath/ath9k/ar9002_hw.c         |   19 ++++++++
- drivers/net/wireless/ath/ath9k/hw.h                |    1 -
- drivers/net/wireless/brcm80211/brcmsmac/ampdu.c    |   12 ++----
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |   10 ++++-
- drivers/net/wireless/rt2x00/rt2x00dev.c            |    3 +-
- include/linux/tcp.h                                |    3 +-
- include/net/tcp.h                                  |    5 +-
- net/bridge/br_multicast.c                          |    7 ++-
- net/bridge/br_stp.c                                |    6 +-
- net/bridge/netfilter/ebtables.c                    |   10 +----
- net/core/rtnetlink.c                               |   18 ++++----
- net/ipv4/tcp_input.c                               |   19 +++++----
- net/mac80211/iface.c                               |    3 +
- net/mac80211/rate.c                                |    2 +-
- 24 files changed, 122 insertions(+), 110 deletions(-)
+greg k-h
