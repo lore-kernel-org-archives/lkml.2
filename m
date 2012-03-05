@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2CEVqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:46:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38712 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab2CEVq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754546Ab2CEVqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:46:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754111Ab2CEVq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 16:46:29 -0500
-Date: Mon, 5 Mar 2012 15:46:22 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>,
-        ecryptfs@vger.kernel.org
-Subject: Re: Linus GIT (3.3.0-rc6+) -- INFO: possible circular locking
- dependency detected
-Message-ID: <20120305214621.GC29910@boyd>
-References: <CAHFgRy-V3ZFK6QrC2++Rvyi4e_f-03Xdr9sj4PUJORVq21GiEw@mail.gmail.com>
- <20120305132334.e3fc92cb.akpm@linux-foundation.org>
- <20120305213557.GO23916@ZenIV.linux.org.uk>
+Date: Mon, 5 Mar 2012 16:45:45 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
+        Vegard Nossum <vegardno@ifi.uio.no>, tony.luck@intel.com, bp@amd64.org,
+        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
+        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v2 x86 1/2]  fix page faults by nmiaction in nmi if
+ kmemcheck is enabled
+Message-ID: <20120305214545.GH3083@redhat.com>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+ <1329735648.2293.307.camel@twins>
+ <1329788560.3448.45.camel@ThinkPad-T61>
+ <1329819437.2293.382.camel@twins>
+ <1329990828.19165.36.camel@ThinkPad-T61>
+ <1330340324.11248.60.camel@twins>
+ <1330941917.24353.63.camel@ThinkPad-T61>
+ <1330969747.11248.250.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120305213557.GO23916@ZenIV.linux.org.uk>
+In-Reply-To: <1330969747.11248.250.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 05, 2012 at 06:49:07PM +0100, Peter Zijlstra wrote:
+> On Mon, 2012-03-05 at 18:05 +0800, Li Zhong wrote:
+> > +static struct nmiaction arch_trigger_all_cpu_bt_nmiaction = {
+> > +       .handler        = arch_trigger_all_cpu_backtrace_handler,
+> > +       .name           = "arch_bt",
+> > +};
+> > +
+> >  static int __init register_trigger_all_cpu_backtrace(void)
+> >  {
+> > -       register_nmi_handler(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler,
+> > -                               0, "arch_bt");
+> > +       register_nmi_handler(NMI_LOCAL, &arch_trigger_all_cpu_bt_nmiaction);
+> >         return 0;
+> >  } 
+> 
+> If you look at things like cpu_notifier() you can shorten this still:
+> 
+> #define nmi_notifier(t, fn, n)				\
+> do {							\
+> 	static struct nmiaction fn##_na = {		\
+> 		.handler = (fn),			\
+> 		.name = (n),				\
+> 	};						\
+> 	register_nmi_handler((t), &fn##_na);		\
+> } while (0)
+> 
+> The whole thing then becomes:
+> 
+>   nmi_notifier(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler, "arch_bt");
 
---s9fJI615cBHmzTOP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Li,
 
-On 2012-03-05 21:35:58, Al Viro wrote:
-> On Mon, Mar 05, 2012 at 01:23:34PM -0800, Andrew Morton wrote:
-> > mmap_sem nests inside i_mutex.
-> >=20
-> > On the path
-> >=20
-> > 	munmap
-> > 	->ecryptfs_vma_close
-> > 	  ->filemap_write_and_wait
-> > 	    ->generic_file_aio_write
-> >=20
-> > we're taking i_mutex inside mmap_sem.  So the problem is triggered by
-> > ecryptfs_vma_close() calling filemap_write_and_wait() inside munmap()'s
-> > mmap_sem.
-> >=20
-> > Question is: what did we recently change to cause this to happen?
->=20
-> AFAICS, it's commit 32001d6fe9ac6b0423e674a3093aa56740849f3b
-> Author: Tyler Hicks <tyhicks@canonical.com>
-> Date:   Mon Nov 21 17:31:29 2011 -0600
->=20
->     eCryptfs: Flush file in vma close
+I would be open to this suggestion.  If you want to modify the patch for
+this approach.
 
-Yes, it is definitely this commit. This is mainly what brought about my
-patch to fix the incorrect logic around lockdep_set_class() in
-lockdep_annotate_inode_mutex_key(). With that patch, I no longer saw
-these lockdep warnings, so I wrote it off. Al has since made it clear
-that this locking order is wrong.
-
-This should fix itself when I revert
-57db4e8d73ef2b5e94a3f412108dff2576670a8a. We'll no longer need this
-flush in vma_close(), so 32001d6fe9ac6b0423e674a3093aa56740849f3b will
-be reverted, too. I was planning on waiting until 3.4 to do all of that
-since it will be a somewhat big change (even though it is mainly
-reverting of patches).
-
-Tyler
-
---s9fJI615cBHmzTOP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJPVTQtAAoJENaSAD2qAscKaKAQAKgD+08pJ0NuSDt/AmXwNOaV
-zfF1LSFB/CBxXcTO79RgEaY/bnoIRPijjFrf4BE8m200MfgBRjXGAtBDlJknjd6U
-bSiDYmEirVpNVUfvfHVHHFBXDIkq0wP2YnlgLQ4uBO4Yk4VYg2d4yjuf6jw8ZExz
-LaQeNp13VG//sRnKi1puhnPcwOwGfnMpD9UhiqSZg5qTjq9vcGUVi1bsuPgrmKHE
-dZAHOzjagcpCMzJAJKvL4hcakPvAZP+MjBUKoEZdlnL+d6fviTWxtk0qFj24UgL9
-bajnSFKXCZrgfIeCJNRAzLGLOVGmKjjw2LRnq4oxlFxUSWPlvzzunWrXvphotBPE
-XmQ/xdOjD41ICOsjpSbmyfn8KTNufPyyeyYD9XZzwcn7D/b6F96NM8CZUg2bhttf
-mohRZnZrtYF+5NSSIpUvzPZsseTDouEor8b8YaQIw4qErigIHfzmQ2Kb0zeAK9be
-/kpePIWMYK9KBkityK74VMwPxEk5YdZGLEUo8YNbwMdtS/nrkb1UD62UuUqNyocZ
-VdYW7sST0P37nVzQu6IO8YHbs4yyLUBkvGeZKoVm02UPDeV5jy6mcMshOQ1UblWx
-3mBBWzi0C+LpF6aYD/ZNlMY23X+b9OPNn3/kVdTQl+K0fAog+ZAk51pErtBMLRzr
-20AJokvL2ll8rdjFIhiQ
-=jeX9
------END PGP SIGNATURE-----
-
---s9fJI615cBHmzTOP--
+Cheers,
+Don
