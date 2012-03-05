@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab2CEVOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:14:55 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:42462 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab2CEVOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:14:54 -0500
-Date: Mon, 5 Mar 2012 13:14:36 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] turn mm->exe_file into mm->exe_path
-Message-ID: <20120305211436.GM7666@count0.beaverton.ibm.com>
-References: <20120305152826.GA12419@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305152826.GA12419@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030521-6078-0000-0000-000008BC32A3
+	id S1753109Ab2CEVUw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:20:52 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:36095 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab2CEVUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 16:20:51 -0500
+From: Serge Hallyn <serge@hallyn.com>
+Reply-To: Serge Hallyn <serge@hallyn.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Subject: Re: [PATCH v12 07/13] seccomp: add SECCOMP_RET_ERRNO
+X-Mailer: Modest 3.2
+References: <1330559620-23543-1-git-send-email-wad@chromium.org>
+	 <1330559620-23543-7-git-send-email-wad@chromium.org>
+	 <20120302182455.GA11308@mail.hallyn.com>
+	  <CABqD9ha8o3JU0v0ZnKcsjqm8osjSiUfCyvc=vrxhDTHHuG_V4A@mail.gmail.com>
+In-Reply-To: <CABqD9ha8o3JU0v0ZnKcsjqm8osjSiUfCyvc=vrxhDTHHuG_V4A@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1330981987.1484.8.camel@Nokia-N900-51-1>
+Date: Mon, 05 Mar 2012 15:13:08 -0600
+Message-Id: <1330981988.1484.9.camel@Nokia-N900-51-1>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 04:28:26PM +0100, Oleg Nesterov wrote:
-> I think the patch is simple and self-explanatory, it simply
-> does s/mm->exe_file/mm->exe_path/.
+
+----- Original message -----
+> On Fri, Mar 2, 2012 at 12:24 PM, Serge E. Hallyn <serge@hallyn.com>
+> wrote:
+> > Quoting Will Drewry (wad@chromium.org):
+> > > This change adds the SECCOMP_RET_ERRNO as a valid return value from a
+> > > seccomp filter.  Additionally, it makes the first use of the lower
+> > > 16-bits for storing a filter-supplied errno.  16-bits is more than
+> > > enough for the errno-base.h calls.
+> > > 
+> > > Returning errors instead of immediately terminating processes that
+> > > violate seccomp policy allow for broader use of this functionality
+> > > for kernel attack surface reduction.  For example, a linux container
+> > > could maintain a whitelist of pre-existing system calls but drop
+> > > all new ones with errnos.  This would keep a logically static attack
+> > > surface while providing errnos that may allow for graceful failure
+> > > without the downside of do_exit() on a bad call.
+> > > 
+> > > v12: - move to WARN_ON if filter is NULL
+> > >        (oleg@redhat.com, luto@mit.edu, keescook@chromium.org)
+> > >      - return immediately for filter==NULL (keescook@chromium.org)
+> > >      - change evaluation to only compare the ACTION so that layered
+> > >        errnos don't result in the lowest one being returned.
+> > >        (keeschook@chromium.org)
+> > > v11: - check for NULL filter (keescook@chromium.org)
+> > > v10: - change loaders to fn
+> > >  v9: - n/a
+> > >  v8: - update Kconfig to note new need for syscall_set_return_value.
+> > >      - reordered such that TRAP behavior follows on later.
+> > >      - made the for loop a little less indent-y
+> > >  v7: - introduced
+> > > 
+> > > Reviewed-by: Kees Cook <keescook@chromium.org>
+> > > Signed-off-by: Will Drewry <wad@chromium.org>
+> > 
+> > Clever :)
+> > 
+> > Thanks, Will.
+> > 
+> > For patches 1-7,
+> > 
+> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 > 
-> Why do we need mm->exe_file? IIUC, there are 2 reasons:
+> Thanks!
 > 
-> 	1. we do not want O(n) proc/pid/exe looking for the 1st
-> 	   VM_EXECUTABLE vma.
-
-(Frankly this always seemed like a bit of a hack to me. If someone got
-creative with text layout then it could break this hack...)
-
+> > The -1 return value from __secure_computing_int() seems like it
+> > could stand  #define, like
+> > 
+> > #define SECCOMP_DONTRUN -1
+> > #define SECCOMP_RUN 0
+> > 
+> > or something Maybe not, but -1 always scares me and I had to look back
+> > and forth a few times to make sure it was doing what I would want.
 > 
-> 	2. we do not want to rely on vma->vm_file->f_path,
-> 	   bprm->file->f_op->mmap can change ->vm_file.
+> Works for me.   The -1 just matches what syscall emulation, etc does on
+> x86.   I'll add this to the tweaks for v14.
 > 
-> Unless there was another subtle reason, "struct path *exe_path"
-> can equally work but it looks more clear.
+> Thanks!
 
-PATCH 1/1 looks fine. I think Alexey Dobriyan was working on a similar
-patch years ago.
+Well, in that case maybe it's not worth it.  Sounds
+like ignorance on my part.
 
-> And can't we also remove added_exe_file_vma/removed_exe_file_vma?
-> Why do we need mm->num_exe_file_vmas? Afaics it is only needed to
-> "free" mm->exe_file if the application unmaps all these vmas. Say,
-> to allow to unmount fs.
-
-Yup. I know it's not pretty to have to track the exe file refs this way
-but I couldn't see any other way to keep a reference to the file (or
-path) and avoid pinning the mounted filesystem the exectuable is on.
-
-> Can't we simply add PR_CLEAR_MM_EXE_PATH instead? Of course it is
-> not enough if ->vm_file still has a reference. But c/r people want
-
-Relying solely on this prctl would break existing programs. I believe Al
-Viro's example was a program that copies its text to a new executable
-area, unmaps the original, performs a pivot_root(), and finally umounts
-the old root. Removing the counter would cause the mount to be pinned
-for these programs and the umount would fail.
-
-> PR_SET_MM_EXE_FILE anyway, see http://marc.info/?t=133052865500016
-> So perhaps we can add PR_SET_MM_EXE_PATH which accepts NULL as well
-> and kill this counter?
-> 
-> Oleg.
-
-Cheers,
-	-Matt Helsley
-
+thanks,
+-serge
