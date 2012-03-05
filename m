@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2CESMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 13:12:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756766Ab2CESMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 13:12:31 -0500
-Date: Mon, 5 Mar 2012 15:10:46 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH -v2] mm: SLAB Out-of-memory diagnostics
-Message-ID: <20120305181041.GA9829@x61.redhat.com>
+	id S1757364Ab2CESPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:15:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2580 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab2CESPk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:15:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 05 Mar 2012 10:15:08 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 5 Mar 2012 10:15:06 -0800
+Subject: RE: [PATCH V3 7/7] pinctrl: fix case of Tegra30's foo_groups[]
+ arrays
+Thread-Topic: [PATCH V3 7/7] pinctrl: fix case of Tegra30's foo_groups[]
+ arrays
+Thread-Index: Acz6u4FTH7xv6MtETka+pME5a2+EHQAQE2hg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BE861C5F@HQMAIL01.nvidia.com>
+References: <1330718750-15217-1-git-send-email-swarren@nvidia.com>
+	<1330718750-15217-8-git-send-email-swarren@nvidia.com>
+ <CACRpkdZY0d619UXcnXcq5_xJQdW9Y9M5gTPeVno2vDgSSucvqA@mail.gmail.com>
+In-Reply-To: <CACRpkdZY0d619UXcnXcq5_xJQdW9Y9M5gTPeVno2vDgSSucvqA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the example at mm/slub.c, add out-of-memory diagnostics to the
-SLAB allocator to help on debugging certain OOM conditions.
+Linus Walleij wrote at Monday, March 05, 2012 3:34 AM:
+> On Fri, Mar 2, 2012 at 9:05 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> > Tegra's pin groups all have lower-case names. Fix the foo_groups[] arrays
+> > in the driver to be lower-case to match.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> 
+> Applied this to my tegra-diet branch (the one with just the driver and
+> not board file changes).
+> 
+> Can I squash it with the patch that introduce the capitalized names
+> so as to avoid pointless churn?
 
-An example print out looks like this:
+Absolutely, thanks.
 
-  <snip page allocator out-of-memory message>
-  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-     cache: bio-0, object size: 192, order: 0
-     node0: slabs: 3/3, objs: 60/60, free: 0
+(I'd suggested doing just that in patch 0, but not in the patch itself)
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
--v2:
-* drop the sysctl knob to override __GFP_NOWARN allocation flag.
-
- mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 50 insertions(+), 1 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index f0bd785..4aeb5e7 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
- }
- __initcall(cpucache_init);
- 
-+static noinline void
-+slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-+{
-+	struct kmem_list3 *l3;
-+	struct slab *slabp;
-+	unsigned long flags;
-+	int node;
-+
-+	printk(KERN_WARNING
-+		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
-+		nodeid, gfpflags);
-+	printk(KERN_WARNING "   cache: %s, object size: %d, order: %d\n",
-+		cachep->name, cachep->buffer_size, cachep->gfporder);
-+
-+	for_each_online_node(node) {
-+		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
-+		unsigned long active_slabs = 0, num_slabs = 0;
-+
-+		l3 = cachep->nodelists[node];
-+		if (!l3)
-+			continue;
-+
-+		spin_lock_irqsave(&l3->list_lock, flags);
-+		list_for_each_entry(slabp, &l3->slabs_full, list) {
-+			active_objs += cachep->num;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_partial, list) {
-+			active_objs += slabp->inuse;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_free, list)
-+			num_slabs++;
-+
-+		free_objects += l3->free_objects;
-+		spin_unlock_irqrestore(&l3->list_lock, flags);
-+
-+		num_slabs += active_slabs;
-+		num_objs = num_slabs * cachep->num;
-+		printk(KERN_WARNING
-+			"   node%d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
-+			node, active_slabs, num_slabs, active_objs, num_objs,
-+			free_objects);
-+	}
-+}
-+
- /*
-  * Interface to system's page allocator. No need to hold the cache-lock.
-  *
-@@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 		flags |= __GFP_RECLAIMABLE;
- 
- 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
--	if (!page)
-+	if (!page) {
-+		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
-+			slab_out_of_memory(cachep, flags, nodeid);
- 		return NULL;
-+	}
- 
- 	nr_pages = (1 << cachep->gfporder);
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
 -- 
-1.7.7.6
+nvpublic
 
