@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab2CEF5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 00:57:22 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:48881 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab2CEF5V (ORCPT
+	id S1752473Ab2CEGAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:00:16 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59465 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab2CEGAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 00:57:21 -0500
-Date: Mon, 05 Mar 2012 00:57:09 -0500 (EST)
-Message-Id: <20120305.005709.1597475617000728984.davem@davemloft.net>
-To: tshimizu818@gmail.com
-Cc: jeffrey.t.kirsher@intel.com, lucas.demarchi@profusion.mobi,
-        mirq-linux@rere.qmqm.pl, paul.gortmaker@windriver.com,
-        toshiharu-linux@dsn.okisemi.com, jdmason@kudzu.us,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH] net/pch_gbe: supports eg20t ptp clock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
-References: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 5 Mar 2012 01:00:14 -0500
+Date: Mon, 5 Mar 2012 17:00:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shengzhou Liu <Shengzhou.Liu@freescale.com>
+Subject: linux-next: manual merge of the usb tree with the usb.current tree
+Message-Id: <20120305170004.9c81f2d148cc179f42a39ade@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 04 Mar 2012 21:57:14 -0800 (PST)
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So how the heck is this supposed to work?
+Hi Greg,
 
-You post a patch for the e20tp clock source, you don't CC: netdev.
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/host/ehci-fsl.h between commit 71919403dc86 ("Revert
+"powerpc/usb: fix issue of CPU halt when missing USB PHY clock"") from
+the usb.current tree and commit 28c56ea14314 ("powerpc/usb: fix bug of
+kernel hang when initializing usb") from the usb tree.
 
-Then you post this network driver patch which depends upon that on
-and you do CC: netdev.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-You've made it impossible for me to apply them both properly into my
-tree so that the dependency goes in.
+diff --cc drivers/usb/host/ehci-fsl.h
+index 4918062,863fb0c..0000000
+--- a/drivers/usb/host/ehci-fsl.h
++++ b/drivers/usb/host/ehci-fsl.h
+@@@ -45,5 -47,7 +47,6 @@@
+  #define FSL_SOC_USB_PRICTRL	0x40c	/* NOTE: big-endian */
+  #define FSL_SOC_USB_SICTRL	0x410	/* NOTE: big-endian */
+  #define FSL_SOC_USB_CTRL	0x500	/* NOTE: big-endian */
++ #define CTRL_UTMI_PHY_EN	(1<<9)
+ -#define CTRL_PHY_CLK_VALID	(1 << 17)
+  #define SNOOP_SIZE_2GB		0x1e
+  #endif				/* _EHCI_FSL_H */
+
+--Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPVFZkAAoJEECxmPOUX5FEXtQP/3zMdpj+iFWTW1JoMrqpFBml
+lAIsQRanvuMHl33UhmuUY5Ahs92s4o3A+FQp9u69hoYDaFVMyPIs9OFd0zn2Cp5S
+WiiO9oYpOHsmqvIjnvYftE4tTRfmp9sEsLcteoztc1aP814mfiQ8uJSEbVMhD0MQ
+YmRQ09n29UrPerd03nm60/peRPjRMa4w7wWJvgd+xTPzSgHL/ptpt37cg2BY0xb/
+Fuhwwqop+RaabDYtCpatqFGIci2nX4dMH8znACX+uILFoPI9i3clsnUs4fmntDta
+e1POgZNv2g1UEKpBtFG8Yy58ngrxl/F34YJT8wchng3euiaHpU/FI2i0Tzz2PLbI
+pyWlH+OKlb4G375VwnNsVyPgamx3s/p+dbKtcRPd8Kpn/CYu+6fn0KiYayzN7Z3O
+D7qB1889pHq1MZBEzRolxkT+6ZsLFnKyJm+RsuP6iYPsbRev++oXY7WiCLoAmsJl
+S3Cd2GXDAWWtgK7fd6hpVgX9ox9vfx+zimr2i2wABxAROcdlgU+kN8pkSN8VIxgi
+LzW9iXtFoAm5mLyv3Oc2JcquTGQo8S+I7bNA4v7ZA+bkhzD3tu39O43R8e5PGseI
+w2y3PSZikHMSDRUJe8oL4+9hMcWLXcCZrNS61qzDuMbWZJ5/fy3gnGFHxnSUKGlh
+8afnslauY0UT1s7ZTL1F
+=37xw
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Mar_2012_17_00_04_+1100_t6oueHIWL9finWWS--
