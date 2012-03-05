@@ -1,88 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2CEAcD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 19:32:03 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:47669 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab2CEAcB (ORCPT
+	id S1755454Ab2CEAeY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 19:34:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:50075 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2CEAeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 19:32:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.14.99.204 as permitted sender) smtp.mail=mturquette@ti.com
-MIME-Version: 1.0
-In-Reply-To: <20120304203359.GE11546@lunn.ch>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-5-git-send-email-mturquette@linaro.org> <20120304203359.GE11546@lunn.ch>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Sun, 4 Mar 2012 16:31:31 -0800
-Message-ID: <CAJOA=zNcyvfEmYtbSKFwyLniFbOnQvG4YPb9wbh1ajNATGoPsQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: Fix compile errors in DEFINE_CLK_GATE
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 4 Mar 2012 19:34:22 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: linux-arch@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [RFC PATCH 0/2] audit of linux/device.h users in include/*
+Date: Sun,  4 Mar 2012 19:34:15 -0500
+Message-Id: <1330907657-2156-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q250W9vG028704
 
-On Sun, Mar 4, 2012 at 12:33 PM, Andrew Lunn <andrew@lunn.ch> wrote:
-> From 71e9a676b2b2f0dc2bb0cc395e8325cf38f4808b Mon Sep 17 00:00:00 2001
-> From: Andrew Lunn <andrew@lunn.ch>
-> Date: Sun, 4 Mar 2012 16:31:14 +0100
-> Subject: [PATCH] [clk] Fix compile errors in DEFINE_CLK_GATE()
->
-> Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Nearly every subsystem has some kind of header with a proto like:
 
-Thanks Andrew.  Will roll this fix in.
+	void foo(struct device *dev);
 
-Regards,
-Mike
+and yet there is no reason for most of these guys to care about the
+sub fields within the device struct.  This allows us to significantly
+reduce the scope of headers including headers.  For this instance, a
+reduction of about 40% is achieved by replacing the include with the
+simple fact that the device is some kind of a struct.
 
-> ---
->  include/linux/clk-private.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-> index d06e6fb..9d5c4b1 100644
-> --- a/include/linux/clk-private.h
-> +++ b/include/linux/clk-private.h
-> @@ -95,7 +95,7 @@ extern struct clk_ops clk_gate_ops;
->                },                                              \
->                .reg = _reg,                                    \
->                .bit_idx = _bit_idx,                            \
-> -               .flags = _gate_flags                            \
-> +               .flags = _gate_flags,                           \
->                .lock = _lock,                                  \
->        };                                                      \
->        static struct clk _name = {                             \
-> @@ -104,7 +104,7 @@ extern struct clk_ops clk_gate_ops;
->                .hw = &_name##_hw.hw,                           \
->                .parent_names = _name##_parent_names,           \
->                .num_parents =                                  \
-> -                       ARRAY_SIZE(_name##parent_names),        \
-> +                       ARRAY_SIZE(_name##_parent_names),       \
->                .parents = _name##_parents,                     \
->                .flags = _flags,                                \
->        };
-> --
-> 1.7.2.5
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Unlike the much larger module.h cleanup, this one is simply two
+commits.  One to fix the implicit <linux/device.h> users, and then
+one to delete the device.h includes from the linux/include/ dir
+wherever possible.  The assumption is that this cleanup will not
+go in through subsystem maintainers in a fragmented fashion, but
+instead be pulled as a whole.
+
+Paul.
+---
+
+Paul Gortmaker (2):
+  device.h: cleanup users outside of linux/include (C files)
+  device.h: audit and cleanup users in main include dir
+
+ drivers/base/power/clock_ops.c        |    1 +
+ drivers/base/power/common.c           |    1 +
+ drivers/base/power/opp.c              |    1 +
+ drivers/base/regmap/regcache-lzo.c    |    1 +
+ drivers/base/regmap/regcache-rbtree.c |    1 +
+ drivers/base/regmap/regcache.c        |    1 +
+ drivers/base/regmap/regmap-debugfs.c  |    1 +
+ drivers/base/regmap/regmap-irq.c      |    1 +
+ drivers/edac/edac_stub.c              |    1 +
+ drivers/edac/mce_amd_inj.c            |    1 +
+ drivers/mfd/wm8994-regmap.c           |    1 +
+ drivers/power/apm_power.c             |    1 +
+ drivers/power/power_supply.h          |    4 ++++
+ drivers/power/power_supply_leds.c     |    1 +
+ drivers/power/power_supply_sysfs.c    |    1 +
+ include/linux/amba/pl022.h            |    2 --
+ include/linux/atmdev.h                |    2 +-
+ include/linux/attribute_container.h   |    3 ++-
+ include/linux/c2port.h                |    3 ++-
+ include/linux/cdrom.h                 |    1 -
+ include/linux/cpu.h                   |    3 ++-
+ include/linux/cpufreq.h               |    1 -
+ include/linux/crash_dump.h            |    1 -
+ include/linux/dma-buf.h               |    2 +-
+ include/linux/edac.h                  |    6 +++++-
+ include/linux/fb.h                    |    1 -
+ include/linux/firewire.h              |    3 ++-
+ include/linux/hwmon-sysfs.h           |    2 ++
+ include/linux/hwmon.h                 |    2 +-
+ include/linux/hwspinlock.h            |    2 +-
+ include/linux/ide.h                   |    3 ++-
+ include/linux/ipmi.h                  |    2 +-
+ include/linux/ipmi_smi.h              |    3 ++-
+ include/linux/jz4740-adc.h            |    2 +-
+ include/linux/maple.h                 |    2 +-
+ include/linux/mfd/abx500.h            |    3 ++-
+ include/linux/mfd/abx500/ab5500.h     |    2 +-
+ include/linux/mfd/abx500/ab8500.h     |    4 +++-
+ include/linux/mfd/pm8xxx/pm8921.h     |    1 -
+ include/linux/mfd/stmpe.h             |    4 +++-
+ include/linux/mfd/tc3589x.h           |    2 +-
+ include/linux/mlx4/driver.h           |    1 -
+ include/linux/mmc/card.h              |    1 +
+ include/linux/mmc/core.h              |    1 -
+ include/linux/mmc/host.h              |    1 +
+ include/linux/netdevice.h             |    2 +-
+ include/linux/of_device.h             |    3 ++-
+ include/linux/opp.h                   |    1 +
+ include/linux/phy.h                   |    5 +++--
+ include/linux/pm_domain.h             |    2 ++
+ include/linux/power_supply.h          |    3 ++-
+ include/linux/regmap.h                |    2 +-
+ include/linux/regulator/consumer.h    |    3 ++-
+ include/linux/rfkill.h                |    2 +-
+ include/linux/rio_drv.h               |    1 -
+ include/linux/serial_pnx8xxx.h        |    1 -
+ include/linux/spi/mmc_spi.h           |    2 +-
+ include/linux/wimax/debug.h           |    2 +-
+ include/media/media-device.h          |    3 ++-
+ include/media/v4l2-ctrls.h            |    1 -
+ include/media/v4l2-ioctl.h            |    1 -
+ include/net/mac80211.h                |    3 ++-
+ include/scsi/scsi_device.h            |    2 +-
+ include/sound/core.h                  |    5 ++---
+ include/sound/soc-dapm.h              |    3 ++-
+ include/trace/events/regmap.h         |    2 +-
+ include/trace/events/rpm.h            |    3 ++-
+ include/trace/events/writeback.h      |    1 -
+ net/rfkill/core.c                     |    1 +
+ sound/core/init.c                     |    1 +
+ sound/core/pcm.c                      |    1 +
+ sound/core/seq/seq.c                  |    1 +
+ sound/core/timer.c                    |    1 +
+ 73 files changed, 90 insertions(+), 52 deletions(-)
+
+-- 
+1.7.9.1
+
