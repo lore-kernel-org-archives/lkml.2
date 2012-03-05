@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2CEQD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:03:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60105 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab2CEQBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:01:40 -0500
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>, Alex Elder <elder@kernel.org>,
-        Anton Altaparmakov <anton@tuxera.com>, Ben Myers <bpm@sgi.com>,
-        Chris Mason <chris.mason@oracle.com>, cluster-devel@redhat.com,
-        "David S. Miller" <davem@davemloft.net>,
-        fuse-devel@lists.sourceforge.net,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-nilfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, Mark Fasheh <mfasheh@suse.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, ocfs2-devel@oss.oracle.com,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, xfs@oss.sgi.com
-Subject: [PATCH 00/19] Fix filesystem freezing deadlocks
-Date: Mon,  5 Mar 2012 17:00:58 +0100
-Message-Id: <1330963277-26336-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1755296Ab2CEQEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:04:42 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:54588 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755024Ab2CEQEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:04:39 -0500
+Date: Mon, 5 Mar 2012 11:04:38 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [linux-pm] 3.3-rc6: Reported regressions from 3.2
+In-Reply-To: <FNlNbnGKWLP.A.dME.3F9UPB@chimera>
+Message-ID: <Pine.LNX.4.44L0.1203051056560.1847-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hallelujah,
+On Sun, 4 Mar 2012, Rafael J. Wysocki wrote:
 
-  after a couple of weeks and several rewrites, here comes the third iteration
-of my patches to improve filesystem freezing.  Filesystem freezing is currently
-racy and thus we can end up with dirty data on frozen filesystem (see changelog
-patch 06 for detailed race description). This patch series aims at fixing this.
+> Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42683
+> Subject		: WARN... Device 'cpu1' does not have a release() function, it is broken and must be fixed. when doing 'xl vcpu-set <guest_id> 1'
+> Submitter	: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date		: 2012-01-23 18:06 (42 days old)
+> Message-ID	: <20120123180601.GA24553@phenom.dumpdata.com>
+> References	: http://marc.info/?l=linux-kernel&m=132734233916154&w=2
 
-To be able to block all places where inodes get dirtied, I've moved filesystem
-freeze handling in mnt_want_write() / mnt_drop_write(). This however required
-some code shuffling and changes to kern_path_create() (see patches 02-05). I
-think the result is OK but opinions may differ ;). The advantage of this change
-also is that all filesystems get freeze protection almost for free - even ext2
-can handle freezing well now.
+This has been fixed by commits 2885e25c422fb68208f677f944a45fce8eda2a3c
+and 29bb5d4fd3140a7d5d02d858118c74a45f15c296, plus probably one more
+that I can't identify.
 
-Another potential contention point might be patch 19. In that patch we make
-freeze_super() refuse to freeze the filesystem when there are open but unlinked
-files which may be impractical in some cases. The main reason for this is the
-problem with handling of file deletion from fput() called with mmap_sem held
-(e.g. from munmap(2)), and then there's the fact that we cannot really force
-such filesystem into a consistent state... But if people think that freezing
-with open but unlinked files should happen, then I have some possible
-solutions in mind (maybe as a separate patchset since this is large enough).
+Alan Stern
 
-I'm not able to hit any deadlocks, lockdep warnings, or dirty data on frozen
-filesystem despite beating it with fsstress and bash-shared-mapping while
-freezing and unfreezing for several hours (using ext4 and xfs) so I'm
-reasonably confident this could finally be the right solution.
-
-And for people wanting to test - this patchset is based on patch series
-"Push file_update_time() into .page_mkwrite" so you'll need to pull that one
-in as well.
-
-Changes since v2:
-  * completely rewritten
-  * freezing is now blocked at VFS entry points
-  * two stage freezing to handle both mmapped writes and other IO
-
-The biggest changes since v1:
-  * have two counters to provide safe state transitions for SB_FREEZE_WRITE
-    and SB_FREEZE_TRANS states
-  * use percpu counters instead of own percpu structure
-  * added documentation fixes from the old fs freezing series
-  * converted XFS to use SB_FREEZE_TRANS counter instead of its private
-    m_active_trans counter
-
-								Honza
-
-CC: Alex Elder <elder@kernel.org>
-CC: Anton Altaparmakov <anton@tuxera.com>
-CC: Ben Myers <bpm@sgi.com>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: cluster-devel@redhat.com
-CC: "David S. Miller" <davem@davemloft.net>
-CC: fuse-devel@lists.sourceforge.net
-CC: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Joel Becker <jlbec@evilplan.org>
-CC: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-CC: linux-btrfs@vger.kernel.org
-CC: linux-ext4@vger.kernel.org
-CC: linux-nfs@vger.kernel.org
-CC: linux-nilfs@vger.kernel.org
-CC: linux-ntfs-dev@lists.sourceforge.net
-CC: Mark Fasheh <mfasheh@suse.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>
-CC: ocfs2-devel@oss.oracle.com
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-CC: Steven Whitehouse <swhiteho@redhat.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: xfs@oss.sgi.com
