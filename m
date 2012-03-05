@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab2CEU2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 15:28:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62099 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932461Ab2CEU2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 15:28:54 -0500
-Date: Mon, 5 Mar 2012 15:28:46 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Dave Jones <davej@redhat.com>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: WARNING: Adjusting tsc more then 11%
-Message-ID: <20120305202845.GD17489@zod.bos.redhat.com>
-References: <20120305154411.GA29668@redhat.com>
- <1330972323.2191.74.camel@work-vm>
- <20120305192338.GA30491@redhat.com>
- <1330977010.2191.84.camel@work-vm>
- <20120305195619.GB17489@zod.bos.redhat.com>
- <1330979077.2191.96.camel@work-vm>
+	id S932411Ab2CEUam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 15:30:42 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40078 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757496Ab2CEUal convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 15:30:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.102.129 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330979077.2191.96.camel@work-vm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120305064029.GK23916@ZenIV.linux.org.uk>
+References: <20120305063707.GH23916@ZenIV.linux.org.uk> <20120305064029.GK23916@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 5 Mar 2012 12:30:19 -0800
+X-Google-Sender-Auth: rwW0aUjGGne2jx0q1pcte10-qXE
+Message-ID: <CA+55aFwQtEPGwK-W8H3Fa0EZUOV057kj_xhUXONZRcyeZtSt3Q@mail.gmail.com>
+Subject: Re: [PATCH 3/3] flush_tlb_range() needs ->page_table_lock when
+ ->mmap_sem is not held
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 12:24:37PM -0800, John Stultz wrote:
-> > > Ok. Well, just to level set: the warning is informative, and points to
-> > > unexpected, but not necessarily unsafe behavior.
-> > > 
-> > > In fact, the risk (where mult is adjusted to be large enough to cause an
-> > > overflow) we're warning about have been present 2.6.36 or even possibly
-> > > before. The change in 3.2 which added the warning also added a more
-> > > conservative mult calculation, so we're less likely to get overflow
-> > > prone large mult values.
-> > 
-> > Is there a reason you decided to use a WARN_ONCE, which dumps a full stack
-> > trace, instead of just printk(KERN_ERR ?
-> 
-> Well, the WARN_ONCE behavior is really nice, since just a printk would
-> end up possibly filling the logs, since you might get one every tick.
+Is this safe? And why does it need it? Please add more explanations.
 
-We have printk_once too.
+                  Linus
 
-> > > So it would be great to get further feedback from folks who are seeing
-> > > this warning, so we can really hammer this out, but I don't want the
-> > > warning spooking anyone into thinking things are terribly broken.
-> > 
-> > Right... people see backtraces and start thinking "my kernel is broken."
-> > 
-> > I'm certainly not meaning to pick on you for this.  Lately it seems all
-> > the rage to throw WARN_ONs for all kinds of error paths and leave the user
-> > to figure out how screwed they are.
-> 
-> Its a trade-off, since we really do want to know if our code has been
-> pushed outside of its expected boundaries (either by unexpected hadware
-> behavior or by expectations being raised, like long nohz idle times), so
-> we have to get folks attention somewhat. The type of error reporting
-> Dave's managed to collect here is really great.
-
-It is, yes.  Do you know, aside from distro kernel maintainers, how many
-reports have you gotten from actual users directly?
-
-> But at the same time, I agree there has been a few cases where the code
-> is limited more narrowly then the reality of existing hardware, and we
-> end up with a constant stream of error messages that get waved off as
-> broken hardware.
-> 
-> There we need to either fix the code or drop the warnings, but I think
-> it gets hard when we really want to know about "unexpected behavior,
-> except on some wide swath of hardware that always acts poorly", where
-> conditionalizing the warnings isn't easy.
-
-Oh my.  Quirks in the timekeeping code would just give me nightmares ;).
-
-josh
+On Sun, Mar 4, 2012 at 10:40 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+>  mm/hugetlb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 5f34bd8..a876871 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2277,8 +2277,8 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+>                        set_page_dirty(page);
+>                list_add(&page->lru, &page_list);
+>        }
+> -       spin_unlock(&mm->page_table_lock);
+>        flush_tlb_range(vma, start, end);
+> +       spin_unlock(&mm->page_table_lock);
+>        mmu_notifier_invalidate_range_end(mm, start, end);
+>        list_for_each_entry_safe(page, tmp, &page_list, lru) {
+>                page_remove_rmap(page);
+> --
+> 1.7.2.5
+>
