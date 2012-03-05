@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab2CEL5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 06:57:52 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:24172 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422Ab2CEL5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 06:57:51 -0500
-Message-ID: <4F54AA3C.6010702@imgtec.com>
-Date: Mon, 5 Mar 2012 11:57:48 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S1756742Ab2CEMDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 07:03:10 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50158 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab2CEMDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 07:03:08 -0500
+Date: Mon, 5 Mar 2012 13:02:41 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
+Message-ID: <20120305120241.GA3627@osiris.boeblingen.de.ibm.com>
+References: <20120304180911.GA7336@kroah.com>
+ <4F54A46A.6000305@suse.cz>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND] [PATCH] media: ir-sony-decoder: 15bit function decode
- fix
-References: <4F4B6EC5.1070806@imgtec.com>
-In-Reply-To: <4F4B6EC5.1070806@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Mar 2012 11:57:48.0835 (UTC) FILETIME=[2F722F30:01CCFAC7]
-X-SEF-Processed: 7_3_0_01181__2012_03_05_11_57_49
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F54A46A.6000305@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12030512-4966-0000-0000-000001A6DBC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping
+On Mon, Mar 05, 2012 at 12:32:58PM +0100, Jiri Slaby wrote:
+> On 03/04/2012 07:09 PM, Greg KH wrote:
+> > I'm announcing the release of the 2.6.32.58 kernel.
+> ...
+> > Heiko Carstens (1): compat: fix compile breakage on s390
+> 
+> It's not that minimal it suggests. It removed asm/compat.h inclusion
+> from arch/s390/kernel/setup.c. This causes build failures on
+> !CONFIG_COMPAT:
+> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+> arch/s390/kernel/setup.c:382: error: 'PSW32_ASC_SECONDARY' undeclared
+> (first use in this function)
+> arch/s390/kernel/setup.c:382: error: (Each undeclared identifier is
+> reported only once
+> arch/s390/kernel/setup.c:382: error: for each function it appears in.)
+> arch/s390/kernel/setup.c:389: error: 'PSW32_ASC_PRIMARY' undeclared
+> (first use in this function)
 
-Another week's gone by with no response. It's a trivial patch, so can
-somebody please take a look at it? (or if I'm missing somebody relevant
-from CC, please add them)
+Ah, right. For kernels < 3.0 it is indeed necessary to include
+asm/compat.h in arch/s390/kernel/setup.c.
 
-Thanks
-James
+The need for that got eliminated with
+043d07084b5347a26eab0a07aa13a4a929ad9e71 "[S390] Remove data execution
+protection".
 
-On 27/02/12 11:53, James Hogan wrote:
-> The raw Sony IR decoder decodes 15bit messages slightly incorrectly.
-> To decode the function number, it shifts the bits right by 7 so that the
-> function is in bits 7:1, masks with 0xFD (0b11111101), and does an 8 bit
-> reverse so it ends up in bits 6:0. The mask should be 0xFE to correspond
-> with bits 7:1 (0b11111110).
+> Perhaps asm/compat.h should be included from linux/compat.h
+> unconditionally...
+
+If you do that you need to add #ifdef wrappers around the is_compat_task()
+definitions in each arch that supports CONFIG_COMPAT. If that's all that's
+needed that would be great!
+
+> > Linus Torvalds (2): Fix autofs compile without CONFIG_COMPAT
 > 
-> The old mask had the effect of dropping the MSB of the function number
-> from bit 6, and leaving the LSB of the device number in bit 7.
+> But who defines is_compat_task *with* CONFIG_COMPAT on ia64?
 > 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> ---
-> 
-> (note, i don't have a 15bit sony remote to test this with, but i'm
-> pretty confident of it's correctness based on this:
-> http://picprojects.org.uk/projects/sirc/sonysirc.pdf )
-> 
->  drivers/media/rc/ir-sony-decoder.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/media/rc/ir-sony-decoder.c b/drivers/media/rc/ir-sony-decoder.c
-> index d5e2b50..dab98b3 100644
-> --- a/drivers/media/rc/ir-sony-decoder.c
-> +++ b/drivers/media/rc/ir-sony-decoder.c
-> @@ -130,7 +130,7 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
->  		case 15:
->  			device    = bitrev8((data->bits >>  0) & 0xFF);
->  			subdevice = 0;
-> -			function  = bitrev8((data->bits >>  7) & 0xFD);
-> +			function  = bitrev8((data->bits >>  7) & 0xFE);
->  			break;
->  		case 20:
->  			device    = bitrev8((data->bits >>  5) & 0xF8);
+> fs/autofs4/inode.c: In function 'autofs4_fill_super':
+> fs/autofs4/inode.c:345: error: implicit declaration of function
+> 'is_compat_task'
+
+The ia64 compat code got entirely removed, since it was broken:
+
+32974ad4907cdde6c9de612cd1b2ee0568fb9409 "[IA64] Remove COMPAT_IA32 support"
 
