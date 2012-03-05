@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab2CEXf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:35:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42342 "EHLO
+	id S1757944Ab2CEXgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:36:10 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37920 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757788Ab2CEXf4 (ORCPT
+	with ESMTP id S1757904Ab2CEXf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:35:56 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.231.33 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 5 Mar 2012 15:35:25 -0800
+	Mon, 5 Mar 2012 18:35:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.221.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 15:35:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/serial patches for 3.3-rc6
-Message-ID: <20120305233525.GA18774@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB bug fixes for 3.3-rc6
+Message-ID: <20120305233550.GA18798@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,28 +23,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
+The following changes since commit 45196cee28a5bcfb6ddbe2bffa4270cbed66ae4b:
 
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
+  Merge tag 'usb-3.3-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2012-02-22 13:00:53 -0800)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tty-3.3-rc6
 
-for you to fetch changes up to f21c6d4a49179f91fd70a41382382f08c780d425:
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-3.3-rc6
 
-  tty/powerpc: early udbg consoles can't be modules (2012-02-24 16:11:50 -0800)
+for you to fetch changes up to 71919403dc86b40fafd9400738668f96679c551b:
+
+  Revert "powerpc/usb: fix issue of CPU halt when missing USB PHY clock" (2012-03-02 16:08:54 -0800)
 
 ----------------------------------------------------------------
-tty: build fix for 3.3-rc6
+USB: revert a powerpc EHCI patch
 
-This contains one build fix for the powerpc udbg driver that was reported.
+There is just one patch in here, a revert of a powerpc EHCI driver
+patch that was reported to cause problems.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Stephen Rothwell (1):
-      tty/powerpc: early udbg consoles can't be modules
+Greg Kroah-Hartman (1):
+      Revert "powerpc/usb: fix issue of CPU halt when missing USB PHY clock"
 
- drivers/tty/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/host/ehci-fsl.c |   11 ++---------
+ drivers/usb/host/ehci-fsl.h |    1 -
+ 2 files changed, 2 insertions(+), 10 deletions(-)
