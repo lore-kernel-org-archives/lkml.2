@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab2CESzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 13:55:23 -0500
-Received: from spaceboyz.net ([87.106.131.203]:33883 "EHLO spaceboyz.net"
+	id S932175Ab2CES5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:57:09 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:57674 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757336Ab2CESzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 13:55:22 -0500
-Date: Mon, 5 Mar 2012 19:55:03 +0100
-From: David Lamparter <equinox@diac24.net>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        ying.xue@windriver.com, luiz.dentz@gmail.com, eric.dumazet@gmail.com,
-        rodrigo.moya@collabora.co.uk, javier@collabora.co.uk,
-        lennart@poettering.net, kay.sievers@vrfy.org,
-        alban.crequy@collabora.co.uk, bart.cerneels@collabora.co.uk,
-        sjoerd.simons@collabora.co.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-Message-ID: <20120305185502.GF3119316@jupiter.n2.diac24.net>
-References: <CABBYNZJ-xxQXAx+ecrkVLqmWFaUVqLcQLj0Jxa3McSLnkLJSJw@mail.gmail.com>
- <20120301.170848.432407217191581288.davem@davemloft.net>
- <CABBYNZLwHKd5srzYYzWNL-iaeuH1K31824pY_bjRSbSLkv0QtA@mail.gmail.com>
- <20120302.035509.1994457175982020283.davem@davemloft.net>
- <4F509274.9060302@collabora.co.uk>
+	id S1755577Ab2CES5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:57:08 -0500
+Date: Mon, 5 Mar 2012 18:57:00 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm gma500 fix
+Message-ID: <alpine.DEB.2.00.1203051856130.31585@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F509274.9060302@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 02, 2012 at 10:27:16AM +0100, Javier Martinez Canillas wrote:
-> Do you think that a simpler AF_UNIX multicast implementation without the
-> locking to guarantee order delivery and the flow control that blocks the
-> sender can be resend to you to reconsider merging it?
 
-I still don't get how blocking the sender when the receiver doesn't
-empty his socket queue can possibly ever be a good idea. All I see is a
-very nice way to choke the entire D-Bus from one malicious or broken
-app.
+Hi,
 
-Note that originally we were talking about blocking delivery for
-_multicast_. In that case you can't even poll on writability on a
-granularity finer than group level.
+Just a single gma500 fix from Alan.
 
-Yet, this still comes up here and there as a requirement for IPC
-mechanisms to back D-Bus.
+Dave.
 
-When the buffers at the receiver are fully filled, IMHO that's the point
-to cut off the client. If this becomes an issue, the buffers can be
-increased in size, but at some point it's a sign that you're using D-Bus
-for too much?
+The following changes since commit a5939eefdcacd3ece57d56167a43bcc0d93733bf:
 
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6 (2012-03-04 17:10:06 -0800)
 
--David
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alan Cox (1):
+      drm/gma500: Fix Cedarview boot failures in 3.3-rc
+
+ drivers/gpu/drm/gma500/cdv_device.c  |    2 ++
+ drivers/gpu/drm/gma500/framebuffer.c |    1 -
+ drivers/gpu/drm/gma500/gtt.c         |    9 ++++-----
+ 3 files changed, 6 insertions(+), 6 deletions(-)
