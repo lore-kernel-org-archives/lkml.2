@@ -1,193 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2CEAMs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 19:12:48 -0500
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:33394 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755790Ab2CEAMr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 19:12:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.213.21.211 as permitted sender) smtp.mail=mturquette@ti.com
+	id S1756061Ab2CEAP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 19:15:29 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:42532 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753867Ab2CEAP2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 19:15:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.14.39.130 as permitted sender) smtp.mail=mturquette@ti.com
 MIME-Version: 1.0
-In-Reply-To: <20120304115201.GB26882@pengutronix.de>
+In-Reply-To: <20120304143502.GC11546@lunn.ch>
 References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de>
- <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com> <20120304115201.GB26882@pengutronix.de>
+ <1330763341-3437-5-git-send-email-mturquette@linaro.org> <20120304143502.GC11546@lunn.ch>
 From: "Turquette, Mike" <mturquette@ti.com>
-Date: Sun, 4 Mar 2012 16:12:21 -0800
-Message-ID: <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
-        linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
+Date: Sun, 4 Mar 2012 16:15:03 -0800
+Message-ID: <CAJOA=zM9Qo=V1He=HfL-6KaFV_Yai=KyC5hbca5iQ3uMO_pZzQ@mail.gmail.com>
+Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q250FYKY028648
 
-On Sun, Mar 4, 2012 at 3:52 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Sat, Mar 03, 2012 at 09:14:43AM -0800, Turquette, Mike wrote:
->> On Sat, Mar 3, 2012 at 5:31 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
->> > On Sat, Mar 03, 2012 at 12:29:00AM -0800, Mike Turquette wrote:
->> >> The common clock framework defines a common struct clk useful across
->> >> most platforms as well as an implementation of the clk api that drivers
->> >> can use safely for managing clocks.
->> >>
->> >> The net result is consolidation of many different struct clk definitions
->> >> and platform-specific clock framework implementations.
->> >>
->> >> This patch introduces the common struct clk, struct clk_ops and an
->> >> implementation of the well-known clock api in include/clk/clk.h.
->> >> Platforms may define their own hardware-specific clock structure and
->> >> their own clock operation callbacks, so long as it wraps an instance of
->> >> struct clk_hw.
->> >>
->> >> See Documentation/clk.txt for more details.
->> >>
->> >> This patch is based on the work of Jeremy Kerr, which in turn was based
->> >> on the work of Ben Herrenschmidt.
->> >>
->> >> +
->> >> +/**
->> >> + * struct clk_hw - handle for traversing from a struct clk to its corresponding
->> >> + * hardware-specific structure.  struct clk_hw should be declared within struct
->> >> + * clk_foo and then referenced by the struct clk instance that uses struct
->> >> + * clk_foo's clk_ops
->> >> + *
->> >> + * clk: pointer to the struct clk instance that points back to this struct
->> >> + * clk_hw instance
->> >> + */
->> >> +struct clk_hw {
->> >> +     struct clk *clk;
->> >> +};
->> >
->> > The reason for doing this is that struct clk should be an opaque cookie
->> > for both drivers and implementers of clocks. I recently had the idea whether
->> > the roles of these two structs could be swapped. So instead of the above we
->> > could do:
->> >
->> > struct clk {
->> >        struct clk_hw *hw;
->> > }
->>
->> Firstly, struct clk is an opaque cookie for both drivers and
->> implementers of clocks with this patchset.
->>
->> Secondly, struct clk does indeed have a pointer to struct clk_hw.
->> Refer to include/linux/clk-private.h in this patch.
->>
->> The reference is cyclical.  A reference to struct clk can navigate to
->> struct clk_foo via container_of (usually something like "#define
->> to_clk_foo(_hw) container_of(_hw, struct clk_foo, hw)" where struct
->> clk's pointer to it's .hw member is passed into one of the struct
->> clk_ops callbacks.
->>
->> Likewise if struct clk_foo needs the struct clk ptr for any reason
->> then it can get it from foo->hw->clk.
->>
->> I believe this patch already does what you suggest, but I might be
->> missing your point.
+On Sun, Mar 4, 2012 at 6:35 AM, Andrew Lunn <andrew@lunn.ch> wrote:
+>> +#define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,    \
+>> +                             _flags, _reg, _bit_idx,         \
+>> +                             _gate_flags, _lock)             \
+>> +     static struct clk _name;                                \
+>> +     static char *_name##_parent_names[] = {                 \
+>> +             _parent_name,                                   \
+>> +     };                                                      \
+>> +     static struct clk *_name##_parents[] = {                \
+>> +             _parent_ptr,                                    \
+>> +     };                                                      \
+>> +     static struct clk_gate _name##_hw = {                   \
+>> +             .hw = {                                         \
+>> +                     .clk = &_name,                          \
+>> +             },                                              \
+>> +             .reg = _reg,                                    \
+>> +             .bit_idx = _bit_idx,                            \
+>> +             .flags = _gate_flags                            \
+>> +             .lock = _lock,                                  \
+>> +     };                                                      \
+>> +     static struct clk _name = {                             \
+>> +             .name = #_name,                                 \
+>> +             .ops = &clk_gate_ops,                           \
+>> +             .hw = &_name##_hw.hw,                           \
+>> +             .parent_names = _name##_parent_names,           \
+>> +             .num_parents =                                  \
+>> +                     ARRAY_SIZE(_name##parent_names),        \
 >
-> In include/linux/clk-private.h you expose struct clk outside the core.
-> This has to be done to make static initializers possible. There is a big
-> warning in this file that it must not be included from files implementing
-> struct clk_ops. You can simply avoid this warning by declaring struct clk
-> with only a single member:
+> Hi Mike
 >
-> include/linux/clk.h:
+> This should be _name##_parent_names, i.e. you are missing a _.
 >
-> struct clk {
->        struct clk_internal *internal;
-> };
->
-> This way everybody knows struct clk (thus can embed it in their static
-> initializers), but doesn't know anything about the internal members. Now
-> in drivers/clk/clk.c you declare struct clk_internal exactly like struct
-> clk was declared before:
->
-> struct clk_internal {
->        const char              *name;
->        const struct clk_ops    *ops;
->        struct clk_hw           *hw;
->        struct clk              *parent;
->        char                    **parent_names;
->        struct clk              **parents;
->        u8                      num_parents;
->        unsigned long           rate;
->        unsigned long           flags;
->        unsigned int            enable_count;
->        unsigned int            prepare_count;
->        struct hlist_head       children;
->        struct hlist_node       child_node;
->        unsigned int            notifier_count;
-> #ifdef CONFIG_COMMON_CLK_DEBUG
->        struct dentry           *dentry;
-> #endif
-> };
->
-> An instance of struct clk_internal will be allocated in
-> __clk_init/clk_register. Now the private data stays completely inside
-> the core and noone can abuse it.
+> With this and the previous change, i get something which at least
+> compiles...
 
-Hi Sascha,
+The gate clock is the only type of the basic clocks that I do not
+(currently) use in my OMAP port and it's test coverage has suffered as
+a result.  My bad.
 
-I see the disconnect here.  For OMAP (and possibly other platforms) at
-least some clock data is necessary during early boot, before the
-regular allocation methods are available (timers for instance).  Due
-to this my idea of static initialization was to take care of
-everything that would normally require an allocator, which includes
-the internals of struct clk; thus exposing struct clk is useful here
-as you can still use the clock framework during very early boot.  Your
-method above doesn't satisfy this requirement.  I'm not sure what the
-purpose would be of statically allocating your version of struct clk,
-which will ultimately need to allocate memory for the clock internals
-anyways.  Can you elaborate the benefit of this approach over just
-using the clk_foo_register functions?
+Thanks for the review and the patch in the separate thread.  I'll take
+the changes in.
 
-Note that struct clk is still declared in clk.h (and clk-provider.h),
-so platforms that have struct clk *clk declarations won't have a
-problem.
-
-Thanks much,
+Regards,
 Mike
 
 >
-> With this __clk_init could be something like:
->
-> struct clk_initializer {
->        const char              *name;
->        const struct clk_ops    *ops;
->        char                    **parent_names;
->        u8                      num_parents;
->        unsigned long           flags;
->        struct clk              *clk;
-> };
->
-> void __clk_init(struct device *dev, struct clk_initializer *init);
->
-> I hope I made my intention a bit clearer.
->
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>        Andrew
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
