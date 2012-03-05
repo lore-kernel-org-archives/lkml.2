@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778Ab2CENko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 08:40:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50815 "EHLO mx2.suse.de"
+	id S932329Ab2CENuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 08:50:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44421 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932326Ab2CENkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 08:40:42 -0500
-Date: Mon, 5 Mar 2012 14:40:40 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1203051434520.23367@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932246Ab2CENuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 08:50:03 -0500
+Message-ID: <4F54C460.2030405@redhat.com>
+Date: Mon, 05 Mar 2012 08:49:20 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Satoru Moriya <satoru.moriya@hds.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        "shaohua.li@intel.com" <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [RFC][PATCH] avoid swapping out with swappiness==0
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 03/02/2012 12:36 PM, Satoru Moriya wrote:
+> Sometimes we'd like to avoid swapping out anonymous memory
+> in particular, avoid swapping out pages of important process or
+> process groups while there is a reasonable amount of pagecache
+> on RAM so that we can satisfy our customers' requirements.
+>
+> OTOH, we can control how aggressive the kernel will swap memory pages
+> with /proc/sys/vm/swappiness for global and
+> /sys/fs/cgroup/memory/memory.swappiness for each memcg.
+>
+> But with current reclaim implementation, the kernel may swap out
+> even if we set swappiness==0 and there is pagecache on RAM.
+>
+> This patch changes the behavior with swappiness==0. If we set
+> swappiness==0, the kernel does not swap out completely
+> (for global reclaim until the amount of free pages and filebacked
+> pages in a zone has been reduced to something very very small
+> (nr_free + nr_filebacked<  high watermark)).
+>
+> Any comments are welcome.
 
-please pull from
+My mind is now rested by doing a nice 10 mile hike :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git upstream-fixes
+> Signed-off-by: Satoru Moriya<satoru.moriya@hds.com>
 
-to receive updates for HID layer. Nikolai's patch is rather important and 
-should still go in for 3.3, as it's a regression fix for commit b4b583d. 
-
-Thanks.
-
-Alan Stern (1):
-      HID: usbhid: Add NOGET quirk for the AIREN Slim+ keyboard
-
-Nikolai Kondrashov (1):
-      HID: hid-input: allow array fields out of range
-
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/hid-input.c         |    9 +++++++--
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 3 files changed, 11 insertions(+), 2 deletions(-)
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Jiri Kosina
-SUSE Labs
+All rights reversed
