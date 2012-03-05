@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab2CEODs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:03:48 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42119 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932286Ab2CEODp (ORCPT
+	id S964916Ab2CEOD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:03:27 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34711 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932310Ab2CENxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 09:03:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.213.2.68 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
-Message-ID: <4F54C7BD.1020105@suse.cz>
-Date: Mon, 05 Mar 2012 15:03:41 +0100
+	Mon, 5 Mar 2012 08:53:15 -0500
 From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120222 Thunderbird/11.0
-MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oliver@neukum.name>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 01/68] USB: cdc-acm, use tty_standard_install
-References: <1330955575-26641-1-git-send-email-jslaby@suse.cz> <1330955575-26641-2-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1330955575-26641-2-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 61/68] TTY: amiserial, use tty_port_close_end
+Date: Mon,  5 Mar 2012 14:52:48 +0100
+Message-Id: <1330955575-26641-62-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
+References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgot to CC maintainers. Done now.
+Hmm, the code was sleeping with interrupts disabled. This was not
+good. Fix this by turning interrupts at an appropriate place. (The
+race is protected by CLOSING flag.)
 
-On 03/05/2012 02:51 PM, Jiri Slaby wrote:
-> This is a piece I missed the last time.
-> 
-> Do not copy the functionality all over the tree. Instead, use the
-> helper the tty layer provides us with.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> ---
->  drivers/usb/class/cdc-acm.c |    7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-> index 6dcc3a3..b3fd449 100644
-> --- a/drivers/usb/class/cdc-acm.c
-> +++ b/drivers/usb/class/cdc-acm.c
-> @@ -509,17 +509,12 @@ static int acm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
->  	if (!acm)
->  		return -ENODEV;
->  
-> -	retval = tty_init_termios(tty);
-> +	retval = tty_standard_install(driver, tty);
->  	if (retval)
->  		goto error_init_termios;
->  
->  	tty->driver_data = acm;
->  
-> -	/* Final install (we use the default method) */
-> -	tty_driver_kref_get(driver);
-> -	tty->count++;
-> -	driver->ttys[tty->index] = tty;
-> -
->  	return 0;
->  
->  error_init_termios:
+After the move, the code is identical to tty_port_close_end, so use
+it!
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/tty/amiserial.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+index 8cc8e15..9c8b199 100644
+--- a/drivers/tty/amiserial.c
++++ b/drivers/tty/amiserial.c
+@@ -1433,6 +1433,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 	 * the line discipline to only process XON/XOFF characters.
+ 	 */
+ 	tty->closing = 1;
++	local_irq_restore(flags);
+ 	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+ 		tty_wait_until_sent(tty, port->closing_wait);
+ 	/*
+@@ -1461,17 +1462,9 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
+ 	rs_flush_buffer(tty);
+ 		
+ 	tty_ldisc_flush(tty);
+-	tty->closing = 0;
+ 	port->tty = NULL;
+-	if (port->blocked_open) {
+-		if (port->close_delay) {
+-			msleep_interruptible(jiffies_to_msecs(port->close_delay));
+-		}
+-		wake_up_interruptible(&port->open_wait);
+-	}
+-	port->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
+-	wake_up_interruptible(&port->close_wait);
+-	local_irq_restore(flags);
++
++	tty_port_close_end(port, tty);
+ }
+ 
+ /*
 -- 
-js
-suse labs
+1.7.9.2
+
+
