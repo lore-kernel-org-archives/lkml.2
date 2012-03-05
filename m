@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab2CEXLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:11:32 -0500
-Received: from comms.econetmobile.co.zw ([217.74.236.106]:65379 "EHLO
-	econetmobile.co.zw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2CEXLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:11:31 -0500
-X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 18:11:29 EST
-From: joydabah2@yahoo.com
-Reply-to: joydabah2@yahoo.com
-Subject: Hello?
-X-Mailer: Quality Web Email v3.1s
-X-Originating-IP: 41.83.161.216
-Date: Mon, 05 Mar 2012 22:50:14 GMT
-Message-id: <4f554326.370.2ffd.28940@econetmobile.co.zw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-X-Authenticated-User: joy_2@econetmobile.co.zw 
-To: unlisted-recipients:; (no To-header on input)
+	id S1757746Ab2CEXUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:20:06 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757584Ab2CEXUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 18:20:03 -0500
+From: Richard Weinberger <richard@nod.at>
+To: pablo@netfilter.org
+Cc: jengelh@medozas.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: [PATCH v6] Netfilter ring buffer support
+Date: Tue,  6 Mar 2012 00:19:42 +0100
+Message-Id: <1330989588-26833-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello?
-I hope you are fine. I am pleased to recognize you. My name
-is Joy dabah from sudan. Interested me to be a relationship
-of friendship and true, The most important thing is honesty,
-sincerity and seriousness in the relationship. I am a girl
-believe in freedom. And enjoy life and I love all people . I
-am honest with myself and others. And I hate lying, fraud
-and tampering with and manipulating the feelings of others .
-I like intellectual debate with others and benefit from
-their knowledge, I wait your reply soon.
-love from joy.
+This patch set merges ipt_LOG and ip6t_LOG and adds ring buffer support
+to xt_LOG.
+
+Using "--ring" an user can create LOG rules which log messages into
+one or more ring buffers.
+Each ring buffer is represented as pipe-like file in
+/proc/net/netfilter/nf_log_ring/.
+
+Ring buffer support can be enabled/disabled using
+CONFIG_NETFILTER_XT_TARGET_LOG_RING.
+
+Changes since v1:
+ - Merged ipt_LOG and ip6t_LOG
+ - Implemented ring buffer support as part of xt_LOG.
+
+Changes since v2:
+ - Fixed struct xt_log_info_v1's data layout
+ - Removed the sizeof(void *) hack
+ - Replaced BUG() by WARN_ON_ONCE()
+
+Changes since v3:
+ - Merged xt_LOG_core.c and xt_LOG_ring.c into xt_LOG.c
+ - Made checkpatch.pl happy
+
+Changes since v4:
+ - Fixed a typo in include/linux/netfilter/Kbuild
+   (Thanks Bastian!)
+
+Changes since v5:
+ - Made timestamp support a separate patch
+ - Renamed xt_LOG_ring to nf_log_ring
+ - Removed unused prototypes from xt_log.h
+ - Renamed find_next_entry_inc() to find_next_iter_entry()
+ - Fixed OOM error path in rlog_open_pipe()
+
+Patch 1 and 2 have already been applied to net-next.git.
+
+[PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
+[PATCH 2/6] netfilter: xt_LOG: fix bogus extra layer-4 logging
+[PATCH 3/6] ring_buffer: Export for_each_buffer_cpu()
+[PATCH 4/6] xt_log: Make printk() in sb_close() optional
+[PATCH 5/6] Netfilter: xt_LOG: Implement ring buffer support
+[PATCH 6/6] Netfilter: xt_LOG: Add timestamp support
+
+Thanks,
+//richard
