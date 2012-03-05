@@ -1,76 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab2CEXXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:23:42 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45447 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab2CEXXk (ORCPT
+	id S1757911Ab2CEXZB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:25:01 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:54801 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757810Ab2CEXY7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:23:40 -0500
-Date: Tue, 6 Mar 2012 00:23:19 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5] EDAC core changes in order to properly report errors
- from all types of memory controllers
-Message-ID: <20120305232319.GA7175@aftab>
-References: <1330698314-9863-1-git-send-email-bp@amd64.org>
- <1330698314-9863-5-git-send-email-bp@amd64.org>
- <4F50DECB.8030200@redhat.com>
- <20120305110441.GC1070@aftab>
- <4F54A6FF.50502@redhat.com>
- <20120305124411.GD1070@aftab>
- <4F54C133.6040709@redhat.com>
- <20120305141349.GF1070@aftab>
- <4F54D4AF.9060802@redhat.com>
- <4F553764.5070305@redhat.com>
+	Mon, 5 Mar 2012 18:24:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=DnjhG/MutMUuoiwNCfn
+	7yHTk6JCaEo6j9CShDOq2LVmzYRmBnNxHsh42XVSB7RPjELTmi4/YW7JQX90+USu
+	fZMT3FRkyVDZ9rY3Brpco5wV7rYSAVSQotFHFuSJ85KeZws/bAIN6vTnVEblCSiJ
+	kXvPV+1Hg7Pczgt+L7B0YWeA=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.9.3
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Mar 2012 15:24:56 -0800
+Message-ID: <7vliney6k7.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F553764.5070305@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 6C3E1748-671A-11E1-BEDF-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 07:00:04PM -0300, Mauro Carvalho Chehab wrote:
-> With those changes, there's just one tracepont defined there, on this patchset:
-> 	http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commit;h=fdfa64045e43c942e1250708365d9240cd0da9c3
+The latest maintenance release Git 1.7.9.3 is now available at the
+usual places.  Time to upgrade.
 
-Ok, here's my take from simply skimming over the patchset for 5 mins:
+The release tarballs are found at:
 
-* first of all, a lot of the patches are done sloppily and have no commit
-messages whatsoever. This is a no-no and the first thing you need to fix.
+    http://code.google.com/p/git-core/downloads/list
 
-* http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=ad015450e549b29a74283733048254d3c647a33at is humongous, has no commit message and contains a lot of changes which probably deserve a patch of their own. Mauro, you're not doing this since yesterday, you should know better!
+and their SHA-1 checksums are:
 
-* http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=ccca89bce4c0515aabd67440ba01ede97d2b4dcc removes crap introduced by earlier patches in the series, so also a no-no and needs to be fixed.
+6216153da1139c25cb96cfb4441eff327013ec4f  git-1.7.9.3.tar.gz
+2d488c3975da1c2ea90965b82233a986c498a8c2  git-htmldocs-1.7.9.3.tar.gz
+223daa871a64facc60bdf643c50c78eac21c88f4  git-manpages-1.7.9.3.tar.gz
 
-* WTF does the commit message of http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=c911a426ef72c817222e7c2ab302a81b69ccbd07 mean? Looks like it redacts a huge function you've introduced in an earlier patch... Hell, no!
+Also the following public repositories all have a copy of the v1.7.9.3
+tag and the maint branch that the tag points at:
 
-...
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
-* And, last but not least, your patches touch amd64_edac* extensively,
-and, I need to properly review those changes before they get committed.
 
-So, my absolutely sincere suggestion to you is to split this huge
-patchset into smaller patchsets containing 5-10 patches, making it much
-easier to review, go over <Documentation/SubmittingPatches> and refresh
-your knowledge on how a proper patch should look like and what it should
-contain, test your stuff properly on the machines it addresses and
-_only_ _then_ send them to the relevant parties for proper review - not
-earlier.
+Git v1.7.9.3 Release Notes
+==========================
 
-HTH.
+Fixes since v1.7.9.2
+--------------------
 
--- 
-Regards/Gruss,
-Boris.
+ * "git p4" (in contrib/) submit the changes to a wrong place when the
+   "--use-client-spec" option is set.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+ * The config.mak.autogen generated by optional autoconf support tried
+   to link the binary with -lintl even when libintl.h is missing from
+   the system.
+
+ * When the filter driver exits before reading the content before the
+   main git process writes the contents to be filtered to the pipe to
+   it, the latter could be killed with SIGPIPE instead of ignoring
+   such an event as an error.
+
+ * "git add --refresh <pathspec>" used to warn about unmerged paths
+   outside the given pathspec.
+
+ * The bulk check-in codepath in "git add" streamed contents that
+   needs smudge/clean filters without running them, instead of punting
+   and delegating to the codepath to run filters after slurping
+   everything to core.
+
+ * "git branch --with $that" assumed incorrectly that the user will never
+   ask the question with nonsense value in $that.
+
+ * "git bundle create" produced a corrupt bundle file upon seeing
+   commits with excessively long subject line.
+
+ * When a remote helper exits before reading the blank line from the
+   main git process to signal the end of commands, the latter could be
+   killed with SIGPIPE. Instead we should ignore such event as a
+   non-error.
+
+ * The commit log template given with "git merge --edit" did not have
+   a short instructive text like what "git commit" gives.
+
+ * "git rev-list --verify-objects -q" omitted the extra verification
+   it needs to do over "git rev-list --objects -q" by mistake.
+
+ * "gitweb" used to drop warnings in the log file when "heads" view is
+   accessed in a repository whose HEAD does not point at a valid
+   branch.
+
+ * An invalid regular expression pattern given by an end user made
+   "gitweb" to return garbled response.
+
+Also contains minor fixes and documentation updates.
+
+
+----------------------------------------------------------------
+
+Changes since v1.7.9.2 are as follows:
+
+Andrew Wong (1):
+      rebase -m: only call "notes copy" when rewritten exists and is non-empty
+
+Carlos Martín Nieto (2):
+      branch: don't assume the merge filter ref exists
+      Documentation: use {asterisk} in rev-list-options.txt when needed
+
+Clemens Buchacher (1):
+      http.proxy: also mention https_proxy and all_proxy
+
+Dmitry V. Levin (1):
+      Makefile: add thread-utils.h to LIB_H
+
+Jakub Narebski (2):
+      gitweb: Fix "heads" view when there is no current branch
+      gitweb: Handle invalid regexp in regexp search
+
+Jeff King (4):
+      disconnect from remote helpers more gently
+      teach convert_to_git a "dry run" mode
+      teach dry-run convert_to_git not to require a src buffer
+      do not stream large files to pack when filters are in use
+
+Jehan Bing (1):
+      Ignore SIGPIPE when running a filter driver
+
+Jim Meyering (1):
+      am: don't infloop for an empty input file
+
+John Szakmeister (1):
+      configure: don't use -lintl when there is no gettext support
+
+Jonathan Nieder (1):
+      mergetools/meld: Use --help output to detect --output support
+
+Junio C Hamano (9):
+      refresh_index: do not show unmerged path that is outside pathspec
+      Documentation/merge-options.txt: group "ff" related options together
+      Document merge.branchdesc configuration variable
+      Git 1.7.8.5
+      Document accumulated fixes since 1.7.9.2
+      Update draft release notes to 1.7.9.3
+      Documentation: do not assume that n > 1 in <rev>~$n
+      Update draft release notes to 1.7.9.3 for the last time
+      Git 1.7.9.3
+
+Libor Pechacek (1):
+      Documentation fixes in git-config
+
+Matthieu Moy (1):
+      README: point to Documentation/SubmittingPatches
+
+Michael Haggerty (2):
+      post-receive-email: remove unused variable
+      post-receive-email: match up $LOGBEGIN..$LOGEND pairs correctly
+
+Michael J Gruber (1):
+      t0300: work around bug in dash 0.5.6
+
+Michał Kiedrowicz (1):
+      grep -P: Fix matching ^ and $
+
+Nguyễn Thái Ngọc Duy (2):
+      rev-list: remove BISECT_SHOW_TRIED flag
+      rev-list: fix --verify-objects --quiet becoming --objects
+
+Pete Wyckoff (4):
+      git-p4: set useClientSpec variable on initial clone
+      git-p4: fix submit regression with clientSpec and subdir clone
+      git-p4: remove bash-ism in t9809
+      git-p4: remove bash-ism in t9800
+
+Philip Jägenstedt (1):
+      remote: fix set-branches usage and documentation
+
+Stefano Lattarini (1):
+      tests: fix spurious error when run directly with Solaris /usr/xpg4/bin/sh
+
+Thomas Rast (6):
+      merge: add instructions to the commit message when editing
+      bundle: put strbuf_readline_fd in strbuf.c with adjustments
+      bundle: use a strbuf to scan the log for boundary commits
+      strbuf: improve strbuf_get*line documentation
+      t5704: match tests to modern style
+      fast-import: zero all of 'struct tag' to silence valgrind
+
+Tim Henigan (2):
+      CodingGuidelines: Add a note about spaces after redirection
+      CodingGuidelines: do not use 'which' in shell scripts
+
+Tom Grennan (1):
+      t5512 (ls-remote): modernize style
+
