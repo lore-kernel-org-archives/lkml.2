@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab2CERpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:45:15 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34895 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2CERpN (ORCPT
+	id S932188Ab2CERp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:45:29 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:37303 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753321Ab2CERpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:45:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.224.9 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Mon, 5 Mar 2012 09:45:09 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120305174509.GR22536@google.com>
-References: <1330036246-21633-1-git-send-email-tj@kernel.org>
- <20120223144336.58742e1b.akpm@linux-foundation.org>
- <20120223230123.GL22536@google.com>
- <20120223231204.GM22536@google.com>
- <20120225034432.GA18391@redhat.com>
- <20120225214641.GB3401@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120225222113.GE3401@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120227142529.GA27677@redhat.com>
- <20120227144045.GB27677@redhat.com>
+	Mon, 5 Mar 2012 12:45:22 -0500
+Message-ID: <4F54FBBC.5060809@xenotime.net>
+Date: Mon, 05 Mar 2012 09:45:32 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120227144045.GB27677@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: Tree for Mar 5 (of/irqs)
+References: <20120305181024.d396adb4fefdf6d269657606@canb.auug.org.au>
+In-Reply-To: <20120305181024.d396adb4fefdf6d269657606@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 03/04/2012 11:10 PM, Stephen Rothwell wrote:
 
-On Mon, Feb 27, 2012 at 09:40:45AM -0500, Vivek Goyal wrote:
-> So we call following.
+> Hi all,
 > 
-> elevator_switch()
->   blkg_destroy_all()
->     update_root_blkg();
-> 
-> Here update_root_blkg() will free up the blkg->pd for cfq. 
-> 
-> And later we call.
-> 
-> elevator_exit()
->   cfq_exit_queue()
->     cfq_put_async_queues()
->       cfq_put_queue()
->         blkg_put(cfqg_to_blkg(cfqg)); <------ trying to reach blkg through
-> already freed policy data.
-> 
-> So we should not free up root group policy data till old elevator has
-> exited.
+> Changes since 20120302:
 
-Yeah, this analysis seems correct.  For some reason, I still can't
-reproduce it even with slab debugging turned on.  I modified the free
-path to fill *pd with pattern w/o actually freeing it and now can see
-similar crashes.  Will post fix soon.
 
-Thanks a lot.
 
--- 
-tejun
+Still have both of these build errors (on i386/X86_32;
+2 different builds):
+
+
+drivers/mfd/twl-core.c:1262:2: error: implicit declaration of function 'irq_alloc_descs'
+drivers/mfd/twl-core.c:1357:3: error: implicit declaration of function 'of_platform_populate'
+
+
+and:
+
+drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' specified in initializer
+drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompatible pointer type
+drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no member named 'irq_base'
+drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of function 'irq_domain_add'
+drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of function 'irq_domain_del'
+
+
+
+
+~Randy
+
