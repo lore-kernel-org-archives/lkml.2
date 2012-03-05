@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab2CEUmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 15:42:08 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56151 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757455Ab2CEUmF (ORCPT
+	id S1757748Ab2CEUx5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 15:53:57 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42922 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757730Ab2CEUxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 15:42:05 -0500
-Message-ID: <1330980117.2191.104.camel@work-vm>
-Subject: Re: WARNING: Adjusting tsc more then 11%
-From: John Stultz <john.stultz@linaro.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 05 Mar 2012 12:41:57 -0800
-In-Reply-To: <20120305202845.GD17489@zod.bos.redhat.com>
-References: <20120305154411.GA29668@redhat.com>
-	 <1330972323.2191.74.camel@work-vm> <20120305192338.GA30491@redhat.com>
-	 <1330977010.2191.84.camel@work-vm>
-	 <20120305195619.GB17489@zod.bos.redhat.com>
-	 <1330979077.2191.96.camel@work-vm>
-	 <20120305202845.GD17489@zod.bos.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030520-7408-0000-0000-000003397EC6
+	Mon, 5 Mar 2012 15:53:55 -0500
+Date: Mon, 5 Mar 2012 20:53:54 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] flush_tlb_range() needs ->page_table_lock when
+ ->mmap_sem is not held
+Message-ID: <20120305205354.GM23916@ZenIV.linux.org.uk>
+References: <20120305063707.GH23916@ZenIV.linux.org.uk>
+ <20120305064029.GK23916@ZenIV.linux.org.uk>
+ <CA+55aFwQtEPGwK-W8H3Fa0EZUOV057kj_xhUXONZRcyeZtSt3Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwQtEPGwK-W8H3Fa0EZUOV057kj_xhUXONZRcyeZtSt3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 15:28 -0500, Josh Boyer wrote:
-> On Mon, Mar 05, 2012 at 12:24:37PM -0800, John Stultz wrote:
-> > > > Ok. Well, just to level set: the warning is informative, and points to
-> > > > unexpected, but not necessarily unsafe behavior.
-> > > > 
-> > > > In fact, the risk (where mult is adjusted to be large enough to cause an
-> > > > overflow) we're warning about have been present 2.6.36 or even possibly
-> > > > before. The change in 3.2 which added the warning also added a more
-> > > > conservative mult calculation, so we're less likely to get overflow
-> > > > prone large mult values.
-> > > 
-> > > Is there a reason you decided to use a WARN_ONCE, which dumps a full stack
-> > > trace, instead of just printk(KERN_ERR ?
-> > 
-> > Well, the WARN_ONCE behavior is really nice, since just a printk would
-> > end up possibly filling the logs, since you might get one every tick.
-> 
-> We have printk_once too.
+On Mon, Mar 05, 2012 at 12:30:19PM -0800, Linus Torvalds wrote:
+> Is this safe? And why does it need it? Please add more explanations.
 
-Good point.  I didn't look into that. The backtrace isn't very useful,
-so I'll see about changing it in the future.
+a) safety - as the matter of fact, all other callers either hold either
+->mmap_sem (exclusive) or ->page_table_lock.  flush_tlb_range() is
+called under ->page_table_lock in a lot of places, e.g.
+page_referenced_one() -> pmdp_clear_flush_young_notify() ->
+-> pmdp_clear_flush_young() -> flush_tlb_range(), with
+                /* go ahead even if the pmd is pmd_trans_splitting() */
+                if (pmdp_clear_flush_young_notify(vma, address, pmd))
+                        referenced++;
+                spin_unlock(&mm->page_table_lock);
+in page_referenced_one().
 
-> > > > So it would be great to get further feedback from folks who are seeing
-> > > > this warning, so we can really hammer this out, but I don't want the
-> > > > warning spooking anyone into thinking things are terribly broken.
-> > > 
-> > > Right... people see backtraces and start thinking "my kernel is broken."
-> > > 
-> > > I'm certainly not meaning to pick on you for this.  Lately it seems all
-> > > the rage to throw WARN_ONs for all kinds of error paths and leave the user
-> > > to figure out how screwed they are.
-> > 
-> > Its a trade-off, since we really do want to know if our code has been
-> > pushed outside of its expected boundaries (either by unexpected hadware
-> > behavior or by expectations being raised, like long nohz idle times), so
-> > we have to get folks attention somewhat. The type of error reporting
-> > Dave's managed to collect here is really great.
-> 
-> It is, yes.  Do you know, aside from distro kernel maintainers, how many
-> reports have you gotten from actual users directly?
+b) there are instances that work with page tables.  See e.g.
+arch/powerpc/mm/tlb_hash32.c, flush_tlb_range() and flush_range() in there.
+The same goes for uml, with a lot more extensive playing with page tables.
 
-Zero so far. Dave's are the first that I've been made aware of.
-
-> > But at the same time, I agree there has been a few cases where the code
-> > is limited more narrowly then the reality of existing hardware, and we
-> > end up with a constant stream of error messages that get waved off as
-> > broken hardware.
-> > 
-> > There we need to either fix the code or drop the warnings, but I think
-> > it gets hard when we really want to know about "unexpected behavior,
-> > except on some wide swath of hardware that always acts poorly", where
-> > conditionalizing the warnings isn't easy.
-> 
-> Oh my.  Quirks in the timekeeping code would just give me nightmares ;).
-
-:)
--john
-
-
+Almost all callers are actually fine - flush_tlb_range() may have no need
+to bother playing with page tables, but it can do so safely; again, this
+caller is the sole exception - everything else either has exclusive ->mmap_sem
+on the mm in question, or mm->page_table_lock is held.
