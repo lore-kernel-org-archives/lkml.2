@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab2CERFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:05:32 -0500
-Received: from ftp.meprolight.com ([194.90.149.17]:33790 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753321Ab2CERFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:05:31 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 12:05:30 EST
-From: Alex Gershgorin <alexg@meprolight.com>
-To: "kernel@pengutronix.de" <kernel@pengutronix.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Mar 2012 18:57:45 +0200
-Subject: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
-Thread-Topic: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
-Thread-Index: AQHM+vEWLRSy/N9DuUqi3XUlfse/FQ==
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904@MEP-EXCH.meprolight.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_"
+	id S1756729Ab2CERF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:05:57 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:41897 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756141Ab2CERFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 12:05:55 -0500
+X-Sasl-enc: TAn0Z2G3uBP2lqJiN/tA6IyUs84G7z/a6WLYRmxdVla+ 1330967155
+Message-ID: <4F54F270.8030108@imap.cc>
+Date: Mon, 05 Mar 2012 18:05:52 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.27) Gecko/20120215 SUSE/3.1.19 Thunderbird/3.1.19
 MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Hansjoerg Lipp <hjlipp@web.de>,
+        gigaset307x-common@lists.sourceforge.net
+Subject: Re: [PATCH 67/68] TTY: isdn/gigaset, do not set tty->driver_data
+ to NULL
+References: <1330955575-26641-1-git-send-email-jslaby@suse.cz> <1330955575-26641-68-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1330955575-26641-68-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
+Am 05.03.2012 14:52, schrieb Jiri Slaby:
+> Close the window in open where driver_data is reset to NULL on each
+> open. It could cause other processes to get invalid retval from the
+> tty->ops operations because of the checks all over the code.
+> 
+> With this change we may do other cleanups. Now, the only valid check
+> for tty->driver_data != NULL is in close. This can happen only if open
+> fails at gigaset_get_cs_by_tty or try_module_get. The rest of checks
+> in various tty->ops->* are invalid as driver_data cannot be NULL
+> there. The same holds for cs->open_count. So remove them.
 
---_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_
-Content-Type: text/x-patch;
-	name="0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch"
-Content-Description: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
-Content-Disposition: attachment;
-	filename="0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch";
-	size=2935; creation-date="Mon, 05 Mar 2012 18:57:58 GMT";
-	modification-date="Mon, 05 Mar 2012 18:57:58 GMT"
-Content-Transfer-Encoding: base64
+Thanks for that nice cleanup. It's most welcome.
+Just one question and a small nit:
 
-RnJvbSA2MzEyNGQ4YjRiYmNmZWE4NzdmMGVkNzM2MjM4YzUzZjk0MGYzMjVmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IDxhbGV4Z0BtZXByb2xpZ2h0LmNvbT4KRGF0ZTogTW9u
-LCA1IE1hciAyMDEyIDE0OjE5OjA4ICswMjAwClN1YmplY3Q6IFtQQVRDSF0gaS5NWDM1IFBESzog
-Q2h1bmdod2EgQ0xBQTA3MFZDMDEgNyIgV1ZHQSBURlQgRGlzcGxheSBzdXBwb3J0CgpUaGlzIHBh
-dGNoIGFkZCBzdXBwb3J0IGZvciBkaXNwbGF5IHRoYXQgc2hpcHBlZCB3aXRoIHRoZSBpLk1YMzUg
-UERLLgoKU2lnbmVkLW9mZi1ieTogQWxleCBHZXJzaGdvcmluIDxhbGV4Z0BtZXByb2xpZ2h0LmNv
-bT4KLS0tCiBhcmNoL2FybS9tYWNoLWlteC9tYWNoLW14MzVfM2RzLmMgfCAgIDU3ICsrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysKIDEgZmlsZXMgY2hhbmdlZCwgNTcgaW5zZXJ0
-aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL2FybS9tYWNoLWlteC9t
-YWNoLW14MzVfM2RzLmMgYi9hcmNoL2FybS9tYWNoLWlteC9tYWNoLW14MzVfM2RzLmMKaW5kZXgg
-MGFmNmM5Yy4uYTQ3N2U0NiAxMDA2NDQKLS0tIGEvYXJjaC9hcm0vbWFjaC1pbXgvbWFjaC1teDM1
-XzNkcy5jCisrKyBiL2FyY2gvYXJtL21hY2gtaW14L21hY2gtbXgzNV8zZHMuYwpAQCAtMTIwLDYg
-KzEyMCw2MSBAQCBzdGF0aWMgaW9tdXhfdjNfY2ZnX3QgbXgzNXBka19wYWRzW10gPSB7CiAJLyog
-STJDMSAqLwogCU1YMzVfUEFEX0kyQzFfQ0xLX19JMkMxX1NDTCwKIAlNWDM1X1BBRF9JMkMxX0RB
-VF9fSTJDMV9TREEsCisJLyogRElTUExBWSAqLworCU1YMzVfUEFEX0xEMF9fSVBVX0RJU1BCX0RB
-VF8wLAorCU1YMzVfUEFEX0xEMV9fSVBVX0RJU1BCX0RBVF8xLAorCU1YMzVfUEFEX0xEMl9fSVBV
-X0RJU1BCX0RBVF8yLAorCU1YMzVfUEFEX0xEM19fSVBVX0RJU1BCX0RBVF8zLAorCU1YMzVfUEFE
-X0xENF9fSVBVX0RJU1BCX0RBVF80LAorCU1YMzVfUEFEX0xENV9fSVBVX0RJU1BCX0RBVF81LAor
-CU1YMzVfUEFEX0xENl9fSVBVX0RJU1BCX0RBVF82LAorCU1YMzVfUEFEX0xEN19fSVBVX0RJU1BC
-X0RBVF83LAorCU1YMzVfUEFEX0xEOF9fSVBVX0RJU1BCX0RBVF84LAorCU1YMzVfUEFEX0xEOV9f
-SVBVX0RJU1BCX0RBVF85LAorCU1YMzVfUEFEX0xEMTBfX0lQVV9ESVNQQl9EQVRfMTAsCisJTVgz
-NV9QQURfTEQxMV9fSVBVX0RJU1BCX0RBVF8xMSwKKwlNWDM1X1BBRF9MRDEyX19JUFVfRElTUEJf
-REFUXzEyLAorCU1YMzVfUEFEX0xEMTNfX0lQVV9ESVNQQl9EQVRfMTMsCisJTVgzNV9QQURfTEQx
-NF9fSVBVX0RJU1BCX0RBVF8xNCwKKwlNWDM1X1BBRF9MRDE1X19JUFVfRElTUEJfREFUXzE1LAor
-CU1YMzVfUEFEX0xEMTZfX0lQVV9ESVNQQl9EQVRfMTYsCisJTVgzNV9QQURfTEQxN19fSVBVX0RJ
-U1BCX0RBVF8xNywKKwlNWDM1X1BBRF9EM19WU1lOQ19fSVBVX0RJU1BCX0QzX1ZTWU5DLAorCU1Y
-MzVfUEFEX0QzX0hTWU5DX19JUFVfRElTUEJfRDNfSFNZTkMsCisJTVgzNV9QQURfRDNfRlBTSElG
-VF9fSVBVX0RJU1BCX0QzX0NMSywKKwlNWDM1X1BBRF9DT05UUkFTVF9fSVBVX0RJU1BCX0NPTlRS
-LAorCU1YMzVfUEFEX0QzX1JFVl9fSVBVX0RJU1BCX0QzX1JFViwKKwlNWDM1X1BBRF9EM19DTFNf
-X0lQVV9ESVNQQl9EM19DTFMsCit9OworCitzdGF0aWMgY29uc3Qgc3RydWN0IGZiX3ZpZGVvbW9k
-ZSBmYl9tb2RlZGJbXSA9IHsKKwl7CisJCS8qIDgwMHg0ODAgQCA2MCBIeiAqLworCQkubmFtZQkJ
-PSAiQ1RQLUNMQUEwNzBMQzBBQ1ciLAorCQkucmVmcmVzaAk9IDYwLAorCQkueHJlcwkJPSA4MDAs
-CisJCS55cmVzCQk9IDQ4MCwKKwkJLnBpeGNsb2NrCT0gS0haMlBJQ09TKDI3MDAwKSwKKwkJLmxl
-ZnRfbWFyZ2luCT0gNTAsCisJCS5yaWdodF9tYXJnaW4JPSA1MCwJLyogd2hvbGUgbGluZSBzaG91
-bGQgaGF2ZSA5MDAgY2xvY2tzICovCisJCS51cHBlcl9tYXJnaW4JPSAxMCwKKwkJLmxvd2VyX21h
-cmdpbgk9IDEwLAkvKiB3aG9sZSBmcmFtZSBzaG91bGQgaGF2ZSA1MDAgbGluZXMgKi8KKwkJLmhz
-eW5jX2xlbgk9IDEsCS8qIG5vdGU6IERFIG9ubHkgZGlzcGxheSAqLworCQkudnN5bmNfbGVuCT0g
-MSwJLyogbm90ZTogREUgb25seSBkaXNwbGF5ICovCisJCS5zeW5jCQk9IEZCX1NZTkNfQ0xLX0lE
-TEVfRU4gfCBGQl9TWU5DX09FX0FDVF9ISUdILAorCQkudm1vZGUJCT0gRkJfVk1PREVfTk9OSU5U
-RVJMQUNFRCwKKwkJLmZsYWcJCT0gMCwKKwl9LAorfTsKKworc3RhdGljIGNvbnN0IHN0cnVjdCBp
-cHVfcGxhdGZvcm1fZGF0YSBteDM1XzNkc19pcHVfZGF0YSBfX2luaXRjb25zdCA9IHsKKwkuaXJx
-X2Jhc2UgPSBNWENfSVBVX0lSUV9TVEFSVCwKK307CisKK3N0YXRpYyBzdHJ1Y3QgbXgzZmJfcGxh
-dGZvcm1fZGF0YSBteDNmYl9wZGF0YSBfX2luaXRkYXRhID0geworCS5uYW1lCQk9ICJDVFAtQ0xB
-QTA3MExDMEFDVyIsCisJLm1vZGUJCT0gZmJfbW9kZWRiLAorCS5udW1fbW9kZXMJPSBBUlJBWV9T
-SVpFKGZiX21vZGVkYiksCiB9OwogCiBzdGF0aWMgaW50IG14MzVfM2RzX290Z19pbml0KHN0cnVj
-dCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCkBAIC0yMDQsNiArMjU5LDggQEAgc3RhdGljIHZvaWQg
-X19pbml0IG14MzVfM2RzX2luaXQodm9pZCkKIAkJcHJfd2FybigiSW5pdCBvZiB0aGUgZGVidWdi
-b2FyZCBmYWlsZWQsIGFsbCAiCiAJCQkJImRldmljZXMgb24gdGhlIGRlYnVnYm9hcmQgYXJlIHVu
-dXNhYmxlLlxuIik7CiAJaW14MzVfYWRkX2lteF9pMmMwKCZteDM1XzNkc19pMmMwX2RhdGEpOwor
-CWlteDM1X2FkZF9pcHVfY29yZSgmbXgzNV8zZHNfaXB1X2RhdGEpOworCWlteDM1X2FkZF9teDNf
-c2RjX2ZiKCZteDNmYl9wZGF0YSk7CiB9CiAKIHN0YXRpYyB2b2lkIF9faW5pdCBteDM1cGRrX3Rp
-bWVyX2luaXQodm9pZCkKLS0gCjEuNy4wLjQKCg==
+> --- a/drivers/isdn/gigaset/interface.c
+> +++ b/drivers/isdn/gigaset/interface.c
+[...]
+> @@ -178,12 +176,11 @@ static int if_open(struct tty_struct *tty, struct file *filp)
+>  
+>  static void if_close(struct tty_struct *tty, struct file *filp)
+>  {
+> -	struct cardstate *cs;
+> +	struct cardstate *cs = tty->driver_data;
+>  	unsigned long flags;
+>  
+> -	cs = (struct cardstate *) tty->driver_data;
+> -	if (!cs) {
+> -		pr_err("%s: no cardstate\n", __func__);
+> +	if (!cs) { /* happens if we didn't find cs in open */
+> +		printk(KERN_DEBUG "%s: no cardstate\n", __func__);
+>  		return;
+>  	}
+>  
 
---_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_--
+Why are you downgrading the error message from KERN_ERR to KERN_DEBUG
+here? I would think that condition would warrant a message with
+KERN_ERR severity.
+Also, the driver does KERN_DEBUG output uniformly through the gig_dbg
+macro, so if you are sure it should be turned into a debug message
+then please write it as
+
+	gig_dbg(DEBUG_IF, "%s: no cardstate", __func__);
+
+like four lines later.
+
+Thanks,
+Tilman
+
+- -- 
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk9U8nAACgkQQ3+did9BuFsaiwCeKiL8hghkVcjstG5azxYoIXOK
+Yl0Anj2FWsaiE4zx3ioVvCo6xgFVKBTk
+=i3+X
+-----END PGP SIGNATURE-----
