@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2CEQDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:03:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60117 "EHLO mx2.suse.de"
+	id S1755055Ab2CEQBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:01:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60046 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755067Ab2CEQBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:01:40 -0500
+	id S1754633Ab2CEQBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:01:35 -0500
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
         sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 18/19] fs: Remove old freezing mechanism
-Date: Mon,  5 Mar 2012 17:01:16 +0100
-Message-Id: <1330963277-26336-19-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs@vger.kernel.org
+Subject: [PATCH 04/19] btrfs: Push mnt_want_write() outside of i_mutex
+Date: Mon,  5 Mar 2012 17:01:02 +0100
+Message-Id: <1330963277-26336-5-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
 References: <1330963277-26336-1-git-send-email-jack@suse.cz>
@@ -22,53 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all users are converted, we can remove functions, variables, and
-constants defined by the old freezing mechanism.
+When mnt_want_write() starts to handle freezing it will get a full lock
+semantics requiring proper lock ordering. So push mnt_want_write() call
+consistently outside of i_mutex.
 
+CC: Chris Mason <chris.mason@oracle.com>
+CC: linux-btrfs@vger.kernel.org
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/super.c         |    1 -
- include/linux/fs.h |    8 --------
- 2 files changed, 0 insertions(+), 9 deletions(-)
+ fs/btrfs/ioctl.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 8b0b40c..0830afb 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -209,7 +209,6 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 		mutex_init(&s->s_dquot.dqio_mutex);
- 		mutex_init(&s->s_dquot.dqonoff_mutex);
- 		init_rwsem(&s->s_dquot.dqptr_sem);
--		init_waitqueue_head(&s->s_wait_unfrozen);
- 		s->s_maxbytes = MAX_NON_LFS;
- 		s->s_op = &default_op;
- 		s->s_time_gran = 1000000000;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 37667f3..fcb4135 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1483,8 +1483,6 @@ struct super_block {
- 	struct hlist_node	s_instances;
- 	struct quota_info	s_dquot;	/* Diskquota specific options */
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 03bb62a..c855e55 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -192,6 +192,10 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
+ 	if (!inode_owner_or_capable(inode))
+ 		return -EACCES;
  
--	int			s_frozen;
--	wait_queue_head_t	s_wait_unfrozen;
- 	struct sb_writers	s_writers;
++	ret = mnt_want_write_file(file);
++	if (ret)
++		return ret;
++
+ 	mutex_lock(&inode->i_mutex);
  
- 	char s_id[32];				/* Informational name */
-@@ -1537,12 +1535,6 @@ extern void prune_dcache_sb(struct super_block *sb, int nr_to_scan);
- extern struct timespec current_fs_time(struct super_block *sb);
+ 	ip_oldflags = ip->flags;
+@@ -206,10 +210,6 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
+ 		}
+ 	}
  
- /*
-- * Snapshotting support.
-- */
--/* Will go away when all users are converted */
--#define vfs_check_frozen(sb, level) do { } while (0)
+-	ret = mnt_want_write_file(file);
+-	if (ret)
+-		goto out_unlock;
 -
--/*
-  * until VFS tracks user namespaces for inodes, just make all files
-  * belong to init_user_ns
-  */
+ 	if (flags & FS_SYNC_FL)
+ 		ip->flags |= BTRFS_INODE_SYNC;
+ 	else
+@@ -271,9 +271,9 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
+ 		inode->i_flags = i_oldflags;
+ 	}
+ 
+-	mnt_drop_write_file(file);
+  out_unlock:
+ 	mutex_unlock(&inode->i_mutex);
++	mnt_drop_write_file(file);
+ 	return ret;
+ }
+ 
+@@ -624,6 +624,10 @@ static noinline int btrfs_mksubvol(struct path *parent,
+ 	struct dentry *dentry;
+ 	int error;
+ 
++	error = mnt_want_write(parent->mnt);
++	if (error)
++		return error;
++
+ 	mutex_lock_nested(&dir->i_mutex, I_MUTEX_PARENT);
+ 
+ 	dentry = lookup_one_len(name, parent->dentry, namelen);
+@@ -635,13 +639,9 @@ static noinline int btrfs_mksubvol(struct path *parent,
+ 	if (dentry->d_inode)
+ 		goto out_dput;
+ 
+-	error = mnt_want_write(parent->mnt);
+-	if (error)
+-		goto out_dput;
+-
+ 	error = btrfs_may_create(dir, dentry);
+ 	if (error)
+-		goto out_drop_write;
++		goto out_dput;
+ 
+ 	down_read(&BTRFS_I(dir)->root->fs_info->subvol_sem);
+ 
+@@ -659,12 +659,11 @@ static noinline int btrfs_mksubvol(struct path *parent,
+ 		fsnotify_mkdir(dir, dentry);
+ out_up_read:
+ 	up_read(&BTRFS_I(dir)->root->fs_info->subvol_sem);
+-out_drop_write:
+-	mnt_drop_write(parent->mnt);
+ out_dput:
+ 	dput(dentry);
+ out_unlock:
+ 	mutex_unlock(&dir->i_mutex);
++	mnt_drop_write(parent->mnt);
+ 	return error;
+ }
+ 
 -- 
 1.7.1
 
