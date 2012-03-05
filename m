@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab2CEOsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:48:39 -0500
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:30036 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932379Ab2CEOsi (ORCPT
+	id S1756961Ab2CEOuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:50:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38834 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756807Ab2CEOuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 09:48:38 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 9.hMGdYVM1nPuf5E2dNrfbTnYZ78AMER0QMtmFZ7jnWJwEN
- MIU.Nq63Ayn9kmOZZd.ogvOevCu5rXilNKus4TH32xtYDfRO4XySt3ugz5u5
- CiXhQyAYLu.8Xy5eR2gd1LS1niQZBI1obg7x6MJqwP9CYKTHYaCtKCeIwpT4
- eNg3BlQZivKpXUFK8VoyB5So9XTYyrWa0TMKFCRDxUZy9CNXJregJj3AYAtB
- iUzsJ1uMWEIt1GoWyHYs4zlzB.rWUhxk5k_0myOaDInxdG_IFQdK24aoqtXN
- gr6WW9kWTOyJKxu0esbi2pLaaRyt59ROc9jlUXyRs2yuY2ptelmsYb6YTnUs
- 9odOH.Dc2qjbTSHCITvRHfyMG0Gi86jMfD5WXkzANLexm3Do40.ARWvvA3yG
- 1cW.cr3JmRl9Oj_aaAKmW1hKr3P_9vFfQPbA8
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 5 Mar 2012 08:48:33 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan@kernel.org>
-cc: Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Namhyung Kim <namhyung@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
-In-Reply-To: <20120304103446.GA9267@barrios>
-Message-ID: <alpine.DEB.2.00.1203050845380.11722@router.home>
-References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com> <20120304103446.GA9267@barrios>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 5 Mar 2012 09:50:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.68.203.65 as permitted sender) smtp.mail=glikely@secretlab.ca
+Date: Mon, 5 Mar 2012 07:50:14 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: broonie@opensource.wolfsonmicro.com, linus.walleij@stericsson.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2 0/3] Open drain/open source support from gpio library
+Message-ID: <20120305145014.GA27229@ponder.secretlab.ca>
+References: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Mar 2012, Minchan Kim wrote:
+On Fri, Feb 17, 2012 at 08:26:18PM +0530, Laxman Dewangan wrote:
+> This patch is as per discussion on the patch
+> [PATCH V1] regulator: fixed: Support for open-drain gpio 
+> where it was suggested to push the handling of open drain gpios
+> into the gpio libray.
+> 
+> This is series of patches  to add support of the open drain and open
+> source gpios in standard gpio library.
+> - Added GPIOF_OPEN_DRAIN flag so that client can request the
+>   gpio with this flag. Handle open drain gpio configuration properly.
+> - Added GPIOF_OPEN_SOURCE flag so that client can request the
+>   gpio with this flag. Handle open source gpio configuration properly.
+> - Gpio documentation changes to have support for open-drain.
+> 
+> From the patch series of V1, it is discussed to
+> - remove the sysfs interface supportsi for open drain.
+> - Added open source support as a new change.
+> 
+> Laxman Dewangan (3):
+>   Documentation: gpio: Add details of open-drain/source configuration
+>   gpio: gpiolib: Support for open drain/collector gpios
+>   gpio: gpiolib: Support for open source/emitter gpios
 
-> I read this thread and I feel the we don't reach right point.
-> I think it's not a compound page problem.
-> We can face above problem where we allocates big order page without __GFP_COMP
-> and free middle page of it.
+Applied, thanks
 
-Yes we can do that and doing such a thing seems to be more legitimate
-since one could argue that the user did not request an atomic allocation
-unit from the page allocator and therefore the freeing of individual
-pages in that group is permissible. If memory serves me right we do that
-sometimes.
+g.
 
-However if compound pages are requested then such an atomic allocation
-unit *was* requested and the page allocator should not allow to free
-individual pages.
+> 
+>  Documentation/gpio.txt |   17 +++++++++-
+>  drivers/gpio/gpiolib.c |   83 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/gpio.h   |    6 +++
+>  3 files changed, 102 insertions(+), 4 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
