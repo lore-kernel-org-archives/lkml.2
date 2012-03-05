@@ -1,120 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab2CEUNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 15:13:07 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40744 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496Ab2CEUNE (ORCPT
+	id S1757678Ab2CEUNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 15:13:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36730 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757532Ab2CEUNb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 15:13:04 -0500
-Message-ID: <4F551E46.7000100@linux.vnet.ibm.com>
-Date: Tue, 06 Mar 2012 01:42:54 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Mon, 5 Mar 2012 15:13:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.43.134.199 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
 MIME-Version: 1.0
-To: Christian Lamparter <chunkeey@googlemail.com>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC] firmware loader: retry _nowait requests when userhelper
- is not yet available
-References: <201203032122.36745.chunkeey@googlemail.com>
-In-Reply-To: <201203032122.36745.chunkeey@googlemail.com>
+In-Reply-To: <20120305120427.2d11d30e.akpm@linux-foundation.org>
+References: <1330977506.1589.59.camel@lappy> <20120305120427.2d11d30e.akpm@linux-foundation.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 5 Mar 2012 22:13:11 +0200
+Message-ID: <CA+1xoqdJLpzDi5GnqQ-4SD1rFv_XzecC2k2A-XYwp_HvuG=HGg@mail.gmail.com>
+Subject: Re: OOM killer even when not overcommiting
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12030520-8878-0000-0000-0000018CB900
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 5, 2012 at 10:04 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 05 Mar 2012 21:58:26 +0200
+> Sasha Levin <levinsasha928@gmail.com> wrote:
+>
+>> Hi all,
+>
+>> I assumed that when setting overcommit_memory=2 and
+>> overcommit_ratio<100 that the OOM killer won't ever get invoked (since
+>> we're not overcommiting memory), but it looks like I'm mistaken since
+>> apparently a simple mmap from userspace will trigger the OOM killer if
+>> it requests more memory than available.
+>>
+>> Is it how it's supposed to work?  Why does it resort to OOM killing
+>> instead of just failing the allocation?
+>>
+>> Here is the dump I get when the OOM kicks in:
+>>
+>> ...
+>>
+>> [ 3108.730350]  [<ffffffff81198e4a>] mlock_vma_pages_range+0x9a/0xa0
+>> [ 3108.734486]  [<ffffffff8119b75b>] mmap_region+0x28b/0x510
+>> ...
+>
+> The vma is mlocked for some reason - presumably the app is using
+> mlockall() or mlock()?  So the kernel is trying to instantiate all the
+> pages at mmap() time.
 
-[ Adding more Cc's. ]
+The app may have used mlock(), but there is no swap space on the
+machine (it's also a KVM guest), so it should matter, no?
 
-On 03/04/2012 01:52 AM, Christian Lamparter wrote:
-
-> During resume, the userhelper might not be available. However for
-> drivers which use the request_firmware_nowait interface, this will
-> only lead to a pointless WARNING and a device which no longer works
-> after the resume [since it couldn't get the firmware, because the
-> userhelper was not available to take the request].
-> 
-> In order to solve this "chicken or egg" dilemma, the code now
-> retries _nowait requests at one second intervals until the
-> "loading_timeout" time is up.
-> 
-> ---
-> I'm aware about the previous "request_firmware* in probe" discussions.
-> Unfortunately, the hardware needs firmware so there is no other way
-> around it. So please, I just wanted to know what the general opinion
-> about the idea behind this patch is.
-> 
-> Regards,
-> 	Christian
-> 
-> BTW: I'm not on the list, so please keep the 'CC'.
-> ---
->  drivers/base/firmware_class.c |   24 +++++++++++++++++++++++-
->  1 files changed, 23 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 6c9387d..9f70096 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -19,6 +19,7 @@
->  #include <linux/kthread.h>
->  #include <linux/highmem.h>
->  #include <linux/firmware.h>
-> +#include <linux/delay.h>
->  #include <linux/slab.h>
-> 
->  #define to_dev(obj) container_of(obj, struct device, kobj)
-> @@ -535,6 +536,11 @@ static int _request_firmware(const struct firmware **firmware_p,
-> 
->  	read_lock_usermodehelper();
-> 
-> +	if (nowait && usermodehelper_is_disabled()) {
-> +		retval = -EBUSY;
-> +		goto out;
-> +	}
-> +
->  	if (WARN_ON(usermodehelper_is_disabled())) {
->  		dev_err(device, "firmware: %s will not be loaded\n", name);
->  		retval = -EBUSY;
-> @@ -633,7 +639,7 @@ static int request_firmware_work_func(void *arg)
->  {
->  	struct firmware_work *fw_work = arg;
->  	const struct firmware *fw;
-> -	int ret;
-> +	int ret, timeout = loading_timeout;
-> 
->  	if (!arg) {
->  		WARN_ON(1);
-> @@ -642,6 +648,22 @@ static int request_firmware_work_func(void *arg)
-> 
->  	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
->  				fw_work->uevent, true);
-> +
-> +	while (ret == -EBUSY) {
-> +		/*
-> +		 * Try to retrieve the firmware within the loading timeout.
-> +		 * To stick with the loading timeout convention from above:
-> +		 *	loading_timeout = 0 means 'try forever' as well.
-> +		 */
-> +
-> +		msleep(1000);
-> +		ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-> +					fw_work->uevent, true);
-> +
-> +		if (timeout != 0 && timeout-- == 1)
-
-> +			break;
-
-> +	};
-
-> +
-
->  	fw_work->cont(fw, fw_work->context);
-> 
->  	module_put(fw_work->module);
-
+Regardless, why doesn't it result in mmap() failing quietly, instead
+of kicking in the OOM killer to kill the entire process?
