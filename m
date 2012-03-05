@@ -1,136 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016Ab2CEPXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 10:23:44 -0500
-Received: from host05.ganssloser.com ([212.71.208.5]:2117 "EHLO
-	mail.ganssloser.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964837Ab2CEPXl (ORCPT
+	id S965014Ab2CEPYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 10:24:55 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43229 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964837Ab2CEPYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 10:23:41 -0500
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 10:23:40 EST
-X-MDAV-Processed: mail.ganssloser.com, Mon, 05 Mar 2012 16:14:32 +0100
-X-Spam-Processed: mail.ganssloser.com, Mon, 05 Mar 2012 16:14:32 +0100
-	(not processed: message from trusted or authenticated source)
-X-Return-Path: prvs=141198154d=frank.benkert@avat.de
-X-Envelope-From: frank.benkert@avat.de
-From: Frank Benkert <frank.benkert@avat.de>
-To: alan@linux.intel.com
-Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Frank Benkert <frank.benkert@avat.de>
-Subject: [PATCH] mpc5200b/uart: select more tolerant uart prescaler on low baudrates
-Date: Mon,  5 Mar 2012 16:14:29 +0100
-Message-Id: <13309604692481-git-send-email-frank.benkert@avat.de>
-X-Mailer: git-send-email 1.5.2.1
+	Mon, 5 Mar 2012 10:24:54 -0500
+Date: Mon, 5 Mar 2012 20:54:44 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120305152443.GE26559@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1329764866.2293.376.camhel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12030515-8878-0000-0000-0000018C0D13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to the /32 prescaler, the MPC5200B supports a second baudrate 
-prescaler /4 to reach higher baudrates.
-The current calculation (introduced with commit 0d1f22e4) in the kernel 
-preferes this low prescaler as often as possible, but with some imprecise 
-counterparts the communication on low baudrates fails. 
-According a support-mail from freescale the low prescaler (/4) allows just 
-1% tolerance in bittiming in contrast to 4% of the high prescaler (/32). 
-The prescaler not only affects the baudrate-calculation, but also the sampling 
-of the bits on the wire.
+* Peter Zijlstra <peterz@infradead.org> [2012-02-20 20:07:46]:
 
-With this patch, we use the slightly less precise, but higher tolerant 
-prescaler calculation on low baudrates up to (and including) 115200 baud and 
-the more precise calculation above.
+> On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
+> > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
+> > Maybe that has changed, but I doubt it.
+> 
+> Right, I through I remembered somet such, you could see it on wakeup
+> heavy things like pipe-bench and that java msg passing thing, right?
 
-Tested on a custom MPC5200B board with "fsl,mpc5200b-psc-uart".
+I did some experiments with volanomark and it does turn out to be
+sensitive to SD_BALANCE_WAKE, while the other wake-heavy benchmark that I am
+dealing with (Trade) benefits from it.
 
-Signed-off-by: Frank Benkert <frank.benkert@avat.de>
+Normalized results for both benchmarks provided below. 
+
+Machine : 2 Quad-core Intel X5570 CPU (H/T enabled)
+Kernel  : tip (HEAD at b86148a) 
+
+	   	   Before patch	    After patch
+
+Trade thr'put		1		2.17 (~200% improvement)
+volanomark		1		0.8  (20% degradation)
+
+
+Quick description of benchmarks 
+===============================
+
+Trade was run inside a 8-vcpu VM (cgroup). 4 other 4-vcpu VMs running
+cpu hogs were also present, leading to this cgroup setup:
+
+	/cgroup/sys (1024 shares - hosts all system tasks)
+	/cgroup/libvirt (20000 shares)
+	/cgroup/libvirt/qemu/VM1 (8192 cpu shares)
+	/cgroup/libvirt/qemu/VM2-5 (1024 shares)
+
+Volanomark server/client programs were run in root cgroup.
+
+The patch essentially does balance on wake to look for any idle cpu in
+same cache domain as its prev_cpu (or cur_cpu if wake_affine obliges),
+failing to find looks for least loaded cpu. This helps minimize
+latencies for trade workload (and thus boost its score). For volanomark, 
+it seems to hurt because of waking on a colder L2 cache.  The
+tradeoff seems to be between latency and cache-misses. Short of adding
+another tunable, are there better suggestions on how we can address this
+sort of tradeoff?
+
+Not-yet-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
 ---
+ include/linux/topology.h |    4 ++--
+ kernel/sched/fair.c      |   26 +++++++++++++++++++++-----
+ 2 files changed, 23 insertions(+), 7 deletions(-)
 
-Calculation Examples with prescaler (PS) 4 and 32 and divisor (DIV) on various 
-baudrates. Real stands for the real baudrate generated and Diff for the 
-differences between:
-     50 Baud PS 32 DIV 0xa122 Real      50 Diff   0.00%
-     75 Baud PS 32 DIV 0x6b6c Real      75 Diff   0.00%
-    110 Baud PS 32 DIV 0x493e Real     110 Diff   0.00%
-    134 Baud PS 32 DIV 0x3c20 Real     133 Diff   0.75%
-    150 Baud PS 32 DIV 0x35b6 Real     150 Diff   0.00%
-    200 Baud PS 32 DIV 0x2849 Real     199 Diff   0.50%
-    300 Baud PS  4 DIV 0xd6d8 Real     300 Diff   0.00%
-             PS 32 DIV 0x1adb Real     300 Diff   0.00%
-    600 Baud PS  4 DIV 0x6b6c Real     600 Diff   0.00%
-             PS 32 DIV 0x0d6e Real     599 Diff   0.17%
-   1200 Baud PS  4 DIV 0x35b6 Real    1200 Diff   0.00%
-             PS 32 DIV 0x06b7 Real    1199 Diff   0.08%
-   1800 Baud PS  4 DIV 0x23cf Real    1799 Diff   0.06%
-             PS 32 DIV 0x047a Real    1799 Diff   0.06%
-   2400 Baud PS  4 DIV 0x1adb Real    2400 Diff   0.00%
-             PS 32 DIV 0x035b Real    2401 Diff - 0.04%
-   4800 Baud PS  4 DIV 0x0d6e Real    4799 Diff   0.02%
-             PS 32 DIV 0x01ae Real    4796 Diff   0.08%
-   9600 Baud PS  4 DIV 0x06b7 Real    9598 Diff   0.02%
-             PS 32 DIV 0x00d7 Real    9593 Diff   0.07%
-  19200 Baud PS  4 DIV 0x035b Real   19208 Diff - 0.04%
-             PS 32 DIV 0x006b Real   19275 Diff - 0.39%
-  38400 Baud PS  4 DIV 0x01ae Real   38372 Diff   0.07%
-             PS 32 DIV 0x0036 Real   38194 Diff   0.54%
-  57600 Baud PS  4 DIV 0x011e Real   57692 Diff - 0.16%
-             PS 32 DIV 0x0024 Real   57291 Diff   0.54%
-  76800 Baud PS  4 DIV 0x00d7 Real   76744 Diff   0.07%
-             PS 32 DIV 0x001b Real   76388 Diff   0.54%
- 115200 Baud PS  4 DIV 0x008f Real  115384 Diff - 0.16%
-             PS 32 DIV 0x0012 Real  114583 Diff   0.54%
- 153600 Baud PS  4 DIV 0x006b Real  154205 Diff - 0.39%
-             PS 32 DIV 0x000d Real  158653 Diff - 3.29%
- 230400 Baud PS  4 DIV 0x0048 Real  229166 Diff   0.54%
-             PS 32 DIV 0x0009 Real  229166 Diff   0.54%
- 307200 Baud PS  4 DIV 0x0036 Real  305555 Diff   0.54%
-             PS 32 DIV 0x0007 Real  294642 Diff   4.09%
- 460800 Baud PS  4 DIV 0x0024 Real  458333 Diff   0.54%
-             PS 32 DIV 0x0005 Real  412500 Diff  10.48%
- 500000 Baud PS  4 DIV 0x0021 Real  500000 Diff   0.00%
-             PS 32 DIV 0x0004 Real  515625 Diff - 3.13%
- 576000 Baud PS  4 DIV 0x001d Real  568965 Diff   1.22%
-             PS 32 DIV 0x0004 Real  515625 Diff  10.48%
- 614400 Baud PS  4 DIV 0x001b Real  611111 Diff   0.54%
-             PS 32 DIV 0x0003 Real  687500 Diff -11.90%
- 921600 Baud PS  4 DIV 0x0012 Real  916666 Diff   0.54%
-             PS 32 DIV 0x0002 Real 1031250 Diff -11.90%
-1000000 Baud PS  4 DIV 0x0011 Real  970588 Diff   2.94%
-             PS 32 DIV 0x0002 Real 1031250 Diff - 3.13%
-1152000 Baud PS  4 DIV 0x000e Real 1178571 Diff - 2.31%
-             PS 32 DIV 0x0002 Real 1031250 Diff  10.48%
-1500000 Baud PS  4 DIV 0x000b Real 1500000 Diff   0.00%
-             PS 32 DIV 0x0001 Real 2062500 Diff -37.50%
-2000000 Baud PS  4 DIV 0x0008 Real 2062500 Diff - 3.13%
-             PS 32 DIV 0x0001 Real 2062500 Diff - 3.13%
-2500000 Baud PS  4 DIV 0x0007 Real 2357142 Diff   5.71%
-             PS 32 DIV 0x0001 Real 2062500 Diff  17.50%
-3000000 Baud PS  4 DIV 0x0006 Real 2750000 Diff   8.33%
-             PS 32 DIV 0x0001 Real 2062500 Diff  31.25%
-3500000 Baud PS  4 DIV 0x0005 Real 3300000 Diff   5.71%
-             PS 32 DIV 0x0001 Real 2062500 Diff  41.07%
-4000000 Baud PS  4 DIV 0x0004 Real 4125000 Diff - 3.13%
-             PS 32 DIV 0x0001 Real 2062500 Diff  48.44%
-
- drivers/tty/serial/mpc52xx_uart.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/mpc52xx_uart.c b/drivers/tty/serial/mpc52xx_uart.c
-index 1093a88..5e2c6fe 100644
---- a/drivers/tty/serial/mpc52xx_uart.c
-+++ b/drivers/tty/serial/mpc52xx_uart.c
-@@ -262,8 +262,9 @@ static unsigned int mpc5200b_psc_set_baudrate(struct uart_port *port,
- 				  port->uartclk / 4);
- 	divisor = (port->uartclk + 2 * baud) / (4 * baud);
+Index: current/include/linux/topology.h
+===================================================================
+--- current.orig/include/linux/topology.h
++++ current/include/linux/topology.h
+@@ -96,7 +96,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_BALANCE_NEWIDLE			\
+ 				| 1*SD_BALANCE_EXEC			\
+ 				| 1*SD_BALANCE_FORK			\
+-				| 0*SD_BALANCE_WAKE			\
++				| 1*SD_BALANCE_WAKE			\
+ 				| 1*SD_WAKE_AFFINE			\
+ 				| 1*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_POWERSAVINGS_BALANCE		\
+@@ -129,7 +129,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_BALANCE_NEWIDLE			\
+ 				| 1*SD_BALANCE_EXEC			\
+ 				| 1*SD_BALANCE_FORK			\
+-				| 0*SD_BALANCE_WAKE			\
++				| 1*SD_BALANCE_WAKE			\
+ 				| 1*SD_WAKE_AFFINE			\
+ 				| 0*SD_PREFER_LOCAL			\
+ 				| 0*SD_SHARE_CPUPOWER			\
+Index: current/kernel/sched/fair.c
+===================================================================
+--- current.orig/kernel/sched/fair.c
++++ current/kernel/sched/fair.c
+@@ -2638,7 +2638,7 @@ static int select_idle_sibling(struct ta
+ 	int prev_cpu = task_cpu(p);
+ 	struct sched_domain *sd;
+ 	struct sched_group *sg;
+-	int i;
++	int i, some_idle_cpu = -1;
  
--	/* select the proper prescaler and set the divisor */
--	if (divisor > 0xffff) {
-+	/* select the proper prescaler and set the divisor
-+	 * prefer high prescaler for more tolerance on low baudrates */
-+	if (divisor > 0xffff || baud <= 115200) {
- 		divisor = (divisor + 4) / 8;
- 		prescaler = 0xdd00; /* /32 */
- 	} else
--- 
-1.5.2.1
+ 	/*
+ 	 * If the task is going to be woken-up on this cpu and if it is
+@@ -2661,15 +2661,25 @@ static int select_idle_sibling(struct ta
+ 	for_each_lower_domain(sd) {
+ 		sg = sd->groups;
+ 		do {
++			int skip = 0;
++
+ 			if (!cpumask_intersects(sched_group_cpus(sg),
+ 						tsk_cpus_allowed(p)))
+ 				goto next;
+ 
+-			for_each_cpu(i, sched_group_cpus(sg)) {
+-				if (!idle_cpu(i))
+-					goto next;
++			for_each_cpu_and(i, sched_group_cpus(sg),
++							 tsk_cpus_allowed(p)) {
++				if (!idle_cpu(i)) {
++					if (some_idle_cpu >= 0)
++						goto next;
++					skip = 1;
++				} else
++					some_idle_cpu = i;
+ 			}
+ 
++			if (skip)
++				goto next;
++
+ 			target = cpumask_first_and(sched_group_cpus(sg),
+ 					tsk_cpus_allowed(p));
+ 			goto done;
+@@ -2677,6 +2687,9 @@ next:
+ 			sg = sg->next;
+ 		} while (sg != sd->groups);
+ 	}
++
++	if (some_idle_cpu >= 0)
++		target = some_idle_cpu;
+ done:
+ 	return target;
+ }
+@@ -2766,7 +2779,10 @@ select_task_rq_fair(struct task_struct *
+ 			prev_cpu = cpu;
+ 
+ 		new_cpu = select_idle_sibling(p, prev_cpu);
+-		goto unlock;
++		if (idle_cpu(new_cpu))
++			goto unlock;
++		sd = rcu_dereference(per_cpu(sd_llc, prev_cpu));
++		cpu = prev_cpu;
+ 	}
+ 
+ 	while (sd) {
+
+
+
+
+
 
 
