@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2CESlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 13:41:49 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14765 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab2CESls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 13:41:48 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18xN0yOU5ecO2Nmkc3Y3rFz
-Date: Mon, 5 Mar 2012 10:41:42 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Uri Yosef <uri.y@variscite.com>
-Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        oren@variscite.com, uri.yosef@gmail.com, Uri Yosef <uri@embedox.com>
-Subject: Re: [PATCH] ARM: OMAP4: Add support for Variscite OMAP4460
- System-On-Module
-Message-ID: <20120305184142.GI12083@atomide.com>
-References: <1326898096-4899-1-git-send-email-uri.y@variscite.com>
+	id S1757381Ab2CESmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:42:36 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:12245 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755577Ab2CESmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:42:35 -0500
+Message-ID: <4F550917.9020508@bfs.de>
+Date: Mon, 05 Mar 2012 19:42:31 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326898096-4899-1-git-send-email-uri.y@variscite.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch v2] x86, efi: fix pointer math issue in handle_ramdisks()
+References: <20120305180614.GA26880@elgon.mountain>
+In-Reply-To: <20120305180614.GA26880@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-* Uri Yosef <uri.y@variscite.com> [120118 06:13]:
-> From: Uri Yosef <uri@embedox.com>
+
+Am 05.03.2012 19:06, schrieb Dan Carpenter:
+> "filename" is a efi_char16_t string so this check for reaching the end
+> of the array doesn't work.  We need to cast the pointer to (u8 *) before
+> doing the math.
 > 
-> Add support for Variscite OMAP4460 System-On-Module and development kit board.
-> Working: LCD, HDMI, USB, UART, Ethernet.
+> This patch changes the "filename" to "filename_16" to avoid confusion in
+> the future.
+> 
 
-For reference, we're trying to remove board-*.c files by
-changing over to device tree. So new board-*.c files will
-be merged. You might want to look at booting your board
-using board-generic.c and a related .dts file.
+maybe it is a bit late,  but ...
+is efi_char16_t a generic requirement for EFI ? perhaps we can use wchar_t
+since it is intended for such cases. additional we would get an api for free.
 
-While this transition is happening, I can carry some
-board-*.c files in the testing-board branch until devices
-start working sufficiently for board-generic.c to be
-usable.
+just my 2 cents,
+ wh
 
-Regards,
 
-Tony
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> v2: Rename "filename" to "filename_16"
+>     Also changed cast from (char *) to (u8 *) because it's not a C
+>     character string.  Ingo suggested (void *) but that's a GCCism
+>     I think.
+> 
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index fec216f..0cdfc0d 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -539,7 +539,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+>  		struct initrd *initrd;
+>  		efi_file_handle_t *h;
+>  		efi_file_info_t *info;
+> -		efi_char16_t filename[256];
+> +		efi_char16_t filename_16[256];
+>  		unsigned long info_sz;
+>  		efi_guid_t info_guid = EFI_FILE_INFO_ID;
+>  		efi_char16_t *p;
+> @@ -552,14 +552,14 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+>  		str += 7;
+>  
+>  		initrd = &initrds[i];
+> -		p = filename;
+> +		p = filename_16;
+>  
+>  		/* Skip any leading slashes */
+>  		while (*str == '/' || *str == '\\')
+>  			str++;
+>  
+>  		while (*str && *str != ' ' && *str != '\n') {
+> -			if (p >= filename + sizeof(filename))
+> +			if ((u8 *)p >= (u8 *)filename_16 + sizeof(filename_16))
+>  				break;
+>  
+>  			*p++ = *str++;
+> @@ -583,7 +583,7 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
+>  				goto free_initrds;
+>  		}
+>  
+> -		status = efi_call_phys5(fh->open, fh, &h, filename,
+> +		status = efi_call_phys5(fh->open, fh, &h, filename_16,
+>  					EFI_FILE_MODE_READ, (u64)0);
+>  		if (status != EFI_SUCCESS)
+>  			goto close_handles;
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
