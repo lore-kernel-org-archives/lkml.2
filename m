@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2CEPzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 10:55:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53813 "EHLO
+	id S1754155Ab2CEPzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 10:55:47 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53812 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab2CEPzp (ORCPT
+	with ESMTP id S1750977Ab2CEPzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 10:55:45 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/7] perf/core improvements and fixes
-Date: Mon,  5 Mar 2012 12:55:25 -0300
-Message-Id: <1330962932-1796-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/7] perf evlist: Restore original errno after open failed
+Date: Mon,  5 Mar 2012 12:55:26 -0300
+Message-Id: <1330962932-1796-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1330962932-1796-1-git-send-email-acme@infradead.org>
+References: <1330962932-1796-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-	Please consider pulling,
+If perf_evsel__open() failed, the errno was set and returned properly.
 
-- Arnaldo
+However since the perf_evlist__open() called close() on fd's for all of
+evsel x cpu x thread after the failure, the errno was overridden by
+other code (EBADF). So the caller of the function ended up seeing
+different error message and getting confused.
 
-The following changes since commit 737f24bda723fdf89ecaacb99fa2bf5683c32799:
+Fit it by restoring original return value. Because one of caller of the
+function is in the python extension, and it uses system errno
+internally, it'd be better restoring the original value rather than
+using the return value of the function directly, IMHO (i.e. I'm not a
+python expert :)
 
-  Merge branch 'perf/urgent' into perf/core (2012-03-05 09:20:08 +0100)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to ff2a6617c2acd6a8dc468c90ab8708a6ad112bb0:
-
-  perf annotate: Add missing newline on error message (2012-03-05 10:15:50 -0300)
-
-----------------------------------------------------------------
-Improvements for 'perf annotate' from Namhyung Kim.
-
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1329966816-23175-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evlist.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-----------------------------------------------------------------
-Namhyung Kim (7):
-      perf evlist: Restore original errno after open failed
-      perf tools: Add descriptions of missing Makefile arguments
-      perf annotate: Print asm code as blue when source code is displayed
-      perf annotate: Handle lower case key code in annotate_browser__run()
-      perf annotate: Restore title when came back to original symbol
-      perf annotate: Fix help string on tui
-      perf annotate: Add missing newline on error message
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f8da9fa..159263d 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -765,6 +765,7 @@ out_err:
+ 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
+ 		perf_evsel__close(evsel, ncpus, nthreads);
+ 
++	errno = -err;
+ 	return err;
+ }
+ 
+-- 
+1.7.9.2.358.g22243
 
- tools/perf/Makefile                    |   14 ++++++++++++++
- tools/perf/util/annotate.c             |    2 +-
- tools/perf/util/evlist.c               |    1 +
- tools/perf/util/ui/browsers/annotate.c |   18 ++++++++++++------
- 4 files changed, 28 insertions(+), 7 deletions(-)
