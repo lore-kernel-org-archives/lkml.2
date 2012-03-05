@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab2CEGkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 01:40:31 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57918 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab2CEGka (ORCPT
+	id S1754981Ab2CEGwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:52:41 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:47586 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab2CEGwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 01:40:30 -0500
-Date: Mon, 5 Mar 2012 06:40:29 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] flush_tlb_range() needs ->page_table_lock when
- ->mmap_sem is not held
-Message-ID: <20120305064029.GK23916@ZenIV.linux.org.uk>
-References: <20120305063707.GH23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305063707.GH23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Mar 2012 01:52:39 -0500
+Subject: Re: iwlwifi WPA-TKIP crypto failure after group rekeying
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, 651199@bugs.debian.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Gustafsson <olangu@impressions.se>,
+        "Marco d'Itri" <md@Linux.IT>, Gabriel Kerneis <kerneis@pps.jussieu.fr>,
+        Shawn Thompson <shawn@projektenterprises.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20120305045334.GF30344@burratino> (sfid-20120305_055451_570064_79E67075)
+References: <1330320802.8460.105.camel@deadeye>
+	 <1330333354.3483.6.camel@jlt3.sipsolutions.net>
+	 <20120305045334.GF30344@burratino> (sfid-20120305_055451_570064_79E67075)
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Mar 2012 07:52:23 +0100
+Message-ID: <1330930343.3545.1.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- mm/hugetlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> >> To summarise, a WPA-TKIP managed connection stops passing traffic and
+> >> the kernel log shows the message "WPA: Group rekeying".  This apparently
+> >> doesn't happen if the connection is in heavy use at the time or with
+> >> module parameter swcrypto=1.  WPA2 is not affected either.
+> >
+> > I think this is due to my patch "iwlagn: rewrite HW crypto" which
+> > accidentally broke key *removal* (of all things), which causes issues
+> > when the first GTK is removed on the second rekeying.
+> >
+> > This patch
+> > [...]h=5dcbf480473f6c3f06ad2426b7517038a2a18911
+> >
+> > should fix it. Wey has sent it to John
+> [...]
+> > it's also marked for stable.
+> 
+> Shawn Thompson (cc-ed) tested the patch against 3.2.9 and 3.3-rc6 and
+> found it to work[1].  What can interested people do to help usher this
+> into mainline?
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 5f34bd8..a876871 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2277,8 +2277,8 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 			set_page_dirty(page);
- 		list_add(&page->lru, &page_list);
- 	}
--	spin_unlock(&mm->page_table_lock);
- 	flush_tlb_range(vma, start, end);
-+	spin_unlock(&mm->page_table_lock);
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	list_for_each_entry_safe(page, tmp, &page_list, lru) {
- 		page_remove_rmap(page);
--- 
-1.7.2.5
+Great, thanks for testing. The patch is already on the way into mainline
+with a Cc:stable tag, so I don't think there's anything to do at this
+point.
+
+johannes
 
