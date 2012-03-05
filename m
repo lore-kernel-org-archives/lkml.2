@@ -1,71 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2CEWMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:12:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755178Ab2CEWMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:12:51 -0500
-Date: Mon, 5 Mar 2012 17:12:42 -0500
-From: Dave Jones <davej@redhat.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: use-after-free in bluetooth (hci_conn_hash_flush)
-Message-ID: <20120305221242.GA2008@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"Gustavo F. Padovan" <padovan@profusion.mobi>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
+	id S1757063Ab2CEWNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:13:30 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41819 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678Ab2CEWNZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 17:13:25 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.191.168 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Mon, 5 Mar 2012 14:13:21 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120305221321.GF1263@google.com>
+References: <1330036246-21633-1-git-send-email-tj@kernel.org>
+ <20120223144336.58742e1b.akpm@linux-foundation.org>
+ <20120223230123.GL22536@google.com>
+ <20120223231204.GM22536@google.com>
+ <20120224142033.GA5095@redhat.com>
+ <20120225214421.GA3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120227031146.GA25187@redhat.com>
+ <20120227091141.GG3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120227194321.GF27677@redhat.com>
+ <20120229173639.GB5930@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120229173639.GB5930@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a user report this, which looks like a use after free
-in hci_conn_hash_flush(). Probably related to bf4c63252490ba78fb833cc7acf1a5b1900c970f
+Hello, Vivek.
 
-Full report is at https://bugzilla.redhat.com/show_bug.cgi?id=797590
+On Wed, Feb 29, 2012 at 12:36:39PM -0500, Vivek Goyal wrote:
+> Index: tejun-misc/block/blk-cgroup.h
+> ===================================================================
+> --- tejun-misc.orig/block/blk-cgroup.h	2012-02-28 01:29:09.238256494 -0500
+> +++ tejun-misc/block/blk-cgroup.h	2012-02-28 01:29:12.000000000 -0500
+> @@ -180,6 +180,8 @@ struct blkio_group {
+>  	struct request_queue *q;
+>  	struct list_head q_node;
+>  	struct hlist_node blkcg_node;
+> +	/* List of blkg waiting for per cpu stats memory to be allocated */
+> +	struct list_head pending_alloc_node;
 
-	Dave
+Can we move this right on top of rcu_head?  It's one of the coldest
+entries.  Also, long field names tend to be a bit painful.  How about
+just alloc_node?
 
-general protection fault: 0000 [#1] SMP 
-CPU 0 
-Modules linked in: rfcomm bnep btusb bluetooth lockd sunrpc uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev v4l2_compat_ioctl32 media snd_hda_codec_conexant snd_hda_intel arc4 snd_hda_codec iwlwifi mac80211 snd_hwdep snd_pcm snd_page_alloc snd_timer cfg80211 thinkpad_acpi iTCO_wdt e1000e snd soundcore microcode i2c_i801 r592 memstick iTCO_vendor_support rfkill binfmt_misc uinput sdhci_pci sdhci firewire_ohci mmc_core firewire_core crc_itu_t yenta_socket wmi i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
-Pid: 881, comm: bluetoothd Not tainted 3.3.0-0.rc4.git3.1.fc18.x86_64 #1 LENOVO 2767C99/2767C99
-RIP: 0010:[<ffffffffa0431175>]  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
-RSP: 0018:ffff8801f33a9d68  EFLAGS: 00010296
-RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000001
-RDX: 0000000000000000 RSI: ffffffff81c297e0 RDI: 0000000000000246
-RBP: ffff8801f33a9d88 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff8801f30cabb8
-R13: ffff8801f30caa88 R14: ffffffff82d20b40 R15: 0000000000000011
-FS:  00007f0e6947b740(0000) GS:ffff880232e00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001f2c08000 CR4: 00000000000406f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bluetoothd (pid: 881, threadinfo ffff8801f33a8000, task ffff8801f33a0000)
-Stack:
- ffff8801f30ca158 6b6b6b6b6b6b6b6b ffff8801f30ca148 ffff8801f30ca158
- ffff8801f33a9db8 ffffffffa042a6b8 ffff8801f30ca148 0000000000000000
- ffff8801f3318000 ffffffff82d20b40 ffff8801f33a9dd8 ffffffffa042cd9d
-Call Trace:
- [<ffffffffa042a6b8>] hci_dev_do_close+0xc8/0x340 [bluetooth]
- [<ffffffffa042cd9d>] hci_dev_close+0x2d/0x70 [bluetooth]
- [<ffffffffa04421a3>] hci_sock_ioctl+0x1a3/0x3e0 [bluetooth]
- [<ffffffff812c1127>] ? inode_has_perm.isra.42+0x67/0xa0
- [<ffffffff815443c0>] sock_do_ioctl+0x30/0x70
- [<ffffffff8154447d>] sock_ioctl+0x7d/0x2c0
- [<ffffffff811d06b9>] do_vfs_ioctl+0x99/0x5a0
- [<ffffffff811d0c59>] sys_ioctl+0x99/0xa0
- [<ffffffff816a74e9>] system_call_fastpath+0x16/0x1b
-Code: fd ff ff 48 8b 03 48 89 45 e8 48 8b 5d e8 e8 83 58 c5 e0 85 c0 74 0f e8 7a 58 c5 e0 85 c0 75 56 66 0f 1f 44 00 00 49 39 dc 74 3b <0f> b6 53 21 66 c7 43 1e 09 00 80 fa 01 74 14 73 8a be 16 00 00 
-RIP  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
- RSP <ffff8801f33a9d68>
+> +static void blkio_stat_alloc_fn(struct work_struct *work)
+> +{
+> +
+> +	void *stat_ptr = NULL;
+> +	struct blkio_group *blkg, *n;
+> +	int i;
+> +
+> +alloc_stats:
+> +	spin_lock_irq(&pending_alloc_list_lock);
+> +		if (list_empty(&pending_alloc_list)) {
+> +			/* Nothing to do */
+> +			spin_unlock_irq(&pending_alloc_list_lock);
+> +			return;
+> +		}
+> +	spin_unlock_irq(&pending_alloc_list_lock);
+> +
+> +	WARN_ON(stat_ptr != NULL);
+> +	stat_ptr = alloc_percpu(struct blkio_group_stats_cpu);
 
+There will only one of this work item and if queued on nrt wq, only
+one instance would be running.  Why not just create static ps[NR_POLS]
+array and fill it here.
+
+> +	/* Retry. Should there be an upper limit on number of retries */
+> +	if (stat_ptr == NULL)
+> +		goto alloc_stats;
+> +
+> +	spin_lock_irq(&blkio_list_lock);
+> +	spin_lock(&pending_alloc_list_lock);
+> +
+> +	list_for_each_entry_safe(blkg, n, &pending_alloc_list,
+> +		pending_alloc_node) {
+> +		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
+> +			struct blkio_policy_type *pol = blkio_policy[i];
+> +			struct blkg_policy_data *pd;
+> +
+> +			if (!pol)
+> +				continue;
+> +
+> +			if (!blkg->pd[i])
+> +				continue;
+> +
+> +			pd = blkg->pd[i];
+> +			if (pd->stats_cpu)
+> +				continue;
+> +
+> +			pd->stats_cpu = stat_ptr;
+> +			stat_ptr = NULL;
+> +			break;
+
+and install everything here at one go.
+
+> +		}
+> +
+> +		if (i == BLKIO_NR_POLICIES - 1) {
+> +			/* We are done with this group */
+> +			list_del_init(&blkg->pending_alloc_node);
+> +			continue;
+> +		} else
+> +			/* Go allocate more memory */
+> +			break;
+> +	}
+
+remove it from alloc list while holding alloc lock, unlock and go for
+retrying or exit and don't worry about stats_cpu left in ps[] as we're
+gonna be using that again later anyway.
+
+>  	/* insert */
+>  	spin_lock(&blkcg->lock);
+> -	swap(blkg, new_blkg);
+> +	spin_lock(&pending_alloc_list_lock);
+
+Do we need this nested inside blkcg->lock?  What's wrong with doing it
+after release blkcg->lock?
+
+> @@ -648,11 +701,16 @@ static void blkg_destroy(struct blkio_gr
+>  	lockdep_assert_held(q->queue_lock);
+>  	lockdep_assert_held(&blkcg->lock);
+>  
+> +	spin_lock(&pending_alloc_list_lock);
+> +
+>  	/* Something wrong if we are trying to remove same group twice */
+>  	WARN_ON_ONCE(list_empty(&blkg->q_node));
+>  	WARN_ON_ONCE(hlist_unhashed(&blkg->blkcg_node));
+>  	list_del_init(&blkg->q_node);
+>  	hlist_del_init_rcu(&blkg->blkcg_node);
+> +	list_del_init(&blkg->pending_alloc_node);
+> +
+> +	spin_unlock(&pending_alloc_list_lock);
+
+Why put the whole thing inside the alloc lock?
+
+Thanks.
+
+-- 
+tejun
