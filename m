@@ -1,117 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab2CEQBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:01:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58732 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab2CEQBc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:01:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.136.197 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Mon, 5 Mar 2012 20:01:27 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
-Message-ID: <20120305160127.GM7366@moon>
-References: <20120301191714.GF9930@moon>
- <20120301194120.GA11400@redhat.com>
- <20120302142630.GK8681@moon>
- <20120302152621.GA29744@redhat.com>
- <20120302161247.GO8681@moon>
- <20120303223333.GB26846@moon>
- <20120305142130.GA9393@redhat.com>
- <20120305142655.GC9393@redhat.com>
- <20120305144648.GA12341@moon>
- <20120305154029.GB12427@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305154029.GB12427@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755123Ab2CEQBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:01:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60070 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755017Ab2CEQBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:01:39 -0500
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 10/19] ext4: Convert to new freezing mechanism
+Date: Mon,  5 Mar 2012 17:01:08 +0100
+Message-Id: <1330963277-26336-11-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 04:40:29PM +0100, Oleg Nesterov wrote:
-> >
-> > Hi Oleg!
-> >
-> > Replying to both your email -- I wanted to be as close to open_exec
-> > as possible.
-> 
-> I see. But open_exec() is different, it returns the file we are going
-> to read/mmap. PR_SET_MM_EXE_FILE is different, I think O_RDONLY buys
-> nothing and looks confusing.
-> 
-> Anyway, as I said I won't argue.
-> 
+We remove most of frozen checks since upper layer takes care
+of blocking all writes. We only have to handle protection in
+ext4_page_mkwrite() in a special way because we cannot use
+generic block_page_mkwrite().
 
-OK
+CC: linux-ext4@vger.kernel.org
+CC: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/ext4/inode.c |    7 ++-----
+ fs/ext4/super.c |   29 +++++------------------------
+ 2 files changed, 7 insertions(+), 29 deletions(-)
 
-> > This prctl does cheat the kernel
-> 
-> Yep. Except, well, it cheats the user-space.
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index feaa82f..c65baf9 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4593,11 +4593,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	get_block_t *get_block;
+ 	int retries = 0;
+ 
+-	/*
+-	 * This check is racy but catches the common case. We rely on
+-	 * __block_page_mkwrite() to do a reliable check.
+-	 */
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++	sb_start_pagefault(inode->i_sb);
+ 	/* Delalloc case is easy... */
+ 	if (test_opt(inode->i_sb, DELALLOC) &&
+ 	    !ext4_should_journal_data(inode) &&
+@@ -4665,5 +4661,6 @@ retry_alloc:
+ out_ret:
+ 	ret = block_page_mkwrite_return(ret);
+ out:
++	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+ }
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 502c61f..0f1024a 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -289,33 +289,17 @@ static void ext4_put_nojournal(handle_t *handle)
+  * journal_end calls result in the superblock being marked dirty, so
+  * that sync() will call the filesystem's write_super callback if
+  * appropriate.
+- *
+- * To avoid j_barrier hold in userspace when a user calls freeze(),
+- * ext4 prevents a new handle from being started by s_frozen, which
+- * is in an upper layer.
+  */
+ handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks)
+ {
+ 	journal_t *journal;
+-	handle_t  *handle;
+ 
+ 	trace_ext4_journal_start(sb, nblocks, _RET_IP_);
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return ERR_PTR(-EROFS);
+ 
++	WARN_ON(sb->s_writers.frozen == SB_FREEZE_COMPLETE);
+ 	journal = EXT4_SB(sb)->s_journal;
+-	handle = ext4_journal_current_handle();
+-
+-	/*
+-	 * If a handle has been started, it should be allowed to
+-	 * finish, otherwise deadlock could happen between freeze
+-	 * and others(e.g. truncate) due to the restart of the
+-	 * journal handle if the filesystem is forzen and active
+-	 * handles are not stopped.
+-	 */
+-	if (!handle)
+-		vfs_check_frozen(sb, SB_FREEZE_TRANS);
+-
+ 	if (!journal)
+ 		return ext4_get_nojournal();
+ 	/*
+@@ -4280,10 +4264,8 @@ int ext4_force_commit(struct super_block *sb)
+ 		return 0;
+ 
+ 	journal = EXT4_SB(sb)->s_journal;
+-	if (journal) {
+-		vfs_check_frozen(sb, SB_FREEZE_TRANS);
++	if (journal)
+ 		ret = ext4_journal_force_commit(journal);
+-	}
+ 
+ 	return ret;
+ }
+@@ -4315,9 +4297,8 @@ static int ext4_sync_fs(struct super_block *sb, int wait)
+  * gives us a chance to flush the journal completely and mark the fs clean.
+  *
+  * Note that only this function cannot bring a filesystem to be in a clean
+- * state independently, because ext4 prevents a new handle from being started
+- * by @sb->s_frozen, which stays in an upper layer.  It thus needs help from
+- * the upper layer.
++ * state independently. It relies on upper layer to stop all data & metadata
++ * modifications.
+  */
+ static int ext4_freeze(struct super_block *sb)
+ {
+@@ -4344,7 +4325,7 @@ static int ext4_freeze(struct super_block *sb)
+ 	EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 	error = ext4_commit_super(sb, 1);
+ out:
+-	/* we rely on s_frozen to stop further updates */
++	/* we rely on upper layer to stop further updates */
+ 	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
+ 	return error;
+ }
+-- 
+1.7.1
 
-And kernel as well, since this link is not anymore
-the same as it was, and memory read from this file
-(at execution time) will keep data irrelevant to what
-the new symlink points to (but it's exactly by design).
-
-> 
-> > but with this tests
-> > the cheating should be minimized (it's almost the same as open_exec
-> > does).
-> 
-> I don't reallt understand "minimized" ;) With this tests
-> proc/pid/exe can't look "obviously wrong", I agree. But that is all.
-
-call it "minimized wrong" ;)
-
-> 
-> > > Seriously, I think we should cleanup this before c/r adds more
-> > > ugliness. I'll try to make the patch today.
-> >
-> > Cleanup what? If you mean this patch -- just point me what
-> > should I do.
-> 
-> I just sent the patch, "turn mm->exe_file into mm->exe_path"
-> 
-
-Cool, just got it, thanks!
-
-> > > And with all these checks I am no longer sure that fd is better
-> > > than filename ;)
-> >
-> > This security tests was a reason why I've used open_exec in
-> > first version of the patch
-> 
-> Yes, but me and Pavel forced you to use "int fd" ;)
-> 
-
-With plain fd it doesn't require kernel to allocate temp
-memory and copy path from user space, this is a positive
-effect.
-
-> > (and I still would prefer to
-> > have open_exec here instead of fd).
-> 
-> With the patch I sent "struct file *" is not needed at all.
-> I think prctl() can use user_path().
-
-OK!
-
-> 
-> > As to allow-write-access -- it should be cleaned once process
-> > finished, no?
-> 
-> Exactly! And who will increment ->i_writecount? Nobody, that is
-> the problem.
-
-I see, thanks!
-
-	Cyrill
