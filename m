@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab2CET6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 14:58:09 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53433 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511Ab2CET6G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 14:58:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of leslaw.kopec@nasza-klasa.pl designates 10.213.17.8 as permitted sender) smtp.mail=leslaw.kopec@nasza-klasa.pl
-Message-ID: <4F551ABE.5080605@nasza-klasa.pl>
-Date: Mon, 05 Mar 2012 20:57:50 +0100
-From: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
+	id S1757579Ab2CET6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 14:58:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757549Ab2CET6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 14:58:08 -0500
+Date: Mon, 5 Mar 2012 14:57:58 -0500
+From: Dave Jones <davej@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: WARNING: Adjusting tsc more then 11%
+Message-ID: <20120305195758.GA25498@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	John Stultz <john.stultz@linaro.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20120305154411.GA29668@redhat.com>
+ <1330972323.2191.74.camel@work-vm>
+ <20120305192338.GA30491@redhat.com>
+ <1330977010.2191.84.camel@work-vm>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Aman Gupta <aman@tmm1.net>, linux-kernel@vger.kernel.org,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: Re: Inconsistent load average on tickless kernels
-References: <CAK=uwuy80LaNdQ4P49i+bGUXFvxf1zB=oKqNBTdAyvFc+mOTyw@mail.gmail.com>	 <4F465F6E.9070605@nasza-klasa.pl> <1330517195.11248.148.camel@twins>	 <1330532667.11248.153.camel@twins> <1330534998.11248.158.camel@twins>
-In-Reply-To: <1330534998.11248.158.camel@twins>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig5D520C09FDAC1D37D9D95965"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330977010.2191.84.camel@work-vm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig5D520C09FDAC1D37D9D95965
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 05, 2012 at 11:50:10AM -0800, John Stultz wrote:
 
-On 29.02.2012 13:06, Peter Zijlstra wrote:
+ > >  > > The reports seem to have started around 3.3-rc4.
+ > > thinking about this some more, while the reports starts around rc4, this
+ > > may have been caused by something prior to that, as anyone moving from
+ > > Fedora 16 or earlier to F17 alpha would have jumped quite a kernel version or two.
+ > 
+ > Was F16 3.1 based? The warning was added in 3.2, so if you skipped it,
+ > it may not be new behavior then.
 
-> Missing here is a kernel build with CONFIG_NO_HZ but booted with
-> nohz=3Doff; this would be an interesting data point because it includes=
+initially 3.1 based. We recently pushed out a rebase to 3.2.
+This bug hasn't shown up there (yet?)
 
-> all the funny code but still ticks are the right frequency.
+ > Ok. Well, just to level set: the warning is informative, and points to
+ > unexpected, but not necessarily unsafe behavior.
+ >
+ > In fact, the risk (where mult is adjusted to be large enough to cause an
+ > overflow) we're warning about have been present 2.6.36 or even possibly
+ > before. The change in 3.2 which added the warning also added a more
+ > conservative mult calculation, so we're less likely to get overflow
+ > prone large mult values.
+ > 
+ > So it would be great to get further feedback from folks who are seeing
+ > this warning, so we can really hammer this out, but I don't want the
+ > warning spooking anyone into thinking things are terribly broken.
+ 
+One of the reports was from someone using vbox. I'm now wondering if
+the other users are using some other flavour of virt. I'll ask.
+ 
+	Dave
 
-You've asked for it and you got it. I have rebooted some servers with
-nohz=3Doff parameter set on kernels complied with CONFIG_NO_HZ=3Dy. They'=
-re
-the ones listed below with 'off' suffix.
-
-On 29.02.2012 17:24, Peter Zijlstra wrote:
-
-> Hrmm, this suggests we age too hard with nohz code.. in your test case
-> is there significant idle time? That is, suppose you run each cpu at 30=
-%
-> what is the period of you load? Running 3s out of 10s is significantly
-> different from running .3ms out of 1ms.
-
-It's definitely more similar to the second case - very frequent, but
-short bursts of activity. A single process does a tiny bit of
-computation mixed with a fair amount of network activity on each
-request. There are 80 such processes which are responsible for majority
-of system load.
-
-On 29.02.2012 18:03, Peter Zijlstra wrote:
-
->> The only thing I could find is that on nohz we can confuse the per-rq
->> sample period, does the below make a difference?=20
->=20
-> Uhm, something like so that is..=20
->=20
-> ---
->  kernel/sched/core.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->=20
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index d7c4322..44f61df 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2380,7 +2380,8 @@ static void calc_load_account_active(struct rq *t=
-his_rq)
->  	if (delta)
->  		atomic_long_add(delta, &calc_load_tasks);
-> =20
-> -	this_rq->calc_load_update +=3D LOAD_FREQ;
-> +	while (!time_before(jiffies, this_rq->calc_load_update))
-> +		this_rq->calc_load_update +=3D LOAD_FREQ;
->  }
-> =20
->  /*
->=20
-
-I have compiled another batch of kernels with this patch applied
-(they're the ones with 'patch0' suffix). The only difference was the
-patch had to go to kernel/sched.c, but that's what you get when not
-using the latest sources. Anyway, here are the results accompanied by a
-pretty picture [1]:
-
-					std	off	patch0
-2.6.32.55-no-hz				0.76	0.91	-
-2.6.32.55-no-hz-74f5187ac8		6.41	9.40	4.93
-2.6.32.55-no-hz-0f004f5a69		0.78	0.92	0.90
-2.6.37-rc5-no-hz-0f004f5a69		0.95	0.92	0.86
-2.6.37-rc5-no-hz-pre-0f004f5a69		9.16	10.47	8.02
-
-It seems that the patch didn't help much on kernels with 0f004f5a69
-applied. The ones with just 74f5187ac8 are reporting a more plausible
-values, but slightly lower than the ones without patch0. Am I right to
-assume that the correct load values are the ones produced by kernels
-complied with CONFIG_NO_HZ=3Dn? Should they be the baseline?
-
-I can run additional tests if you have other leads to follow. Is there a
-particular kernel version I should focus on? If not I will continue
-to use the current bundle. I'm also planning to give the latest stable
-release a spin.
-
-
-[1] http://img835.imageshack.us/img835/2204/kernelload.png
-
---=20
-Les=C5=82aw Kope=C4=87
-
-
---------------enig5D520C09FDAC1D37D9D95965
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk9VGskACgkQNZJfI+JDs2L5TQCfdkkSE31HuEhVUpjgA64HHVFt
-Z1sAniWa98adeWW2Db7BgNQSTKeyXSyz
-=9KaE
------END PGP SIGNATURE-----
-
---------------enig5D520C09FDAC1D37D9D95965--
