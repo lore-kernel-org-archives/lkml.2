@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2CEGCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 01:02:22 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39178 "EHLO
+	id S1754930Ab2CEGEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:04:39 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:34325 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751873Ab2CEGCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 01:02:20 -0500
-Message-ID: <1330927336.3009.10.camel@joe2Laptop>
+	id S1753636Ab2CEGEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 01:04:37 -0500
+Message-ID: <1330927473.3140.1.camel@joe2Laptop>
 Subject: Re: [PATCH] net/pch_gbe: supports eg20t ptp clock
 From: Joe Perches <joe@perches.com>
 To: Takahiro Shimizu <tshimizu818@gmail.com>
@@ -16,7 +16,7 @@ Cc: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
         jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com
-Date: Sun, 04 Mar 2012 22:02:16 -0800
+Date: Sun, 04 Mar 2012 22:04:33 -0800
 In-Reply-To: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
 References: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
@@ -56,11 +56,14 @@ static void
 pch_rx_timestamp(struct pch_gbe_adapter *adapter, struct sk_buff *skb)
 
 []
+
 > +static void pch_tx_timestamp(
 > +			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
 
 here too.
+
 []
+
 > +	shtx = skb_shinfo(skb);
 > +	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && adapter->hwts_tx_en))
 > +		shtx->tx_flags |= SKBTX_IN_PROGRESS;
@@ -90,12 +93,14 @@ probably better as
 > +		udelay(1);
 > +	}
 
-why not just continually poll instead of udelay?
+why not just continually poll until timeout instead of udelay?
 
 []
 
 > +static int hwtstamp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
+
 []
+
 > +	switch (cfg.rx_filter) {
 > +	case HWTSTAMP_FILTER_NONE:
 > +		adapter->hwts_rx_en = 0;
@@ -104,7 +109,7 @@ why not just continually poll instead of udelay?
 > +		adapter->hwts_rx_en = 0;
 > +		pch_ch_control_write(pdev, (SLAVE_MODE | CAP_MODE0));
 
-parentheses are not nececessary around SLAVE_MODE | CAP_MODE0
+parentheses are not necessary around SLAVE_MODE | CAP_MODE0
 
 > +		break;
 > +	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
