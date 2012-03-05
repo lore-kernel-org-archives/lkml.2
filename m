@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab2CEQIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:08:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60039 "EHLO mx2.suse.de"
+	id S1755581Ab2CEQH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:07:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60051 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609Ab2CEQBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754642Ab2CEQBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 11:01:35 -0500
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
         sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 06/19] fs: Improve filesystem freezing handling
-Date: Mon,  5 Mar 2012 17:01:04 +0100
-Message-Id: <1330963277-26336-7-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: [PATCH 05/19] nfsd: Push mnt_want_write() outside of i_mutex
+Date: Mon,  5 Mar 2012 17:01:03 +0100
+Message-Id: <1330963277-26336-6-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
 References: <1330963277-26336-1-git-send-email-jack@suse.cz>
@@ -22,517 +23,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vfs_check_frozen() tests are racy since the filesystem can be frozen just after
-the test is performed. Thus in write paths we can end up marking some pages or
-inodes dirty even though the file system is already frozen. This creates
-problems with flusher thread hanging on frozen filesystem.
+When mnt_want_write() starts to handle freezing it will get a full lock
+semantics requiring proper lock ordering. So push mnt_want_write() call
+consistently outside of i_mutex.
 
-Another problem is that exclusion between ->page_mkwrite() and filesystem
-freezing has been handled by setting page dirty and then verifying s_frozen.
-This guaranteed that either the freezing code sees the faulted page, writes it,
-and writeprotects it again or we see s_frozen set and bail out of page fault.
-This works to protect from page being marked writeable while filesystem
-freezing is running but has an unpleasant artefact of leaving dirty (although
-unmodified and writeprotected) pages on frozen filesystem resulting in similar
-problems with flusher thread as the first problem.
-
-This patch aims at providing exclusion between write paths and filesystem
-freezing. We implement a writer-freeze read-write semaphore in the superblock.
-Actually, there are two such semaphores because of lock ranking reasons - one
-for page fault handlers (->page_mkwrite) and one for all other writers.  Write
-paths which should block freezing (e.g. directory operations, ->aio_write(),
-->page_mkwrite) hold reader side of the semaphore. Code freezing the filesystem
-takes the writer side.
-
-Only that we don't really want to bounce cachelines of the semaphores between
-CPUs for each write happening. So we implement the reader side of the semaphore
-as a per-cpu counter and the writer side is implemented using s_writers.frozen
-superblock field.
-
+CC: linux-nfs@vger.kernel.org
+CC: "J. Bruce Fields" <bfields@fieldses.org>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/super.c         |  262 +++++++++++++++++++++++++++++++++++++++++++++++-----
- include/linux/fs.h |   42 +++++++--
- 2 files changed, 274 insertions(+), 30 deletions(-)
+ fs/nfsd/nfs4recover.c      |    9 +++--
+ fs/nfsd/nfsfh.c            |    1 +
+ fs/nfsd/nfsproc.c          |    9 ++++-
+ fs/nfsd/vfs.c              |   79 ++++++++++++++++++++++---------------------
+ fs/nfsd/vfs.h              |   11 +++++-
+ include/linux/nfsd/nfsfh.h |    1 +
+ 6 files changed, 64 insertions(+), 46 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 6277ec6..8b0b40c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -32,12 +32,15 @@
- #include <linux/backing-dev.h>
- #include <linux/rculist_bl.h>
- #include <linux/cleancache.h>
-+#include <linux/lockdep.h>
- #include "internal.h"
+diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+index 0b3e875..8e599a6 100644
+--- a/fs/nfsd/nfs4recover.c
++++ b/fs/nfsd/nfs4recover.c
+@@ -135,6 +135,10 @@ void nfsd4_create_clid_dir(struct nfs4_client *clp)
+ 	if (status < 0)
+ 		return;
  
- 
- LIST_HEAD(super_blocks);
- DEFINE_SPINLOCK(sb_lock);
- 
-+static struct lock_class_key sb_writers_key[2];
++	status = mnt_want_write_file(rec_file);
++	if (status)
++		return;
 +
- /*
-  * One thing we have to be careful of with a per-sb shrinker is that we don't
-  * drop the last active reference to the superblock from within the shrinker.
-@@ -101,6 +104,33 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
- 	return total_objects;
+ 	dir = rec_file->f_path.dentry;
+ 	/* lock the parent */
+ 	mutex_lock(&dir->d_inode->i_mutex);
+@@ -154,11 +158,7 @@ void nfsd4_create_clid_dir(struct nfs4_client *clp)
+ 		 * as well be forgiving and just succeed silently.
+ 		 */
+ 		goto out_put;
+-	status = mnt_want_write_file(rec_file);
+-	if (status)
+-		goto out_put;
+ 	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
+-	mnt_drop_write_file(rec_file);
+ out_put:
+ 	dput(dentry);
+ out_unlock:
+@@ -170,6 +170,7 @@ out_unlock:
+ 				" (err %d); please check that %s exists"
+ 				" and is writeable", status,
+ 				user_recovery_dirname);
++	mnt_drop_write_file(rec_file);
+ 	nfs4_reset_creds(original_cred);
  }
  
-+static int init_sb_writers(struct super_block *s)
-+{
-+	int err;
-+
-+	err = percpu_counter_init(&s->s_writers.counter[0], 0);
-+	if (err < 0)
-+		return err;
-+	err = percpu_counter_init(&s->s_writers.counter[1], 0);
-+	if (err < 0) {
-+		percpu_counter_destroy(&s->s_writers.counter[0]);
-+		return err;
-+	}
-+	init_waitqueue_head(&s->s_writers.wait);
-+	init_waitqueue_head(&s->s_writers.wait_unfrozen);
-+	lockdep_init_map(&s->s_writers.lock_map[0], "sb_writers",
-+			 &sb_writers_key[0], 0);
-+	lockdep_init_map(&s->s_writers.lock_map[1], "sb_pagefaults",
-+			 &sb_writers_key[1], 0);
-+	return 0;
-+}
-+
-+static void destroy_sb_writers(struct super_block *s)
-+{
-+	percpu_counter_destroy(&s->s_writers.counter[0]);
-+	percpu_counter_destroy(&s->s_writers.counter[1]);
-+}
-+
- /**
-  *	alloc_super	-	create new superblock
-  *	@type:	filesystem type superblock should belong to
-@@ -115,18 +145,19 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 
- 	if (s) {
- 		if (security_sb_alloc(s)) {
-+			/*
-+			 * We cannot call security_sb_free() without
-+			 * security_sb_alloc() succeeding. So bail out manually
-+			 */
- 			kfree(s);
- 			s = NULL;
- 			goto out;
- 		}
- #ifdef CONFIG_SMP
- 		s->s_files = alloc_percpu(struct list_head);
--		if (!s->s_files) {
--			security_sb_free(s);
--			kfree(s);
--			s = NULL;
--			goto out;
--		} else {
-+		if (!s->s_files)
-+			goto err_out;
-+		else {
- 			int i;
- 
- 			for_each_possible_cpu(i)
-@@ -135,6 +166,9 @@ static struct super_block *alloc_super(struct file_system_type *type)
- #else
- 		INIT_LIST_HEAD(&s->s_files);
+diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+index 68454e7..8b93353 100644
+--- a/fs/nfsd/nfsfh.c
++++ b/fs/nfsd/nfsfh.c
+@@ -635,6 +635,7 @@ fh_put(struct svc_fh *fhp)
+ 		fhp->fh_post_saved = 0;
  #endif
-+		if (init_sb_writers(s))
-+			goto err_out;
-+
- 		s->s_bdi = &default_backing_dev_info;
- 		INIT_HLIST_NODE(&s->s_instances);
- 		INIT_HLIST_BL_HEAD(&s->s_anon);
-@@ -187,6 +221,16 @@ static struct super_block *alloc_super(struct file_system_type *type)
  	}
- out:
- 	return s;
-+err_out:
-+	security_sb_free(s);
-+#ifdef CONFIG_SMP
-+	if (s->s_files)
-+		free_percpu(s->s_files);
-+#endif
-+	destroy_sb_writers(s);
-+	kfree(s);
-+	s = NULL;
-+	goto out;
- }
++	fh_drop_write(fhp);
+ 	if (exp) {
+ 		cache_put(&exp->h, &svc_export_cache);
+ 		fhp->fh_export = NULL;
+diff --git a/fs/nfsd/nfsproc.c b/fs/nfsd/nfsproc.c
+index e15dc45..aad6d45 100644
+--- a/fs/nfsd/nfsproc.c
++++ b/fs/nfsd/nfsproc.c
+@@ -196,6 +196,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ 	struct dentry	*dchild;
+ 	int		type, mode;
+ 	__be32		nfserr;
++	int		hosterr;
+ 	dev_t		rdev = 0, wanted = new_decode_dev(attr->ia_size);
  
- /**
-@@ -200,6 +244,7 @@ static inline void destroy_super(struct super_block *s)
- #ifdef CONFIG_SMP
- 	free_percpu(s->s_files);
- #endif
-+	destroy_sb_writers(s);
- 	security_sb_free(s);
- 	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
-@@ -646,10 +691,11 @@ struct super_block *get_super_thawed(struct block_device *bdev)
- {
- 	while (1) {
- 		struct super_block *s = get_super(bdev);
--		if (!s || s->s_frozen == SB_UNFROZEN)
-+		if (!s || s->s_writers.frozen == SB_UNFROZEN)
- 			return s;
- 		up_read(&s->s_umount);
--		vfs_check_frozen(s, SB_FREEZE_WRITE);
-+		wait_event(s->s_writers.wait_unfrozen,
-+			   s->s_writers.frozen == SB_UNFROZEN);
- 		put_super(s);
- 	}
- }
-@@ -727,7 +773,7 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 	int retval;
- 	int remount_ro;
- 
--	if (sb->s_frozen != SB_UNFROZEN)
-+	if (sb->s_writers.frozen != SB_UNFROZEN)
- 		return -EBUSY;
- 
- #ifdef CONFIG_BLOCK
-@@ -1162,6 +1208,164 @@ out:
- 	return ERR_PTR(error);
- }
- 
-+static void __sb_end_write(struct super_block *sb, int level)
-+{
-+	percpu_counter_dec(&sb->s_writers.counter[level-1]);
-+	/*
-+	 * Make sure s_writers are updated before we wake up waiters in
-+	 * freeze_super().
-+	 */
-+	smp_mb();
-+	if (waitqueue_active(&sb->s_writers.wait))
-+		wake_up(&sb->s_writers.wait);
-+	rwsem_release(&sb->s_writers.lock_map[level-1], 1, _RET_IP_);
-+}
-+
-+/**
-+ * sb_end_write - drop write access to a superblock
-+ * @sb: the super we wrote to
-+ *
-+ * Decrement number of writers to the filesystem. Wake up possible waiters
-+ * wanting to freeze the filesystem.
-+ */
-+void sb_end_write(struct super_block *sb)
-+{
-+	__sb_end_write(sb, SB_FREEZE_WRITE);
-+}
-+EXPORT_SYMBOL(sb_end_write);
-+
-+/**
-+ * sb_end_pagefault - drop write access to a superblock from a page fault
-+ * @sb: the super we wrote to
-+ *
-+ * Decrement number of processes handling write page fault to the filesystem.
-+ * Wake up possible waiters wanting to freeze the filesystem.
-+ */
-+void sb_end_pagefault(struct super_block *sb)
-+{
-+	__sb_end_write(sb, SB_FREEZE_PAGEFAULT);
-+}
-+EXPORT_SYMBOL(sb_end_pagefault);
-+
-+static int __sb_start_write(struct super_block *sb, int level, bool wait)
-+{
-+retry:
-+	if (wait) {
-+		wait_event(sb->s_writers.wait_unfrozen,
-+			   sb->s_writers.frozen < level);
-+	} else if (sb->s_writers.frozen >= level)
-+		return 0;
-+
-+	rwsem_acquire_read(&sb->s_writers.lock_map[level-1], 0, !wait,
-+			   _RET_IP_);
-+	percpu_counter_inc(&sb->s_writers.counter[level-1]);
-+	/*
-+	 * Make sure counter is updated before we check for frozen.
-+	 * freeze_super() first sets frozen and then checks the counter.
-+	 */
-+	smp_mb();
-+	if (sb->s_writers.frozen >= level) {
-+		__sb_end_write(sb, level);
-+		goto retry;
+ 	dprintk("nfsd: CREATE   %s %.*s\n",
+@@ -214,6 +215,12 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ 	nfserr = nfserr_exist;
+ 	if (isdotent(argp->name, argp->len))
+ 		goto done;
++	hosterr = fh_want_write(dirfhp);
++	if (hosterr) {
++		nfserr = nfserrno(hosterr);
++		goto done;
 +	}
-+	return 1;
-+}
 +
-+/**
-+ * sb_start_write - get write access to a superblock
-+ * @sb: the super we write to
-+ *
-+ * When a process wants to write data or metadata to a file system (i.e. dirty
-+ * a page or an inode), it should embed the operation in a sb_start_write() -
-+ * sb_end_write() pair to get exclusion against file system freezing. This
-+ * function increments number of writers preventing freezing. If the file
-+ * system is already frozen, the function waits until the file system is
-+ * thawed.
-+ *
-+ * Since freeze protection behaves as a lock, users have to preserve
-+ * ordering of freeze protection and other filesystem locks. Generally,
-+ * freeze protection should be the outermost lock. In particular, we have:
-+ *
-+ * sb_start_write
-+ *   -> i_mutex			(write path, truncate, directory ops, ...)
-+ *   -> s_umount		(freeze_super, thaw_super)
-+ */
-+void sb_start_write(struct super_block *sb)
-+{
-+	__sb_start_write(sb, SB_FREEZE_WRITE, true);
-+}
-+EXPORT_SYMBOL(sb_start_write);
-+
-+int sb_start_write_trylock(struct super_block *sb)
-+{
-+	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
-+}
-+EXPORT_SYMBOL(sb_start_write_trylock);
-+
-+/**
-+ * sb_start_write - get write access to a superblock from a page fault
-+ * @sb: the super we write to
-+ *
-+ * When a process starts handling write page fault, it should embed the
-+ * operation into sb_start_pagefault() - sb_end_pagefault() pair to get
-+ * exclusion against file system freezing. This is needed since the page fault
-+ * is going to dirty a page. This function increments number of running page
-+ * faults preventing freezing. If the file system is already frozen, the
-+ * function waits until the file system is thawed.
-+ *
-+ * Since page fault freeze protection behaves as a lock, users have to preserve
-+ * ordering of freeze protection and other filesystem locks. It is advised to
-+ * put sb_start_pagefault() close to mmap_sem in lock ordering. Page fault
-+ * handling code implies lock dependency:
-+ *
-+ * mmap_sem
-+ *   -> sb_start_pagefault
-+ */
-+void sb_start_pagefault(struct super_block *sb)
-+{
-+	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
-+}
-+EXPORT_SYMBOL(sb_start_pagefault);
-+
-+/**
-+ * sb_wait_write - wait until all writers to given file system finish
-+ * @sb: the super for which we wait
-+ * @level: type of writers we wait for (normal vs page fault)
-+ *
-+ * This function waits until there are no writers of given type to given file
-+ * system. Caller of this function should make sure there can be no new writers
-+ * of type @level before calling this function. Otherwise this function can
-+ * livelock.
-+ */
-+static void sb_wait_write(struct super_block *sb, int level)
-+{
-+	s64 writers;
-+
-+	/*
-+	 * We just cycle-through lockdep here so that it does not complain
-+	 * about returning with lock to userspace
-+	 */
-+	rwsem_acquire(&sb->s_writers.lock_map[level-1], 0, 0, _THIS_IP_);
-+	rwsem_release(&sb->s_writers.lock_map[level-1], 1, _THIS_IP_);
-+
-+	do {
-+		DEFINE_WAIT(wait);
-+
-+		/*
-+		 * We use a barrier in prepare_to_wait() to separate setting
-+		 * of frozen and checking of the counter
-+		 */
-+		prepare_to_wait(&sb->s_writers.wait, &wait,
-+				TASK_UNINTERRUPTIBLE);
-+
-+		writers = percpu_counter_sum(&sb->s_writers.counter[level-1]);
-+		if (writers)
-+			schedule();
-+
-+		finish_wait(&sb->s_writers.wait, &wait);
-+	} while (writers);
-+}
-+
- /**
-  * freeze_super - lock the filesystem and force it into a consistent state
-  * @sb: the super to lock
-@@ -1176,7 +1380,7 @@ int freeze_super(struct super_block *sb)
- 
- 	atomic_inc(&sb->s_active);
- 	down_write(&sb->s_umount);
--	if (sb->s_frozen) {
-+	if (sb->s_writers.frozen != SB_UNFROZEN) {
- 		deactivate_locked_super(sb);
- 		return -EBUSY;
- 	}
-@@ -1187,33 +1391,48 @@ int freeze_super(struct super_block *sb)
- 	}
- 
- 	if (sb->s_flags & MS_RDONLY) {
--		sb->s_frozen = SB_FREEZE_TRANS;
--		smp_wmb();
-+		/* Nothing to do really... */
-+		sb->s_writers.frozen = SB_FREEZE_COMPLETE;
- 		up_write(&sb->s_umount);
- 		return 0;
- 	}
- 
--	sb->s_frozen = SB_FREEZE_WRITE;
-+	/* From now on, no new normal writers can start */
-+	sb->s_writers.frozen = SB_FREEZE_WRITE;
- 	smp_wmb();
- 
--	sync_filesystem(sb);
-+	/* Release s_umount to preserve sb_start_write -> s_umount ordering */
-+	up_write(&sb->s_umount);
-+
-+	sb_wait_write(sb, SB_FREEZE_WRITE);
- 
--	sb->s_frozen = SB_FREEZE_TRANS;
-+	/* Now we go and block page faults... */
-+	down_write(&sb->s_umount);
-+	sb->s_writers.frozen = SB_FREEZE_PAGEFAULT;
- 	smp_wmb();
- 
--	sync_blockdev(sb->s_bdev);
-+	sb_wait_write(sb, SB_FREEZE_PAGEFAULT);
-+
-+	/* All writers are done so after syncing there won't be dirty data */
-+	sync_filesystem(sb);
-+
- 	if (sb->s_op->freeze_fs) {
- 		ret = sb->s_op->freeze_fs(sb);
- 		if (ret) {
- 			printk(KERN_ERR
- 				"VFS:Filesystem freeze failed\n");
--			sb->s_frozen = SB_UNFROZEN;
-+			sb->s_writers.frozen = SB_UNFROZEN;
- 			smp_wmb();
--			wake_up(&sb->s_wait_unfrozen);
-+			wake_up(&sb->s_writers.wait_unfrozen);
- 			deactivate_locked_super(sb);
- 			return ret;
- 		}
- 	}
-+	/*
-+	 * This is just for debugging purposes so that fs can warn if it
-+	 * sees write activity when frozen is set to SB_FREEZE_COMPLETE.
-+	 */
-+	sb->s_writers.frozen = SB_FREEZE_COMPLETE;
- 	up_write(&sb->s_umount);
- 	return 0;
- }
-@@ -1230,7 +1449,7 @@ int thaw_super(struct super_block *sb)
- 	int error;
- 
- 	down_write(&sb->s_umount);
--	if (sb->s_frozen == SB_UNFROZEN) {
-+	if (sb->s_writers.frozen == SB_UNFROZEN) {
- 		up_write(&sb->s_umount);
- 		return -EINVAL;
- 	}
-@@ -1243,16 +1462,15 @@ int thaw_super(struct super_block *sb)
- 		if (error) {
- 			printk(KERN_ERR
- 				"VFS:Filesystem thaw failed\n");
--			sb->s_frozen = SB_FREEZE_TRANS;
- 			up_write(&sb->s_umount);
- 			return error;
- 		}
- 	}
- 
- out:
--	sb->s_frozen = SB_UNFROZEN;
-+	sb->s_writers.frozen = SB_UNFROZEN;
- 	smp_wmb();
--	wake_up(&sb->s_wait_unfrozen);
-+	wake_up(&sb->s_writers.wait_unfrozen);
- 	deactivate_locked_super(sb);
- 
- 	return 0;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 69cd5bb..37667f3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -397,6 +397,7 @@ struct inodes_stat_t {
- #include <linux/atomic.h>
- #include <linux/shrinker.h>
- #include <linux/migrate_mode.h>
-+#include <linux/lockdep.h>
- 
- #include <asm/byteorder.h>
- 
-@@ -1392,6 +1393,14 @@ extern void f_delown(struct file *filp);
- extern pid_t f_getown(struct file *filp);
- extern int send_sigurg(struct fown_struct *fown);
- 
-+struct mm_struct;
-+
-+void sb_start_write(struct super_block *sb);
-+int sb_start_write_trylock(struct super_block *sb);
-+void sb_end_write(struct super_block *sb);
-+void sb_start_pagefault(struct super_block *sb);
-+void sb_end_pagefault(struct super_block *sb);
-+
- /*
-  *	Umount options
-  */
-@@ -1405,6 +1414,28 @@ extern int send_sigurg(struct fown_struct *fown);
- extern struct list_head super_blocks;
- extern spinlock_t sb_lock;
- 
-+/* Possible states of 'frozen' field */
-+enum {
-+	SB_UNFROZEN = 0,		/* FS is unfrozen */
-+	SB_FREEZE_WRITE	= 1,		/* Writes, dir ops, ioctls frozen */
-+	SB_FREEZE_TRANS = 2,
-+	SB_FREEZE_PAGEFAULT = 2,	/* Page faults stopped as well */
-+	SB_FREEZE_COMPLETE = 3,		/* ->freeze_fs finished successfully */
-+};
-+
-+struct sb_writers {
-+	struct percpu_counter	counter[2];	/* counter of running writes
-+						 * and page faults  */
-+	wait_queue_head_t	wait;		/* queue for waiting for
-+						   writers / faults to finish */
-+	int			frozen;		/* Is sb frozen? */
-+	wait_queue_head_t	wait_unfrozen;	/* queue for waiting for
-+						   sb to be thawed */
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	struct lockdep_map	lock_map[2];
-+#endif
-+};
-+
- struct super_block {
- 	struct list_head	s_list;		/* Keep this first */
- 	dev_t			s_dev;		/* search index; _not_ kdev_t */
-@@ -1454,6 +1485,7 @@ struct super_block {
- 
- 	int			s_frozen;
- 	wait_queue_head_t	s_wait_unfrozen;
-+	struct sb_writers	s_writers;
- 
- 	char s_id[32];				/* Informational name */
- 	u8 s_uuid[16];				/* UUID */
-@@ -1507,14 +1539,8 @@ extern struct timespec current_fs_time(struct super_block *sb);
- /*
-  * Snapshotting support.
-  */
--enum {
--	SB_UNFROZEN = 0,
--	SB_FREEZE_WRITE	= 1,
--	SB_FREEZE_TRANS = 2,
--};
+ 	fh_lock_nested(dirfhp, I_MUTEX_PARENT);
+ 	dchild = lookup_one_len(argp->name, dirfhp->fh_dentry, argp->len);
+ 	if (IS_ERR(dchild)) {
+@@ -330,7 +337,7 @@ nfsd_proc_create(struct svc_rqst *rqstp, struct nfsd_createargs *argp,
+ out_unlock:
+ 	/* We don't really need to unlock, as fh_put does it. */
+ 	fh_unlock(dirfhp);
 -
--#define vfs_check_frozen(sb, level) \
--	wait_event((sb)->s_wait_unfrozen, ((sb)->s_frozen < (level)))
-+/* Will go away when all users are converted */
-+#define vfs_check_frozen(sb, level) do { } while (0)
++	fh_drop_write(dirfhp);
+ done:
+ 	fh_put(dirfhp);
+ 	return nfsd_return_dirop(nfserr, resp);
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index edf6d3e..af49c63 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1268,6 +1268,10 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	 * If it has, the parent directory should already be locked.
+ 	 */
+ 	if (!resfhp->fh_dentry) {
++		host_err = fh_want_write(fhp);
++		if (host_err)
++			goto out_nfserr;
++
+ 		/* called from nfsd_proc_mkdir, or possibly nfsd3_proc_create */
+ 		fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 		dchild = lookup_one_len(fname, dentry, flen);
+@@ -1311,14 +1315,11 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		goto out;
+ 	}
  
- /*
-  * until VFS tracks user namespaces for inodes, just make all files
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+-
+ 	/*
+ 	 * Get the dir op function pointer.
+ 	 */
+ 	err = 0;
++	host_err = 0;
+ 	switch (type) {
+ 	case S_IFREG:
+ 		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
+@@ -1335,10 +1336,8 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		host_err = vfs_mknod(dirp, dchild, iap->ia_mode, rdev);
+ 		break;
+ 	}
+-	if (host_err < 0) {
+-		fh_drop_write(fhp);
++	if (host_err < 0)
+ 		goto out_nfserr;
+-	}
+ 
+ 	err = nfsd_create_setattr(rqstp, resfhp, iap);
+ 
+@@ -1350,7 +1349,6 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err2 = nfserrno(commit_metadata(fhp));
+ 	if (err2)
+ 		err = err2;
+-	fh_drop_write(fhp);
+ 	/*
+ 	 * Update the file handle to get the new inode info.
+ 	 */
+@@ -1409,6 +1407,11 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err = nfserr_notdir;
+ 	if (!dirp->i_op->lookup)
+ 		goto out;
++
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 
+ 	/*
+@@ -1441,9 +1444,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 		v_atime = verifier[1]&0x7fffffff;
+ 	}
+ 	
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+ 	if (dchild->d_inode) {
+ 		err = 0;
+ 
+@@ -1514,7 +1514,6 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	if (!err)
+ 		err = nfserrno(commit_metadata(fhp));
+ 
+-	fh_drop_write(fhp);
+ 	/*
+ 	 * Update the filehandle to get the new inode info.
+ 	 */
+@@ -1525,6 +1524,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	fh_unlock(fhp);
+ 	if (dchild && !IS_ERR(dchild))
+ 		dput(dchild);
++	fh_drop_write(fhp);
+  	return err;
+  
+  out_nfserr:
+@@ -1604,6 +1604,11 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
+ 	if (err)
+ 		goto out;
++
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock(fhp);
+ 	dentry = fhp->fh_dentry;
+ 	dnew = lookup_one_len(fname, dentry, flen);
+@@ -1611,10 +1616,6 @@ nfsd_symlink(struct svc_rqst *rqstp, struct svc_fh *fhp,
+ 	if (IS_ERR(dnew))
+ 		goto out_nfserr;
+ 
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_nfserr;
+-
+ 	if (unlikely(path[plen] != 0)) {
+ 		char *path_alloced = kmalloc(plen+1, GFP_KERNEL);
+ 		if (path_alloced == NULL)
+@@ -1674,6 +1675,12 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 	if (isdotent(name, len))
+ 		goto out;
+ 
++	host_err = fh_want_write(tfhp);
++	if (host_err) {
++		err = nfserrno(host_err);
++		goto out;
++	}
++
+ 	fh_lock_nested(ffhp, I_MUTEX_PARENT);
+ 	ddir = ffhp->fh_dentry;
+ 	dirp = ddir->d_inode;
+@@ -1685,18 +1692,13 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 
+ 	dold = tfhp->fh_dentry;
+ 
+-	host_err = fh_want_write(tfhp);
+-	if (host_err) {
+-		err = nfserrno(host_err);
+-		goto out_dput;
+-	}
+ 	err = nfserr_noent;
+ 	if (!dold->d_inode)
+-		goto out_drop_write;
++		goto out_dput;
+ 	host_err = nfsd_break_lease(dold->d_inode);
+ 	if (host_err) {
+ 		err = nfserrno(host_err);
+-		goto out_drop_write;
++		goto out_dput;
+ 	}
+ 	host_err = vfs_link(dold, dirp, dnew);
+ 	if (!host_err) {
+@@ -1709,12 +1711,11 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+ 		else
+ 			err = nfserrno(host_err);
+ 	}
+-out_drop_write:
+-	fh_drop_write(tfhp);
+ out_dput:
+ 	dput(dnew);
+ out_unlock:
+ 	fh_unlock(ffhp);
++	fh_drop_write(tfhp);
+ out:
+ 	return err;
+ 
+@@ -1757,6 +1758,12 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 	if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
+ 		goto out;
+ 
++	host_err = fh_want_write(ffhp);
++	if (host_err) {
++		err = nfserrno(host_err);
++		goto out;
++	}
++
+ 	/* cannot use fh_lock as we need deadlock protective ordering
+ 	 * so do it by hand */
+ 	trap = lock_rename(tdentry, fdentry);
+@@ -1787,17 +1794,14 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 	host_err = -EXDEV;
+ 	if (ffhp->fh_export->ex_path.mnt != tfhp->fh_export->ex_path.mnt)
+ 		goto out_dput_new;
+-	host_err = fh_want_write(ffhp);
+-	if (host_err)
+-		goto out_dput_new;
+ 
+ 	host_err = nfsd_break_lease(odentry->d_inode);
+ 	if (host_err)
+-		goto out_drop_write;
++		goto out_dput_new;
+ 	if (ndentry->d_inode) {
+ 		host_err = nfsd_break_lease(ndentry->d_inode);
+ 		if (host_err)
+-			goto out_drop_write;
++			goto out_dput_new;
+ 	}
+ 	host_err = vfs_rename(fdir, odentry, tdir, ndentry);
+ 	if (!host_err) {
+@@ -1805,8 +1809,6 @@ nfsd_rename(struct svc_rqst *rqstp, struct svc_fh *ffhp, char *fname, int flen,
+ 		if (!host_err)
+ 			host_err = commit_metadata(ffhp);
+ 	}
+-out_drop_write:
+-	fh_drop_write(ffhp);
+  out_dput_new:
+ 	dput(ndentry);
+  out_dput_old:
+@@ -1822,6 +1824,7 @@ out_drop_write:
+ 	fill_post_wcc(tfhp);
+ 	unlock_rename(tdentry, fdentry);
+ 	ffhp->fh_locked = tfhp->fh_locked = 0;
++	fh_drop_write(ffhp);
+ 
+ out:
+ 	return err;
+@@ -1847,6 +1850,10 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+ 	if (err)
+ 		goto out;
+ 
++	host_err = fh_want_write(fhp);
++	if (host_err)
++		goto out_nfserr;
++
+ 	fh_lock_nested(fhp, I_MUTEX_PARENT);
+ 	dentry = fhp->fh_dentry;
+ 	dirp = dentry->d_inode;
+@@ -1865,21 +1872,15 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
+ 	if (!type)
+ 		type = rdentry->d_inode->i_mode & S_IFMT;
+ 
+-	host_err = fh_want_write(fhp);
+-	if (host_err)
+-		goto out_put;
+-
+ 	host_err = nfsd_break_lease(rdentry->d_inode);
+ 	if (host_err)
+-		goto out_drop_write;
++		goto out_put;
+ 	if (type != S_IFDIR)
+ 		host_err = vfs_unlink(dirp, rdentry);
+ 	else
+ 		host_err = vfs_rmdir(dirp, rdentry);
+ 	if (!host_err)
+ 		host_err = commit_metadata(fhp);
+-out_drop_write:
+-	fh_drop_write(fhp);
+ out_put:
+ 	dput(rdentry);
+ 
+diff --git a/fs/nfsd/vfs.h b/fs/nfsd/vfs.h
+index 1dcd238..d5a50b4 100644
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -108,12 +108,19 @@ int nfsd_set_posix_acl(struct svc_fh *, int, struct posix_acl *);
+ 
+ static inline int fh_want_write(struct svc_fh *fh)
+ {
+-	return mnt_want_write(fh->fh_export->ex_path.mnt);
++	int ret = mnt_want_write(fh->fh_export->ex_path.mnt);
++
++	if (!ret)
++		fh->fh_want_write = 1;
++	return ret;
+ }
+ 
+ static inline void fh_drop_write(struct svc_fh *fh)
+ {
+-	mnt_drop_write(fh->fh_export->ex_path.mnt);
++	if (fh->fh_want_write) {
++		fh->fh_want_write = 0;
++		mnt_drop_write(fh->fh_export->ex_path.mnt);
++	}
+ }
+ 
+ #endif /* LINUX_NFSD_VFS_H */
+diff --git a/include/linux/nfsd/nfsfh.h b/include/linux/nfsd/nfsfh.h
+index ce4743a..fa63048 100644
+--- a/include/linux/nfsd/nfsfh.h
++++ b/include/linux/nfsd/nfsfh.h
+@@ -143,6 +143,7 @@ typedef struct svc_fh {
+ 	int			fh_maxsize;	/* max size for fh_handle */
+ 
+ 	unsigned char		fh_locked;	/* inode locked by us */
++	unsigned char		fh_want_write;	/* remount protection taken */
+ 
+ #ifdef CONFIG_NFSD_V3
+ 	unsigned char		fh_post_saved;	/* post-op attrs saved */
 -- 
 1.7.1
 
