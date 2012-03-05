@@ -1,153 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab2CELok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 06:44:40 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:45114
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756594Ab2CELoh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 06:44:37 -0500
-X-SpamScore: -1
-X-BigFish: VPS-1(zz9371Izz1202hzz8275bhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
-From: Rajesh Borundia <rajesh.borundia@qlogic.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>,
-        Sony Chacko <sony.chacko@qlogic.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Date: Mon, 5 Mar 2012 05:43:56 -0600
-Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Index: Acz5VSHJmvk0oJ1XRgSEUi8uNyxIcgBcB2mf
-Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA81A886ED40@MNEXMB1.qlogic.org>
-References: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
-In-Reply-To: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+	id S1756903Ab2CELtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 06:49:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24488 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756758Ab2CELtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 06:49:13 -0500
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Matt Fleming <matt.fleming@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <86wr71up4j.fsf@sumi.keithp.com>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	 <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	 <86zkbxusu2.fsf@sumi.keithp.com> <4F52B6F0.6060902@zytor.com>
+	 <86wr71up4j.fsf@sumi.keithp.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Mon, 05 Mar 2012 11:48:40 +0000
+Message-ID: <1330948120.3539.16.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will review this and get back to you.
+On Sat, 2012-03-03 at 17:33 -0800, Keith Packard wrote:
+> <#part sign=pgpmime>
+> On Sat, 03 Mar 2012 16:27:28 -0800, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> 
+> > Do you have the dmesg from your MBA?  I'm wondering what the memory map
+> > looks like...
+> 
+> Here's the first part of dmesg from a running kernel (3.3-rc1 plus some
+> DRM patches). Let me know if I cut this off too soon...
 
-Rajesh
-________________________________________
-From: santosh nayak [santoshprasadnayak@gmail.com]
-Sent: Saturday, March 03, 2012 9:17 PM
-To: Sony Chacko
-Cc: Rajesh Borundia; netdev; linux-kernel; kernel-janitors@vger.kernel.org; Santosh Nayak
-Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
-
-Fix endian bug.
-
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   12 +++++++-----
- .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
- 3 files changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-index 2eeac32..b5de8a7 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-@@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
-
- struct nx_vlan_ip_list {
-        struct list_head list;
--       u32 ip_addr;
-+       __be32 ip_addr;
- };
-
- /*
-@@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct nx_host_sds_ring *sds_ring, int max);
- void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
- int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
- int netxen_config_rss(struct netxen_adapter *adapter, int enable);
--int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd);
-+int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd);
- int netxen_linkevent_request(struct netxen_adapter *adapter, int enable);
- void netxen_advert_link_change(struct netxen_adapter *adapter, int linkup);
- void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-index 6f37470..0f81287 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-@@ -909,10 +909,11 @@ int netxen_config_rss(struct netxen_adapter *adapter, int enable)
-        return rv;
- }
-
--int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
-+int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd)
- {
-        nx_nic_req_t req;
-        u64 word;
-+       u64 ip_addr;
-        int rv;
-
-        memset(&req, 0, sizeof(nx_nic_req_t));
-@@ -922,7 +923,8 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
-        req.req_hdr = cpu_to_le64(word);
-
-        req.words[0] = cpu_to_le64(cmd);
--       req.words[1] = cpu_to_le64(ip);
-+       ip_addr = be32_to_cpu(ip);
-+       *(__be64 *)&req.words[1] = cpu_to_be64(ip_addr);
-
-        rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
-        if (rv != 0) {
-@@ -1050,7 +1052,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
-        if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac) == -1)
-                return -1;
-
--       if (*mac == cpu_to_le64(~0ULL)) {
-+       if (*mac == ~0ULL) {
-
-                offset = NX_OLD_MAC_ADDR_OFFSET +
-                        (adapter->portnum * sizeof(u64));
-@@ -1059,7 +1061,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
-                                        offset, sizeof(u64), pmac) == -1)
-                        return -1;
-
--               if (*mac == cpu_to_le64(~0ULL))
-+               if (*mac == ~0ULL)
-                        return -1;
-        }
-        return 0;
-@@ -2178,7 +2180,7 @@ lock_try:
-                NX_WR_DUMP_REG(FLASH_ROM_WINDOW, adapter->ahw.pci_base0, waddr);
-                raddr = FLASH_ROM_DATA + (fl_addr & 0x0000FFFF);
-                NX_RD_DUMP_REG(raddr, adapter->ahw.pci_base0, &val);
--               *data_buff++ = cpu_to_le32(val);
-+               *data_buff++ = val;
-                fl_addr += sizeof(val);
-        }
-        readl((void __iomem *)(adapter->ahw.pci_base0 + NX_FLASH_SEM2_ULK));
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-index 8dc4a134..70783b4 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter *adapter)
-                        adapter->driver_mismatch = 1;
-                        return;
-                }
--               ptr32[i] = cpu_to_le32(val);
-+               ptr32[i] = val;
-                offset += sizeof(u32);
-        }
-
---
-1.7.4.4
-
+Have you tried adding 'add_efi_memmap' to your kernel command line?
 
 
