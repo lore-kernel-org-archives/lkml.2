@@ -1,316 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab2CEQTv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:19:51 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50087 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab2CEQQy (ORCPT
+	id S1756339Ab2CEQUC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:20:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60868 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab2CEQT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:16:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.216.133.72 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
+	Mon, 5 Mar 2012 11:19:58 -0500
+Date: Mon, 5 Mar 2012 08:18:54 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-41c21a68308f2f268a01ec1a7fa5f650e320a0f3@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1329966816-23175-1-git-send-email-namhyung.kim@lge.com>
+References: <1329966816-23175-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evlist:
+  Restore original errno after open failed
+Git-Commit-ID: 41c21a68308f2f268a01ec1a7fa5f650e320a0f3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH 03/14] dmaengine: imx-dma: remove dma_mode member of internal structure.
-Date: Mon,  5 Mar 2012 17:16:25 +0100
-Message-Id: <1330964196-32623-4-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 08:19:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use direction field which is embedded in the descriptor structure
-instead.
+Commit-ID:  41c21a68308f2f268a01ec1a7fa5f650e320a0f3
+Gitweb:     http://git.kernel.org/tip/41c21a68308f2f268a01ec1a7fa5f650e320a0f3
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 23 Feb 2012 12:13:36 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 5 Mar 2012 10:15:49 -0300
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+perf evlist: Restore original errno after open failed
+
+If perf_evsel__open() failed, the errno was set and returned properly.
+
+However since the perf_evlist__open() called close() on fd's for all of
+evsel x cpu x thread after the failure, the errno was overridden by
+other code (EBADF). So the caller of the function ended up seeing
+different error message and getting confused.
+
+Fit it by restoring original return value. Because one of caller of the
+function is in the python extension, and it uses system errno
+internally, it'd be better restoring the original value rather than
+using the return value of the function directly, IMHO (i.e. I'm not a
+python expert :)
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1329966816-23175-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/dma/imx-dma.c |  103 +++++++++++++++++++++---------------------------
- 1 files changed, 45 insertions(+), 58 deletions(-)
+ tools/perf/util/evlist.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 1a9be6d..2c524e1 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -35,10 +35,6 @@
- #define IMXDMA_MAX_CHAN_DESCRIPTORS	16
- #define IMX_DMA_CHANNELS  16
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index f8da9fa..159263d 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -765,6 +765,7 @@ out_err:
+ 	list_for_each_entry_reverse(evsel, &evlist->entries, node)
+ 		perf_evsel__close(evsel, ncpus, nthreads);
  
--#define DMA_MODE_READ		0
--#define DMA_MODE_WRITE		1
--#define DMA_MODE_MASK		1
--
- #define IMX_DMA_LENGTH_LOOP	((unsigned int)-1)
- #define IMX_DMA_MEMSIZE_32	(0 << 4)
- #define IMX_DMA_MEMSIZE_8	(1 << 4)
-@@ -132,7 +128,6 @@ enum  imxdma_prep_type {
-  */
- 
- struct imxdma_channel_internal {
--	unsigned int dma_mode;
- 	struct scatterlist *sg;
- 	unsigned int resbytes;
- 
-@@ -153,7 +148,7 @@ struct imxdma_desc {
- 	dma_addr_t			src;
- 	dma_addr_t			dest;
- 	size_t				len;
--	unsigned int			dmamode;
-+	enum dma_transfer_direction	direction;
- 	enum imxdma_prep_type		type;
- 	/* For memcpy and interleaved */
- 	unsigned int			config_port;
-@@ -239,8 +234,9 @@ static int imxdma_hw_chain(struct imxdma_channel_internal *imxdma)
- /*
-  * imxdma_sg_next - prepare next chunk for scatter-gather DMA emulation
-  */
--static inline int imxdma_sg_next(struct imxdma_channel *imxdmac, struct scatterlist *sg)
-+static inline int imxdma_sg_next(struct imxdma_desc *d, struct scatterlist *sg)
- {
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
- 	struct imxdma_channel_internal *imxdma = &imxdmac->internal;
- 	unsigned long now;
- 
-@@ -248,7 +244,7 @@ static inline int imxdma_sg_next(struct imxdma_channel *imxdmac, struct scatterl
- 	if (imxdma->resbytes != IMX_DMA_LENGTH_LOOP)
- 		imxdma->resbytes -= now;
- 
--	if ((imxdma->dma_mode & DMA_MODE_MASK) == DMA_MODE_READ)
-+	if (d->direction == DMA_DEV_TO_MEM)
- 		imx_dmav1_writel(sg->dma_address, DMA_DAR(imxdmac->channel));
- 	else
- 		imx_dmav1_writel(sg->dma_address, DMA_SAR(imxdmac->channel));
-@@ -265,14 +261,12 @@ static inline int imxdma_sg_next(struct imxdma_channel *imxdmac, struct scatterl
++	errno = -err;
+ 	return err;
  }
  
- static int
--imxdma_setup_single_hw(struct imxdma_channel *imxdmac, dma_addr_t dma_address,
--		     unsigned int dma_length, unsigned int dev_addr,
--		     unsigned int dmamode)
-+imxdma_setup_mem2mem_hw(struct imxdma_channel *imxdmac, dma_addr_t dma_address,
-+		     unsigned int dma_length, unsigned int dev_addr)
- {
- 	int channel = imxdmac->channel;
- 
- 	imxdmac->internal.sg = NULL;
--	imxdmac->internal.dma_mode = dmamode;
- 
- 	if (!dma_address) {
- 		printk(KERN_ERR "imxdma%d: imx_dma_setup_single null address\n",
-@@ -286,38 +280,24 @@ imxdma_setup_single_hw(struct imxdma_channel *imxdmac, dma_addr_t dma_address,
- 		return -EINVAL;
- 	}
- 
--	if ((dmamode & DMA_MODE_MASK) == DMA_MODE_READ) {
--		pr_debug("imxdma%d: %s dma_addressg=0x%08x dma_length=%d "
--			"dev_addr=0x%08x for read\n",
--			channel, __func__, (unsigned int)dma_address,
--			dma_length, dev_addr);
-+	pr_debug("imxdma%d: %s dma_addressg=0x%08x dma_length=%d "
-+		"dev_addr=0x%08x for write\n",
-+		channel, __func__, (unsigned int)dma_address,
-+		dma_length, dev_addr);
- 
--		imx_dmav1_writel(dev_addr, DMA_SAR(channel));
--		imx_dmav1_writel(dma_address, DMA_DAR(channel));
--		imx_dmav1_writel(imxdmac->internal.ccr_from_device, DMA_CCR(channel));
--	} else if ((dmamode & DMA_MODE_MASK) == DMA_MODE_WRITE) {
--		pr_debug("imxdma%d: %s dma_addressg=0x%08x dma_length=%d "
--			"dev_addr=0x%08x for write\n",
--			channel, __func__, (unsigned int)dma_address,
--			dma_length, dev_addr);
--
--		imx_dmav1_writel(dma_address, DMA_SAR(channel));
--		imx_dmav1_writel(dev_addr, DMA_DAR(channel));
--		imx_dmav1_writel(imxdmac->internal.ccr_to_device,
--				DMA_CCR(channel));
--	} else {
--		printk(KERN_ERR "imxdma%d: imx_dma_setup_single bad dmamode\n",
--		       channel);
--		return -EINVAL;
--	}
-+	imx_dmav1_writel(dma_address, DMA_SAR(channel));
-+	imx_dmav1_writel(dev_addr, DMA_DAR(channel));
-+	imx_dmav1_writel(imxdmac->internal.ccr_to_device,
-+			 DMA_CCR(channel));
- 
- 	imx_dmav1_writel(dma_length, DMA_CNTR(channel));
- 
- 	return 0;
- }
- 
--static void imxdma_enable_hw(struct imxdma_channel *imxdmac)
-+static void imxdma_enable_hw(struct imxdma_desc *d)
- {
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
- 	int channel = imxdmac->channel;
- 	unsigned long flags;
- 
-@@ -338,7 +318,7 @@ static void imxdma_enable_hw(struct imxdma_channel *imxdmac)
- 		imxdmac->internal.sg = sg_next(imxdmac->internal.sg);
- 		if (imxdmac->internal.sg) {
- 			u32 tmp;
--			imxdma_sg_next(imxdmac, imxdmac->internal.sg);
-+			imxdma_sg_next(d, imxdmac->internal.sg);
- 			tmp = imx_dmav1_readl(DMA_CCR(channel));
- 			imx_dmav1_writel(tmp | CCR_RPT | CCR_ACRPT,
- 				DMA_CCR(channel));
-@@ -395,18 +375,18 @@ imxdma_config_channel_hw(struct imxdma_channel *imxdmac, unsigned int config_por
- }
- 
- static int
--imxdma_setup_sg_hw(struct imxdma_channel *imxdmac,
-+imxdma_setup_sg_hw(struct imxdma_desc *d,
- 		 struct scatterlist *sg, unsigned int sgcount,
- 		 unsigned int dma_length, unsigned int dev_addr,
--		 unsigned int dmamode)
-+		 enum dma_transfer_direction direction)
- {
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
- 	int channel = imxdmac->channel;
- 
- 	if (imxdmac->internal.in_use)
- 		return -EBUSY;
- 
- 	imxdmac->internal.sg = sg;
--	imxdmac->internal.dma_mode = dmamode;
- 	imxdmac->internal.resbytes = dma_length;
- 
- 	if (!sg || !sgcount) {
-@@ -421,14 +401,14 @@ imxdma_setup_sg_hw(struct imxdma_channel *imxdmac,
- 		return -EINVAL;
- 	}
- 
--	if ((dmamode & DMA_MODE_MASK) == DMA_MODE_READ) {
-+	if (direction == DMA_DEV_TO_MEM) {
- 		pr_debug("imxdma%d: %s sg=%p sgcount=%d total length=%d "
- 			"dev_addr=0x%08x for read\n",
- 			channel, __func__, sg, sgcount, dma_length, dev_addr);
- 
- 		imx_dmav1_writel(dev_addr, DMA_SAR(channel));
- 		imx_dmav1_writel(imxdmac->internal.ccr_from_device, DMA_CCR(channel));
--	} else if ((dmamode & DMA_MODE_MASK) == DMA_MODE_WRITE) {
-+	} else if (direction == DMA_MEM_TO_DEV) {
- 		pr_debug("imxdma%d: %s sg=%p sgcount=%d total length=%d "
- 			"dev_addr=0x%08x for write\n",
- 			channel, __func__, sg, sgcount, dma_length, dev_addr);
-@@ -441,7 +421,7 @@ imxdma_setup_sg_hw(struct imxdma_channel *imxdmac,
- 		return -EINVAL;
- 	}
- 
--	imxdma_sg_next(imxdmac, sg);
-+	imxdma_sg_next(d, sg);
- 
- 	return 0;
- }
-@@ -519,13 +499,26 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
- {
- 	struct imxdma_channel_internal *imxdma = &imxdmac->internal;
- 	int chno = imxdmac->channel;
-+	struct imxdma_desc *desc;
- 
- 	if (imxdma->sg) {
- 		u32 tmp;
- 		imxdma->sg = sg_next(imxdma->sg);
- 
- 		if (imxdma->sg) {
--			imxdma_sg_next(imxdmac, imxdma->sg);
-+
-+			spin_lock(&imxdmac->lock);
-+			if (list_empty(&imxdmac->ld_active)) {
-+				spin_unlock(&imxdmac->lock);
-+				goto out;
-+			}
-+
-+			desc = list_first_entry(&imxdmac->ld_active,
-+						struct imxdma_desc,
-+						node);
-+			spin_unlock(&imxdmac->lock);
-+
-+			imxdma_sg_next(desc, imxdma->sg);
- 
- 			tmp = imx_dmav1_readl(DMA_CCR(chno));
- 
-@@ -558,6 +551,7 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
- 		}
- 	}
- 
-+out:
- 	imx_dmav1_writel(0, DMA_CCR(chno));
- 	imxdma->in_use = 0;
- 	/* Tasklet irq */
-@@ -601,8 +595,7 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
- 					  d->config_port, d->config_mem, 0, 0);
- 		if (ret < 0)
- 			return ret;
--		ret = imxdma_setup_single_hw(imxdmac, d->src,
--					   d->len, d->dest, d->dmamode);
-+		ret = imxdma_setup_mem2mem_hw(imxdmac, d->src, d->len, d->dest);
- 		if (ret < 0)
- 			return ret;
- 		break;
-@@ -610,19 +603,15 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
- 	/* Cyclic transfer is the same as slave_sg with special sg configuration. */
- 	case IMXDMA_DESC_CYCLIC:
- 	case IMXDMA_DESC_SLAVE_SG:
--		if (d->dmamode == DMA_MODE_READ)
--			ret = imxdma_setup_sg_hw(imxdmac, d->sg,
--				       d->sgcount, d->len, d->src, d->dmamode);
--		else
--			ret = imxdma_setup_sg_hw(imxdmac, d->sg,
--				      d->sgcount, d->len, d->dest, d->dmamode);
-+		ret = imxdma_setup_sg_hw(d, d->sg, d->sgcount, d->len,
-+					 imxdmac->per_address, d->direction);
- 		if (ret < 0)
- 			return ret;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
--	imxdma_enable_hw(imxdmac);
-+	imxdma_enable_hw(d);
- 	return 0;
- }
- 
-@@ -867,11 +856,10 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
- 	desc->sg = sgl;
- 	desc->sgcount = sg_len;
- 	desc->len = dma_length;
-+	desc->direction = direction;
- 	if (direction == DMA_DEV_TO_MEM) {
--		desc->dmamode = DMA_MODE_READ;
- 		desc->src = imxdmac->per_address;
- 	} else {
--		desc->dmamode = DMA_MODE_WRITE;
- 		desc->dest = imxdmac->per_address;
- 	}
- 	desc->desc.callback = NULL;
-@@ -927,11 +915,10 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
- 	desc->sg = imxdmac->sg_list;
- 	desc->sgcount = periods;
- 	desc->len = IMX_DMA_LENGTH_LOOP;
-+	desc->direction = direction;
- 	if (direction == DMA_DEV_TO_MEM) {
--		desc->dmamode = DMA_MODE_READ;
- 		desc->src = imxdmac->per_address;
- 	} else {
--		desc->dmamode = DMA_MODE_WRITE;
- 		desc->dest = imxdmac->per_address;
- 	}
- 	desc->desc.callback = NULL;
-@@ -961,7 +948,7 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
- 	desc->src = src;
- 	desc->dest = dest;
- 	desc->len = len;
--	desc->dmamode = DMA_MODE_WRITE;
-+	desc->direction = DMA_MEM_TO_MEM;
- 	desc->config_port = IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR;
- 	desc->config_mem = IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR;
- 	desc->desc.callback = NULL;
--- 
-1.7.0.4
-
