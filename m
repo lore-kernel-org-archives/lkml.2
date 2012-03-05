@@ -1,69 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab2CEQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:27:45 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42834 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab2CEQ1o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:27:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.130.67 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Mon, 5 Mar 2012 08:27:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Aditya Kali <adityakali@google.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Max Kellermann <mk@cm4all.com>, Tim Hockin <thockin@hockin.org>,
-        Glauber Costa <glommer@gmail.com>, Paul Menage <paul@paulmenage.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Papp =?iso-8859-1?Q?Tam=E1s?= <tompos@martos.bme.hu>,
-        Ulli Horlacher <framstag@rus.uni-stuttgart.de>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-Message-ID: <20120305162739.GP22536@google.com>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
- <20120201163126.GA19837@google.com>
- <20120201184959.GH6731@somewhere.redhat.com>
- <20120201115107.93e11471.akpm@linux-foundation.org>
- <20120202145000.GC9071@somewhere.redhat.com>
- <4F4FFDE4.8050908@free.fr>
- <20120305032130.GD18143@somewhere.redhat.com>
- <20120305162652.GO22536@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305162652.GO22536@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753135Ab2CEQaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:30:39 -0500
+Received: from mga03.intel.com ([143.182.124.21]:51464 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab2CEQai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:30:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114870502"
+Message-ID: <1330965033.7220.16.camel@golum>
+Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 05 Mar 2012 18:30:33 +0200
+In-Reply-To: <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+References: <cover.1329349881.git.joe@perches.com>
+	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 08:26:52AM -0800, Tejun Heo wrote:
-> Hello, Frederic.
+On Wed, 2012-02-15 at 15:56 -0800, Joe Perches wrote:
+> D1 and D2 macros are mostly uses to emit debugging messages.
 > 
-> On Mon, Mar 05, 2012 at 04:21:33AM +0100, Frederic Weisbecker wrote:
-> > Time for me to try to wake up again this discussion.
-> > Andrew, Tejun, Li, as you can see we don't lack the users
-> > for this feature.
+> Convert the logging uses of D1 & D2 to jffs2_dbg(level, fmt, ...)
+> to be a bit more consistent style with the rest of the kernel.
 > 
-> Yes, I agree this can be a useful feature for certain use cases.  I'm
-> just mostly feeling reluctant about adding another utility type
-> controller without clear direction on how to proceed from here on
-> regarding multiple hierarchies (and I was on vacation :).  That said,
-> dealing with multiple hierarchies is a much longer term issue and
-> we'll probably have to continue on our current path for the time
-> being.
-> 
-> We're already into -rc6, so unless someone objects I'll try to merge
-> it after the coming merge window.
+> All jffs2_dbg output is now at KERN_DEBUG where some of
+> the previous uses were emitted at various KERN_<LEVEL>s.
 
-If I don't take action after the coming -rc1, please ping me.  Thanks.
+I would just kill all the levels and left only the first one - others
+are not useful. This FS is in the kernel for ages and it is safe to
+assume it is robust enough to require no level 2. And change the Kconfig
+correspondingly.
+
+I would accept that to my l2 tree, although the final word is from
+dwmw2, of course.
+
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Would it please be possible to make the patch which introduces jffs2_dbg
+macros be separate? It is very difficult to find the definition (most
+interesting in this patch) while looking at the e-mail.
+
+
+> @@ -47,7 +47,8 @@ int jffs2_start_garbage_collect_thread(struct jffs2_sb_info *c)
+>  		ret = PTR_ERR(tsk);
+>  	} else {
+>  		/* Wait for it... */
+> -		D1(printk(KERN_DEBUG "JFFS2: Garbage collect thread is pid %d\n", tsk->pid));
+> +		jffs2_dbg(1, "JFFS2: Garbage collect thread is pid %d\n",
+> +			  tsk->pid);
+
+Notice JFFS2 prefix.
+
+> -		D1(printk(KERN_DEBUG "jffs2: Killing GC task %d\n", c->gc_task->pid));
+> +		jffs2_dbg(1, "jffs2: Killing GC task %d\n", c->gc_task->pid);
+
+Here and in many other places we have jffs2: prefix.
+
+How about make one more step forward and remove this prefix from all the
+messages and make it to be part of the 'jffs2_dbg' macro?
+
+Really, just mechanical D1 -> jffs2_dbg() translation is not so
+interesting.
+
+> -			D1(printk(KERN_DEBUG "jffs2_garbage_collect_thread():  kthread_stop() called.\n"));
+> +			jffs2_dbg(1, "%s(): kthread_stop() called\n", __func__);
+
+A lot of messages have the function name prefix - would you make another
+step forward and make this to be generated by 'jffs2_dbg()' instead as
+well?
+
+I believe you may not worry about breaking anything by changing the
+messages.
+
+
+> +				jffs2_dbg(1, "%s(): SIGSTOP received\n",
+> +					  __func__);
+
+May become a one-liner here and in many other places.
+
+> ;
+> +				jffs2_dbg(1, "%s(): SIGKILL received\n",
+> +					  __func__);
+
+Ditto, and there are many other places.
+ 
+> -	D1(printk(KERN_DEBUG "jffs2_erase_block(): erase block %#08x (range %#08x-%#08x)\n",
+> -				jeb->offset, jeb->offset, jeb->offset + c->sector_size));
+> +	jffs2_dbg(1, "%s(): erase block %#08x (range %#08x-%#08x)\n",
+> +		  __func__,
+> +		  jeb->offset, jeb->offset, jeb->offset + c->sector_size);
+
+Probably lines can be joined?
+
+>  				if (jeb == c->gcblock) {
+> -					D1(printk(KERN_DEBUG "Expanding down to cover frag (0x%x-0x%x) in gcblock at %08x\n",
+> -						  frag->ofs, frag->ofs+frag->size, ref_offset(raw)));
+> +					jffs2_dbg(1, "Expanding down to cover frag (0x%x-0x%x) in gcblock at %08x\n",
+> +						  frag->ofs,
+> +						  frag->ofs + frag->size,
+> +						  ref_offset(raw));
+
+Lines can be joined, and in other places as well.
+
+> -						  frag->ofs, frag->ofs+frag->size, jeb->offset));
+> +					jffs2_dbg(1, "Not expanding down to cover frag (0x%x-0x%x) in clean block %08x\n",
+> +						  frag->ofs,
+> +						  frag->ofs + frag->size,
+> +						  jeb->offset);
+
+> -		D1(printk(KERN_DEBUG "Obsoleting previously unchecked node at 0x%08x of len %x: ", ref_offset(ref), freed_len));
+> +			jffs2_dbg(1, "Obsoleting previously unchecked node at 0x%08x of len %x\n",
+> +				  ref_offset(ref), freed_len);
+
+What happened to the indentation?
+
+> -		D1(printk(KERN_DEBUG "Obsoleting node at 0x%08x of len %#x: ", ref_offset(ref), freed_len));
+> +			jffs2_dbg(1, "Obsoleting node at 0x%08x of len %#x: ",
+> +				  ref_offset(ref), freed_len);
+
+And here.
+
+... did not review further.
 
 -- 
-tejun
+Best Regards,
+Artem Bityutskiy
+
