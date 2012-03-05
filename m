@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab2CERtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:49:50 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56896 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab2CERts convert rfc822-to-8bit (ORCPT
+	id S1757297Ab2CERuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:50:05 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47455 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757253Ab2CERuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:49:48 -0500
-Message-ID: <1330969747.11248.250.camel@twins>
-Subject: Re: [PATCH v2 x86 1/2]  fix page faults by nmiaction in nmi if
- kmemcheck is enabled
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, Vegard Nossum <vegardno@ifi.uio.no>,
-        Don Zickus <dzickus@redhat.com>, tony.luck@intel.com, bp@amd64.org,
-        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
-        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
-        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
-        linux-watchdog@vger.kernel.org
-Date: Mon, 05 Mar 2012 18:49:07 +0100
-In-Reply-To: <1330941917.24353.63.camel@ThinkPad-T61>
-References: <1329717665.3448.28.camel@ThinkPad-T61>
-	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
-	 <1329819437.2293.382.camel@twins> <1329990828.19165.36.camel@ThinkPad-T61>
-	 <1330340324.11248.60.camel@twins> <1330941917.24353.63.camel@ThinkPad-T61>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 5 Mar 2012 12:50:03 -0500
+Date: Mon, 5 Mar 2012 17:50:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+Message-ID: <20120305174959.GZ3224@opensource.wolfsonmicro.com>
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qD80nKKiJWXm4UaL"
+Content-Disposition: inline
+In-Reply-To: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 18:05 +0800, Li Zhong wrote:
-> +static struct nmiaction arch_trigger_all_cpu_bt_nmiaction = {
-> +       .handler        = arch_trigger_all_cpu_backtrace_handler,
-> +       .name           = "arch_bt",
-> +};
-> +
->  static int __init register_trigger_all_cpu_backtrace(void)
->  {
-> -       register_nmi_handler(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler,
-> -                               0, "arch_bt");
-> +       register_nmi_handler(NMI_LOCAL, &arch_trigger_all_cpu_bt_nmiaction);
->         return 0;
->  } 
 
-If you look at things like cpu_notifier() you can shorten this still:
+--qD80nKKiJWXm4UaL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-#define nmi_notifier(t, fn, n)				\
-do {							\
-	static struct nmiaction fn##_na = {		\
-		.handler = (fn),			\
-		.name = (n),				\
-	};						\
-	register_nmi_handler((t), &fn##_na);		\
-} while (0)
+On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
+> Allow drivers to report at probe time that they cannot get all the resources
+> required by the device, and should be retried at a later time.
 
-The whole thing then becomes:
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-  nmi_notifier(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler, "arch_bt");
+In my copious, copious free time I'll try to replace the ASoC code with
+this for test.  I did a regulator parch against one of the previous
+versions which has acks and so on, if you don't get that merged along
+with this (the external interface didn't change I think) then I'll do so
+myself as soon as this hits mainline or somewhere mergable.
 
+--qD80nKKiJWXm4UaL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPVPy9AAoJEBus8iNuMP3dhEIQAJrAMxobzT7HYOPewvbMB+8g
+ax9mm4prY/Gin0aT56c4M8WhDDSA/Uk0Vdn5SjnAKKMuwPyPWqUsXFGcT7kqD31M
+a1b75RKwOKUTU3eywRmeeXejVPEdVgtDT9YvxDfZrGzcv1X56S1YQYd/JGAkzlUK
+8sBOwAIQ1cVmFfh8BW8KKzpTZWiFyBrgBJgO2AaRatYZuA7X4u5bslpv+rvxjzYg
+mlB9up7Zu9NI6/sk9C8hY6QMykBBjg87Ags9hhmxhhqwr7f6RuY9Br1AMxjemZG8
+INCIq0GOzi+5b7mVDkEkPBwDR4gy9yNT3NRyoHF032svAPTUI8jm8LB1RMXsZddx
+TbmHST/GAT16MfIgSJpdRSgqLXdgTfWXy/mham5KEgcPcJmDP0ymNidBmNe75Tg4
+KloV1847V9PEukT9leED+xvzGqlrwt3FCVRgrJ5Ujiq7GE46vG98evJVLOxIXm9r
+nWosWaH2AuGWV/NhtUWzta8keAq5kb0C7zd/8gS0cKRmwI/j+eVCeJXm0Vrg1+Yp
+4nf8Gdnvjg3OgiaPvcD3+wHNmRmjAcvW6eCYJDufMX0iLwfBuwSocID586hjY7c7
+kBG0qW/XD0jgFmjcFBEJDgdEixvLlbNwmTk09n8aTeremoTIGRrmASJqAYbgm/3b
+HLsnUN8CqeJk6MjIczfI
+=fAZ9
+-----END PGP SIGNATURE-----
+
+--qD80nKKiJWXm4UaL--
