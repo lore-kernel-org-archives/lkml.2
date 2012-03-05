@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2CEXWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:22:05 -0500
-Received: from mga14.intel.com ([143.182.124.37]:8649 "EHLO mga14.intel.com"
+	id S1757887Ab2CEXV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:21:56 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47843 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757814Ab2CEXV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:21:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="73922968"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Jonathan Nieder <jrnieder@gmail.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
-CC: Michel Lespinasse <walken@google.com>,
-        =?utf-8?B?w4ltZXJpYyBNYXNjaGlubw==?= <emeric.maschino@gmail.com>,
-        Patrick Baggett <baggett.patrick@gmail.com>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [regression] Re: [PATCH 2/3] futex: Sanitize
- cmpxchg_futex_value_locked API
-Thread-Topic: [regression] Re: [PATCH 2/3] futex: Sanitize
- cmpxchg_futex_value_locked API
-Thread-Index: AQHM+mMa60fd+Qk36EG3ZjMoKs1tHZZcV0Nw
-Date: Mon, 5 Mar 2012 23:21:53 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
-References: <20110307021127.GB31188@google.com>
- <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com>
- <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
- <20110311021654.GA26122@google.com> <20110311024851.GC26122@google.com>
- <20120305000112.GA27512@burratino>
-In-Reply-To: <20120305000112.GA27512@burratino>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757666Ab2CEXUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 18:20:04 -0500
+From: Richard Weinberger <richard@nod.at>
+To: pablo@netfilter.org
+Cc: jengelh@medozas.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        rostedt@goodmis.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3/6] ring_buffer: Export for_each_buffer_cpu()
+Date: Tue,  6 Mar 2012 00:19:45 +0100
+Message-Id: <1330989588-26833-4-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1330989588-26833-1-git-send-email-richard@nod.at>
+References: <1330989588-26833-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q25NMFxp003560
 
-> It doesn't look like the return value (r8) is actually being set beyond
-> initialized to 0. If there is some ia64 instruction that modifies it, GCC
-> doesn't know about it from the inline assembly (r8 doesn't appear in the
-> inputs/outputs list). From looking at the x86 version (agh, inline asm is
-> hard to parse), it does modify the return value based on whether the
-> comparison was a success or not, and the return value is certainly used by
-> the callers.
+In order to make ring_buffer usable to other modules
+for_each_buffer_cpu() needs to be exported.
 
-The commit comment for the change makes it sound like the return value
-is an error code (-ENOSYS if the function isn't implemented/configured;
--EFAULT if the user address is bogus) - or zero if nothing bad happened.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ring_buffer.h |    5 +++++
+ kernel/trace/ring_buffer.c  |    7 +++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-Not "the comparison was a success or not".
+diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+index 67be037..5c1c29f 100644
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -185,4 +185,9 @@ enum ring_buffer_flags {
+ 	RB_FL_OVERWRITE		= 1 << 0,
+ };
+ 
++cpumask_var_t *ring_buffer_mask(struct ring_buffer *buffer);
++
++#define for_each_buffer_cpu(buffer, cpu) \
++	for_each_cpu(cpu, *(ring_buffer_mask(buffer)))
++
+ #endif /* _LINUX_RING_BUFFER_H */
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index f5b7b5c..a4117c5 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -348,6 +348,7 @@ void *ring_buffer_event_data(struct ring_buffer_event *event)
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_event_data);
+ 
++#undef for_each_buffer_cpu
+ #define for_each_buffer_cpu(buffer, cpu)		\
+ 	for_each_cpu(cpu, buffer->cpumask)
+ 
+@@ -4139,3 +4140,9 @@ static int rb_cpu_notify(struct notifier_block *self,
+ 	return NOTIFY_OK;
+ }
+ #endif
++
++cpumask_var_t *ring_buffer_mask(struct ring_buffer *buffer)
++{
++	return &buffer->cpumask;
++}
++EXPORT_SYMBOL_GPL(ring_buffer_mask);
+-- 
+1.7.7.3
 
-What's the real answer? The ia64 code is returning 0 regardless of whether the
-compare/exchange found the old value or not.  Is this a bad assumption?
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
