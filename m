@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2CEQDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:03:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60109 "EHLO mx2.suse.de"
+	id S1754531Ab2CEQDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:03:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60117 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab2CEQBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755067Ab2CEQBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 11:01:40 -0500
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
         sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>, linux-nilfs@vger.kernel.org,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 16/19] nilfs2: Convert to new freezing mechanism
-Date: Mon,  5 Mar 2012 17:01:14 +0100
-Message-Id: <1330963277-26336-17-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 18/19] fs: Remove old freezing mechanism
+Date: Mon,  5 Mar 2012 17:01:16 +0100
+Message-Id: <1330963277-26336-19-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
 References: <1330963277-26336-1-git-send-email-jack@suse.cz>
@@ -23,100 +22,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We change nilfs_page_mkwrite() to provide proper freeze protection for
-writeable page faults (we must wait for frozen filesystem even if the
-page is fully mapped).
+Now that all users are converted, we can remove functions, variables, and
+constants defined by the old freezing mechanism.
 
-We remove all vfs_check_frozen() checks since they are now handled by
-the generic code.
-
-CC: linux-nilfs@vger.kernel.org
-CC: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/nilfs2/file.c    |   18 +++++++++++-------
- fs/nilfs2/ioctl.c   |    2 --
- fs/nilfs2/segment.c |    2 --
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ fs/super.c         |    1 -
+ include/linux/fs.h |    8 --------
+ 2 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 2660152..0cdd702 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -65,16 +65,18 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct page *page = vmf->page;
- 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
- 	struct nilfs_transaction_info ti;
--	int ret;
-+	int ret = 0;
+diff --git a/fs/super.c b/fs/super.c
+index 8b0b40c..0830afb 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -209,7 +209,6 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		mutex_init(&s->s_dquot.dqio_mutex);
+ 		mutex_init(&s->s_dquot.dqonoff_mutex);
+ 		init_rwsem(&s->s_dquot.dqptr_sem);
+-		init_waitqueue_head(&s->s_wait_unfrozen);
+ 		s->s_maxbytes = MAX_NON_LFS;
+ 		s->s_op = &default_op;
+ 		s->s_time_gran = 1000000000;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 37667f3..fcb4135 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1483,8 +1483,6 @@ struct super_block {
+ 	struct hlist_node	s_instances;
+ 	struct quota_info	s_dquot;	/* Diskquota specific options */
  
- 	if (unlikely(nilfs_near_disk_full(inode->i_sb->s_fs_info)))
- 		return VM_FAULT_SIGBUS; /* -ENOSPC */
+-	int			s_frozen;
+-	wait_queue_head_t	s_wait_unfrozen;
+ 	struct sb_writers	s_writers;
  
-+	sb_start_pagefault(inode->i_sb);
- 	lock_page(page);
- 	if (page->mapping != inode->i_mapping ||
- 	    page_offset(page) >= i_size_read(inode) || !PageUptodate(page)) {
- 		unlock_page(page);
--		return VM_FAULT_NOPAGE; /* make the VM retry the fault */
-+		ret = -EFAULT;	/* make the VM retry the fault */
-+		goto out;
- 	}
+ 	char s_id[32];				/* Informational name */
+@@ -1537,12 +1535,6 @@ extern void prune_dcache_sb(struct super_block *sb, int nr_to_scan);
+ extern struct timespec current_fs_time(struct super_block *sb);
  
- 	/*
-@@ -108,19 +110,21 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	ret = nilfs_transaction_begin(inode->i_sb, &ti, 1);
- 	/* never returns -ENOMEM, but may return -ENOSPC */
- 	if (unlikely(ret))
--		return VM_FAULT_SIGBUS;
-+		goto out;
- 
--	ret = block_page_mkwrite(vma, vmf, nilfs_get_block);
--	if (ret != VM_FAULT_LOCKED) {
-+	ret = __block_page_mkwrite(vma, vmf, nilfs_get_block);
-+	if (ret) {
- 		nilfs_transaction_abort(inode->i_sb);
--		return ret;
-+		goto out;
- 	}
- 	nilfs_set_file_dirty(inode, 1 << (PAGE_SHIFT - inode->i_blkbits));
- 	nilfs_transaction_commit(inode->i_sb);
- 
-  mapped:
- 	wait_on_page_writeback(page);
--	return VM_FAULT_LOCKED;
-+ out:
-+	sb_end_pagefault(inode->i_sb);
-+	return block_page_mkwrite_return(ret);
- }
- 
- static const struct vm_operations_struct nilfs_file_vm_ops = {
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 2a70fce..a2063c7 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -660,8 +660,6 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
- 		goto out_free;
- 	}
- 
--	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+ /*
+- * Snapshotting support.
+- */
+-/* Will go away when all users are converted */
+-#define vfs_check_frozen(sb, level) do { } while (0)
 -
- 	ret = nilfs_ioctl_move_blocks(inode->i_sb, &argv[0], kbufs[0]);
- 	if (ret < 0)
- 		printk(KERN_ERR "NILFS: GC failed during preparation: "
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 0e72ad6..0891cef 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -189,8 +189,6 @@ int nilfs_transaction_begin(struct super_block *sb,
- 	if (ret > 0)
- 		return 0;
- 
--	vfs_check_frozen(sb, SB_FREEZE_WRITE);
--
- 	nilfs = sb->s_fs_info;
- 	down_read(&nilfs->ns_segctor_sem);
- 	if (vacancy_check && nilfs_near_disk_full(nilfs)) {
+-/*
+  * until VFS tracks user namespaces for inodes, just make all files
+  * belong to init_user_ns
+  */
 -- 
 1.7.1
 
