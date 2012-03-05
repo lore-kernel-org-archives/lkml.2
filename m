@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2CEKVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 05:21:15 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62013 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab2CEKVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 05:21:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alex Shi <alex.shi@intel.com>
-Subject: Re: [RFC patch] spindep: add cross cache lines checking
-Date: Mon, 5 Mar 2012 09:41:56 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: tglx@linutronix.com, "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, andi.kleen@intel.com
-References: <1330917630.18835.44.camel@debian> <1330917889.18835.46.camel@debian> <1330926234.18835.51.camel@debian>
-In-Reply-To: <1330926234.18835.51.camel@debian>
+	id S1756636Ab2CEKZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 05:25:59 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57295 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756518Ab2CEKZ5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 05:25:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of balajitk@ti.com designates 10.112.87.234 as permitted sender) smtp.mail=balajitk@ti.com
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203050941.56502.arnd@arndb.de>
-X-Provags-ID: V02:K0:mdgG4sIoUktx/DyksHu8oJQekGDBpwXEjzrB7Mvk+Jg
- ++CintgUEfeuoTtzfVxLO9dbOUHW+2golRxnE2JIzPxujJ2mhO
- RDTxexo991FKiSM+R9X7nqabBe4AjOg6tx6qYM6CckjqlJEgTC
- 2uxE1J0bPmcOmYedroadeQ5varBcBQn5SAwk6A5IHXTMpOU918
- SWuG4yMrbcOdeiqiM/+18cLaSGpybKJrE9fx/JS5ezHDuQhYWH
- VH53xP0FMpnh7oCsuutHHY+zubnt3L0CLAVdT8Rb/tEsE/fXxA
- bpSFU+VzL9v5hpf9rdTTQOZOMV1bo/v3ffwx3mBIZAL/mvq25D
- /jK7R6NYGwRKuMOCoLzA=
+In-Reply-To: <4F548457.5050205@ti.com>
+References: <20120301185044.29210.44521.stgit@kaulin.local>
+	<20120301185535.29210.71546.stgit@kaulin.local>
+	<4F50643B.9050500@ti.com>
+	<20120302172251.GJ18901@atomide.com>
+	<4F548457.5050205@ti.com>
+Date: Mon, 5 Mar 2012 15:55:56 +0530
+Message-ID: <CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card detect
+From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-arm-kernel@lists.infradead.org, Venkatraman S <svenkatr@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 March 2012, Alex Shi wrote:
-> Subject: [PATCH] lockdep: add cross cache lines checking
-> 
-> Modern x86 CPU won't hold whole memory bus when executing 'lock'
-> prefixed instructions unless the instruction destination is crossing 2
-> cache lines. If so, it is disaster of system performance.
-> 
-> Actually if the lock is not in the 'packed' structure, gcc places it
-> safely under x86 arch. But seems add this checking in
-> CONFIG_DEBUG_LOCK_ALLOC is harmless.
+On Mon, Mar 5, 2012 at 2:46 PM, Rajendra Nayak <rnayak@ti.com> wrote:
+> On Friday 02 March 2012 10:52 PM, Tony Lindgren wrote:
+>>
+>> BTW, with -rc5, looks like re-inserting omap_hsmmc on omap4 fails
+>> to detect any cards, and then fails to unload. This works on omap3
+>> just fine. Any ideas why that would be?
+>
+>
+> Yeah, looks like thats broken. I am not sure whats going wrong though.
+> I just enabled CONFIG_MMC_DEBUG and saw these logs below.
+>
+> Venkat/Balaji, care to look at this one?
+>
 
-Have you tried making this a compile-time check using __alignof__?
-I would say that any spinlock in a packed data structure is
-basically a bug, even more so on most other architectures besides
-x86.
+Let me check this
 
-	Arnd
+> # insmod omap_hsmmc.ko
+> [   43.358398] omap_hsmmc omap_hsmmc.0: context was not lost
+> [   43.364105] omap_hsmmc omap_hsmmc.0: enabled
+> [   44.434661] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
+> timing 0
+> [   44.442352] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
+> [   44.474365] omap_hsmmc omap_hsmmc.0: disabled
+> [   44.482208] omap_hsmmc omap_hsmmc.4: context was not lost
+> [   44.482208] omap_hsmmc omap_hsmmc.4: enabled
+> [   44.546600] omap_hsmmc omap_hsmmc.0: context was not lost
+> [   44.552276] omap_hsmmc omap_hsmmc.0: enabled
+> [   44.552276] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
+> [   44.563720] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 18 width 0
+> timing 0
+> [   44.572174] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
+> [   44.613800] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 18 width
+> 0 timing 0
+> [   44.621887] omap_hsmmc omap_hsmmc.0: Set clock to 400000Hz
+> [   44.735290] mmc0: starting CMD52 arg 00000c00 flags 00000195
+> [   44.741271] omap_hsmmc omap_hsmmc.0: mmc0: CMD52, argument 0x00000c00
+> [   45.560241] mmc1: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
+> timing 0
+> [   45.567871] omap_hsmmc omap_hsmmc.4: Set clock to 0Hz
+> [   45.591491] omap_hsmmc omap_hsmmc.4: disabled
+> #
+> #
+> # rmmod omap_hsmmc
+> [  607.302307] omap_hsmmc omap_hsmmc.4: context was not lost
+> [  607.308044] omap_hsmmc omap_hsmmc.4: enabled
+> [  607.312591] omap_hsmmc omap_hsmmc.4: disabled
+> [  607.317199] omap_hsmmc omap_hsmmc.4: context was not lost
+> [  607.322875] omap_hsmmc omap_hsmmc.4: enabled
+>
