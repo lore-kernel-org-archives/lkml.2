@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2CECEY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 21:04:24 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42548 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab2CECEX (ORCPT
+	id S1756299Ab2CECEi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 21:04:38 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:49202
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756269Ab2CECE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 21:04:23 -0500
-X-AuditID: 9c930179-b7c4fae0000073fb-af-4f541f23104b
-Message-ID: <4F541F20.7000405@lge.com>
-Date: Mon, 05 Mar 2012 11:04:16 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Sun, 4 Mar 2012 21:04:28 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Mon, 5 Mar 2012 10:04:11 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, <patches@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        <linaro-dev@lists.linaro.org>, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH v5 2/4] clk: Kconfig: add entry for HAVE_CLK_PREPARE
+Message-ID: <20120305020410.GB3261@b20223-02.ap.freescale.net>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-3-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Luigi Semenzato <semenzato@chromium.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
-        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
-Subject: Re: [PATCH] perf: add PERF_RECORD_EXEC type, to distinguish from
- PERF_RECORD_COMM (DO NOT APPLY)
-References: <1330716607-28227-1-git-send-email-semenzato@chromium.org>
-In-Reply-To: <1330716607-28227-1-git-send-email-semenzato@chromium.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1330763341-3437-3-git-send-email-mturquette@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, again.
-
-2012-03-03 4:30 AM, Luigi Semenzato wrote:
-> ---- NOT FINISHED - NOT TESTED ---- rfc only
->
-> I agree with others that adding a new record type is the cleanest solution.
-> This is more or less what it takes to add a new record type.  It may be
-> more than we like but that's a separate problem.  I am open to other
-> solutions.  I may be able to do a bit of refactoring to reduce the
-> copy-paste, but of course the CL will grow as the refactoring would
-> not be limited to COMM and EXEC.
->
-> ---- actual commit message below ----
->
-> Currently the kernel produces a PERF_RECORD_COMM type record both when
-> a process execs and when it renames its "comm" name.  The "perf report"
-> command interprets each COMM record as an exec, and flushes all
-> mappings to executables when it encounters one.  This can result in the
-> inability to correlate IP samples to function symbols.
->
-> This CL adds a PERF_RECORD_EXEC type, which doesn't contain the process
-> name (the comm field).  Thus, an exec now must send two records, one EXEC
-> and one COMM, whereas a rename sends only a COMM.
->
-> The change is mostly straightforward, but there are some complications
-> in the synthesized events sent when "perf record" starts to account for
-> existing processes.
->
-> Signed-off-by: Luigi Semenzato<semenzato@chromium.org>
+On Sat, Mar 03, 2012 at 12:28:59AM -0800, Mike Turquette wrote:
+> The common clk framework provides clk_prepare and clk_unprepare
+> implementations.  Create an entry for HAVE_CLK_PREPARE so that
+> COMMON_CLK can select it.
+> 
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Mike Turquette <mturquette@ti.com>
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Richard Zhao <richard.zhao@linaro.org>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Amit Kucheria <amit.kucheria@linaro.org>
+> Cc: Deepak Saxena <dsaxena@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Andrew Lunn <andrew@lunn.ch>
 > ---
->   fs/exec.c                  |    1 +
->   include/linux/perf_event.h |   19 +++++-
->   kernel/events/core.c       |  153 +++++++++++++++++++++++++++++++++++++++++---
->   tools/perf/builtin-test.c  |   24 ++-----
->   tools/perf/builtin-top.c   |    5 +-
->   tools/perf/util/event.c    |  148 +++++++++++++++++++++++++++++-------------
->   tools/perf/util/event.h    |   11 +++
->   tools/perf/util/evsel.c    |    5 +-
->   tools/perf/util/python.c   |   42 +++++++++++-
->   tools/perf/util/session.c  |   11 +++
->   tools/perf/util/thread.c   |    1 -
->   tools/perf/util/tool.h     |    1 +
->   12 files changed, 338 insertions(+), 83 deletions(-)
->
-> diff --git a/fs/exec.c b/fs/exec.c
-> index e33501a..077d199 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1144,6 +1144,7 @@ void setup_new_exec(struct linux_binprm * bprm)
->   	else
->   		set_dumpable(current->mm, suid_dumpable);
->
-> +        perf_event_exec(current);
->   	set_task_comm(current, bprm->tcomm);
->
->   	/* Set the new mm task size. We have to do that late because it may
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 64426b7..8e4a472 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -200,8 +200,8 @@ struct perf_event_attr {
->   				exclude_kernel :  1, /* ditto kernel          */
->   				exclude_hv     :  1, /* ditto hypervisor      */
->   				exclude_idle   :  1, /* don't count when idle */
-> -				mmap           :  1, /* include mmap data     */
-> -				comm	       :  1, /* include comm data     */
-> +				mmap_attr      :  1, /* include mmap data     */
-> +				comm_attr      :  1, /* include comm data     */
->   				freq           :  1, /* use freq, not period  */
->   				inherit_stat   :  1, /* per task counts       */
->   				enable_on_exec :  1, /* next exec enables     */
-> @@ -223,8 +223,10 @@ struct perf_event_attr {
->
->   				exclude_host   :  1, /* don't count in host   */
->   				exclude_guest  :  1, /* don't count in guest  */
-> +                                /* COMM used to mean exec in older versions   */
-> +                                exec_attr      :  1, /* include exec data     */
->
-> -				__reserved_1   : 43;
-> +				__reserved_1   : 42;
->
+>  drivers/clk/Kconfig |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 9b3cd08..3912576 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -8,3 +8,6 @@ config HAVE_CLK_PREPARE
+>  
+>  config HAVE_MACH_CLKDEV
+>  	bool
+> +
+> +config HAVE_CLK_PREPARE
+> +	bool
+We've already had it. redundant?
 
-This new bit will cause the same issue with ->sample_id_all and 
-->exclude_{host,guest} on old kernels. It needs to be handled too in a similar 
-way of perf record/top IMHO.
-
-Thanks,
-Namhyung
+Thanks
+Richard
+> -- 
+> 1.7.5.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
