@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab2CEIjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 03:39:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58664 "EHLO
+	id S1756401Ab2CEIk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 03:40:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58691 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab2CEIjU (ORCPT
+	with ESMTP id S1756386Ab2CEIk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 03:39:20 -0500
-Date: Mon, 5 Mar 2012 00:38:04 -0800
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
-Message-ID: <tip-8f54ed4a2d8cf001456d3779bdb33985a050bf03@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        jasowang@redhat.com, joerg.roedel@amd.com, dsahern@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, joerg.roedel@amd.com,
-        jasowang@redhat.com, a.p.zijlstra@chello.nl, dsahern@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1328893505-4115-3-git-send-email-joerg.roedel@amd.com>
-References: <1328893505-4115-3-git-send-email-joerg.roedel@amd.com>
+	Mon, 5 Mar 2012 03:40:26 -0500
+Date: Mon, 5 Mar 2012 00:39:42 -0800
+From: tip-bot for Alex Shi <alex.shi@intel.com>
+Message-ID: <tip-901b04450a0ff44d579158b8b0492ce7e66cd442@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        alex.shi@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, alex.shi@intel.com, mingo@elte.hu
+In-Reply-To: <1330774047-18597-1-git-send-email-alex.shi@intel.com>
+References: <1330774047-18597-1-git-send-email-alex.shi@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Change perf_guest default back to false
-Git-Commit-ID: 8f54ed4a2d8cf001456d3779bdb33985a050bf03
+Subject: [tip:x86/asm] x86/numa: Improve internode cache alignment
+Git-Commit-ID: 901b04450a0ff44d579158b8b0492ce7e66cd442
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,48 +27,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 00:38:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 00:40:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f54ed4a2d8cf001456d3779bdb33985a050bf03
-Gitweb:     http://git.kernel.org/tip/8f54ed4a2d8cf001456d3779bdb33985a050bf03
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Fri, 10 Feb 2012 18:05:05 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 3 Mar 2012 12:13:41 -0300
+Commit-ID:  901b04450a0ff44d579158b8b0492ce7e66cd442
+Gitweb:     http://git.kernel.org/tip/901b04450a0ff44d579158b8b0492ce7e66cd442
+Author:     Alex Shi <alex.shi@intel.com>
+AuthorDate: Sat, 3 Mar 2012 19:27:27 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Mar 2012 09:19:20 +0100
 
-perf tools: Change perf_guest default back to false
+x86/numa: Improve internode cache alignment
 
-Setting perf_guest to true by default makes no sense because the perf
-subcommands can not setup guest symbol information and thus not process
-and guest samples. The only exception is perf-kvm which changes the
-perf_guest value on its own.  So change the default for perf_guest back
-to false.
+Currently cache alignment among nodes in the kernel is still 128
+bytes on x86 NUMA machines - we got that X86_INTERNODE_CACHE_SHIFT
+default from old P4 processors.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1328893505-4115-3-git-send-email-joerg.roedel@amd.com
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+But now most modern x86 CPUs use the same size: 64 bytes from L1 to
+last level L3. so let's remove the incorrect setting, and directly
+use the L1 cache size to do SMP cache line alignment.
+
+This patch saves some memory space on kernel data, and it also
+improves the cache locality of kernel data.
+
+The System.map is quite different with/without this change:
+
+	before patch			after patch
+  ...
+  000000000000b000 d tlb_vector_|  000000000000b000 d tlb_vector
+  000000000000b080 d cpu_loops_p|  000000000000b040 d cpu_loops_
+  ...
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Cc: asit.k.mallick@intel.com
+Link: http://lkml.kernel.org/r/1330774047-18597-1-git-send-email-alex.shi@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/util/util.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/Kconfig.cpu |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 8131410..fb25d13 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -6,7 +6,7 @@
-  * XXX We need to find a better place for these things...
-  */
- bool perf_host  = true;
--bool perf_guest = true;
-+bool perf_guest = false;
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index 3c57033..6443c6f 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -303,7 +303,6 @@ config X86_GENERIC
+ config X86_INTERNODE_CACHE_SHIFT
+ 	int
+ 	default "12" if X86_VSMP
+-	default "7" if NUMA
+ 	default X86_L1_CACHE_SHIFT
  
- void event_attr_init(struct perf_event_attr *attr)
- {
+ config X86_CMPXCHG
