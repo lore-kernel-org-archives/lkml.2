@@ -1,97 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965033Ab2CEN6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 08:58:50 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40200 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964773Ab2CEN6r convert rfc822-to-8bit (ORCPT
+	id S965023Ab2CEN6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 08:58:01 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34841 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964847Ab2CENx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 08:58:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of musicosdelinterior@gmail.com designates 10.52.178.40 as permitted sender) smtp.mail=musicosdelinterior@gmail.com; dkim=pass header.i=musicosdelinterior@gmail.com
-MIME-Version: 1.0
-Date: Mon, 5 Mar 2012 10:58:36 -0300
-Message-ID: <CA+qmiWm2TkF_4gYajapP3yOdaSt_C3BxTxH_6DGc2enmn89SJQ@mail.gmail.com>
-Subject: 
-From: luis abayan <musicosdelinterior@gmail.com>
-To: luisabyan@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Mar 2012 08:53:26 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 58/68] TTY: amiserial no longer needs serialP
+Date: Mon,  5 Mar 2012 14:52:45 +0100
+Message-Id: <1330955575-26641-59-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
+References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CAMARAS DIGITALES Y FILMADORAS
-Sony w510 + memoria de 4gb                                760$
-Sony w530 + memoria de 4gb                                860$
-Sony w560 + memoria de 4gb                                940$
-Sony w570 + memoria de 4gb                              1080$
-Sony w610 NEW MODEL                                       1080$
-Sony w620 NEW MODEL                                       1110$
-Sony TX10 + memoria de 4gb                               2300$
-Sony H70  + memoria de 4gb                                1499$
-Sony HX100V + memoria de 4gb                           3500$
-Sony sx21                                                           1570$
-Sony sx45                                                           1610$
-Sony sx85                                                            1950$
-Sony sr21                                                             2100$
-Sony cx130                                                           2650$
-Sony cx190 NEW MODEL                                        2480$
-Sony cx200 NEW MODEL                                        2650$
-Sony cx360                                                           4400$
-Sony xr160                                                           3900$
-Sony xr260 NEW MODEL                                         4600$
-Sony hdr-pj260V with proyector                              4600$
-Nikon s3100  + memoria de 4gb                                890$
-Nikon s4100  + memoria de 4gb                                998$
-Nikon L120    + memoria de 4gb                              2050$
-Nikon P500    + memoria de 4gb                              3000$
-Nikon D3100 kit 18-55mm                                        4700$
-Nikon D5100 kit 18-55mm                                        6500$
-Nikon D90 kit                                                           8000$
-Nikon SB700                                                            2550$
-Nikon SB900                                                            3700$
-Canon SX150IS                                                        1520$
-Canon SX40IS                                                          3100$
-Canon T2i kit 18-55mm  +memoria 8gb                       4900$
-Samsung ES80 + memoria 4gb                                     710$
-Samsung W200WP + memoria 4gb                               900$
-Samsung PL120 + memoria 4gb                                    850$
-Samsung PL170  + memoria 4gb                                  1050$
-Samsung EC-SH100 wi fi + memoria 4gb                       1050$
-Panasonic FZ47 + memoria 4gb                                     2500$
-Panasonic FZ150 + memoria 4gb                                   3400$
-Panasonic ZS10 + memoria 4gb                                     1899$
-Garmin Nuvi 40
-     749$
+amiserial is the last user of serialP.h. Let's move struct
+serial_state directly to amiserial and remove serialP crap from
+includes. Finally, remove the header from the tree completely.
 
-Tablet VIEWSONIC 7"                                                     2250$
-Tablet BLACKBERRY 7"                                                    2500$
-Tablet VIEWSONIC 10 "                                                   2700$
-Tablet SAMSUNG Galaxy P1000+ 7"                                  3100$
-Tablet SONY SGPT1111US 9,4"                                         3700$
-Tablet SONY SGPT1112US 9,4"                                          4050$
-Tablet MOTOROLA XOOM 10,1"                                          4000$
-Tablet SAMSUNG Galaxy P7500+ 10"                                    4300$
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/tty/amiserial.c |   20 ++++++++++++++++++-
+ include/linux/serialP.h |   49 -----------------------------------------------
+ 2 files changed, 19 insertions(+), 50 deletions(-)
+ delete mode 100644 include/linux/serialP.h
+
+diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
+index b182bcc..613d6a3 100644
+--- a/drivers/tty/amiserial.c
++++ b/drivers/tty/amiserial.c
+@@ -58,7 +58,6 @@
+ 
+ #include <linux/types.h>
+ #include <linux/serial.h>
+-#include <linux/serialP.h>
+ #include <linux/serial_reg.h>
+ static char *serial_version = "4.30";
+ 
+@@ -70,6 +69,7 @@ static char *serial_version = "4.30";
+ #include <linux/interrupt.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
++#include <linux/circ_buf.h>
+ #include <linux/console.h>
+ #include <linux/major.h>
+ #include <linux/string.h>
+@@ -92,6 +92,24 @@ static char *serial_version = "4.30";
+ #include <asm/amigahw.h>
+ #include <asm/amigaints.h>
+ 
++struct serial_state {
++	struct tty_port		tport;
++	struct circ_buf		xmit;
++	struct async_icount	icount;
++
++	unsigned long		port;
++	int			baud_base;
++	int			xmit_fifo_size;
++	int			custom_divisor;
++	int			read_status_mask;
++	int			ignore_status_mask;
++	int			timeout;
++	int			quot;
++	int			IER; 	/* Interrupt Enable Register */
++	int			MCR; 	/* Modem control register */
++	int			x_char;	/* xon/xoff character */
++};
++
+ #define custom amiga_custom
+ static char *serial_name = "Amiga-builtin serial driver";
+ 
+diff --git a/include/linux/serialP.h b/include/linux/serialP.h
+deleted file mode 100644
+index 77afbdb..0000000
+--- a/include/linux/serialP.h
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- * Private header file for the (dumb) serial driver
+- *
+- * Copyright (C) 1997 by Theodore Ts'o.
+- * 
+- * Redistribution of this file is permitted under the terms of the GNU 
+- * Public License (GPL)
+- */
+-
+-#ifndef _LINUX_SERIALP_H
+-#define _LINUX_SERIALP_H
+-
+-/*
+- * This is our internal structure for each serial port's state.
+- * 
+- * Many fields are paralleled by the structure used by the serial_struct
+- * structure.
+- *
+- * For definitions of the flags field, see tty.h
+- */
+-
+-#include <linux/termios.h>
+-#include <linux/workqueue.h>
+-#include <linux/interrupt.h>
+-#include <linux/circ_buf.h>
+-#include <linux/tty.h>
+-#include <linux/wait.h>
+-
+-struct serial_state {
+-	int	baud_base;
+-	unsigned long	port;
+-	int	xmit_fifo_size;
+-	int	custom_divisor;
+-	struct async_icount	icount;	
+-	struct tty_port tport;
+-
+-	/* amiserial */
+-	int			read_status_mask;
+-	int			ignore_status_mask;
+-	int			timeout;
+-	int			quot;
+-	int			IER; 	/* Interrupt Enable Register */
+-	int			MCR; 	/* Modem control register */
+-	int			x_char;	/* xon/xoff character */
+- 	struct circ_buf		xmit;
+-	/* /amiserial */
+-};
+-
+-#endif /* _LINUX_SERIAL_H */
+-- 
+1.7.9.2
 
 
-
-NOTEBOOKS, NETBOOKS
-ACER ASPIRE  AS5250-BZ853, DUAL CORE E-350, 2GB, 320GB, 15,6", DVDRW,
-WIN 7, TECLADO EN INGLES, NEW           U$S 700.-
-HP COMPAQ CQ43-172LA, AMD E240, 2GB, 320GB, 14", DVDRW, TECLADO EN
-ESPAÑOL, NEW                                            U$S 750.-
-HP COMPAQ CQ56-204LA, AMD V140, 2GB, 320GB, 15,6", DVDRW, TECLADO EN
-ESPAÑOL, NEW                                    U$S 800.-
-HP 4530s ProBook, Ci3-230M, 4GB, 500GB, DVDRW, 15,6", WEB, W7HP,
-TECLADO EN INGLES, NEW                                  U$S 850.-
-HP DV5-2133LA, DUAL CORE N640, 4GB, 500GB, DVDRW, 14,5", TECLADO EN
-ESPAÑOL, NEW                                            U$S 840.-
-TOSHIBA C645-SP4140L, CORE i3 370M, 3GB, 320GB, 14", DVDRW, WIN7,
-TECLADO EN ESPAÑOL, NEW                         U$S 875.-
-TOSHIBA C605-SP4102L, PENTIUM T4500, 2GB, 320GB, DVDRW, WIN7, GeForce
-512MB, TEC ESP, NEW                             U$S 760.-
-SAMSUNG NP-RV440-JA05VE  14", Ci3 370M, 3GB, 500GB, DVDRW, W7, TECLADO
-EN ESPAÑOL, NEW                         U$S 900.-
-TOSHIBA NB505-SP0114L, 10,1", N455, 1GB, 320GB, TECLADO EN ESPAÑOL,
-WIN 7, NEW                                                      U$S
-470.-  DOLAR 4.90
