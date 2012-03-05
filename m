@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab2CEDAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:00:05 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38188 "EHLO
+	id S1755216Ab2CEDE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 22:04:28 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48394 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab2CEDAC (ORCPT
+	with ESMTP id S1755034Ab2CEDE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:00:02 -0500
-Date: Mon, 5 Mar 2012 13:59:49 +1100
+	Sun, 4 Mar 2012 22:04:26 -0500
+Date: Mon, 5 Mar 2012 14:04:17 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
+        Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: linux-next: manual merge of the sound-asoc tree with the slave-dma
+Subject: linux-next: manual merge of the sound-asoc tree with the l2-mtd
  tree
-Message-Id: <20120305135949.cd08aaf15f8bfa36d35dbc98@canb.auug.org.au>
+Message-Id: <20120305140417.e55b7f1f0f0a9280dcb73040@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Mar_2012_13_59_49_+1100_A_JMbom0XNiPPmhk"
+ boundary="Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Mar_2012_13_59_49_+1100_A_JMbom0XNiPPmhk
+--Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -35,36 +35,36 @@ Content-Transfer-Encoding: quoted-printable
 Hi all,
 
 Today's linux-next merge of the sound-asoc tree got a conflict in
-sound/soc/imx/imx-pcm-dma-mx2.c between commit c0fa6c8af7ab ("ASoC: i.MX:
-Add missing dma_async_issue_pending") from the slave-dma tree and commit
-c307e8e32e11 ("ASoC: imx-pcm-dma: Use dmaengine PCM helper functions")
-from the sound-asoc tree.
+sound/soc/mxs/mxs-pcm.h between commit 7079e020563c ("mxs-dma : move the
+mxs dma.h to a more common place") from the l2-mtd tree and commit
+016ab467aa53 ("ASoC: mxs-pcm: Use dmaengine PCM helper functions") from
+the sound-asoc tree.
 
-The latter removed the code modified by the former, so hopefully the
-former change is subsumed into the latter.
+The latter seems to remove the need for the include updated by the
+former, so I removed it.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__5_Mar_2012_13_59_49_+1100_A_JMbom0XNiPPmhk
+--Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPVCwlAAoJEECxmPOUX5FENwEP/jIpazfgnGbuxw4wERni660g
-Ir1KcXS0Ymy/m8PEGNQyRtNzOs6mWqgtD1aMSbciG69VfXAEeEbm1QacwrVmXmwb
-R4HeZE3yTDX4AlTvQwSkNxZyk9yBCup8Sqxk/kRReSRxTOysP58e1dFm7Wi6Widk
-kiFyEU8iPcck+aJlDuI6U+mbdb4xxKecygaojDFVD8HJB3+FhMF/+d9uvAklaOl3
-kdcYguFmE2l2KRmXQOu1QVIG4ccF7sKdN+6CR6wWngA77TWCNoW1iP4O8KAY7d67
-HKuR6AdNYaUOAgGgYPsAMxb5mhSQ/NAA87BDZuJ2CVMqzVoOw8FMA0pOIxRiWvNX
-Ya5xQ8I3/M5RSfRBejqXdWF/Ul6RfYsD9Q5044fEVk2thUSVk9CMCMLscDiV+Cp4
-hKUVuYXx9kR9oZJRsBx9zuC1RF+8QtKKNvKuMsF/5TrMpRQ4TjX+XJes48isg1kp
-dzHxmczvVnNSPIVncFNYSgE/GztdmcbTYJKatmTneuLQuNK/ZNfeOVaqtfLQo4bw
-C8pyKL5uzOY30PI4kC6mp6rm0DG4s88znyysUC8BDJJadmpHXZhf131Ws/c9uxHE
-cYybS+6QCzQtvgTj4dh3RsEnKPNCpL/Z1+KSAHbYBz1Uv3mhBC/+21083WI2F4F1
-q4E56pOQutk4MTVipvoI
-=1pw7
+iQIcBAEBCAAGBQJPVC0xAAoJEECxmPOUX5FE9qwP/RNK/GzB5WnqyAb9XcrXIIXJ
+6EEAEpFLT8KIhoUtIE87xUfPSR0VawKAzx/qx2SHHz1jAodGzn2GA2V7iJYnP929
+G7W4AUDFd3htqM6nBIwspEbe93a43T5SYZf/vSCOjEwG+adjtaWyo7CeiyQES1LB
+KuXgG7fRTihc9axyR4qAIzyNoL3eNxlyVNJSCxi3yNcgD1AZnA6IDTlUPAI7DHuT
+0ggLv77jQwQeYsb4Ize0t7F0F+jD9KMCSeB1XW6uG2w3Q55DuRR+ondY9uSW4+wd
+8F1wXjhfvsDlO/QQawCKqIuKCN8ENXXP7nNZ0ITAAag8YFfccLp/6k3llI9y4HJK
+0/WSOxMEGJChfTBz7S+cB12KenQYikHaqUx+4fVNoKKi3t9K8hDonubzX0IL0mU+
+B3FupaJmLDxWpjId+2FuGkO/ApaP7iph9Ft5ZxOqA2j/7djFIOgYazqpNf4TeAkz
+OZUospm8iKIR+vvvRqlQpC16BDczqRE2znWR4V9z2UDMJ9AuXUzPufuknP2rcXrh
+JySExIdRMOTX9uhLb+cegLg2oYNdRXMrJ4z9vD/7xB70ZWawd1SLpB++ddBDhXJ4
+gY+nftLiTc4RbS9JQrXJgwkCvpgCqzcRSGQefbxZOfFVSChHM5NqFy//nzJzkxcV
+WS95E/oxB0lX4xyL3m48
+=98n8
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__5_Mar_2012_13_59_49_+1100_A_JMbom0XNiPPmhk--
+--Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul--
