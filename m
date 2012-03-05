@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961Ab2CEOuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:50:18 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38834 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807Ab2CEOuP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 09:50:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.68.203.65 as permitted sender) smtp.mail=glikely@secretlab.ca
-Date: Mon, 5 Mar 2012 07:50:14 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: broonie@opensource.wolfsonmicro.com, linus.walleij@stericsson.com,
-        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2 0/3] Open drain/open source support from gpio library
-Message-ID: <20120305145014.GA27229@ponder.secretlab.ca>
-References: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932615Ab2CEOye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:54:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56233 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932252Ab2CEOy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 09:54:27 -0500
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 7/7] mm: Update file times from fault path only if .page_mkwrite is not set
+Date: Mon,  5 Mar 2012 15:54:18 +0100
+Message-Id: <1330959258-23211-8-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1330959258-23211-1-git-send-email-jack@suse.cz>
+References: <1330959258-23211-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 08:26:18PM +0530, Laxman Dewangan wrote:
-> This patch is as per discussion on the patch
-> [PATCH V1] regulator: fixed: Support for open-drain gpio 
-> where it was suggested to push the handling of open drain gpios
-> into the gpio libray.
-> 
-> This is series of patches  to add support of the open drain and open
-> source gpios in standard gpio library.
-> - Added GPIOF_OPEN_DRAIN flag so that client can request the
->   gpio with this flag. Handle open drain gpio configuration properly.
-> - Added GPIOF_OPEN_SOURCE flag so that client can request the
->   gpio with this flag. Handle open source gpio configuration properly.
-> - Gpio documentation changes to have support for open-drain.
-> 
-> From the patch series of V1, it is discussed to
-> - remove the sysfs interface supportsi for open drain.
-> - Added open source support as a new change.
-> 
-> Laxman Dewangan (3):
->   Documentation: gpio: Add details of open-drain/source configuration
->   gpio: gpiolib: Support for open drain/collector gpios
->   gpio: gpiolib: Support for open source/emitter gpios
+Filesystems wanting to properly support freezing need to have control
+when file_update_time() is called. After pushing file_update_time()
+to all relevant .page_mkwrite implementations we can just stop calling
+file_update_time() when filesystem implements .page_mkwrite.
 
-Applied, thanks
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ mm/memory.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-g.
+diff --git a/mm/memory.c b/mm/memory.c
+index fa2f04e..1dfe9a1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2621,6 +2621,9 @@ reuse:
+ 		if (!page_mkwrite) {
+ 			wait_on_page_locked(dirty_page);
+ 			set_page_dirty_balance(dirty_page, page_mkwrite);
++			/* file_update_time outside page_lock */
++			if (vma->vm_file)
++				file_update_time(vma->vm_file);
+ 		}
+ 		put_page(dirty_page);
+ 		if (page_mkwrite) {
+@@ -2638,10 +2641,6 @@ reuse:
+ 			}
+ 		}
+ 
+-		/* file_update_time outside page_lock */
+-		if (vma->vm_file)
+-			file_update_time(vma->vm_file);
+-
+ 		return ret;
+ 	}
+ 
+@@ -3310,12 +3309,13 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	if (dirty_page) {
+ 		struct address_space *mapping = page->mapping;
++		int dirtied = 0;
+ 
+ 		if (set_page_dirty(dirty_page))
+-			page_mkwrite = 1;
++			dirtied = 1;
+ 		unlock_page(dirty_page);
+ 		put_page(dirty_page);
+-		if (page_mkwrite && mapping) {
++		if ((dirtied || page_mkwrite) && mapping) {
+ 			/*
+ 			 * Some device drivers do not set page.mapping but still
+ 			 * dirty their pages
+@@ -3324,7 +3324,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 
+ 		/* file_update_time outside page_lock */
+-		if (vma->vm_file)
++		if (vma->vm_file && !page_mkwrite)
+ 			file_update_time(vma->vm_file);
+ 	} else {
+ 		unlock_page(vmf.page);
+-- 
+1.7.1
 
-> 
->  Documentation/gpio.txt |   17 +++++++++-
->  drivers/gpio/gpiolib.c |   83 ++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/gpio.h   |    6 +++
->  3 files changed, 102 insertions(+), 4 deletions(-)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
