@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2CEVr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:47:59 -0500
+	id S1754984Ab2CEVsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:48:23 -0500
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:35024 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab2CEVr5 (ORCPT
+	with ESMTP id S1754239Ab2CEVsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:47:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.224.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 5 Mar 2012 13:47:47 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-Message-ID: <20120305214747.GA9425@kroah.com>
-References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+	Mon, 5 Mar 2012 16:48:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.203.135 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Mon, 5 Mar 2012 13:48:18 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>
+Subject: [GIT PULL] percpu: fixes for v3.3-rc6
+Message-ID: <20120305214818.GE1263@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -587,6 +587,10 @@ struct device_dma_parameters {
->   * @mutex:	Mutex to synchronize calls to its driver.
->   * @bus:	Type of bus device is on.
->   * @driver:	Which driver has allocated this
-> + * @deferred_probe: entry in deferred_probe_list which is used to retry the
-> + * 		binding of drivers which were unable to get all the resources
-> + * 		needed by the device; typically because it depends on another
-> + * 		driver getting probed first.
->   * @platform_data: Platform data specific to the device.
->   * 		Example: For devices on custom boards, as typical of embedded
->   * 		and SOC based hardware, Linux often uses platform_data to point
-> @@ -646,6 +650,7 @@ struct device {
->  	struct bus_type	*bus;		/* type of bus device is on */
->  	struct device_driver *driver;	/* which driver has allocated this
->  					   device */
-> +	struct list_head	deferred_probe;
->  	void		*platform_data;	/* Platform specific data, device
->  					   core doesn't touch it */
->  	struct dev_pm_info	power;
+Hello, Linus.
 
-This can go into the "struct device_private" structure instead, right?
-That would be better to ensure that no non-driver-core code ever touches
-this thing.
+This pull request contains four patches.  One replaces manual clearing
+with bitmap_clear(), two fix generic definition of __this_cpu ops so
+that they don't choose unnecessarily strict arch version.  One makes
+_this_cpu definition use raw_local_irq_*() so that it doesn't end up
+wrecking irq on/off state tracking when used from inside lockdep.
 
-thanks,
+Of the four patches, the raw_local_irq_*() update is the most
+important, so please feel free to cherry pick only that one patch and
+ignore the rest if you want to - e920d5971d "percpu: use
+raw_local_irq_* in _this_cpu op".
 
-greg k-h
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.3-fixes
+
+Akinobu Mita (1):
+      percpu: use bitmap_clear
+
+Konstantin Khlebnikov (2):
+      percpu: fix generic definition of __this_cpu_add_and_return()
+      percpu: fix __this_cpu_{sub,inc,dec}_return() definition
+
+Ming Lei (1):
+      percpu: use raw_local_irq_* in _this_cpu op
+
+ include/linux/percpu.h |   29 +++++++++++++++--------------
+ mm/percpu-vm.c         |    3 +--
+ 2 files changed, 16 insertions(+), 16 deletions(-)
+
+Thanks.
+
+-- 
+tejun
