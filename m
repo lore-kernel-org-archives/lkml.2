@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab2CEQJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:09:59 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34166 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab2CEQJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:09:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.97 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 5 Mar 2012 08:09:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [PATCH] sysfs: Optionally count subdirectories to support buggy
- applications
-Message-ID: <20120305160953.GA3870@kroah.com>
-References: <20120130222717.GA6393@kroah.com>
- <m18vkoirv9.fsf@fess.ebiederm.org>
- <4F27C6EB.2070305@suse.cz>
- <m14nvc82jo.fsf@fess.ebiederm.org>
- <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
- <m1wr87ywex.fsf@fess.ebiederm.org>
- <m1ehueyz20.fsf_-_@fess.ebiederm.org>
- <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
- <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
- <4F54BFEC.6000206@suse.cz>
+	id S1754475Ab2CEQMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:12:43 -0500
+Received: from void.printf.net ([89.145.121.20]:36903 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752160Ab2CEQMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:12:41 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.3
+Date: Mon, 05 Mar 2012 11:12:25 -0500
+Message-ID: <m2hay3jac6.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F54BFEC.6000206@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 02:30:20PM +0100, Jiri Slaby wrote:
-> On 02/02/2012 12:18 AM, Linus Torvalds wrote:
-> > On Wed, Feb 1, 2012 at 3:15 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> >>
-> >> No extra "keep track of inode counts by hand" crap, and no idiotic
-> >> config options that just make it easy to (conditionally) get things
-> >> wrong. Just do it right, and do it *unconditionally* right.
-> > 
-> > And btw, "nlink shows number of subdirectories" for a directory entry
-> > really *is* right. It's how Unix filesystems work, like it or not.
-> > 
-> > It's mainly lazy/bad filesystems that set nlink to 1. So the whole
-> > "nlink==1" case is meant for crap like FAT etc, not for a filesystem
-> > that we control and that could easily just do it right.
-> > 
-> > Which is why I detest that config option. It's as if you were asking the user
-> > 
-> >  "Do you want to make the sysfs filesystem act like crap filesystems?"
-> > 
-> > and kernel config time. What kind of inane question is that?
-> 
-> <thread resumed...>
-> 
-> What's going on here? I still have to revert "sysfs: Kill nlink
-> counting." with today's -next to have working sensors.
+Hi Linus,
 
-I don't remember.  I thought there was a proposed patch for this issue
-from Eric, but I don't see it in my queue anywhere.
+Please pull from:
 
-Eric, what was the resolution here?
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-greg k-h
+to receive MMC fixes for 3.3.  I've signed an "mmc-fixes-for-3.3" tag.
+There are no merge conflicts, and the patches have been tested in
+linux-next.  Thanks.
+
+The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
+
+  Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+for you to fetch changes up to e7747475b61fdc2a4a412475a9d64d8c309916e3:
+
+  mmc: core: Fixup suspend/resume issues for UHS-I cards (2012-03-04 12:25:15 -0500)
+
+----------------------------------------------------------------
+MMC fixes for 3.3:
+* atmel-mci: oops fix against regression introduced in 3.2
+* core: power saving regression fix against 3.3-rc1
+* core: suspend/resume fix for UHS-I cards
+* esdhc-imx: MMC card regression fix against 3.0
+* mmci: oops fix for ARM systems with large (64k) pages
+* MAINTAINERS update for atmel-mci.
+
+----------------------------------------------------------------
+Guennadi Liakhovetski (1):
+      mmc: core: fix regression: set default clock gating delay to 0
+
+Ludovic Desroches (1):
+      mmc: atmel-mci: don't use dma features when using DMA with no chan available
+
+Nicolas Ferre (1):
+      MAINTAINERS: hand over atmel-mci (sd/mmc interface)
+
+Sascha Hauer (1):
+      mmc: sdhci-esdhc-imx: fix for mmc cards on i.MX5
+
+Ulf Hansson (1):
+      mmc: core: Fixup suspend/resume issues for UHS-I cards
+
+Will Deacon (1):
+      mmc: mmci: reduce max_blk_count to avoid overflowing max_req_size
+
+ MAINTAINERS                        |    4 ++--
+ drivers/mmc/core/core.c            |    3 +++
+ drivers/mmc/core/host.c            |    4 ++--
+ drivers/mmc/core/mmc.c             |    3 +++
+ drivers/mmc/core/sd.c              |    8 +++-----
+ drivers/mmc/core/sdio.c            |    8 ++++++++
+ drivers/mmc/host/atmel-mci.c       |   21 ++++++++++-----------
+ drivers/mmc/host/mmci.c            |    7 ++++---
+ drivers/mmc/host/sdhci-esdhc-imx.c |    5 +++--
+ 9 files changed, 38 insertions(+), 25 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
