@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab2CEXmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:42:47 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:33259 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756678Ab2CEXmp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:42:45 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.50.212.40 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
-Date: Mon, 5 Mar 2012 17:42:40 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        =?utf-8?Q?=C3=89meric?= Maschino <emeric.maschino@gmail.com>,
-        Patrick Baggett <baggett.patrick@gmail.com>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [regression] Re: [PATCH 2/3] futex: Sanitize
- cmpxchg_futex_value_locked API
-Message-ID: <20120305234240.GB1360@burratino>
-References: <20110307021127.GB31188@google.com>
- <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com>
- <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
- <20110311021654.GA26122@google.com>
- <20110311024851.GC26122@google.com>
- <20120305000112.GA27512@burratino>
- <3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757983Ab2CEX6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:58:03 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57867 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757953Ab2CEX6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 18:58:01 -0500
+Date: Tue, 6 Mar 2012 10:57:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: bad merge in the moduleh tree
+Message-Id: <20120306105749.4eb0fcccacfe9352e8042f06@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__6_Mar_2012_10_57_49_+1100_ptMBkFAm6h1TuYkE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luck, Tony wrote:
+--Signature=_Tue__6_Mar_2012_10_57_49_+1100_ptMBkFAm6h1TuYkE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> It doesn't look like the return value (r8) is actually being set beyond
->> initialized to 0. If there is some ia64 instruction that modifies it, GCC
->> doesn't know about it from the inline assembly (r8 doesn't appear in the
->> inputs/outputs list). From looking at the x86 version (agh, inline asm is
->> hard to parse), it does modify the return value based on whether the
->> comparison was a success or not, and the return value is certainly used by
->> the callers.
->
-> The commit comment for the change makes it sound like the return value
-> is an error code (-ENOSYS if the function isn't implemented/configured;
-> -EFAULT if the user address is bogus) - or zero if nothing bad happened.
+Hi Paul,
 
-Yes, that's right.
+I noticed this merge in the moduleh tree:
 
-> Not "the comparison was a success or not".
->
-> What's the real answer? The ia64 code is returning 0 regardless of whether the
-> compare/exchange found the old value or not.  Is this a bad assumption?
+dc69707e944e "Merge branch 'module-3.4' into for-sfr"
 
-No, I think something else is wrong, though I don't know what it would
-be.
+This merge result in multplie includes of kernel.h in lib/average.c and
+lib/list_debug.c.
 
-Émeric, was the bisection result reproducible?  E.g., if you try
-building 37a9d912b24f and 37a9d912b24f^ again, does the former
-consistently produce and the latter consistently not produce a crashy
-system?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__6_Mar_2012_10_57_49_+1100_ptMBkFAm6h1TuYkE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPVVL9AAoJEECxmPOUX5FEHmoP/iBAjhwXXM42IQTIAoWTWnkJ
+P7s0j/6E+wyLkesf9kQGUGwFDFCrm0nErn+8B30wYw30CpCwMg9hx++vCrWaPAra
+D4yhtsAAhO/PCAGIwwz1zXIbXBU+lMFoHjF/bzgwbw64GTW8HjFZT1loRI9KZY9g
+S7OOMD8bV6EDHprz/yrp4idQHSFSgZFfGKpEQVEoThzbYJgE2fTLhM5oRWfiLzlK
+J9YYB5mBJMokEVnsH9ilgbTWPW+WU2g3vL93nVaEhXrroe/Rw5yFNcL7M1LV46Wg
+iqmPmDis6O5jnN4Ik2WpcImblFppOs6gQTfWnEo/B0CQyisswzOJnvt7cpLSrVSv
+TJZkPOosEE7j9/nUT3fipPlS5eGl1r2IxgvRxZFmSgfM9mVsY847OywGXuKXw665
+S/CqyTi1ReoksDqk3uZiF1uUi1UJblcaDVNeo1/xfB0ccsTiJbZblauQinNyeHg2
+/lB6UWpKW+23suqsUZTxZiSqTOrFQoAS6njodmG9CsQ+oMD6oFK6zeOxq56S49HO
+sHXqVuzcuV/1mJihYcCaSWxspbQuGhSw7szzONE3BnaI9Z08RAp/6kZGKxAcNzej
+6SMRo1PKeqFsBqDgH9CzgFvActIU5kkM6MxSNwizLlkzGyNZTHkvleUrKIouLfMC
+GLfj70Sj17Ne+9xq/zwE
+=xOfv
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__6_Mar_2012_10_57_49_+1100_ptMBkFAm6h1TuYkE--
