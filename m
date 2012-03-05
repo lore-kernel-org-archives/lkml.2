@@ -1,48 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2CDX4Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 18:56:25 -0500
-Received: from nm25-vm3.bullet.mail.sg3.yahoo.com ([106.10.151.98]:28112 "HELO
-	nm25-vm3.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751002Ab2CDX4Y (ORCPT
+	id S1755823Ab2CEABZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 19:01:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41635 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab2CEABX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 18:56:24 -0500
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Mar 2012 18:56:24 EST
-X-Yahoo-Newman-Id: 546007.30770.bm@omp1002.mail.cnh.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: oCQ63GIVM1lBEzq4qBNyQMfAfzjY1V11LmutbU85bZQh.to
- 4l_yzNaeDAxxYgwLr_nM5ugeTsg7UkP_L6JbLsfPR7XZQ5BA1UCRupoJ9bLL
- jYS6BQ5NlIM0wU_9lKUTudc3ryahCyQSPguH5.NKgLCUudq1zmrr0YuZgnoa
- BdiQ3gx8uRnMrywZkg7nwqmXH9R.YukyChd76zcs6V6.Vq3.t_pG6f1DYWkf
- L6nCEGyRhT.f6lj4JmWqkT72Nqy4nCkXEgXg0HeNrCqHtB4wvmZwSB9FmYVZ
- qM34jd824M7qcHMqbqnvMoHNCPATaxeiquu8dpMVPjd3SRgvQ1.E4hE5vlt5
- PgRbKuysVlqcnxvuydYCSl9TQ6VXkph.pA5_LOVo-
-X-Yahoo-SMTP: mw385NiswBCSuQ3x8xklattCxQmexuY5SZ3wKN3.w7E-
-Message-ID: <249B66E0224A647EEE43D9CABBD22C93@tqthumnhm>
-From: "qdwnvoajs" <zhutaijdwe@yahoo.cn>
-To: <linux123@online.sh.cn>
-Subject: =?utf-8?B?wrfCt8K36LWE77yI5paZ?=
-Date: Mon, 5 Mar 2012 07:49:49 +0800
+	Sun, 4 Mar 2012 19:01:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.43.51.135 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
+Date: Sun, 4 Mar 2012 18:01:13 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: linux-ia64@vger.kernel.org
+Cc: Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>,
+        =?utf-8?Q?=C3=89meric?= Maschino <emeric.maschino@gmail.com>,
+        Patrick Baggett <baggett.patrick@gmail.com>,
+        Jakub Jelinek <jakub@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [regression] Re: [PATCH 2/3] futex: Sanitize
+ cmpxchg_futex_value_locked API
+Message-ID: <20120305000112.GA27512@burratino>
+References: <20110307021127.GB31188@google.com>
+ <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+ <20110309112550.GA3050@google.com>
+ <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
+ <20110311021654.GA26122@google.com>
+ <20110311024851.GC26122@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 1
-X-MSMail-Priority: High
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110311024851.GC26122@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q24NvC9L028593
 
-linux123ï¼Œè²¡å‹™/æ‚¨å¥½ï¼
-      
-æœ¬å…¬å¸ä»£é–‹å„å¤§åŸŽå¸‚çš„æ™®é€šç™¼ç¥¨ï¼šå¦‚ï¼šè²¨ç‰©éŠ·å”®ï¼šæ©Ÿæ‰“é€šç”¨ç™¼ç¥¨ï¼š
-å»ºç¯‰å®‰è£ï¼šæœå‹™æ¥­ï¼šå»£å‘Šæ¥­ï¼šåœ‹éš›è²¨é‹ï¼šï¼ˆåœ‹ç¨…ã€åœ°ç¨…ï¼‰ç­‰ç­‰ç™¼ç¥¨:
-é»žæ•¸å„ªæƒ ï¼Œå¯é©—è­‰å¾Œä»˜æ¬¾,è²´å…¬å¸å¦‚æœ‰éœ€è¦å¯ä¾†é›»è©³è«‡ï¼š
-      è”ç³»äººï¼šå‘¨ å…ˆç”Ÿ
-       ç”µè¯ï¼š13544094864 
-       Q Q: 5951 17162 
-   qdwnvoajs
-   2012-3-5ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+(reset cc list)
+Hi,
+
+Michel Lespinasse wrote:
+
+> This change makes the cmpxchg_futex_value_locked API more similar to the
+> get_futex_value_locked one, returning an error code and updating the
+> original value through a reference argument.
+[...]
+> Acked-by: Tony Luck <tony.luck@intel.com>  [ia64]
+
+Ã‰meric Maschino (cc-ed) is experiencing random crashes, X restarts,
+and so on on Itanium.  Bisects to this patch[1].
+
+Patrick Baggett, investigating, wrote[2]:
+
+> It doesn't look like the return value (r8) is actually being set beyond
+> initialized to 0. If there is some ia64 instruction that modifies it, GCC
+> doesn't know about it from the inline assembly (r8 doesn't appear in the
+> inputs/outputs list). From looking at the x86 version (agh, inline asm is
+> hard to parse), it does modify the return value based on whether the
+> comparison was a success or not, and the return value is certainly used by
+> the callers.
+
+And indeed, pinning that variable to that register (why not "prev"
+instead?) looks suspicious.
+
+Anywhere, here's the potentially problematic patch hunk.  Ideas?
+
+> --- a/arch/ia64/include/asm/futex.h
+> +++ b/arch/ia64/include/asm/futex.h
+> @@ -100,23 +100,26 @@ futex_atomic_op_inuser (int encoded_op, int __user *uaddr)
+>  }
+>  
+>  static inline int
+> -futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
+> +futex_atomic_cmpxchg_inatomic(int *uval, int __user *uaddr,
+> +			      int oldval, int newval)
+>  {
+>  	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
+>  		return -EFAULT;
+>  
+>  	{
+> -		register unsigned long r8 __asm ("r8");
+> +		register unsigned long r8 __asm ("r8") = 0;
+> +		unsigned long prev;
+>  		__asm__ __volatile__(
+>  			"	mf;;					\n"
+>  			"	mov ar.ccv=%3;;				\n"
+>  			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
+>  			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
+>  			"[2:]"
+> -			: "=r" (r8)
+> +			: "=r" (prev)
+>  			: "r" (uaddr), "r" (newval),
+>  			  "rO" ((long) (unsigned) oldval)
+>  			: "memory");
+> +		*uval = prev;
+>  		return r8;
+>  	}
+>  }
+
+Jonathan
+
+[1] https://bugzilla.kernel.org/show_bug.cgi?id=42757
+[2] http://thread.gmane.org/gmane.linux.debian.ports.ia64/3121/focus=3123
