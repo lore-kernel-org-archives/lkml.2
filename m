@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2CEGfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 01:35:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35949 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab2CEGfJ convert rfc822-to-8bit (ORCPT
+	id S1753955Ab2CEGhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:37:13 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57906 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab2CEGhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 01:35:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of corentin.chary@gmail.com designates 10.204.15.205 as permitted sender) smtp.mail=corentin.chary@gmail.com; dkim=pass header.i=corentin.chary@gmail.com
+	Mon, 5 Mar 2012 01:37:11 -0500
+Date: Mon, 5 Mar 2012 06:37:07 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, arve@android.com, airlied@linux.ie,
+        carsteno@de.ibm.com, steiner@sgi.com
+Subject: [patches] VM-related fixes
+Message-ID: <20120305063707.GH23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <4F5370CD.3000501@suse.cz>
-References: <1330714505-13170-1-git-send-email-jslaby@suse.cz>
-	<CA+5PVA7=rMwMdvL+jY6nXS-RD8CCTTug6XZ6fmdzwHeksi79aw@mail.gmail.com>
-	<CAHR064gbNSwHc=GVfm1R7LAmswJg_o7eW33cQ=JZHMJ8PMoVNw@mail.gmail.com>
-	<4F5370CD.3000501@suse.cz>
-Date: Mon, 5 Mar 2012 07:35:07 +0100
-Message-ID: <CAHR064i0m_4=BntT-vpvdtM5MiuEku3jnYE1mB4BTUiSiztRMg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] samsung-laptop: add N230 to supported models
-From: Corentin Chary <corentin.chary@gmail.com>
-To: platform-driver-x86@vger.kernel.org, mjg@redhat.com
-Cc: Josh Boyer <jwboyer@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 4, 2012 at 2:40 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 03/04/2012 11:52 AM, Corentin Chary wrote:
->> On Fri, Mar 2, 2012 at 8:06 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> On Fri, Mar 2, 2012 at 1:55 PM, Jiri Slaby <jslaby@suse.cz> wrote:
->>>> There is a version of N230 which has only this in product and board
->>>> names. See dmidecode in the bugzilla entry.
->>>>
->>>> Without this patch, one has to pass the force module parameter to have
->>>> rfkill working.
->>>>
->>>> References: https://bugzilla.novell.com/show_bug.cgi?id=746695
->>>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->>>
->>> I think Corey has patches queued up in Matthew's git tree that drop the DMI
->>> checks in this driver entirely.  If so, this probably isn't needed.
->>
->> Right. You can try the out-of-tree module using this repository
->> https://github.com/iksaif/samsung-laptop-dkms . The patchs are in
->> Matthew queue and they should be merged in 3.4.
->
-> Ok, thanks. Then please merge with -next ASAP.
+	I'd been crawling through VMA-related code for the last couple
+of weeks; the obvious parts of fallout are in followups and IMO they
+need to go into -stable as well; there's more, including some bugs I
+don't know what to do about and patches that need more testing...
 
-Matthew, is your new tree
-(git://cavan.codon.org.uk/platform-drivers-x86.git) merged in -next ?
+* aout handling needs to do setup_arg_pages() _before_ it does any mmap();
+otherwise we might easily end up with bprm->vma freed by the time we
+get to setup_arg_pages().  Sure, long-term we want setup_new_exec()
+merged with setup_arg_pages(), but not this late in the cycle...
 
+* anonymous shared mapping should *not* get VM_GROWS{UP,DOWN}, or we'll
+end up with very unpleasant things happening.
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+* __unmap_hugepage_range() calls flush_tlb_range() without ->mmap_sem,
+which means that we need ->page_table_lock.  Call it before dropping
+->page_table_lock, not after that...
+
+[unsolved] binder is insane, even more than usual for drivers/staging.
+It stores a reference to mm at open() time, then it stores a reference to
+vma at mmap() time, then it cheerfully works with that ->vma assuming that
+->mmap_sem on stored reference to ->mm would suffice.  Guess what happens
+if somebody opens it and then forks and does mmap in child?  Moreover, if
+we fork() and have child exit(), we get ->close() called on each VMA we'd
+copied into child.  Since they have stored reference to vma invalidated by
+->close(), that has unpleasant side effects, to put it mildly.  And yes,
+I realize that android userland probably doesn't do anything of that kind;
+fat lot of good it does us...
+
+[unsolved] a bunch of ->fault() instances are doing things that need
+->mmap_sem exclusive; e.g. vm_insert_page() is called by xip_file_fault(),
+drivers/misc/sgi-gru/grumain.c:gru_fault() does remap_pfn_range().
+drivers/gpu/drm/gma500/framebuffer.c:psbfb_vm_fault() does
+        vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+and drivers/gpu/drm/ttm/ttm_bo_vm.c:ttm_bo_vm_fault() does very similar
+things, same for spufs ->fault() instances.
