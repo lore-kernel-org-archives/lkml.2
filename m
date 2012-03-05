@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab2CEDZC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:25:02 -0500
-Received: from mga03.intel.com ([143.182.124.21]:16237 "EHLO mga03.intel.com"
+	id S1755128Ab2CEDeX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 22:34:23 -0500
+Received: from gate.crashing.org ([63.228.1.57]:59254 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755074Ab2CEDZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:25:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="73509514"
-Subject: Re: [RFC patch] spin_lock: add cross cache lines checking
-From: Alex Shi <alex.shi@intel.com>
-To: tglx@linutronix.com
-Cc: mingo@redhat.com, hpa@zytor.com, arnd@arndb.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, andi.kleen@intel.com
-In-Reply-To: <1330917630.18835.44.camel@debian>
-References: <1330917630.18835.44.camel@debian>
+	id S1754982Ab2CEDeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 22:34:22 -0500
+Message-ID: <1330918440.11728.87.camel@pasglop>
+Subject: Re: linux-next: boot failure for next-20120227 and later (pci tree
+ related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Mon, 05 Mar 2012 14:34:00 +1100
+In-Reply-To: <1330725132.11728.52.camel@pasglop>
+References: <20120302170638.3d172369d04335d9b921a28c@canb.auug.org.au>
+	 <CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
+	 <1330725132.11728.52.camel@pasglop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Mar 2012 11:24:49 +0800
-Message-ID: <1330917889.18835.46.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops.
-Sorry, the patch is not tested well! will update it later. 
+On Sat, 2012-03-03 at 08:52 +1100, Benjamin Herrenschmidt wrote:
 
-On Mon, 2012-03-05 at 11:20 +0800, Alex Shi wrote:
-> Modern x86 CPU won't hold whole memory bus when executing 'lock'
-> prefixed instructions unless the instruction destination is crossing 2
-> cache lines. If so, it is disaster of system performance.
-> 
-> Actually if the lock is not in the 'packed' structure, gcc places it
-> safely under x86 arch. But seems add this checking in
-> CONFIG_DEBUG_LOCK_ALLOC is harmless.
-> 
-> btw, change SPIN_BUG_ON macro a little for style complain.
-> 
-> Inspired-by: Andi Kleen <andi.kleen@intel.com>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
-> diff --git a/arch/x86/include/asm/cache.h b/arch/x86/include/asm/cache.h
-> index 48f99f1..79d146e 100644
-> --- a/arch/x86/include/asm/cache.h
-> +++ b/arch/x86/include/asm/cache.h
-> @@ -7,6 +7,8 @@
->  #define L1_CACHE_SHIFT	(CONFIG_X86_L1_CACHE_SHIFT)
->  #define L1_CACHE_BYTES	(1 << L1_CACHE_SHIFT)
->  
-> +#define L1_CACHE_SIZE_MASK	(~(L1_CACHE_BYTES - 1)UL)
-> +
->  #define __read_mostly __attribute__((__section__(".data..read_mostly")))
->  
->  #define INTERNODE_CACHE_SHIFT CONFIG_X86_INTERNODE_CACHE_SHIFT
-> diff --git a/include/asm-generic/cache.h b/include/asm-generic/cache.h
-> index 1bfcfe5..244e528 100644
-> --- a/include/asm-generic/cache.h
-> +++ b/include/asm-generic/cache.h
-> @@ -9,4 +9,6 @@
->  #define L1_CACHE_SHIFT		5
->  #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
->  
-> +#define L1_CACHE_SIZE_MASK     (~(L1_CACHE_BYTES - 1)UL)
-> +
->  #endif /* __ASM_GENERIC_CACHE_H */
-> diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
-> index 5f3eacd..554dcda 100644
-> --- a/lib/spinlock_debug.c
-> +++ b/lib/spinlock_debug.c
-> @@ -13,6 +13,12 @@
->  #include <linux/delay.h>
->  #include <linux/module.h>
->  
-> +#define SPIN_BUG_ON(cond, lock, msg) {if (unlikely(cond)) spin_bug(lock, msg); }
-> +
-> +#define is_cross_lines(p)						\
-> +	(((unsigned long)(p) & L1_CACHE_SIZE_MASK) !=			\
-> +	(((unsigned long)(p) + sizeof(*p) - 1) & L1_CACHE_SIZE_MASK))	\
-> +
->  void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
->  			  struct lock_class_key *key)
->  {
-> @@ -22,6 +28,8 @@ void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
->  	 */
->  	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
->  	lockdep_init_map(&lock->dep_map, name, key, 0);
-> +	SPIN_BUG_ON(is_cross_lines(lock->raw_lock), lock,
-> +			"!!! the lock cross cache lines !!!");
->  #endif
->  	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
->  	lock->magic = SPINLOCK_MAGIC;
-> @@ -40,6 +48,8 @@ void __rwlock_init(rwlock_t *lock, const char *name,
->  	 */
->  	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
->  	lockdep_init_map(&lock->dep_map, name, key, 0);
-> +	SPIN_BUG_ON(is_cross_lines(lock->raw_lock), lock,
-> +			"!!! the lock cross cache lines !!!");
->  #endif
->  	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
->  	lock->magic = RWLOCK_MAGIC;
-> @@ -75,8 +85,6 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
->  	spin_dump(lock, msg);
->  }
->  
-> -#define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
-> -
->  static inline void
->  debug_spin_lock_before(raw_spinlock_t *lock)
->  {
-> 
+> Or give me a chance to dig :-) I'll have a look next week.
+
+This is indeed what bjorn suspected on irc, this patch fixes it:
+
+(Bjorn, please fold it in the original offending patch)
+
+Cheers,
+Ben.
+
+diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
+index b37d0b5..5dd63f1 100644
+--- a/arch/powerpc/kernel/pci_of_scan.c
++++ b/arch/powerpc/kernel/pci_of_scan.c
+@@ -75,6 +75,7 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
+ {
+ 	u64 base, size;
+ 	unsigned int flags;
++	struct pci_bus_region region;
+ 	struct resource *res;
+ 	const u32 *addrs;
+ 	u32 i;
+@@ -106,10 +107,12 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
+ 			printk(KERN_ERR "PCI: bad cfg reg num 0x%x\n", i);
+ 			continue;
+ 		}
+-		res->start = base;
+-		res->end = base + size - 1;
++
+ 		res->flags = flags;
+ 		res->name = pci_name(dev);
++		region.start = base;
++		region.end = base + size - 1;
++		pcibios_bus_to_resource(dev, res, &region);
+ 	}
+ }
+ 
+@@ -209,6 +212,7 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
+ 	struct pci_bus *bus;
+ 	const u32 *busrange, *ranges;
+ 	int len, i, mode;
++	struct pci_bus_region region;
+ 	struct resource *res;
+ 	unsigned int flags;
+ 	u64 size;
+@@ -270,9 +274,10 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
+ 			res = bus->resource[i];
+ 			++i;
+ 		}
+-		res->start = of_read_number(&ranges[1], 2);
+-		res->end = res->start + size - 1;
+ 		res->flags = flags;
++		region.start = of_read_number(&ranges[1], 2);
++		region.end = region.start + size - 1;		
++		pcibios_bus_to_resource(dev, res, &region);
+ 	}
+ 	sprintf(bus->name, "PCI Bus %04x:%02x", pci_domain_nr(bus),
+ 		bus->number);
 
 
