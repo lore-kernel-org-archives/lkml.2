@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964775Ab2CEOy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:54:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56217 "EHLO mx2.suse.de"
+	id S964892Ab2CEOzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:55:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56250 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab2CEOy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 09:54:27 -0500
+	id S932328Ab2CEOy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 09:54:28 -0500
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Jaya Kumar <jayalk@intworks.biz>
-Subject: [PATCH 1/7] fb_defio: Push file_update_time() into fb_deferred_io_mkwrite()
-Date: Mon,  5 Mar 2012 15:54:12 +0100
-Message-Id: <1330959258-23211-2-git-send-email-jack@suse.cz>
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: [PATCH 5/7] gfs2: Push file_update_time() into gfs2_page_mkwrite()
+Date: Mon,  5 Mar 2012 15:54:16 +0100
+Message-Id: <1330959258-23211-6-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1330959258-23211-1-git-send-email-jack@suse.cz>
 References: <1330959258-23211-1-git-send-email-jack@suse.cz>
@@ -22,25 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Jaya Kumar <jayalk@intworks.biz>
+CC: Steven Whitehouse <swhiteho@redhat.com>
+CC: cluster-devel@redhat.com
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/video/fb_defio.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/gfs2/file.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/fb_defio.c b/drivers/video/fb_defio.c
-index c27e153..7a09c06 100644
---- a/drivers/video/fb_defio.c
-+++ b/drivers/video/fb_defio.c
-@@ -104,6 +104,8 @@ static int fb_deferred_io_mkwrite(struct vm_area_struct *vma,
- 	deferred framebuffer IO. then if userspace touches a page
- 	again, we repeat the same scheme */
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index c5fb359..1f03531 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -375,6 +375,9 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	 */
+ 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
  
++	/* Update file times before taking page lock */
 +	file_update_time(vma->vm_file);
 +
- 	/* protect against the workqueue changing the page list */
- 	mutex_lock(&fbdefio->lock);
- 
+ 	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, &gh);
+ 	ret = gfs2_glock_nq(&gh);
+ 	if (ret)
 -- 
 1.7.1
 
