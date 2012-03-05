@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2CEQnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:43:24 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5369 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2CEQnX (ORCPT
+	id S1755923Ab2CEQpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:45:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55982 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab2CEQpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:43:23 -0500
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=U9mXrcM7HOUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=drOt6m5kAAAA:8 a=0Mb-8gqCNcyzWS0PyrMA:9 a=PUjeQqilurYA:10 a=iLO_WyKNCWtz44fe:21 a=DtX7BJpD3j5P-ivT:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330965801.25686.328.camel@gandalf.stny.rr.com>
-Subject: Re: Missing stable commits?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Mar 2012 11:43:21 -0500
-In-Reply-To: <1330965566.25686.327.camel@gandalf.stny.rr.com>
-References: <1330965566.25686.327.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 5 Mar 2012 11:45:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.145.81 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Mon, 5 Mar 2012 20:45:47 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file
+Message-ID: <20120305164547.GN7366@moon>
+References: <20120302142630.GK8681@moon>
+ <20120302152621.GA29744@redhat.com>
+ <20120302161247.GO8681@moon>
+ <20120303223333.GB26846@moon>
+ <20120305142130.GA9393@redhat.com>
+ <20120305142655.GC9393@redhat.com>
+ <20120305144648.GA12341@moon>
+ <20120305154029.GB12427@redhat.com>
+ <20120305160127.GM7366@moon>
+ <20120305163130.GA13744@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305163130.GA13744@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this. Seems it is in stable, but not in the branch I was
-looking at.
-
-Sorry for the noise :-p
-
--- Steve
-
-
-On Mon, 2012-03-05 at 11:39 -0500, Steven Rostedt wrote:
-> As I'm going through adding commits from Thomas's latest -rt patch set
-> into the stable-rt tree, some of the patches conflicted. Looking at the
-> conflicts, it seems that mainline has patches that should probably be
-> added to the stable tree. Here's what I found so far:
+On Mon, Mar 05, 2012 at 05:31:30PM +0100, Oleg Nesterov wrote:
 > 
-> commit 1b71fe2efa31cd18c865db474a4cd473b6ab5281
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Sat Jul 16 23:43:58 2011 -0400
-> 
->     ceph analog of cifs build_path_from_dentry() race fix
->     
->     ... unfortunately, cifs bug got copied.  Fix is essentially the same.
->     
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> commit dc137bf553dbb6855bd7efc34fedcd03102455f7
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Sat Jul 16 23:37:20 2011 -0400
-> 
->     cifs: build_path_from_dentry() race fix
->     
->     deal with d_move() races properly; rename_lock read-retry loop,
->     rcu_read_lock() held while walking to root, d_lock held over
->     subtraction from namelen and copying the component to stabilize
->     ->d_name.
->     
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> 
-> These seem appropriate for stable, don't they?
-> 
-> -- Steve
+> User-space can be confused, yes, this is by design.
 > 
 
+OK ;)
 
+	Cyrill
