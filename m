@@ -1,76 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab2CEWOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:14:05 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13822 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab2CEWOD (ORCPT
+	id S1757079Ab2CEWPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:15:39 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56923 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab2CEWPi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:14:03 -0500
-X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=io4tkrCHpDoPPcwbIBsA:9 a=vngTnXs6-xot6x43z3YA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1330985640.25686.342.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.2.9-rt15
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Clark Williams <clark@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Date: Mon, 05 Mar 2012 17:14:00 -0500
-In-Reply-To: <alpine.LFD.2.02.1203021743040.2742@ionos>
-References: <alpine.LFD.2.02.1203021743040.2742@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Mar 2012 17:15:38 -0500
+Date: Mon, 05 Mar 2012 17:15:32 -0500 (EST)
+Message-Id: <20120305.171532.1094926884019491898.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 05 Mar 2012 14:15:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
 
-Please fold this change into
+1) TCP SACK processing can calculate an incorrect reordering value in
+   some cases, fix from Neal Cardwell.
 
-   cpu-rt-make-hotplug-lock-a-sleeping-spinlock-on-rt.patch
+2) tcp_mark_head_lost() can split SKBs in situations where it should
+   not, violating send queue invariants expected by other pieces of
+   code and thus resulting (eventually) in corrupted retransmit state
+   counters.  Also from Neal Cardwell.
 
+3) qla3xxx erroneously calls spin_lock_irqrestore() with constant
+   hw_flags of zero.  Fix from Santosh Nayak.
 
-As the patch was never tested (nor even compiled) it introduced a nasty
-bug into taking a CPU down instead of fixing one.
+4) Fix NULL deref in rt2x00, from Gabor Juhos.
 
-Thanks,
+5) pch_gbe passes address of wrong typed object to pch_gbe_validate_option
+   thus corrupting part of the value.  From Dan Carpenter.
 
--- Steve
+6) We must check the return value of nlmsg_parse() before trying to use
+   the results.  From Eric Dumazet.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index c25b5ff..66dfb74 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -59,16 +59,20 @@ static struct {
- 	int refcount;
- } cpu_hotplug = {
- 	.active_writer = NULL,
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	.lock = __SPIN_LOCK_UNLOCKED(cpu_hotplug.lock),
-+#else
- 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
-+#endif
- 	.refcount = 0,
- };
- 
- #ifdef CONFIG_PREEMPT_RT_FULL
--# define hotplug_lock() spin_lock(&cpu_hotplug.lock)
--# define hotplug_unlock() spin_unlock(&cpu_hotplug.lock)
-+# define hotplug_lock() rt_spin_lock(&cpu_hotplug.lock)
-+# define hotplug_unlock() rt_spin_unlock(&cpu_hotplug.lock)
- #else
- # define hotplug_lock() mutex_lock(&cpu_hotplug.lock)
--# define hotplug_lock() mutex_unlock(&cpu_hotplug.lock)
-+# define hotplug_unlock() mutex_unlock(&cpu_hotplug.lock)
- #endif
- 
- struct hotplug_pcp {
+7) Bridging code fails to check return value of ipv6_dev_get_saddr() thus
+   potentially leaving uninitialized garbage in the outgoing ipv6 header.
+   From Ulrich Weber.
 
+8) Due to rounding and a reversed operation on jiffies, bridge message
+   ages can go backwards instead of forwards, thus breaking STP.  Fixes
+   from Joakim Tjernlund.
 
+9) r8169 modifies Config* registers without properly holding the
+   Config9346 lock, resulting in corrupted IP fragments on some chips.
+   Fix from Francois Romieu.
+
+10) NET_PACKET_ENGINE default wan't set properly during the network
+    driver mega-move.  Fix from Stephen Hemminger.
+
+11) vmxnet3 uses TCP header size where it actually should use the UDP
+    header size, fix from Shreyas Bhatewara.
+
+12) Netfilter bridge module autoload is busted in the compat case, fix from
+    Florian Westphal.
+
+13) Wireless Key removal was not setting multicast bits correctly thus
+    accidently killing the unicast key 0 and thus all traffic stops.
+    Fix from Johannes Berg.
+
+14) Fix endless retries of A-MPDU transmissions in brcm80211 driver.
+
+Please pull, thanks a lot!
+
+The following changes since commit 550cf00dbc8ee402bef71628cb71246493dd4500:
+
+  Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2012-03-05 08:51:10 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Arend van Spriel (2):
+      brcm80211: smac: fix endless retry of A-MPDU transmissions
+      brcm80211: smac: only print block-ack timeout message at trace level
+
+Dan Carpenter (2):
+      pch_gbe: memory corruption calling pch_gbe_validate_option()
+      enic: fix an endian bug in enic_probe()
+
+David S. Miller (1):
+      Merge branch 'master' of git://1984.lsi.us.es/net
+
+Eric Dumazet (1):
+      rtnetlink: fix rtnl_calcit() and rtnl_dump_ifinfo()
+
+Felix Fietkau (1):
+      ath9k_hw: prevent writes to const data on AR9160
+
+Florian Westphal (1):
+      netfilter: bridge: fix module autoload in compat case
+
+Gabor Juhos (1):
+      rt2x00: fix a possible NULL pointer dereference
+
+Joakim Tjernlund (2):
+      bridge: Adjust min age inc for HZ > 256
+      bridge: message age needs to increase, not decrease.
+
+Johannes Berg (1):
+      iwlwifi: fix key removal
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Matt Carlson (1):
+      tg3: Fix tg3_get_stats64 for 5700 / 5701 devs
+
+Mohammed Shafi Shajakhan (2):
+      mac80211: zero initialize count field in ieee80211_tx_rate
+      mac80211: Fix a warning on changing to monitor mode from STA
+
+Neal Cardwell (3):
+      tcp: fix comment for tp->highest_sack
+      tcp: fix false reordering signal in tcp_shifted_skb
+      tcp: don't fragment SACKed skbs in tcp_mark_head_lost()
+
+Santosh Nayak (1):
+      qla3xxx: ethernet: Fix bogus interrupt state flag.
+
+Shreyas Bhatewara (1):
+      vmxnet3: Fix transport header size
+
+Ulrich Weber (1):
+      bridge: check return value of ipv6_dev_get_saddr()
+
+françois romieu (1):
+      r8169: corrupted IP fragments fix for large mtu.
+
+stephen hemminger (1):
+      packetengines: fix config default
+
+ drivers/net/ethernet/broadcom/tg3.c                |   45 ++++++++++----------
+ drivers/net/ethernet/cisco/enic/enic.h             |    2 +-
+ drivers/net/ethernet/cisco/enic/enic_main.c        |    2 +-
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_param.c  |   15 ++++---
+ drivers/net/ethernet/packetengines/Kconfig         |    1 +
+ drivers/net/ethernet/qlogic/qla3xxx.c              |    5 +-
+ drivers/net/ethernet/realtek/r8169.c               |    8 ++++
+ drivers/net/vmxnet3/vmxnet3_drv.c                  |    7 +---
+ drivers/net/vmxnet3/vmxnet3_int.h                  |    4 +-
+ drivers/net/wireless/ath/ath9k/ar5008_phy.c        |   25 +----------
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c         |   19 ++++++++
+ drivers/net/wireless/ath/ath9k/hw.h                |    1 -
+ drivers/net/wireless/brcm80211/brcmsmac/ampdu.c    |   12 ++----
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |   10 ++++-
+ drivers/net/wireless/rt2x00/rt2x00dev.c            |    3 +-
+ include/linux/tcp.h                                |    3 +-
+ include/net/tcp.h                                  |    5 +-
+ net/bridge/br_multicast.c                          |    7 ++-
+ net/bridge/br_stp.c                                |    6 +-
+ net/bridge/netfilter/ebtables.c                    |   10 +----
+ net/core/rtnetlink.c                               |   18 ++++----
+ net/ipv4/tcp_input.c                               |   19 +++++----
+ net/mac80211/iface.c                               |    3 +
+ net/mac80211/rate.c                                |    2 +-
+ 24 files changed, 122 insertions(+), 110 deletions(-)
