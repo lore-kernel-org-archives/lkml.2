@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2CEDr1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:47:27 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53929 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755458Ab2CEDr0 (ORCPT
+	id S1755780Ab2CEDu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 22:50:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53506 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755111Ab2CEDu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:47:26 -0500
-Date: Mon, 5 Mar 2012 14:47:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20120305144715.6a50c71ae343761cfb99f80a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78"
+	Sun, 4 Mar 2012 22:50:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of robherring2@gmail.com designates 10.101.190.10 as permitted sender) smtp.mail=robherring2@gmail.com; dkim=pass header.i=robherring2@gmail.com
+Message-ID: <4F5437FE.2000306@gmail.com>
+Date: Sun, 04 Mar 2012 21:50:22 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL] generic irq chip and pl061 irqdomain support
+References: <4F3ADFE7.4090409@gmail.com>
+In-Reply-To: <4F3ADFE7.4090409@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Grant,
 
-Hi Dave,
+On 02/14/2012 04:27 PM, Rob Herring wrote:
+> Grant,
+> 
+> Please pull. This is based on your current branch which you have said
+> you plan to rebase, so feel free to rebase these as you need to. This
+> has been tested on highbank and i.MX5.
+> 
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_ringbuffer.c between commit 5d031e5b633d
-("drm/i915: Remove use of the autoreported ringbuffer HEAD position")
-from Linus' tree and commit a71d8d94525e ("drm/i915: Record the tail at
-each request and use it to estimate the head") from the drm tree.
+Ping.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I've rebased onto your current tree. Updated pull request:
 
-diff --cc drivers/gpu/drm/i915/intel_ringbuffer.c
-index 5361915,ca3972f..0000000
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@@ -1132,6 -1190,23 +1190,11 @@@ int intel_wait_ring_buffer(struct intel
-  	struct drm_device *dev =3D ring->dev;
-  	struct drm_i915_private *dev_priv =3D dev->dev_private;
-  	unsigned long end;
-+ 	int ret;
- -	u32 head;
- -
- -	/* If the reported head position has wrapped or hasn't advanced,
- -	 * fallback to the slow and accurate path.
- -	 */
- -	head =3D intel_read_status_page(ring, 4);
- -	if (head > ring->head) {
- -		ring->head =3D head;
- -		ring->space =3D ring_space(ring);
- -		if (ring->space >=3D n)
- -			return 0;
- -	}
-+=20
-+ 	ret =3D intel_ring_wait_request(ring, n);
-+ 	if (ret !=3D -ENOSPC)
-+ 		return ret;
- =20
-  	trace_i915_ring_wait_begin(ring);
-  	if (drm_core_check_feature(dev, DRIVER_GEM))
+The following changes since commit 280ad7fda5f95211857fda38960f2b6fdf6edd3e:
 
---Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78
-Content-Type: application/pgp-signature
+  mfd: twl-core: Add IRQ_DOMAIN dependency (2012-02-26 16:48:06 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+are available in the git repository at:
+  git://sources.calxeda.com/kernel/linux.git irqdomain-for-grant
 
-iQIcBAEBCAAGBQJPVDdDAAoJEECxmPOUX5FETPIP/jhl11qhAlR0WKx+N0kFGXs4
-M9Df0IWxEYPojtTt9/uexGQ4tnCRSMcmwOEe0PKPbf4Q8oUzqN8BZjEyM1QoEAxh
-tW/nSkztMyUtPmrvZ6U1xv51UuwVJY8Q/d6PZEziAjwTja1i3X1J+swfIbJ17Eps
-giwh3YcNIg5twjwic5/XU/hohJZljwcNqQ/xHvRrBv6Tx7a9CaPqD3roIPI8PAwG
-ifKK05QrfmpONtgp/DQi4Y1/zyxBD+IQO4C818LyzcY1YeiM/kg9eWMOsvhE5W+k
-3/g3xZXZzsSimW1P3XEwYSb+3hY3aNpzIrGmB3ML+HmRcK8aFWHBpzF5FsbpgMv6
-2PYkQ6/wgaY1+FUXVq8hs0DzxpX2AlAPN5Wn8gJLmpm1MakK/I3VLPps1PN3hdL/
-e0j1K6pS9vb69IUK5UJuUCKu7JvpBS0MbHOqgZ3nXfyFa+fwTh8Fz6LomFEqxmNT
-CPd3WYwgMQYamQg/C3ItENTML5dOziKusYpSMRbeNmVA1iDFhllOXEkKNl8RcyAN
-lKEfziBvu6LfIsRmevAz38FUYdd+A7dbLcDybpQP1F64J2eiOU6ct3/lRXq606oV
-POKNUtSKMqwQNmmgQaDa8u99xGbGgmTr/PiswMaoi18+HDUv6htJWdWbXbrkFytF
-ZmkfzzajJg43waol5JIQ
-=IpAt
------END PGP SIGNATURE-----
+Rob Herring (3):
+      ARM: kconfig: always select IRQ_DOMAIN
+      irq: add irq_domain support to generic-chip
+      gpio: pl061: enable interrupts with DT style binding
 
---Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78--
+ .../devicetree/bindings/gpio/pl061-gpio.txt        |   15 ++
+ arch/arm/Kconfig                                   |    2 +-
+ arch/arm/common/Kconfig                            |    2 -
+ drivers/gpio/gpio-pl061.c                          |   48 ++++---
+ include/linux/irq.h                                |   15 ++
+ kernel/irq/generic-chip.c                          |  152
++++++++++++++++++---
+ 6 files changed, 186 insertions(+), 48 deletions(-)
+
+Rob
+
+> 
+> The following changes since commit 98ecf5260207e45ad587a5dc16c39f5ede467a45:
+> 
+>   irq_domain/microblaze: Convert microblaze to use irq_domains
+> (2012-02-05 23:02:26 -0700)
+> 
+> are available in the git repository at:
+>   git://sources.calxeda.com/kernel/linux.git irqdomain-for-grant
+> 
+> Rob Herring (3):
+>       ARM: kconfig: always select IRQ_DOMAIN
+>       irq: add irq_domain support to generic-chip
+>       gpio: pl061: enable interrupts with DT style binding
+> 
+>  .../devicetree/bindings/gpio/pl061-gpio.txt        |   15 ++
+>  arch/arm/Kconfig                                   |    2 +-
+>  arch/arm/common/Kconfig                            |    2 -
+>  drivers/gpio/gpio-pl061.c                          |   48 ++++---
+>  include/linux/irq.h                                |   15 ++
+>  kernel/irq/generic-chip.c                          |  152
+> +++++++++++++++++---
+>  6 files changed, 186 insertions(+), 48 deletions(-)
+> 
+> Rob
+
