@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab2CELtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 06:49:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24488 "EHLO mga09.intel.com"
+	id S932080Ab2CEL5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 06:57:52 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:24172 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756758Ab2CELtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 06:49:13 -0500
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
- CONFIG_X86_32 oops
-From: Matt Fleming <matt.fleming@intel.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, rui.zhang@intel.com,
-        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <86wr71up4j.fsf@sumi.keithp.com>
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
-	 <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
-	 <86zkbxusu2.fsf@sumi.keithp.com> <4F52B6F0.6060902@zytor.com>
-	 <86wr71up4j.fsf@sumi.keithp.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Mon, 05 Mar 2012 11:48:40 +0000
-Message-ID: <1330948120.3539.16.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+	id S1756422Ab2CEL5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 06:57:51 -0500
+Message-ID: <4F54AA3C.6010702@imgtec.com>
+Date: Mon, 5 Mar 2012 11:57:48 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-media@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND] [PATCH] media: ir-sony-decoder: 15bit function decode
+ fix
+References: <4F4B6EC5.1070806@imgtec.com>
+In-Reply-To: <4F4B6EC5.1070806@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Mar 2012 11:57:48.0835 (UTC) FILETIME=[2F722F30:01CCFAC7]
+X-SEF-Processed: 7_3_0_01181__2012_03_05_11_57_49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-03 at 17:33 -0800, Keith Packard wrote:
-> <#part sign=pgpmime>
-> On Sat, 03 Mar 2012 16:27:28 -0800, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> 
-> > Do you have the dmesg from your MBA?  I'm wondering what the memory map
-> > looks like...
-> 
-> Here's the first part of dmesg from a running kernel (3.3-rc1 plus some
-> DRM patches). Let me know if I cut this off too soon...
+Ping
 
-Have you tried adding 'add_efi_memmap' to your kernel command line?
+Another week's gone by with no response. It's a trivial patch, so can
+somebody please take a look at it? (or if I'm missing somebody relevant
+from CC, please add them)
 
+Thanks
+James
+
+On 27/02/12 11:53, James Hogan wrote:
+> The raw Sony IR decoder decodes 15bit messages slightly incorrectly.
+> To decode the function number, it shifts the bits right by 7 so that the
+> function is in bits 7:1, masks with 0xFD (0b11111101), and does an 8 bit
+> reverse so it ends up in bits 6:0. The mask should be 0xFE to correspond
+> with bits 7:1 (0b11111110).
+> 
+> The old mask had the effect of dropping the MSB of the function number
+> from bit 6, and leaving the LSB of the device number in bit 7.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> ---
+> 
+> (note, i don't have a 15bit sony remote to test this with, but i'm
+> pretty confident of it's correctness based on this:
+> http://picprojects.org.uk/projects/sirc/sonysirc.pdf )
+> 
+>  drivers/media/rc/ir-sony-decoder.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/rc/ir-sony-decoder.c b/drivers/media/rc/ir-sony-decoder.c
+> index d5e2b50..dab98b3 100644
+> --- a/drivers/media/rc/ir-sony-decoder.c
+> +++ b/drivers/media/rc/ir-sony-decoder.c
+> @@ -130,7 +130,7 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
+>  		case 15:
+>  			device    = bitrev8((data->bits >>  0) & 0xFF);
+>  			subdevice = 0;
+> -			function  = bitrev8((data->bits >>  7) & 0xFD);
+> +			function  = bitrev8((data->bits >>  7) & 0xFE);
+>  			break;
+>  		case 20:
+>  			device    = bitrev8((data->bits >>  5) & 0xF8);
 
