@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab2CER4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:56:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58562 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab2CER4G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:56:06 -0500
-Message-ID: <1330970118.11248.256.camel@twins>
-Subject: Re: [PATCH v2 x86 1/2]  fix page faults by nmiaction in nmi if
- kmemcheck is enabled
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        Vegard Nossum <vegardno@ifi.uio.no>, tony.luck@intel.com, bp@amd64.org,
-        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
-        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
-        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
-        linux-watchdog@vger.kernel.org
-Date: Mon, 05 Mar 2012 18:55:18 +0100
-In-Reply-To: <20120305155434.GT3083@redhat.com>
-References: <1329717665.3448.28.camel@ThinkPad-T61>
-	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
-	 <1329819437.2293.382.camel@twins> <1329990828.19165.36.camel@ThinkPad-T61>
-	 <1330340324.11248.60.camel@twins> <1330941917.24353.63.camel@ThinkPad-T61>
-	 <20120305155434.GT3083@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757237Ab2CESDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:03:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756091Ab2CESDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:03:34 -0500
+Date: Mon, 5 Mar 2012 13:03:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120305180325.GC18546@redhat.com>
+References: <1330036246-21633-1-git-send-email-tj@kernel.org>
+ <20120223144336.58742e1b.akpm@linux-foundation.org>
+ <20120223230123.GL22536@google.com>
+ <20120223231204.GM22536@google.com>
+ <20120227182220.GD27677@redhat.com>
+ <20120229190354.GC5930@redhat.com>
+ <20120305172000.GQ22536@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305172000.GQ22536@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 10:54 -0500, Don Zickus wrote:
-> This is one way of doing this.  I was trying to avoid this when I rewrote the
-> nmi handlers, because everyone kept screwing up the structs.  I thought it
-> would be safer to have callers pass in data based on an api instead.
+On Mon, Mar 05, 2012 at 09:20:00AM -0800, Tejun Heo wrote:
+> Hello, Vivek.
+> 
+> Sorry about the delay.  Was off last week.
+> 
+> On Wed, Feb 29, 2012 at 02:03:54PM -0500, Vivek Goyal wrote:
+> > Ok, more debugging revealed that culprit here is "floppy" driver module.
+> > It instanciates a queue but never registers a disk against it. Better
+> > skip such queues/groups. Here is the patch.
+> 
+> Urgh.. I hate that driver.  I ended up folding the following patch in
+> the series right after "blkcg: kill the mind-bending blkg->dev".
 
-Apparently kmemcheck marks pages as non-present and does magic in the
-fault handler. Having the action thing allocated meant kmemcheck also
-marks that thing as non-present in the page-tables, the list iteration
-from NMI context would then fault and things would go funny.
+Looks good to me.
 
-There's two ways out, help kmemcheck with a new annotation (which of
-course starts with checking if there isn't already such a thing).
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Or this one, avoid the action things from being allocated, this
-side-steps kmemcheck and avoids the problem thusly.
-
-Sadly this patch doesn't at all mention the first possibility and why
-that isn't a feasible approach. A well...
+Thanks
+Vivek
