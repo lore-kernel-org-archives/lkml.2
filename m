@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab2CEKPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 05:15:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43752 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab2CEKPc (ORCPT
+	id S1756550Ab2CEKSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 05:18:34 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55705 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756418Ab2CEKSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 05:15:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.42.18.195 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BE8619C2@HQMAIL01.nvidia.com>
-References: <1330705873-10798-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BE861978@HQMAIL01.nvidia.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BE861991@HQMAIL01.nvidia.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BE8619C2@HQMAIL01.nvidia.com>
-Date: Mon, 5 Mar 2012 11:15:32 +0100
-Message-ID: <CACRpkdYrj2ay=k2MgYOekQtcfbP9FiY5Rju8VznJHrxG81Y7SQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: resurrect verbose pinmux-pins
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
+	Mon, 5 Mar 2012 05:18:33 -0500
+X-Sasl-enc: /SpHp2JW24KHhaO5rmNQnpGCLVmrrNHky+/gI+nZ3TLO 1330942711
+Date: Mon, 5 Mar 2012 07:18:27 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH V3] cpuidle: Add a sysfs entry to disable specific C
+ state for debug purpose.
+Message-ID: <20120305101827.GA19408@khazad-dum.debian.net>
+References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
+ <1330647453.1916.7.camel@ymzhang>
+ <20120302142303.648285a7.akpm@linux-foundation.org>
+ <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
+ <4F545A4E.8010801@linux.vnet.ibm.com>
+ <4F5466C4.2090808@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5466C4.2090808@intel.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 7:24 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Stephen Warren wrote at Friday, March 02, 2012 10:41 AM:
->> Stephen Warren wrote at Friday, March 02, 2012 10:22 AM:
->> > Linus Walleij wrote at riday, March 02, 2012 9:31 AM:
->> > > From: Linus Walleij <linus.walleij@linaro.org>
->> > >
->> > > This reintroduces the verbosity in the pinmux-pins file, now this
->> > > file will list all pins, their names, owning device (and if it's
->> > > a hog) and also in applicable cases the function and group making
->> > > use of that pin right now.
->> > >
->> > > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->> >
->> > It'd be nice if we could defer this fix until after all the API rework,
->> > because it'll cause all kinds of conflicts otherwise.
->>
->> Oh, I see this patch is in your for-next branch already before I had a chance
->> to comment on it. I guess I'll have write a patch to convert the removed struct
->> type to char*s and rebase on top of it:-(
+On Mon, 05 Mar 2012, ShuoX Liu wrote:
+> @@ -45,6 +46,7 @@ total 0
+>  /sys/devices/system/cpu/cpu0/cpuidle/state1:
+>  total 0
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
 
-Mainly because I saw it as a regression fix.
+...
 
-> I take that back. Can we please drop this patch and I'll provide an
-> equivalent in my API rework series?
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index 3fe41fe..1eae29a 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -222,6 +222,9 @@ struct cpuidle_state_attr {
+>  #define define_one_state_ro(_name, show) \
+>  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444,
+> show, NULL)
+> 
+> +#define define_one_state_rw(_name, show, store) \
+> +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644,
+> show, store)
+> +
+>  #define define_show_state_function(_name) \
+>  static ssize_t show_state_##_name(struct cpuidle_state *state, \
+>  			 struct cpuidle_state_usage *state_usage, char *buf) \
+> @@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct
+> cpuidle_state *state, \
+>  	return sprintf(buf, "%u\n", state->_name);\
+>  }
+> 
+> +#define define_store_state_function(_name) \
+> +static ssize_t store_state_##_name(struct cpuidle_state *state, \
+> +		const char *buf, size_t size) \
+> +{ \
+> +	int value; \
+> +	sscanf(buf, "%d", &value); \
+> +	if (value) \
+> +		state->disable = 1; \
+> +	else \
+> +		state->disable = 0; \
+> +	return size; \
+> +}
 
-Yeah no problem, if the rest of the v3 patch set is OK I'll just
-remove that patch.
+Isn't this missing a check for capabilities?  Disabling cpuidle states is
+not something random Joe (and IMHO that does mean random capability-
+restricted Joe root) should be doing...
 
-Yours,
-Linus Walleij
+Also, maybe it would be best to use one of the lib helpers to parse that
+value, so that it will be less annoying to userspace (trim blanks, complain
+if there is trailing junk after trimming, etc)?
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
