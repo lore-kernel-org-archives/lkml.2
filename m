@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab2CERgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:36:33 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43168 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab2CERgc (ORCPT
+	id S1757239Ab2CERkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:40:17 -0500
+Received: from ftp.meprolight.com ([194.90.149.17]:48188 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755877Ab2CERkO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:36:32 -0500
-Date: Mon, 5 Mar 2012 17:38:06 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-Message-ID: <20120305173806.15c73097@pyramind.ukuu.org.uk>
-In-Reply-To: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
-References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Mar 2012 12:40:14 -0500
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 5 Mar 2012 19:39:57 +0200
+Subject: RE: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
+Thread-Topic: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
+Thread-Index: Acz68ucQLFjH777jRHSnwUGQCSEYgwAAKK5T
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8905@MEP-EXCH.meprolight.com>
+References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904@MEP-EXCH.meprolight.com>,<CAOMZO5Bdq_LuwUtsuv2kWrdGPHB3Q9hqvj3JyP0q53BLwZD3FQ@mail.gmail.com>
+In-Reply-To: <CAOMZO5Bdq_LuwUtsuv2kWrdGPHB3Q9hqvj3JyP0q53BLwZD3FQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Mar 2012 08:47:41 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
 
-> Allow drivers to report at probe time that they cannot get all the resources
-> required by the device, and should be retried at a later time.
+Hi Fabio,
 
-Stick my oar in for that as well. We've got several bits of Intel SCU
-using code that right now have ugly hacks in them (and generally aren't
-upstream) because they must cope with random ordering problems.
+Thanks for you comment.
 
-Alan
+>Thanks for your patch.
+
+>This has already been submitted previously:
+>http://patchwork.ozlabs.org/patch/123404/
+
+>Also, please read Documentation/SubmittingPatches and do not attach
+>your patch next time.
+
+>You can use "git send-email" for example.
+
+I always used git send-email, my problem is the SMTP server does not exit out.
+I think it will be solved by tomorrow.
+
+Thanks,
+Alex Gershgorin 
+
+ 
