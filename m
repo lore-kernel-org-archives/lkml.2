@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab2CEVqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:46:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21366 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab2CEVq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:46:29 -0500
-Date: Mon, 5 Mar 2012 16:45:45 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        Vegard Nossum <vegardno@ifi.uio.no>, tony.luck@intel.com, bp@amd64.org,
-        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
-        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
-        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v2 x86 1/2]  fix page faults by nmiaction in nmi if
- kmemcheck is enabled
-Message-ID: <20120305214545.GH3083@redhat.com>
-References: <1329717665.3448.28.camel@ThinkPad-T61>
- <1329735648.2293.307.camel@twins>
- <1329788560.3448.45.camel@ThinkPad-T61>
- <1329819437.2293.382.camel@twins>
- <1329990828.19165.36.camel@ThinkPad-T61>
- <1330340324.11248.60.camel@twins>
- <1330941917.24353.63.camel@ThinkPad-T61>
- <1330969747.11248.250.camel@twins>
+	id S1754733Ab2CEVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:47:59 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:35024 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab2CEVr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 16:47:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.224.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 13:47:47 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+Message-ID: <20120305214747.GA9425@kroah.com>
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330969747.11248.250.camel@twins>
+In-Reply-To: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 06:49:07PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-03-05 at 18:05 +0800, Li Zhong wrote:
-> > +static struct nmiaction arch_trigger_all_cpu_bt_nmiaction = {
-> > +       .handler        = arch_trigger_all_cpu_backtrace_handler,
-> > +       .name           = "arch_bt",
-> > +};
-> > +
-> >  static int __init register_trigger_all_cpu_backtrace(void)
-> >  {
-> > -       register_nmi_handler(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler,
-> > -                               0, "arch_bt");
-> > +       register_nmi_handler(NMI_LOCAL, &arch_trigger_all_cpu_bt_nmiaction);
-> >         return 0;
-> >  } 
-> 
-> If you look at things like cpu_notifier() you can shorten this still:
-> 
-> #define nmi_notifier(t, fn, n)				\
-> do {							\
-> 	static struct nmiaction fn##_na = {		\
-> 		.handler = (fn),			\
-> 		.name = (n),				\
-> 	};						\
-> 	register_nmi_handler((t), &fn##_na);		\
-> } while (0)
-> 
-> The whole thing then becomes:
-> 
->   nmi_notifier(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler, "arch_bt");
+On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -587,6 +587,10 @@ struct device_dma_parameters {
+>   * @mutex:	Mutex to synchronize calls to its driver.
+>   * @bus:	Type of bus device is on.
+>   * @driver:	Which driver has allocated this
+> + * @deferred_probe: entry in deferred_probe_list which is used to retry the
+> + * 		binding of drivers which were unable to get all the resources
+> + * 		needed by the device; typically because it depends on another
+> + * 		driver getting probed first.
+>   * @platform_data: Platform data specific to the device.
+>   * 		Example: For devices on custom boards, as typical of embedded
+>   * 		and SOC based hardware, Linux often uses platform_data to point
+> @@ -646,6 +650,7 @@ struct device {
+>  	struct bus_type	*bus;		/* type of bus device is on */
+>  	struct device_driver *driver;	/* which driver has allocated this
+>  					   device */
+> +	struct list_head	deferred_probe;
+>  	void		*platform_data;	/* Platform specific data, device
+>  					   core doesn't touch it */
+>  	struct dev_pm_info	power;
 
-Hi Li,
+This can go into the "struct device_private" structure instead, right?
+That would be better to ensure that no non-driver-core code ever touches
+this thing.
 
-I would be open to this suggestion.  If you want to modify the patch for
-this approach.
+thanks,
 
-Cheers,
-Don
+greg k-h
