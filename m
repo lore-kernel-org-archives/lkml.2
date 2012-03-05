@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab2CECEi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 21:04:38 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:49202
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756269Ab2CECE2 (ORCPT
+	id S1752645Ab2CECLS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 21:11:18 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33984 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2CECLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 21:04:28 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 5 Mar 2012 10:04:11 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, <patches@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        <linaro-dev@lists.linaro.org>, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [PATCH v5 2/4] clk: Kconfig: add entry for HAVE_CLK_PREPARE
-Message-ID: <20120305020410.GB3261@b20223-02.ap.freescale.net>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-3-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1330763341-3437-3-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Sun, 4 Mar 2012 21:11:16 -0500
+Date: Mon, 5 Mar 2012 13:11:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20120305131103.71d87f250accd238b7d7630e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Mar_2012_13_11_03_+1100_r.7lZImHPi7/cNDR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 12:28:59AM -0800, Mike Turquette wrote:
-> The common clk framework provides clk_prepare and clk_unprepare
-> implementations.  Create an entry for HAVE_CLK_PREPARE so that
-> COMMON_CLK can select it.
-> 
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Mike Turquette <mturquette@ti.com>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Richard Zhao <richard.zhao@linaro.org>
-> Cc: Saravana Kannan <skannan@codeaurora.org>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Amit Kucheria <amit.kucheria@linaro.org>
-> Cc: Deepak Saxena <dsaxena@linaro.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> ---
->  drivers/clk/Kconfig |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 9b3cd08..3912576 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -8,3 +8,6 @@ config HAVE_CLK_PREPARE
->  
->  config HAVE_MACH_CLKDEV
->  	bool
-> +
-> +config HAVE_CLK_PREPARE
-> +	bool
-We've already had it. redundant?
+--Signature=_Mon__5_Mar_2012_13_11_03_+1100_r.7lZImHPi7/cNDR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
-Richard
-> -- 
-> 1.7.5.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Hi all,
 
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/vmxnet3/vmxnet3_drv.c between commit efead8710aad ("vmxnet3:
+Fix transport header size") from the net tree and commit 8bca5d1ebb8b
+("vmxnet3: cleanup tso headers manipulation") from the net-next tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/vmxnet3/vmxnet3_drv.c
+index 756c0f5,adf527e..0000000
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@@ -824,14 -820,17 +820,12 @@@ vmxnet3_parse_and_copy_hdr(struct sk_bu
+  			ctx->eth_ip_hdr_size =3D skb_checksum_start_offset(skb);
+ =20
+  			if (ctx->ipv4) {
+- 				struct iphdr *iph =3D (struct iphdr *)
+- 						    skb_network_header(skb);
++ 				const struct iphdr *iph =3D ip_hdr(skb);
++=20
+  				if (iph->protocol =3D=3D IPPROTO_TCP)
+- 					ctx->l4_hdr_size =3D ((struct tcphdr *)
+- 					   skb_transport_header(skb))->doff * 4;
++ 					ctx->l4_hdr_size =3D tcp_hdrlen(skb);
+  				else if (iph->protocol =3D=3D IPPROTO_UDP)
+- 					ctx->l4_hdr_size =3D
+- 							sizeof(struct udphdr);
+ -					/*
+ -					 * Use tcp header size so that bytes to
+ -					 * be copied are more than required by
+ -					 * the device.
+ -					 */
+ -					ctx->l4_hdr_size =3D sizeof(struct tcphdr);
+++					ctx->l4_hdr_size =3D sizeof(struct udphdr);
+  				else
+  					ctx->l4_hdr_size =3D 0;
+  			} else {
+
+--Signature=_Mon__5_Mar_2012_13_11_03_+1100_r.7lZImHPi7/cNDR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPVCC3AAoJEECxmPOUX5FEVTkQAIlY66e5lMPOnU/VQY5eY4E6
+OwGJK99sqlS6rKHrVT0hVnZdUmUJNJqP2fDPnv5dy4A5gPK15IWTcwgoWiOcr/M9
+Rxugdhs9ZBCCywh7XHNHEnKBal3OjwkwNcNsLTuikf6OFa/O7BYtV9sQdyR7sq4O
+9o+SoNdzNlC7D9FkbCLOFKR+6IhttOdkye4honB/8bl8MDYRleE9Hqcg62eVoLMM
+uEKYpPvLsvFHi/B5b6vgDR3ux7bpwwpVczUxdvUZogmZAvlUGw81KbwZ2rrfH3hS
+1PodVyUFN1JtMxKrnlBhD9kF7f0/a6skPYd691gzFdd8rLdZ7z9s1rNEDBx1DgZy
+ELA+rmg8OiYLgDFIm1Ssc6XexMWWElQ7VlZlZXk+BHm3F2AhEMgjlPhIA3rQG9vX
+z1/WQpSowvoVPJ6kP3GX0hdqDyDJFaK5zKD+ZtNeq0/QoGlilF65tpw+TQKP+Bq3
+awwkGcXfdDurN+QdbB8Y1kJ4c4A92ym1xE/3y766PgDCzimtUse4fwBUwHYoeoti
+VKkNocWp7n7deKw+04Tczg7rpTQt2ZK/R9hJ5/ZuRxo73Vgj2hfMl4tgLiLfE3IQ
+17cU0kECm0jkdE+RDn8tTl2FEIhvmDs/LjqEL2SlM0UK98W3QjroYvfF+h6tRYDf
+5n8yTTpvYK4jYuRYvT28
+=DItd
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Mar_2012_13_11_03_+1100_r.7lZImHPi7/cNDR--
