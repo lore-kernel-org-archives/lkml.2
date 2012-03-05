@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab2CETu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 14:50:27 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51165 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756488Ab2CETu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 14:50:26 -0500
-Message-ID: <1330977010.2191.84.camel@work-vm>
-Subject: Re: WARNING: Adjusting tsc more then 11%
-From: John Stultz <john.stultz@linaro.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Fedora Kernel Team <kernel-team@fedoraproject.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 05 Mar 2012 11:50:10 -0800
-In-Reply-To: <20120305192338.GA30491@redhat.com>
-References: <20120305154411.GA29668@redhat.com>
-	 <1330972323.2191.74.camel@work-vm> <20120305192338.GA30491@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030519-9360-0000-0000-0000043E24C6
+	id S1757530Ab2CETvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 14:51:55 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:36539 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756488Ab2CETvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 14:51:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of james@albanarts.com designates 10.60.29.68 as permitted sender) smtp.mail=james@albanarts.com
+MIME-Version: 1.0
+X-Originating-IP: [212.159.75.221]
+In-Reply-To: <4F54F524.8020105@redhat.com>
+References: <4F4B6EC5.1070806@imgtec.com>
+	<4F54AA3C.6010702@imgtec.com>
+	<4F54CE85.7070009@codeaurora.org>
+	<4F54F524.8020105@redhat.com>
+Date: Mon, 5 Mar 2012 19:51:52 +0000
+X-Google-Sender-Auth: iVXsPy8lHPiMYZgc9Q01VNxKBgM
+Message-ID: <CAAG0J9-VhywKSX9uFXsEyT2ec8Dx683A0XcjR7hN1VJ_dAT-ng@mail.gmail.com>
+Subject: Re: [RESEND] [PATCH] media: ir-sony-decoder: 15bit function decode fix
+From: James Hogan <james.hogan@imgtec.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Trilok Soni <tsoni@codeaurora.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-media@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 14:23 -0500, Dave Jones wrote:
-> On Mon, Mar 05, 2012 at 10:32:03AM -0800, John Stultz wrote:
->  > On Mon, 2012-03-05 at 10:44 -0500, Dave Jones wrote:
-> 
->  > > any idea what could have changed to start tripping that up ?
->  > > 
->  > > The reports seem to have started around 3.3-rc4.
->  > 
->  > Huh. No I don't know what would have started causing such a warning. I
->  > had expected that there would be some edge hardware that might trip that
->  > warning, but I'd expect the noise to start there w/ 3.2 after it was
->  > introduced. There's only been spelling & comment changes to the
->  > timekeeping core in the 3.3-rc series.
-> 
-> thinking about this some more, while the reports starts around rc4, this
-> may have been caused by something prior to that, as anyone moving from
-> Fedora 16 or earlier to F17 alpha would have jumped quite a kernel version or two.
+On 5 March 2012 17:17, Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
+>
+> Em 05-03-2012 11:32, Trilok Soni escreveu:
+> > Hi James,
+> >
+> > On 3/5/2012 5:27 PM, James Hogan wrote:
+> >> Ping
+> >>
+> >> Another week's gone by with no response. It's a trivial patch, so can
+> >> somebody please take a look at it? (or if I'm missing somebody relevant
+> >> from CC, please add them)
+> >>
+> >
+> > You are not alone, GPIO IR patch is also in waiting mode...
+>
+> Unfortunately, I'm very busy those days, testing a big patch series that
+> it is
+> re-writing one subsystem on several machines. Due to that, I had to reduce
+> the timeslot for patch review.
+>
+> If your patches are at patchwork.linuxtv.org, you shouldn't worry... the
+> patches
+> are on my queue ;)
+>
+> I'll review them in time for 3.4.
 
-Was F16 3.1 based? The warning was added in 3.2, so if you skipped it,
-it may not be new behavior then.
+Okay no problem, sorry for nagging :)
 
->  > Do you know if this is an occasional thing on any of the affected
->  > hardware, or if it happens after every reboot?
-> 
-> Out of all the people running the Fedora 17 alpha, this has only shown
-> up those four times, so it does seem to be a rare thing.
-> I suspect we'll get more instances of it as more people start testing.
-> 
-> Three of the reporters noted that it happened on boot.
-> 
->  > Are any of the reported boxes systems you have access to in order to
->  > reproduce?
-> 
-> unfortunately not.
-
-Ok. Well, just to level set: the warning is informative, and points to
-unexpected, but not necessarily unsafe behavior.
-
-In fact, the risk (where mult is adjusted to be large enough to cause an
-overflow) we're warning about have been present 2.6.36 or even possibly
-before. The change in 3.2 which added the warning also added a more
-conservative mult calculation, so we're less likely to get overflow
-prone large mult values.
-
-So it would be great to get further feedback from folks who are seeing
-this warning, so we can really hammer this out, but I don't want the
-warning spooking anyone into thinking things are terribly broken.
-
-thanks
--john
-
-
-
-
-
-
+Thanks
+James
