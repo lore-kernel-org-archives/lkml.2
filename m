@@ -1,125 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab2CEIsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 03:48:46 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:53797 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756244Ab2CEIsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 03:48:45 -0500
-Date: Mon, 5 Mar 2012 09:48:23 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v5 4/4] clk: basic clock hardware types
-Message-ID: <20120305084823.GD24858@lunn.ch>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
- <1330763341-3437-5-git-send-email-mturquette@linaro.org>
- <20120304174229.GD11546@lunn.ch>
- <CAJOA=zNWN6L+-YEkNKoQnjnrrswNpCBmtnhKBm04HekWP46i5w@mail.gmail.com>
+	id S1756147Ab2CEI7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 03:59:04 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:16752 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751Ab2CEI7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 03:59:01 -0500
+Date: Mon, 5 Mar 2012 12:01:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Eric Wollesen <ericw@xmtp.net>, Doug Thompson <dougthompson@xmission.com>,
+        list-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
+Message-ID: <20120305090109.GM22598@mwanda>
+References: <20120302065441.GB24508@elgon.mountain>
+ <4F508C16.30900@bfs.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M2Pxvdb9QxnGd/3e"
 Content-Disposition: inline
-In-Reply-To: <CAJOA=zNWN6L+-YEkNKoQnjnrrswNpCBmtnhKBm04HekWP46i5w@mail.gmail.com>
+In-Reply-To: <4F508C16.30900@bfs.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F548052.005F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 04, 2012 at 04:30:08PM -0800, Turquette, Mike wrote:
-> On Sun, Mar 4, 2012 at 9:42 AM, Andrew Lunn <andrew@lunn.ch> wrote:
-> > On Sat, Mar 03, 2012 at 12:29:01AM -0800, Mike Turquette wrote:
-> >> Many platforms support simple gateable clocks, fixed-rate clocks,
-> >> adjustable divider clocks and multi-parent multiplexer clocks.
-> >>
-> >> This patch introduces basic clock types for the above-mentioned hardware
-> >> which share some common characteristics.
-> >
-> > Hi Mike
-> >
-> > These basic clocks don't allow the use of prepare/unprepare, from the
-> > side of the clock provider. I think i need this.
-> 
-> This is an interesting point and might help us nail down exactly what
-> we expect from clk_prepare/clk_unprepare.
-> 
-> >
-> > The Orion Kirkwood SoC has clock gating for most of its on chip
-> > peripherals, which the other older Orion devices don't have. The SATA
-> > and PCIe also allows the PHY to be shut down, again which older Orion
-> > devices don't have. The current code links the clock and the PHY
-> > together, shutting both down are the same time. So i would like to
-> > perform the PHY shutdown in the unprepare() function of the clk
-> > driver.
-> 
-> Do you feel it is The Right Thing to enable/disable the phy from
-> clk_prepare/clk_unprepare?  
 
-Humm, not sure yet. I don't know all the different possibilities,
-which is why i tried to describe my use case, rather than just assume
-i need prepare/unprepare.
+--M2Pxvdb9QxnGd/3e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I also realized i did not explain my use case properly. 
+"pvt->ambase" is a u64 datatype.  The intent here is to fill the first
+half in the first call to pci_read_config_dword() and the other half in
+the second.  Unfortunately the pointer math is wrong so we set the wrong
+data.
 
-At boot, uboot is turning on various clocks and SATA/PCIe PHYs etc, in
-order to get the device booted. Linux takes over, and the
-Orion/kirkwood board files, ask the kirkwood or generic Orion code to
-create platform_data structures for the different devices that the
-board uses. The kirkwood code keeps a bitmap of devices for which it
-creates platform data for which there is a gated clock. Then in a
-lateinit call, it turns on clocks which are needed, and also turns off
-clocks which are no longer needed, because the board did not ask for a
-driver binding for that device. If it turns off a SATA or PCIe clock,
-it also turns off the PHY associated with it.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Redid it as with a union as Walter Harms suggested.
+    Fixed the same bug in i5400_edac.c as well.
 
-So we are talking about turning off hardware for which there is no
-driver. This seems to exclude pm_runtime_get(_sync), which is about
-hardware with drivers.
+I don't have this hardware, so please review carefully.
 
-We touched on this subject a couple of months ago, at least with
-respect to clocks. You said that is what the flag CLK_IGNORE_UNUSED
-will be used for. In a lateinit call, you plan to iterate over all
-clocks and turn off any which don't have CLK_IGNORE_UNUSED and have
-not been enabled. I assume you will call both disable() and
-unprepare(), and if i've can put code into the unprepare to turn the
-PHY off, all is good.
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index 74d6ec34..083e80a 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -343,7 +343,13 @@ struct i5400_pvt {
+ 	struct pci_dev *branch_1;		/* 22.0 */
+=20
+ 	u16 tolm;				/* top of low memory */
+-	u64 ambase;				/* AMB BAR */
++	union {
++		u64 ambase;				/* AMB BAR */
++		struct {
++			u32 ambase_bottom;
++			u32 ambase_top;
++		} u;
++	};
+=20
+ 	u16 mir0, mir1;
+=20
+@@ -1024,9 +1030,9 @@ static void i5400_get_mc_regs(struct mem_ctl_info *mc=
+i)
+ 	pvt =3D mci->pvt_info;
+=20
+ 	pci_read_config_dword(pvt->system_address, AMBASE,
+-			(u32 *) &pvt->ambase);
++			&pvt->u.ambase_bottom);
+ 	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
+-			((u32 *) &pvt->ambase) + sizeof(u32));
++			&pvt->u.ambase_top);
+=20
+ 	maxdimmperch =3D pvt->maxdimmperch;
+ 	maxch =3D pvt->maxch;
+diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+index 4dc3ac2..ecc2401 100644
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -343,7 +343,13 @@ struct i5000_pvt {
+ 	struct pci_dev *branch_1;	/* 22.0 */
+=20
+ 	u16 tolm;		/* top of low memory */
+-	u64 ambase;		/* AMB BAR */
++	union {
++		u64 ambase;		/* AMB BAR */
++		struct {
++			u32 ambase_bottom;
++			u32 ambase_top;
++		} u;
++	};
+=20
+ 	u16 mir0, mir1, mir2;
+=20
+@@ -1128,9 +1134,9 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mc=
+i)
+ 	pvt =3D mci->pvt_info;
+=20
+ 	pci_read_config_dword(pvt->system_address, AMBASE,
+-			(u32 *) & pvt->ambase);
++			&pvt->u.ambase_bottom);
+ 	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
+-			((u32 *) & pvt->ambase) + sizeof(u32));
++			&pvt->u.ambase_top);
+=20
+ 	maxdimmperch =3D pvt->maxdimmperch;
+ 	maxch =3D pvt->maxch;
 
-> > Is allowing to pass prepare/unprepare functions to basic clocks
-> > something you want to support? If i prepare a patch would you consider
-> > it?
-> 
-> My original instinct was "no".  The simple gate clock was always
-> supposed to be "simple" and if you need more than it provides then it
-> might be best for your platform to implement a specific clock type.
-> Especially since the purpose of clk_prepare is still up in the air.
+--M2Pxvdb9QxnGd/3e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I think i can wrap your simple gate clock, to make my "complex" gate
-clock. What would help is if you would EXPORT_SYMBOL_GPL
-clk_gate_enable() and clk_gate_disable(), since they do exactly what i
-want. I can then build my own clk_ops structure, with my own
-unprepare() function. I would probably use DEFINE_CLK_GATE as is, and
-then at run time, before calling __clk_init() overwrite the .ops with
-my own version.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-However, if others have the need for {un}prepare(), it would be good
-to have a generic solution.
+iQIcBAEBAgAGBQJPVIDVAAoJEOnZkXI/YHqRCEUP/RZtrlCrWp/d2etTvYOQNhHA
+K7s4E7Q1oUl5twQKXRtu0+rBckmLCD7A3pY/qaxwO7CV72OKGOdMJJOfjzxCVhJg
+r6tPzwGF6yGv7Rix6B3aANJsTXsii4sAhTCA4tz4ieJdIiGFlbb93BV+awpgOBg0
+ys3tJxk/rICxDfkC+yreKEK2n+Bi7wgi/ArmTHpjQMs7Ra+okwrTav27nK0HJkMz
+mjqKu3sXMv35LubLXOwKrfZizOyBNexSML1a3DshPP0/sUusrPiR39aCmPDtP5sL
+MXgc+HOKhpAq4xM6ihimFPZSaai8ICrUaRbhRLXpeKV7ZFSn1IV65GnwaQbqi6Ue
+vRtesqxP6T+0d5UE5ygRlb06v8Vx0ADSgrjTuojsBlCd27j3CzoEbLkZYES/yX3D
+G0piqtXbOIrRJJWfnx1aSkDAr7TKtCrT02DOvaYZ3lQC+11k2picGMCrl8czLDLu
+ivrvU0Stxo7TMyT6huY17vy2mP0yJDi//EF3Dv6YIGUnTGC9xB889YWE9v6z7RdV
+5+ZYPkAjOgNxYVaOIP8V1nBqcPASuTs2UTWsFEY2nJW/bKoYRE1jhyekVyIb6BqU
+JzCGLpmvNy2JwocgI1EnedkM9iEhr4386YdnXIm72q3n67q6y2duMCV7X4tnaUjB
+5S1ID3SgErY3TZBE4IxB
+=gXTC
+-----END PGP SIGNATURE-----
 
-   Andrew
+--M2Pxvdb9QxnGd/3e--
