@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2CEVso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:48:44 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:39084 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab2CEVsn convert rfc822-to-8bit (ORCPT
+	id S1755260Ab2CEVtP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:49:15 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:52299 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755053Ab2CEVtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:48:43 -0500
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Minchan Kim <minchan@kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        "shaohua.li@intel.com" <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Mon, 5 Mar 2012 16:38:14 -0500
-Subject: RE: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Topic: [RFC][PATCH] avoid swapping out with swappiness==0
-Thread-Index: Acz51ClzWdL/EuMfQwCLniP/MCyyFwBQ9NSg
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB9456775@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB9455FE2@USINDEVS02.corp.hds.com>
- <20120304065759.GA7824@barrios>
-In-Reply-To: <20120304065759.GA7824@barrios>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1203050220
+	Mon, 5 Mar 2012 16:49:13 -0500
+Date: Mon, 5 Mar 2012 13:49:08 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20120305134908.4f764921@jbarnes-x220>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 174.253.226.109 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+The following changes since commit
+45196cee28a5bcfb6ddbe2bffa4270cbed66ae4b:
 
-Thank you for reviewing.
+  Merge tag 'usb-3.3-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2012-02-22 13:00:53 -0800)
 
-On 03/04/2012 01:57 AM, Minchan Kim wrote:
-> On Fri, Mar 02, 2012 at 12:36:40PM -0500, Satoru Moriya wrote:
-> 
-> I agree this feature but current code is rather ugly on readbility.
+are available in the git repository at:
 
-I agree with you.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci for-linus
 
-> Hillf's version looks to be much clean refactoring so after we merge 
-> your patch, we can tidy it up with Hillf's patch.
+A couple of fixes for booting specific machines, and one for a minor
+memory leak on pre-_CRS platforms.
 
-Thanks. No problem.
+Jonathan Nieder (2):
+      x86/PCI: use host bridge _CRS info on MSI MS-7253
+      x86/PCI: do not tie MSI MS-7253 use_crs quirk to BIOS version
 
-Regards,
-Satoru
+Yinghai Lu (1):
+      PCI: fix memleak when ACPI _CRS is not used.
+
+ arch/x86/pci/acpi.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
+
+Thanks,
+Jesse
