@@ -1,138 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab2CEVI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:08:58 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53992 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2CEVI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:08:56 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miles.lane@gmail.com designates 10.180.107.67 as permitted sender) smtp.mail=miles.lane@gmail.com; dkim=pass header.i=miles.lane@gmail.com
+	id S1752114Ab2CEVLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:11:13 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:65334 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab2CEVLM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 16:11:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.60.30.66 as permitted sender) smtp.mail=glikely@secretlab.ca
 MIME-Version: 1.0
-Date: Mon, 5 Mar 2012 16:08:55 -0500
-Message-ID: <CAHFgRy-V3ZFK6QrC2++Rvyi4e_f-03Xdr9sj4PUJORVq21GiEw@mail.gmail.com>
-Subject: Linus GIT (3.3.0-rc6+) -- INFO: possible circular locking dependency detected
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <201203051915.45197.arnd@arndb.de>
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca> <201203051915.45197.arnd@arndb.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 5 Mar 2012 14:10:52 -0700
+X-Google-Sender-Auth: qMZzFaCDA9fRlGrrY1H010M5Jig
+Message-ID: <CACxGe6ujqF3st0y5jbWxx=amr534NY3RHdUzmVVdjqt=fJMJmA@mail.gmail.com>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[  107.839605] [ INFO: possible circular locking dependency detected ]
-[  107.839608] 3.3.0-rc6+ #14 Not tainted
-[  107.839609] -------------------------------------------------------
-[  107.839611] gvfsd-metadata/2314 is trying to acquire lock:
-[  107.839612]  (&sb->s_type->i_mutex_key#13){+.+.+.}, at:
-[<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
-[  107.839622]
-[  107.839623] but task is already holding lock:
-[  107.839624]  (&mm->mmap_sem){++++++}, at: [<ffffffff810ca534>]
-sys_munmap+0x36/0x5b
-[  107.839630]
-[  107.839630] which lock already depends on the new lock.
-[  107.839631]
-[  107.839632]
-[  107.839632] the existing dependency chain (in reverse order) is:
-[  107.839634]
-[  107.839634] -> #1 (&mm->mmap_sem){++++++}:
-[  107.839638]        [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
-[  107.839642]        [<ffffffff810c3363>] might_fault+0x7b/0x9e
-[  107.839646]        [<ffffffff810f5246>] filldir+0x6a/0xc2
-[  107.839649]        [<ffffffff81143b91>] call_filldir+0x91/0xb8
-[  107.839653]        [<ffffffff81143eb2>] ext4_readdir+0x1b2/0x519
-[  107.839656]        [<ffffffff810f548c>] vfs_readdir+0x76/0xac
-[  107.839658]        [<ffffffff810f559e>] sys_getdents+0x79/0xc9
-[  107.839661]        [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
-[  107.839665]
-[  107.839665] -> #0 (&sb->s_type->i_mutex_key#13){+.+.+.}:
-[  107.839669]        [<ffffffff81073918>] __lock_acquire+0xa81/0xd75
-[  107.839672]        [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
-[  107.839675]        [<ffffffff8139acfe>] __mutex_lock_common+0x61/0x456
-[  107.839679]        [<ffffffff8139b1da>] mutex_lock_nested+0x36/0x3b
-[  107.839681]        [<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
-[  107.839684]        [<ffffffff8114478e>] ext4_file_write+0x1e2/0x23a
-[  107.839687]        [<ffffffff810e5bb5>] do_sync_write+0xbd/0xfd
-[  107.839691]        [<ffffffff810e6333>] vfs_write+0xa7/0xee
-[  107.839694]        [<ffffffffa037f266>]
-ecryptfs_write_lower+0x4e/0x73 [ecryptfs]
-[  107.839700]        [<ffffffffa03803d3>]
-ecryptfs_encrypt_page+0x11c/0x182 [ecryptfs]
-[  107.839704]        [<ffffffffa037e967>]
-ecryptfs_writepage+0x31/0x73 [ecryptfs]
-[  107.839708]        [<ffffffff810b448b>] __writepage+0x12/0x31
-[  107.839710]        [<ffffffff810b4b25>] write_cache_pages+0x1e6/0x310
-[  107.839713]        [<ffffffff810b4c8d>] generic_writepages+0x3e/0x54
-[  107.839716]        [<ffffffff810b5e05>] do_writepages+0x26/0x28
-[  107.839719]        [<ffffffff810ae1e4>] __filemap_fdatawrite_range+0x4e/0x50
-[  107.839722]        [<ffffffff810aed55>] filemap_fdatawrite+0x1a/0x1c
-[  107.839725]        [<ffffffff810aed72>] filemap_write_and_wait+0x1b/0x36
-[  107.839727]        [<ffffffffa037c1bb>]
-ecryptfs_vma_close+0x17/0x19 [ecryptfs]
-[  107.839731]        [<ffffffff810c9374>] remove_vma+0x3b/0x71
-[  107.839733]        [<ffffffff810ca40c>] do_munmap+0x2ed/0x306
-[  107.839735]        [<ffffffff810ca542>] sys_munmap+0x44/0x5b
-[  107.839738]        [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
-[  107.839741]
-[  107.839741] other info that might help us debug this:
-[  107.839741]
-[  107.839743]  Possible unsafe locking scenario:
-[  107.839743]
-[  107.839744]        CPU0                    CPU1
-[  107.839746]        ----                    ----
-[  107.839747]   lock(&mm->mmap_sem);
-[  107.839749]                                lock(&sb->s_type->i_mutex_key#13);
-[  107.839753]                                lock(&mm->mmap_sem);
-[  107.839755]   lock(&sb->s_type->i_mutex_key#13);
-[  107.839758]
-[  107.839758]  *** DEADLOCK ***
-[  107.839759]
-[  107.839761] 1 lock held by gvfsd-metadata/2314:
-[  107.839762]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810ca534>]
-sys_munmap+0x36/0x5b
-[  107.839767]
-[  107.839767] stack backtrace:
-[  107.839769] Pid: 2314, comm: gvfsd-metadata Not tainted 3.3.0-rc6+ #14
-[  107.839771] Call Trace:
-[  107.839775]  [<ffffffff813956a2>] print_circular_bug+0x1f8/0x209
-[  107.839778]  [<ffffffff81073918>] __lock_acquire+0xa81/0xd75
-[  107.839781]  [<ffffffff81073bfd>] ? __lock_acquire+0xd66/0xd75
-[  107.839784]  [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
-[  107.839787]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
-[  107.839790]  [<ffffffff8139acfe>] __mutex_lock_common+0x61/0x456
-[  107.839792]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
-[  107.839795]  [<ffffffff81071a96>] ? mark_lock+0x2d/0x258
-[  107.839798]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
-[  107.839801]  [<ffffffff8107299e>] ? lock_is_held+0x92/0x9d
-[  107.839803]  [<ffffffff8139b1da>] mutex_lock_nested+0x36/0x3b
-[  107.839806]  [<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
-[  107.839810]  [<ffffffff811a013f>] ? scatterwalk_map+0x2b/0x5d
-[  107.839813]  [<ffffffff810570d4>] ? get_parent_ip+0xe/0x3e
-[  107.839816]  [<ffffffff8114478e>] ext4_file_write+0x1e2/0x23a
-[  107.839818]  [<ffffffff81071a96>] ? mark_lock+0x2d/0x258
-[  107.839821]  [<ffffffff810e5bb5>] do_sync_write+0xbd/0xfd
-[  107.839824]  [<ffffffff8139b2fd>] ? __mutex_unlock_slowpath+0x11e/0x152
-[  107.839828]  [<ffffffff81197092>] ? security_file_permission+0x29/0x2e
-[  107.839831]  [<ffffffff810e60b2>] ? rw_verify_area+0xab/0xc8
-[  107.839834]  [<ffffffff810e6333>] vfs_write+0xa7/0xee
-[  107.839838]  [<ffffffffa037f266>] ecryptfs_write_lower+0x4e/0x73 [ecryptfs]
-[  107.839842]  [<ffffffffa03803d3>] ecryptfs_encrypt_page+0x11c/0x182
-[ecryptfs]
-[  107.839846]  [<ffffffffa037e967>] ecryptfs_writepage+0x31/0x73 [ecryptfs]
-[  107.839849]  [<ffffffff810b448b>] __writepage+0x12/0x31
-[  107.839851]  [<ffffffff810b4b25>] write_cache_pages+0x1e6/0x310
-[  107.839854]  [<ffffffff810b4479>] ? bdi_set_max_ratio+0x6a/0x6a
-[  107.839857]  [<ffffffff813a03c1>] ? sub_preempt_count+0x90/0xa3
-[  107.839860]  [<ffffffff810b4c8d>] generic_writepages+0x3e/0x54
-[  107.839863]  [<ffffffff810b5e05>] do_writepages+0x26/0x28
-[  107.839866]  [<ffffffff810ae1e4>] __filemap_fdatawrite_range+0x4e/0x50
-[  107.839869]  [<ffffffff810aed55>] filemap_fdatawrite+0x1a/0x1c
-[  107.839871]  [<ffffffff810aed72>] filemap_write_and_wait+0x1b/0x36
-[  107.839875]  [<ffffffffa037c1bb>] ecryptfs_vma_close+0x17/0x19 [ecryptfs]
-[  107.839877]  [<ffffffff810c9374>] remove_vma+0x3b/0x71
-[  107.839879]  [<ffffffff810ca40c>] do_munmap+0x2ed/0x306
-[  107.839882]  [<ffffffff810ca542>] sys_munmap+0x44/0x5b
-[  107.839884]  [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
+On Mon, Mar 5, 2012 at 12:15 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 05 March 2012, Grant Likely wrote:
+>> Allow drivers to report at probe time that they cannot get all the resources
+>> required by the device, and should be retried at a later time.
+>>
+>> This should completely solve the problem of getting devices
+>> initialized in the right order.  Right now this is mostly handled by
+>> mucking about with initcall ordering which is a complete hack, and
+>> doesn't even remotely handle the case where device drivers are in
+>> modules.  This approach completely sidesteps the issues by allowing
+>> driver registration to occur in any order, and any driver can request
+>> to be retried after a few more other drivers get probed.
+>
+> Hi Grant,
+>
+> Looks great! I thought I had found two bugs but it turned out to
+> all be correct on second look.  What remains in my review is basically
+> bike-shedding, but I'll send it anyway since I took the time to
+> write it before I noticed I was wrong on the other points ;-)
+>
+> Anyway, I'm happy for this to go in in the current way,
+
+Cool, thanks.  I've responded below even though some of the items are
+the non-existent bugs you mentioned.  :-)
+
+>
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+>
+>> @@ -28,6 +28,133 @@
+>>  #include "base.h"
+>>  #include "power/power.h"
+>>
+>> +/*
+>> + * Deferred Probe infrastructure.
+>> + *
+>> + * Sometimes driver probe order matters, but the kernel doesn't always have
+>> + * dependency information which means some drivers will get probed before a
+>> + * resource it depends on is available.  For example, an SDHCI driver may
+>> + * first need a GPIO line from an i2c GPIO controller before it can be
+>> + * initialized.  If a required resource is not available yet, a driver can
+>> + * request probing to be deferred by returning -EPROBE_DEFER from its probe hook
+>> + *
+>> + * Deferred probe maintains two lists of devices, a pending list and an active
+>> + * list.  A driver returning -EPROBE_DEFER causes the device to be added to the
+>> + * pending list.  A successful driver probe will trigger moving all devices
+>> + * from the pending to the active list so that the workqueue will eventually
+>> + * retry them.
+>> + *
+>> + * The deferred_probe_mutex must be held any time the deferred_probe_*_list
+>> + * of the (struct device*)->deferred_probe pointers are manipulated
+>> + */
+>> +static DEFINE_MUTEX(deferred_probe_mutex);
+>> +static LIST_HEAD(deferred_probe_pending_list);
+>> +static LIST_HEAD(deferred_probe_active_list);
+>> +static struct workqueue_struct *deferred_wq;
+>
+> I don't understand why you want both lists to be global, it seems to
+> complicate things.
+>
+>> +/**
+>> + * deferred_probe_work_func() - Retry probing devices in the active list.
+>> + */
+>> +static void deferred_probe_work_func(struct work_struct *work)
+>> +{
+>> +     struct device *dev;
+>> +     /*
+>> +      * This block processes every device in the deferred 'active' list.
+>> +      * Each device is removed from the active list and passed to
+>> +      * bus_probe_device() to re-attempt the probe.  The loop continues
+>> +      * until every device in the active list is removed and retried.
+>> +      *
+>> +      * Note: Once the device is removed from the list and the mutex is
+>> +      * released, it is possible for the device get freed by another thread
+>> +      * and cause a illegal pointer dereference.  This code uses
+>> +      * get/put_device() to ensure the device structure cannot disappear
+>> +      * from under our feet.
+>> +      */
+>> +     mutex_lock(&deferred_probe_mutex);
+>> +     while (!list_empty(&deferred_probe_active_list)) {
+>> +             dev = list_first_entry(&deferred_probe_active_list,
+>> +                                     typeof(*dev), deferred_probe);
+>> +             list_del_init(&dev->deferred_probe);
+>> +
+>> +             get_device(dev);
+>> +
+>> +             /* Drop the mutex while probing each device; the probe path
+>> +              * may manipulate the deferred list */
+>> +             mutex_unlock(&deferred_probe_mutex);
+>> +             dev_dbg(dev, "Retrying from deferred list\n");
+>> +             bus_probe_device(dev);
+>> +             mutex_lock(&deferred_probe_mutex);
+>> +
+>> +             put_device(dev);
+>> +     }
+>> +     mutex_unlock(&deferred_probe_mutex);
+>
+>
+> If you make the deferred_probe_active_list local to this function, and do
+> the splice inside of it, you only need to hold the mutex for the
+> splice, and the loop can become a simpler
+
+Hmmm; that is true.  My original though was that new devices can be
+moved to the pending list at any time; even while the work function is
+running.  That means that the active list is always up to date with
+items that should be retried immediately.  However, if I moved the
+active list to be local into this function then it means the work
+function needs to exit and reenter if a new trigger occurs part way
+through the loop.  However, the kick of the workqueue guarantees that
+it will happen anyway so all is still good.  Regardless, this is the
+tested version; I'd like to get this merged and use a follow-on patch
+to try it out the other way.
+
+>
+>        LIST_HEAD(list);
+>
+>        mutex_lock(&deferred_probe_mutex);
+>        list_splice_tail_init(&deferred_probe_pending_list, &list);
+>        mutex_unlock(&deferred_probe_mutex);
+>
+>        list_for_each_entry_safe(...) {
+>                list_del_init(&dev->deferred_probe);
+>                bus_probe_device(dev);
+>                put_device(dev);
+>        }
+>
+> Also, What protects the device from going away between being put on the list
+> and taken off of it? Don't you have to do the device_get during
+> driver_deferred_probe_add()?
+
+The deferred_probe_mutex.  Nothing can be removed from the deferred
+list without holding the deferred_probe_mutex, and no device can be
+freed before it is taken off the deferred list.  If the device is in
+the process of being removed, then get_device() occurs before dropping
+the mutex to protect against freeing, and bus_probe_device() won't
+attach a driver to a device getting removed.
+
+>
+>> +static bool driver_deferred_probe_enable = false;
+>> +/**
+>> + * driver_deferred_probe_trigger() - Kick off re-probing deferred devices
+>> + *
+>> + * This functions moves all devices from the pending list to the active
+>> + * list and schedules the deferred probe workqueue to process them.  It
+>> + * should be called anytime a driver is successfully bound to a device.
+>> + */
+>> +static void driver_deferred_probe_trigger(void)
+>> +{
+>> +     if (!driver_deferred_probe_enable)
+>> +             return;
+>
+> I tried to understand whether you need to have locking around
+> driver_deferred_probe_enable, but I think you don't even need this
+> variable at all:
+
+The only purpose to this variable is to hold off deferred probing
+until after all the initcalls have completed.
+
+>
+>> +
+>> +     /* A successful probe means that all the devices in the pending list
+>> +      * should be triggered to be reprobed.  Move all the deferred devices
+>> +      * into the active list so they can be retried by the workqueue */
+>> +     mutex_lock(&deferred_probe_mutex);
+>> +     list_splice_tail_init(&deferred_probe_pending_list,
+>> +                           &deferred_probe_active_list);
+>> +     mutex_unlock(&deferred_probe_mutex);
+>> +
+>> +     /* Kick the re-probe thread.  It may already be scheduled, but
+>> +      * it is safe to kick it again. */
+>> +     queue_work(deferred_wq, &deferred_probe_work);
+>> +}
+>
+> You can simply check whether deferred_wq is non-NULL here before you call it,
+> because it never goes away after it has been created.
+
+Ah, true.  Alright, that can be a follow-on patch too.
+
+>
+>> +static int deferred_probe_initcall(void)
+>> +{
+>> +     deferred_wq = create_singlethread_workqueue("deferwq");
+>> +     if (WARN_ON(!deferred_wq))
+>> +             return -ENOMEM;
+>
+> I think "deferwq" is not a good name for a global thread: all work queues are
+> there for deferring somehting. How about "deferredprobe"?
+
+Sure; again for a follow-on patch if Greg is okay with this version.
+
+g.
