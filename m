@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab2CEP5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 10:57:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45778 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2CEPzp (ORCPT
+	id S1754576Ab2CEP6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 10:58:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab2CEP6j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 10:55:45 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/7] perf tools: Add descriptions of missing Makefile arguments
-Date: Mon,  5 Mar 2012 12:55:27 -0300
-Message-Id: <1330962932-1796-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1330962932-1796-1-git-send-email-acme@infradead.org>
-References: <1330962932-1796-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 5 Mar 2012 10:58:39 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1330088295-28732-1-git-send-email-joerg.roedel@amd.com>
+References: <1330088295-28732-1-git-send-email-joerg.roedel@amd.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] bitops: Add missing parentheses to new get_order macro
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 05 Mar 2012 15:58:26 +0000
+Message-ID: <21621.1330963106@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Joerg Roedel <joerg.roedel@amd.com> wrote:
 
-There are some variable arguments can be specified on make invocation,
-but some of them are missing descriptions so that user cannot be
-informed easily. Fix it.
+> The new get_order macro introcuded in commit
+> 
+> 	d66acc39c7cee323733c8503b9de1821a56dff7e
+> 
+> does not use parentheses around all uses of the parameter n.
+> This causes new compile warnings, for example in the
+> amd_iommu_init.c function:
+> 
+> drivers/iommu/amd_iommu_init.c:561:6: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+> drivers/iommu/amd_iommu_init.c:561:6: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+> 
+> Fix those warnings by adding the missing parentheses.
+> 
+> Reported-by: Ingo Molnar <mingo@elte.hu>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1329980894-4289-1-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e011b50..fa04340 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -15,6 +15,16 @@ endif
- 
- # Define V to have a more verbose compile.
- #
-+# Define O to save output files in a separate directory.
-+#
-+# Define ARCH as name of target architecture if you want cross-builds.
-+#
-+# Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
-+#
-+# Define NO_LIBPERL to disable perl script extension.
-+#
-+# Define NO_LIBPYTHON to disable python script extension.
-+#
- # Define PYTHON to point to the python binary if the default
- # `python' is not correct; for example: PYTHON=python2
- #
-@@ -32,6 +42,10 @@ endif
- # Define NO_DWARF if you do not want debug-info analysis feature at all.
- #
- # Define WERROR=0 to disable treating any warnings as errors.
-+#
-+# Define NO_NEWT if you do not want TUI support.
-+#
-+# Define NO_DEMANGLE if you do not want C++ symbol demangling.
- 
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
--- 
-1.7.9.2.358.g22243
-
+Acked-by: David Howells <dhowells@redhat.com>
