@@ -1,380 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab2CEFry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 00:47:54 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49314 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2CEFrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 00:47:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tshimizu818@gmail.com designates 10.68.130.67 as permitted sender) smtp.mail=tshimizu818@gmail.com; dkim=pass header.i=tshimizu818@gmail.com
-From: Takahiro Shimizu <tshimizu818@gmail.com>
-To: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, toshiharu-linux@dsn.okisemi.com,
-        jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Takahiroi Shimizu <tshimizu818@gmail.com>
-Subject: [PATCH] net/pch_gbe: supports eg20t ptp clock
-Date: Mon,  5 Mar 2012 14:46:17 +0900
-Message-Id: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753283Ab2CEFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 00:48:27 -0500
+Received: from mga03.intel.com ([143.182.124.21]:24909 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752842Ab2CEFs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 00:48:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114647054"
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+From: Alex Shi <alex.shi@intel.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>
+Cc: "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com, arnd@arndb.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, andi.kleen@intel.com
+In-Reply-To: <1330926234.18835.51.camel@debian>
+References: <1330917630.18835.44.camel@debian>
+	 <1330917889.18835.46.camel@debian>  <1330926234.18835.51.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Mar 2012 13:48:15 +0800
+Message-ID: <1330926495.18835.53.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takahiroi Shimizu <tshimizu818@gmail.com>
+On Mon, 2012-03-05 at 13:43 +0800, Alex Shi wrote:
+> On Mon, 2012-03-05 at 11:24 +0800, Alex Shi wrote:
+> > Oops.
+> > Sorry, the patch is not tested well! will update it later. 
 
-Supports EG20T ptp clock in the driver
+resent for correct Thomas's e-mail address. Sorry. 
+> 
+> corrected version:
+> ==========
+> >From 28745c1970a61a1420d388660cd9dcc619cd38ba Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Mon, 5 Mar 2012 13:03:35 +0800
+> Subject: [PATCH] lockdep: add cross cache lines checking
+> 
+> Modern x86 CPU won't hold whole memory bus when executing 'lock'
+> prefixed instructions unless the instruction destination is crossing 2
+> cache lines. If so, it is disaster of system performance.
+> 
+> Actually if the lock is not in the 'packed' structure, gcc places it
+> safely under x86 arch. But seems add this checking in
+> CONFIG_DEBUG_LOCK_ALLOC is harmless.
+> 
+> Inspired-by: Andi Kleen <andi.kleen@intel.com>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  arch/x86/include/asm/cache.h |    2 +
+>  include/asm-generic/cache.h  |    2 +
+>  lib/spinlock_debug.c         |   76 ++++++++++++++++++++++-------------------
+>  3 files changed, 45 insertions(+), 35 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/cache.h b/arch/x86/include/asm/cache.h
+> index 48f99f1..63c2316 100644
+> --- a/arch/x86/include/asm/cache.h
+> +++ b/arch/x86/include/asm/cache.h
+> @@ -7,6 +7,8 @@
+>  #define L1_CACHE_SHIFT	(CONFIG_X86_L1_CACHE_SHIFT)
+>  #define L1_CACHE_BYTES	(1 << L1_CACHE_SHIFT)
+>  
+> +#define L1_CACHE_SIZE_MASK	(~(L1_CACHE_BYTES - 1))
+> +
+>  #define __read_mostly __attribute__((__section__(".data..read_mostly")))
+>  
+>  #define INTERNODE_CACHE_SHIFT CONFIG_X86_INTERNODE_CACHE_SHIFT
+> diff --git a/include/asm-generic/cache.h b/include/asm-generic/cache.h
+> index 1bfcfe5..6f8eb29 100644
+> --- a/include/asm-generic/cache.h
+> +++ b/include/asm-generic/cache.h
+> @@ -9,4 +9,6 @@
+>  #define L1_CACHE_SHIFT		5
+>  #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+>  
+> +#define L1_CACHE_SIZE_MASK     (~(L1_CACHE_BYTES - 1))
+> +
+>  #endif /* __ASM_GENERIC_CACHE_H */
+> diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
+> index 5f3eacd..938a145 100644
+> --- a/lib/spinlock_debug.c
+> +++ b/lib/spinlock_debug.c
+> @@ -13,41 +13,9 @@
+>  #include <linux/delay.h>
+>  #include <linux/module.h>
+>  
+> -void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+> -			  struct lock_class_key *key)
+> -{
+> -#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> -	/*
+> -	 * Make sure we are not reinitializing a held lock:
+> -	 */
+> -	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+> -	lockdep_init_map(&lock->dep_map, name, key, 0);
+> -#endif
+> -	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+> -	lock->magic = SPINLOCK_MAGIC;
+> -	lock->owner = SPINLOCK_OWNER_INIT;
+> -	lock->owner_cpu = -1;
+> -}
+> -
+> -EXPORT_SYMBOL(__raw_spin_lock_init);
+> -
+> -void __rwlock_init(rwlock_t *lock, const char *name,
+> -		   struct lock_class_key *key)
+> -{
+> -#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> -	/*
+> -	 * Make sure we are not reinitializing a held lock:
+> -	 */
+> -	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+> -	lockdep_init_map(&lock->dep_map, name, key, 0);
+> -#endif
+> -	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
+> -	lock->magic = RWLOCK_MAGIC;
+> -	lock->owner = SPINLOCK_OWNER_INIT;
+> -	lock->owner_cpu = -1;
+> -}
+> -
+> -EXPORT_SYMBOL(__rwlock_init);
+> +#define is_cross_lines(p)						\
+> +	(((unsigned long)(p) & L1_CACHE_SIZE_MASK) !=			\
+> +	(((unsigned long)(p) + sizeof(*p) - 1) & L1_CACHE_SIZE_MASK))	\
+>  
+>  static void spin_dump(raw_spinlock_t *lock, const char *msg)
+>  {
+> @@ -296,3 +264,41 @@ void do_raw_write_unlock(rwlock_t *lock)
+>  	debug_write_unlock(lock);
+>  	arch_write_unlock(&lock->raw_lock);
+>  }
+> +
+> +void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+> +			  struct lock_class_key *key)
+> +{
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +	/*
+> +	 * Make sure we are not reinitializing a held lock:
+> +	 */
+> +	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+> +	lockdep_init_map(&lock->dep_map, name, key, 0);
+> +	SPIN_BUG_ON(is_cross_lines(&lock->raw_lock), lock,
+> +			"!!! the lock cross cache lines !!!");
+> +#endif
+> +	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+> +	lock->magic = SPINLOCK_MAGIC;
+> +	lock->owner = SPINLOCK_OWNER_INIT;
+> +	lock->owner_cpu = -1;
+> +}
+> +EXPORT_SYMBOL(__raw_spin_lock_init);
+> +
+> +void __rwlock_init(rwlock_t *lock, const char *name,
+> +		   struct lock_class_key *key)
+> +{
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +	/*
+> +	 * Make sure we are not reinitializing a held lock:
+> +	 */
+> +	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+> +	lockdep_init_map(&lock->dep_map, name, key, 0);
+> +	RWLOCK_BUG_ON(is_cross_lines(&lock->raw_lock), lock,
+> +			"!!! the lock cross cache lines !!!");
+> +#endif
+> +	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
+> +	lock->magic = RWLOCK_MAGIC;
+> +	lock->owner = SPINLOCK_OWNER_INIT;
+> +	lock->owner_cpu = -1;
+> +}
+> +EXPORT_SYMBOL(__rwlock_init);
 
-Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
----
- drivers/net/ethernet/oki-semi/pch_gbe/Kconfig      |   13 ++
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |   13 ++
- .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |  217 +++++++++++++++++++-
- 3 files changed, 240 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-index 00bc4fc..bce0164 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-@@ -20,3 +20,16 @@ config PCH_GBE
- 	  purpose use.
- 	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
- 	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
-+
-+if PCH_GBE
-+
-+config PCH_PTP
-+	bool "PCH PTP clock support"
-+	default n
-+	depends on PTP_1588_CLOCK_PCH
-+	---help---
-+	  Say Y here if you want to use Precision Time Protocol (PTP) in the
-+	  driver. PTP is a method to precisely synchronize distributed clocks
-+	  over Ethernet networks.
-+
-+endif # PCH_GBE
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-index a09a071..dd14915 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-@@ -630,6 +630,9 @@ struct pch_gbe_adapter {
- 	unsigned long tx_queue_len;
- 	bool have_msi;
- 	bool rx_stop_flag;
-+	int hwts_tx_en;
-+	int hwts_rx_en;
-+	struct pci_dev *ptp_pdev;
- };
- 
- extern const char pch_driver_version[];
-@@ -648,6 +651,16 @@ extern void pch_gbe_free_tx_resources(struct pch_gbe_adapter *adapter,
- extern void pch_gbe_free_rx_resources(struct pch_gbe_adapter *adapter,
- 				       struct pch_gbe_rx_ring *rx_ring);
- extern void pch_gbe_update_stats(struct pch_gbe_adapter *adapter);
-+#ifdef CONFIG_PCH_PTP
-+extern u32 pch_ch_control_read(struct pci_dev *pdev);
-+extern void pch_ch_control_write(struct pci_dev *pdev, u32 val);
-+extern u32 pch_ch_event_read(struct pci_dev *pdev);
-+extern void pch_ch_event_write(struct pci_dev *pdev, u32 val);
-+extern u32 pch_src_uuid_lo_read(struct pci_dev *pdev);
-+extern u32 pch_src_uuid_hi_read(struct pci_dev *pdev);
-+extern u64 pch_rx_snap_read(struct pci_dev *pdev);
-+extern u64 pch_tx_snap_read(struct pci_dev *pdev);
-+#endif
- 
- /* pch_gbe_param.c */
- extern void pch_gbe_check_options(struct pch_gbe_adapter *adapter);
-diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-index 3ead111..aa54ede 100644
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1,6 +1,6 @@
- /*
-  * Copyright (C) 1999 - 2010 Intel Corporation.
-- * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-+ * Copyright (C) 2010 - 2012 LAPIS SEMICONDUCTOR CO., LTD.
-  *
-  * This code was derived from the Intel e1000e Linux driver.
-  *
-@@ -21,6 +21,10 @@
- #include "pch_gbe.h"
- #include "pch_gbe_api.h"
- #include <linux/module.h>
-+#ifdef CONFIG_PCH_PTP
-+#include <linux/net_tstamp.h>
-+#include <linux/ptp_classify.h>
-+#endif
- 
- #define DRV_VERSION     "1.00"
- const char pch_driver_version[] = DRV_VERSION;
-@@ -95,12 +99,195 @@ const char pch_driver_version[] = DRV_VERSION;
- 
- #define PCH_GBE_INT_DISABLE_ALL		0
- 
-+#ifdef CONFIG_PCH_PTP
-+/* Macros for ieee1588 */
-+#define TICKS_NS_SHIFT  5
-+
-+/* 0x40 Time Synchronization Channel Control Register Bits */
-+#define MASTER_MODE   (1<<0)
-+#define SLAVE_MODE    (0<<0)
-+#define V2_MODE       (1<<31)
-+#define CAP_MODE0     (0<<16)
-+#define CAP_MODE2     (1<<17)
-+
-+/* 0x44 Time Synchronization Channel Event Register Bits */
-+#define TX_SNAPSHOT_LOCKED (1<<0)
-+#define RX_SNAPSHOT_LOCKED (1<<1)
-+#endif
-+
- static unsigned int copybreak __read_mostly = PCH_GBE_COPYBREAK_DEFAULT;
- 
- static int pch_gbe_mdio_read(struct net_device *netdev, int addr, int reg);
- static void pch_gbe_mdio_write(struct net_device *netdev, int addr, int reg,
- 			       int data);
- 
-+#ifdef CONFIG_PCH_PTP
-+static struct sock_filter ptp_filter[] = {
-+	PTP_FILTER
-+};
-+
-+static int pch_ptp_match(struct sk_buff *skb, u16 uid_hi, u32 uid_lo, u16 seqid)
-+{
-+	u8 *data = skb->data;
-+	unsigned int offset;
-+	u16 *hi, *id;
-+	u32 lo;
-+
-+	if ((sk_run_filter(skb, ptp_filter) != PTP_CLASS_V2_IPV4) &&
-+		(sk_run_filter(skb, ptp_filter) != PTP_CLASS_V1_IPV4)) {
-+		return 0;
-+	}
-+
-+	offset = ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
-+
-+	if (skb->len < offset + OFF_PTP_SEQUENCE_ID + sizeof(seqid))
-+		return 0;
-+
-+	hi = (u16 *)(data + offset + OFF_PTP_SOURCE_UUID);
-+	id = (u16 *)(data + offset + OFF_PTP_SEQUENCE_ID);
-+
-+	memcpy(&lo, &hi[1], sizeof(lo));
-+
-+	return (uid_hi == *hi &&
-+		uid_lo == lo &&
-+		seqid  == *id);
-+}
-+
-+static void pch_rx_timestamp(
-+			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
-+{
-+	struct skb_shared_hwtstamps *shhwtstamps;
-+	struct pci_dev *pdev;
-+	u64 ns;
-+	u32 hi, lo, val;
-+	u16 uid, seq;
-+
-+	if (!adapter->hwts_rx_en)
-+		return;
-+
-+	/* Get ieee1588's dev information */
-+	pdev = adapter->ptp_pdev;
-+
-+	val = pch_ch_event_read(pdev);
-+
-+	if (!(val & RX_SNAPSHOT_LOCKED))
-+		return;
-+
-+	lo = pch_src_uuid_lo_read(pdev);
-+	hi = pch_src_uuid_hi_read(pdev);
-+
-+	uid = hi & 0xffff;
-+	seq = (hi >> 16) & 0xffff;
-+
-+	if (!pch_ptp_match(skb, htons(uid), htonl(lo), htons(seq)))
-+		goto out;
-+
-+	ns = pch_rx_snap_read(pdev);
-+	ns <<= TICKS_NS_SHIFT;
-+
-+	shhwtstamps = skb_hwtstamps(skb);
-+	memset(shhwtstamps, 0, sizeof(*shhwtstamps));
-+	shhwtstamps->hwtstamp = ns_to_ktime(ns);
-+out:
-+	pch_ch_event_write(pdev, RX_SNAPSHOT_LOCKED);
-+}
-+
-+static void pch_tx_timestamp(
-+			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
-+{
-+	struct skb_shared_hwtstamps shhwtstamps;
-+	struct pci_dev *pdev;
-+	struct skb_shared_info *shtx;
-+	u64 ns;
-+	u32 cnt, val;
-+
-+	shtx = skb_shinfo(skb);
-+	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && adapter->hwts_tx_en))
-+		shtx->tx_flags |= SKBTX_IN_PROGRESS;
-+	else
-+		return;
-+
-+	/* Get ieee1588's dev information */
-+	pdev = adapter->ptp_pdev;
-+
-+	/*
-+	 * This really stinks, but we have to poll for the Tx time stamp.
-+	 * Usually, the time stamp is ready after 4 to 6 microseconds.
-+	 */
-+	for (cnt = 0; cnt < 100; cnt++) {
-+		val = pch_ch_event_read(pdev);
-+		if (val & TX_SNAPSHOT_LOCKED)
-+			break;
-+		udelay(1);
-+	}
-+	if (!(val & TX_SNAPSHOT_LOCKED)) {
-+		shtx->tx_flags &= ~SKBTX_IN_PROGRESS;
-+		return;
-+	}
-+
-+	ns = pch_tx_snap_read(pdev);
-+	ns <<= TICKS_NS_SHIFT;
-+
-+	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
-+	shhwtstamps.hwtstamp = ns_to_ktime(ns);
-+	skb_tstamp_tx(skb, &shhwtstamps);
-+
-+	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED);
-+}
-+
-+static int hwtstamp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
-+{
-+	struct hwtstamp_config cfg;
-+	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-+	struct pci_dev *pdev;
-+
-+	if (copy_from_user(&cfg, ifr->ifr_data, sizeof(cfg)))
-+		return -EFAULT;
-+
-+	if (cfg.flags) /* reserved for future extensions */
-+		return -EINVAL;
-+
-+	/* Get ieee1588's dev information */
-+	pdev = adapter->ptp_pdev;
-+
-+	switch (cfg.tx_type) {
-+	case HWTSTAMP_TX_OFF:
-+		adapter->hwts_tx_en = 0;
-+		break;
-+	case HWTSTAMP_TX_ON:
-+		adapter->hwts_tx_en = 1;
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	switch (cfg.rx_filter) {
-+	case HWTSTAMP_FILTER_NONE:
-+		adapter->hwts_rx_en = 0;
-+		break;
-+	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
-+		adapter->hwts_rx_en = 0;
-+		pch_ch_control_write(pdev, (SLAVE_MODE | CAP_MODE0));
-+		break;
-+	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
-+		adapter->hwts_rx_en = 1;
-+		pch_ch_control_write(pdev, (MASTER_MODE | CAP_MODE0));
-+		break;
-+	case HWTSTAMP_FILTER_PTP_V2_EVENT:
-+		adapter->hwts_rx_en = 1;
-+		pch_ch_control_write(pdev, (V2_MODE | CAP_MODE2));
-+		break;
-+	default:
-+		return -ERANGE;
-+	}
-+
-+	/* Clear out any old time stamps. */
-+	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED | RX_SNAPSHOT_LOCKED);
-+
-+	return copy_to_user(ifr->ifr_data, &cfg, sizeof(cfg)) ? -EFAULT : 0;
-+}
-+#endif
-+
- inline void pch_gbe_mac_load_mac_addr(struct pch_gbe_hw *hw)
- {
- 	iowrite32(0x01, &hw->reg->MAC_ADDR_LOAD);
-@@ -1072,6 +1259,11 @@ static void pch_gbe_tx_queue(struct pch_gbe_adapter *adapter,
- 	iowrite32(tx_ring->dma +
- 		  (int)sizeof(struct pch_gbe_tx_desc) * ring_num,
- 		  &hw->reg->TX_DSC_SW_P);
-+
-+#ifdef CONFIG_PCH_PTP
-+	pch_tx_timestamp(adapter, skb);
-+#endif
-+
- 	dev_kfree_skb_any(skb);
- }
- 
-@@ -1543,6 +1735,11 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 				adapter->stats.multicast++;
- 			/* Write meta date of skb */
- 			skb_put(skb, length);
-+
-+#ifdef CONFIG_PCH_PTP
-+			pch_rx_timestamp(adapter, skb);
-+#endif
-+
- 			skb->protocol = eth_type_trans(skb, netdev);
- 			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
- 				skb->ip_summed = CHECKSUM_NONE;
-@@ -2147,6 +2344,11 @@ static int pch_gbe_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
- 
- 	pr_debug("cmd : 0x%04x\n", cmd);
- 
-+#ifdef CONFIG_PCH_PTP
-+	if (cmd == SIOCSHWTSTAMP)
-+		return hwtstamp_ioctl(netdev, ifr, cmd);
-+#endif
-+
- 	return generic_mii_ioctl(&adapter->mii, if_mii(ifr), cmd, NULL);
- }
- 
-@@ -2440,6 +2642,15 @@ static int pch_gbe_probe(struct pci_dev *pdev,
- 		goto err_free_netdev;
- 	}
- 
-+#ifdef CONFIG_PCH_PTP
-+	adapter->ptp_pdev = pci_get_bus_and_slot(adapter->pdev->bus->number,
-+					       PCI_DEVFN(12, 4));
-+	if (ptp_filter_init(ptp_filter, ARRAY_SIZE(ptp_filter))) {
-+		pr_err("Bad ptp filter\n");
-+		return -EINVAL;
-+	}
-+#endif
-+
- 	netdev->netdev_ops = &pch_gbe_netdev_ops;
- 	netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
- 	netif_napi_add(netdev, &adapter->napi,
-@@ -2504,7 +2715,7 @@ static int pch_gbe_probe(struct pci_dev *pdev,
- 	netif_carrier_off(netdev);
- 	netif_stop_queue(netdev);
- 
--	dev_dbg(&pdev->dev, "OKIsemi(R) PCH Network Connection\n");
-+	dev_dbg(&pdev->dev, "PCH Network Connection\n");
- 
- 	device_set_wakeup_enable(&pdev->dev, 1);
- 	return 0;
-@@ -2605,7 +2816,7 @@ module_init(pch_gbe_init_module);
- module_exit(pch_gbe_exit_module);
- 
- MODULE_DESCRIPTION("EG20T PCH Gigabit ethernet Driver");
--MODULE_AUTHOR("OKI SEMICONDUCTOR, <toshiharu-linux@dsn.okisemi.com>");
-+MODULE_AUTHOR("LAPIS SEMICONDUCTOR, <tshimizu818@gmail.com>");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_VERSION);
- MODULE_DEVICE_TABLE(pci, pch_gbe_pcidev_id);
--- 
-1.7.4.4
 
