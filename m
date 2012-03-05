@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab2CENF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 08:05:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21673 "EHLO relay.sw.ru"
+	id S932183Ab2CENK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 08:10:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48312 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757074Ab2CENF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 08:05:57 -0500
-Message-ID: <4F54B9DE.60604@openvz.org>
-Date: Mon, 05 Mar 2012 17:04:30 +0400
-From: Kinsbursky Stanislav <skinsbursky@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1756965Ab2CENKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 08:10:55 -0500
+Date: Mon, 5 Mar 2012 14:10:53 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120305131053.GH6643@quack.suse.cz>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
+ <20120301143859.GX5054@shiny>
+ <CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
+ <20120302140038.GD5054@shiny>
+ <CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
+ <20120302142651.GH5054@shiny>
+ <20120302193215.GB22215@thunk.org>
 MIME-Version: 1.0
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "criu@openvz.org" <criu@openvz.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@parisplace.org" <eparis@parisplace.org>,
-        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>
-Subject: Re: [CRIU] [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
-References: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
-In-Reply-To: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120302193215.GB22215@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
-Are you going to take this patch set?
+On Fri 02-03-12 14:32:15, Ted Tso wrote:
+> On Fri, Mar 02, 2012 at 09:26:51AM -0500, Chris Mason wrote:
+> It would be interesting to have a project where someone added
+> fallocate() support into libelf, and then added some hueristics into
+> ext4 so that if a file is fallocated to a precise size, or if the file
+> is fully written and closed before writeback begins, that we use this
+> to more efficiently pack the space used by the files by the block
+> allocator.  This is a place where I would not be surprised that XFS
+> has some better code to avoid accelerated file system aging, and where
+> we could do better with ext4 with some development effort.
+  AFAIK XFS people actually prefer that applications let them do their work
+using delayed allocation and do not interfere with fallocate(2) calls. The
+problem they have with fallocate(2) is that it forces you to allocate
+blocks while with delayed allocation you can make the decision about
+allocation later. So for small files which completely fit into pagecache
+before they get pushed out by writeback, they can make better decisions
+from delayed allocation. Just dumping my memory from some other thread...
 
-
-09.02.2012 22:01, Stanislav Kinsbursky пишет:
-> This patch set aimed to provide additional functionality for all IPC objects,
-> which is required for migration these objects by user-space checkpoint/restore
-> utils.
-> The main problem here was impossibility to set up object id. This patch set
-> solves the problem in two steps:
-> 1) Makes it possible to create new object (shared memory, semaphores set or
-> messages queue) with ID, equal to passed key.
-> 2) Makes it possible to change existent object key.
->
-> The following series consists of:
->
-> ---
->
-> Stanislav Kinsbursky (5):
->        ipc: "use key as id" functionality for resource get system call introduced
->        ipc: segment key change helper introduced
->        ipc: add new SHM_SET command for sys_shmctl() call
->        ipc: add new MSG_SET command for sys_msgctl() call
->        ipc: add new SEM_SET command for sys_semctl() call
->
->
->   include/linux/ipc.h        |    1 +
->   include/linux/msg.h        |    1 +
->   include/linux/sem.h        |    1 +
->   include/linux/shm.h        |    1 +
->   ipc/compat.c               |    9 +++++++
->   ipc/msg.c                  |   14 +++++++++-
->   ipc/sem.c                  |   11 +++++++-
->   ipc/shm.c                  |   14 +++++++++-
->   ipc/util.c                 |   59 +++++++++++++++++++++++++++++++++++++++++---
->   ipc/util.h                 |    3 ++
->   security/selinux/hooks.c   |    3 ++
->   security/smack/smack_lsm.c |    3 ++
->   12 files changed, 110 insertions(+), 10 deletions(-)
->
-> _______________________________________________
-> CRIU mailing list
-> CRIU@openvz.org
-> https://openvz.org/mailman/listinfo/criu
-
-
+							Honza
 -- 
-Best regards,
-Stanislav Kinsbursky
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
