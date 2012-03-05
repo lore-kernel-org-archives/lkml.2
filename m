@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2CEDE2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:04:28 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48394 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab2CEDE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:04:26 -0500
-Date: Mon, 5 Mar 2012 14:04:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: linux-next: manual merge of the sound-asoc tree with the l2-mtd
- tree
-Message-Id: <20120305140417.e55b7f1f0f0a9280dcb73040@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1755354Ab2CEDUl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 22:20:41 -0500
+Received: from mga03.intel.com ([143.182.124.21]:1361 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755004Ab2CEDUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 22:20:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="114610642"
+Subject: [RFC patch] spin_lock: add cross cache lines checking
+From: Alex Shi <alex.shi@intel.com>
+To: tglx@linutronix.com, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, andi.kleen@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Mar 2012 11:20:30 +0800
+Message-ID: <1330917630.18835.44.camel@debian>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul"
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Modern x86 CPU won't hold whole memory bus when executing 'lock'
+prefixed instructions unless the instruction destination is crossing 2
+cache lines. If so, it is disaster of system performance.
 
-Hi all,
+Actually if the lock is not in the 'packed' structure, gcc places it
+safely under x86 arch. But seems add this checking in
+CONFIG_DEBUG_LOCK_ALLOC is harmless.
 
-Today's linux-next merge of the sound-asoc tree got a conflict in
-sound/soc/mxs/mxs-pcm.h between commit 7079e020563c ("mxs-dma : move the
-mxs dma.h to a more common place") from the l2-mtd tree and commit
-016ab467aa53 ("ASoC: mxs-pcm: Use dmaengine PCM helper functions") from
-the sound-asoc tree.
+btw, change SPIN_BUG_ON macro a little for style complain.
 
-The latter seems to remove the need for the include updated by the
-former, so I removed it.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Inspired-by: Andi Kleen <andi.kleen@intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+diff --git a/arch/x86/include/asm/cache.h b/arch/x86/include/asm/cache.h
+index 48f99f1..79d146e 100644
+--- a/arch/x86/include/asm/cache.h
++++ b/arch/x86/include/asm/cache.h
+@@ -7,6 +7,8 @@
+ #define L1_CACHE_SHIFT	(CONFIG_X86_L1_CACHE_SHIFT)
+ #define L1_CACHE_BYTES	(1 << L1_CACHE_SHIFT)
+ 
++#define L1_CACHE_SIZE_MASK	(~(L1_CACHE_BYTES - 1)UL)
++
+ #define __read_mostly __attribute__((__section__(".data..read_mostly")))
+ 
+ #define INTERNODE_CACHE_SHIFT CONFIG_X86_INTERNODE_CACHE_SHIFT
+diff --git a/include/asm-generic/cache.h b/include/asm-generic/cache.h
+index 1bfcfe5..244e528 100644
+--- a/include/asm-generic/cache.h
++++ b/include/asm-generic/cache.h
+@@ -9,4 +9,6 @@
+ #define L1_CACHE_SHIFT		5
+ #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+ 
++#define L1_CACHE_SIZE_MASK     (~(L1_CACHE_BYTES - 1)UL)
++
+ #endif /* __ASM_GENERIC_CACHE_H */
+diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
+index 5f3eacd..554dcda 100644
+--- a/lib/spinlock_debug.c
++++ b/lib/spinlock_debug.c
+@@ -13,6 +13,12 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ 
++#define SPIN_BUG_ON(cond, lock, msg) {if (unlikely(cond)) spin_bug(lock, msg); }
++
++#define is_cross_lines(p)						\
++	(((unsigned long)(p) & L1_CACHE_SIZE_MASK) !=			\
++	(((unsigned long)(p) + sizeof(*p) - 1) & L1_CACHE_SIZE_MASK))	\
++
+ void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+ 			  struct lock_class_key *key)
+ {
+@@ -22,6 +28,8 @@ void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+ 	 */
+ 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+ 	lockdep_init_map(&lock->dep_map, name, key, 0);
++	SPIN_BUG_ON(is_cross_lines(lock->raw_lock), lock,
++			"!!! the lock cross cache lines !!!");
+ #endif
+ 	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+ 	lock->magic = SPINLOCK_MAGIC;
+@@ -40,6 +48,8 @@ void __rwlock_init(rwlock_t *lock, const char *name,
+ 	 */
+ 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+ 	lockdep_init_map(&lock->dep_map, name, key, 0);
++	SPIN_BUG_ON(is_cross_lines(lock->raw_lock), lock,
++			"!!! the lock cross cache lines !!!");
+ #endif
+ 	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
+ 	lock->magic = RWLOCK_MAGIC;
+@@ -75,8 +85,6 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
+ 	spin_dump(lock, msg);
+ }
+ 
+-#define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
+-
+ static inline void
+ debug_spin_lock_before(raw_spinlock_t *lock)
+ {
 
---Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPVC0xAAoJEECxmPOUX5FE9qwP/RNK/GzB5WnqyAb9XcrXIIXJ
-6EEAEpFLT8KIhoUtIE87xUfPSR0VawKAzx/qx2SHHz1jAodGzn2GA2V7iJYnP929
-G7W4AUDFd3htqM6nBIwspEbe93a43T5SYZf/vSCOjEwG+adjtaWyo7CeiyQES1LB
-KuXgG7fRTihc9axyR4qAIzyNoL3eNxlyVNJSCxi3yNcgD1AZnA6IDTlUPAI7DHuT
-0ggLv77jQwQeYsb4Ize0t7F0F+jD9KMCSeB1XW6uG2w3Q55DuRR+ondY9uSW4+wd
-8F1wXjhfvsDlO/QQawCKqIuKCN8ENXXP7nNZ0ITAAag8YFfccLp/6k3llI9y4HJK
-0/WSOxMEGJChfTBz7S+cB12KenQYikHaqUx+4fVNoKKi3t9K8hDonubzX0IL0mU+
-B3FupaJmLDxWpjId+2FuGkO/ApaP7iph9Ft5ZxOqA2j/7djFIOgYazqpNf4TeAkz
-OZUospm8iKIR+vvvRqlQpC16BDczqRE2znWR4V9z2UDMJ9AuXUzPufuknP2rcXrh
-JySExIdRMOTX9uhLb+cegLg2oYNdRXMrJ4z9vD/7xB70ZWawd1SLpB++ddBDhXJ4
-gY+nftLiTc4RbS9JQrXJgwkCvpgCqzcRSGQefbxZOfFVSChHM5NqFy//nzJzkxcV
-WS95E/oxB0lX4xyL3m48
-=98n8
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Mar_2012_14_04_17_+1100_iWn6CpgS7GcIz8Ul--
