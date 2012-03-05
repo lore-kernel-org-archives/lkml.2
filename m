@@ -1,118 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357Ab2CEVoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:44:11 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:53301 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753577Ab2CEVoJ (ORCPT
+	id S1754870Ab2CEVqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:46:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38712 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab2CEVq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:44:09 -0500
-Message-ID: <4F55337B.4080807@fb.com>
-Date: Mon, 5 Mar 2012 13:43:23 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 5 Mar 2012 16:46:29 -0500
+Date: Mon, 5 Mar 2012 15:46:22 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>,
+        ecryptfs@vger.kernel.org
+Subject: Re: Linus GIT (3.3.0-rc6+) -- INFO: possible circular locking
+ dependency detected
+Message-ID: <20120305214621.GC29910@boyd>
+References: <CAHFgRy-V3ZFK6QrC2++Rvyi4e_f-03Xdr9sj4PUJORVq21GiEw@mail.gmail.com>
+ <20120305132334.e3fc92cb.akpm@linux-foundation.org>
+ <20120305213557.GO23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
-        <dsahern@gmail.com>, <ravitillo@lbl.gov>,
-        <khandual@linux.vnet.ibm.com>, <robert.richter@amd.com>,
-        <ming.m.lin@intel.com>, <vweaver1@eecs.utk.edu>, <andi@firstfloor.org>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-References: <20120224094048.GA7952@quad> <20120305154753.GA14604@elte.hu> <20120305155011.GA32413@elte.hu> <20120305155642.GB32413@elte.hu> <1330965033.11248.240.camel@twins> <20120305203518.GA5656@infradead.org>
-In-Reply-To: <20120305203518.GA5656@infradead.org>
-Content-Type: multipart/mixed;
-	boundary="------------000906030108040105050308"
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-05_06:2012-03-05,2012-03-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
+Content-Disposition: inline
+In-Reply-To: <20120305213557.GO23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------000906030108040105050308
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 
-On 3/5/12 12:35 PM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Mar 05, 2012 at 05:30:33PM +0100, Peter Zijlstra escreveu:
->> On Mon, 2012-03-05 at 16:56 +0100, Ingo Molnar wrote:
->>> A third usability bug is that for some reason a branch sampling
->>> 'perf report' defaults to the stdio output on my testsystem -
->>> with --no-branch-stack it gives the regular tui.
->
->> Ah, I would not have noticed that since I still explicitly build my perf
->> without TUI support. That stuff mostly just gets in the way.
->
-> Do you have any specific complaints about it?
->
+--s9fJI615cBHmzTOP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think --tui code paths have some bugs that cause it to SIGSEGV, while 
-the --stdio paths don't. I think much of it has to do with how often 
-that particular combination of command line options is used.
+On 2012-03-05 21:35:58, Al Viro wrote:
+> On Mon, Mar 05, 2012 at 01:23:34PM -0800, Andrew Morton wrote:
+> > mmap_sem nests inside i_mutex.
+> >=20
+> > On the path
+> >=20
+> > 	munmap
+> > 	->ecryptfs_vma_close
+> > 	  ->filemap_write_and_wait
+> > 	    ->generic_file_aio_write
+> >=20
+> > we're taking i_mutex inside mmap_sem.  So the problem is triggered by
+> > ecryptfs_vma_close() calling filemap_write_and_wait() inside munmap()'s
+> > mmap_sem.
+> >=20
+> > Question is: what did we recently change to cause this to happen?
+>=20
+> AFAICS, it's commit 32001d6fe9ac6b0423e674a3093aa56740849f3b
+> Author: Tyler Hicks <tyhicks@canonical.com>
+> Date:   Mon Nov 21 17:31:29 2011 -0600
+>=20
+>     eCryptfs: Flush file in vma close
 
-Here's an example:
+Yes, it is definitely this commit. This is mainly what brought about my
+patch to fix the incorrect logic around lockdep_set_class() in
+lockdep_annotate_inode_mutex_key(). With that patch, I no longer saw
+these lockdep warnings, so I wrote it off. Al has since made it clear
+that this locking order is wrong.
 
-# perf record -ag -- sleep 3
-# perf report -G -s pid --tui # SIGSEGV
-# perf report -G -s pid --stdio # works fine
+This should fix itself when I revert
+57db4e8d73ef2b5e94a3f412108dff2576670a8a. We'll no longer need this
+flush in vma_close(), so 32001d6fe9ac6b0423e674a3093aa56740849f3b will
+be reverted, too. I was planning on waiting until 3.4 to do all of that
+since it will be a somewhat big change (even though it is mainly
+reverting of patches).
 
-Details attached.
+Tyler
 
-  -Arun
+--s9fJI615cBHmzTOP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCgAGBQJPVTQtAAoJENaSAD2qAscKaKAQAKgD+08pJ0NuSDt/AmXwNOaV
+zfF1LSFB/CBxXcTO79RgEaY/bnoIRPijjFrf4BE8m200MfgBRjXGAtBDlJknjd6U
+bSiDYmEirVpNVUfvfHVHHFBXDIkq0wP2YnlgLQ4uBO4Yk4VYg2d4yjuf6jw8ZExz
+LaQeNp13VG//sRnKi1puhnPcwOwGfnMpD9UhiqSZg5qTjq9vcGUVi1bsuPgrmKHE
+dZAHOzjagcpCMzJAJKvL4hcakPvAZP+MjBUKoEZdlnL+d6fviTWxtk0qFj24UgL9
+bajnSFKXCZrgfIeCJNRAzLGLOVGmKjjw2LRnq4oxlFxUSWPlvzzunWrXvphotBPE
+XmQ/xdOjD41ICOsjpSbmyfn8KTNufPyyeyYD9XZzwcn7D/b6F96NM8CZUg2bhttf
+mohRZnZrtYF+5NSSIpUvzPZsseTDouEor8b8YaQIw4qErigIHfzmQ2Kb0zeAK9be
+/kpePIWMYK9KBkityK74VMwPxEk5YdZGLEUo8YNbwMdtS/nrkb1UD62UuUqNyocZ
+VdYW7sST0P37nVzQu6IO8YHbs4yyLUBkvGeZKoVm02UPDeV5jy6mcMshOQ1UblWx
+3mBBWzi0C+LpF6aYD/ZNlMY23X+b9OPNn3/kVdTQl+K0fAog+ZAk51pErtBMLRzr
+20AJokvL2ll8rdjFIhiQ
+=jeX9
+-----END PGP SIGNATURE-----
 
-
---------------000906030108040105050308
-Content-Type: text/plain; name="perf-debug.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="perf-debug.txt"
-
-                                                                                                                                                                                                                  
-Program received signal SIGSEGV, Segmentation fault.                                                                                                                                                              
-[Switching to Thread 139975795275488 (LWP 13155)]                                                                                                                                                                 
-symbol__inc_addr_samples (sym=0x91eb90, map=<value optimized out>, evidx=0, addr=120416) at util/annotate.c:73                                                                                                    
-73      util/annotate.c: No such file or directory.                                                                                                                                                               
-        in util/annotate.c                                                                                                                                                                                        
-(gdb) bt                                                                                                                                                                                                          
-#0  symbol__inc_addr_samples (sym=0x91eb90, map=<value optimized out>, evidx=0, addr=120416) at util/annotate.c:73                                                                                                
-#1  0x0000000000410b5d in process_sample_event (tool=<value optimized out>, event=0x7f4ea28e26b0, sample=0x7fffcc1ca8f0, evsel=0x823ea0, machine=0x822290) at builtin-report.c:127                                
-#2  0x00000000004433ca in flush_sample_queue (s=0x822230, tool=0x7fffcc1cc340) at util/session.c:528                                                                                                              
-#3  0x0000000000444d16 in __perf_session__process_events (session=0x822230, data_offset=<value optimized out>, data_size=<value optimized out>, file_size=<value optimized out>, tool=0x7fffcc1cc340)             
-    at util/session.c:1175                                                                                                                                                                                        
-#4  0x0000000000445217 in perf_session__process_events (self=0x822230, tool=0x7fffcc1cc340) at util/session.c:1191                                                                                                
-#5  0x000000000041015b in cmd_report (argc=0, argv=0x7fffcc1cc830, prefix=<value optimized out>) at builtin-report.c:311                                                                                          
-#6  0x00000000004051b9 in handle_internal_command (argc=4, argv=0x7fffcc1cc830) at perf.c:273                                                                                                                     
-#7  0x0000000000405623 in main (argc=4, argv=0x479218) at perf.c:388                                                                                                                                              
-                                                                                                                                                                                      
-(gdb) p /x sym->start                                                                                                                                                                                          
-$5 = 0xffffffff8100fb74                                                                                                                                                                                           
-(gdb) p /x addr
-$6 = 0x1d660
-(gdb) p offset
-$7 = 2130762476
-
-54 int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
-55                              int evidx, u64 addr)
-56 {
-57         unsigned offset;
-58         struct annotation *notes;
-59         struct sym_hist *h;
-60 
-61         notes = symbol__annotation(sym);
-62         if (notes->src == NULL)
-63                 return -ENOMEM;
-64 
-65         pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
-66 
-67         if (addr >= sym->end)
-68                 return 0;
-69 
-70         offset = addr - sym->start;
-71         h = annotation__histogram(notes, evidx);
-72         h->sum++;
-73         h->addr[offset]++; <-- potential bad memory reference
-
---------------000906030108040105050308--
+--s9fJI615cBHmzTOP--
