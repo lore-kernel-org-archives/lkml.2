@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab2CERp3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:45:29 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:37303 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753321Ab2CERpW (ORCPT
+	id S1757231Ab2CERtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:49:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56896 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab2CERts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:45:22 -0500
-Message-ID: <4F54FBBC.5060809@xenotime.net>
-Date: Mon, 05 Mar 2012 09:45:32 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: Tree for Mar 5 (of/irqs)
-References: <20120305181024.d396adb4fefdf6d269657606@canb.auug.org.au>
-In-Reply-To: <20120305181024.d396adb4fefdf6d269657606@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 5 Mar 2012 12:49:48 -0500
+Message-ID: <1330969747.11248.250.camel@twins>
+Subject: Re: [PATCH v2 x86 1/2]  fix page faults by nmiaction in nmi if
+ kmemcheck is enabled
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net, Vegard Nossum <vegardno@ifi.uio.no>,
+        Don Zickus <dzickus@redhat.com>, tony.luck@intel.com, bp@amd64.org,
+        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
+        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
+        linux-watchdog@vger.kernel.org
+Date: Mon, 05 Mar 2012 18:49:07 +0100
+In-Reply-To: <1330941917.24353.63.camel@ThinkPad-T61>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
+	 <1329819437.2293.382.camel@twins> <1329990828.19165.36.camel@ThinkPad-T61>
+	 <1330340324.11248.60.camel@twins> <1330941917.24353.63.camel@ThinkPad-T61>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2012 11:10 PM, Stephen Rothwell wrote:
+On Mon, 2012-03-05 at 18:05 +0800, Li Zhong wrote:
+> +static struct nmiaction arch_trigger_all_cpu_bt_nmiaction = {
+> +       .handler        = arch_trigger_all_cpu_backtrace_handler,
+> +       .name           = "arch_bt",
+> +};
+> +
+>  static int __init register_trigger_all_cpu_backtrace(void)
+>  {
+> -       register_nmi_handler(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler,
+> -                               0, "arch_bt");
+> +       register_nmi_handler(NMI_LOCAL, &arch_trigger_all_cpu_bt_nmiaction);
+>         return 0;
+>  } 
 
-> Hi all,
-> 
-> Changes since 20120302:
+If you look at things like cpu_notifier() you can shorten this still:
 
+#define nmi_notifier(t, fn, n)				\
+do {							\
+	static struct nmiaction fn##_na = {		\
+		.handler = (fn),			\
+		.name = (n),				\
+	};						\
+	register_nmi_handler((t), &fn##_na);		\
+} while (0)
 
+The whole thing then becomes:
 
-Still have both of these build errors (on i386/X86_32;
-2 different builds):
+  nmi_notifier(NMI_LOCAL, arch_trigger_all_cpu_backtrace_handler, "arch_bt");
 
-
-drivers/mfd/twl-core.c:1262:2: error: implicit declaration of function 'irq_alloc_descs'
-drivers/mfd/twl-core.c:1357:3: error: implicit declaration of function 'of_platform_populate'
-
-
-and:
-
-drivers/gpio/gpio-sodaville.c:130:2: error: unknown field 'dt_translate' specified in initializer
-drivers/gpio/gpio-sodaville.c:130:2: warning: initialization from incompatible pointer type
-drivers/gpio/gpio-sodaville.c:152:8: error: 'struct irq_domain' has no member named 'irq_base'
-drivers/gpio/gpio-sodaville.c:182:2: error: implicit declaration of function 'irq_domain_add'
-drivers/gpio/gpio-sodaville.c:263:2: error: implicit declaration of function 'irq_domain_del'
-
-
-
-
-~Randy
 
