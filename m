@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab2CEKZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 05:25:59 -0500
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57295 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756518Ab2CEKZ5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 05:25:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of balajitk@ti.com designates 10.112.87.234 as permitted sender) smtp.mail=balajitk@ti.com
+	id S1756679Ab2CEK2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 05:28:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38380 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756469Ab2CEK2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 05:28:03 -0500
+Date: Mon, 5 Mar 2012 11:28:00 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, Nigel Cunningham <nigel@tuxonice.net>,
+        Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: [linux-pm] [Patch] JBD and JBD2 missing set_freezable()
+Message-ID: <20120305102800.GB6643@quack.suse.cz>
+References: <4F2BA1FD.3030302@tuxonice.net>
+ <201203042351.07405.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <4F548457.5050205@ti.com>
-References: <20120301185044.29210.44521.stgit@kaulin.local>
-	<20120301185535.29210.71546.stgit@kaulin.local>
-	<4F50643B.9050500@ti.com>
-	<20120302172251.GJ18901@atomide.com>
-	<4F548457.5050205@ti.com>
-Date: Mon, 5 Mar 2012 15:55:56 +0530
-Message-ID: <CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card detect
-From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org, Venkatraman S <svenkatr@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201203042351.07405.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 2:46 PM, Rajendra Nayak <rnayak@ti.com> wrote:
-> On Friday 02 March 2012 10:52 PM, Tony Lindgren wrote:
->>
->> BTW, with -rc5, looks like re-inserting omap_hsmmc on omap4 fails
->> to detect any cards, and then fails to unload. This works on omap3
->> just fine. Any ideas why that would be?
->
->
-> Yeah, looks like thats broken. I am not sure whats going wrong though.
-> I just enabled CONFIG_MMC_DEBUG and saw these logs below.
->
-> Venkat/Balaji, care to look at this one?
->
+On Sun 04-03-12 23:51:07, Rafael J. Wysocki wrote:
+> On Friday, February 03, 2012, Nigel Cunningham wrote:
+> > Hi all.
+> > 
+> > With the latest and greatest changes to the freezer, I started seeing
+> > panics that were caused by jbd2 running post-process freezing and
+> > hitting the canary BUG_ON for non-TuxOnIce I/O submission. I've traced
+> > this back to a lack of set_freezable calls in both jbd and jbd2. Since
+> > they're clearly meant to be frozen (there are tests for freezing()), I
+> > submit the following patch to add the missing calls.
+> > 
+> > Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
+> 
+> Well, I wonder what the filesystems people think about that.
+  Nigel is right that threads are meant to be freezable. If below patch
+is needed for that, you have my ack.
 
-Let me check this
+  Just two notes:
+1) Freezing the journal thread will effectively block filesystem activity
+(not immediately but once transaction fills up) so you should better make
+sure you don't need to do anything with the filesystem after freezing the
+thread.
 
-> # insmod omap_hsmmc.ko
-> [   43.358398] omap_hsmmc omap_hsmmc.0: context was not lost
-> [   43.364105] omap_hsmmc omap_hsmmc.0: enabled
-> [   44.434661] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
-> timing 0
-> [   44.442352] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
-> [   44.474365] omap_hsmmc omap_hsmmc.0: disabled
-> [   44.482208] omap_hsmmc omap_hsmmc.4: context was not lost
-> [   44.482208] omap_hsmmc omap_hsmmc.4: enabled
-> [   44.546600] omap_hsmmc omap_hsmmc.0: context was not lost
-> [   44.552276] omap_hsmmc omap_hsmmc.0: enabled
-> [   44.552276] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> [   44.563720] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 18 width 0
-> timing 0
-> [   44.572174] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
-> [   44.613800] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 18 width
-> 0 timing 0
-> [   44.621887] omap_hsmmc omap_hsmmc.0: Set clock to 400000Hz
-> [   44.735290] mmc0: starting CMD52 arg 00000c00 flags 00000195
-> [   44.741271] omap_hsmmc omap_hsmmc.0: mmc0: CMD52, argument 0x00000c00
-> [   45.560241] mmc1: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
-> timing 0
-> [   45.567871] omap_hsmmc omap_hsmmc.4: Set clock to 0Hz
-> [   45.591491] omap_hsmmc omap_hsmmc.4: disabled
-> #
-> #
-> # rmmod omap_hsmmc
-> [  607.302307] omap_hsmmc omap_hsmmc.4: context was not lost
-> [  607.308044] omap_hsmmc omap_hsmmc.4: enabled
-> [  607.312591] omap_hsmmc omap_hsmmc.4: disabled
-> [  607.317199] omap_hsmmc omap_hsmmc.4: context was not lost
-> [  607.322875] omap_hsmmc omap_hsmmc.4: enabled
->
+2) Is freezing journal thread still needed when we freeze filesystem in
+suspend code? Because no IO should happen once filesystem is frozen...
+
+								Honza
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> > index 59c09f9..89cd985 100644
+> > --- a/fs/jbd/journal.c
+> > +++ b/fs/jbd/journal.c
+> > @@ -129,6 +129,8 @@ static int kjournald(void *arg)
+> >  	setup_timer(&journal->j_commit_timer, commit_timeout,
+> >  			(unsigned long)current);
+> > 
+> > +	set_freezable();
+> > +
+> >  	/* Record that the journal thread is running */
+> >  	journal->j_task = current;
+> >  	wake_up(&journal->j_wait_done_commit);
+> > diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> > index c0a5f9f..663e47c 100644
+> > --- a/fs/jbd2/journal.c
+> > +++ b/fs/jbd2/journal.c
+> > @@ -139,6 +139,8 @@ static int kjournald2(void *arg)
+> >  	setup_timer(&journal->j_commit_timer, commit_timeout,
+> >  			(unsigned long)current);
+> > 
+> > +	set_freezable();
+> > +
+> >  	/* Record that the journal thread is running */
+> >  	journal->j_task = current;
+> >  	wake_up(&journal->j_wait_done_commit);
+> > 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
