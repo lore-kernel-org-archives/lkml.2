@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2CEQSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:18:20 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34761 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab2CEQRH (ORCPT
+	id S1755513Ab2CEQRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:17:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65482 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab2CEQRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:17:07 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.216.138.38 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
+	Mon, 5 Mar 2012 11:17:01 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.180.95.1 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
 MIME-Version: 1.0
 From: Javier Martin <javier.martin@vista-silicon.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
         vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de,
         Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH 10/14] dmaengine: imx-dma: remove internal structure.
-Date: Mon,  5 Mar 2012 17:16:32 +0100
-Message-Id: <1330964196-32623-11-git-send-email-javier.martin@vista-silicon.com>
+Subject: [PATCH 07/14] dmaengine: imx-dma: remove sg member from internal structure.
+Date: Mon,  5 Mar 2012 17:16:29 +0100
+Message-Id: <1330964196-32623-8-git-send-email-javier.martin@vista-silicon.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
 References: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
@@ -27,188 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
 ---
- drivers/dma/imx-dma.c |   64 +++++++++++++-----------------------------------
- 1 files changed, 18 insertions(+), 46 deletions(-)
+ drivers/dma/imx-dma.c |   42 ++++++++++++++++++------------------------
+ 1 files changed, 18 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index d525f1e..2f72447 100644
+index cb45aff..ed94207 100644
 --- a/drivers/dma/imx-dma.c
 +++ b/drivers/dma/imx-dma.c
-@@ -110,29 +110,6 @@ enum  imxdma_prep_type {
- 	IMXDMA_DESC_CYCLIC,
- };
+@@ -128,7 +128,6 @@ enum  imxdma_prep_type {
+  */
  
--/*
-- * struct imxdma_channel_internal - i.MX specific DMA extension
-- * @name: name specified by DMA client
-- * @irq_handler: client callback for end of transfer
-- * @err_handler: client callback for error condition
-- * @data: clients context data for callbacks
-- * @dma_mode: direction of the transfer %DMA_MODE_READ or %DMA_MODE_WRITE
-- * @sg: pointer to the actual read/written chunk for scatter-gather emulation
-- * @resbytes: total residual number of bytes to transfer
-- *            (it can be lower or same as sum of SG mapped chunk sizes)
-- * @sgcount: number of chunks to be read/written
-- *
-- * Structure is used for IMX DMA processing. It would be probably good
-- * @struct dma_struct in the future for external interfacing and use
-- * @struct imxdma_channel_internal only as extension to it.
-- */
--
--struct imxdma_channel_internal {
--	struct timer_list watchdog;
--
--	int hw_chaining;
--};
--
- struct imxdma_desc {
- 	struct list_head		node;
- 	struct dma_async_tx_descriptor	desc;
-@@ -155,7 +132,8 @@ struct imxdma_desc {
- };
+ struct imxdma_channel_internal {
+-	struct scatterlist *sg;
+ 	unsigned int resbytes;
  
- struct imxdma_channel {
--	struct imxdma_channel_internal	internal;
-+	int				hw_chaining;
-+	struct timer_list		watchdog;
- 	struct imxdma_engine		*imxdma;
- 	unsigned int			channel;
- 
-@@ -217,10 +195,10 @@ static unsigned imx_dmav1_readl(unsigned offset)
- 	return __raw_readl(imx_dmav1_baseaddr + offset);
- }
- 
--static int imxdma_hw_chain(struct imxdma_channel_internal *imxdma)
-+static int imxdma_hw_chain(struct imxdma_channel *imxdmac)
- {
- 	if (cpu_is_mx27())
--		return imxdma->hw_chaining;
-+		return imxdmac->hw_chaining;
- 	else
- 		return 0;
- }
-@@ -269,7 +247,7 @@ static void imxdma_enable_hw(struct imxdma_desc *d)
+ 	int in_use;
+@@ -278,11 +277,11 @@ static void imxdma_enable_hw(struct imxdma_desc *d)
  		CCR_ACRPT, DMA_CCR(channel));
  
  	if ((cpu_is_mx21() || cpu_is_mx27()) &&
--			d->sg && imxdma_hw_chain(&imxdmac->internal)) {
-+			d->sg && imxdma_hw_chain(imxdmac)) {
- 		d->sg = sg_next(d->sg);
- 		if (d->sg) {
+-			imxdmac->internal.sg && imxdma_hw_chain(&imxdmac->internal)) {
+-		imxdmac->internal.sg = sg_next(imxdmac->internal.sg);
+-		if (imxdmac->internal.sg) {
++			d->sg && imxdma_hw_chain(&imxdmac->internal)) {
++		d->sg = sg_next(d->sg);
++		if (d->sg) {
  			u32 tmp;
-@@ -290,8 +268,8 @@ static void imxdma_disable_hw(struct imxdma_channel *imxdmac)
+-			imxdma_sg_next(d, imxdmac->internal.sg);
++			imxdma_sg_next(d, d->sg);
+ 			tmp = imx_dmav1_readl(DMA_CCR(channel));
+ 			imx_dmav1_writel(tmp | CCR_RPT | CCR_ACRPT,
+ 				DMA_CCR(channel));
+@@ -319,7 +318,6 @@ static void imxdma_watchdog(unsigned long data)
  
- 	pr_debug("imxdma%d: imx_dma_disable\n", channel);
+ 	imx_dmav1_writel(0, DMA_CCR(channel));
+ 	imxdmac->internal.in_use = 0;
+-	imxdmac->internal.sg = NULL;
  
--	if (imxdma_hw_chain(&imxdmac->internal))
--		del_timer(&imxdmac->internal.watchdog);
-+	if (imxdma_hw_chain(imxdmac))
-+		del_timer(&imxdmac->watchdog);
- 
- 	local_irq_save(flags);
- 	imx_dmav1_writel(imx_dmav1_readl(DMA_DIMR) | (1 << channel), DMA_DIMR);
-@@ -316,7 +294,6 @@ static void imxdma_watchdog(unsigned long data)
- static irqreturn_t imxdma_err_handler(int irq, void *dev_id)
- {
- 	struct imxdma_engine *imxdma = dev_id;
--	struct imxdma_channel_internal *internal;
- 	unsigned int err_mask;
- 	int i, disr;
- 	int errcode;
-@@ -336,7 +313,6 @@ static irqreturn_t imxdma_err_handler(int irq, void *dev_id)
- 	for (i = 0; i < IMX_DMA_CHANNELS; i++) {
- 		if (!(err_mask & (1 << i)))
- 			continue;
--		internal = &imxdma->channel[i].internal;
- 		errcode = 0;
- 
- 		if (imx_dmav1_readl(DMA_DBTOSR) & (1 << i)) {
-@@ -370,7 +346,6 @@ static irqreturn_t imxdma_err_handler(int irq, void *dev_id)
- 
- static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
- {
--	struct imxdma_channel_internal *imxdma = &imxdmac->internal;
+ 	/* Tasklet watchdog error handler */
+ 	tasklet_schedule(&imxdmac->dma_tasklet);
+@@ -387,24 +385,23 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
  	int chno = imxdmac->channel;
  	struct imxdma_desc *desc;
  
-@@ -394,11 +369,11 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
+-	if (imxdma->sg) {
+-		u32 tmp;
+-		imxdma->sg = sg_next(imxdma->sg);
+-
+-		if (imxdma->sg) {
++	spin_lock(&imxdmac->lock);
++	if (list_empty(&imxdmac->ld_active)) {
++		spin_unlock(&imxdmac->lock);
++		goto out;
++	}
+ 
+-			spin_lock(&imxdmac->lock);
+-			if (list_empty(&imxdmac->ld_active)) {
+-				spin_unlock(&imxdmac->lock);
+-				goto out;
+-			}
++	desc = list_first_entry(&imxdmac->ld_active,
++				struct imxdma_desc,
++				node);
++	spin_unlock(&imxdmac->lock);
+ 
+-			desc = list_first_entry(&imxdmac->ld_active,
+-						struct imxdma_desc,
+-						node);
+-			spin_unlock(&imxdmac->lock);
++	if (desc->sg) {
++		u32 tmp;
++		desc->sg = sg_next(desc->sg);
+ 
+-			imxdma_sg_next(desc, imxdma->sg);
++		if (desc->sg) {
++			imxdma_sg_next(desc, desc->sg);
  
  			tmp = imx_dmav1_readl(DMA_CCR(chno));
  
--			if (imxdma_hw_chain(imxdma)) {
-+			if (imxdma_hw_chain(imxdmac)) {
- 				/* FIXME: The timeout should probably be
- 				 * configurable
- 				 */
--				mod_timer(&imxdma->watchdog,
-+				mod_timer(&imxdmac->watchdog,
- 					jiffies + msecs_to_jiffies(500));
+@@ -478,8 +475,6 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
+ 	/* Configure and enable */
+ 	switch (d->type) {
+ 	case IMXDMA_DESC_MEMCPY:
+-		imxdmac->internal.sg = NULL;
+-
+ 		imx_dmav1_writel(d->src, DMA_SAR(imxdmac->channel));
+ 		imx_dmav1_writel(d->dest, DMA_DAR(imxdmac->channel));
+ 		imx_dmav1_writel(d->config_mem | (d->config_port << 2),
+@@ -495,7 +490,6 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
+ 	/* Cyclic transfer is the same as slave_sg with special sg configuration. */
+ 	case IMXDMA_DESC_CYCLIC:
+ 	case IMXDMA_DESC_SLAVE_SG:
+-		imxdmac->internal.sg = d->sg;
+ 		imxdmac->internal.resbytes = d->len;
  
- 				tmp |= CCR_CEN | CCR_RPT | CCR_ACRPT;
-@@ -417,8 +392,8 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
- 			return;
- 		}
- 
--		if (imxdma_hw_chain(imxdma)) {
--			del_timer(&imxdma->watchdog);
-+		if (imxdma_hw_chain(imxdmac)) {
-+			del_timer(&imxdmac->watchdog);
- 			return;
- 		}
- 	}
-@@ -432,7 +407,6 @@ out:
- static irqreturn_t dma_irq_handler(int irq, void *dev_id)
- {
- 	struct imxdma_engine *imxdma = dev_id;
--	struct imxdma_channel_internal *internal;
- 	int i, disr;
- 
- 	if (cpu_is_mx21() || cpu_is_mx27())
-@@ -445,10 +419,8 @@ static irqreturn_t dma_irq_handler(int irq, void *dev_id)
- 
- 	imx_dmav1_writel(disr, DMA_DISR);
- 	for (i = 0; i < IMX_DMA_CHANNELS; i++) {
--		if (disr & (1 << i)) {
--			internal = &imxdma->channel[i].internal;
-+		if (disr & (1 << i))
- 			dma_irq_handle_channel(&imxdma->channel[i]);
--		}
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -591,8 +563,8 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 			break;
- 		}
- 
--		imxdmac->internal.hw_chaining = 1;
--		if (!imxdma_hw_chain(&imxdmac->internal))
-+		imxdmac->hw_chaining = 1;
-+		if (!imxdma_hw_chain(imxdmac))
- 			return -EINVAL;
- 		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
- 			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
-@@ -944,7 +916,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	/* Initialize channel parameters */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
- 		struct imxdma_channel *imxdmac = &imxdma->channel[i];
--		memset(&imxdmac->internal, 0, sizeof(imxdmac->internal));
-+
- 		if (cpu_is_mx21() || cpu_is_mx27()) {
- 			ret = request_irq(MX2x_INT_DMACH0 + i,
- 					dma_irq_handler, 0, "DMA", imxdma);
-@@ -953,9 +925,9 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 						MX2x_INT_DMACH0 + i, i);
- 				goto err_init;
- 			}
--			init_timer(&imxdmac->internal.watchdog);
--			imxdmac->internal.watchdog.function = &imxdma_watchdog;
--			imxdmac->internal.watchdog.data = (unsigned long)imxdmac;
-+			init_timer(&imxdmac->watchdog);
-+			imxdmac->watchdog.function = &imxdma_watchdog;
-+			imxdmac->watchdog.data = (unsigned long)imxdmac;
- 		}
- 
- 		imxdmac->imxdma = imxdma;
+ 		if (d->direction == DMA_DEV_TO_MEM) {
 -- 
 1.7.0.4
 
