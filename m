@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab2CEWNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:13:00 -0500
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:63742 "EHLO
-	intmgw001.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756592Ab2CEWM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:12:57 -0500
-Date: Mon, 5 Mar 2012 14:12:54 -0800
-From: Arun Sharma <asharma@fb.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-perf-users@vger.kernel.org
-Subject: [RFC] Sort inclusive
-Message-ID: <20120305221253.GA30250@dev3310.snc6.facebook.com>
+	id S1756655Ab2CEWMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:12:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755178Ab2CEWMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 17:12:51 -0500
+Date: Mon, 5 Mar 2012 17:12:42 -0500
+From: Dave Jones <davej@redhat.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: use-after-free in bluetooth (hci_conn_hash_flush)
+Message-ID: <20120305221242.GA2008@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	"Gustavo F. Padovan" <padovan@profusion.mobi>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,259 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We had a user report this, which looks like a use after free
+in hci_conn_hash_flush(). Probably related to bf4c63252490ba78fb833cc7acf1a5b1900c970f
 
-Some of our users have been asking for the ability to sort samples by
-inclusive time (time spent in the function + all of the callees in the
-callgraph).
+Full report is at https://bugzilla.redhat.com/show_bug.cgi?id=797590
 
-While something like this is possible via tools such as:
+	Dave
 
-perf script | gprof2dot.py -f perf
+general protection fault: 0000 [#1] SMP 
+CPU 0 
+Modules linked in: rfcomm bnep btusb bluetooth lockd sunrpc uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev v4l2_compat_ioctl32 media snd_hda_codec_conexant snd_hda_intel arc4 snd_hda_codec iwlwifi mac80211 snd_hwdep snd_pcm snd_page_alloc snd_timer cfg80211 thinkpad_acpi iTCO_wdt e1000e snd soundcore microcode i2c_i801 r592 memstick iTCO_vendor_support rfkill binfmt_misc uinput sdhci_pci sdhci firewire_ohci mmc_core firewire_core crc_itu_t yenta_socket wmi i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+Pid: 881, comm: bluetoothd Not tainted 3.3.0-0.rc4.git3.1.fc18.x86_64 #1 LENOVO 2767C99/2767C99
+RIP: 0010:[<ffffffffa0431175>]  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
+RSP: 0018:ffff8801f33a9d68  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000001
+RDX: 0000000000000000 RSI: ffffffff81c297e0 RDI: 0000000000000246
+RBP: ffff8801f33a9d88 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff8801f30cabb8
+R13: ffff8801f30caa88 R14: ffffffff82d20b40 R15: 0000000000000011
+FS:  00007f0e6947b740(0000) GS:ffff880232e00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000001f2c08000 CR4: 00000000000406f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process bluetoothd (pid: 881, threadinfo ffff8801f33a8000, task ffff8801f33a0000)
+Stack:
+ ffff8801f30ca158 6b6b6b6b6b6b6b6b ffff8801f30ca148 ffff8801f30ca158
+ ffff8801f33a9db8 ffffffffa042a6b8 ffff8801f30ca148 0000000000000000
+ ffff8801f3318000 ffffffff82d20b40 ffff8801f33a9dd8 ffffffffa042cd9d
+Call Trace:
+ [<ffffffffa042a6b8>] hci_dev_do_close+0xc8/0x340 [bluetooth]
+ [<ffffffffa042cd9d>] hci_dev_close+0x2d/0x70 [bluetooth]
+ [<ffffffffa04421a3>] hci_sock_ioctl+0x1a3/0x3e0 [bluetooth]
+ [<ffffffff812c1127>] ? inode_has_perm.isra.42+0x67/0xa0
+ [<ffffffff815443c0>] sock_do_ioctl+0x30/0x70
+ [<ffffffff8154447d>] sock_ioctl+0x7d/0x2c0
+ [<ffffffff811d06b9>] do_vfs_ioctl+0x99/0x5a0
+ [<ffffffff811d0c59>] sys_ioctl+0x99/0xa0
+ [<ffffffff816a74e9>] system_call_fastpath+0x16/0x1b
+Code: fd ff ff 48 8b 03 48 89 45 e8 48 8b 5d e8 e8 83 58 c5 e0 85 c0 74 0f e8 7a 58 c5 e0 85 c0 75 56 66 0f 1f 44 00 00 49 39 dc 74 3b <0f> b6 53 21 66 c7 43 1e 09 00 80 fa 01 74 14 73 8a be 16 00 00 
+RIP  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
+ RSP <ffff8801f33a9d68>
 
-a simpler, text only tool seems desirable.
-
-The attached patch seems to work ok on some test programs in
-order=caller mode. The idea is simple:
-
-For each input callchain such as:
-
-main -> a -> b -> c
-
-We create histogram entries for:
-
-main -> a -> b -> c (original callchain)
-a -> b -> c (inclusive callchain)
-b -> c (inclusive callchain)
-c (inclusive callchain)
-
-When computing hists->stats.total_period, the patch ignores the inclusive
-callchains and considers only the original callchain.
-
-However, this doesn't work very well for order=callee, mainly because
-the patch doesn't compute total_period correctly. The number of samples
-look ok (and should be the same as order=caller) for each symbol.
-
-If the input stream had:
-
-c <- b <- a <- main 
-
-everything would've worked just fine. But when I step through the code,
-I see:
-
-some <- kernel <- funcs <- c <- b <- a <- main (original)
-kernel <- funcs <- c <- b <- a <- main (inclusive)
-funcs <- c <- b <- a <- main (inclusive)
-c <- b <- a <- main (inclusive <- but should be the original callchain)
-b <- a <- main (inclusive)
-a <- main (inclusive)
-main (inclusive)
-
-I tried a couple of hacks (eg: comparing event->ip.ip to al->addr) to
-tell the original callchain from inclusive ones, so the inclusive chains
-can be used for histogram display/sorting, but ignored for other
-purposes.
-
-I hope others find --sort inclusive functionality useful. Any comments
-on how to solve the order=callee case would be great. I suspect this has
-something to do with histogram output collapsing/resorting.
-
- -Arun
-
-commit 29e659f0ca2041f2f1681a0072739165220d7c64
-Author: Arun Sharma <asharma@fb.com>
-Date:   Wed Feb 29 21:40:47 2012 +0000
-
-    perf: Add a new sort order: SORT_INCLUSIVE
-    
-    Each entry that used to get added once to the histogram, now is added
-    chain->nr times, each time with one less entry in the
-    callchain.
-    
-    This will result in a non-leaf function that appears in a lot of
-    samples to get a histogram entry with lots of hits.
-    
-    The user can then drill down into the callchains of functions that
-    have high inclusive times.
-    
-    Signed-off-by: Arun Sharma <asharma@fb.com>
-
-diff --git a/builtin-report.c b/builtin-report.c
-index 25d34d4..4bcd169 100644
---- a/builtin-report.c
-+++ b/builtin-report.c
-@@ -60,7 +60,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- {
- 	struct symbol *parent = NULL;
- 	int err = 0;
--	struct hist_entry *he;
-+	struct hist_entry *he = NULL;
- 
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
-@@ -69,16 +69,47 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 			return err;
- 	}
- 
--	he = __hists__add_entry(&evsel->hists, al, parent, sample->period);
--	if (he == NULL)
--		return -ENOMEM;
-+	if ((sort__first_dimension == SORT_INCLUSIVE) && (symbol_conf.use_callchain)) {
-+		struct callchain_cursor *cursor = &evsel->hists.callchain_cursor;
-+		struct callchain_cursor iter = *cursor;
-+		struct callchain_cursor new_cursor = *cursor;
-+		u64 i;
-+
-+		iter.pos = 0;
-+		iter.curr = iter.first;
-+		for (i = 0; i < cursor->nr; i++) {
-+			struct addr_location al_child = *al;
-+
-+			err = callchain_get(&iter, &al_child);
-+			if (err)
-+				return err;
-+			he = __hists__add_entry(&evsel->hists, &al_child, parent, sample->period);
-+			if (he == NULL)
-+				return -ENOMEM;
-+
-+			new_cursor.first = iter.curr;
-+			new_cursor.nr = cursor->nr - i;
-+			if (i != 0) 
-+				he->inclusive = 1;
-+			err = callchain_append(he->callchain,
-+					       &new_cursor,
-+					       sample->period);
-+			if (err)
-+				return err;
-+			callchain_cursor_advance(&iter);
-+		}
-+	} else {
-+		he = __hists__add_entry(&evsel->hists, al, parent, sample->period);
-+		if (he == NULL)
-+			return -ENOMEM;
- 
--	if (symbol_conf.use_callchain) {
--		err = callchain_append(he->callchain,
--				       &evsel->hists.callchain_cursor,
--				       sample->period);
--		if (err)
--			return err;
-+		if (symbol_conf.use_callchain) {
-+			err = callchain_append(he->callchain,
-+					       &evsel->hists.callchain_cursor,
-+					       sample->period);
-+			if (err)
-+				return err;
-+		}
- 	}
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
-@@ -595,6 +626,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
-+	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "inclusive", stdout);
- 
- 	return __cmd_report(&report);
- }
-diff --git a/util/callchain.c b/util/callchain.c
-index 9f7106a..aa4acde 100644
---- a/util/callchain.c
-+++ b/util/callchain.c
-@@ -459,3 +459,17 @@ int callchain_cursor_append(struct callchain_cursor *cursor,
- 
- 	return 0;
- }
-+
-+int callchain_get(struct callchain_cursor *cursor,
-+		  struct addr_location *al)
-+{
-+	struct callchain_cursor_node *node = cursor->curr;
-+
-+	if (node == NULL) return -1;
-+
-+	al->map = node->map;
-+	al->sym = node->sym;
-+	al->addr = node->ip;
-+
-+	return 0;
-+}
-diff --git a/util/callchain.h b/util/callchain.h
-index 7f9c0f1..dcff6ec 100644
---- a/util/callchain.h
-+++ b/util/callchain.h
-@@ -103,9 +103,13 @@ int callchain_merge(struct callchain_cursor *cursor,
- 
- struct ip_callchain;
- union perf_event;
-+struct addr_location;
- 
- bool ip_callchain__valid(struct ip_callchain *chain,
- 			 const union perf_event *event);
-+
-+int callchain_get(struct callchain_cursor *cursor, struct addr_location *al);
-+
- /*
-  * Initialize a cursor before adding entries inside, but keep
-  * the previously allocated entries as a cache.
-diff --git a/util/hist.c b/util/hist.c
-index 6f505d1..0eebe46 100644
---- a/util/hist.c
-+++ b/util/hist.c
-@@ -174,6 +174,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			he->ms.map->referenced = true;
- 		if (symbol_conf.use_callchain)
- 			callchain_init(he->callchain);
-+		he->inclusive = false;
- 	}
- 
- 	return he;
-@@ -181,7 +182,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 
- static void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
- {
--	if (!h->filtered) {
-+	if (!h->filtered && !h->inclusive) {
- 		hists__calc_col_len(hists, h);
- 		++hists->nr_entries;
- 		hists->stats.total_period += h->period;
-diff --git a/util/sort.c b/util/sort.c
-index 16da30d..1440ad4 100644
---- a/util/sort.c
-+++ b/util/sort.c
-@@ -259,6 +259,7 @@ static struct sort_dimension sort_dimensions[] = {
- 	{ .name = "symbol",	.entry = &sort_sym,	},
- 	{ .name = "parent",	.entry = &sort_parent,	},
- 	{ .name = "cpu",	.entry = &sort_cpu,	},
-+	{ .name = "inclusive",	.entry = &sort_sym, 	},
- };
- 
- int sort_dimension__add(const char *tok)
-@@ -298,6 +299,8 @@ int sort_dimension__add(const char *tok)
- 				sort__first_dimension = SORT_DSO;
- 			else if (!strcmp(sd->name, "symbol"))
- 				sort__first_dimension = SORT_SYM;
-+			else if (!strcmp(sd->name, "inclusive"))
-+				sort__first_dimension = SORT_INCLUSIVE;
- 			else if (!strcmp(sd->name, "parent"))
- 				sort__first_dimension = SORT_PARENT;
- 			else if (!strcmp(sd->name, "cpu"))
-diff --git a/util/sort.h b/util/sort.h
-index 3f67ae3..2d35c11 100644
---- a/util/sort.h
-+++ b/util/sort.h
-@@ -65,6 +65,7 @@ struct hist_entry {
- 	bool			init_have_children;
- 	char			level;
- 	bool			used;
-+	bool			inclusive;
- 	u8			filtered;
- 	struct symbol		*parent;
- 	union {
-@@ -82,6 +83,7 @@ enum sort_type {
- 	SORT_SYM,
- 	SORT_PARENT,
- 	SORT_CPU,
-+	SORT_INCLUSIVE,
- };
- 
- /*
