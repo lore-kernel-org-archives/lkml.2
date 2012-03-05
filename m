@@ -1,186 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2CEFi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 00:38:56 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:45311 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2CEFiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 00:38:54 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.83.42 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CABS55+D97mKFdQhGdAXjMGfyRiWd4Os8wfRq9YNa-FQAEQSR7Q@mail.gmail.com>
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org> <CABS55+D97mKFdQhGdAXjMGfyRiWd4Os8wfRq9YNa-FQAEQSR7Q@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 4 Mar 2012 21:38:31 -0800
-X-Google-Sender-Auth: myZ2NPQ8EMKGBe-7G23BXOkxSpw
-Message-ID: <CA+55aFyVELrXO50pfbL-eH48K3_3noRkKMDCqTSVsuSQ0hHRWw@mail.gmail.com>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
- any filesystems that depend on the exact VFS 'namehash' implementation?)
-To: Jason Garrett-Glaser <jason@x264.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=f46d044283b872684e04ba785756
+	id S1752049Ab2CEFoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 00:44:08 -0500
+Received: from mga01.intel.com ([192.55.52.88]:41644 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376Ab2CEFoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 00:44:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124999030"
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+From: Alex Shi <alex.shi@intel.com>
+To: tglx@linutronix.com, "mingo@redhat.com" <mingo@redhat.com>
+Cc: hpa@zytor.com, arnd@arndb.de, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, andi.kleen@intel.com
+In-Reply-To: <1330917889.18835.46.camel@debian>
+References: <1330917630.18835.44.camel@debian>
+	 <1330917889.18835.46.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Mar 2012 13:43:54 +0800
+Message-ID: <1330926234.18835.51.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d044283b872684e04ba785756
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, Mar 4, 2012 at 7:58 PM, Jason Garrett-Glaser <jason@x264.com> wrote=
-:
->
-> There is an improvement you can make to this. =A0"bsf" is microcoded in
-> many future CPUs (e.g. Piledriver) in favor of tzcnt, which has
-> slightly different flag behavior and no undefined behavior and is part
-> of BMI1.
+On Mon, 2012-03-05 at 11:24 +0800, Alex Shi wrote:
+> Oops.
+> Sorry, the patch is not tested well! will update it later. 
 
-So I've gotten rid of 'bsf' because it really does have problems on
-many CPU's. It's disgustingly slow on some older CPU's.
+corrected version:
+==========
+>From 28745c1970a61a1420d388660cd9dcc619cd38ba Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 5 Mar 2012 13:03:35 +0800
+Subject: [PATCH] lockdep: add cross cache lines checking
 
-I asked around on G+ to see if that would be useful, and there's a
-nice simple four-instruction sequence for the 32-bit case using just
-trivial operations (one shift, one and, a couple of adds).
+Modern x86 CPU won't hold whole memory bus when executing 'lock'
+prefixed instructions unless the instruction destination is crossing 2
+cache lines. If so, it is disaster of system performance.
 
-For the 64-bit case, the bsf can be replaced with a single multiply
-and shift. The bsf is still better on some CPU's, but the single
-multiply and shift is more consistently good - and as long as it
-doesn't stall the CPU, we're good, because the end result of it all
-won't be used until several cycles later.
+Actually if the lock is not in the 'packed' structure, gcc places it
+safely under x86 arch. But seems add this checking in
+CONFIG_DEBUG_LOCK_ALLOC is harmless.
 
-So my current patch is attached - it does depend on the current -git
-tree having moved dentry_cmp() into fs/dcache.c, so it's on top of
-*tonights* -git tree, but this is something I'm pretty happy with, and
-was planning on actually committing early in the 3.4 merge window.
+Inspired-by: Andi Kleen <andi.kleen@intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/include/asm/cache.h |    2 +
+ include/asm-generic/cache.h  |    2 +
+ lib/spinlock_debug.c         |   76 ++++++++++++++++++++++-------------------
+ 3 files changed, 45 insertions(+), 35 deletions(-)
 
-My profiling seems to show that the multiply is pretty much free on
-64-bit at least on the cpu's I have access to - it's not like a
-multiply is free, but I do suspect it gets hidden very well by any OoO
-instruction scheduling.
+diff --git a/arch/x86/include/asm/cache.h b/arch/x86/include/asm/cache.h
+index 48f99f1..63c2316 100644
+--- a/arch/x86/include/asm/cache.h
++++ b/arch/x86/include/asm/cache.h
+@@ -7,6 +7,8 @@
+ #define L1_CACHE_SHIFT	(CONFIG_X86_L1_CACHE_SHIFT)
+ #define L1_CACHE_BYTES	(1 << L1_CACHE_SHIFT)
+ 
++#define L1_CACHE_SIZE_MASK	(~(L1_CACHE_BYTES - 1))
++
+ #define __read_mostly __attribute__((__section__(".data..read_mostly")))
+ 
+ #define INTERNODE_CACHE_SHIFT CONFIG_X86_INTERNODE_CACHE_SHIFT
+diff --git a/include/asm-generic/cache.h b/include/asm-generic/cache.h
+index 1bfcfe5..6f8eb29 100644
+--- a/include/asm-generic/cache.h
++++ b/include/asm-generic/cache.h
+@@ -9,4 +9,6 @@
+ #define L1_CACHE_SHIFT		5
+ #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+ 
++#define L1_CACHE_SIZE_MASK     (~(L1_CACHE_BYTES - 1))
++
+ #endif /* __ASM_GENERIC_CACHE_H */
+diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
+index 5f3eacd..938a145 100644
+--- a/lib/spinlock_debug.c
++++ b/lib/spinlock_debug.c
+@@ -13,41 +13,9 @@
+ #include <linux/delay.h>
+ #include <linux/module.h>
+ 
+-void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+-			  struct lock_class_key *key)
+-{
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	/*
+-	 * Make sure we are not reinitializing a held lock:
+-	 */
+-	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
+-#endif
+-	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+-	lock->magic = SPINLOCK_MAGIC;
+-	lock->owner = SPINLOCK_OWNER_INIT;
+-	lock->owner_cpu = -1;
+-}
+-
+-EXPORT_SYMBOL(__raw_spin_lock_init);
+-
+-void __rwlock_init(rwlock_t *lock, const char *name,
+-		   struct lock_class_key *key)
+-{
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	/*
+-	 * Make sure we are not reinitializing a held lock:
+-	 */
+-	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
+-#endif
+-	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
+-	lock->magic = RWLOCK_MAGIC;
+-	lock->owner = SPINLOCK_OWNER_INIT;
+-	lock->owner_cpu = -1;
+-}
+-
+-EXPORT_SYMBOL(__rwlock_init);
++#define is_cross_lines(p)						\
++	(((unsigned long)(p) & L1_CACHE_SIZE_MASK) !=			\
++	(((unsigned long)(p) + sizeof(*p) - 1) & L1_CACHE_SIZE_MASK))	\
+ 
+ static void spin_dump(raw_spinlock_t *lock, const char *msg)
+ {
+@@ -296,3 +264,41 @@ void do_raw_write_unlock(rwlock_t *lock)
+ 	debug_write_unlock(lock);
+ 	arch_write_unlock(&lock->raw_lock);
+ }
++
++void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
++			  struct lock_class_key *key)
++{
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	/*
++	 * Make sure we are not reinitializing a held lock:
++	 */
++	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
++	lockdep_init_map(&lock->dep_map, name, key, 0);
++	SPIN_BUG_ON(is_cross_lines(&lock->raw_lock), lock,
++			"!!! the lock cross cache lines !!!");
++#endif
++	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
++	lock->magic = SPINLOCK_MAGIC;
++	lock->owner = SPINLOCK_OWNER_INIT;
++	lock->owner_cpu = -1;
++}
++EXPORT_SYMBOL(__raw_spin_lock_init);
++
++void __rwlock_init(rwlock_t *lock, const char *name,
++		   struct lock_class_key *key)
++{
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	/*
++	 * Make sure we are not reinitializing a held lock:
++	 */
++	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
++	lockdep_init_map(&lock->dep_map, name, key, 0);
++	RWLOCK_BUG_ON(is_cross_lines(&lock->raw_lock), lock,
++			"!!! the lock cross cache lines !!!");
++#endif
++	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
++	lock->magic = RWLOCK_MAGIC;
++	lock->owner = SPINLOCK_OWNER_INIT;
++	lock->owner_cpu = -1;
++}
++EXPORT_SYMBOL(__rwlock_init);
+-- 
+1.6.3.3
 
-A bit-count instructions (popcount or bsf or tzcnt is obviously in
-*theory* less work than a 64-bit multiply, but the multiply is
-"portable". Even if it isn't optimal, it shouldn't be horrible on any
-64-bit capable x86 CPU, and it also means (for example) that the code
-might even work on non-x86 chips.
 
-I did only very limited profiling of the 32-bit case, but it's really
-just four cheap ALU instructions there and didn't really show up at
-all in the limited profiles I did. And at least I checked that the
-code worked. I have to say that the advantage of "vectorizing" this
-code is obviously much less if you can only do 4-byte "vectors", so I
-didn't actually time whether the patch *improves* anything on x86-32.
 
-                                     Linus
-
---f46d044283b872684e04ba785756
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gzf2q8zq0
-
-IGFyY2gveDg2L0tjb25maWcgfCAgICAxICsKIGZzL0tjb25maWcgICAgICAgfCAgICA0ICsrCiBm
-cy9kY2FjaGUuYyAgICAgIHwgICAyMyArKysrKysrKysrCiBmcy9uYW1laS5jICAgICAgIHwgIDEy
-OSArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysK
-IDQgZmlsZXMgY2hhbmdlZCwgMTU3IGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9hcmNoL3g4
-Ni9LY29uZmlnIGIvYXJjaC94ODYvS2NvbmZpZwppbmRleCA1YmVkOTRlMTg5ZmEuLjA5Njc1ZDNl
-MGFjMyAxMDA2NDQKLS0tIGEvYXJjaC94ODYvS2NvbmZpZworKysgYi9hcmNoL3g4Ni9LY29uZmln
-CkBAIC04Miw2ICs4Miw3IEBAIGNvbmZpZyBYODYKIAlzZWxlY3QgQ0xLRVZUX0k4MjUzCiAJc2Vs
-ZWN0IEFSQ0hfSEFWRV9OTUlfU0FGRV9DTVBYQ0hHCiAJc2VsZWN0IEdFTkVSSUNfSU9NQVAKKwlz
-ZWxlY3QgRENBQ0hFX1dPUkRfQUNDRVNTIGlmICFERUJVR19QQUdFQUxMT0MKIAogY29uZmlnIElO
-U1RSVUNUSU9OX0RFQ09ERVIKIAlkZWZfYm9vbCAoS1BST0JFUyB8fCBQRVJGX0VWRU5UUykKZGlm
-ZiAtLWdpdCBhL2ZzL0tjb25maWcgYi9mcy9LY29uZmlnCmluZGV4IGQ2MjFmMDJhM2Y5ZS4uYWEx
-OTUyNjUzNjJmIDEwMDY0NAotLS0gYS9mcy9LY29uZmlnCisrKyBiL2ZzL0tjb25maWcKQEAgLTQs
-NiArNCwxMCBAQAogCiBtZW51ICJGaWxlIHN5c3RlbXMiCiAKKyMgVXNlIHVuYWxpZ25lZCB3b3Jk
-IGRjYWNoZSBhY2Nlc3NlcworY29uZmlnIERDQUNIRV9XT1JEX0FDQ0VTUworICAgICAgIGJvb2wK
-KwogaWYgQkxPQ0sKIAogc291cmNlICJmcy9leHQyL0tjb25maWciCmRpZmYgLS1naXQgYS9mcy9k
-Y2FjaGUuYyBiL2ZzL2RjYWNoZS5jCmluZGV4IGJjYmRiMzNmY2MyMC4uZmZkNDdhMTZkODcwIDEw
-MDY0NAotLS0gYS9mcy9kY2FjaGUuYworKysgYi9mcy9kY2FjaGUuYwpAQCAtMTQ0LDYgKzE0NCwy
-OCBAQCBpbnQgcHJvY19ucl9kZW50cnkoY3RsX3RhYmxlICp0YWJsZSwgaW50IHdyaXRlLCB2b2lk
-IF9fdXNlciAqYnVmZmVyLAogc3RhdGljIGlubGluZSBpbnQgZGVudHJ5X2NtcChjb25zdCB1bnNp
-Z25lZCBjaGFyICpjcywgc2l6ZV90IHNjb3VudCwKIAkJCQljb25zdCB1bnNpZ25lZCBjaGFyICpj
-dCwgc2l6ZV90IHRjb3VudCkKIHsKKyNpZmRlZiBDT05GSUdfRENBQ0hFX1dPUkRfQUNDRVNTCisJ
-dW5zaWduZWQgbG9uZyBhLGIsbWFzazsKKworCWlmICh1bmxpa2VseShzY291bnQgIT0gdGNvdW50
-KSkKKwkJcmV0dXJuIDE7CisKKwlmb3IgKDs7KSB7CisJCWEgPSAqKHVuc2lnbmVkIGxvbmcgKilj
-czsKKwkJYiA9ICoodW5zaWduZWQgbG9uZyAqKWN0OworCQlpZiAodGNvdW50IDwgc2l6ZW9mKHVu
-c2lnbmVkIGxvbmcpKQorCQkJYnJlYWs7CisJCWlmICh1bmxpa2VseShhICE9IGIpKQorCQkJcmV0
-dXJuIDE7CisJCWNzICs9IHNpemVvZih1bnNpZ25lZCBsb25nKTsKKwkJY3QgKz0gc2l6ZW9mKHVu
-c2lnbmVkIGxvbmcpOworCQl0Y291bnQgLT0gc2l6ZW9mKHVuc2lnbmVkIGxvbmcpOworCQlpZiAo
-IXRjb3VudCkKKwkJCXJldHVybiAwOworCX0KKwltYXNrID0gfih+MHVsIDw8IHRjb3VudCo4KTsK
-KwlyZXR1cm4gdW5saWtlbHkoISEoKGEgXiBiKSAmIG1hc2spKTsKKyNlbHNlCiAJaWYgKHNjb3Vu
-dCAhPSB0Y291bnQpCiAJCXJldHVybiAxOwogCkBAIC0xNTUsNiArMTc3LDcgQEAgc3RhdGljIGlu
-bGluZSBpbnQgZGVudHJ5X2NtcChjb25zdCB1bnNpZ25lZCBjaGFyICpjcywgc2l6ZV90IHNjb3Vu
-dCwKIAkJdGNvdW50LS07CiAJfSB3aGlsZSAodGNvdW50KTsKIAlyZXR1cm4gMDsKKyNlbmRpZgog
-fQogCiBzdGF0aWMgdm9pZCBfX2RfZnJlZShzdHJ1Y3QgcmN1X2hlYWQgKmhlYWQpCmRpZmYgLS1n
-aXQgYS9mcy9uYW1laS5jIGIvZnMvbmFtZWkuYwppbmRleCBlMmJhNjI4MjBhMGYuLjU1Njc3OGNk
-OGI4NyAxMDA2NDQKLS0tIGEvZnMvbmFtZWkuYworKysgYi9mcy9uYW1laS5jCkBAIC0xMzc0LDYg
-KzEzNzQsMTMzIEBAIHN0YXRpYyBpbmxpbmUgaW50IGNhbl9sb29rdXAoc3RydWN0IGlub2RlICpp
-bm9kZSkKIAlyZXR1cm4gMTsKIH0KIAorLyoKKyAqIFdlIGNhbiBkbyB0aGUgY3JpdGljYWwgZGVu
-dHJ5IG5hbWUgY29tcGFyaXNvbiBhbmQgaGFzaGluZworICogb3BlcmF0aW9ucyBvbmUgd29yZCBh
-dCBhIHRpbWUsIGJ1dCB3ZSBhcmUgbGltaXRlZCB0bzoKKyAqCisgKiAtIEFyY2hpdGVjdHVyZXMg
-d2l0aCBmYXN0IHVuYWxpZ25lZCB3b3JkIGFjY2Vzc2VzLiBXZSBjb3VsZAorICogICBkbyBhICJn
-ZXRfdW5hbGlnbmVkKCkiIGlmIHRoaXMgaGVscHMgYW5kIGlzIHN1ZmZpY2llbnRseQorICogICBm
-YXN0LgorICoKKyAqIC0gTGl0dGxlLWVuZGlhbiBtYWNoaW5lcyAoc28gdGhhdCB3ZSBjYW4gZ2Vu
-ZXJhdGUgdGhlIG1hc2sKKyAqICAgb2YgbG93IGJ5dGVzIGVmZmljaWVudGx5KS4gQWdhaW4sIHdl
-ICpjb3VsZCogZG8gYSBieXRlCisgKiAgIHN3YXBwaW5nIGxvYWQgb24gYmlnLWVuZGlhbiBhcmNo
-aXRlY3R1cmVzIGlmIHRoYXQgaXMgbm90CisgKiAgIGV4cGVuc2l2ZSBlbm91Z2ggdG8gbWFrZSB0
-aGUgb3B0aW1pemF0aW9uIHdvcnRobGVzcy4KKyAqCisgKiAtIG5vbi1DT05GSUdfREVCVUdfUEFH
-RUFMTE9DIGNvbmZpZ3VyYXRpb25zIChzbyB0aGF0IHdlCisgKiAgIGRvIG5vdCB0cmFwIG9uIHRo
-ZSAoZXh0cmVtZWx5IHVubGlrZWx5KSBjYXNlIG9mIGEgcGFnZQorICogICBjcm9zc2luZyBvcGVy
-YXRpb24uCisgKgorICogLSBGdXJ0aGVybW9yZSwgd2UgbmVlZCBhbiBlZmZpY2llbnQgNjQtYml0
-IGNvbXBpbGUgZm9yIHRoZQorICogICA2NC1iaXQgY2FzZSBpbiBvcmRlciB0byBnZW5lcmF0ZSB0
-aGUgIm51bWJlciBvZiBieXRlcyBpbgorICogICB0aGUgZmluYWwgbWFzayIuIEFnYWluLCB0aGF0
-IGNvdWxkIGJlIHJlcGxhY2VkIHdpdGggYQorICogICBlZmZpY2llbnQgcG9wdWxhdGlvbiBjb3Vu
-dCBpbnN0cnVjdGlvbiBvciBzaW1pbGFyLgorICovCisjaWZkZWYgQ09ORklHX0RDQUNIRV9XT1JE
-X0FDQ0VTUworCisjaWZkZWYgQ09ORklHXzY0QklUCisKKy8qCisgKiBKYW4gQWNocmVuaXVzIG9u
-IEcrOiBtaWNyb29wdGltaXplZCB2ZXJzaW9uIG9mCisgKiB0aGUgc2ltcGxlciAiKG1hc2sgJiBP
-TkVCWVRFUykgKiBPTkVCWVRFUyA+PiA1NiIKKyAqIHRoYXQgd29ya3MgZm9yIHRoZSBieXRlbWFz
-a3Mgd2l0aG91dCBoYXZpbmcgdG8KKyAqIG1hc2sgdGhlbSBmaXJzdC4KKyAqLworc3RhdGljIGlu
-bGluZSBsb25nIGNvdW50X21hc2tlZF9ieXRlcyh1bnNpZ25lZCBsb25nIG1hc2spCit7CisJcmV0
-dXJuIG1hc2sqMHgwMDAxMDIwMzA0MDUwNjA4ID4+IDU2OworfQorCitzdGF0aWMgaW5saW5lIHVu
-c2lnbmVkIGludCBmb2xkX2hhc2godW5zaWduZWQgbG9uZyBoYXNoKQoreworCWhhc2ggKz0gaGFz
-aCA+PiAoOCpzaXplb2YoaW50KSk7CisJcmV0dXJuIGhhc2g7Cit9CisKKyNlbHNlCS8qIDMyLWJp
-dCBjYXNlICovCisKKy8qIE1vZGlmaWVkIENhcmwgQ2hhdGZpZWxkIEcrIHZlcnNpb24gZm9yIDMy
-LWJpdCAqLworc3RhdGljIGlubGluZSBsb25nIGNvdW50X21hc2tlZF9ieXRlcyhsb25nIG1hc2sp
-Cit7CisJLyoKKwkgKiAoYSkgZ2l2ZXMgdXMKKwkgKiAgIC0xICgwLCBmZiksIDAgKGZmZmYpIG9y
-IDEgKGZmZmZmZikKKwkgKiAoYikgZ2l2ZXMgdXMKKwkgKiAgIDAgZm9yIDAsIDEgZm9yIChmZiBm
-ZmZmIGZmZmZmZikKKwkgKiAoYStiKzEpIGdpdmVzIHVzCisJICogICBjb3JyZWN0IDAtMyBieXRl
-bWFzayBjb3VudCByZXN1bHQKKwkgKi8KKwlsb25nIGEgPSAobWFzay0yNTYpID4+IDIzOworCWxv
-bmcgYiA9IG1hc2sgJiAxOworCXJldHVybiBhICsgYiArIDE7Cit9CisKKyNkZWZpbmUgZm9sZF9o
-YXNoKHgpICh4KQorCisjZW5kaWYKKwordW5zaWduZWQgaW50IGZ1bGxfbmFtZV9oYXNoKGNvbnN0
-IHVuc2lnbmVkIGNoYXIgKm5hbWUsIHVuc2lnbmVkIGludCBsZW4pCit7CisJdW5zaWduZWQgbG9u
-ZyBhLCBtYXNrOworCXVuc2lnbmVkIGxvbmcgaGFzaCA9IDA7CisKKwlmb3IgKDs7KSB7CisJCWEg
-PSAqKHVuc2lnbmVkIGxvbmcgKiluYW1lOworCQloYXNoICo9IDk7CisJCWlmIChsZW4gPCBzaXpl
-b2YodW5zaWduZWQgbG9uZykpCisJCQlicmVhazsKKwkJaGFzaCArPSBhOworCQluYW1lICs9IHNp
-emVvZih1bnNpZ25lZCBsb25nKTsKKwkJbGVuIC09IHNpemVvZih1bnNpZ25lZCBsb25nKTsKKwkJ
-aWYgKCFsZW4pCisJCQlnb3RvIGRvbmU7CisJfQorCW1hc2sgPSB+KH4wdWwgPDwgbGVuKjgpOwor
-CWhhc2ggKz0gbWFzayAmIGE7Citkb25lOgorCXJldHVybiBmb2xkX2hhc2goaGFzaCk7Cit9CitF
-WFBPUlRfU1lNQk9MKGZ1bGxfbmFtZV9oYXNoKTsKKworI2RlZmluZSBPTkVCWVRFUwkweDAxMDEw
-MTAxMDEwMTAxMDF1bAorI2RlZmluZSBTTEFTSEJZVEVTCTB4MmYyZjJmMmYyZjJmMmYyZnVsCisj
-ZGVmaW5lIEhJR0hCSVRTCTB4ODA4MDgwODA4MDgwODA4MHVsCisKKy8qIFJldHVybiB0aGUgaGln
-aCBiaXQgc2V0IGluIHRoZSBmaXJzdCBieXRlIHRoYXQgaXMgYSB6ZXJvICovCitzdGF0aWMgaW5s
-aW5lIHVuc2lnbmVkIGxvbmcgaGFzX3plcm8odW5zaWduZWQgbG9uZyBhKQoreworCXJldHVybiAo
-KGEgLSBPTkVCWVRFUykgJiB+YSkgJiBISUdIQklUUzsKK30KKworLyoKKyAqIENhbGN1bGF0ZSB0
-aGUgbGVuZ3RoIGFuZCBoYXNoIG9mIHRoZSBwYXRoIGNvbXBvbmVudCwgYW5kCisgKiByZXR1cm4g
-dGhlIGxlbmd0aCBvZiB0aGUgY29tcG9uZW50OworICovCitzdGF0aWMgaW5saW5lIHVuc2lnbmVk
-IGxvbmcgaGFzaF9uYW1lKGNvbnN0IGNoYXIgKm5hbWUsIHVuc2lnbmVkIGludCAqaGFzaHApCit7
-CisJdW5zaWduZWQgbG9uZyBhLCBtYXNrLCBoYXNoLCBsZW47CisKKwloYXNoID0gYSA9IDA7CisJ
-bGVuID0gLXNpemVvZih1bnNpZ25lZCBsb25nKTsKKwlkbyB7CisJCWhhc2ggPSAoaGFzaCArIGEp
-ICogOTsKKwkJbGVuICs9IHNpemVvZih1bnNpZ25lZCBsb25nKTsKKwkJYSA9ICoodW5zaWduZWQg
-bG9uZyAqKShuYW1lK2xlbik7CisJCS8qIERvIHdlIGhhdmUgYW55IE5VTCBvciAnLycgYnl0ZXMg
-aW4gdGhpcyB3b3JkPyAqLworCQltYXNrID0gaGFzX3plcm8oYSkgfCBoYXNfemVybyhhIF4gU0xB
-U0hCWVRFUyk7CisJfSB3aGlsZSAoIW1hc2spOworCisJLyogVGhlIG1hc2sgKmJlbG93KiB0aGUg
-Zmlyc3QgaGlnaCBiaXQgc2V0ICovCisJbWFzayA9IChtYXNrIC0gMSkgJiB+bWFzazsKKwltYXNr
-ID4+PSA3OworCWhhc2ggKz0gYSAmIG1hc2s7CisJKmhhc2hwID0gZm9sZF9oYXNoKGhhc2gpOwor
-CisJcmV0dXJuIGxlbiArIGNvdW50X21hc2tlZF9ieXRlcyhtYXNrKTsKK30KKworI2Vsc2UKKwog
-dW5zaWduZWQgaW50IGZ1bGxfbmFtZV9oYXNoKGNvbnN0IHVuc2lnbmVkIGNoYXIgKm5hbWUsIHVu
-c2lnbmVkIGludCBsZW4pCiB7CiAJdW5zaWduZWQgbG9uZyBoYXNoID0gaW5pdF9uYW1lX2hhc2go
-KTsKQEAgLTE0MDIsNiArMTUyOSw4IEBAIHN0YXRpYyBpbmxpbmUgdW5zaWduZWQgbG9uZyBoYXNo
-X25hbWUoY29uc3QgY2hhciAqbmFtZSwgdW5zaWduZWQgaW50ICpoYXNocCkKIAlyZXR1cm4gbGVu
-OwogfQogCisjZW5kaWYKKwogLyoKICAqIE5hbWUgcmVzb2x1dGlvbi4KICAqIFRoaXMgaXMgdGhl
-IGJhc2ljIG5hbWUgcmVzb2x1dGlvbiBmdW5jdGlvbiwgdHVybmluZyBhIHBhdGhuYW1lIGludG8K
---f46d044283b872684e04ba785756--
