@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab2CEQDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:03:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60082 "EHLO mx2.suse.de"
+	id S1755290Ab2CEQD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:03:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60079 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab2CEQBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755042Ab2CEQBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 11:01:39 -0500
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
         sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: [PATCH 03/19] fat: Push mnt_want_write() outside of i_mutex
-Date: Mon,  5 Mar 2012 17:01:01 +0100
-Message-Id: <1330963277-26336-4-git-send-email-jack@suse.cz>
+        Jan Kara <jack@suse.cz>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH 12/19] ocfs2: Convert to new freezing mechanism
+Date: Mon,  5 Mar 2012 17:01:10 +0100
+Message-Id: <1330963277-26336-13-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
 References: <1330963277-26336-1-git-send-email-jack@suse.cz>
@@ -22,77 +23,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When mnt_want_write() starts to handle freezing it will get a full lock
-semantics requiring proper lock ordering. So push mnt_want_write() call
-outside of i_mutex as in other places.
+Protect ocfs2_page_mkwrite() and ocfs2_file_aio_write() using the new
+freeze protection. We also protect several ioctl entry points which
+were missing the protection.
 
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+CC: Mark Fasheh <mfasheh@suse.com>
+CC: Joel Becker <jlbec@evilplan.org>
+CC: ocfs2-devel@oss.oracle.com
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/fat/file.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+ fs/ocfs2/file.c  |   11 +++++++++--
+ fs/ocfs2/ioctl.c |   14 ++++++++++++--
+ fs/ocfs2/mmap.c  |    2 ++
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index a71fe37..e007b8b 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -43,10 +43,10 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	if (err)
- 		goto out;
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 061591a..9b1e3d4 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -1971,6 +1971,7 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
+ {
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
++	int ret;
  
--	mutex_lock(&inode->i_mutex);
- 	err = mnt_want_write_file(file);
- 	if (err)
--		goto out_unlock_inode;
-+		goto out;
-+	mutex_lock(&inode->i_mutex);
+ 	if ((cmd == OCFS2_IOC_RESVSP || cmd == OCFS2_IOC_RESVSP64) &&
+ 	    !ocfs2_writes_unwritten_extents(osb))
+@@ -1985,7 +1986,12 @@ int ocfs2_change_file_space(struct file *file, unsigned int cmd,
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
  
- 	/*
- 	 * ATTR_VOLUME and ATTR_DIR cannot be changed; this also
-@@ -73,14 +73,14 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	/* The root directory has no attributes */
- 	if (inode->i_ino == MSDOS_ROOT_INO && attr != ATTR_DIR) {
- 		err = -EINVAL;
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 	}
- 
- 	if (sbi->options.sys_immutable &&
- 	    ((attr | oldattr) & ATTR_SYS) &&
- 	    !capable(CAP_LINUX_IMMUTABLE)) {
- 		err = -EPERM;
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 	}
- 
- 	/*
-@@ -90,12 +90,12 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 	 */
- 	err = security_inode_setattr(file->f_path.dentry, &ia);
- 	if (err)
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 
- 	/* This MUST be done before doing anything irreversible... */
- 	err = fat_setattr(file->f_path.dentry, &ia);
- 	if (err)
--		goto out_drop_write;
-+		goto out_unlock_inode;
- 
- 	fsnotify_change(file->f_path.dentry, ia.ia_valid);
- 	if (sbi->options.sys_immutable) {
-@@ -107,10 +107,9 @@ static int fat_ioctl_set_attributes(struct file *file, u32 __user *user_attr)
- 
- 	fat_save_attrs(inode, attr);
- 	mark_inode_dirty(inode);
--out_drop_write:
--	mnt_drop_write_file(file);
- out_unlock_inode:
- 	mutex_unlock(&inode->i_mutex);
+-	return __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
++	ret = mnt_want_write_file(file);
++	if (ret)
++		return ret;
++	ret = __ocfs2_change_file_space(file, inode, file->f_pos, cmd, sr, 0);
 +	mnt_drop_write_file(file);
- out:
- 	return err;
++	return ret;
  }
+ 
+ static long ocfs2_fallocate(struct file *file, int mode, loff_t offset,
+@@ -2261,7 +2267,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+ 
+-	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
++	sb_start_write(inode->i_sb);
+ 
+ 	appending = file->f_flags & O_APPEND ? 1 : 0;
+ 	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
+@@ -2434,6 +2440,7 @@ out_sems:
+ 		ocfs2_iocb_clear_sem_locked(iocb);
+ 
+ 	mutex_unlock(&inode->i_mutex);
++	sb_end_write(inode->i_sb);
+ 
+ 	if (written)
+ 		ret = written;
+diff --git a/fs/ocfs2/ioctl.c b/fs/ocfs2/ioctl.c
+index a6fda3c..59de312 100644
+--- a/fs/ocfs2/ioctl.c
++++ b/fs/ocfs2/ioctl.c
+@@ -928,7 +928,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		if (get_user(new_clusters, (int __user *)arg))
+ 			return -EFAULT;
+ 
+-		return ocfs2_group_extend(inode, new_clusters);
++		status = mnt_want_write_file(filp);
++		if (status)
++			return status;
++		status = ocfs2_group_extend(inode, new_clusters);
++		mnt_drop_write_file(filp);
++		return status;
+ 	case OCFS2_IOC_GROUP_ADD:
+ 	case OCFS2_IOC_GROUP_ADD64:
+ 		if (!capable(CAP_SYS_RESOURCE))
+@@ -937,7 +942,12 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
+ 			return -EFAULT;
+ 
+-		return ocfs2_group_add(inode, &input);
++		status = mnt_want_write_file(filp);
++		if (status)
++			return status;
++		status = ocfs2_group_add(inode, &input);
++		mnt_drop_write_file(filp);
++		return status;
+ 	case OCFS2_IOC_REFLINK:
+ 		if (copy_from_user(&args, (struct reflink_arguments *)arg,
+ 				   sizeof(args)))
+diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
+index 9cd4108..d150372 100644
+--- a/fs/ocfs2/mmap.c
++++ b/fs/ocfs2/mmap.c
+@@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	sigset_t oldset;
+ 	int ret;
+ 
++	sb_start_pagefault(inode->i_sb);
+ 	ocfs2_block_signals(&oldset);
+ 
+ 	/*
+@@ -165,6 +166,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 
+ out:
+ 	ocfs2_unblock_signals(&oldset);
++	sb_end_pagefault(inode->i_sb);
+ 	return ret;
+ }
+ 
 -- 
 1.7.1
 
