@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab2CEQma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:42:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab2CEQm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:42:28 -0500
-Date: Mon, 5 Mar 2012 13:39:43 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4 V13] Avoid soft lockup message when KVM is stopped by
- host
-Message-ID: <20120305163943.GA10338@amt.cnet>
-References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
- <20120214152931.GA6881@mgebm.net>
- <20120214153836.GA21106@amt.cnet>
- <20120214155013.GB6881@mgebm.net>
- <20120214161009.GA21515@amt.cnet>
- <20120214211720.GC6881@mgebm.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214211720.GC6881@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755781Ab2CEQnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:43:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5369 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab2CEQnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:43:23 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=U9mXrcM7HOUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=drOt6m5kAAAA:8 a=0Mb-8gqCNcyzWS0PyrMA:9 a=PUjeQqilurYA:10 a=iLO_WyKNCWtz44fe:21 a=DtX7BJpD3j5P-ivT:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1330965801.25686.328.camel@gandalf.stny.rr.com>
+Subject: Re: Missing stable commits?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Mar 2012 11:43:21 -0500
+In-Reply-To: <1330965566.25686.327.camel@gandalf.stny.rr.com>
+References: <1330965566.25686.327.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 04:17:20PM -0500, Eric B Munson wrote:
-> On Tue, 14 Feb 2012, Marcelo Tosatti wrote:
-> 
-> > On Tue, Feb 14, 2012 at 10:50:13AM -0500, Eric B Munson wrote:
-> > > On Tue, 14 Feb 2012, Marcelo Tosatti wrote:
-> > > 
-> > > > On Tue, Feb 14, 2012 at 10:29:31AM -0500, Eric B Munson wrote:
-> > > > > On Wed, 08 Feb 2012, Eric B Munson wrote:
-> > > > > 
-> > > > > > 
-> > > > > > When a guest kernel is stopped by the host hypervisor it can look like a soft
-> > > > > > lockup to the guest kernel.  This false warning can mask later soft lockup
-> > > > > > warnings which may be real.  This patch series adds a method for a host
-> > > > > > hypervisor to communicate to a guest kernel that it is being stopped.  The
-> > > > > > final patch in the series has the watchdog check this flag when it goes to
-> > > > > > issue a soft lockup warning and skip the warning if the guest knows it was
-> > > > > > stopped.
-> > > > > > 
-> > > > > > It was attempted to solve this in Qemu, but the side effects of saving and
-> > > > > > restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-> > > > > > by the amount of time of the pause.  This forces a guest to have ntp running
-> > > > > > in order to keep the wall clock accurate.
-> > > > > 
-> > > > > Avi,
-> > > > > 
-> > > > > Is this set fit for merging or is there something else you want changed?
-> > > > 
-> > > > Eric,
-> > > > 
-> > > > On Message-ID: <20120210160536.GA23363@amt.cnet>, i asked:
-> > > > 
-> > > > How is the stub getting included for other architectures again?
-> > > > 
-> > > 
-> > > Marcelo,
-> > > 
-> > > Sorry, I put out V13 to answer that.  There is a stub in asm-generic that was
-> > > lost in the V11-V12 rebase.  This stub has be included in the V13 set.
-> > > 
-> > > Eric
-> > 
-> > Eric, 
-> > 
-> > I know the stub has been included in the series. But i am asking how 
-> > it is #include'ed for other architectures? (can't see that).
-> 
-> Marcelo,
-> 
-> kernel/watchdog.c now includes linux/kvm_para.h which includes asm/kvm_para.h.
-> The check_and_clear function is defined in arch include/asm/kvm_para.h or in
-> asm-generic/kvm_para.h for any arch lacking the specific header in their asm
-> include dir.  If I have misunderstood how these headers work, please let me
-> know and I will fix it.
+Please ignore this. Seems it is in stable, but not in the branch I was
+looking at.
 
-There is no automatic inclusion of asm-generic/ headers. You must create
-kvm_para.h in each architecture's include/asm/ directory, #including
-asm-generic/kvm_para.h.
+Sorry for the noise :-p
+
+-- Steve
+
+
+On Mon, 2012-03-05 at 11:39 -0500, Steven Rostedt wrote:
+> As I'm going through adding commits from Thomas's latest -rt patch set
+> into the stable-rt tree, some of the patches conflicted. Looking at the
+> conflicts, it seems that mainline has patches that should probably be
+> added to the stable tree. Here's what I found so far:
+> 
+> commit 1b71fe2efa31cd18c865db474a4cd473b6ab5281
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Sat Jul 16 23:43:58 2011 -0400
+> 
+>     ceph analog of cifs build_path_from_dentry() race fix
+>     
+>     ... unfortunately, cifs bug got copied.  Fix is essentially the same.
+>     
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> commit dc137bf553dbb6855bd7efc34fedcd03102455f7
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Sat Jul 16 23:37:20 2011 -0400
+> 
+>     cifs: build_path_from_dentry() race fix
+>     
+>     deal with d_move() races properly; rename_lock read-retry loop,
+>     rcu_read_lock() held while walking to root, d_lock held over
+>     subtraction from namelen and copying the component to stabilize
+>     ->d_name.
+>     
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> 
+> These seem appropriate for stable, don't they?
+> 
+> -- Steve
+> 
+
 
