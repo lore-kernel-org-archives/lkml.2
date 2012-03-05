@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab2CEWMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:12:08 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42353 "EHLO
+	id S1756233Ab2CEWMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:12:47 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64740 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754711Ab2CEWMF convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1754385Ab2CEWMq convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:12:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of grundler@google.com designates 10.182.37.99 as permitted sender) smtp.mail=grundler@google.com; dkim=pass header.i=grundler@google.com
+	Mon, 5 Mar 2012 17:12:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of grundler@google.com designates 10.182.136.41 as permitted sender) smtp.mail=grundler@google.com; dkim=pass header.i=grundler@google.com
 MIME-Version: 1.0
-In-Reply-To: <CAEYUcX0ofOgv+G2aUaqcpEZhJU7UmBpxTZ0ye1FkcWdkHLR0MA@mail.gmail.com>
+In-Reply-To: <CANLzEkvKkgRNLCxiAYp+5+PVABrqtQA18MqKYiUEgqA5CG-OhA@mail.gmail.com>
 References: <1330967759-18660-1-git-send-email-grundler@chromium.org>
-	<CAEYUcX0ofOgv+G2aUaqcpEZhJU7UmBpxTZ0ye1FkcWdkHLR0MA@mail.gmail.com>
-Date: Mon, 5 Mar 2012 14:12:04 -0800
-X-Google-Sender-Auth: xCRvAD4Z4xkDR0jaciFIIBWoFRo
-Message-ID: <CANEJEGs-BG4Dv6m0f0r+bue=hg+JWJSw4fxQKFYivkxf6qOA2Q@mail.gmail.com>
+	<CANLzEkvKkgRNLCxiAYp+5+PVABrqtQA18MqKYiUEgqA5CG-OhA@mail.gmail.com>
+Date: Mon, 5 Mar 2012 14:12:45 -0800
+X-Google-Sender-Auth: AfXEAmDVduCzyZe5-0FwIDpWe80
+Message-ID: <CANEJEGvNYFc39+Kf4+r2ksJDX6yznVD5abVs06TGgj1Rc9RZ7A@mail.gmail.com>
 Subject: Re: [PATCH] staging:iio:tsl2563 rewrite probe error handling
 From: Grant Grundler <grundler@chromium.org>
-To: Bryan Freed <bfreed@chromium.org>
+To: Benson Leung <bleung@chromium.org>
 Cc: Jonathan Cameron <jic23@cam.ac.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benson Leung <bleung@chromium.org>, linux-iio@vger.kernel.org,
+        Bryan Freed <bfreed@chromium.org>, linux-iio@vger.kernel.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
@@ -29,36 +29,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 1:53 PM, Bryan Freed <bfreed@chromium.org> wrote:
-> Looks good to me, too,
+On Mon, Mar 5, 2012 at 1:27 PM, Benson Leung <bleung@chromium.org> wrote:
+> Looks good to me.
 
-Thanks for reviewing!
-
-> but couldn't we get rid of one fail state (fail3) by
-> reversing the order of schedule_delayed_work() and iio_device_register()?
-
-My focus on this patch was to get a driver to load/unload properly and
-avoid restructuring bits that can be deferred to later patches.
-
-I had the same thought and considered this. The problem is I don't
-understand or have time to investigate the locking that is hinted at
-in the comment preceding the call to schedule_delayed_work(). I don't
-understand what locking they are referring to since interrupts are in
-fact enabled by the time the delayed work function is invoked.
-
-I have to wonder if the comment is left over from when the function
-was directly called instead of "delayed work".  ie race condition
-exists regardless of when we call schedule_delayed_work().
-
-> Reviewed-by: Bryan Freed <bfreed@chromium.org>
-
-Thanks! :)
+Thanks Benson!
 
 cheers,
 grant
 
 >
-> bryan.
+> Reviewed-by: Benson Leung <bleung@chromium.org>
 >
 > On Mon, Mar 5, 2012 at 9:15 AM, Grant Grundler <grundler@chromium.org>
 > wrote:
@@ -201,4 +181,11 @@ grant
 >> --
 >> 1.7.3.4
 >>
+>
+>
+>
+> --
+> Benson Leung
+> Software Engineer, Chrom* OS
+> bleung@chromium.org
 >
