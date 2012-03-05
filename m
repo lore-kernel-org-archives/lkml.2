@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab2CERCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:02:23 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:53464 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750963Ab2CERCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:02:22 -0500
-Message-ID: <1330966942.3140.8.camel@joe2Laptop>
-Subject: Re: [PATCH] vsprintf: make %pV handling compatible with kasprintf()
-From: Joe Perches <joe@perches.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: akpm@linux-foundation.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 05 Mar 2012 09:02:22 -0800
-In-Reply-To: <4F54FCA402000078000766F1@nat28.tlf.novell.com>
-References: <4F54FCA402000078000766F1@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755985Ab2CERFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:05:32 -0500
+Received: from ftp.meprolight.com ([194.90.149.17]:33790 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753321Ab2CERFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 12:05:31 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 12:05:30 EST
+From: Alex Gershgorin <alexg@meprolight.com>
+To: "kernel@pengutronix.de" <kernel@pengutronix.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 5 Mar 2012 18:57:45 +0200
+Subject: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
+Thread-Topic: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
+Thread-Index: AQHM+vEWLRSy/N9DuUqi3XUlfse/FQ==
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904@MEP-EXCH.meprolight.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 16:49 +0000, Jan Beulich wrote:
-> kasprintf() (and potentially other functions that I didn't run across
-> so far) want to evaluate argument lists twice. Caring to do so for the
-> primary list is obviously their job, but they can't reasonably be
-> expected to check the format string for instances of %pV, which however
-> need special handling too: On architectures like x86-64 (as opposed to
-> e.g. ix86), using the same argument list twice doesn't produce the
-> expected results, as an internally managed cursor gets updated during
-> the first run.
-> 
-> Fix the problem by always acting on a copy of the original list when
-> handling %pV.
-
-Wouldn't stable need this too?
+--_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
 
+--_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_
+Content-Type: text/x-patch;
+	name="0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch"
+Content-Description: 0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch
+Content-Disposition: attachment;
+	filename="0001-i.MX35-PDK-Chunghwa-CLAA070VC01-7-WVGA-TFT-Display-s.patch";
+	size=2935; creation-date="Mon, 05 Mar 2012 18:57:58 GMT";
+	modification-date="Mon, 05 Mar 2012 18:57:58 GMT"
+Content-Transfer-Encoding: base64
+
+RnJvbSA2MzEyNGQ4YjRiYmNmZWE4NzdmMGVkNzM2MjM4YzUzZjk0MGYzMjVmIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IDxhbGV4Z0BtZXByb2xpZ2h0LmNvbT4KRGF0ZTogTW9u
+LCA1IE1hciAyMDEyIDE0OjE5OjA4ICswMjAwClN1YmplY3Q6IFtQQVRDSF0gaS5NWDM1IFBESzog
+Q2h1bmdod2EgQ0xBQTA3MFZDMDEgNyIgV1ZHQSBURlQgRGlzcGxheSBzdXBwb3J0CgpUaGlzIHBh
+dGNoIGFkZCBzdXBwb3J0IGZvciBkaXNwbGF5IHRoYXQgc2hpcHBlZCB3aXRoIHRoZSBpLk1YMzUg
+UERLLgoKU2lnbmVkLW9mZi1ieTogQWxleCBHZXJzaGdvcmluIDxhbGV4Z0BtZXByb2xpZ2h0LmNv
+bT4KLS0tCiBhcmNoL2FybS9tYWNoLWlteC9tYWNoLW14MzVfM2RzLmMgfCAgIDU3ICsrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysKIDEgZmlsZXMgY2hhbmdlZCwgNTcgaW5zZXJ0
+aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL2FybS9tYWNoLWlteC9t
+YWNoLW14MzVfM2RzLmMgYi9hcmNoL2FybS9tYWNoLWlteC9tYWNoLW14MzVfM2RzLmMKaW5kZXgg
+MGFmNmM5Yy4uYTQ3N2U0NiAxMDA2NDQKLS0tIGEvYXJjaC9hcm0vbWFjaC1pbXgvbWFjaC1teDM1
+XzNkcy5jCisrKyBiL2FyY2gvYXJtL21hY2gtaW14L21hY2gtbXgzNV8zZHMuYwpAQCAtMTIwLDYg
+KzEyMCw2MSBAQCBzdGF0aWMgaW9tdXhfdjNfY2ZnX3QgbXgzNXBka19wYWRzW10gPSB7CiAJLyog
+STJDMSAqLwogCU1YMzVfUEFEX0kyQzFfQ0xLX19JMkMxX1NDTCwKIAlNWDM1X1BBRF9JMkMxX0RB
+VF9fSTJDMV9TREEsCisJLyogRElTUExBWSAqLworCU1YMzVfUEFEX0xEMF9fSVBVX0RJU1BCX0RB
+VF8wLAorCU1YMzVfUEFEX0xEMV9fSVBVX0RJU1BCX0RBVF8xLAorCU1YMzVfUEFEX0xEMl9fSVBV
+X0RJU1BCX0RBVF8yLAorCU1YMzVfUEFEX0xEM19fSVBVX0RJU1BCX0RBVF8zLAorCU1YMzVfUEFE
+X0xENF9fSVBVX0RJU1BCX0RBVF80LAorCU1YMzVfUEFEX0xENV9fSVBVX0RJU1BCX0RBVF81LAor
+CU1YMzVfUEFEX0xENl9fSVBVX0RJU1BCX0RBVF82LAorCU1YMzVfUEFEX0xEN19fSVBVX0RJU1BC
+X0RBVF83LAorCU1YMzVfUEFEX0xEOF9fSVBVX0RJU1BCX0RBVF84LAorCU1YMzVfUEFEX0xEOV9f
+SVBVX0RJU1BCX0RBVF85LAorCU1YMzVfUEFEX0xEMTBfX0lQVV9ESVNQQl9EQVRfMTAsCisJTVgz
+NV9QQURfTEQxMV9fSVBVX0RJU1BCX0RBVF8xMSwKKwlNWDM1X1BBRF9MRDEyX19JUFVfRElTUEJf
+REFUXzEyLAorCU1YMzVfUEFEX0xEMTNfX0lQVV9ESVNQQl9EQVRfMTMsCisJTVgzNV9QQURfTEQx
+NF9fSVBVX0RJU1BCX0RBVF8xNCwKKwlNWDM1X1BBRF9MRDE1X19JUFVfRElTUEJfREFUXzE1LAor
+CU1YMzVfUEFEX0xEMTZfX0lQVV9ESVNQQl9EQVRfMTYsCisJTVgzNV9QQURfTEQxN19fSVBVX0RJ
+U1BCX0RBVF8xNywKKwlNWDM1X1BBRF9EM19WU1lOQ19fSVBVX0RJU1BCX0QzX1ZTWU5DLAorCU1Y
+MzVfUEFEX0QzX0hTWU5DX19JUFVfRElTUEJfRDNfSFNZTkMsCisJTVgzNV9QQURfRDNfRlBTSElG
+VF9fSVBVX0RJU1BCX0QzX0NMSywKKwlNWDM1X1BBRF9DT05UUkFTVF9fSVBVX0RJU1BCX0NPTlRS
+LAorCU1YMzVfUEFEX0QzX1JFVl9fSVBVX0RJU1BCX0QzX1JFViwKKwlNWDM1X1BBRF9EM19DTFNf
+X0lQVV9ESVNQQl9EM19DTFMsCit9OworCitzdGF0aWMgY29uc3Qgc3RydWN0IGZiX3ZpZGVvbW9k
+ZSBmYl9tb2RlZGJbXSA9IHsKKwl7CisJCS8qIDgwMHg0ODAgQCA2MCBIeiAqLworCQkubmFtZQkJ
+PSAiQ1RQLUNMQUEwNzBMQzBBQ1ciLAorCQkucmVmcmVzaAk9IDYwLAorCQkueHJlcwkJPSA4MDAs
+CisJCS55cmVzCQk9IDQ4MCwKKwkJLnBpeGNsb2NrCT0gS0haMlBJQ09TKDI3MDAwKSwKKwkJLmxl
+ZnRfbWFyZ2luCT0gNTAsCisJCS5yaWdodF9tYXJnaW4JPSA1MCwJLyogd2hvbGUgbGluZSBzaG91
+bGQgaGF2ZSA5MDAgY2xvY2tzICovCisJCS51cHBlcl9tYXJnaW4JPSAxMCwKKwkJLmxvd2VyX21h
+cmdpbgk9IDEwLAkvKiB3aG9sZSBmcmFtZSBzaG91bGQgaGF2ZSA1MDAgbGluZXMgKi8KKwkJLmhz
+eW5jX2xlbgk9IDEsCS8qIG5vdGU6IERFIG9ubHkgZGlzcGxheSAqLworCQkudnN5bmNfbGVuCT0g
+MSwJLyogbm90ZTogREUgb25seSBkaXNwbGF5ICovCisJCS5zeW5jCQk9IEZCX1NZTkNfQ0xLX0lE
+TEVfRU4gfCBGQl9TWU5DX09FX0FDVF9ISUdILAorCQkudm1vZGUJCT0gRkJfVk1PREVfTk9OSU5U
+RVJMQUNFRCwKKwkJLmZsYWcJCT0gMCwKKwl9LAorfTsKKworc3RhdGljIGNvbnN0IHN0cnVjdCBp
+cHVfcGxhdGZvcm1fZGF0YSBteDM1XzNkc19pcHVfZGF0YSBfX2luaXRjb25zdCA9IHsKKwkuaXJx
+X2Jhc2UgPSBNWENfSVBVX0lSUV9TVEFSVCwKK307CisKK3N0YXRpYyBzdHJ1Y3QgbXgzZmJfcGxh
+dGZvcm1fZGF0YSBteDNmYl9wZGF0YSBfX2luaXRkYXRhID0geworCS5uYW1lCQk9ICJDVFAtQ0xB
+QTA3MExDMEFDVyIsCisJLm1vZGUJCT0gZmJfbW9kZWRiLAorCS5udW1fbW9kZXMJPSBBUlJBWV9T
+SVpFKGZiX21vZGVkYiksCiB9OwogCiBzdGF0aWMgaW50IG14MzVfM2RzX290Z19pbml0KHN0cnVj
+dCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCkBAIC0yMDQsNiArMjU5LDggQEAgc3RhdGljIHZvaWQg
+X19pbml0IG14MzVfM2RzX2luaXQodm9pZCkKIAkJcHJfd2FybigiSW5pdCBvZiB0aGUgZGVidWdi
+b2FyZCBmYWlsZWQsIGFsbCAiCiAJCQkJImRldmljZXMgb24gdGhlIGRlYnVnYm9hcmQgYXJlIHVu
+dXNhYmxlLlxuIik7CiAJaW14MzVfYWRkX2lteF9pMmMwKCZteDM1XzNkc19pMmMwX2RhdGEpOwor
+CWlteDM1X2FkZF9pcHVfY29yZSgmbXgzNV8zZHNfaXB1X2RhdGEpOworCWlteDM1X2FkZF9teDNf
+c2RjX2ZiKCZteDNmYl9wZGF0YSk7CiB9CiAKIHN0YXRpYyB2b2lkIF9faW5pdCBteDM1cGRrX3Rp
+bWVyX2luaXQodm9pZCkKLS0gCjEuNy4wLjQKCg==
+
+--_002_4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8904MEPEXCHmeprol_--
