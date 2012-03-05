@@ -1,135 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab2CELct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 06:32:49 -0500
+	id S1756949Ab2CELdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 06:33:05 -0500
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:53183 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866Ab2CELcr convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756615Ab2CELdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 06:32:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of difrost.kernel@gmail.com designates 10.213.103.73 as permitted sender) smtp.mail=difrost.kernel@gmail.com; dkim=pass header.i=difrost.kernel@gmail.com
+	Mon, 5 Mar 2012 06:33:02 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.213.6.203 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
+Message-ID: <4F54A46A.6000305@suse.cz>
+Date: Mon, 05 Mar 2012 12:32:58 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120222 Thunderbird/11.0
 MIME-Version: 1.0
-In-Reply-To: <CADDYkjSWpWAW0dxmMEWjHaRV=jS+U5obeau_GPEgwnJuPBLe3w@mail.gmail.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<E15A491F-62E2-4518-939F-07B3AB4C3E65@mit.edu>
-	<20120301143859.GX5054@shiny>
-	<CADDYkjQ8jgWUo7=eAeMjve0iRmVZMcrjjbqnvPq0SchE5W9Fqg@mail.gmail.com>
-	<20120302140038.GD5054@shiny>
-	<CADDYkjT8apYQpdZqr1gZKiHbm9xfTaLr=8GEJF0VKF9neHwgOg@mail.gmail.com>
-	<20120302142651.GH5054@shiny>
-	<CADDYkjRyQruZgFHDsyAgAV7J3yvunU5YuwmmbxK=1WXJLHw98Q@mail.gmail.com>
-	<CADDYkjSWpWAW0dxmMEWjHaRV=jS+U5obeau_GPEgwnJuPBLe3w@mail.gmail.com>
-Date: Mon, 5 Mar 2012 12:32:45 +0100
-Message-ID: <CADDYkjQ+N1O0x=_JUdCAdNgrp6mQM44VBzZf6V8e2B5OK6fp1A@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>, Theodore Tso <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Tony Luck <tony.luck@intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
+References: <20120304180911.GA7336@kroah.com>
+In-Reply-To: <20120304180911.GA7336@kroah.com>
+X-Enigmail-Version: 1.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/4 Jacek Luczak <difrost.kernel@gmail.com>:
-> 2012/3/3 Jacek Luczak <difrost.kernel@gmail.com>:
->> 2012/3/2 Chris Mason <chris.mason@oracle.com>:
->>> On Fri, Mar 02, 2012 at 03:16:12PM +0100, Jacek Luczak wrote:
->>>> 2012/3/2 Chris Mason <chris.mason@oracle.com>:
->>>> > On Fri, Mar 02, 2012 at 11:05:56AM +0100, Jacek Luczak wrote:
->>>> >>
->>>> >> I've took both on tests. The subject is acp and spd_readdir used with
->>>> >> tar, all on ext4:
->>>> >> 1) acp: http://91.234.146.107/~difrost/seekwatcher/acp_ext4.png
->>>> >> 2) spd_readdir: http://91.234.146.107/~difrost/seekwatcher/tar_ext4_readir.png
->>>> >> 3) both: http://91.234.146.107/~difrost/seekwatcher/acp_vs_spd_ext4.png
->>>> >>
->>>> >> The acp looks much better than spd_readdir but directory copy with
->>>> >> spd_readdir decreased to 52m 39sec (30 min less).
->>>> >
->>>> > Do you have stats on how big these files are, and how fragmented they
->>>> > are?  For acp and spd to give us this, I think something has gone wrong
->>>> > at writeback time (creating individual fragmented files).
->>>>
->>>> How big? Which files?
->>>
->>> All the files you're reading ;)
->>>
->>> filefrag will tell you how many extents each file has, any file with
->>> more than one extent is interesting.  (The ext4 crowd may have better
->>> suggestions on measuring fragmentation).
->>>
->>> Since you mention this is a compile farm, I'm guessing there are a bunch
->>> of .o files created by parallel builds.  There are a lot of chances for
->>> delalloc and the kernel writeback code to do the wrong thing here.
->>>
->>
-> [Most of files are B and K size]
->>
->> All files scanned: 1978149
->> Files fragmented: 313 (0.015%) where 11 have 3+ extents
->> Total size of fragmented files: 7GB (~13% of dir size)
->
-> BTRFS: Non of files according to filefrag are fragmented - all fit
-> into one extent.
->
->> tar cf on fragmented files:
->> 1) time: 7sec
->> 2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_fragmented.png
->> 3) sw graph with spd_readdir:
->> http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_spd.png
->> 4) both on one:
->> http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_pure_spd.png
->
-> BTRFS: tar on ext4 fragmented files
-> 1) time: 6sec
-> 2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_fragmented_btrfs.png
->
->> tar cf of fragmented files disturbed with [40,50) K files (in total
->> 4373 files). K files before fragmented M files:
->> 1) size: 7.2GB
->> 2) time: 1m 14sec
->> 3) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_disturbed.png
->> 4) sw graph with spd_readdir:
->> http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_spd.png
->> 5) both on one:
->> http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_pure_spd.png
->
-> BTRFS: tar on [40,50) K and ext4 fragmented
-> 1) time: 56sec
-> 2) sw graph: http://91.234.146.107/~difrost/seekwatcher/tar_disturbed_btrfs.png
->
-> New test I've included - randomly selected files:
-> - size 240MB
-> 1) ext4 (time: 34sec) sw graph:
-> http://91.234.146.107/~difrost/seekwatcher/tar_random_ext4.png
-> 2) btrfs (time: 55sec) sw graph:
-> http://91.234.146.107/~difrost/seekwatcher/tar_random_btrfs.png
+On 03/04/2012 07:09 PM, Greg KH wrote:
+> I'm announcing the release of the 2.6.32.58 kernel.
+...
+> Heiko Carstens (1): compat: fix compile breakage on s390
 
-Yet another test. The original issue is in the directory data
-handling. In my case a lot of dirs are introduced due to extra .svn.
-Let's then see how does tar on those dirs looks like.
+It's not that minimal it suggests. It removed asm/compat.h inclusion
+from arch/s390/kernel/setup.c. This causes build failures on
+!CONFIG_COMPAT:
+arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+arch/s390/kernel/setup.c:382: error: 'PSW32_ASC_SECONDARY' undeclared
+(first use in this function)
+arch/s390/kernel/setup.c:382: error: (Each undeclared identifier is
+reported only once
+arch/s390/kernel/setup.c:382: error: for each function it appears in.)
+arch/s390/kernel/setup.c:389: error: 'PSW32_ASC_PRIMARY' undeclared
+(first use in this function)
 
-Number of .svn directories: 61605
-1) Ext4:
- - tar time: 10m 53sec
- - sw tar graph: http://91.234.146.107/~difrost/seekwatcher/svn_dir_ext4.png
- - sw tar graph with spd_readdir:
-http://91.234.146.107/~difrost/seekwatcher/svn_dir_spd_ext4.png
-2) Btrfs:
- - tar time: 4m 35sec
- - sw tar graph: http://91.234.146.107/~difrost/seekwatcher/svn_dir_btrfs.png
- - sw tar graph with ext4:
-http://91.234.146.107/~difrost/seekwatcher/svn_dir_btrfs_ext4.png
+Perhaps asm/compat.h should be included from linux/compat.h
+unconditionally...
 
-IMO this is not a writeback issue (well it could be but then it mean
-that it broken in general), it's not fragmentation. Sorting files in
-readdir helps a bit but is still far behind the btrfs.
+> Linus Torvalds (2): Fix autofs compile without CONFIG_COMPAT
 
-Any ideas? Is this a issue or the things are like they are and one
-need to live with it.
+But who defines is_compat_task *with* CONFIG_COMPAT on ia64?
 
--Jacek
+fs/autofs4/inode.c: In function 'autofs4_fill_super':
+fs/autofs4/inode.c:345: error: implicit declaration of function
+'is_compat_task'
+
+thanks,
+-- 
+js
+suse labs
