@@ -1,55 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab2CEVIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 16:08:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:32948 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2CEVIk (ORCPT
+	id S1752339Ab2CEVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 16:08:58 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53992 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab2CEVI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 16:08:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.194.65 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Mon, 5 Mar 2012 13:08:36 -0800
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
-Message-ID: <20120305210836.GD1263@google.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <20120305210726.GC1263@google.com>
+	Mon, 5 Mar 2012 16:08:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of miles.lane@gmail.com designates 10.180.107.67 as permitted sender) smtp.mail=miles.lane@gmail.com; dkim=pass header.i=miles.lane@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305210726.GC1263@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 5 Mar 2012 16:08:55 -0500
+Message-ID: <CAHFgRy-V3ZFK6QrC2++Rvyi4e_f-03Xdr9sj4PUJORVq21GiEw@mail.gmail.com>
+Subject: Linus GIT (3.3.0-rc6+) -- INFO: possible circular locking dependency detected
+From: Miles Lane <miles.lane@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 01:07:26PM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> Vivek reported two different crashes.  Patch 17.5 added and patch 27
-> updated to address both issues.  Andrew reminded me a deeper problem
-> with percpu mempool approach and I'll go with Vivek's delayed
-> allocation patch.  For now, I'm dropping the stats patches.
-> 
-> I posted the two updated patches but holding off reposting all patches
-> which now generate conflicts due to the updates.  git branches are
-> updated.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-stacking
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git unified-blkg
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-kill-pn
-> 
-> Note that blkcg-stats is dropped for now.  I'll repost the series
-> later when Jens is ready to pull.
-
-Ooh, the commit ID of blkcg-stacking, which is on top of all other
-pending commits is fcddfec4ea9067ae6c963682dcdb5ddf783a3ff9.
-
-Vivek, can you please verify the crashes you were seeing are gone now?
-
-Thanks.
-
--- 
-tejun
+[  107.839605] [ INFO: possible circular locking dependency detected ]
+[  107.839608] 3.3.0-rc6+ #14 Not tainted
+[  107.839609] -------------------------------------------------------
+[  107.839611] gvfsd-metadata/2314 is trying to acquire lock:
+[  107.839612]  (&sb->s_type->i_mutex_key#13){+.+.+.}, at:
+[<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
+[  107.839622]
+[  107.839623] but task is already holding lock:
+[  107.839624]  (&mm->mmap_sem){++++++}, at: [<ffffffff810ca534>]
+sys_munmap+0x36/0x5b
+[  107.839630]
+[  107.839630] which lock already depends on the new lock.
+[  107.839631]
+[  107.839632]
+[  107.839632] the existing dependency chain (in reverse order) is:
+[  107.839634]
+[  107.839634] -> #1 (&mm->mmap_sem){++++++}:
+[  107.839638]        [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
+[  107.839642]        [<ffffffff810c3363>] might_fault+0x7b/0x9e
+[  107.839646]        [<ffffffff810f5246>] filldir+0x6a/0xc2
+[  107.839649]        [<ffffffff81143b91>] call_filldir+0x91/0xb8
+[  107.839653]        [<ffffffff81143eb2>] ext4_readdir+0x1b2/0x519
+[  107.839656]        [<ffffffff810f548c>] vfs_readdir+0x76/0xac
+[  107.839658]        [<ffffffff810f559e>] sys_getdents+0x79/0xc9
+[  107.839661]        [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
+[  107.839665]
+[  107.839665] -> #0 (&sb->s_type->i_mutex_key#13){+.+.+.}:
+[  107.839669]        [<ffffffff81073918>] __lock_acquire+0xa81/0xd75
+[  107.839672]        [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
+[  107.839675]        [<ffffffff8139acfe>] __mutex_lock_common+0x61/0x456
+[  107.839679]        [<ffffffff8139b1da>] mutex_lock_nested+0x36/0x3b
+[  107.839681]        [<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
+[  107.839684]        [<ffffffff8114478e>] ext4_file_write+0x1e2/0x23a
+[  107.839687]        [<ffffffff810e5bb5>] do_sync_write+0xbd/0xfd
+[  107.839691]        [<ffffffff810e6333>] vfs_write+0xa7/0xee
+[  107.839694]        [<ffffffffa037f266>]
+ecryptfs_write_lower+0x4e/0x73 [ecryptfs]
+[  107.839700]        [<ffffffffa03803d3>]
+ecryptfs_encrypt_page+0x11c/0x182 [ecryptfs]
+[  107.839704]        [<ffffffffa037e967>]
+ecryptfs_writepage+0x31/0x73 [ecryptfs]
+[  107.839708]        [<ffffffff810b448b>] __writepage+0x12/0x31
+[  107.839710]        [<ffffffff810b4b25>] write_cache_pages+0x1e6/0x310
+[  107.839713]        [<ffffffff810b4c8d>] generic_writepages+0x3e/0x54
+[  107.839716]        [<ffffffff810b5e05>] do_writepages+0x26/0x28
+[  107.839719]        [<ffffffff810ae1e4>] __filemap_fdatawrite_range+0x4e/0x50
+[  107.839722]        [<ffffffff810aed55>] filemap_fdatawrite+0x1a/0x1c
+[  107.839725]        [<ffffffff810aed72>] filemap_write_and_wait+0x1b/0x36
+[  107.839727]        [<ffffffffa037c1bb>]
+ecryptfs_vma_close+0x17/0x19 [ecryptfs]
+[  107.839731]        [<ffffffff810c9374>] remove_vma+0x3b/0x71
+[  107.839733]        [<ffffffff810ca40c>] do_munmap+0x2ed/0x306
+[  107.839735]        [<ffffffff810ca542>] sys_munmap+0x44/0x5b
+[  107.839738]        [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
+[  107.839741]
+[  107.839741] other info that might help us debug this:
+[  107.839741]
+[  107.839743]  Possible unsafe locking scenario:
+[  107.839743]
+[  107.839744]        CPU0                    CPU1
+[  107.839746]        ----                    ----
+[  107.839747]   lock(&mm->mmap_sem);
+[  107.839749]                                lock(&sb->s_type->i_mutex_key#13);
+[  107.839753]                                lock(&mm->mmap_sem);
+[  107.839755]   lock(&sb->s_type->i_mutex_key#13);
+[  107.839758]
+[  107.839758]  *** DEADLOCK ***
+[  107.839759]
+[  107.839761] 1 lock held by gvfsd-metadata/2314:
+[  107.839762]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810ca534>]
+sys_munmap+0x36/0x5b
+[  107.839767]
+[  107.839767] stack backtrace:
+[  107.839769] Pid: 2314, comm: gvfsd-metadata Not tainted 3.3.0-rc6+ #14
+[  107.839771] Call Trace:
+[  107.839775]  [<ffffffff813956a2>] print_circular_bug+0x1f8/0x209
+[  107.839778]  [<ffffffff81073918>] __lock_acquire+0xa81/0xd75
+[  107.839781]  [<ffffffff81073bfd>] ? __lock_acquire+0xd66/0xd75
+[  107.839784]  [<ffffffff8107402d>] lock_acquire+0x8a/0xa7
+[  107.839787]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
+[  107.839790]  [<ffffffff8139acfe>] __mutex_lock_common+0x61/0x456
+[  107.839792]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
+[  107.839795]  [<ffffffff81071a96>] ? mark_lock+0x2d/0x258
+[  107.839798]  [<ffffffff810ae65a>] ? generic_file_aio_write+0x45/0xbc
+[  107.839801]  [<ffffffff8107299e>] ? lock_is_held+0x92/0x9d
+[  107.839803]  [<ffffffff8139b1da>] mutex_lock_nested+0x36/0x3b
+[  107.839806]  [<ffffffff810ae65a>] generic_file_aio_write+0x45/0xbc
+[  107.839810]  [<ffffffff811a013f>] ? scatterwalk_map+0x2b/0x5d
+[  107.839813]  [<ffffffff810570d4>] ? get_parent_ip+0xe/0x3e
+[  107.839816]  [<ffffffff8114478e>] ext4_file_write+0x1e2/0x23a
+[  107.839818]  [<ffffffff81071a96>] ? mark_lock+0x2d/0x258
+[  107.839821]  [<ffffffff810e5bb5>] do_sync_write+0xbd/0xfd
+[  107.839824]  [<ffffffff8139b2fd>] ? __mutex_unlock_slowpath+0x11e/0x152
+[  107.839828]  [<ffffffff81197092>] ? security_file_permission+0x29/0x2e
+[  107.839831]  [<ffffffff810e60b2>] ? rw_verify_area+0xab/0xc8
+[  107.839834]  [<ffffffff810e6333>] vfs_write+0xa7/0xee
+[  107.839838]  [<ffffffffa037f266>] ecryptfs_write_lower+0x4e/0x73 [ecryptfs]
+[  107.839842]  [<ffffffffa03803d3>] ecryptfs_encrypt_page+0x11c/0x182
+[ecryptfs]
+[  107.839846]  [<ffffffffa037e967>] ecryptfs_writepage+0x31/0x73 [ecryptfs]
+[  107.839849]  [<ffffffff810b448b>] __writepage+0x12/0x31
+[  107.839851]  [<ffffffff810b4b25>] write_cache_pages+0x1e6/0x310
+[  107.839854]  [<ffffffff810b4479>] ? bdi_set_max_ratio+0x6a/0x6a
+[  107.839857]  [<ffffffff813a03c1>] ? sub_preempt_count+0x90/0xa3
+[  107.839860]  [<ffffffff810b4c8d>] generic_writepages+0x3e/0x54
+[  107.839863]  [<ffffffff810b5e05>] do_writepages+0x26/0x28
+[  107.839866]  [<ffffffff810ae1e4>] __filemap_fdatawrite_range+0x4e/0x50
+[  107.839869]  [<ffffffff810aed55>] filemap_fdatawrite+0x1a/0x1c
+[  107.839871]  [<ffffffff810aed72>] filemap_write_and_wait+0x1b/0x36
+[  107.839875]  [<ffffffffa037c1bb>] ecryptfs_vma_close+0x17/0x19 [ecryptfs]
+[  107.839877]  [<ffffffff810c9374>] remove_vma+0x3b/0x71
+[  107.839879]  [<ffffffff810ca40c>] do_munmap+0x2ed/0x306
+[  107.839882]  [<ffffffff810ca542>] sys_munmap+0x44/0x5b
+[  107.839884]  [<ffffffff813a1fb9>] system_call_fastpath+0x16/0x1b
