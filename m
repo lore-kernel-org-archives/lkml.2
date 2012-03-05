@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab2CERUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:20:08 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:49030 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757062Ab2CERUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:20:06 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.190.8 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Mon, 5 Mar 2012 09:20:00 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120305172000.GQ22536@google.com>
-References: <1330036246-21633-1-git-send-email-tj@kernel.org>
- <20120223144336.58742e1b.akpm@linux-foundation.org>
- <20120223230123.GL22536@google.com>
- <20120223231204.GM22536@google.com>
- <20120227182220.GD27677@redhat.com>
- <20120229190354.GC5930@redhat.com>
+	id S1757180Ab2CERUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:20:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37860 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757154Ab2CERUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 12:20:41 -0500
+Date: Mon, 5 Mar 2012 18:20:08 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, ravitillo@lbl.gov,
+        khandual@linux.vnet.ibm.com, asharma@fb.com, robert.richter@amd.com,
+        ming.m.lin@intel.com, vweaver1@eecs.utk.edu, andi@firstfloor.org
+Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
+Message-ID: <20120305172008.GA29411@elte.hu>
+References: <20120224094048.GA7952@quad>
+ <20120305154753.GA14604@elte.hu>
+ <20120305155011.GA32413@elte.hu>
+ <20120305155642.GB32413@elte.hu>
+ <1330965033.11248.240.camel@twins>
+ <CABPqkBQ5iC9TB=W4=19SghYdz9D6z6sXrBerm78TuVwk+W8sBQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120229190354.GC5930@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABPqkBQ5iC9TB=W4=19SghYdz9D6z6sXrBerm78TuVwk+W8sBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
 
-Sorry about the delay.  Was off last week.
+* Stephane Eranian <eranian@google.com> wrote:
 
-On Wed, Feb 29, 2012 at 02:03:54PM -0500, Vivek Goyal wrote:
-> Ok, more debugging revealed that culprit here is "floppy" driver module.
-> It instanciates a queue but never registers a disk against it. Better
-> skip such queues/groups. Here is the patch.
+> On Mon, Mar 5, 2012 at 5:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2012-03-05 at 16:56 +0100, Ingo Molnar wrote:
+> >> A third usability bug is that for some reason a branch sampling
+> >> 'perf report' defaults to the stdio output on my testsystem -
+> >> with --no-branch-stack it gives the regular tui.
+> >>
+> >>
+> > Ah, I would not have noticed that since I still explicitly 
+> > build my perf without TUI support. That stuff mostly just 
+> > gets in the way.
+> 
+> I tend to agree with Peter here.
 
-Urgh.. I hate that driver.  I ended up folding the following patch in
-the series right after "blkcg: kill the mind-bending blkg->dev".
+I use the TUI most of the time (it allows me to navigate and 
+look at annotated output easily - something the --stdio one 
+cannot do), and I know at least two other kernel developers who 
+prefer the TUI, so it's a YMMV thing.
 
-Thanks.
+> There is no TUI support for branch as of now.
 
-Subject: blkcg: skip blkg printing if q isn't associated with disk
+Why? What would be needed to add proper TUI support?
 
-blk-cgroup printing code currently assumes that there is a device/disk
-associated with every queue in the system, but modules like floppy,
-can instantiate request queues without registering disk which can lead
-to oops.
+Thanks,
 
-Skip the queue/blkg which don't have dev/disk associated with them.
-
--tj: Factored out backing_dev_info check into blkg_dev_name().
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-cgroup.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
-
-Index: work/block/blk-cgroup.c
-===================================================================
---- work.orig/block/blk-cgroup.c
-+++ work/block/blk-cgroup.c
-@@ -951,13 +951,24 @@ static int blkiocg_file_write(struct cgr
- 	return ret;
- }
- 
-+static const char *blkg_dev_name(struct blkio_group *blkg)
-+{
-+	/* some drivers (floppy) instantiate a queue w/o disk registered */
-+	if (blkg->q->backing_dev_info.dev)
-+		return dev_name(blkg->q->backing_dev_info.dev);
-+	return NULL;
-+}
-+
- static void blkio_print_group_conf(struct cftype *cft, struct blkio_group *blkg,
- 				   struct seq_file *m)
- {
--	const char *dname = dev_name(blkg->q->backing_dev_info.dev);
-+	const char *dname = blkg_dev_name(blkg);
- 	int fileid = BLKIOFILE_ATTR(cft->private);
- 	int rw = WRITE;
- 
-+	if (!dname)
-+		return;
-+
- 	switch (blkg->plid) {
- 		case BLKIO_POLICY_PROP:
- 			if (blkg->conf.weight)
-@@ -1049,9 +1060,9 @@ static int blkio_read_blkg_stats(struct 
- 
- 	rcu_read_lock();
- 	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {
--		const char *dname = dev_name(blkg->q->backing_dev_info.dev);
-+		const char *dname = blkg_dev_name(blkg);
- 
--		if (BLKIOFILE_POLICY(cft->private) != blkg->plid)
-+		if (!dname || BLKIOFILE_POLICY(cft->private) != blkg->plid)
- 			continue;
- 		if (pcpu)
- 			cgroup_total += blkio_get_stat_cpu(blkg, cb, dname,
+	Ingo
