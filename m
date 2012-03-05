@@ -1,102 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab2CEABZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 19:01:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41635 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab2CEABX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 19:01:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.43.51.135 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
-Date: Sun, 4 Mar 2012 18:01:13 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: linux-ia64@vger.kernel.org
-Cc: Michel Lespinasse <walken@google.com>, Tony Luck <tony.luck@intel.com>,
-        =?utf-8?Q?=C3=89meric?= Maschino <emeric.maschino@gmail.com>,
-        Patrick Baggett <baggett.patrick@gmail.com>,
-        Jakub Jelinek <jakub@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [regression] Re: [PATCH 2/3] futex: Sanitize
- cmpxchg_futex_value_locked API
-Message-ID: <20120305000112.GA27512@burratino>
-References: <20110307021127.GB31188@google.com>
- <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
- <20110309112550.GA3050@google.com>
- <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
- <20110311021654.GA26122@google.com>
- <20110311024851.GC26122@google.com>
+	id S1755938Ab2CEAMs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 19:12:48 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:33394 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755790Ab2CEAMr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 19:12:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mturquette@ti.com designates 10.213.21.211 as permitted sender) smtp.mail=mturquette@ti.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+In-Reply-To: <20120304115201.GB26882@pengutronix.de>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de>
+ <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com> <20120304115201.GB26882@pengutronix.de>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Sun, 4 Mar 2012 16:12:21 -0800
+Message-ID: <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
+        linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20110311024851.GC26122@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(reset cc list)
-Hi,
+On Sun, Mar 4, 2012 at 3:52 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Sat, Mar 03, 2012 at 09:14:43AM -0800, Turquette, Mike wrote:
+>> On Sat, Mar 3, 2012 at 5:31 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> > On Sat, Mar 03, 2012 at 12:29:00AM -0800, Mike Turquette wrote:
+>> >> The common clock framework defines a common struct clk useful across
+>> >> most platforms as well as an implementation of the clk api that drivers
+>> >> can use safely for managing clocks.
+>> >>
+>> >> The net result is consolidation of many different struct clk definitions
+>> >> and platform-specific clock framework implementations.
+>> >>
+>> >> This patch introduces the common struct clk, struct clk_ops and an
+>> >> implementation of the well-known clock api in include/clk/clk.h.
+>> >> Platforms may define their own hardware-specific clock structure and
+>> >> their own clock operation callbacks, so long as it wraps an instance of
+>> >> struct clk_hw.
+>> >>
+>> >> See Documentation/clk.txt for more details.
+>> >>
+>> >> This patch is based on the work of Jeremy Kerr, which in turn was based
+>> >> on the work of Ben Herrenschmidt.
+>> >>
+>> >> +
+>> >> +/**
+>> >> + * struct clk_hw - handle for traversing from a struct clk to its corresponding
+>> >> + * hardware-specific structure.  struct clk_hw should be declared within struct
+>> >> + * clk_foo and then referenced by the struct clk instance that uses struct
+>> >> + * clk_foo's clk_ops
+>> >> + *
+>> >> + * clk: pointer to the struct clk instance that points back to this struct
+>> >> + * clk_hw instance
+>> >> + */
+>> >> +struct clk_hw {
+>> >> +     struct clk *clk;
+>> >> +};
+>> >
+>> > The reason for doing this is that struct clk should be an opaque cookie
+>> > for both drivers and implementers of clocks. I recently had the idea whether
+>> > the roles of these two structs could be swapped. So instead of the above we
+>> > could do:
+>> >
+>> > struct clk {
+>> >        struct clk_hw *hw;
+>> > }
+>>
+>> Firstly, struct clk is an opaque cookie for both drivers and
+>> implementers of clocks with this patchset.
+>>
+>> Secondly, struct clk does indeed have a pointer to struct clk_hw.
+>> Refer to include/linux/clk-private.h in this patch.
+>>
+>> The reference is cyclical.  A reference to struct clk can navigate to
+>> struct clk_foo via container_of (usually something like "#define
+>> to_clk_foo(_hw) container_of(_hw, struct clk_foo, hw)" where struct
+>> clk's pointer to it's .hw member is passed into one of the struct
+>> clk_ops callbacks.
+>>
+>> Likewise if struct clk_foo needs the struct clk ptr for any reason
+>> then it can get it from foo->hw->clk.
+>>
+>> I believe this patch already does what you suggest, but I might be
+>> missing your point.
+>
+> In include/linux/clk-private.h you expose struct clk outside the core.
+> This has to be done to make static initializers possible. There is a big
+> warning in this file that it must not be included from files implementing
+> struct clk_ops. You can simply avoid this warning by declaring struct clk
+> with only a single member:
+>
+> include/linux/clk.h:
+>
+> struct clk {
+>        struct clk_internal *internal;
+> };
+>
+> This way everybody knows struct clk (thus can embed it in their static
+> initializers), but doesn't know anything about the internal members. Now
+> in drivers/clk/clk.c you declare struct clk_internal exactly like struct
+> clk was declared before:
+>
+> struct clk_internal {
+>        const char              *name;
+>        const struct clk_ops    *ops;
+>        struct clk_hw           *hw;
+>        struct clk              *parent;
+>        char                    **parent_names;
+>        struct clk              **parents;
+>        u8                      num_parents;
+>        unsigned long           rate;
+>        unsigned long           flags;
+>        unsigned int            enable_count;
+>        unsigned int            prepare_count;
+>        struct hlist_head       children;
+>        struct hlist_node       child_node;
+>        unsigned int            notifier_count;
+> #ifdef CONFIG_COMMON_CLK_DEBUG
+>        struct dentry           *dentry;
+> #endif
+> };
+>
+> An instance of struct clk_internal will be allocated in
+> __clk_init/clk_register. Now the private data stays completely inside
+> the core and noone can abuse it.
 
-Michel Lespinasse wrote:
+Hi Sascha,
 
-> This change makes the cmpxchg_futex_value_locked API more similar to the
-> get_futex_value_locked one, returning an error code and updating the
-> original value through a reference argument.
-[...]
-> Acked-by: Tony Luck <tony.luck@intel.com>  [ia64]
+I see the disconnect here.  For OMAP (and possibly other platforms) at
+least some clock data is necessary during early boot, before the
+regular allocation methods are available (timers for instance).  Due
+to this my idea of static initialization was to take care of
+everything that would normally require an allocator, which includes
+the internals of struct clk; thus exposing struct clk is useful here
+as you can still use the clock framework during very early boot.  Your
+method above doesn't satisfy this requirement.  I'm not sure what the
+purpose would be of statically allocating your version of struct clk,
+which will ultimately need to allocate memory for the clock internals
+anyways.  Can you elaborate the benefit of this approach over just
+using the clk_foo_register functions?
 
-Ã‰meric Maschino (cc-ed) is experiencing random crashes, X restarts,
-and so on on Itanium.  Bisects to this patch[1].
+Note that struct clk is still declared in clk.h (and clk-provider.h),
+so platforms that have struct clk *clk declarations won't have a
+problem.
 
-Patrick Baggett, investigating, wrote[2]:
+Thanks much,
+Mike
 
-> It doesn't look like the return value (r8) is actually being set beyond
-> initialized to 0. If there is some ia64 instruction that modifies it, GCC
-> doesn't know about it from the inline assembly (r8 doesn't appear in the
-> inputs/outputs list). From looking at the x86 version (agh, inline asm is
-> hard to parse), it does modify the return value based on whether the
-> comparison was a success or not, and the return value is certainly used by
-> the callers.
-
-And indeed, pinning that variable to that register (why not "prev"
-instead?) looks suspicious.
-
-Anywhere, here's the potentially problematic patch hunk.  Ideas?
-
-> --- a/arch/ia64/include/asm/futex.h
-> +++ b/arch/ia64/include/asm/futex.h
-> @@ -100,23 +100,26 @@ futex_atomic_op_inuser (int encoded_op, int __user *uaddr)
->  }
->  
->  static inline int
-> -futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
-> +futex_atomic_cmpxchg_inatomic(int *uval, int __user *uaddr,
-> +			      int oldval, int newval)
->  {
->  	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
->  		return -EFAULT;
->  
->  	{
-> -		register unsigned long r8 __asm ("r8");
-> +		register unsigned long r8 __asm ("r8") = 0;
-> +		unsigned long prev;
->  		__asm__ __volatile__(
->  			"	mf;;					\n"
->  			"	mov ar.ccv=%3;;				\n"
->  			"[1:]	cmpxchg4.acq %0=[%1],%2,ar.ccv		\n"
->  			"	.xdata4 \"__ex_table\", 1b-., 2f-.	\n"
->  			"[2:]"
-> -			: "=r" (r8)
-> +			: "=r" (prev)
->  			: "r" (uaddr), "r" (newval),
->  			  "rO" ((long) (unsigned) oldval)
->  			: "memory");
-> +		*uval = prev;
->  		return r8;
->  	}
->  }
-
-Jonathan
-
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=42757
-[2] http://thread.gmane.org/gmane.linux.debian.ports.ia64/3121/focus=3123
+>
+> With this __clk_init could be something like:
+>
+> struct clk_initializer {
+>        const char              *name;
+>        const struct clk_ops    *ops;
+>        char                    **parent_names;
+>        u8                      num_parents;
+>        unsigned long           flags;
+>        struct clk              *clk;
+> };
+>
+> void __clk_init(struct device *dev, struct clk_initializer *init);
+>
+> I hope I made my intention a bit clearer.
+>
+> Sascha
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
