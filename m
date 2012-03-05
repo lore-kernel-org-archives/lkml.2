@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965146Ab2CEOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:05:57 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:34676 "EHLO
+	id S964776Ab2CEOF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:05:56 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34682 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab2CENxM (ORCPT
+	with ESMTP id S932384Ab2CENxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 08:53:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH 50/68] TTY: simserial, use tty_port_open
-Date: Mon,  5 Mar 2012 14:52:37 +0100
-Message-Id: <1330955575-26641-51-git-send-email-jslaby@suse.cz>
+        Jiri Kosina <jkosina@suse.cz>, David Sterba <dsterba@suse.cz>
+Subject: [PATCH 15/68] TTY: ipwireless, fix tty->index handling
+Date: Mon,  5 Mar 2012 14:52:02 +0100
+Message-Id: <1330955575-26641-16-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
@@ -22,150 +22,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So now we convert startup to be ->activate of tty_port. This means we
-no longer care about INITIALIZED and TTY_IO_ERROR flags.
+* do not test if tty->index is in bounds. It is always.
+* tty->index is not a minor! Fix that.
 
-After we have ->activate much of the code may go as it duplicates what
-tty_port_open does. In this case tty_port_open adds block_til_ready to
-the path. But we do not define carrier hooks, so it is a noop.
+>From now on, let's assume that the parameter of the function is tty
+index with base being zero. This makes also the code more readable.
+
+Factually, there is no real change as tty_driver->minor_start is zero,
+so the tests are equivalent. But it did not make sense. And if this
+had changed eventually, it would have caused troubles.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: David Sterba <dsterba@suse.cz>
 ---
- arch/ia64/hp/sim/simserial.c |   64 ++++--------------------------------------
- 1 file changed, 5 insertions(+), 59 deletions(-)
+ drivers/tty/ipwireless/tty.c |   36 +++++++++++++-----------------------
+ 1 file changed, 13 insertions(+), 23 deletions(-)
 
-diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
-index b3ec91c..e9c5fb7 100644
---- a/arch/ia64/hp/sim/simserial.c
-+++ b/arch/ia64/hp/sim/simserial.c
-@@ -473,9 +473,10 @@ static void rs_hangup(struct tty_struct *tty)
+diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
+index 6990b3b..77ceaa9 100644
+--- a/drivers/tty/ipwireless/tty.c
++++ b/drivers/tty/ipwireless/tty.c
+@@ -90,33 +90,23 @@ static void report_deregistering(struct ipw_tty *tty)
+ 	       tty->index);
  }
  
- 
--static int startup(struct tty_struct *tty, struct serial_state *state)
-+static int activate(struct tty_port *port, struct tty_struct *tty)
+-static struct ipw_tty *get_tty(int minor)
++static struct ipw_tty *get_tty(int index)
  {
--	struct tty_port *port = &state->port;
-+	struct serial_state *state = container_of(port, struct serial_state,
-+			port);
- 	unsigned long flags;
- 	int	retval=0;
- 	unsigned long page;
-@@ -486,20 +487,11 @@ static int startup(struct tty_struct *tty, struct serial_state *state)
- 
- 	local_irq_save(flags);
- 
--	if (port->flags & ASYNC_INITIALIZED) {
--		free_page(page);
--		goto errout;
+-	if (minor < ipw_tty_driver->minor_start
+-			|| minor >= ipw_tty_driver->minor_start +
+-			IPWIRELESS_PCMCIA_MINORS)
++	/*
++	 * The 'ras_raw' channel is only available when 'loopback' mode
++	 * is enabled.
++	 * Number of minor starts with 16 (_RANGE * _RAS_RAW).
++	 */
++	if (!ipwireless_loopback && index >=
++			 IPWIRELESS_PCMCIA_MINOR_RANGE * TTYTYPE_RAS_RAW)
+ 		return NULL;
+-	else {
+-		int minor_offset = minor - ipw_tty_driver->minor_start;
+-
+-		/*
+-		 * The 'ras_raw' channel is only available when 'loopback' mode
+-		 * is enabled.
+-		 * Number of minor starts with 16 (_RANGE * _RAS_RAW).
+-		 */
+-		if (!ipwireless_loopback &&
+-				minor_offset >=
+-				 IPWIRELESS_PCMCIA_MINOR_RANGE * TTYTYPE_RAS_RAW)
+-			return NULL;
+-
+-		return ttys[minor_offset];
 -	}
--
- 	if (state->xmit.buf)
- 		free_page(page);
- 	else
- 		state->xmit.buf = (unsigned char *) page;
- 
--#ifdef SIMSERIAL_DEBUG
--	printk("startup: ttys%d (irq %d)...", state->line, state->irq);
--#endif
--
- 	/*
- 	 * Allocate the IRQ if necessary
- 	 */
-@@ -510,18 +502,8 @@ static int startup(struct tty_struct *tty, struct serial_state *state)
- 			goto errout;
- 	}
- 
--	clear_bit(TTY_IO_ERROR, &tty->flags);
--
- 	state->xmit.head = state->xmit.tail = 0;
- 
--#if 0
--	/*
--	 * Set up serial timers...
--	 */
--	timer_table[RS_TIMER].expires = jiffies + 2*HZ/100;
--	timer_active |= 1 << RS_TIMER;
--#endif
--
- 	/*
- 	 * Set up the tty->alt_speed kludge
- 	 */
-@@ -534,10 +516,6 @@ static int startup(struct tty_struct *tty, struct serial_state *state)
- 	if ((port->flags & ASYNC_SPD_MASK) == ASYNC_SPD_WARP)
- 		tty->alt_speed = 460800;
- 
--	port->flags |= ASYNC_INITIALIZED;
--	local_irq_restore(flags);
--	return 0;
--
- errout:
- 	local_irq_restore(flags);
- 	return retval;
-@@ -554,41 +532,11 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
- {
- 	struct serial_state *info = rs_table + tty->index;
- 	struct tty_port *port = &info->port;
--	int retval;
- 
--	port->count++;
--	tty_port_tty_set(port, tty);
- 	tty->driver_data = info;
--	tty->port = port;
--
--#ifdef SIMSERIAL_DEBUG
--	printk("rs_open %s, count = %d\n", tty->name, port->count);
--#endif
- 	tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	/*
--	 * If the port is the middle of closing, bail out now
--	 */
--	if (tty_hung_up_p(filp) || (port->flags & ASYNC_CLOSING)) {
--		if (port->flags & ASYNC_CLOSING)
--			interruptible_sleep_on(&port->close_wait);
--#ifdef SERIAL_DO_RESTART
--		return ((port->flags & ASYNC_HUP_NOTIFY) ?
--			-EAGAIN : -ERESTARTSYS);
--#else
--		return -EAGAIN;
--#endif
--	}
--
--	/*
--	 * Start up serial port
--	 */
--	retval = startup(tty, info);
--	if (retval) {
--		return retval;
--	}
--
--	/*
- 	 * figure out which console to use (should be one already)
- 	 */
- 	console = console_drivers;
-@@ -597,10 +545,7 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
- 		console = console->next;
- 	}
- 
--#ifdef SIMSERIAL_DEBUG
--	printk("rs_open ttys%d successful\n", info->line);
--#endif
--	return 0;
-+	return tty_port_open(port, tty, filp);
++
++	return ttys[index];
  }
  
- /*
-@@ -669,6 +614,7 @@ static const struct tty_operations hp_ops = {
- };
+ static int ipw_open(struct tty_struct *linux_tty, struct file *filp)
+ {
+-	int minor = linux_tty->index;
+-	struct ipw_tty *tty = get_tty(minor);
++	struct ipw_tty *tty = get_tty(linux_tty->index);
  
- static const struct tty_port_operations hp_port_ops = {
-+	.activate = activate,
- };
+ 	if (!tty)
+ 		return -ENODEV;
+@@ -510,7 +500,7 @@ static int add_tty(int j,
+ 		ipwireless_associate_network_tty(network,
+ 						 secondary_channel_idx,
+ 						 ttys[j]);
+-	if (get_tty(j + ipw_tty_driver->minor_start) == ttys[j])
++	if (get_tty(j) == ttys[j])
+ 		report_registering(ttys[j]);
+ 	return 0;
+ }
+@@ -570,7 +560,7 @@ void ipwireless_tty_free(struct ipw_tty *tty)
  
- /*
+ 		if (ttyj) {
+ 			mutex_lock(&ttyj->ipw_tty_mutex);
+-			if (get_tty(j + ipw_tty_driver->minor_start) == ttyj)
++			if (get_tty(j) == ttyj)
+ 				report_deregistering(ttyj);
+ 			ttyj->closing = 1;
+ 			if (ttyj->linux_tty != NULL) {
 -- 
 1.7.9.2
 
