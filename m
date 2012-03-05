@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2CEC3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 21:29:18 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:33381
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978Ab2CEC3Q (ORCPT
+	id S1755028Ab2CECxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 21:53:51 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:8102 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754920Ab2CECxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 21:29:16 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzzz2fh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Index: AQHM+LUYOjJW5Du7G0WJSaUrHj4mnJZZ3GmAgABVn8CAAAhLgIAAwj0A
-Date: Mon, 5 Mar 2012 02:29:11 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B74B90D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
-	 <20120304091225.GA27297@infradead.org>
-	 <6E21E5352C11B742B20C142EB499E0481B74886F@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <1330872513.2858.14.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1330872513.2858.14.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="utf-8"
+	Sun, 4 Mar 2012 21:53:50 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz936eK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Subject: Re: [PATCH] powerpc/srio: Fix the compile errors when building
+	with 64bit
+From: Liu Gang <Gang.Liu@freescale.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <r61911@freescale.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>
+In-Reply-To: <4F50D98F.1040705@windriver.com>
+References: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
+	 <4F50D98F.1040705@windriver.com>
+Content-Type: text/plain
+Date: Mon, 5 Mar 2012 10:52:24 +0800
+Message-ID: <1330915944.23420.115.camel@10.ap.freescale.net>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q252TUla029021
 
+Hi, Paul,
 
-
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Sunday, March 04, 2012 9:49 AM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; linux-scsi@vger.kernel.org;
-> Haiyang Zhang
-> Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> the host
+On Fri, 2012-03-02 at 09:30 -0500, Paul Gortmaker wrote:
+> > Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+> > Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 > 
-> On Sun, 2012-03-04 at 14:23 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > Sent: Sunday, March 04, 2012 4:12 AM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
-> ohering@suse.com;
-> > > jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org;
-> > > Haiyang Zhang
-> > > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> > > the host
-> > >
-> > > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
-> > > > Windows hosts don't handle the ATA_16 command; don't pass it to the
-> host.
-> > >
-> > > Most devices don't handle it, and answer with and unsupported opcode
-> > > sense reason.  If hyperv iis buggy enough to crap out on it please add
-> > > a comment explaining that.
-> >
-> > The host does not "crap out", it does return an error code but it is not
-> "unsupported opcode".
-> > The sense reason that comes back is a generic error SRB_STATUS code. It is
-> easier for me to filter the
-> > command on the outgoing side as opposed to dealing with a generic error code
-> that is coming back from
-> > the host.
+> Hi Liu,
 > 
-> That's the wrong thing to do ... you need to unwrap the error code.
+> You can't just go adding a "Signed-off-by:" line for me to a patch that
+> I've never seen before.  Perhaps you meant to add "Reported-by:" ?
+> 
+> Paul.
 
-I will see if this is even possible based on the current error codes I get back.
+I'm sorry for this. I added "Signed-off-by" for you because I wanted to
+thank you found this issue. I'll add "Reported-by:" if needed in the
+future.
 
-> The reason being I presume it's not impossible for Windows to host a
-> device supporting ATA_16 and there are signs that this is going to be
-> necessary to prevent data corruption on some USB devices ... if you just
-> filter the command without checking if the host supports it, you're
-> going to end up perpetuating the corruption problem.
+Best Regards,
 
-We are talking of virtual  block devices exposed to Linux guests running on a Windows
-hosts. I don't think they will ever need to support ATA_16 command on these virtual block
-devices. I will however confirm with the Windows team.
+Liu Gang
 
 
-Regards,
-
-K. Y
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
