@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2CEH0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 02:26:07 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:59624 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab2CEH0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 02:26:05 -0500
-Date: Mon, 5 Mar 2012 09:26:01 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #42776] OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-In-Reply-To: <hq7dqombK_C.A.M0E.KG9UPB@chimera>
-Message-ID: <alpine.SOC.1.00.1203050925000.22265@math.ut.ee>
-References: <FNlNbnGKWLP.A.dME.3F9UPB@chimera> <hq7dqombK_C.A.M0E.KG9UPB@chimera>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1755928Ab2CEHbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 02:31:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54966 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882Ab2CEHbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 02:31:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of udknight@gmail.com designates 10.50.168.99 as permitted sender) smtp.mail=udknight@gmail.com; dkim=pass header.i=udknight@gmail.com
+Date: Mon, 5 Mar 2012 15:25:51 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spock@gentoo.org
+Subject: Re: [PATCH] video:uvesafb: Fix oops that uvesafb try to execute
+ NX-protected page
+Message-ID: <20120305072551.GA8120@udknight>
+Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
+	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	spock@gentoo.org
+References: <20120302004850.GA4139@udknight>
+ <20120305005250.GA17071@udknight>
+ <4F54669E.6080009@gmx.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F54669E.6080009@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42776
-> Subject		: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-> Submitter	: Meelis Roos <mroos@linux.ee>
-> Date		: 2012-02-13 7:45 (21 days old)
-> Message-ID	: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee>
-> References	: http://marc.info/?l=linux-kernel&m=132911916331615&w=2
-> 		  http://marc.info/?l=linux-kernel&m=132993294018762&w=2
+On Mon, Mar 05, 2012 at 07:09:18AM +0000, Florian Tobias Schandinat wrote:
+> Hi,
+> 
+> On 03/05/2012 12:52 AM, Wang YanQing wrote:
+> > On Fri, Mar 02, 2012 at 08:48:50AM +0800, Wang YanQing wrote:
+> >>
+> >> Ok! I think I have learned to make thing simple and send to the right people:)
+> 
+> That's right.
+> 
+> >> This patch try to fix the oops below that catched in my machine
+> 
+> This sounds like you didn't test it. I assume you did? So just write
+> "This patch fixes the oops below"
+Yes, I had tested it on three machines.
+I think I have got a good lesson, thanks so much!
 
-Works in 3.3-rc6. The patch is like a workaround if understand correctly 
-but it cures the problem.
 
--- 
-Meelis Roos (mroos@linux.ee)
+
