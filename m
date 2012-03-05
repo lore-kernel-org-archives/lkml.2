@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab2CEJLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 04:11:20 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49724 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756423Ab2CEJLQ (ORCPT
+	id S1756455Ab2CEJQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 04:16:17 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:44267 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756394Ab2CEJQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 04:11:16 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of amit.kachhap@linaro.org designates 10.152.148.106 as permitted sender) smtp.mail=amit.kachhap@linaro.org
+	Mon, 5 Mar 2012 04:16:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rnayak@ti.com designates 10.236.155.6 as permitted sender) smtp.mail=rnayak@ti.com
+Message-ID: <4F548457.5050205@ti.com>
+Date: Mon, 05 Mar 2012 14:46:07 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-In-Reply-To: <20120303180402.GA30062@ericsson.com>
-References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
-	<1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
-	<20120303164410.GB1495@sirena.org.uk>
-	<20120303180402.GA30062@ericsson.com>
-Date: Mon, 5 Mar 2012 14:41:14 +0530
-Message-ID: <CAK44p20WsM4DHdcYF_NSWS7Ux_O6p2Fx1R9fdms5UAoWE3YXaA@mail.gmail.com>
-Subject: Re: [lm-sensors] [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal
- sensor driver to driver/mfd directory
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-arm-kernel@lists.infradead.org,
+        Venkatraman S <svenkatr@ti.com>, Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card
+ detect
+References: <20120301185044.29210.44521.stgit@kaulin.local> <20120301185535.29210.71546.stgit@kaulin.local> <4F50643B.9050500@ti.com> <20120302172251.GJ18901@atomide.com>
+In-Reply-To: <20120302172251.GJ18901@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 March 2012 23:34, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> On Sat, Mar 03, 2012 at 11:44:10AM -0500, Mark Brown wrote:
->> On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
->> > This movement is needed because the hwmon entries and corresponding
->> > sysfs interface is a duplicate of utilities already provided by
->> > driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
->> > and add necessary calls to get the temperature information.
->>
->> > --- a/Documentation/hwmon/exynos4_tmu
->> > +++ /dev/null
->>
->> Moving this seems to be a failure, the device is exposing a hwmon
->> interface even if you've moved the code to mfd (though it doesn't
->> actually look like a multi-function device at all as far as I can see -
->> usually a MFD would have a bunch of unrelated functionality while this
->> has one function used by two subsystems).
->>
->> If anything it looks like the ADC driver ought to be moved into IIO with
->> either generic or Exynos specific function drivers layered on top of it
->> in hwmon and thermal making use of the values that are read.
->>
-> I would agree. Or maybe move it all to thermal, since thermal devices register
-> the hwmon subsystem.
+On Friday 02 March 2012 10:52 PM, Tony Lindgren wrote:
+> BTW, with -rc5, looks like re-inserting omap_hsmmc on omap4 fails
+> to detect any cards, and then fails to unload. This works on omap3
+> just fine. Any ideas why that would be?
 
-Ok I agree with your suggestion of moving into thermal. Since I wanted
-to separate exynos specific generic thermal implementation with the
-H/W driver so that other versions of the sensor driver can easily hook
-into the common part. Anyway this implementation seems possible.
+Yeah, looks like thats broken. I am not sure whats going wrong though.
+I just enabled CONFIG_MMC_DEBUG and saw these logs below.
 
-Thanks for the comments
->
-> Guenter
+Venkat/Balaji, care to look at this one?
+
+# insmod omap_hsmmc.ko
+[   43.358398] omap_hsmmc omap_hsmmc.0: context was not lost
+[   43.364105] omap_hsmmc omap_hsmmc.0: enabled
+[   44.434661] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
+[   44.442352] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
+[   44.474365] omap_hsmmc omap_hsmmc.0: disabled
+[   44.482208] omap_hsmmc omap_hsmmc.4: context was not lost
+[   44.482208] omap_hsmmc omap_hsmmc.4: enabled
+[   44.546600] omap_hsmmc omap_hsmmc.0: context was not lost
+[   44.552276] omap_hsmmc omap_hsmmc.0: enabled
+[   44.552276] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
+[   44.563720] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 18 width 0 
+timing 0
+[   44.572174] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
+[   44.613800] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 18 
+width 0 timing 0
+[   44.621887] omap_hsmmc omap_hsmmc.0: Set clock to 400000Hz
+[   44.735290] mmc0: starting CMD52 arg 00000c00 flags 00000195
+[   44.741271] omap_hsmmc omap_hsmmc.0: mmc0: CMD52, argument 0x00000c00
+[   45.560241] mmc1: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0 
+timing 0
+[   45.567871] omap_hsmmc omap_hsmmc.4: Set clock to 0Hz
+[   45.591491] omap_hsmmc omap_hsmmc.4: disabled
+#
+#
+# rmmod omap_hsmmc
+[  607.302307] omap_hsmmc omap_hsmmc.4: context was not lost
+[  607.308044] omap_hsmmc omap_hsmmc.4: enabled
+[  607.312591] omap_hsmmc omap_hsmmc.4: disabled
+[  607.317199] omap_hsmmc omap_hsmmc.4: context was not lost
+[  607.322875] omap_hsmmc omap_hsmmc.4: enabled
+
