@@ -1,231 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab2CEHQD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 02:16:03 -0500
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:56827 "EHLO
-	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab2CEHQB (ORCPT
+	id S1755576Ab2CEHUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 02:20:41 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:45378 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805Ab2CEHUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 02:16:01 -0500
-From: Barry Song <Barry.Song@csr.com>
-To: <mina86@mina86.com>, <m.szyprowski@samsung.com>
-CC: <workgroup.linux@csr.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Barry Song <Baohua.Song@csr.com>
-Subject: [PATCH v2] MM: CMA: add a simple kernel module as the helper to test CMA
-Date: Mon, 5 Mar 2012 15:13:46 +0800
-Message-ID: <1330931626-30855-1-git-send-email-Barry.Song@csr.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 5 Mar 2012 02:20:40 -0500
+Date: Mon, 5 Mar 2012 10:22:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, smatch@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: Re: Smatch v1.56 released
+Message-ID: <20120305072220.GL22598@mwanda>
+References: <20120304180455.GA1003@mwanda>
+ <1330886330.7070.22.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.125.36.195]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dpynvXbW/eW9Tpc3"
+Content-Disposition: inline
+In-Reply-To: <1330886330.7070.22.camel@joe2Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4F546927.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Barry Song <Baohua.Song@csr.com>
 
-Any write request to /dev/cma_test will let the module to allocate memory from
-CMA, for example:
+--dpynvXbW/eW9Tpc3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1st time
-$ echo 1024 > /dev/cma_test
-will require cma_test to request 1MB(1024KB)
-2nd time
-$ echo 2048 > /dev/cma_test
-will require cma_test to request 2MB(2048KB)
+On Sun, Mar 04, 2012 at 10:38:50AM -0800, Joe Perches wrote:
+> On Sun, 2012-03-04 at 21:04 +0300, Dan Carpenter wrote:
+> > Smatch still produces a lot of false positives.  Also as bugs get
+> > fixed in the kernel, the false positive to real bug ratio gets
+> > worse and worse.  But it does find real bugs as well.
+>=20
+> Perhaps a database of known false positives and a mechanism
+> to use it to see only new instances could be created.
 
-Any read request to /dev/cma_test will let the module to free the 1st valid
-memory from CMA, for example:
+What I do is only look at new bugs.  I've got a script
+	smatch_scripts/new_bugs.sh
+That takes the output from two smatch runs and prints the bugs which
+are new.
 
-1st time
-$ cat /dev/cma_test
-will require cma_test to free the 1MB allocated in the first write request
-2nd time
-$ cat /dev/cma_test
-will require cma_test to free the 2MB allocated in the second write request
+Artem has a set of scripts he's working on as well.
 
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
----
- -v2:
- move to support multiple allocation and permit users to set alloc size
- (pointed out by Michal Nazarewicz)
-
- tools/cma/Makefile   |   13 +++++
- tools/cma/cma_test.c |  140 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 153 insertions(+), 0 deletions(-)
- create mode 100644 tools/cma/Makefile
- create mode 100644 tools/cma/cma_test.c
-
-diff --git a/tools/cma/Makefile b/tools/cma/Makefile
-new file mode 100644
-index 0000000..d15c2c0
---- /dev/null
-+++ b/tools/cma/Makefile
-@@ -0,0 +1,13 @@
-+# Kernel modules
-+#
-+# To compile for ARM:
-+# make ARCH=arm CC=arm-none-linux-gnueabi-gcc
-+#
-+obj-m	+= cma_test.o
-+
-+build: kernel_modules
-+
-+kernel_modules:
-+	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR)
-+clean:
-+	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR) clean
-diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
-new file mode 100644
-index 0000000..46af250
---- /dev/null
-+++ b/tools/cma/cma_test.c
-@@ -0,0 +1,140 @@
-+/*
-+ * kernel module helper for testing CMA
-+ *
-+ * Copyright (c) 2011 Cambridge Silicon Radio Limited, a CSR plc group company.
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+struct cma_allocation {
-+	struct list_head list;
-+	unsigned long size;
-+	dma_addr_t dma;
-+	void *virt;
-+};
-+
-+static struct device *cma_dev;
-+static LIST_HEAD(cma_allocations);
-+static DEFINE_SPINLOCK(cma_lock);
-+
-+/*
-+ * any read request will free the 1st allocated coherent memory, eg.
-+ * cat /dev/cma_test
-+ */
-+static ssize_t
-+cma_test_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
-+{
-+	struct cma_allocation *alloc = NULL;
-+
-+	spin_lock(&cma_lock);
-+	if (!list_empty(&cma_allocations)) {
-+		alloc = list_first_entry(&cma_allocations,
-+			struct cma_allocation, list);
-+		list_del(&alloc->list);
-+	}
-+	spin_unlock(&cma_lock);
-+
-+	if (alloc) {
-+		dma_free_coherent(cma_dev, alloc->size, alloc->virt,
-+			alloc->dma);
-+
-+		_dev_info(cma_dev, "free CM at virtual address: 0x%p dma address: 0x%p size:%luKiB\n",
-+			alloc->virt, (void *)alloc->dma, alloc->size / SZ_1K);
-+		kfree(alloc);
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * any write request will alloc a new coherent memory, eg.
-+ * echo 1024 > /dev/cma_test
-+ * will request 1024KiB by CMA
-+ */
-+static ssize_t
-+cma_test_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
-+{
-+	struct cma_allocation *alloc;
-+	int ret;
-+
-+	alloc = kmalloc(sizeof *alloc, GFP_KERNEL);
-+	if (!alloc)
-+		return -ENOMEM;
-+
-+	ret = kstrtoul_from_user(buf, count, 0, &alloc->size);
-+	if (ret)
-+		return ret;
-+
-+	if (!alloc->size)
-+		return -EINVAL;
-+
-+	if (alloc->size > (ULONG_MAX << PAGE_SHIFT))
-+		return -EOVERFLOW;
-+
-+	alloc->size *= SZ_1K;
-+	alloc->virt = dma_alloc_coherent(cma_dev, alloc->size,
-+		&alloc->dma, GFP_KERNEL);
-+
-+	if (alloc->virt) {
-+		_dev_info(cma_dev, "allocate CM at virtual address: 0x%p"
-+			"address: 0x%p size:%luKiB\n", alloc->virt,
-+			(void *)alloc->dma, alloc->size / SZ_1K);
-+
-+		spin_lock(&cma_lock);
-+		list_add_tail(&alloc->list, &cma_allocations);
-+		spin_unlock(&cma_lock);
-+
-+		return count;
-+	} else {
-+		dev_err(cma_dev, "no mem in CMA area\n");
-+		kfree(alloc);
-+		return -ENOSPC;
-+	}
-+}
-+
-+static const struct file_operations cma_test_fops = {
-+	.owner =    THIS_MODULE,
-+	.read  =    cma_test_read,
-+	.write =    cma_test_write,
-+};
-+
-+static struct miscdevice cma_test_misc = {
-+	.name = "cma_test",
-+	.fops = &cma_test_fops,
-+};
-+
-+static int __init cma_test_init(void)
-+{
-+	int ret = 0;
-+
-+	ret = misc_register(&cma_test_misc);
-+	if (unlikely(ret)) {
-+		pr_err("failed to register cma test misc device!\n");
-+		return ret;
-+	}
-+	cma_dev = cma_test_misc.this_device;
-+	cma_dev->coherent_dma_mask = ~0;
-+	_dev_info(cma_dev, "registered.\n");
-+
-+	return ret;
-+}
-+module_init(cma_test_init);
-+
-+static void __exit cma_test_exit(void)
-+{
-+	misc_deregister(&cma_test_misc);
-+}
-+module_exit(cma_test_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Barry Song <Baohua.Song@csr.com>");
-+MODULE_DESCRIPTION("kernel module to help the test of CMA");
-+MODULE_ALIAS("CMA test");
--- 
-1.7.1
+regards,
+dan carpenter
 
 
+--dpynvXbW/eW9Tpc3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPVGmsAAoJEOnZkXI/YHqREEwP/3LKxBhtBVeoWKs9dbeFDA0V
+xi+jzYfKNJPHU/Bm1JoKwGuSBKGw7+bQ2S3Tifm4d56TLqvue+Ya0pwYug4KUiC1
+3WaIoeVyid5QS3LO7DPjHpqRrR4OKhA72QrMqM/h2f+F6VMY3nDoYluQlsBL487Y
+AzQ1xy420WI3aFwOO8X/Z+kfKxMOSQqLwxTeeIvgC63WxcBiPRzKdH/zag8FqZXT
+8pPtWHTSUQ15Kd2oqE53lXCYVJxZSx/UhKqzvdgSOs/kunYfnFUCKRezxNfpSjhK
+5uDK6qYZnyXnBmalmPsfYMUkbQ8EyXWTV8EuSyXbVTdfKsVCBYAPlZXubHfrP7YN
+7I9BZ20aCfQDsR3FcBA5yTVOeaJm5F2hP9if8+dgLwA/qFoDDQVJ/xvEAsO8tToP
+zBJOzu0iBwvHXzPeA7gjVB/StsKbel7/aZdG4MtdqWdnHZ8cDfpUPY6XyEExeDuI
+hfeL5c9vYjjqYgzcKyh+FXvN7Mvm8M81ZFOno2eJFNWZy78wSbIcgO/Oh2ViCw0B
+EK4gadum5KEpDIzkVb0uu+PMf3ymRGAh9Ofu3rxnA/o/QnEmJ3mqRGzhIj3uQ+Ly
+x342ctSU2tS6tmilifSizPwT1p6CimYvOh9s0p38PwFwr9RgNofkdpwWEg6cBhcQ
+gHhuXQjg5eQPMQ6s+ZcZ
+=KOa+
+-----END PGP SIGNATURE-----
+
+--dpynvXbW/eW9Tpc3--
