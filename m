@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964916Ab2CEOD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:03:27 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:34711 "EHLO
+	id S965204Ab2CEOE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:04:29 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34696 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310Ab2CENxP (ORCPT
+	with ESMTP id S932398Ab2CENxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 08:53:15 -0500
+	Mon, 5 Mar 2012 08:53:14 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 61/68] TTY: amiserial, use tty_port_close_end
-Date: Mon,  5 Mar 2012 14:52:48 +0100
-Message-Id: <1330955575-26641-62-git-send-email-jslaby@suse.cz>
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 08/68] TTY: serial, simplify ASYNC_USR_MASK
+Date: Mon,  5 Mar 2012 14:51:55 +0100
+Message-Id: <1330955575-26641-9-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
@@ -22,51 +21,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm, the code was sleeping with interrupts disabled. This was not
-good. Fix this by turning interrupts at an appropriate place. (The
-race is protected by CLOSING flag.)
-
-After the move, the code is identical to tty_port_close_end, so use
-it!
+By using ASYNC_SPD_MASK instead of the single speed bits.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/tty/amiserial.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ include/linux/serial.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-index 8cc8e15..9c8b199 100644
---- a/drivers/tty/amiserial.c
-+++ b/drivers/tty/amiserial.c
-@@ -1433,6 +1433,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 	 * the line discipline to only process XON/XOFF characters.
- 	 */
- 	tty->closing = 1;
-+	local_irq_restore(flags);
- 	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
- 		tty_wait_until_sent(tty, port->closing_wait);
- 	/*
-@@ -1461,17 +1462,9 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
- 	rs_flush_buffer(tty);
- 		
- 	tty_ldisc_flush(tty);
--	tty->closing = 0;
- 	port->tty = NULL;
--	if (port->blocked_open) {
--		if (port->close_delay) {
--			msleep_interruptible(jiffies_to_msecs(port->close_delay));
--		}
--		wake_up_interruptible(&port->open_wait);
--	}
--	port->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
--	wake_up_interruptible(&port->close_wait);
--	local_irq_restore(flags);
-+
-+	tty_port_close_end(port, tty);
- }
+diff --git a/include/linux/serial.h b/include/linux/serial.h
+index 3d86517..441980e 100644
+--- a/include/linux/serial.h
++++ b/include/linux/serial.h
+@@ -152,8 +152,8 @@ struct serial_uart_config {
+ #define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
  
- /*
+ #define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
+-#define ASYNC_USR_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI| \
+-		ASYNC_CALLOUT_NOHUP|ASYNC_SPD_SHI|ASYNC_LOW_LATENCY)
++#define ASYNC_USR_MASK		(ASYNC_SPD_MASK|ASYNC_CALLOUT_NOHUP| \
++		ASYNC_LOW_LATENCY)
+ #define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
+ #define ASYNC_SPD_WARP		(ASYNC_SPD_HI|ASYNC_SPD_SHI)
+ #define ASYNC_SPD_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI|ASYNC_SPD_SHI)
 -- 
 1.7.9.2
 
