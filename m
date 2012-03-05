@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab2CEXmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:42:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52460 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756666Ab2CEXmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:42:09 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm8994: Fix register default for WM1811 AntiPOP2
-Date: Mon,  5 Mar 2012 23:42:06 +0000
-Message-Id: <1330990926-12191-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1757979Ab2CEXmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:42:47 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:33259 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756678Ab2CEXmp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 18:42:45 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jrnieder@gmail.com designates 10.50.212.40 as permitted sender) smtp.mail=jrnieder@gmail.com; dkim=pass header.i=jrnieder@gmail.com
+Date: Mon, 5 Mar 2012 17:42:40 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        =?utf-8?Q?=C3=89meric?= Maschino <emeric.maschino@gmail.com>,
+        Patrick Baggett <baggett.patrick@gmail.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [regression] Re: [PATCH 2/3] futex: Sanitize
+ cmpxchg_futex_value_locked API
+Message-ID: <20120305234240.GB1360@burratino>
+References: <20110307021127.GB31188@google.com>
+ <alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+ <20110309112550.GA3050@google.com>
+ <alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
+ <20110311021654.GA26122@google.com>
+ <20110311024851.GC26122@google.com>
+ <20120305000112.GA27512@burratino>
+ <3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should be all bits clear.
+Luck, Tony wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm8994-regmap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> It doesn't look like the return value (r8) is actually being set beyond
+>> initialized to 0. If there is some ia64 instruction that modifies it, GCC
+>> doesn't know about it from the inline assembly (r8 doesn't appear in the
+>> inputs/outputs list). From looking at the x86 version (agh, inline asm is
+>> hard to parse), it does modify the return value based on whether the
+>> comparison was a success or not, and the return value is certainly used by
+>> the callers.
+>
+> The commit comment for the change makes it sound like the return value
+> is an error code (-ENOSYS if the function isn't implemented/configured;
+> -EFAULT if the user address is bogus) - or zero if nothing bad happened.
 
-diff --git a/drivers/mfd/wm8994-regmap.c b/drivers/mfd/wm8994-regmap.c
-index bd50d80..f00427d 100644
---- a/drivers/mfd/wm8994-regmap.c
-+++ b/drivers/mfd/wm8994-regmap.c
-@@ -59,7 +59,7 @@ static struct reg_default wm1811_defaults[] = {
- 	{ 0x0036, 0x0000 },    /* R54   - Speaker Mixer */
- 	{ 0x0037, 0x0000 },    /* R55   - Additional Control */
- 	{ 0x0038, 0x0000 },    /* R56   - AntiPOP (1) */
--	{ 0x0039, 0x0180 },    /* R57   - AntiPOP (2) */
-+	{ 0x0039, 0x0000 },    /* R57   - AntiPOP (2) */
- 	{ 0x003B, 0x000D },    /* R59   - LDO 1 */
- 	{ 0x003C, 0x0003 },    /* R60   - LDO 2 */
- 	{ 0x003D, 0x0039 },    /* R61   - MICBIAS1 */
--- 
-1.7.9.1
+Yes, that's right.
 
+> Not "the comparison was a success or not".
+>
+> What's the real answer? The ia64 code is returning 0 regardless of whether the
+> compare/exchange found the old value or not.  Is this a bad assumption?
+
+No, I think something else is wrong, though I don't know what it would
+be.
+
+Émeric, was the bisection result reproducible?  E.g., if you try
+building 37a9d912b24f and 37a9d912b24f^ again, does the former
+consistently produce and the latter consistently not produce a crashy
+system?
