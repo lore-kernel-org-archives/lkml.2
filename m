@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2CEQQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:16:59 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50087 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab2CEQQ5 (ORCPT
+	id S1755946Ab2CEQRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:17:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65482 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab2CEQQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:16:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.216.134.205 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
+	Mon, 5 Mar 2012 11:16:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of javier.martin@vista-silicon.com designates 10.180.106.9 as permitted sender) smtp.mail=javier.martin@vista-silicon.com
 MIME-Version: 1.0
 From: Javier Martin <javier.martin@vista-silicon.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
         vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de,
         Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH 05/14] dmaengine: imx-dma: remove 'imxdma_config_channel_hw' function.
-Date: Mon,  5 Mar 2012 17:16:27 +0100
-Message-Id: <1330964196-32623-6-git-send-email-javier.martin@vista-silicon.com>
+Subject: [PATCH 06/14] dmaengine: imx-dma: remove 'imxdma_setup_sg_hw' function.
+Date: Mon,  5 Mar 2012 17:16:28 +0100
+Message-Id: <1330964196-32623-7-git-send-email-javier.martin@vista-silicon.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
 References: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
@@ -24,84 +24,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removing this function allows moving 'ccr_to_device' and
+'ccr_from_device' from internal struct to channel struct.
 
 Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
 ---
- drivers/dma/imx-dma.c |   46 +++++++++++++---------------------------------
- 1 files changed, 13 insertions(+), 33 deletions(-)
+ drivers/dma/imx-dma.c |   97 ++++++++++++++++++-------------------------------
+ 1 files changed, 35 insertions(+), 62 deletions(-)
 
 diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 8a0afb1..5432b04 100644
+index 5432b04..cb45aff 100644
 --- a/drivers/dma/imx-dma.c
 +++ b/drivers/dma/imx-dma.c
-@@ -314,32 +314,6 @@ static void imxdma_disable_hw(struct imxdma_channel *imxdmac)
+@@ -133,9 +133,6 @@ struct imxdma_channel_internal {
+ 
+ 	int in_use;
+ 
+-	u32 ccr_from_device;
+-	u32 ccr_to_device;
+-
+ 	struct timer_list watchdog;
+ 
+ 	int hw_chaining;
+@@ -180,6 +177,8 @@ struct imxdma_channel {
+ 	dma_cookie_t			last_completed;
+ 	int				dma_request;
+ 	struct scatterlist		*sg_list;
++	u32				ccr_from_device;
++	u32				ccr_to_device;
+ };
+ 
+ #define MAX_DMA_CHANNELS 8
+@@ -313,58 +312,6 @@ static void imxdma_disable_hw(struct imxdma_channel *imxdmac)
+ 	local_irq_restore(flags);
  }
  
- static int
--imxdma_config_channel_hw(struct imxdma_channel *imxdmac, unsigned int config_port,
--	unsigned int config_mem, unsigned int dmareq, int hw_chaining)
+-static int
+-imxdma_setup_sg_hw(struct imxdma_desc *d,
+-		 struct scatterlist *sg, unsigned int sgcount,
+-		 unsigned int dma_length, unsigned int dev_addr,
+-		 enum dma_transfer_direction direction)
 -{
+-	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
 -	int channel = imxdmac->channel;
--	u32 dreq = 0;
 -
--	imxdmac->internal.hw_chaining = 0;
+-	if (imxdmac->internal.in_use)
+-		return -EBUSY;
 -
--	if (hw_chaining) {
--		imxdmac->internal.hw_chaining = 1;
--		if (!imxdma_hw_chain(&imxdmac->internal))
--			return -EINVAL;
+-	imxdmac->internal.sg = sg;
+-	imxdmac->internal.resbytes = dma_length;
+-
+-	if (!sg || !sgcount) {
+-		printk(KERN_ERR "imxdma%d: imx_dma_setup_sg empty sg list\n",
+-		       channel);
+-		return -EINVAL;
 -	}
 -
--	if (dmareq)
--		dreq = CCR_REN;
+-	if (!sg->length) {
+-		printk(KERN_ERR "imxdma%d: imx_dma_setup_sg zero length\n",
+-		       channel);
+-		return -EINVAL;
+-	}
 -
--	imxdmac->internal.ccr_from_device = config_port | (config_mem << 2) | dreq;
--	imxdmac->internal.ccr_to_device = config_mem | (config_port << 2) | dreq;
+-	if (direction == DMA_DEV_TO_MEM) {
+-		pr_debug("imxdma%d: %s sg=%p sgcount=%d total length=%d "
+-			"dev_addr=0x%08x for read\n",
+-			channel, __func__, sg, sgcount, dma_length, dev_addr);
 -
--	imx_dmav1_writel(dmareq, DMA_RSSR(channel));
+-		imx_dmav1_writel(dev_addr, DMA_SAR(channel));
+-		imx_dmav1_writel(imxdmac->internal.ccr_from_device, DMA_CCR(channel));
+-	} else if (direction == DMA_MEM_TO_DEV) {
+-		pr_debug("imxdma%d: %s sg=%p sgcount=%d total length=%d "
+-			"dev_addr=0x%08x for write\n",
+-			channel, __func__, sg, sgcount, dma_length, dev_addr);
+-
+-		imx_dmav1_writel(dev_addr, DMA_DAR(channel));
+-		imx_dmav1_writel(imxdmac->internal.ccr_to_device, DMA_CCR(channel));
+-	} else {
+-		printk(KERN_ERR "imxdma%d: imx_dma_setup_sg bad dmamode\n",
+-		       channel);
+-		return -EINVAL;
+-	}
+-
+-	imxdma_sg_next(d, sg);
 -
 -	return 0;
 -}
 -
--static int
- imxdma_setup_sg_hw(struct imxdma_desc *d,
- 		 struct scatterlist *sg, unsigned int sgcount,
- 		 unsigned int dma_length, unsigned int dev_addr,
-@@ -628,7 +602,6 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ static void imxdma_watchdog(unsigned long data)
  {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
- 	struct dma_slave_config *dmaengine_cfg = (void *)arg;
--	int ret;
- 	unsigned long flags;
- 	unsigned int mode = 0;
- 
-@@ -664,13 +637,20 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 			mode = IMX_DMA_MEMSIZE_32;
- 			break;
- 		}
--		ret = imxdma_config_channel_hw(imxdmac,
--				mode | IMX_DMA_TYPE_FIFO,
--				IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
--				imxdmac->dma_request, 1);
- 
--		if (ret)
+ 	struct imxdma_channel *imxdmac = (struct imxdma_channel *)data;
+@@ -548,10 +495,37 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
+ 	/* Cyclic transfer is the same as slave_sg with special sg configuration. */
+ 	case IMXDMA_DESC_CYCLIC:
+ 	case IMXDMA_DESC_SLAVE_SG:
+-		ret = imxdma_setup_sg_hw(d, d->sg, d->sgcount, d->len,
+-					 imxdmac->per_address, d->direction);
+-		if (ret < 0)
 -			return ret;
-+		imxdmac->internal.hw_chaining = 1;
-+		if (!imxdma_hw_chain(&imxdmac->internal))
-+			return -EINVAL;
-+		imxdmac->internal.ccr_from_device =
-+			(mode | IMX_DMA_TYPE_FIFO) |
-+			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
-+			CCR_REN;
-+		imxdmac->internal.ccr_to_device =
-+			(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
-+			((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
-+		imx_dmav1_writel(imxdmac->dma_request,
-+				 DMA_RSSR(imxdmac->channel));
++		imxdmac->internal.sg = d->sg;
++		imxdmac->internal.resbytes = d->len;
 +
- 		/* Set burst length */
- 		imx_dmav1_writel(imxdmac->watermark_level * imxdmac->word_size,
- 				 DMA_BLR(imxdmac->channel));
++		if (d->direction == DMA_DEV_TO_MEM) {
++			imx_dmav1_writel(imxdmac->per_address,
++					 DMA_SAR(imxdmac->channel));
++			imx_dmav1_writel(imxdmac->ccr_from_device,
++					 DMA_CCR(imxdmac->channel));
++
++			dev_dbg(imxdma->dev, "%s channel: %d sg=%p sgcount=%d "
++				"total length=%d dev_addr=0x%08x (dev2mem)\n",
++				__func__, imxdmac->channel, d->sg, d->sgcount,
++				d->len, imxdmac->per_address);
++		} else if (d->direction == DMA_MEM_TO_DEV) {
++			imx_dmav1_writel(imxdmac->per_address,
++					 DMA_DAR(imxdmac->channel));
++			imx_dmav1_writel(imxdmac->ccr_to_device,
++					 DMA_CCR(imxdmac->channel));
++
++			dev_dbg(imxdma->dev, "%s channel: %d sg=%p sgcount=%d "
++				"total length=%d dev_addr=0x%08x (mem2dev)\n",
++				__func__, imxdmac->channel, d->sg, d->sgcount,
++				d->len, imxdmac->per_address);
++		} else {
++			dev_err(imxdma->dev, "%s channel: %d bad dma mode\n",
++				__func__, imxdmac->channel);
++			return -EINVAL;
++		}
++
++		imxdma_sg_next(d, d->sg);
++
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -641,11 +615,10 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		imxdmac->internal.hw_chaining = 1;
+ 		if (!imxdma_hw_chain(&imxdmac->internal))
+ 			return -EINVAL;
+-		imxdmac->internal.ccr_from_device =
+-			(mode | IMX_DMA_TYPE_FIFO) |
++		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
+ 			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
+ 			CCR_REN;
+-		imxdmac->internal.ccr_to_device =
++		imxdmac->ccr_to_device =
+ 			(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
+ 			((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
+ 		imx_dmav1_writel(imxdmac->dma_request,
 -- 
 1.7.0.4
 
