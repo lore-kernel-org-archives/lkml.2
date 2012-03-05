@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2CED7P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:59:15 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43517 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111Ab2CED7O (ORCPT
+	id S1756210Ab2CEEAv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 23:00:51 -0500
+Received: from exprod5og106.obsmtp.com ([64.18.0.182]:54779 "HELO
+	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756100Ab2CEEAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:59:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of darkshikari@gmail.com designates 10.236.154.232 as permitted sender) smtp.mail=darkshikari@gmail.com; dkim=pass header.i=darkshikari@gmail.com
+	Sun, 4 Mar 2012 23:00:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhdang@apm.com designates 10.68.73.234 as permitted sender) smtp.mail=dhdang@apm.com
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
-References: <alpine.LFD.2.02.1203021544300.28247@i5.linux-foundation.org>
-From: Jason Garrett-Glaser <jason@x264.com>
-Date: Sun, 4 Mar 2012 19:58:33 -0800
-X-Google-Sender-Auth: xcBHXpB1ZLi0lajq72U6tqq9XX0
-Message-ID: <CABS55+D97mKFdQhGdAXjMGfyRiWd4Os8wfRq9YNa-FQAEQSR7Q@mail.gmail.com>
-Subject: Re: Word-at-a-time dcache name accesses (was Re: .. anybody know of
- any filesystems that depend on the exact VFS 'namehash' implementation?)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Duc Dang <dhdang@apm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
+        Josh Boyer <jwboyer@gmail.com>
+Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Duc Dang <dhdang@apm.com>
+Subject: [PATCH v2 1/2] powerpc/44x: Add new compatible value for EMAC node of APM821XX dts file.
+Date: Mon,  5 Mar 2012 11:00:19 +0700
+Message-Id: <1330920019-2957-1-git-send-email-dhdang@apm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1329466058-15969-1-git-send-email-dhdang@apm.com>
+References: <1329466058-15969-1-git-send-email-dhdang@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 2, 2012 at 3:46 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Here's a new version of that patch.
->
-> It's based n the cleanups I committed and pushed out today, so the base
-> may not look familiar, but the upside is that this does the configuration
-> automatically (currently the patch enables the word accesses on x86 by
-> default as long as DEBUG_PAGEALLOC isn't set).
->
-> I worked around my problems with stupid branch prediction on the '/' test
-> at the end by just reorganizing the code a bit, and it actually all just
-> looks cleaner.
->
-> This *does* assume that "bsf" is a reasonably fast instruction, which is
-> not necessarily the case especially on 32-bit x86. So the config option
-> choice for this might want some tuning even on x86, but it would be lovely
-> to get comments and have people test it out on older hardware.
+This compatible value will be used to distinguish some special features of APM821XX EMAC: no half duplex mode support, configuring jumbo frame.
 
-There is an improvement you can make to this.  "bsf" is microcoded in
-many future CPUs (e.g. Piledriver) in favor of tzcnt, which has
-slightly different flag behavior and no undefined behavior and is part
-of BMI1.  This costs a few clocks in such chips -- not as bad as the
-Really Slow bsf in chips like the Pentium 4 and Atom, but more than is
-necessary (and stalls the instruction decoder, at least on AMD, while
-the microcode unit runs).
+Signed-off-by: Duc Dang <dhdang@apm.com>
+---
+v2:
+ No change since v1 patch set. Added for completeness.
 
-However, "tzcnt" is opcode-equivalent to "rep bsf", for some odd sort
-of backwards compatibility.  Therefore, if your code does the same
-thing with both tzcnt and bsf, you can simply use rep bsf instead, and
-it'll work without any CPU checks.  The manuals claim that this works
-on legacy CPUs, i.e. won't SIGILL.
+ arch/powerpc/boot/dts/bluestone.dts |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The only downside I've noticed to this is that valgrind incorrectly
-SIGILLs on rep bsf.
+diff --git a/arch/powerpc/boot/dts/bluestone.dts b/arch/powerpc/boot/dts/bluestone.dts
+index 2a56a0d..74876f7 100644
+--- a/arch/powerpc/boot/dts/bluestone.dts
++++ b/arch/powerpc/boot/dts/bluestone.dts
+@@ -222,7 +222,7 @@
+ 
+ 			EMAC0: ethernet@ef600c00 {
+ 				device_type = "network";
+-				compatible = "ibm,emac4sync";
++				compatible = "ibm,emac-apm821xx", "ibm,emac4sync";
+ 				interrupt-parent = <&EMAC0>;
+ 				interrupts = <0x0 0x1>;
+ 				#interrupt-cells = <1>;
+-- 
+1.7.5.4
 
-Jason
