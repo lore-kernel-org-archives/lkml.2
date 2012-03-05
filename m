@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab2CERIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:08:05 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:57236 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756766Ab2CERIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:08:02 -0500
-X-Sasl-enc: XwV3CCeuSGbZovDmplx+GjLJqLF5/+zctVV7Q2uq8LOw 1330967282
-Message-ID: <4F54F2F0.8090909@imap.cc>
-Date: Mon, 05 Mar 2012 18:08:00 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.27) Gecko/20120215 SUSE/3.1.19 Thunderbird/3.1.19
+	id S1757084Ab2CERKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:10:32 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:56242 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756766Ab2CERK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 12:10:29 -0500
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Hansjoerg Lipp <hjlipp@web.de>,
-        gigaset307x-common@lists.sourceforge.net
-Subject: Re: [PATCH 68/68] TTY: isdn/gigaset, use tty_port
-References: <1330955575-26641-1-git-send-email-jslaby@suse.cz> <1330955575-26641-69-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1330955575-26641-69-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 05 Mar 2012 09:10:02 -0800
+From: Eric B Munson <emunson@mgebm.net>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: <avi@redhat.com>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <ryanh@linux.vnet.ibm.com>, <aliguori@us.ibm.com>,
+        <kvm@vger.kernel.org>, <linux-arch@vger.kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4 V13] Avoid soft lockup message when KVM is stopped
+ by host
+In-Reply-To: <20120305163943.GA10338@amt.cnet>
+References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
+ <20120214152931.GA6881@mgebm.net> <20120214153836.GA21106@amt.cnet>
+ <20120214155013.GB6881@mgebm.net> <20120214161009.GA21515@amt.cnet>
+ <20120214211720.GC6881@mgebm.net> <20120305163943.GA10338@amt.cnet>
+Message-ID: <5f5cd9a500911093c5c585c9e78e8362@mgebm.net>
+User-Agent: Roundcube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Mon, 5 Mar 2012 13:39:43 -0300, Marcelo Tosatti wrote:
+> On Tue, Feb 14, 2012 at 04:17:20PM -0500, Eric B Munson wrote:
+>> On Tue, 14 Feb 2012, Marcelo Tosatti wrote:
+>>
+>> > On Tue, Feb 14, 2012 at 10:50:13AM -0500, Eric B Munson wrote:
+>> > > On Tue, 14 Feb 2012, Marcelo Tosatti wrote:
+>> > >
+>> > > > On Tue, Feb 14, 2012 at 10:29:31AM -0500, Eric B Munson wrote:
+>> > > > > On Wed, 08 Feb 2012, Eric B Munson wrote:
+>> > > > >
+>> > > > > >
+>> > > > > > When a guest kernel is stopped by the host hypervisor it 
+>> can look like a soft
+>> > > > > > lockup to the guest kernel.  This false warning can mask 
+>> later soft lockup
+>> > > > > > warnings which may be real.  This patch series adds a 
+>> method for a host
+>> > > > > > hypervisor to communicate to a guest kernel that it is 
+>> being stopped.  The
+>> > > > > > final patch in the series has the watchdog check this flag 
+>> when it goes to
+>> > > > > > issue a soft lockup warning and skip the warning if the 
+>> guest knows it was
+>> > > > > > stopped.
+>> > > > > >
+>> > > > > > It was attempted to solve this in Qemu, but the side 
+>> effects of saving and
+>> > > > > > restoring the clock and tsc for each vcpu put the wall 
+>> clock of the guest behind
+>> > > > > > by the amount of time of the pause.  This forces a guest 
+>> to have ntp running
+>> > > > > > in order to keep the wall clock accurate.
+>> > > > >
+>> > > > > Avi,
+>> > > > >
+>> > > > > Is this set fit for merging or is there something else you 
+>> want changed?
+>> > > >
+>> > > > Eric,
+>> > > >
+>> > > > On Message-ID: <20120210160536.GA23363@amt.cnet>, i asked:
+>> > > >
+>> > > > How is the stub getting included for other architectures 
+>> again?
+>> > > >
+>> > >
+>> > > Marcelo,
+>> > >
+>> > > Sorry, I put out V13 to answer that.  There is a stub in 
+>> asm-generic that was
+>> > > lost in the V11-V12 rebase.  This stub has be included in the 
+>> V13 set.
+>> > >
+>> > > Eric
+>> >
+>> > Eric,
+>> >
+>> > I know the stub has been included in the series. But i am asking 
+>> how
+>> > it is #include'ed for other architectures? (can't see that).
+>>
+>> Marcelo,
+>>
+>> kernel/watchdog.c now includes linux/kvm_para.h which includes 
+>> asm/kvm_para.h.
+>> The check_and_clear function is defined in arch 
+>> include/asm/kvm_para.h or in
+>> asm-generic/kvm_para.h for any arch lacking the specific header in 
+>> their asm
+>> include dir.  If I have misunderstood how these headers work, please 
+>> let me
+>> know and I will fix it.
+>
+> There is no automatic inclusion of asm-generic/ headers. You must 
+> create
+> kvm_para.h in each architecture's include/asm/ directory, #including
+> asm-generic/kvm_para.h.
 
-Am 05.03.2012 14:52, schrieb Jiri Slaby:
-> Let us port the code to use tty_port. We now use open_count and tty
-> from there. This allows us also to use tty_port_tty_set with tty
-> refcounting instead of hand-written locking and logic.
-> 
-> Note that tty and open_count are no longer protected by cs->lock. It is
-> protected by tty_port->lock. But since all the places where they were
-> used are now switched to the helpers, we are fine.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Hansjoerg Lipp <hjlipp@web.de>
-> Cc: Tilman Schmidt <tilman@imap.cc>
-> Cc: gigaset307x-common@lists.sourceforge.net
 
-Very nice. Thanks!
+Okay, that will go into V16 then...
 
-Acked-by: Tilman Schmidt <tilman@imap.cc>
-
-- -- 
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk9U8vAACgkQQ3+did9BuFv8RACeLMRSUGhjotg0il1LtWqtfrzR
-sakAn0LJr66dYyUXteH44p5+KFQuS5v9
-=Is+Q
------END PGP SIGNATURE-----
+Eric
