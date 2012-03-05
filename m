@@ -1,40 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab2CEWve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:51:34 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53707 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806Ab2CEWvd (ORCPT
+	id S1757261Ab2CEWyw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:54:52 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:49881 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2CEWyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:51:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.132.222 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <86ipiiisju.fsf@sumi.keithp.com>
-References: <alpine.DEB.2.00.1203051856130.31585@skynet.skynet.ie>
- <CA+55aFw6w85_6wCTcB_AvXnRgFYhkB8rxpe9FOei3j0ZpGf0FQ@mail.gmail.com> <86ipiiisju.fsf@sumi.keithp.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 5 Mar 2012 14:51:12 -0800
-X-Google-Sender-Auth: jhneLYOeuBuChQNxLfi9pysLE3I
-Message-ID: <CA+55aFyuieJ-Ac2Y2C=KXBWkgheD6rEic4YqObx5jvM1Cg=GQQ@mail.gmail.com>
-Subject: Re: [git pull] drm gma500 fix
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Mar 2012 17:54:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.73.234 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330988080.5328.1.camel@phoenix>
+Subject: [PATCH] regulator: da903x: Use DIV_ROUND_UP macro to calculate
+ selector
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Mike Rapoport <mike@compulab.co.il>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 06 Mar 2012 06:54:40 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 2:36 PM, Keith Packard <keithp@keithp.com> wrote:
-> <#part sign=pgpmime>
-> On Mon, 5 Mar 2012 14:09:13 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->> Hmm. Is freedesktop.org having trouble?
->
-> ECC memory errors -- we're moving this stuff to a new machine as quickly
-> as rsync can run...
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/da903x.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Ok. I'll just take Alan's patch directly as a patch.
+diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
+index 8dbc54d..1851f09 100644
+--- a/drivers/regulator/da903x.c
++++ b/drivers/regulator/da903x.c
+@@ -119,7 +119,7 @@ static int da903x_set_ldo_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	val = (min_uV - info->min_uV + info->step_uV - 1) / info->step_uV;
++	val = DIV_ROUND_UP(min_uV - info->min_uV, info->step_uV);
+ 	*selector = val;
+ 	val <<= info->vol_shift;
+ 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
+@@ -202,7 +202,7 @@ static int da9030_set_ldo1_15_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	val = (min_uV - info->min_uV + info->step_uV - 1) / info->step_uV;
++	val = DIV_ROUND_UP(min_uV - info->min_uV, info->step_uV);
+ 	*selector = val;
+ 	val <<= info->vol_shift;
+ 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
+@@ -233,10 +233,10 @@ static int da9030_set_ldo14_voltage(struct regulator_dev *rdev,
+ 
+ 	thresh = (info->max_uV + info->min_uV) / 2;
+ 	if (min_uV < thresh) {
+-		val = (thresh - min_uV + info->step_uV - 1) / info->step_uV;
++		val = DIV_ROUND_UP(thresh - min_uV, info->step_uV);
+ 		val |= 0x4;
+ 	} else {
+-		val = (min_uV - thresh + info->step_uV - 1) / info->step_uV;
++		val = DIV_ROUND_UP(min_uV - thresh, info->step_uV);
+ 	}
+ 
+ 	*selector = val;
+@@ -281,7 +281,7 @@ static int da9034_set_dvc_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	val = (min_uV - info->min_uV + info->step_uV - 1) / info->step_uV;
++	val = DIV_ROUND_UP(min_uV - info->min_uV, info->step_uV);
+ 	*selector = val;
+ 	val <<= info->vol_shift;
+ 	mask = ((1 << info->vol_nbits) - 1)  << info->vol_shift;
+@@ -307,7 +307,7 @@ static int da9034_set_ldo12_voltage(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	val = (min_uV - info->min_uV + info->step_uV - 1) / info->step_uV;
++	val = DIV_ROUND_UP(min_uV - info->min_uV, info->step_uV);
+ 	val = (val >= 20) ? val - 12 : ((val > 7) ? 8 : val);
+ 	*selector = val;
+ 	val <<= info->vol_shift;
+-- 
+1.7.5.4
 
-No worries.
 
-                    Linus
+
