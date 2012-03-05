@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab2CEOCR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:02:17 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:34756 "EHLO
+	id S964976Ab2CEOCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:02:15 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34765 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab2CENxU (ORCPT
+	with ESMTP id S932343Ab2CENxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 08:53:20 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Hansjoerg Lipp <hjlipp@web.de>, Tilman Schmidt <tilman@imap.cc>,
-        gigaset307x-common@lists.sourceforge.net
-Subject: [PATCH 67/68] TTY: isdn/gigaset, do not set tty->driver_data to NULL
-Date: Mon,  5 Mar 2012 14:52:54 +0100
-Message-Id: <1330955575-26641-68-git-send-email-jslaby@suse.cz>
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: [PATCH 66/68] TTY: pdc_cons, use tty_port
+Date: Mon,  5 Mar 2012 14:52:53 +0100
+Message-Id: <1330955575-26641-67-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
@@ -23,282 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Close the window in open where driver_data is reset to NULL on each
-open. It could cause other processes to get invalid retval from the
-tty->ops operations because of the checks all over the code.
-
-With this change we may do other cleanups. Now, the only valid check
-for tty->driver_data != NULL is in close. This can happen only if open
-fails at gigaset_get_cs_by_tty or try_module_get. The rest of checks
-in various tty->ops->* are invalid as driver_data cannot be NULL
-there. The same holds for cs->open_count. So remove them.
+Instead of digging a tty out of the tty_driver struct, which is not
+defined to work, use tty_port properly. This includes proper tty
+refcounting even though there is no possible race currently. But we
+will need tty_port for tty buffers in the future anyway.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Hansjoerg Lipp <hjlipp@web.de>
-Cc: Tilman Schmidt <tilman@imap.cc>
-Cc: gigaset307x-common@lists.sourceforge.net
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
 ---
- drivers/isdn/gigaset/interface.c |  105 +++++---------------------------------
- 1 file changed, 14 insertions(+), 91 deletions(-)
+ arch/parisc/kernel/pdc_cons.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-index 7e54577..040f5f9 100644
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@ -151,8 +151,6 @@ static int if_open(struct tty_struct *tty, struct file *filp)
- 	gig_dbg(DEBUG_IF, "%d+%d: %s()",
- 		tty->driver->minor_start, tty->index, __func__);
+diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
+index d14e20f..4f00459 100644
+--- a/arch/parisc/kernel/pdc_cons.c
++++ b/arch/parisc/kernel/pdc_cons.c
+@@ -92,10 +92,11 @@ static int pdc_console_setup(struct console *co, char *options)
  
--	tty->driver_data = NULL;
--
- 	cs = gigaset_get_cs_by_tty(tty);
- 	if (!cs || !try_module_get(cs->driver->owner))
- 		return -ENODEV;
-@@ -178,12 +176,11 @@ static int if_open(struct tty_struct *tty, struct file *filp)
+ static void pdc_console_poll(unsigned long unused);
+ static DEFINE_TIMER(pdc_console_timer, pdc_console_poll, 0, 0);
++static struct tty_port tty_port;
  
- static void if_close(struct tty_struct *tty, struct file *filp)
+ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
  {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	unsigned long flags;
+-
++	tty_port_tty_set(&tty_port, tty);
+ 	mod_timer(&pdc_console_timer, jiffies + PDC_CONS_POLL_DELAY);
  
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
-+	if (!cs) { /* happens if we didn't find cs in open */
-+		printk(KERN_DEBUG "%s: no cardstate\n", __func__);
+ 	return 0;
+@@ -103,8 +104,10 @@ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
+ 
+ static void pdc_console_tty_close(struct tty_struct *tty, struct file *filp)
+ {
+-	if (!tty->count)
++	if (!tty->count) {
+ 		del_timer_sync(&pdc_console_timer);
++		tty_port_tty_set(&tty_port, NULL);
++	}
+ }
+ 
+ static int pdc_console_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+@@ -123,8 +126,6 @@ static int pdc_console_tty_chars_in_buffer(struct tty_struct *tty)
+ 	return 0; /* no buffer */
+ }
+ 
+-static struct tty_driver *pdc_console_tty_driver;
+-
+ static const struct tty_operations pdc_console_tty_ops = {
+ 	.open = pdc_console_tty_open,
+ 	.close = pdc_console_tty_close,
+@@ -135,10 +136,8 @@ static const struct tty_operations pdc_console_tty_ops = {
+ 
+ static void pdc_console_poll(unsigned long unused)
+ {
+-
+ 	int data, count = 0;
+-
+-	struct tty_struct *tty = pdc_console_tty_driver->ttys[0];
++	struct tty_struct *tty = tty_port_tty_get(&tty_port);
+ 
+ 	if (!tty)
  		return;
- 	}
+@@ -154,10 +153,14 @@ static void pdc_console_poll(unsigned long unused)
+ 	if (count)
+ 		tty_flip_buffer_push(tty);
  
-@@ -211,18 +208,12 @@ static void if_close(struct tty_struct *tty, struct file *filp)
- static int if_ioctl(struct tty_struct *tty,
- 		    unsigned int cmd, unsigned long arg)
++	tty_kref_put(tty);
++
+ 	if (pdc_cons.flags & CON_ENABLED)
+ 		mod_timer(&pdc_console_timer, jiffies + PDC_CONS_POLL_DELAY);
+ }
+ 
++static struct tty_driver *pdc_console_tty_driver;
++
+ static int __init pdc_console_tty_driver_init(void)
  {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	int retval = -ENODEV;
- 	int int_arg;
- 	unsigned char buf[6];
- 	unsigned version[4];
+ 	int err;
+@@ -182,6 +185,8 @@ static int __init pdc_console_tty_driver_init(void)
+ 	printk(KERN_INFO "The PDC console driver is still registered, removing CON_BOOT flag\n");
+ 	pdc_cons.flags &= ~CON_BOOT;
  
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return -ENODEV;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s(0x%x)", cs->minor_index, __func__, cmd);
++	tty_port_init(&tty_port);
++
+ 	pdc_console_tty_driver = alloc_tty_driver(1);
  
- 	if (mutex_lock_interruptible(&cs->mutex))
-@@ -231,9 +222,7 @@ static int if_ioctl(struct tty_struct *tty,
- 	if (!cs->connected) {
- 		gig_dbg(DEBUG_IF, "not connected");
- 		retval = -ENODEV;
--	} else if (!cs->open_count)
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
--	else {
-+	} else {
- 		retval = 0;
- 		switch (cmd) {
- 		case GIGASET_REDIR:
-@@ -285,15 +274,9 @@ static int if_ioctl(struct tty_struct *tty,
- 
- static int if_tiocmget(struct tty_struct *tty)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	int retval;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return -ENODEV;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
- 	if (mutex_lock_interruptible(&cs->mutex))
-@@ -309,16 +292,10 @@ static int if_tiocmget(struct tty_struct *tty)
- static int if_tiocmset(struct tty_struct *tty,
- 		       unsigned int set, unsigned int clear)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	int retval;
- 	unsigned mc;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return -ENODEV;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s(0x%x, 0x%x)",
- 		cs->minor_index, __func__, set, clear);
- 
-@@ -341,16 +318,10 @@ static int if_tiocmset(struct tty_struct *tty,
- 
- static int if_write(struct tty_struct *tty, const unsigned char *buf, int count)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	struct cmdbuf_t *cb;
- 	int retval;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return -ENODEV;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
- 	if (mutex_lock_interruptible(&cs->mutex))
-@@ -361,11 +332,6 @@ static int if_write(struct tty_struct *tty, const unsigned char *buf, int count)
- 		retval = -ENODEV;
- 		goto done;
- 	}
--	if (!cs->open_count) {
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
--		retval = -ENODEV;
--		goto done;
--	}
- 	if (cs->mstate != MS_LOCKED) {
- 		dev_warn(cs->dev, "can't write to unlocked device\n");
- 		retval = -EBUSY;
-@@ -397,15 +363,9 @@ done:
- 
- static int if_write_room(struct tty_struct *tty)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	int retval = -ENODEV;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return -ENODEV;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
- 	if (mutex_lock_interruptible(&cs->mutex))
-@@ -414,9 +374,7 @@ static int if_write_room(struct tty_struct *tty)
- 	if (!cs->connected) {
- 		gig_dbg(DEBUG_IF, "not connected");
- 		retval = -ENODEV;
--	} else if (!cs->open_count)
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
--	else if (cs->mstate != MS_LOCKED) {
-+	} else if (cs->mstate != MS_LOCKED) {
- 		dev_warn(cs->dev, "can't write to unlocked device\n");
- 		retval = -EBUSY;
- 	} else
-@@ -429,23 +387,15 @@ static int if_write_room(struct tty_struct *tty)
- 
- static int if_chars_in_buffer(struct tty_struct *tty)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	int retval = 0;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return 0;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
- 	mutex_lock(&cs->mutex);
- 
- 	if (!cs->connected)
- 		gig_dbg(DEBUG_IF, "not connected");
--	else if (!cs->open_count)
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
- 	else if (cs->mstate != MS_LOCKED)
- 		dev_warn(cs->dev, "can't write to unlocked device\n");
- 	else
-@@ -458,13 +408,7 @@ static int if_chars_in_buffer(struct tty_struct *tty)
- 
- static void if_throttle(struct tty_struct *tty)
- {
--	struct cardstate *cs;
--
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return;
--	}
-+	struct cardstate *cs = tty->driver_data;
- 
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
-@@ -472,8 +416,6 @@ static void if_throttle(struct tty_struct *tty)
- 
- 	if (!cs->connected)
- 		gig_dbg(DEBUG_IF, "not connected");	/* nothing to do */
--	else if (!cs->open_count)
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
- 	else
- 		gig_dbg(DEBUG_IF, "%s: not implemented\n", __func__);
- 
-@@ -482,13 +424,7 @@ static void if_throttle(struct tty_struct *tty)
- 
- static void if_unthrottle(struct tty_struct *tty)
- {
--	struct cardstate *cs;
--
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return;
--	}
-+	struct cardstate *cs = tty->driver_data;
- 
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
-@@ -496,8 +432,6 @@ static void if_unthrottle(struct tty_struct *tty)
- 
- 	if (!cs->connected)
- 		gig_dbg(DEBUG_IF, "not connected");	/* nothing to do */
--	else if (!cs->open_count)
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
- 	else
- 		gig_dbg(DEBUG_IF, "%s: not implemented\n", __func__);
- 
-@@ -506,18 +440,12 @@ static void if_unthrottle(struct tty_struct *tty)
- 
- static void if_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
--	struct cardstate *cs;
-+	struct cardstate *cs = tty->driver_data;
- 	unsigned int iflag;
- 	unsigned int cflag;
- 	unsigned int old_cflag;
- 	unsigned int control_state, new_state;
- 
--	cs = (struct cardstate *) tty->driver_data;
--	if (!cs) {
--		pr_err("%s: no cardstate\n", __func__);
--		return;
--	}
--
- 	gig_dbg(DEBUG_IF, "%u: %s()", cs->minor_index, __func__);
- 
- 	mutex_lock(&cs->mutex);
-@@ -527,11 +455,6 @@ static void if_set_termios(struct tty_struct *tty, struct ktermios *old)
- 		goto out;
- 	}
- 
--	if (!cs->open_count) {
--		dev_warn(cs->dev, "%s: device not opened\n", __func__);
--		goto out;
--	}
--
- 	iflag = tty->termios->c_iflag;
- 	cflag = tty->termios->c_cflag;
- 	old_cflag = old ? old->c_cflag : cflag;
+ 	if (!pdc_console_tty_driver)
 -- 
 1.7.9.2
 
