@@ -1,390 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab2CEWpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:45:31 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:26733 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754177Ab2CEWp3 (ORCPT
+	id S1757537Ab2CEWpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:45:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57591 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab2CEWpu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:45:29 -0500
-Message-ID: <1330987524.2538.61.camel@bwh-desktop>
-Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Roland Stigge <stigge@antcom.de>
-CC: <davem@davemloft.net>, <jeffrey.t.kirsher@intel.com>,
-        <alexander.h.duyck@intel.com>, <eilong@broadcom.com>,
-        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
-        <w.sang@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <kevin.wells@nxp.com>, <linux-arm-kernel@lists.infradead.org>,
-        <arnd@arndb.de>, <baruch@tkos.co.il>, <joe@perches.com>
-Date: Mon, 5 Mar 2012 22:45:24 +0000
-In-Reply-To: <1330983641-32622-1-git-send-email-stigge@antcom.de>
-References: <1330983641-32622-1-git-send-email-stigge@antcom.de>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Mar 2012 17:45:50 -0500
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18752.005
-X-TM-AS-Result: No--29.480400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <4F551ABE.5080605@nasza-klasa.pl>
+References: <CAK=uwuy80LaNdQ4P49i+bGUXFvxf1zB=oKqNBTdAyvFc+mOTyw@mail.gmail.com>
+ <4F465F6E.9070605@nasza-klasa.pl> <1330517195.11248.148.camel@twins>
+ <1330532667.11248.153.camel@twins> <1330534998.11248.158.camel@twins> <4F551ABE.5080605@nasza-klasa.pl>
+From: Aman Gupta <aman@tmm1.net>
+Date: Mon, 5 Mar 2012 14:45:29 -0800
+X-Google-Sender-Auth: psaKEy8S2eHyxFTD4nRcz3czSwQ
+Message-ID: <CAK=uwuxvzGwes4ffy9EXVReG95U3HQaKmPPKgFnHzo_MwaO_NA@mail.gmail.com>
+Subject: Re: Inconsistent load average on tickless kernels
+To: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 22:40 +0100, Roland Stigge wrote:
-[...]
-> --- /dev/null
-> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
-[...]
-> +/*
-> + * Transmit timeout, default 2.5 seconds.
-> + */
-> +static int watchdog = 2500;
-> +module_param(watchdog, int, 0400);
-> +MODULE_PARM_DESC(watchdog, "transmit timeout in milliseconds");
+On Mon, Mar 5, 2012 at 11:57 AM, Lesław Kopeć
+<leslaw.kopec@nasza-klasa.pl> wrote:
+> On 29.02.2012 13:06, Peter Zijlstra wrote:
+>
+>> Missing here is a kernel build with CONFIG_NO_HZ but booted with
+>> nohz=off; this would be an interesting data point because it includes
+>> all the funny code but still ticks are the right frequency.
+>
+> You've asked for it and you got it. I have rebooted some servers with
+> nohz=off parameter set on kernels complied with CONFIG_NO_HZ=y. They're
+> the ones listed below with 'off' suffix.
+>
+> On 29.02.2012 17:24, Peter Zijlstra wrote:
+>
+>> Hrmm, this suggests we age too hard with nohz code.. in your test case
+>> is there significant idle time? That is, suppose you run each cpu at 30%
+>> what is the period of you load? Running 3s out of 10s is significantly
+>> different from running .3ms out of 1ms.
+>
+> It's definitely more similar to the second case - very frequent, but
+> short bursts of activity. A single process does a tiny bit of
+> computation mixed with a fair amount of network activity on each
+> request. There are 80 such processes which are responsible for majority
+> of system load.
+>
+> On 29.02.2012 18:03, Peter Zijlstra wrote:
+>
+>>> The only thing I could find is that on nohz we can confuse the per-rq
+>>> sample period, does the below make a difference?
+>>
+>> Uhm, something like so that is..
+>>
+>> ---
+>>  kernel/sched/core.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index d7c4322..44f61df 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -2380,7 +2380,8 @@ static void calc_load_account_active(struct rq *this_rq)
+>>       if (delta)
+>>               atomic_long_add(delta, &calc_load_tasks);
+>>
+>> -     this_rq->calc_load_update += LOAD_FREQ;
+>> +     while (!time_before(jiffies, this_rq->calc_load_update))
+>> +             this_rq->calc_load_update += LOAD_FREQ;
+>>  }
+>>
+>>  /*
+>>
+>
+> I have compiled another batch of kernels with this patch applied
+> (they're the ones with 'patch0' suffix). The only difference was the
+> patch had to go to kernel/sched.c, but that's what you get when not
+> using the latest sources. Anyway, here are the results accompanied by a
+> pretty picture [1]:
+>
+>                                        std     off     patch0
+> 2.6.32.55-no-hz                         0.76    0.91    -
+> 2.6.32.55-no-hz-74f5187ac8              6.41    9.40    4.93
+> 2.6.32.55-no-hz-0f004f5a69              0.78    0.92    0.90
+> 2.6.37-rc5-no-hz-0f004f5a69             0.95    0.92    0.86
+> 2.6.37-rc5-no-hz-pre-0f004f5a69         9.16    10.47   8.02
+>
+> It seems that the patch didn't help much on kernels with 0f004f5a69
+> applied. The ones with just 74f5187ac8 are reporting a more plausible
+> values, but slightly lower than the ones without patch0. Am I right to
+> assume that the correct load values are the ones produced by kernels
+> complied with CONFIG_NO_HZ=n? Should they be the baseline?
+>
+> I can run additional tests if you have other leads to follow. Is there a
+> particular kernel version I should focus on? If not I will continue
+> to use the current bundle. I'm also planning to give the latest stable
+> release a spin.
 
-Why does this need to be a parameter?
+I can confirm these results on 3.2.8. Booting with nohz=off makes no
+difference. Applying the patch to kernel/sched.c made no noticeable
+difference either.
 
-> +/*
-> + * Structure of a TX/RX descriptors and RX status
-> + */
-> +struct txrx_desc_t {
-> +	volatile u32 packet;
-> +	volatile u32 control;
-> +};
-> +struct rx_status_t {
-> +	volatile u32 statusinfo;
-> +	volatile u32 statushashcrc;
-> +};
+  Aman
 
-Use of volatile here is probably wrong; see
-Documentation/volatile-considered-harmful.txt.
-
-> +/*
-> + * Device driver data structure
-> + */
-> +struct netdata_local {
-> +	struct platform_device	*pdev;
-> +	struct net_device	*ndev;
-> +	spinlock_t		lock;
-> +	void __iomem		*net_base;
-> +	u32			msg_enable;
-> +	struct sk_buff		*skb[ENET_TX_DESC];
-> +	unsigned int		last_tx_idx;
-> +	unsigned int		num_used_tx_buffs;
-> +	struct mii_bus		*mii_bus;
-> +	struct phy_device	*phy_dev;
-> +	struct clk		*clk;
-> +	dma_addr_t		dma_buff_base_p;
-> +	void			*dma_buff_base_v;
-> +	size_t			dma_buff_size;
-> +	struct txrx_desc_t	*tx_desc_v[ENET_TX_DESC];
-> +	u32			*tx_stat_v[ENET_TX_DESC];
-> +	void			*tx_buff_v[ENET_TX_DESC];
-> +	struct txrx_desc_t	*rx_desc_v[ENET_RX_DESC];
-> +	struct rx_status_t	*rx_stat_v[ENET_RX_DESC];
-> +	void			*rx_buff_v[ENET_RX_DESC];
-
-Why are these 6 members defined as arrays of pointers and not single
-pointers to arrays?  It appears that each array element is initialised
-to point into an array and then never changed; for example
-tx_desc_v[i] == tx_desc_v[0] + i.
-
-[...]
-> +static void __lpc_eth_init(struct netdata_local *pldat)
-> +{
-[...]
-> +	/* Clear and enable interrupts */
-> +	writel(0xFFFF, LPC_ENET_INTCLEAR(pldat->net_base));
-> +	lpc_eth_enable_int(pldat->net_base);
-> +
-> +	/* Get the next TX buffer output index */
-> +	pldat->num_used_tx_buffs = 0;
-> +	pldat->last_tx_idx =
-> +		readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
-
-Doesn't this need to be done *before* enabling interrupts?  Also, I
-think you need an smp_wmb() so that the interrupt handler is guaranteed
-to see all these writes.
-
-[...]
-> +static void lpc_handle_link_change(struct net_device *ndev)
-> +{
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	struct phy_device *phydev = pldat->phy_dev;
-> +	unsigned long flags;
-> +
-> +	int status_change = 0;
-
-This is logically a boolean, so use bool/true/false.
-
-[...]
-> +static void __lpc_handle_xmit(struct net_device *ndev)
-> +{
-[...]
-> +		/* Any errors occurred? */
-> +		if (txstat & TXSTATUS_ERROR) {
-> +			if (txstat & TXSTATUS_UNDERRUN) {
-> +				/* FIFO underrun */
-> +				ndev->stats.tx_fifo_errors++;
-> +			}
-> +			if (txstat & TXSTATUS_LATECOLL) {
-> +				/* Late collision */
-> +				ndev->stats.tx_aborted_errors++;
-> +			}
-> +			if (txstat & TXSTATUS_EXCESSCOLL) {
-> +				/* Excessive collision */
-> +				ndev->stats.tx_aborted_errors++;
-> +			}
-> +			if (txstat & TXSTATUS_EXCESSDEFER) {
-> +				/* Defer limit */
-> +				ndev->stats.tx_aborted_errors++;
-> +			}
-> +			ndev->stats.tx_errors++;
-> +
-> +			/* Buffer transmit failed, requeue it */
-> +			lpc_eth_hard_start_xmit(skb, ndev);
-
-It is not the responsibility of an Ethernet network driver to retry
-transmission.  Also, this will deadlock on an SMP system since
-lpc_eth_hard_start_xmit() will try to acquire pldat->lock which is
-already held.  I suggest you test with lockdep in case there any other
-such bugs which are being masked by running on a UP system.
-
-[...]
-> +static int __lpc_handle_recv(struct net_device *ndev, int budget)
-> +{
-[...]
-> +			/* Packet is good */
-> +			skb = dev_alloc_skb(len + 8);
-> +			if (!skb)
-> +				ndev->stats.rx_dropped++;
-> +			else {
-> +				skb_reserve(skb, 8);
-
-What are you reserving this space for?
-
-> +				prdbuf = skb_put(skb, (len - 0));
-
-len - 0??
-
-> +				/* Copy packet from buffer */
-> +				memcpy(prdbuf,
-> +					pldat->rx_buff_v[rxconsidx], len);
-> +
-> +				/* Pass to upper layer */
-> +				skb->protocol = eth_type_trans(skb, ndev);
-> +				netif_rx(skb);
-> +				ndev->last_rx = jiffies;
-
-Drivers don't need to set last_rx any more.
-
-[...]
-> +static int lpc_eth_poll(struct napi_struct *napi, int budget)
-> +{
-> +	struct netdata_local *pldat = container_of(napi,
-> +			struct netdata_local, napi);
-> +	struct net_device *ndev = pldat->ndev;
-> +	unsigned long flags;
-> +	int rx_done = 0;
-> +
-> +	spin_lock_irqsave(&pldat->lock, flags);
-> +
-> +	__lpc_handle_xmit(ndev);
-> +	rx_done = __lpc_handle_recv(ndev, budget);
-> +
-> +	if (rx_done < budget) {
-> +		napi_complete(napi);
-> +		lpc_eth_enable_int(pldat->net_base);
-> +	}
-> +
-> +	spin_unlock_irqrestore(&pldat->lock, flags);
-
-This is really sad.  You implement NAPI but then take away most of the
-benefits of that by disabling interrupts.
-
-It looks like you could safely unlock pldat->lock before calling
-__lpc_handle_recv - nothing else manipulates RX queue state so no lock
-is required.
-
-As for the TX side, you can probably use the TX queue lock
-(__netif_tx_lock, __netif_tx_unlock) to serialise with
-lpc_eth_hard_start_xmit() and avoid taking pldat->lock in either
-__lpc_handle_xmit() or here.
-
-[...]
-> +	return rx_done;
-> +}
-> +
-> +static irqreturn_t __lpc_eth_interrupt(int irq, void *dev_id)
-> +{
-> +	struct net_device *ndev = dev_id;
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	u32 tmp;
-> +
-> +	spin_lock(&pldat->lock);
-> +
-> +	tmp = readl(LPC_ENET_INTSTATUS(pldat->net_base));
-> +	/* Clear interrupts */
-> +	writel(tmp, LPC_ENET_INTCLEAR(pldat->net_base));
-> +
-> +	if (likely(napi_schedule_prep(&pldat->napi))) {
-> +		lpc_eth_disable_int(pldat->net_base);
-> +		__napi_schedule(&pldat->napi);
-> +	}
-
-I think you need to mask the interrupt unconditionally here.  See my
-next comment.
-
-> +	spin_unlock(&pldat->lock);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int lpc_eth_close(struct net_device *ndev)
-> +{
-> +	unsigned long flags;
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +
-> +	if (netif_msg_ifdown(pldat))
-> +		dev_dbg(&pldat->pdev->dev, "shutting down %s\n", ndev->name);
-> +
-> +	napi_disable(&pldat->napi);
-
-If an interrupt is received after this returns, napi_schedule_prep()
-will return false and the interrupt will not be masked.
-
-There is a similar problem in lpc_eth_open() where you enable interrupts
-before NAPI.
-
-> +	netif_stop_queue(ndev);
-> +
-> +	if (pldat->phy_dev)
-> +		phy_stop(pldat->phy_dev);
-> +
-> +	spin_lock_irqsave(&pldat->lock, flags);
-> +	__lpc_eth_reset(pldat);
-> +	netif_carrier_off(ndev);
-> +	writel(0, LPC_ENET_MAC1(pldat->net_base));
-> +	writel(0, LPC_ENET_MAC2(pldat->net_base));
-> +	spin_unlock_irqrestore(&pldat->lock, flags);
-> +
-> +	__lpc_eth_clock_enable(pldat, 0);
-> +
-> +	return 0;
-> +}
-[...]
-> +static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
-> +{
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	u32 len, txidx;
-> +	u32 *ptxstat;
-> +	struct txrx_desc_t *ptxrxdesc;
-> +
-> +	len = skb->len;
-> +
-> +	spin_lock_irq(&pldat->lock);
-> +
-> +	if (pldat->num_used_tx_buffs >= (ENET_TX_DESC - 1)) {
-> +		/* This function should never be called when there are no
-> +		   buffers, log the error */
-
-So use WARN to make the error really obvious.
-
-> +		netif_stop_queue(ndev);
-> +		spin_unlock_irq(&pldat->lock);
-> +		dev_err(&pldat->pdev->dev,
-> +			"BUG! TX request when no free TX buffers!\n");
-> +		return 1;
-
-This is not a valid return value; you need to return NETDEV_TX_BUSY.
-
-> +	}
-> +
-> +	/* Get the next TX descriptor index */
-> +	txidx = readl(LPC_ENET_TXPRODUCEINDEX(pldat->net_base));
-> +
-> +	/* Setup control for the transfer */
-> +	ptxstat = pldat->tx_stat_v[txidx];
-> +	*ptxstat = 0;
-> +	ptxrxdesc = pldat->tx_desc_v[txidx];
-> +	ptxrxdesc->control =
-> +		(len - 1) | TXDESC_CONTROL_LAST | TXDESC_CONTROL_INT;
-> +
-> +	/* Copy data to the DMA buffer */
-> +	memcpy(pldat->tx_buff_v[txidx], skb->data, len);
-> +
-> +	/* Save the buffer and increment the buffer counter */
-> +	pldat->skb[txidx] = skb;
-> +	pldat->num_used_tx_buffs++;
-> +
-> +	/* Start transmit */
-> +	txidx++;
-> +	if (txidx >= ENET_TX_DESC)
-> +		txidx = 0;
-> +	writel(txidx, LPC_ENET_TXPRODUCEINDEX(pldat->net_base));
-> +
-> +	/* Stop queue if no more TX buffers */
-> +	if (pldat->num_used_tx_buffs >= (ENET_TX_DESC - 1))
-> +		netif_stop_queue(ndev);
-> +
-> +	spin_unlock_irq(&pldat->lock);
-> +	ndev->trans_start = jiffies;
-
-Drivers don't need to set trans_start any more.
-
-> +	return 0;
-
-NETDEV_TX_OK
-
-> +}
-[...]
-> +static void lpc_eth_timeout(struct net_device *ndev)
-> +{
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +
-> +	/* This should never happen and indicates a problem */
-> +	dev_err(&pldat->pdev->dev, "BUG! TX timeout occurred!\n");
-> +}
-
-The networking core will print a big fat warning before calling this
-function, so this message is redundant.  Also, timeout isn't necessarily
-a bug; it can be caused by a misconfigured switch.
-
-[...]
-> +static int lpc_eth_ethtool_getsettings(struct net_device *ndev,
-> +	struct ethtool_cmd *cmd)
-> +{
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	struct phy_device *phydev = pldat->phy_dev;
-> +
-> +	if (!phydev)
-> +		return -ENODEV;
-
--EOPNOTSUPP
-
-> +	return phy_ethtool_gset(phydev, cmd);
-> +}
-> +
-> +static int lpc_eth_ethtool_setsettings(struct net_device *ndev,
-> +	struct ethtool_cmd *cmd)
-> +{
-> +	struct netdata_local *pldat = netdev_priv(ndev);
-> +	struct phy_device *phydev = pldat->phy_dev;
-> +
-> +	if (!phydev)
-> +		return -ENODEV;
-[...]
-
--EOPNOTSUPP
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+>
+>
+> [1] http://img835.imageshack.us/img835/2204/kernelload.png
+>
+> --
+> Lesław Kopeć
+>
