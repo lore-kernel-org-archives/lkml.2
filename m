@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab2CEQIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:08:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60026 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933Ab2CEQBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:01:33 -0500
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 01/19] mm: Make default vm_ops provide ->page_mkwrite handler
-Date: Mon,  5 Mar 2012 17:00:59 +0100
-Message-Id: <1330963277-26336-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+	id S1755194Ab2CEQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:09:59 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:34166 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab2CEQJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:09:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.136.97 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 08:09:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] sysfs: Optionally count subdirectories to support buggy
+ applications
+Message-ID: <20120305160953.GA3870@kroah.com>
+References: <20120130222717.GA6393@kroah.com>
+ <m18vkoirv9.fsf@fess.ebiederm.org>
+ <4F27C6EB.2070305@suse.cz>
+ <m14nvc82jo.fsf@fess.ebiederm.org>
+ <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org>
+ <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+ <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+ <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+ <4F54BFEC.6000206@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F54BFEC.6000206@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make default vm_ops provide ->page_mkwrite handler. Currently it only updates
-file's modification times and gets locked page but later it will also handle
-filesystem freezing.
+On Mon, Mar 05, 2012 at 02:30:20PM +0100, Jiri Slaby wrote:
+> On 02/02/2012 12:18 AM, Linus Torvalds wrote:
+> > On Wed, Feb 1, 2012 at 3:15 PM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> >>
+> >> No extra "keep track of inode counts by hand" crap, and no idiotic
+> >> config options that just make it easy to (conditionally) get things
+> >> wrong. Just do it right, and do it *unconditionally* right.
+> > 
+> > And btw, "nlink shows number of subdirectories" for a directory entry
+> > really *is* right. It's how Unix filesystems work, like it or not.
+> > 
+> > It's mainly lazy/bad filesystems that set nlink to 1. So the whole
+> > "nlink==1" case is meant for crap like FAT etc, not for a filesystem
+> > that we control and that could easily just do it right.
+> > 
+> > Which is why I detest that config option. It's as if you were asking the user
+> > 
+> >  "Do you want to make the sysfs filesystem act like crap filesystems?"
+> > 
+> > and kernel config time. What kind of inane question is that?
+> 
+> <thread resumed...>
+> 
+> What's going on here? I still have to revert "sysfs: Kill nlink
+> counting." with today's -next to have working sensors.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- include/linux/mm.h |    1 +
- mm/filemap.c       |   20 ++++++++++++++++++++
- mm/filemap_xip.c   |    1 +
- 3 files changed, 22 insertions(+), 0 deletions(-)
+I don't remember.  I thought there was a proposed patch for this issue
+from Eric, but I don't see it in my queue anywhere.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 17b27cd..074c075 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1419,6 +1419,7 @@ extern void truncate_inode_pages_range(struct address_space *,
- 
- /* generic vm_area_ops exported for stackable file systems */
- extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
-+extern int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
- 
- /* mm/page-writeback.c */
- int write_one_page(struct page *page, int wait);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b662757..b865c0b 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1759,8 +1759,28 @@ page_not_uptodate:
- }
- EXPORT_SYMBOL(filemap_fault);
- 
-+int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	struct page *page = vmf->page;
-+	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
-+	int ret = VM_FAULT_LOCKED;
-+
-+	file_update_time(vma->vm_file);
-+	lock_page(page);
-+	if ((page->mapping != inode->i_mapping) ||
-+	    (page_offset(page) > i_size_read(inode))) {
-+		unlock_page(page);
-+		ret = VM_FAULT_NOPAGE;
-+		goto out;
-+	}
-+out:
-+	return ret;
-+}
-+EXPORT_SYMBOL(filemap_page_mkwrite);
-+
- const struct vm_operations_struct generic_file_vm_ops = {
- 	.fault		= filemap_fault,
-+	.page_mkwrite	= filemap_page_mkwrite,
- };
- 
- /* This is used for a general mmap of a disk file */
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index a4eb311..591dba6 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -304,6 +304,7 @@ out:
- 
- static const struct vm_operations_struct xip_file_vm_ops = {
- 	.fault	= xip_file_fault,
-+	.page_mkwrite	= filemap_page_mkwrite,
- };
- 
- int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
--- 
-1.7.1
+Eric, what was the resolution here?
 
+greg k-h
