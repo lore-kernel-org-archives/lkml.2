@@ -1,46 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab2CESLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 13:11:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39173 "EHLO mx2.suse.de"
+	id S1757362Ab2CESMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 13:12:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54776 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757318Ab2CESLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 13:11:00 -0500
-Message-ID: <4F5501B3.6050601@suse.de>
-Date: Mon, 05 Mar 2012 19:10:59 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S1756766Ab2CESMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 13:12:31 -0500
+Date: Mon, 5 Mar 2012 15:10:46 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH -v2] mm: SLAB Out-of-memory diagnostics
+Message-ID: <20120305181041.GA9829@x61.redhat.com>
 MIME-Version: 1.0
-To: Ben Collins <bcollins@ubuntu.com>
-Cc: kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: PPC: check error return of kvmppc_core_vcpu_create
- first
-References: <50A8F108-8055-4115-B4EB-706D97736E65@ubuntu.com>
-In-Reply-To: <50A8F108-8055-4115-B4EB-706D97736E65@ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 05:30 AM, Ben Collins wrote:
-> The result of kvmppc_core_vcpu_create() was being manipulated before it was checked for IS_ERR(). Did not see the bug occur, but caught it when looking through the code.
+Following the example at mm/slub.c, add out-of-memory diagnostics to the
+SLAB allocator to help on debugging certain OOM conditions.
 
-Nice catch, but this has already been fixed by Matt:
+An example print out looks like this:
 
-commit c6f3830e7313eea47b526b597aadc5b18c69ad55
-Author: Matt Evans <matt@ozlabs.org>
-Date:   Tue Dec 6 21:19:42 2011 +0000
+  <snip page allocator out-of-memory message>
+  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+     cache: bio-0, object size: 192, order: 0
+     node0: slabs: 3/3, objs: 60/60, free: 0
 
-     KVM: PPC: Fix vcpu_create dereference before validity check.
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+-v2:
+* drop the sysctl knob to override __GFP_NOWARN allocation flag.
 
-     Fix usage of vcpu struct before check that it's actually valid.
+ mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 50 insertions(+), 1 deletions(-)
 
-     Signed-off-by: Matt Evans <matt@ozlabs.org>
-     Signed-off-by: Alexander Graf <agraf@suse.de>
-
-
-Thanks a lot for sending the patch nevertheless!
-
-Alex
+diff --git a/mm/slab.c b/mm/slab.c
+index f0bd785..4aeb5e7 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
+ }
+ __initcall(cpucache_init);
+ 
++static noinline void
++slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
++{
++	struct kmem_list3 *l3;
++	struct slab *slabp;
++	unsigned long flags;
++	int node;
++
++	printk(KERN_WARNING
++		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
++		nodeid, gfpflags);
++	printk(KERN_WARNING "   cache: %s, object size: %d, order: %d\n",
++		cachep->name, cachep->buffer_size, cachep->gfporder);
++
++	for_each_online_node(node) {
++		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
++		unsigned long active_slabs = 0, num_slabs = 0;
++
++		l3 = cachep->nodelists[node];
++		if (!l3)
++			continue;
++
++		spin_lock_irqsave(&l3->list_lock, flags);
++		list_for_each_entry(slabp, &l3->slabs_full, list) {
++			active_objs += cachep->num;
++			active_slabs++;
++		}
++		list_for_each_entry(slabp, &l3->slabs_partial, list) {
++			active_objs += slabp->inuse;
++			active_slabs++;
++		}
++		list_for_each_entry(slabp, &l3->slabs_free, list)
++			num_slabs++;
++
++		free_objects += l3->free_objects;
++		spin_unlock_irqrestore(&l3->list_lock, flags);
++
++		num_slabs += active_slabs;
++		num_objs = num_slabs * cachep->num;
++		printk(KERN_WARNING
++			"   node%d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
++			node, active_slabs, num_slabs, active_objs, num_objs,
++			free_objects);
++	}
++}
++
+ /*
+  * Interface to system's page allocator. No need to hold the cache-lock.
+  *
+@@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 		flags |= __GFP_RECLAIMABLE;
+ 
+ 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+-	if (!page)
++	if (!page) {
++		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
++			slab_out_of_memory(cachep, flags, nodeid);
+ 		return NULL;
++	}
+ 
+ 	nr_pages = (1 << cachep->gfporder);
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+-- 
+1.7.7.6
 
