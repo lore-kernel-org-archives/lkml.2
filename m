@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab2CEXgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:36:10 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37920 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab2CEXf6 (ORCPT
+	id S1757951Ab2CEXg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:36:27 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59901 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757799Ab2CEXgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 18:35:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.221.73 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 5 Mar 2012 15:35:50 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB bug fixes for 3.3-rc6
-Message-ID: <20120305233550.GA18798@kroah.com>
+	Mon, 5 Mar 2012 18:36:08 -0500
+Message-ID: <4F554DC7.8010504@fb.com>
+Date: Mon, 5 Mar 2012 15:35:35 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>, <linux-kernel@vger.kernel.org>,
+        <dsahern@gmail.com>, <ravitillo@lbl.gov>,
+        <khandual@linux.vnet.ibm.com>, <robert.richter@amd.com>,
+        <ming.m.lin@intel.com>, <vweaver1@eecs.utk.edu>, <andi@firstfloor.org>
+Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
+References: <20120224094048.GA7952@quad> <20120305154753.GA14604@elte.hu> <20120305155011.GA32413@elte.hu> <20120305155642.GB32413@elte.hu> <1330965033.11248.240.camel@twins> <20120305203518.GA5656@infradead.org> <4F55337B.4080807@fb.com> <20120305222614.GB5656@infradead.org>
+In-Reply-To: <20120305222614.GB5656@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-05_07:2012-03-05,2012-03-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 45196cee28a5bcfb6ddbe2bffa4270cbed66ae4b:
 
-  Merge tag 'usb-3.3-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2012-02-22 13:00:53 -0800)
+Like you probably figured from my other mail, we deal with deeply nested 
+callchains with unwieldy function names a lot -- thanks to C++ and 
+template programming. --tui's collapsing/expanding functionality is 
+quite useful to navigate that mess. I'm just taking this opportunity to 
+get some attention focused on improving it :)
 
-are available in the git repository at:
+On 3/5/12 2:26 PM, Arnaldo Carvalho de Melo wrote:
 
+>> Here's an example:
+>>
+>> # perf record -ag -- sleep 3
+>> # perf report -G -s pid --tui # SIGSEGV
+>
+> Ok, now this is a good report, I managed to reproduce and will work on a
+> fix, thanks,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-3.3-rc6
+Something like this seems to do it for me.
 
-for you to fetch changes up to 71919403dc86b40fafd9400738668f96679c551b:
+         offset = addr - sym->start;
++       len = sym->end - sym->start;
++       if (offset >= len)
++               return 0;
++
 
-  Revert "powerpc/usb: fix issue of CPU halt when missing USB PHY clock" (2012-03-02 16:08:54 -0800)
+The other problem area seems to be callchains when using -p regexp -x 
+options. I'll try to summarize problems there in a separate thread.
 
-----------------------------------------------------------------
-USB: revert a powerpc EHCI patch
-
-There is just one patch in here, a revert of a powerpc EHCI driver
-patch that was reported to cause problems.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      Revert "powerpc/usb: fix issue of CPU halt when missing USB PHY clock"
-
- drivers/usb/host/ehci-fsl.c |   11 ++---------
- drivers/usb/host/ehci-fsl.h |    1 -
- 2 files changed, 2 insertions(+), 10 deletions(-)
+  -Arun
