@@ -1,55 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab2CEWhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 17:37:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38895 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757175Ab2CEWht (ORCPT
+	id S1757461Ab2CEWpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 17:45:31 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:26733 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754177Ab2CEWp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 17:37:49 -0500
-Date: Mon, 5 Mar 2012 16:37:45 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
-Message-ID: <20120305223745.GC16312@ubuntu-macmini>
-Mail-Followup-To: Josh Boyer <jwboyer@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
- <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
- <20120305220651.GB16312@ubuntu-macmini>
- <CA+5PVA5nRvtDPXgen5=10=Yt2YdQAUo-K+OK8MXENiQ7wEQCYg@mail.gmail.com>
+	Mon, 5 Mar 2012 17:45:29 -0500
+Message-ID: <1330987524.2538.61.camel@bwh-desktop>
+Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Roland Stigge <stigge@antcom.de>
+CC: <davem@davemloft.net>, <jeffrey.t.kirsher@intel.com>,
+        <alexander.h.duyck@intel.com>, <eilong@broadcom.com>,
+        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
+        <w.sang@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <kevin.wells@nxp.com>, <linux-arm-kernel@lists.infradead.org>,
+        <arnd@arndb.de>, <baruch@tkos.co.il>, <joe@perches.com>
+Date: Mon, 5 Mar 2012 22:45:24 +0000
+In-Reply-To: <1330983641-32622-1-git-send-email-stigge@antcom.de>
+References: <1330983641-32622-1-git-send-email-stigge@antcom.de>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA5nRvtDPXgen5=10=Yt2YdQAUo-K+OK8MXENiQ7wEQCYg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18752.005
+X-TM-AS-Result: No--29.480400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 05:10:50PM -0500, Josh Boyer wrote:
-> On Mon, Mar 5, 2012 at 5:06 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> > On Wed, Feb 22, 2012 at 08:37:37AM -0600, Seth Forshee wrote:
-> >> Apple laptops with hybrid graphics have a device named gmux that
-> >> controls the muxing of the LVDS panel between the GPUs as well as screen
-> >> brightness. This driver adds support for the gmux device. Only backlight
-> >> control is supported initially.
-> >>
-> >> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> >
-> > Ping. Is there anything that would prevent getting this into 3.4?
-> 
-> I sent a list of patches that seemed ready for 3.4 to Matthew last week.  This
-> was on the list and he seemed to agree.  I would guess he just either needs
-> a minion, a clone, or a time machine.  Or maybe all three.
+On Mon, 2012-03-05 at 22:40 +0100, Roland Stigge wrote:
+[...]
+> --- /dev/null
+> +++ linux-2.6/drivers/net/ethernet/nxp/lpc_eth.c
+[...]
+> +/*
+> + * Transmit timeout, default 2.5 seconds.
+> + */
+> +static int watchdog = 2500;
+> +module_param(watchdog, int, 0400);
+> +MODULE_PARM_DESC(watchdog, "transmit timeout in milliseconds");
 
-Huh, guess I missed that, and even now I can't seem to find it. Any
-chance you could point me to the list?
+Why does this need to be a parameter?
 
-Thanks for the heads-up!
+> +/*
+> + * Structure of a TX/RX descriptors and RX status
+> + */
+> +struct txrx_desc_t {
+> +	volatile u32 packet;
+> +	volatile u32 control;
+> +};
+> +struct rx_status_t {
+> +	volatile u32 statusinfo;
+> +	volatile u32 statushashcrc;
+> +};
 
-Seth
+Use of volatile here is probably wrong; see
+Documentation/volatile-considered-harmful.txt.
+
+> +/*
+> + * Device driver data structure
+> + */
+> +struct netdata_local {
+> +	struct platform_device	*pdev;
+> +	struct net_device	*ndev;
+> +	spinlock_t		lock;
+> +	void __iomem		*net_base;
+> +	u32			msg_enable;
+> +	struct sk_buff		*skb[ENET_TX_DESC];
+> +	unsigned int		last_tx_idx;
+> +	unsigned int		num_used_tx_buffs;
+> +	struct mii_bus		*mii_bus;
+> +	struct phy_device	*phy_dev;
+> +	struct clk		*clk;
+> +	dma_addr_t		dma_buff_base_p;
+> +	void			*dma_buff_base_v;
+> +	size_t			dma_buff_size;
+> +	struct txrx_desc_t	*tx_desc_v[ENET_TX_DESC];
+> +	u32			*tx_stat_v[ENET_TX_DESC];
+> +	void			*tx_buff_v[ENET_TX_DESC];
+> +	struct txrx_desc_t	*rx_desc_v[ENET_RX_DESC];
+> +	struct rx_status_t	*rx_stat_v[ENET_RX_DESC];
+> +	void			*rx_buff_v[ENET_RX_DESC];
+
+Why are these 6 members defined as arrays of pointers and not single
+pointers to arrays?  It appears that each array element is initialised
+to point into an array and then never changed; for example
+tx_desc_v[i] == tx_desc_v[0] + i.
+
+[...]
+> +static void __lpc_eth_init(struct netdata_local *pldat)
+> +{
+[...]
+> +	/* Clear and enable interrupts */
+> +	writel(0xFFFF, LPC_ENET_INTCLEAR(pldat->net_base));
+> +	lpc_eth_enable_int(pldat->net_base);
+> +
+> +	/* Get the next TX buffer output index */
+> +	pldat->num_used_tx_buffs = 0;
+> +	pldat->last_tx_idx =
+> +		readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+
+Doesn't this need to be done *before* enabling interrupts?  Also, I
+think you need an smp_wmb() so that the interrupt handler is guaranteed
+to see all these writes.
+
+[...]
+> +static void lpc_handle_link_change(struct net_device *ndev)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	struct phy_device *phydev = pldat->phy_dev;
+> +	unsigned long flags;
+> +
+> +	int status_change = 0;
+
+This is logically a boolean, so use bool/true/false.
+
+[...]
+> +static void __lpc_handle_xmit(struct net_device *ndev)
+> +{
+[...]
+> +		/* Any errors occurred? */
+> +		if (txstat & TXSTATUS_ERROR) {
+> +			if (txstat & TXSTATUS_UNDERRUN) {
+> +				/* FIFO underrun */
+> +				ndev->stats.tx_fifo_errors++;
+> +			}
+> +			if (txstat & TXSTATUS_LATECOLL) {
+> +				/* Late collision */
+> +				ndev->stats.tx_aborted_errors++;
+> +			}
+> +			if (txstat & TXSTATUS_EXCESSCOLL) {
+> +				/* Excessive collision */
+> +				ndev->stats.tx_aborted_errors++;
+> +			}
+> +			if (txstat & TXSTATUS_EXCESSDEFER) {
+> +				/* Defer limit */
+> +				ndev->stats.tx_aborted_errors++;
+> +			}
+> +			ndev->stats.tx_errors++;
+> +
+> +			/* Buffer transmit failed, requeue it */
+> +			lpc_eth_hard_start_xmit(skb, ndev);
+
+It is not the responsibility of an Ethernet network driver to retry
+transmission.  Also, this will deadlock on an SMP system since
+lpc_eth_hard_start_xmit() will try to acquire pldat->lock which is
+already held.  I suggest you test with lockdep in case there any other
+such bugs which are being masked by running on a UP system.
+
+[...]
+> +static int __lpc_handle_recv(struct net_device *ndev, int budget)
+> +{
+[...]
+> +			/* Packet is good */
+> +			skb = dev_alloc_skb(len + 8);
+> +			if (!skb)
+> +				ndev->stats.rx_dropped++;
+> +			else {
+> +				skb_reserve(skb, 8);
+
+What are you reserving this space for?
+
+> +				prdbuf = skb_put(skb, (len - 0));
+
+len - 0??
+
+> +				/* Copy packet from buffer */
+> +				memcpy(prdbuf,
+> +					pldat->rx_buff_v[rxconsidx], len);
+> +
+> +				/* Pass to upper layer */
+> +				skb->protocol = eth_type_trans(skb, ndev);
+> +				netif_rx(skb);
+> +				ndev->last_rx = jiffies;
+
+Drivers don't need to set last_rx any more.
+
+[...]
+> +static int lpc_eth_poll(struct napi_struct *napi, int budget)
+> +{
+> +	struct netdata_local *pldat = container_of(napi,
+> +			struct netdata_local, napi);
+> +	struct net_device *ndev = pldat->ndev;
+> +	unsigned long flags;
+> +	int rx_done = 0;
+> +
+> +	spin_lock_irqsave(&pldat->lock, flags);
+> +
+> +	__lpc_handle_xmit(ndev);
+> +	rx_done = __lpc_handle_recv(ndev, budget);
+> +
+> +	if (rx_done < budget) {
+> +		napi_complete(napi);
+> +		lpc_eth_enable_int(pldat->net_base);
+> +	}
+> +
+> +	spin_unlock_irqrestore(&pldat->lock, flags);
+
+This is really sad.  You implement NAPI but then take away most of the
+benefits of that by disabling interrupts.
+
+It looks like you could safely unlock pldat->lock before calling
+__lpc_handle_recv - nothing else manipulates RX queue state so no lock
+is required.
+
+As for the TX side, you can probably use the TX queue lock
+(__netif_tx_lock, __netif_tx_unlock) to serialise with
+lpc_eth_hard_start_xmit() and avoid taking pldat->lock in either
+__lpc_handle_xmit() or here.
+
+[...]
+> +	return rx_done;
+> +}
+> +
+> +static irqreturn_t __lpc_eth_interrupt(int irq, void *dev_id)
+> +{
+> +	struct net_device *ndev = dev_id;
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	u32 tmp;
+> +
+> +	spin_lock(&pldat->lock);
+> +
+> +	tmp = readl(LPC_ENET_INTSTATUS(pldat->net_base));
+> +	/* Clear interrupts */
+> +	writel(tmp, LPC_ENET_INTCLEAR(pldat->net_base));
+> +
+> +	if (likely(napi_schedule_prep(&pldat->napi))) {
+> +		lpc_eth_disable_int(pldat->net_base);
+> +		__napi_schedule(&pldat->napi);
+> +	}
+
+I think you need to mask the interrupt unconditionally here.  See my
+next comment.
+
+> +	spin_unlock(&pldat->lock);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int lpc_eth_close(struct net_device *ndev)
+> +{
+> +	unsigned long flags;
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +
+> +	if (netif_msg_ifdown(pldat))
+> +		dev_dbg(&pldat->pdev->dev, "shutting down %s\n", ndev->name);
+> +
+> +	napi_disable(&pldat->napi);
+
+If an interrupt is received after this returns, napi_schedule_prep()
+will return false and the interrupt will not be masked.
+
+There is a similar problem in lpc_eth_open() where you enable interrupts
+before NAPI.
+
+> +	netif_stop_queue(ndev);
+> +
+> +	if (pldat->phy_dev)
+> +		phy_stop(pldat->phy_dev);
+> +
+> +	spin_lock_irqsave(&pldat->lock, flags);
+> +	__lpc_eth_reset(pldat);
+> +	netif_carrier_off(ndev);
+> +	writel(0, LPC_ENET_MAC1(pldat->net_base));
+> +	writel(0, LPC_ENET_MAC2(pldat->net_base));
+> +	spin_unlock_irqrestore(&pldat->lock, flags);
+> +
+> +	__lpc_eth_clock_enable(pldat, 0);
+> +
+> +	return 0;
+> +}
+[...]
+> +static int lpc_eth_hard_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	u32 len, txidx;
+> +	u32 *ptxstat;
+> +	struct txrx_desc_t *ptxrxdesc;
+> +
+> +	len = skb->len;
+> +
+> +	spin_lock_irq(&pldat->lock);
+> +
+> +	if (pldat->num_used_tx_buffs >= (ENET_TX_DESC - 1)) {
+> +		/* This function should never be called when there are no
+> +		   buffers, log the error */
+
+So use WARN to make the error really obvious.
+
+> +		netif_stop_queue(ndev);
+> +		spin_unlock_irq(&pldat->lock);
+> +		dev_err(&pldat->pdev->dev,
+> +			"BUG! TX request when no free TX buffers!\n");
+> +		return 1;
+
+This is not a valid return value; you need to return NETDEV_TX_BUSY.
+
+> +	}
+> +
+> +	/* Get the next TX descriptor index */
+> +	txidx = readl(LPC_ENET_TXPRODUCEINDEX(pldat->net_base));
+> +
+> +	/* Setup control for the transfer */
+> +	ptxstat = pldat->tx_stat_v[txidx];
+> +	*ptxstat = 0;
+> +	ptxrxdesc = pldat->tx_desc_v[txidx];
+> +	ptxrxdesc->control =
+> +		(len - 1) | TXDESC_CONTROL_LAST | TXDESC_CONTROL_INT;
+> +
+> +	/* Copy data to the DMA buffer */
+> +	memcpy(pldat->tx_buff_v[txidx], skb->data, len);
+> +
+> +	/* Save the buffer and increment the buffer counter */
+> +	pldat->skb[txidx] = skb;
+> +	pldat->num_used_tx_buffs++;
+> +
+> +	/* Start transmit */
+> +	txidx++;
+> +	if (txidx >= ENET_TX_DESC)
+> +		txidx = 0;
+> +	writel(txidx, LPC_ENET_TXPRODUCEINDEX(pldat->net_base));
+> +
+> +	/* Stop queue if no more TX buffers */
+> +	if (pldat->num_used_tx_buffs >= (ENET_TX_DESC - 1))
+> +		netif_stop_queue(ndev);
+> +
+> +	spin_unlock_irq(&pldat->lock);
+> +	ndev->trans_start = jiffies;
+
+Drivers don't need to set trans_start any more.
+
+> +	return 0;
+
+NETDEV_TX_OK
+
+> +}
+[...]
+> +static void lpc_eth_timeout(struct net_device *ndev)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +
+> +	/* This should never happen and indicates a problem */
+> +	dev_err(&pldat->pdev->dev, "BUG! TX timeout occurred!\n");
+> +}
+
+The networking core will print a big fat warning before calling this
+function, so this message is redundant.  Also, timeout isn't necessarily
+a bug; it can be caused by a misconfigured switch.
+
+[...]
+> +static int lpc_eth_ethtool_getsettings(struct net_device *ndev,
+> +	struct ethtool_cmd *cmd)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	struct phy_device *phydev = pldat->phy_dev;
+> +
+> +	if (!phydev)
+> +		return -ENODEV;
+
+-EOPNOTSUPP
+
+> +	return phy_ethtool_gset(phydev, cmd);
+> +}
+> +
+> +static int lpc_eth_ethtool_setsettings(struct net_device *ndev,
+> +	struct ethtool_cmd *cmd)
+> +{
+> +	struct netdata_local *pldat = netdev_priv(ndev);
+> +	struct phy_device *phydev = pldat->phy_dev;
+> +
+> +	if (!phydev)
+> +		return -ENODEV;
+[...]
+
+-EOPNOTSUPP
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
