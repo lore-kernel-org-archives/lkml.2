@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab2CET6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 14:58:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54642 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511Ab2CET57 (ORCPT
+	id S1757565Ab2CET6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 14:58:09 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53433 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757511Ab2CET6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 14:57:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.204.152.219 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
-Message-ID: <1330977506.1589.59.camel@lappy>
-Subject: OOM killer even when not overcommiting
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-mm@kvack.org
-Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Date: Mon, 05 Mar 2012 21:58:26 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 5 Mar 2012 14:58:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of leslaw.kopec@nasza-klasa.pl designates 10.213.17.8 as permitted sender) smtp.mail=leslaw.kopec@nasza-klasa.pl
+Message-ID: <4F551ABE.5080605@nasza-klasa.pl>
+Date: Mon, 05 Mar 2012 20:57:50 +0100
+From: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Aman Gupta <aman@tmm1.net>, linux-kernel@vger.kernel.org,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Damien Wyart <damien.wyart@free.fr>, Kyle McMartin <kyle@redhat.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: Re: Inconsistent load average on tickless kernels
+References: <CAK=uwuy80LaNdQ4P49i+bGUXFvxf1zB=oKqNBTdAyvFc+mOTyw@mail.gmail.com>	 <4F465F6E.9070605@nasza-klasa.pl> <1330517195.11248.148.camel@twins>	 <1330532667.11248.153.camel@twins> <1330534998.11248.158.camel@twins>
+In-Reply-To: <1330534998.11248.158.camel@twins>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5D520C09FDAC1D37D9D95965"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5D520C09FDAC1D37D9D95965
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I assumed that when setting overcommit_memory=2 and overcommit_ratio<100 that the OOM killer won't ever get invoked (since we're not overcommiting memory), but it looks like I'm mistaken since apparently a simple mmap from userspace will trigger the OOM killer if it requests more memory than available.
+On 29.02.2012 13:06, Peter Zijlstra wrote:
 
-Is it how it's supposed to work? Why does it resort to OOM killing instead of just failing the allocation?
+> Missing here is a kernel build with CONFIG_NO_HZ but booted with
+> nohz=3Doff; this would be an interesting data point because it includes=
 
-Here is the dump I get when the OOM kicks in:
+> all the funny code but still ticks are the right frequency.
 
-[ 3102.565520] trinity used greatest stack depth: 3472 bytes left
-[ 3108.706940] trinity invoked oom-killer: gfp_mask=0x84d0, order=0, oom_adj=0, oom_score_adj=0
-[ 3108.709101] trinity cpuset=/ mems_allowed=0
-[ 3108.710152] Pid: 5694, comm: trinity Not tainted 3.3.0-rc5-next-20120302-sasha #31
-[ 3108.711978] Call Trace:
-[ 3108.712569]  [<ffffffff826e87d0>] ? _raw_spin_unlock+0x30/0x60
-[ 3108.713981]  [<ffffffff8117485a>] dump_header+0x8a/0xd0
-[ 3108.715234]  [<ffffffff81174f76>] oom_kill_process+0x2e6/0x320
-[ 3108.716638]  [<ffffffff811753fa>] out_of_memory+0x17a/0x210
-[ 3108.718035]  [<ffffffff8117ab0c>] __alloc_pages_nodemask+0x81c/0x980
-[ 3108.719371]  [<ffffffff811b4170>] alloc_pages_current+0xa0/0x110
-[ 3108.720458]  [<ffffffff81085796>] pte_alloc_one+0x16/0x40
-[ 3108.721534]  [<ffffffff81192b3d>] __pte_alloc+0x2d/0x190
-[ 3108.722696]  [<ffffffff811cb79e>] do_huge_pmd_anonymous_page+0x5e/0x230
-[ 3108.724484]  [<ffffffff81196b8e>] handle_mm_fault+0x28e/0x330
-[ 3108.725860]  [<ffffffff81196e3c>] __get_user_pages+0x14c/0x640
-[ 3108.727231]  [<ffffffff8119b78b>] ? mmap_region+0x2bb/0x510
-[ 3108.728561]  [<ffffffff81198a77>] __mlock_vma_pages_range+0x87/0xa0
-[ 3108.730350]  [<ffffffff81198e4a>] mlock_vma_pages_range+0x9a/0xa0
-[ 3108.734486]  [<ffffffff8119b75b>] mmap_region+0x28b/0x510
-[ 3108.736185]  [<ffffffff810e30c1>] ? get_parent_ip+0x11/0x50
-[ 3108.737937]  [<ffffffff8119bd2c>] do_mmap_pgoff+0x34c/0x390
-[ 3108.741945]  [<ffffffff8119bdca>] ? sys_mmap_pgoff+0x5a/0x240
-[ 3108.743288]  [<ffffffff8119bde8>] sys_mmap_pgoff+0x78/0x240
-[ 3108.744781]  [<ffffffff8187dbee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 3108.746301]  [<ffffffff81051ea9>] sys_mmap+0x29/0x30
-[ 3108.747597]  [<ffffffff826e9efd>] system_call_fastpath+0x1a/0x1f
-[ 3108.748967] Mem-Info:
-[ 3108.749499] Node 0 DMA per-cpu:
-[ 3108.750253] CPU    0: hi:    0, btch:   1 usd:   0
-[ 3108.751387] CPU    1: hi:    0, btch:   1 usd:   0
-[ 3108.752530] CPU    2: hi:    0, btch:   1 usd:   0
-[ 3108.753637] CPU    3: hi:    0, btch:   1 usd:   0
-[ 3108.754738] Node 0 DMA32 per-cpu:
-[ 3108.755591] CPU    0: hi:  186, btch:  31 usd:   0
-[ 3108.756728] CPU    1: hi:  186, btch:  31 usd:   0
-[ 3108.757901] CPU    2: hi:  186, btch:  31 usd:  30
-[ 3108.759059] CPU    3: hi:  186, btch:  31 usd:   9
-[ 3108.760297] active_anon:3646 inactive_anon:25 isolated_anon:0
-[ 3108.760298]  active_file:0 inactive_file:0 isolated_file:0
-[ 3108.760299]  unevictable:178176 dirty:0 writeback:0 unstable:0
-[ 3108.760300]  free:12235 slab_reclaimable:11196 slab_unreclaimable:18070
-[ 3108.760301]  mapped:9 shmem:4 pagetables:904 bounce:0
-[ 3108.766381] Node 0 DMA free:4692kB min:680kB low:848kB high:1020kB active_anon:92kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:10240kB isolated(anon):0kB isolated(file):0kB present:15656kB mlocked:20kB dirty:0kB writeback:0kB mapped:8kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:40kB kernel_stack:8kB pagetables:716kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-[ 3108.774660] lowmem_reserve[]: 0 992 992 992
-[ 3108.776050] Node 0 DMA32 free:44292kB min:44372kB low:55464kB high:66556kB active_anon:14492kB inactive_anon:100kB active_file:0kB inactive_file:0kB unevictable:702464kB isolated(anon):0kB isolated(file):0kB present:1016064kB mlocked:1372kB dirty:0kB writeback:0kB mapped:28kB shmem:16kB slab_reclaimable:44784kB slab_unreclaimable:72240kB kernel_stack:1160kB pagetables:2900kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:21 all_unreclaimable? yes
-[ 3108.784537] lowmem_reserve[]: 0 0 0 0
-[ 3108.785548] Node 0 DMA: 1*4kB 3*8kB 3*16kB 3*32kB 2*64kB 2*128kB 2*256kB 1*512kB 1*1024kB 1*2048kB 0*4096kB = 4652kB
-[ 3108.788376] Node 0 DMA32: 95*4kB 87*8kB 263*16kB 427*32kB 128*64kB 30*128kB 10*256kB 7*512kB 1*1024kB 3*2048kB 0*4096kB = 44292kB
-[ 3108.801455] 29 total pagecache pages
-[ 3108.801991] 0 pages in swap cache
-[ 3108.802761] Swap cache stats: add 0, delete 0, find 0/0
-[ 3108.803987] Free swap  = 0kB
-[ 3108.804658] Total swap = 0kB
-[ 3108.808256] 262128 pages RAM
-[ 3108.808959] 21499 pages reserved
-[ 3108.809702] 2099 pages shared
-[ 3108.810390] 224544 pages non-shared
-[ 3108.811200] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-[ 3108.812904] [ 3032]     0  3032     4507       95   3       0             0 sh
-[ 3108.814571] [ 3049]     0  3049     3970      881   1       0             0 trinity
-[ 3108.816307] [ 3051]     0  3051     3994      885   1       0             0 trinity
-[ 3108.818072] [ 3053]     0  3053     4036      894   1       0             0 trinity
-[ 3108.819243] [ 3055]     0  3055     3970      882   3       0             0 trinity
-[ 3108.820553] [ 5694]     0  5694   531859   178526   1       0             0 trinity
-[ 3108.821871] [ 6191]     0  6191     3970      884   3       0             0 trinity
-[ 3108.823510] [ 6193]     0  6193     3970      881   3       0             0 trinity
-[ 3108.825261] Out of memory: Kill process 5694 (trinity) score 713 or sacrifice child
-[ 3108.826997] Killed process 5694 (trinity) total-vm:2127436kB, anon-rss:714096kB, file-rss:8kB
-[ 3109.360692] trinity used greatest stack depth: 2912 bytes left
+You've asked for it and you got it. I have rebooted some servers with
+nohz=3Doff parameter set on kernels complied with CONFIG_NO_HZ=3Dy. They'=
+re
+the ones listed below with 'off' suffix.
 
-Thanks!
+On 29.02.2012 17:24, Peter Zijlstra wrote:
 
+> Hrmm, this suggests we age too hard with nohz code.. in your test case
+> is there significant idle time? That is, suppose you run each cpu at 30=
+%
+> what is the period of you load? Running 3s out of 10s is significantly
+> different from running .3ms out of 1ms.
+
+It's definitely more similar to the second case - very frequent, but
+short bursts of activity. A single process does a tiny bit of
+computation mixed with a fair amount of network activity on each
+request. There are 80 such processes which are responsible for majority
+of system load.
+
+On 29.02.2012 18:03, Peter Zijlstra wrote:
+
+>> The only thing I could find is that on nohz we can confuse the per-rq
+>> sample period, does the below make a difference?=20
+>=20
+> Uhm, something like so that is..=20
+>=20
+> ---
+>  kernel/sched/core.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index d7c4322..44f61df 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2380,7 +2380,8 @@ static void calc_load_account_active(struct rq *t=
+his_rq)
+>  	if (delta)
+>  		atomic_long_add(delta, &calc_load_tasks);
+> =20
+> -	this_rq->calc_load_update +=3D LOAD_FREQ;
+> +	while (!time_before(jiffies, this_rq->calc_load_update))
+> +		this_rq->calc_load_update +=3D LOAD_FREQ;
+>  }
+> =20
+>  /*
+>=20
+
+I have compiled another batch of kernels with this patch applied
+(they're the ones with 'patch0' suffix). The only difference was the
+patch had to go to kernel/sched.c, but that's what you get when not
+using the latest sources. Anyway, here are the results accompanied by a
+pretty picture [1]:
+
+					std	off	patch0
+2.6.32.55-no-hz				0.76	0.91	-
+2.6.32.55-no-hz-74f5187ac8		6.41	9.40	4.93
+2.6.32.55-no-hz-0f004f5a69		0.78	0.92	0.90
+2.6.37-rc5-no-hz-0f004f5a69		0.95	0.92	0.86
+2.6.37-rc5-no-hz-pre-0f004f5a69		9.16	10.47	8.02
+
+It seems that the patch didn't help much on kernels with 0f004f5a69
+applied. The ones with just 74f5187ac8 are reporting a more plausible
+values, but slightly lower than the ones without patch0. Am I right to
+assume that the correct load values are the ones produced by kernels
+complied with CONFIG_NO_HZ=3Dn? Should they be the baseline?
+
+I can run additional tests if you have other leads to follow. Is there a
+particular kernel version I should focus on? If not I will continue
+to use the current bundle. I'm also planning to give the latest stable
+release a spin.
+
+
+[1] http://img835.imageshack.us/img835/2204/kernelload.png
+
+--=20
+Les=C5=82aw Kope=C4=87
+
+
+--------------enig5D520C09FDAC1D37D9D95965
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk9VGskACgkQNZJfI+JDs2L5TQCfdkkSE31HuEhVUpjgA64HHVFt
+Z1sAniWa98adeWW2Db7BgNQSTKeyXSyz
+=9KaE
+-----END PGP SIGNATURE-----
+
+--------------enig5D520C09FDAC1D37D9D95965--
