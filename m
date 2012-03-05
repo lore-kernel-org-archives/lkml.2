@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab2CEJK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 04:10:58 -0500
-Received: from fb1.tech.numericable.fr ([82.216.111.51]:60239 "EHLO
-	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab2CEJK4 (ORCPT
+	id S1756430Ab2CEJLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 04:11:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49724 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756423Ab2CEJLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 04:10:56 -0500
-X-Greylist: delayed 559 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 04:10:55 EST
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Corentin Chary <corentincj@iksaif.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI / Video: blacklist some samsung laptops
-Date: Mon,  5 Mar 2012 10:01:20 +0100
-Message-Id: <1330938083-10873-1-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvddtucetggdotefuucfrrhhofhhilhgvmecupfgfoffgtffkveetuefngfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddm
+	Mon, 5 Mar 2012 04:11:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of amit.kachhap@linaro.org designates 10.152.148.106 as permitted sender) smtp.mail=amit.kachhap@linaro.org
+MIME-Version: 1.0
+In-Reply-To: <20120303180402.GA30062@ericsson.com>
+References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+	<1330772767-16120-3-git-send-email-amit.kachhap@linaro.org>
+	<20120303164410.GB1495@sirena.org.uk>
+	<20120303180402.GA30062@ericsson.com>
+Date: Mon, 5 Mar 2012 14:41:14 +0530
+Message-ID: <CAK44p20WsM4DHdcYF_NSWS7Ux_O6p2Fx1R9fdms5UAoWE3YXaA@mail.gmail.com>
+Subject: Re: [lm-sensors] [linux-pm] [PATCH 2/4] hwmon: exynos4: Move thermal
+ sensor driver to driver/mfd directory
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corentin Chary <corentincj@iksaif.net>
+On 3 March 2012 23:34, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> On Sat, Mar 03, 2012 at 11:44:10AM -0500, Mark Brown wrote:
+>> On Sat, Mar 03, 2012 at 04:36:05PM +0530, Amit Daniel Kachhap wrote:
+>> > This movement is needed because the hwmon entries and corresponding
+>> > sysfs interface is a duplicate of utilities already provided by
+>> > driver/thermal/thermal_sys.c. The goal is to place it in mfd folder
+>> > and add necessary calls to get the temperature information.
+>>
+>> > --- a/Documentation/hwmon/exynos4_tmu
+>> > +++ /dev/null
+>>
+>> Moving this seems to be a failure, the device is exposing a hwmon
+>> interface even if you've moved the code to mfd (though it doesn't
+>> actually look like a multi-function device at all as far as I can see -
+>> usually a MFD would have a bunch of unrelated functionality while this
+>> has one function used by two subsystems).
+>>
+>> If anything it looks like the ADC driver ought to be moved into IIO with
+>> either generic or Exynos specific function drivers layered on top of it
+>> in hwmon and thermal making use of the values that are read.
+>>
+> I would agree. Or maybe move it all to thermal, since thermal devices register
+> the hwmon subsystem.
 
-On these laptops, the ACPI video is not functional, and very unlikely
-to be fixed by the vendor. Note that intel_backlight works for some
-of these laptops, and the backlight from samsung-laptop always work.
+Ok I agree with your suggestion of moving into thermal. Since I wanted
+to separate exynos specific generic thermal implementation with the
+H/W driver so that other versions of the sensor driver can easily hook
+into the common part. Anyway this implementation seems possible.
 
-The good news is that newer laptops have functional ACPI video device
-and won't end up growing this list.
-
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
----
- drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 49 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index f3f0fe7..b6f6979 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
- }
- 
-+/* Force to use vendor driver when the ACPI device is known to be
-+ * buggy */
-+static int video_detect_force_vendor(const struct dmi_system_id *d)
-+{
-+	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-+	return 0;
-+}
-+
-+static struct dmi_system_id video_detect_dmi_table[] = {
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N145P/N250P/N260P",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "N150/N210/N220",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-+		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-+		},
-+	},
-+	{
-+	 .callback = video_detect_force_vendor,
-+	 .ident = "NF110/NF210/NF310",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
-+		DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
-+		},
-+	},
-+};
-+
- /*
-  * Returns the video capabilities of a specific ACPI graphics device
-  *
-@@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
- 		 *		ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
- 		 *}
- 		 */
-+
-+		dmi_check_system(video_detect_dmi_table);
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
--- 
-1.7.3.4
-
+Thanks for the comments
+>
+> Guenter
