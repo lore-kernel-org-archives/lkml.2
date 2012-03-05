@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab2CERka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 12:40:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab2CERk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 12:40:27 -0500
-Date: Mon, 5 Mar 2012 18:33:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] turn mm->exe_file into mm->exe_path
-Message-ID: <20120305173314.GA17895@redhat.com>
-References: <20120305152826.GA12419@redhat.com> <20120305170556.GC12341@moon>
+	id S1757219Ab2CERkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 12:40:16 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39101 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755948Ab2CERkN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 12:40:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ddaney.cavm@gmail.com designates 10.236.161.232 as permitted sender) smtp.mail=ddaney.cavm@gmail.com; dkim=pass header.i=ddaney.cavm@gmail.com
+Message-ID: <4F54FA79.9030608@gmail.com>
+Date: Mon, 05 Mar 2012 09:40:09 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305170556.GC12341@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05, Cyrill Gorcunov wrote:
+On 03/05/2012 07:47 AM, Grant Likely wrote:
+> Allow drivers to report at probe time that they cannot get all the resources
+> required by the device, and should be retried at a later time.
 >
-> On Mon, Mar 05, 2012 at 04:28:26PM +0100, Oleg Nesterov wrote:
-> > I think the patch is simple and self-explanatory, it simply
-> > does s/mm->exe_file/mm->exe_path/.
-> >
-> > Why do we need mm->exe_file? IIUC, there are 2 reasons:
-> >
-> > 	1. we do not want O(n) proc/pid/exe looking for the 1st
-> > 	   VM_EXECUTABLE vma.
-> >
-> > 	2. we do not want to rely on vma->vm_file->f_path,
-> > 	   bprm->file->f_op->mmap can change ->vm_file.
-> >
-> > Unless there was another subtle reason, "struct path *exe_path"
-> > can equally work but it looks more clear.
-> >
-> > And can't we also remove added_exe_file_vma/removed_exe_file_vma?
-> > Why do we need mm->num_exe_file_vmas? Afaics it is only needed to
-> > "free" mm->exe_file if the application unmaps all these vmas. Say,
-> > to allow to unmount fs.
-> >
-> > Can't we simply add PR_CLEAR_MM_EXE_PATH instead? Of course it is
-> > not enough if ->vm_file still has a reference. But c/r people want
-> > PR_SET_MM_EXE_FILE anyway, see http://marc.info/?t=133052865500016
-> > So perhaps we can add PR_SET_MM_EXE_PATH which accepts NULL as well
-> > and kill this counter?
-> >
+> This should completely solve the problem of getting devices
+> initialized in the right order.  Right now this is mostly handled by
+> mucking about with initcall ordering which is a complete hack, and
+> doesn't even remotely handle the case where device drivers are in
+> modules.  This approach completely sidesteps the issues by allowing
+> driver registration to occur in any order, and any driver can request
+> to be retried after a few more other drivers get probed.
 >
-> So, if I understand you correctly, if there is exe_path, I would
-> simply put() it and get() and assign new one. Looks cool for me.
+> v4: - Integrate Manjunath's addition of a separate workqueue
+>      - Change -EAGAIN to -EPROBE_DEFER for drivers to trigger deferral
+>      - Update comment blocks to reflect how the code really works
+> v3: - Hold off workqueue scheduling until late_initcall so that the bulk
+>        of driver probes are complete before we start retrying deferred devices.
+>      - Tested with simple use cases.  Still needs more testing though.
+>        Using it to get rid of the gpio early_initcall madness, or to replace
+>        the ASoC internal probe deferral code would be ideal.
+> v2: - added locking so it should no longer be utterly broken in that regard
+>      - remove device from deferred list at device_del time.
+>      - Still completely untested with any real use case, but has been
+>        boot tested.
+>
+> Signed-off-by: Grant Likely<grant.likely@secretlab.ca>
 
-Yes,
+Hi Grant, thanks for working on this:
 
-> Not sure where we may use PR_SET_MM_EXE_PATH with NULL to kill
-> num_exe_file_vmas from user space though
+Acked-by: David Daney <david.daney@cavium.com>
 
-Please see above:
-
-	Why do we need mm->num_exe_file_vmas? Afaics it is only needed to
-	"free" mm->exe_file if the application unmaps all these vmas. Say,
-	to allow to unmount fs.
-
-If we remove this counter, the application can't do the final put.
-But if we add PR_SET_MM_EXE_PATH which accepts NULL we solve this
-problem and this works for c/r too.
-
-Of course, this is orthogonal to the patch I sent.
-
-Oleg.
+> Cc: Greg Kroah-Hartman<greg@kroah.com>
+> Cc: Mark Brown<broonie@opensource.wolfsonmicro.com>
+> Cc: Arnd Bergmann<arnd@arndb.de>
+> Cc: Dilan Lee<dilee@nvidia.com>
+> Cc: Manjunath GKondaiah<manjunath.gkondaiah@linaro.org>
+> Cc: Alan Stern<stern@rowland.harvard.edu>
+> Cc: Tony Lindgren<tony@atomide.com>
+> ---
+>
+> Hi Greg,
+>
+> This has been through several revisions now and I think it's ready to go
+> in.  The summary from the last discussion is that users need to have the
+> dpm_list order adjusted if they defer themselves, but that is something
+> which just cannot be performed by the core code (It needs to be manipulated
+> mid-probe() call).
+>
+> I know that not everybody is happy with this approach, but I've yet to
+> see a better alternative.  However, it is *really easy* to find all the
+> users of deferred probe since any user must return -EPROBE_DEFER explicitly.
+> If/when a better approach is found, all the users will be easy to find
+> and modify.
+>
+> If this patch is not merged, then I'm going to have to merge another round
+> of patches that futz with initcall ordering to get some drivers to probe
+> correctly.  :-(
+>
+> g.
+>
+>   drivers/base/base.h    |    1 +
+>   drivers/base/core.c    |    2 +
+>   drivers/base/dd.c      |  138 +++++++++++++++++++++++++++++++++++++++++++++++-
+>   include/linux/device.h |    5 ++
+>   include/linux/errno.h  |    1 +
+>   5 files changed, 146 insertions(+), 1 deletions(-)
+>
 
