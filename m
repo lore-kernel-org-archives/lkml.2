@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2CEDeX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 22:34:23 -0500
-Received: from gate.crashing.org ([63.228.1.57]:59254 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754982Ab2CEDeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 22:34:22 -0500
-Message-ID: <1330918440.11728.87.camel@pasglop>
-Subject: Re: linux-next: boot failure for next-20120227 and later (pci tree
- related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Mon, 05 Mar 2012 14:34:00 +1100
-In-Reply-To: <1330725132.11728.52.camel@pasglop>
-References: <20120302170638.3d172369d04335d9b921a28c@canb.auug.org.au>
-	 <CAErSpo6xQa4Rnv+RkkXCRjQ2HDZdBhorRv2c6pmWyXqRzhM4Vw@mail.gmail.com>
-	 <1330725132.11728.52.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1755802Ab2CEDr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 22:47:27 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53929 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab2CEDr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 22:47:26 -0500
+Date: Mon, 5 Mar 2012 14:47:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20120305144715.6a50c71ae343761cfb99f80a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-03 at 08:52 +1100, Benjamin Herrenschmidt wrote:
+--Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Or give me a chance to dig :-) I'll have a look next week.
+Hi Dave,
 
-This is indeed what bjorn suspected on irc, this patch fixes it:
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/intel_ringbuffer.c between commit 5d031e5b633d
+("drm/i915: Remove use of the autoreported ringbuffer HEAD position")
+from Linus' tree and commit a71d8d94525e ("drm/i915: Record the tail at
+each request and use it to estimate the head") from the drm tree.
 
-(Bjorn, please fold it in the original offending patch)
-
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
-index b37d0b5..5dd63f1 100644
---- a/arch/powerpc/kernel/pci_of_scan.c
-+++ b/arch/powerpc/kernel/pci_of_scan.c
-@@ -75,6 +75,7 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
- {
- 	u64 base, size;
- 	unsigned int flags;
-+	struct pci_bus_region region;
- 	struct resource *res;
- 	const u32 *addrs;
- 	u32 i;
-@@ -106,10 +107,12 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
- 			printk(KERN_ERR "PCI: bad cfg reg num 0x%x\n", i);
- 			continue;
- 		}
--		res->start = base;
--		res->end = base + size - 1;
-+
- 		res->flags = flags;
- 		res->name = pci_name(dev);
-+		region.start = base;
-+		region.end = base + size - 1;
-+		pcibios_bus_to_resource(dev, res, &region);
- 	}
- }
- 
-@@ -209,6 +212,7 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
- 	struct pci_bus *bus;
- 	const u32 *busrange, *ranges;
- 	int len, i, mode;
-+	struct pci_bus_region region;
- 	struct resource *res;
- 	unsigned int flags;
- 	u64 size;
-@@ -270,9 +274,10 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
- 			res = bus->resource[i];
- 			++i;
- 		}
--		res->start = of_read_number(&ranges[1], 2);
--		res->end = res->start + size - 1;
- 		res->flags = flags;
-+		region.start = of_read_number(&ranges[1], 2);
-+		region.end = region.start + size - 1;		
-+		pcibios_bus_to_resource(dev, res, &region);
- 	}
- 	sprintf(bus->name, "PCI Bus %04x:%02x", pci_domain_nr(bus),
- 		bus->number);
+diff --cc drivers/gpu/drm/i915/intel_ringbuffer.c
+index 5361915,ca3972f..0000000
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@@ -1132,6 -1190,23 +1190,11 @@@ int intel_wait_ring_buffer(struct intel
+  	struct drm_device *dev =3D ring->dev;
+  	struct drm_i915_private *dev_priv =3D dev->dev_private;
+  	unsigned long end;
++ 	int ret;
+ -	u32 head;
+ -
+ -	/* If the reported head position has wrapped or hasn't advanced,
+ -	 * fallback to the slow and accurate path.
+ -	 */
+ -	head =3D intel_read_status_page(ring, 4);
+ -	if (head > ring->head) {
+ -		ring->head =3D head;
+ -		ring->space =3D ring_space(ring);
+ -		if (ring->space >=3D n)
+ -			return 0;
+ -	}
++=20
++ 	ret =3D intel_ring_wait_request(ring, n);
++ 	if (ret !=3D -ENOSPC)
++ 		return ret;
+ =20
+  	trace_i915_ring_wait_begin(ring);
+  	if (drm_core_check_feature(dev, DRIVER_GEM))
 
+--Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPVDdDAAoJEECxmPOUX5FETPIP/jhl11qhAlR0WKx+N0kFGXs4
+M9Df0IWxEYPojtTt9/uexGQ4tnCRSMcmwOEe0PKPbf4Q8oUzqN8BZjEyM1QoEAxh
+tW/nSkztMyUtPmrvZ6U1xv51UuwVJY8Q/d6PZEziAjwTja1i3X1J+swfIbJ17Eps
+giwh3YcNIg5twjwic5/XU/hohJZljwcNqQ/xHvRrBv6Tx7a9CaPqD3roIPI8PAwG
+ifKK05QrfmpONtgp/DQi4Y1/zyxBD+IQO4C818LyzcY1YeiM/kg9eWMOsvhE5W+k
+3/g3xZXZzsSimW1P3XEwYSb+3hY3aNpzIrGmB3ML+HmRcK8aFWHBpzF5FsbpgMv6
+2PYkQ6/wgaY1+FUXVq8hs0DzxpX2AlAPN5Wn8gJLmpm1MakK/I3VLPps1PN3hdL/
+e0j1K6pS9vb69IUK5UJuUCKu7JvpBS0MbHOqgZ3nXfyFa+fwTh8Fz6LomFEqxmNT
+CPd3WYwgMQYamQg/C3ItENTML5dOziKusYpSMRbeNmVA1iDFhllOXEkKNl8RcyAN
+lKEfziBvu6LfIsRmevAz38FUYdd+A7dbLcDybpQP1F64J2eiOU6ct3/lRXq606oV
+POKNUtSKMqwQNmmgQaDa8u99xGbGgmTr/PiswMaoi18+HDUv6htJWdWbXbrkFytF
+ZmkfzzajJg43waol5JIQ
+=IpAt
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Mar_2012_14_47_15_+1100_ECFKtZuSy7Hqzu78--
