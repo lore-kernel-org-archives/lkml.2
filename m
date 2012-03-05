@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab2CEXUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 18:20:06 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	id S1757764Ab2CEXUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 18:20:08 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47840 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757584Ab2CEXUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757662Ab2CEXUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Mar 2012 18:20:03 -0500
 From: Richard Weinberger <richard@nod.at>
 To: pablo@netfilter.org
 Cc: jengelh@medozas.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        rostedt@goodmis.org
-Subject: [PATCH v6] Netfilter ring buffer support
-Date: Tue,  6 Mar 2012 00:19:42 +0100
-Message-Id: <1330989588-26833-1-git-send-email-richard@nod.at>
+        rostedt@goodmis.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 2/6] netfilter: xt_LOG: fix bogus extra layer-4 logging information
+Date: Tue,  6 Mar 2012 00:19:44 +0100
+Message-Id: <1330989588-26833-3-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1330989588-26833-1-git-send-email-richard@nod.at>
+References: <1330989588-26833-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set merges ipt_LOG and ip6t_LOG and adds ring buffer support
-to xt_LOG.
+In 16059b5 netfilter: merge ipt_LOG and ip6_LOG into xt_LOG, we have
+merged ipt_LOG and ip6t_LOG.
 
-Using "--ring" an user can create LOG rules which log messages into
-one or more ring buffers.
-Each ring buffer is represented as pipe-like file in
-/proc/net/netfilter/nf_log_ring/.
+However:
 
-Ring buffer support can be enabled/disabled using
-CONFIG_NETFILTER_XT_TARGET_LOG_RING.
+IN=wlan0 OUT= MAC=xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
+SRC=213.150.61.61 DST=192.168.1.133 LEN=40 TOS=0x00 PREC=0x00 TTL=117
+ID=10539 DF PROTO=TCP SPT=80 DPT=49013 WINDOW=0 RES=0x00 ACK RST
+URGP=0 PROTO=UDPLITE SPT=80 DPT=49013 LEN=45843 PROTO=ICMP TYPE=0
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Changes since v1:
- - Merged ipt_LOG and ip6t_LOG
- - Implemented ring buffer support as part of xt_LOG.
+Several missing break in the code led to including bogus layer-4
+information. This patch fixes this problem.
 
-Changes since v2:
- - Fixed struct xt_log_info_v1's data layout
- - Removed the sizeof(void *) hack
- - Replaced BUG() by WARN_ON_ONCE()
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/netfilter/xt_LOG.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Changes since v3:
- - Merged xt_LOG_core.c and xt_LOG_ring.c into xt_LOG.c
- - Made checkpatch.pl happy
+diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+index 1595608..f99f8de 100644
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@ -216,12 +216,14 @@ static void dump_ipv4_packet(struct sbuff *m,
+ 				    ntohs(ih->frag_off) & IP_OFFSET,
+ 				    iphoff+ih->ihl*4, logflags))
+ 			return;
++		break;
+ 	case IPPROTO_UDP:
+ 	case IPPROTO_UDPLITE:
+ 		if (dump_udp_header(m, skb, ih->protocol,
+ 				    ntohs(ih->frag_off) & IP_OFFSET,
+ 				    iphoff+ih->ihl*4))
+ 			return;
++		break;
+ 	case IPPROTO_ICMP: {
+ 		struct icmphdr _icmph;
+ 		const struct icmphdr *ich;
+@@ -649,10 +651,12 @@ static void dump_ipv6_packet(struct sbuff *m,
+ 		if (dump_tcp_header(m, skb, currenthdr, fragment, ptr,
+ 		    logflags))
+ 			return;
++		break;
+ 	case IPPROTO_UDP:
+ 	case IPPROTO_UDPLITE:
+ 		if (dump_udp_header(m, skb, currenthdr, fragment, ptr))
+ 			return;
++		break;
+ 	case IPPROTO_ICMPV6: {
+ 		struct icmp6hdr _icmp6h;
+ 		const struct icmp6hdr *ic;
+-- 
+1.7.7.3
 
-Changes since v4:
- - Fixed a typo in include/linux/netfilter/Kbuild
-   (Thanks Bastian!)
-
-Changes since v5:
- - Made timestamp support a separate patch
- - Renamed xt_LOG_ring to nf_log_ring
- - Removed unused prototypes from xt_log.h
- - Renamed find_next_entry_inc() to find_next_iter_entry()
- - Fixed OOM error path in rlog_open_pipe()
-
-Patch 1 and 2 have already been applied to net-next.git.
-
-[PATCH 1/6] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-[PATCH 2/6] netfilter: xt_LOG: fix bogus extra layer-4 logging
-[PATCH 3/6] ring_buffer: Export for_each_buffer_cpu()
-[PATCH 4/6] xt_log: Make printk() in sb_close() optional
-[PATCH 5/6] Netfilter: xt_LOG: Implement ring buffer support
-[PATCH 6/6] Netfilter: xt_LOG: Add timestamp support
-
-Thanks,
-//richard
