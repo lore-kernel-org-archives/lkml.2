@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2CEIk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 03:40:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58691 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756386Ab2CEIk0 (ORCPT
+	id S1756330Ab2CEInE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 03:43:04 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47664 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab2CEInD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 03:40:26 -0500
-Date: Mon, 5 Mar 2012 00:39:42 -0800
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Message-ID: <tip-901b04450a0ff44d579158b8b0492ce7e66cd442@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        alex.shi@intel.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, alex.shi@intel.com, mingo@elte.hu
-In-Reply-To: <1330774047-18597-1-git-send-email-alex.shi@intel.com>
-References: <1330774047-18597-1-git-send-email-alex.shi@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/numa: Improve internode cache alignment
-Git-Commit-ID: 901b04450a0ff44d579158b8b0492ce7e66cd442
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 5 Mar 2012 03:43:03 -0500
+X-AuditID: 9c93016f-b7cc4ae0000027c5-ca-4f547c958a99
+Message-ID: <4F547C90.4040007@lge.com>
+Date: Mon, 05 Mar 2012 17:42:56 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 00:40:09 -0800 (PST)
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: Minchan Kim <minchan@kernel.org>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
+References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com> <20120304103446.GA9267@barrios>
+In-Reply-To: <20120304103446.GA9267@barrios>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  901b04450a0ff44d579158b8b0492ce7e66cd442
-Gitweb:     http://git.kernel.org/tip/901b04450a0ff44d579158b8b0492ce7e66cd442
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Sat, 3 Mar 2012 19:27:27 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Mar 2012 09:19:20 +0100
+2012-03-04 7:34 PM, Minchan Kim wrote:
+> Hi Namhyung,
+>
 
-x86/numa: Improve internode cache alignment
+Hi Minchan,
+glad to see you here again :)
 
-Currently cache alignment among nodes in the kernel is still 128
-bytes on x86 NUMA machines - we got that X86_INTERNODE_CACHE_SHIFT
-default from old P4 processors.
 
-But now most modern x86 CPUs use the same size: 64 bytes from L1 to
-last level L3. so let's remove the incorrect setting, and directly
-use the L1 cache size to do SMP cache line alignment.
+> On Wed, Feb 29, 2012 at 05:54:34PM +0900, Namhyung Kim wrote:
+>> Unlike SLAB, SLUB doesn't set PG_slab on tail pages, so if a user would
+>> call free_pages() incorrectly on a object in a tail page, she will get
+>> i confused with the undefined result. Setting the flag would help her by
+>> emitting a warning on bad_page() in such a case.
+>>
+>> Reported-by: Sangseok Lee <sangseok.lee@lge.com>
+>> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+>
+> I read this thread and I feel the we don't reach right point.
+> I think it's not a compound page problem.
+> We can face above problem where we allocates big order page without __GFP_COMP
+> and free middle page of it.
+>
+> Fortunately, We can catch such a problem by put_page_testzero in __free_pages
+> if you enable CONFIG_DEBUG_VM.
+>
+> Did you tried that with CONFIG_DEBUG_VM?
+>
 
-This patch saves some memory space on kernel data, and it also
-improves the cache locality of kernel data.
+To be honest, I don't have a real test environment which brings this issue in 
+the first place. On my simple test environment, enabling CONFIG_DEBUG_VM emits 
+a bug when I tried to free middle of the slab pages. Thanks for pointing it out.
 
-The System.map is quite different with/without this change:
+However I guess there was a chance to bypass that test anyhow since it did 
+reach to __free_pages_ok(). If the page count was 0 already, free_pages() will 
+prevent it from getting to the function even though CONFIG_DEBUG_VM was 
+disabled. But I don't think it's a kernel bug - it seems entirely our fault :( 
+I'll recheck and talk about it with my colleagues.
 
-	before patch			after patch
-  ...
-  000000000000b000 d tlb_vector_|  000000000000b000 d tlb_vector
-  000000000000b080 d cpu_loops_p|  000000000000b040 d cpu_loops_
-  ...
+Thanks,
+Namhyung
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Cc: asit.k.mallick@intel.com
-Link: http://lkml.kernel.org/r/1330774047-18597-1-git-send-email-alex.shi@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/Kconfig.cpu |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 3c57033..6443c6f 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -303,7 +303,6 @@ config X86_GENERIC
- config X86_INTERNODE_CACHE_SHIFT
- 	int
- 	default "12" if X86_VSMP
--	default "7" if NUMA
- 	default X86_L1_CACHE_SHIFT
- 
- config X86_CMPXCHG
+>> ---
+>>   mm/slub.c |   12 ++++++++++--
+>>   1 files changed, 10 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 33bab2aca882..575baacbec9b 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -1287,6 +1287,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>>   	struct page *page;
+>>   	struct kmem_cache_order_objects oo = s->oo;
+>>   	gfp_t alloc_gfp;
+>> +	int i;
+>>
+>>   	flags&= gfp_allowed_mask;
+>>
+>> @@ -1320,6 +1321,9 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>>   	if (!page)
+>>   		return NULL;
+>>
+>> +	for (i = 0; i<  1<<  oo_order(oo); i++)
+>> +		__SetPageSlab(page + i);
+>> +
+>>   	if (kmemcheck_enabled
+>>   		&&  !(s->flags&  (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+>>   		int pages = 1<<  oo_order(oo);
+>> @@ -1369,7 +1373,6 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+>>
+>>   	inc_slabs_node(s, page_to_nid(page), page->objects);
+>>   	page->slab = s;
+>> -	page->flags |= 1<<  PG_slab;
+>>
+>>   	start = page_address(page);
+>>
+>> @@ -1396,6 +1399,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+>>   {
+>>   	int order = compound_order(page);
+>>   	int pages = 1<<  order;
+>> +	int i;
+>>
+>>   	if (kmem_cache_debug(s)) {
+>>   		void *p;
+>> @@ -1413,7 +1417,11 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+>>   		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE,
+>>   		-pages);
+>>
+>> -	__ClearPageSlab(page);
+>> +	for (i = 0; i<  pages; i++) {
+>> +		BUG_ON(!PageSlab(page + i));
+>> +		__ClearPageSlab(page + i);
+>> +	}
+>> +
+>>   	reset_page_mapcount(page);
+>>   	if (current->reclaim_state)
+>>   		current->reclaim_state->reclaimed_slab += pages;
+>> --
+>> 1.7.9
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+>
+
