@@ -1,43 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2CEPAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 10:00:35 -0500
-Received: from ackle.nomi.cz ([81.31.33.35]:39957 "EHLO ackle.nomi.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932150Ab2CEPAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 10:00:34 -0500
-Date: Mon, 5 Mar 2012 16:00:31 +0100
-From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: wwguy <wey-yi.w.guy@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>, security@kernel.org
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20120305150031.GA22387@nomi.cz>
-References: <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz> <1321755233.22510.1.camel@wwguy-ubuntu> <20111120032016.GA14520@nomi.cz> <1321763314.22510.4.camel@wwguy-ubuntu> <20111120204007.GA7273@nomi.cz> <20120210180929.GA17733@nomi.cz> <20120214092020.GB12905@redhat.com> <20120305140130.GA15186@nomi.cz> <20120305145700.GA17800@redhat.com>
+	id S932643Ab2CEPBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 10:01:10 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:50830 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932150Ab2CEPBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 10:01:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.68.189.5 as permitted sender) smtp.mail=glikely@secretlab.ca
+Date: Mon, 5 Mar 2012 08:01:05 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: Guenter Roeck <guenter@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        Peter Tyser <ptyser@xes-inc.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3 v3] gpio: Add support for Intel ICHx/3100/Series[56]
+ GPIO
+Message-ID: <20120305150105.GB27229@ponder.secretlab.ca>
+References: <8bf67546-b865-4de1-8436-049a79d656bd@zimbra>
+ <7cddf613-68db-43d5-93f6-bc6e2d63af44@zimbra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120305145700.GA17800@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <7cddf613-68db-43d5-93f6-bc6e2d63af44@zimbra>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Feb 17, 2012 at 12:18:26PM -0600, Aaron Sierra wrote:
+> From: Peter Tyser <ptyser@xes-inc.com>
+> 
+> This driver works on many Intel chipsets, including the ICH6, ICH7,
+> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
+> (Cougar Point), and NM10 (Tiger Point).
+> 
+> Additional Intel chipsets should be easily supported if needed, eg the
+> ICH1-5, EP80579, etc.
+> 
+> Tested on QM67 (Cougar Point), QM57 (Ibex Peak), 3100 (Whitmore Lake),
+> and NM10 (Tiger Point).
+> 
+> Includes work from Jean Delvare:
+> 	- Resource leak removal during module load/unload
+> 	- GPIO API bit value enforcement
+> 
+> Also includes code cleanup from Guenter Roeck.
+> 
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
+> ---
+>  MAINTAINERS             |    6 +
+>  drivers/gpio/Kconfig    |   13 ++
+>  drivers/gpio/Makefile   |    1 +
+>  drivers/gpio/gpio-ich.c |  440 +++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 460 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/gpio-ich.c
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index a1fce9a..9a0b59f 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3284,6 +3284,12 @@ W:	http://www.developer.ibm.com/welcome/netfinity/serveraid.html
+>  S:	Supported
+>  F:	drivers/scsi/ips.*
+>  
+> +ICH LPC DRIVER
+> +M:	Peter Tyser <ptyser@xes-inc.com>
+> +S:	Maintained
+> +F:	drivers/mfd/lpc_ich.c
+> +F:	drivers/gpio/gpio-ich.c
+> +
+>  IDE SUBSYSTEM
+>  M:	"David S. Miller" <davem@davemloft.net>
+>  L:	linux-ide@vger.kernel.org
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index d0c4118..3359f1e 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -178,6 +178,19 @@ config GPIO_SCH
+>  	  The Intel Tunnel Creek processor has 5 GPIOs powered by the
+>  	  core power rail and 9 from suspend power supply.
+>  
+> +config GPIO_ICH
+> +	tristate "Intel ICH GPIO"
+> +	depends on PCI && X86
+> +	select MFD_CORE
+> +	select LPC_ICH
+> +	help
+> +	  Say yes here to support the GPIO functionality of a number of Intel
+> +	  ICH-based chipsets.  Currently supported devices: ICH6, ICH7, ICH8
+> +	  ICH9, ICH10, Series 5/3400 (eg Ibex Peak), Series 6/C200 (eg
+> +	  Cougar Point), NM10 (Tiger Point), and 3100 (Whitmore Lake).
+> +
+> +	  If unsure, say N.
+> +
+>  config GPIO_VX855
+>  	tristate "VIA VX855/VX875 GPIO"
+>  	depends on PCI
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index fa10df6..b538830 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -44,6 +44,7 @@ obj-$(CONFIG_GPIO_PXA)		+= gpio-pxa.o
+>  obj-$(CONFIG_GPIO_RDC321X)	+= gpio-rdc321x.o
+>  obj-$(CONFIG_PLAT_SAMSUNG)	+= gpio-samsung.o
+>  obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
+> +obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+>  obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
+>  obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
+>  obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
 
-On Mon, Mar 05, 2012 at 03:57:01PM +0100, Stanislaw Gruszka wrote:
-> No problem. Can you remind me, is this reproducible on 64-bit kernel
-> with 32-bit user space? I'm asking because I would like to know if we
-> need to  backport those fixes to our kernel. We do not enable
-> CONFIG_CRYPTO_AES_NI_INTEL on 32 bit kernel, only on 64 bit, but if this
-> problem happen with 32-bit user land with 64 bit kernel, we will need to
-> do backport.
+This list is alphabetized, please keep it that way.
 
-It happens in 32-bit KVM guests on a 64-bit host, so I guess you need it.
+[...]
+> +static struct platform_driver ichx_gpio_driver = {
+> +	.driver		= {
+> +		.owner	= THIS_MODULE,
+> +		.name	= DRV_NAME,
+> +	},
+> +	.probe		= ichx_gpio_probe,
+> +	.remove		= __devexit_p(ichx_gpio_remove),
+> +};
+> +
+> +static int __devinit ichx_gpio_init_module(void)
+> +{
+> +	return platform_driver_register(&ichx_gpio_driver);
+> +}
+> +
+> +static void __devexit ichx_gpio_exit_module(void)
+> +{
+> +	platform_driver_unregister(&ichx_gpio_driver);
+> +}
+> +
+> +subsys_initcall(ichx_gpio_init_module);
+> +module_exit(ichx_gpio_exit_module);
 
-Regards,
--- 
-Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
+Don't use subsys_initcall.  Futzing with initcalls to get drivers in the
+right order isn't sustainable.  I'm going to try to get the probe_defer
+patches into v3.4 which is a better solution to the problem.
+
+Also, you should use module_platform_driver() for trivial platform driver
+registrations.
+
+Otherwise looks good.
+
+g.
+
