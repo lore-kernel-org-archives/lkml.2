@@ -1,284 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab2CEGRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 01:17:04 -0500
-Received: from plane.gmane.org ([80.91.229.3]:38947 "EHLO plane.gmane.org"
+	id S1754214Ab2CEGSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 01:18:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49986 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752791Ab2CEGRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 01:17:02 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: Re: Subject: [PATCH] cpuidle: Add a sysfs entry to disable specific
- C state for debug purpose.
-Date: Mon, 05 Mar 2012 11:46:46 +0530
-Message-ID: <4F545A4E.8010801@linux.vnet.ibm.com>
-References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>	<1330647453.1916.7.camel@ymzhang> <20120302142303.648285a7.akpm@linux-foundation.org> <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751957Ab2CEGSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 01:18:53 -0500
+Message-ID: <4F545AC3.50004@redhat.com>
+Date: Mon, 05 Mar 2012 14:18:43 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Sergei Trofimovich <slyich@gmail.com>
+CC: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCHv 2] tcp: properly initialize tcp memory limits part 2
+ (fix nfs regression)
+References: <1330675173-18968-1-git-send-email-slyich@gmail.com> <4F509150.5060904@redhat.com> <20120302202421.753b36bc@sf.home> <20120302205000.088bf231@sf.home> <4F5227C9.7060209@parallels.com> <20120303174322.7e920bc5@sf.home> <4F52A8D5.9090703@parallels.com> <20120304121400.4d756e55@sf.home>
+In-Reply-To: <20120304121400.4d756e55@sf.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-pm@lists.linux-foundation.org
-X-Gmane-NNTP-Posting-Host: 122.248.161.59
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
-In-Reply-To: <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 03/05/2012 08:52 AM, Liu, ShuoX wrote:
-
->>> It's useful to help developers debug some issues.
->>
->> It would help developers more if it was documented a bit.  As it
->> stands, they'd be lucky if they even knew it existed.
->>
->> Looky:
->>
->> akpm:/usr/src/linux-3.3-rc5> grep -ril cpuidle Documentation
->> Documentation/trace/events-power.txt
->> Documentation/ABI/testing/sysfs-devices-system-cpu
->> Documentation/kernel-parameters.txt
->> Documentation/00-INDEX
->> Documentation/cpuidle/core.txt
->> Documentation/cpuidle/sysfs.txt
->> Documentation/cpuidle/driver.txt
->> Documentation/cpuidle/governor.txt
-> 
-> Thanks Andrew's advice and Yanmin's review. Here is the new patch. 
-> 
-> From: ShuoX Liu <shuox.liu@intel.com>
-> 
-> Some C states of new CPU might be not good. One reason is BIOS might configure
-> them incorrectly. To help developers root cause it quickly, the patch adds a
-> new sysfs entry, so developers could disable specific C state manually.
-> 
-> In addition, C state might have much impact on performance tuning, as it takes
-> much time to enter/exit C states, which might delay interrupt processing. With
-> the new debug option, developers could check if a deep C state could  impact
-> performance and how much impact it could cause.
-> 
-> Also add this option in Documentation/cpuidle/sysfs.txt.
-
-
-
-Enabling/Disabling particular C-states from sysfs entry is really
-helpful for cpuidle developers for general debugging and performance
-tuning for not just x86 but for all platforms that support cpuidle,
-like arm, powerpc etc .
-
+On 03/04/2012 05:14 PM, Sergei Trofimovich wrote:
+> On Sat, 3 Mar 2012 20:27:17 -0300
+> Glauber Costa<glommer@parallels.com>  wrote:
 >
+>> On 03/03/2012 11:43 AM, Sergei Trofimovich wrote:
+>>> On Sat, 3 Mar 2012 11:16:41 -0300
+>>> Glauber Costa<glommer@parallels.com>   wrote:
+>>>
+>>>> On 03/02/2012 02:50 PM, Sergei Trofimovich wrote:
+>>>>>>>> The change looks like a typo (division flipped to multiplication):
+>>>>>>>>> limit = nr_free_buffer_pages() / 8;
+>>>>>>>>> limit = nr_free_buffer_pages()<<     (PAGE_SHIFT - 10);
+>>>>>>> Hi, thanks for the reporting. It's not a typo. It was previously:
+>>>>>>> sysctl_tcp_mem[1]<<    (PAGE_SHIFT -  7). Looks like we need to do the
+>>>>>>> limit check before shift the value. Please try the following patch, thanks.
+>>>>>> Still does not help. I test it by checking sha1sum of a large file over NFS
+>>>>>> (small files seem to work simetimes):
+>>>>>>
+>>>>>>        $ strace sha1sum /gentoo/distfiles/gcc-4.6.2.tar.bz2
+>>>>>>        ...
+>>>>>>        open("/gentoo/distfiles/gcc-4.6.2.tar.bz2", O_RDONLY
+>>>>>>        <HUNG>
+Hi Sergei:
 
-> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-> Reviewed-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> ---
->  Documentation/cpuidle/sysfs.txt  |    5 +++++
->  drivers/cpuidle/cpuidle.c        |    1 +
->  drivers/cpuidle/governors/menu.c |    5 ++++-
->  drivers/cpuidle/sysfs.c          |   34 ++++++++++++++++++++++++++++++++++
->  include/linux/cpuidle.h          |    1 +
->  5 files changed, 45 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/cpuidle/sysfs.txt b/Documentation/cpuidle/sysfs.txt
-> index 50d7b16..635424f 100644
-> --- a/Documentation/cpuidle/sysfs.txt
-> +++ b/Documentation/cpuidle/sysfs.txt
-> @@ -36,6 +36,7 @@ drwxr-xr-x 2 root root 0 Feb  8 10:42 state3
->  /sys/devices/system/cpu/cpu0/cpuidle/state0:
->  total 0
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> +-r--r--r-- 1 root root 4096 Feb  8 10:42 disable  
+Looks like the client does not even start to read the file.
+>>>>>> After a certain timeout dmesg gets odd spam:
+>>>>>> [  314.848094] nfs: server vmhost not responding, still trying
+>>>>>> [  314.848134] nfs: server vmhost not responding, still trying
+>>>>>> [  314.848145] nfs: server vmhost not responding, still trying
+>>>>>> [  314.957047] nfs: server vmhost not responding, still trying
+>>>>>> [  314.957066] nfs: server vmhost not responding, still trying
+>>>>>> [  314.957075] nfs: server vmhost not responding, still trying
+>>>>>> [  314.957085] nfs: server vmhost not responding, still trying
+>>>>>> [  314.957100] nfs: server vmhost not responding, still trying
+>>>>>> [  314.958023] nfs: server vmhost not responding, still trying
+>>>>>> [  314.958035] nfs: server vmhost not responding, still trying
+>>>>>> [  314.958044] nfs: server vmhost not responding, still trying
+>>>>>> [  314.958054] nfs: server vmhost not responding, still trying
+>>>>>>
+>>>>>> looks like bogus messages. Might be relevant to mishandled timings
+>>>>>> somewhere else or a bug in nfs code.
 
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+  Did you use a virtual machine as your NFS server? Have you tried to 
+bisect the server side code?
+>>>>> And after 120 seconds hung tasks shows it might be an OOM issue
+>>>>> Likely caused by patch, as it's a 2GB RAM +4GB swap amd64 box
+>>>>> not running anything heavy:
+>>>> That is a bit weird.
+>>>>
+>>>> First because with Jason's patch, we should end up with the very same
+>>>> calculation, at the same exact order, as it was in older kernels.
+>>>> Second, because by shifting<<   10, you should be ending up with very
+>>>> small numbers, effectively having tcp_rmem[1] == tcp_rmem[2], and the
+>>>> same for wmem.
+>>>>
+>>>> Can you share which numbers you end up with at
+>>>> /proc/sys/net/ipv4/tcp_{r,w}mem ?
+>>>>
+>>> Sure:
+>>>
+>>>       $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+>>>       4096    87380   1999072
+>>>       4096    16384   1999072
+>>>
+>> Sergei,
+>>
+>> Sorry for not being clearer. I was expecting you'd post those values
+>> both in the scenario in which you see the bug, and in the scenario you
+>> don't.
+> Ah, I see.  Sorry. Patches are on top of v3.3-rc5-166-g1f033c1. Buggy one:
+>> -       limit = nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
+>> -       limit = max(limit, 128UL);
+>> +       limit = nr_free_buffer_pages() / 8;
+>> +       limit = max(limit, 128UL)<<  (PAGE_SHIFT - 7);
+>>          max_share = min(4UL*1024*1024, limit);
+>> +       printk(KERN_INFO "TCP: max_share=%u\n", max_share);
+>      $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+>      4096    87380   1999072
+>      4096    16384   1999072
 
+Nothing strange to me.
+> Working one:
+>> -       limit = nr_free_buffer_pages()<<  (PAGE_SHIFT - 10);
+>> +       limit = nr_free_buffer_pages()>>  (PAGE_SHIFT - 10);
+>>          limit = max(limit, 128UL);
+>>          max_share = min(4UL*1024*1024, limit);
+>> +       printk(KERN_INFO "TCP: max_share=%u\n", max_share);
+>      $ cat /proc/sys/net/ipv4/tcp_{r,w}mem
+>      4096    87380   124942
+>      4096    16384   124942
 
-Please update the documentation, rw fields are valid
-for disable flag
-/sys/devices/system/cpu/cpu2/cpuidle/state1 # ls -l
-total 0
--r--r--r-- 1 root root 65536 Mar  5 11:28 desc
--rw-r--r-- 1 root root 65536 Mar  5 11:28 disable
--r--r--r-- 1 root root 65536 Mar  5 11:28 latency
--r--r--r-- 1 root root 65536 Mar  5 11:28 name
--r--r--r-- 1 root root 65536 Mar  5 11:28 power
--r--r--r-- 1 root root 65536 Mar  5 11:28 time
--r--r--r-- 1 root root 65536 Mar  5 11:28 usage
-> @@ -45,6 +46,7 @@ total 0
+This one looks small to me, as the tcp_{r,w}mem were count by bytes and 
+limit were count by number of pages, so we need to shift PAGE_SHIFT.
 
->  /sys/devices/system/cpu/cpu0/cpuidle/state1:
->  total 0
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> +-r--r--r-- 1 root root 4096 Feb  8 10:42 disable
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-> @@ -54,6 +56,7 @@ total 0
->  /sys/devices/system/cpu/cpu0/cpuidle/state2:
->  total 0
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> +-r--r--r-- 1 root root 4096 Feb  8 10:42 disable
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-> @@ -63,6 +66,7 @@ total 0
->  /sys/devices/system/cpu/cpu0/cpuidle/state3:
->  total 0
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> +-r--r--r-- 1 root root 4096 Feb  8 10:42 disable
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
->  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-> @@ -72,6 +76,7 @@ total 0
->  
->  
->  * desc : Small description about the idle state (string)
-> +* disable : Option to disable this idle state (bool)
->  * latency : Latency to exit out of this idle state (in microseconds)
->  * name : Name of the idle state (string)
->  * power : Power consumed while in this idle state (in milliwatts)
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 59f4261..7d66d3e 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -197,6 +197,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
->  	state->power_usage = -1;
->  	state->flags = 0;
->  	state->enter = poll_idle;
-> +	state->disable = 0;
->  }
->  #else
->  static void poll_idle_init(struct cpuidle_driver *drv) {}
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index ad09526..5c17ca1 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -280,7 +280,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->  	 * We want to default to C1 (hlt), not to busy polling
->  	 * unless the timer is happening really really soon.
->  	 */
-> -	if (data->expected_us > 5)
-> +	if (data->expected_us > 5 &&
-> +		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
->  		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
->  
->  	/*
-> @@ -290,6 +291,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->  	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
->  		struct cpuidle_state *s = &drv->states[i];
->  
-> +		if (s->disable)
-> +			continue;
->  		if (s->target_residency > data->predicted_us)
->  			continue;
->  		if (s->exit_latency > latency_req)
-> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> index 3fe41fe..1eae29a 100644
-> --- a/drivers/cpuidle/sysfs.c
-> +++ b/drivers/cpuidle/sysfs.c
-> @@ -222,6 +222,9 @@ struct cpuidle_state_attr {
->  #define define_one_state_ro(_name, show) \
->  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444, show, NULL)
->  
-> +#define define_one_state_rw(_name, show, store) \
-> +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
-> +
->  #define define_show_state_function(_name) \
->  static ssize_t show_state_##_name(struct cpuidle_state *state, \
->  			 struct cpuidle_state_usage *state_usage, char *buf) \
-> @@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
->  	return sprintf(buf, "%u\n", state->_name);\
->  }
->  
-> +#define define_store_state_function(_name) \
-> +static ssize_t store_state_##_name(struct cpuidle_state *state, \
-> +		const char *buf, size_t size) \
-> +{ \
-> +	int value; \
-> +	sscanf(buf, "%d", &value); \
-> +	if (value) \
-> +		state->disable = 1; \
-> +	else \
-> +		state->disable = 0; \
-> +	return size; \
-> +}
-> +
->  #define define_show_state_ull_function(_name) \
->  static ssize_t show_state_##_name(struct cpuidle_state *state, \
->  			struct cpuidle_state_usage *state_usage, char *buf) \
-> @@ -251,6 +267,8 @@ define_show_state_ull_function(usage)
->  define_show_state_ull_function(time)
->  define_show_state_str_function(name)
->  define_show_state_str_function(desc)
-> +define_show_state_function(disable)
-> +define_store_state_function(disable)
->  
->  define_one_state_ro(name, show_state_name);
->  define_one_state_ro(desc, show_state_desc);
-> @@ -258,6 +276,7 @@ define_one_state_ro(latency, show_state_exit_latency);
->  define_one_state_ro(power, show_state_power_usage);
->  define_one_state_ro(usage, show_state_usage);
->  define_one_state_ro(time, show_state_time);
-> +define_one_state_rw(disable, show_state_disable, store_state_disable);
->  
->  static struct attribute *cpuidle_state_default_attrs[] = {
->  	&attr_name.attr,
-> @@ -266,6 +285,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
->  	&attr_power.attr,
->  	&attr_usage.attr,
->  	&attr_time.attr,
-> +	&attr_disable.attr,
->  	NULL
->  };
->  
-> @@ -287,8 +307,22 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
->  	return ret;
->  }
->  
-> +static ssize_t cpuidle_state_store(struct kobject *kobj,
-> +	struct attribute *attr, const char *buf, size_t size)
-> +{
-> +	int ret = -EIO;
-> +	struct cpuidle_state *state = kobj_to_state(kobj);
-> +	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
-> +
-> +	if (cattr->store)
-> +		ret = cattr->store(state, buf, size);
-> +
-> +	return ret;
-> +}
-> +
->  static const struct sysfs_ops cpuidle_state_sysfs_ops = {
->  	.show = cpuidle_state_show,
-> +	.store = cpuidle_state_store,
->  };
->  
->  static void cpuidle_state_sysfs_release(struct kobject *kobj)
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 712abcc..eb150a5 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -45,6 +45,7 @@ struct cpuidle_state {
->  	unsigned int	exit_latency; /* in US */
->  	unsigned int	power_usage; /* in mW */
->  	unsigned int	target_residency; /* in US */
-> +	unsigned int    disable;
->  
->  	int (*enter)	(struct cpuidle_device *dev,
->  			struct cpuidle_driver *drv,
-> 
+As I can't reproduce this locally, in order to narrow down the problem, 
+could you please help to check whether the issue were 
+introduced/eliminated by commit  4acb4190 or 3dc43e3?
 
-
-Reviewed-and-Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-
-Cheers,
-Deepthi
+Thanks
+>>> Nothing special with NFS nere, so I guess it uses UDP.
+>>> TCP works fine on machine (I do everything via SSH).
+>> Can you confirm that? If you're using nfs through udp, it makes
+>> even less sense that the default values of tcp sock mem will harm
+>> you. So it might be a bug somewhere else...
+> Rechecked with tcpdump. It uses TCP.
+>
 
