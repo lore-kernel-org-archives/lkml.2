@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab2CEQc3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:32:29 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40489 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750816Ab2CEQc2 (ORCPT
+	id S1755067Ab2CEQiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:38:09 -0500
+Received: from mail.windriver.com ([147.11.1.11]:45277 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab2CEQiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:32:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.152.132.132 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
-MIME-Version: 1.0
-In-Reply-To: <1330965033.11248.240.camel@twins>
-References: <20120224094048.GA7952@quad>
-	<20120305154753.GA14604@elte.hu>
-	<20120305155011.GA32413@elte.hu>
-	<20120305155642.GB32413@elte.hu>
-	<1330965033.11248.240.camel@twins>
-Date: Mon, 5 Mar 2012 17:32:26 +0100
-Message-ID: <CABPqkBQ5iC9TB=W4=19SghYdz9D6z6sXrBerm78TuVwk+W8sBQ@mail.gmail.com>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org, acme@redhat.com,
-        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
-        asharma@fb.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        vweaver1@eecs.utk.edu, andi@firstfloor.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Mon, 5 Mar 2012 11:38:07 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: siddhesh.poyarekar@gmail.com, akpm@linux-foundation.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] mm: fix task_nommu build regressions
+Date: Mon,  5 Mar 2012 11:37:53 -0500
+Message-Id: <1330965473-5401-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 5:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-03-05 at 16:56 +0100, Ingo Molnar wrote:
->> A third usability bug is that for some reason a branch sampling
->> 'perf report' defaults to the stdio output on my testsystem -
->> with --no-branch-stack it gives the regular tui.
->>
->>
-> Ah, I would not have noticed that since I still explicitly build my perf
-> without TUI support. That stuff mostly just gets in the way.
+Commit a69b756788619171e65c4d7081e9e3b8fbc4646a (linux-next)
 
-I tend to agree with Peter here.
+  "procfs: mark thread stack correctly in proc/<pid>/maps"
 
-There is no TUI support for branch as of now.
+introduced this failure on ARM's at91x40_defconfig:
 
-I will fix the other two bugs you reported.
+In file included from fs/proc/task_nommu.c:3:
+include/linux/mm.h: In function 'vm_is_stack_for_task':
+include/linux/mm.h:1048: error: implicit declaration of function 'task_stack_page'
+fs/proc/task_nommu.c: In function 'nommu_vma_show':
+fs/proc/task_nommu.c:178: warning: no return statement in function returning non-void
+fs/proc/task_nommu.c: At top level:
+fs/proc/task_nommu.c:180: error: expected ')' before '\xa'
+fs/proc/task_nommu.c:181: error: expected identifier or '(' before 'return'
+fs/proc/task_nommu.c:182: error: expected identifier or '(' before '}' token
+
+There are two reasons for the failure.  1) sched.h is needed for
+task_stack_page, which is used by the newly added KSTK_ESP calls.
+2) The above commit clearly left off an opening "{" in the line
+"if (...) {" that it was altering.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index bdfff69..239fbd4 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -1,4 +1,5 @@
+ 
++#include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/file.h>
+ #include <linux/fdtable.h>
+@@ -170,7 +171,7 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+ 		pad_len_spaces(m, len);
+ 		seq_path(m, &file->f_path, "");
+ 	} else if (mm) {
+-		if (vm_is_stack(priv->task, vma, is_pid))
++		if (vm_is_stack(priv->task, vma, is_pid)) {
+ 			pad_len_spaces(m, len);
+ 			seq_puts(m, "[stack]");
+ 		}
+-- 
+1.7.9.1
+
