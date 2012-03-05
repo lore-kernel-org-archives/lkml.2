@@ -1,452 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2CEQBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:01:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60032 "EHLO mx2.suse.de"
+	id S1755430Ab2CEQGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:06:43 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:36538 "EHLO d1.icnet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab2CEQBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:01:34 -0500
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Jan Kara <jack@suse.cz>, ocfs2-devel@oss.oracle.com,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 02/19] fs: Push mnt_want_write() outside of i_mutex
-Date: Mon,  5 Mar 2012 17:01:00 +0100
-Message-Id: <1330963277-26336-3-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1330963277-26336-1-git-send-email-jack@suse.cz>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+	id S1754365Ab2CEQGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 11:06:40 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [PATCH v3 0/3] Amstrad Delta: access MODEM_RESET GPIO pin over a regulator
+Date: Mon,  5 Mar 2012 17:05:09 +0100
+Message-Id: <1330963512-20413-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, mnt_want_write() is sometimes called with i_mutex held and sometimes
-without it. This isn't really a problem because mnt_want_write() is a
-non-blocking operation (essentially has a trylock semantics) but when the
-function starts to handle also frozen filesystems, it will get a full lock
-semantics and thus proper lock ordering has to be established. So move
-all mnt_want_write() calls outside of i_mutex.
+The Amstrad Delta on-board latch2 bit named MODEM_NRESET, now available
+as a GPIO pin AMS_DELTA_GPIO_PIN_NMODEM_RESET, is used to power up/down
+(bring into/out of a reset state) two distinct on-board devices
+simultaneously: the modem, and the voice codec. As a consequence, that
+bit is, or can be, manipulated concurrently by two drivers, or their
+platform provided hooks.
 
-One non-trivial case needing conversion is kern_path_create() /
-user_path_create() which didn't include mnt_want_write() but now needs to
-because it acquires i_mutex.  Because there are virtual file systems which
-don't bother with freeze / remount-ro protection we actually provide both
-versions of the function - one which calls mnt_want_write() and one which does
-not.
+Instead of updating those drivers to use the gpiolib API as a new method
+of controlling the MODEM_NRESET pin state, like it was done to other
+drivers accessing latch2 pins, and still being vulnerable to potential
+concurrency conflicts, or trying to solve that sharing issue with a
+custom piece of code, set up a fixed regulator device on top of that
+GPIO pin and update both drivers to manipulate that regulator, not the
+GPIO pin directly.
 
-CC: ocfs2-devel@oss.oracle.com
-CC: Mark Fasheh <mfasheh@suse.com>
-CC: Joel Becker <jlbec@evilplan.org>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/namei.c              |  115 +++++++++++++++++++++++++++--------------------
- fs/ocfs2/refcounttree.c |   10 +---
- include/linux/namei.h   |    2 +
- net/unix/af_unix.c      |   13 ++----
- 4 files changed, 74 insertions(+), 66 deletions(-)
+This is v3 of this series, with Mark's Ack for ASoC subtree touching
+changes already collected, rebased on top of linux-omap/ams-delta tip,
+commit da564a05b3aefe403062411b67d64b7e992718f7.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index a780ea5..575d3a4 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2383,7 +2383,9 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	return file;
- }
- 
--struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
-+static struct dentry *do_kern_path_create(int dfd, const char *pathname,
-+					  struct path *path, int is_dir,
-+					  int freeze_protect)
- {
- 	struct dentry *dentry = ERR_PTR(-EEXIST);
- 	struct nameidata nd;
-@@ -2401,6 +2403,14 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
- 	nd.flags |= LOOKUP_CREATE | LOOKUP_EXCL;
- 	nd.intent.open.flags = O_EXCL;
- 
-+	if (freeze_protect) {
-+		error = mnt_want_write(nd.path.mnt);
-+		if (error) {
-+			dentry = ERR_PTR(error);
-+			goto out;
-+		}
-+	}
-+
- 	/*
- 	 * Do the final lookup.
- 	 */
-@@ -2429,24 +2439,49 @@ eexist:
- 	dentry = ERR_PTR(-EEXIST);
- fail:
- 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-+	if (freeze_protect)
-+		mnt_drop_write(nd.path.mnt);
- out:
- 	path_put(&nd.path);
- 	return dentry;
- }
-+
-+struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
-+{
-+	return do_kern_path_create(dfd, pathname, path, is_dir, 0);
-+}
- EXPORT_SYMBOL(kern_path_create);
- 
-+struct dentry *kern_path_create_thawed(int dfd, const char *pathname, struct path *path, int is_dir)
-+{
-+	return do_kern_path_create(dfd, pathname, path, is_dir, 1);
-+}
-+EXPORT_SYMBOL(kern_path_create_thawed);
-+
- struct dentry *user_path_create(int dfd, const char __user *pathname, struct path *path, int is_dir)
- {
- 	char *tmp = getname(pathname);
- 	struct dentry *res;
- 	if (IS_ERR(tmp))
- 		return ERR_CAST(tmp);
--	res = kern_path_create(dfd, tmp, path, is_dir);
-+	res = do_kern_path_create(dfd, tmp, path, is_dir, 0);
- 	putname(tmp);
- 	return res;
- }
- EXPORT_SYMBOL(user_path_create);
- 
-+struct dentry *user_path_create_thawed(int dfd, const char __user *pathname, struct path *path, int is_dir)
-+{
-+	char *tmp = getname(pathname);
-+	struct dentry *res;
-+	if (IS_ERR(tmp))
-+		return ERR_CAST(tmp);
-+	res = do_kern_path_create(dfd, tmp, path, is_dir, 1);
-+	putname(tmp);
-+	return res;
-+}
-+EXPORT_SYMBOL(user_path_create_thawed);
-+
- int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
- {
- 	int error = may_create(dir, dentry);
-@@ -2502,7 +2537,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 	if (S_ISDIR(mode))
- 		return -EPERM;
- 
--	dentry = user_path_create(dfd, filename, &path, 0);
-+	dentry = user_path_create_thawed(dfd, filename, &path, 0);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
-@@ -2511,12 +2546,9 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 	error = may_mknod(mode);
- 	if (error)
- 		goto out_dput;
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto out_dput;
- 	error = security_path_mknod(&path, dentry, mode, dev);
- 	if (error)
--		goto out_drop_write;
-+		goto out_dput;
- 	switch (mode & S_IFMT) {
- 		case 0: case S_IFREG:
- 			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
-@@ -2529,11 +2561,10 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
- 			break;
- 	}
--out_drop_write:
--	mnt_drop_write(path.mnt);
- out_dput:
- 	dput(dentry);
- 	mutex_unlock(&path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(path.mnt);
- 	path_put(&path);
- 
- 	return error;
-@@ -2571,24 +2602,20 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
- 	struct path path;
- 	int error;
- 
--	dentry = user_path_create(dfd, pathname, &path, 1);
-+	dentry = user_path_create_thawed(dfd, pathname, &path, 1);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
- 	if (!IS_POSIXACL(path.dentry->d_inode))
- 		mode &= ~current_umask();
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto out_dput;
- 	error = security_path_mkdir(&path, dentry, mode);
- 	if (error)
--		goto out_drop_write;
-+		goto out_dput;
- 	error = vfs_mkdir(path.dentry->d_inode, dentry, mode);
--out_drop_write:
--	mnt_drop_write(path.mnt);
- out_dput:
- 	dput(dentry);
- 	mutex_unlock(&path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(path.mnt);
- 	path_put(&path);
- 	return error;
- }
-@@ -2683,6 +2710,9 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	}
- 
- 	nd.flags &= ~LOOKUP_PARENT;
-+	error = mnt_want_write(nd.path.mnt);
-+	if (error)
-+		goto exit1;
- 
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
- 	dentry = lookup_hash(&nd);
-@@ -2693,19 +2723,15 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 		error = -ENOENT;
- 		goto exit3;
- 	}
--	error = mnt_want_write(nd.path.mnt);
--	if (error)
--		goto exit3;
- 	error = security_path_rmdir(&nd.path, dentry);
- 	if (error)
--		goto exit4;
-+		goto exit3;
- 	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
--exit4:
--	mnt_drop_write(nd.path.mnt);
- exit3:
- 	dput(dentry);
- exit2:
- 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(nd.path.mnt);
- exit1:
- 	path_put(&nd.path);
- 	putname(name);
-@@ -2772,6 +2798,9 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 		goto exit1;
- 
- 	nd.flags &= ~LOOKUP_PARENT;
-+	error = mnt_want_write(nd.path.mnt);
-+	if (error)
-+		goto exit1;
- 
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
- 	dentry = lookup_hash(&nd);
-@@ -2784,21 +2813,17 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 		if (!inode)
- 			goto slashes;
- 		ihold(inode);
--		error = mnt_want_write(nd.path.mnt);
--		if (error)
--			goto exit2;
- 		error = security_path_unlink(&nd.path, dentry);
- 		if (error)
--			goto exit3;
-+			goto exit2;
- 		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
--exit3:
--		mnt_drop_write(nd.path.mnt);
--	exit2:
-+exit2:
- 		dput(dentry);
- 	}
- 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
- 	if (inode)
- 		iput(inode);	/* truncate the inode here */
-+	mnt_drop_write(nd.path.mnt);
- exit1:
- 	path_put(&nd.path);
- 	putname(name);
-@@ -2858,23 +2883,19 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
- 	if (IS_ERR(from))
- 		return PTR_ERR(from);
- 
--	dentry = user_path_create(newdfd, newname, &path, 0);
-+	dentry = user_path_create_thawed(newdfd, newname, &path, 0);
- 	error = PTR_ERR(dentry);
- 	if (IS_ERR(dentry))
- 		goto out_putname;
- 
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto out_dput;
- 	error = security_path_symlink(&path, dentry, from);
- 	if (error)
--		goto out_drop_write;
-+		goto out_dput;
- 	error = vfs_symlink(path.dentry->d_inode, dentry, from);
--out_drop_write:
--	mnt_drop_write(path.mnt);
- out_dput:
- 	dput(dentry);
- 	mutex_unlock(&path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(path.mnt);
- 	path_put(&path);
- out_putname:
- 	putname(from);
-@@ -2964,7 +2985,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (error)
- 		return error;
- 
--	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
-+	new_dentry = user_path_create_thawed(newdfd, newname, &new_path, 0);
- 	error = PTR_ERR(new_dentry);
- 	if (IS_ERR(new_dentry))
- 		goto out;
-@@ -2972,18 +2993,14 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	error = -EXDEV;
- 	if (old_path.mnt != new_path.mnt)
- 		goto out_dput;
--	error = mnt_want_write(new_path.mnt);
--	if (error)
--		goto out_dput;
- 	error = security_path_link(old_path.dentry, &new_path, new_dentry);
- 	if (error)
--		goto out_drop_write;
-+		goto out_dput;
- 	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
--out_drop_write:
--	mnt_drop_write(new_path.mnt);
- out_dput:
- 	dput(new_dentry);
- 	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(new_path.mnt);
- 	path_put(&new_path);
- out:
- 	path_put(&old_path);
-@@ -3174,6 +3191,10 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	if (newnd.last_type != LAST_NORM)
- 		goto exit2;
- 
-+	error = mnt_want_write(oldnd.path.mnt);
-+	if (error)
-+		goto exit2;
-+
- 	oldnd.flags &= ~LOOKUP_PARENT;
- 	newnd.flags &= ~LOOKUP_PARENT;
- 	newnd.flags |= LOOKUP_RENAME_TARGET;
-@@ -3209,23 +3230,19 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	if (new_dentry == trap)
- 		goto exit5;
- 
--	error = mnt_want_write(oldnd.path.mnt);
--	if (error)
--		goto exit5;
- 	error = security_path_rename(&oldnd.path, old_dentry,
- 				     &newnd.path, new_dentry);
- 	if (error)
--		goto exit6;
-+		goto exit5;
- 	error = vfs_rename(old_dir->d_inode, old_dentry,
- 				   new_dir->d_inode, new_dentry);
--exit6:
--	mnt_drop_write(oldnd.path.mnt);
- exit5:
- 	dput(new_dentry);
- exit4:
- 	dput(old_dentry);
- exit3:
- 	unlock_rename(new_dir, old_dir);
-+	mnt_drop_write(oldnd.path.mnt);
- exit2:
- 	path_put(&newnd.path);
- 	putname(to);
-diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-index cf78233..a99b8e2 100644
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -4453,7 +4453,7 @@ int ocfs2_reflink_ioctl(struct inode *inode,
- 		return error;
- 	}
- 
--	new_dentry = user_path_create(AT_FDCWD, newname, &new_path, 0);
-+	new_dentry = user_path_create_thawed(AT_FDCWD, newname, &new_path, 0);
- 	error = PTR_ERR(new_dentry);
- 	if (IS_ERR(new_dentry)) {
- 		mlog_errno(error);
-@@ -4466,19 +4466,13 @@ int ocfs2_reflink_ioctl(struct inode *inode,
- 		goto out_dput;
- 	}
- 
--	error = mnt_want_write(new_path.mnt);
--	if (error) {
--		mlog_errno(error);
--		goto out_dput;
--	}
--
- 	error = ocfs2_vfs_reflink(old_path.dentry,
- 				  new_path.dentry->d_inode,
- 				  new_dentry, preserve);
--	mnt_drop_write(new_path.mnt);
- out_dput:
- 	dput(new_dentry);
- 	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(new_path.mnt);
- 	path_put(&new_path);
- out:
- 	path_put(&old_path);
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index ffc0213..432f6bb 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -77,7 +77,9 @@ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *,
- extern int kern_path(const char *, unsigned, struct path *);
- 
- extern struct dentry *kern_path_create(int, const char *, struct path *, int);
-+extern struct dentry *kern_path_create_thawed(int, const char *, struct path *, int);
- extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
-+extern struct dentry *user_path_create_thawed(int, const char __user *, struct path *, int);
- extern int kern_path_parent(const char *, struct nameidata *);
- extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
- 			   const char *, unsigned int, struct path *);
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 85d3bb7..7888b09 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -856,7 +856,7 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 		 * Get the parent directory, calculate the hash for last
- 		 * component.
- 		 */
--		dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
-+		dentry = kern_path_create_thawed(AT_FDCWD, sun_path, &path, 0);
- 		err = PTR_ERR(dentry);
- 		if (IS_ERR(dentry))
- 			goto out_mknod_parent;
-@@ -866,19 +866,13 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 		 */
- 		mode = S_IFSOCK |
- 		       (SOCK_INODE(sock)->i_mode & ~current_umask());
--		err = mnt_want_write(path.mnt);
--		if (err)
--			goto out_mknod_dput;
- 		err = security_path_mknod(&path, dentry, mode, 0);
- 		if (err)
--			goto out_mknod_drop_write;
--		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
--out_mknod_drop_write:
--		mnt_drop_write(path.mnt);
--		if (err)
- 			goto out_mknod_dput;
-+		err = vfs_mknod(path.dentry->d_inode, dentry, mode, 0);
- 		mutex_unlock(&path.dentry->d_inode->i_mutex);
- 		dput(path.dentry);
-+		mnt_drop_write(path.mnt);
- 		path.dentry = dentry;
- 
- 		addr->hash = UNIX_HASH_SIZE;
-@@ -916,6 +910,7 @@ out:
- out_mknod_dput:
- 	dput(dentry);
- 	mutex_unlock(&path.dentry->d_inode->i_mutex);
-+	mnt_drop_write(path.mnt);
- 	path_put(&path);
- out_mknod_parent:
- 	if (err == -EEXIST)
+There were initially 4 patches in the series, but patch 2/4, "ASoC:
+cx20442: add bias control over a platform provided regulator", has been
+since then applied by Liam to the ASoC tree (thanks!) and is already
+present in mainline (commit f75a8ff67d161b5166a2c2360bb2ffaefd5eb853),
+hence omitted from this submission.
+
+v2 -> v3 changes:
+* fix section mismatch issue present in previous versions of patch 1/3.
+
+v2 changes against initial version:
+* in both the codec and the modem callbacks, don't track the regulator
+  enable/disable state, compare new target bias level (the codec case)
+  or power state (the modem case) with the old value instead; thanks to
+  Mark Brown who suggested this solution,
+* a few other minor changes, mostly stylistic.
+
+Janusz Krzysztofik (3):
+  ARM: OMAP1: ams-delta: set up regulator over modem reset GPIO pin
+  ARM: OMAP1: ams-delta: update the modem to use regulator API
+  ASoC: OMAP: ams-delta: drop .set_bias_level callback
+
+ arch/arm/mach-omap1/Kconfig                       |    2 +
+ arch/arm/mach-omap1/board-ams-delta.c             |   94 +++++++++++++++++++--
+ arch/arm/plat-omap/include/plat/board-ams-delta.h |    1 -
+ sound/soc/omap/ams-delta.c                        |   32 -------
+ 4 files changed, 87 insertions(+), 42 deletions(-)
+
 -- 
-1.7.1
+1.7.3.4
 
