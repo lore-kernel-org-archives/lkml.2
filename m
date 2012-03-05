@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2CEOKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 09:10:01 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:34617 "EHLO
+	id S1030209Ab2CEOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 09:09:59 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:34623 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab2CENxH (ORCPT
+	with ESMTP id S932312Ab2CENxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 08:53:07 -0500
+	Mon, 5 Mar 2012 08:53:08 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        netdev@vger.kernel.org
-Subject: [PATCH 16/68] NET: pc300, do not zero global variables
-Date: Mon,  5 Mar 2012 14:52:03 +0100
-Message-Id: <1330955575-26641-17-git-send-email-jslaby@suse.cz>
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 43/68] TTY: simserial, stop using serial_state->{line,icount}
+Date: Mon,  5 Mar 2012 14:52:30 +0100
+Message-Id: <1330955575-26641-44-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
 References: <1330955575-26641-1-git-send-email-jslaby@suse.cz>
@@ -22,74 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are in .bss which is initialized to zeros when the module is
-loaded/kernel booted.
-
-What a strange way to do the initialization once in the pci probe
-routine...
+* instead of line, use tty->index or an iterator
+* icount is not made public, only the tx path increments it
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: netdev@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 ---
- drivers/net/wan/pc300_drv.c |    4 ----
- drivers/net/wan/pc300_tty.c |   18 ------------------
- 2 files changed, 22 deletions(-)
+ arch/ia64/hp/sim/simserial.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/wan/pc300_drv.c b/drivers/net/wan/pc300_drv.c
-index 1eeedd6..a6dd00d 100644
---- a/drivers/net/wan/pc300_drv.c
-+++ b/drivers/net/wan/pc300_drv.c
-@@ -299,7 +299,6 @@ void cpc_tty_init(pc300dev_t * dev);
- void cpc_tty_unregister_service(pc300dev_t * pc300dev);
- void cpc_tty_receive(pc300dev_t * pc300dev);
- void cpc_tty_trigger_poll(pc300dev_t * pc300dev);
--void cpc_tty_reset_var(void);
- #endif
+diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
+index 45df0f4..3698a2f 100644
+--- a/arch/ia64/hp/sim/simserial.c
++++ b/arch/ia64/hp/sim/simserial.c
+@@ -176,7 +176,6 @@ static void transmit_chars(struct tty_struct *tty, struct serial_state *info,
  
- /************************/
-@@ -3421,9 +3420,6 @@ cpc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (first_time) {
- 		first_time = 0;
- 		show_version();
--#ifdef CONFIG_PC300_MLPPP
--		cpc_tty_reset_var();
--#endif
+ 		console->write(console, &c, 1);
+ 
+-		info->icount.tx++;
+ 		info->x_char = 0;
+ 
+ 		goto out;
+@@ -478,7 +477,7 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
  	}
- 
- 	if ((err = pci_enable_device(pdev)) < 0)
-diff --git a/drivers/net/wan/pc300_tty.c b/drivers/net/wan/pc300_tty.c
-index d47d2cd..4709f42 100644
---- a/drivers/net/wan/pc300_tty.c
-+++ b/drivers/net/wan/pc300_tty.c
-@@ -139,7 +139,6 @@ void cpc_tty_init(pc300dev_t *dev);
- void cpc_tty_unregister_service(pc300dev_t *pc300dev);
- void cpc_tty_receive(pc300dev_t *pc300dev);
- void cpc_tty_trigger_poll(pc300dev_t *pc300dev);
--void cpc_tty_reset_var(void);
- 
- /*
-  * PC300 TTY clear "signal"
-@@ -1078,20 +1077,3 @@ void cpc_tty_trigger_poll(pc300dev_t *pc300dev)
+ 	if (--info->tport.count < 0) {
+ 		printk(KERN_ERR "rs_close: bad serial port count for ttys%d: %d\n",
+-		       info->line, info->tport.count);
++		       tty->index, info->tport.count);
+ 		info->tport.count = 0;
  	}
- 	schedule_work(&(cpc_tty->tty_tx_work)); 
- } 
--
--/*
-- * PC300 TTY reset var routine
-- * This routine is called by pc300driver to init the TTY area. 
-- */
--
--void cpc_tty_reset_var(void)
+ 	if (info->tport.count) {
+@@ -669,19 +668,14 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
+  * /proc fs routines....
+  */
+ 
+-static inline void line_info(struct seq_file *m, struct serial_state *state)
 -{
--	int i ; 
--
--	CPC_TTY_DBG("hdlcX-tty: reset variables\n");
--	/* reset  the tty_driver structure - serial_drv */ 
--	memset(&serial_drv, 0, sizeof(struct tty_driver));
--	for (i=0; i < CPC_TTY_NPORTS; i++){
--		memset(&cpc_tty_area[i],0, sizeof(st_cpc_tty_area)); 
--	}
+-	seq_printf(m, "%d: uart:16550 port:3F8 irq:%d\n",
+-		       state->line, state->irq);
 -}
+-
+ static int rs_proc_show(struct seq_file *m, void *v)
+ {
+ 	int i;
+ 
+ 	seq_printf(m, "simserinfo:1.0 driver:%s\n", serial_version);
+ 	for (i = 0; i < NR_PORTS; i++)
+-		line_info(m, &rs_table[i]);
++		seq_printf(m, "%d: uart:16550 port:3F8 irq:%d\n",
++		       i, rs_table[i].irq);
+ 	return 0;
+ }
+ 
+@@ -786,8 +780,7 @@ static int __init simrs_init(void)
+ 	state->irq = retval;
+ 
+ 	/* the port is imaginary */
+-	printk(KERN_INFO "ttyS%d at 0x03f8 (irq = %d) is a 16550\n",
+-			state->line, state->irq);
++	printk(KERN_INFO "ttyS0 at 0x03f8 (irq = %d) is a 16550\n", state->irq);
+ 
+ 	retval = tty_register_driver(hp_simserial_driver);
+ 	if (retval) {
 -- 
 1.7.9.2
 
