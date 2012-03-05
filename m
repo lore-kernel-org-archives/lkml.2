@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab2CEQxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:53:39 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:41335 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008Ab2CEQxi (ORCPT
+	id S1757069Ab2CEQxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:53:50 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50489 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757039Ab2CEQxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:53:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.72.9 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
-Date: Mon, 5 Mar 2012 08:40:43 -0800
+	Mon, 5 Mar 2012 11:53:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gregkh@linuxfoundation.org designates 10.68.125.195 as permitted sender) smtp.mail=gregkh@linuxfoundation.org
+Date: Mon, 5 Mar 2012 08:45:18 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        konrad.wilk@oracle.com, yinghai@kernel.org, tglx@linutronix.de,
-        joe.jin@oracle.com, hpa@zytor.com
-Subject: Re: =?utf-8?B?562U5aSNOiBbUEFUQ0hdIEluaXRp?= =?utf-8?Q?alize?=
- max_pfn_mapped as initial ident mapping size for x86_64
-Message-ID: <20120305164043.GB2459@kroah.com>
-References: <d493264b-7da0-41bd-b0bc-219b1a180f10@default>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: bhelgaas@google.com, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/1 v3] PCI: Device specific reset function
+Message-ID: <20120305164518.GF2459@kroah.com>
+References: <4f548ed1.4o6PhHmCeKTSPZXU%tadeusz.struk@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <d493264b-7da0-41bd-b0bc-219b1a180f10@default>
+In-Reply-To: <4f548ed1.4o6PhHmCeKTSPZXU%tadeusz.struk@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 04, 2012 at 11:49:31PM -0800, Zhenzhong Duan wrote:
+On Mon, Mar 05, 2012 at 10:00:49AM +0000, Tadeusz Struk wrote:
 > 
-> ----- zhenzhong.duan@oracle.com 写道：
+> ---
+>  drivers/pci/pci.h    |    1 +
+>  drivers/pci/quirks.c |   33 +++++++++++++++++++++++++++------
+>  include/linux/pci.h  |    1 +
+>  3 files changed, 29 insertions(+), 6 deletions(-)
 
-<snip>
+Please read Documentation/SubmittingPatches for how to properly create,
+and send, patches that are in a format that can be accepted.
 
-<formletter>
+Hint, also run your patch through scripts/checkpatch.pl to find the
+obvious problems that are in it, to keep us from having to do that for
+you...
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+> 
+> This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
 
-</formletter>
+I have been told that such email footers require that the patch be
+deleted and never be accepted.  Please fix this if you expect your
+patches to be able to be applied.
+
+greg k-h
