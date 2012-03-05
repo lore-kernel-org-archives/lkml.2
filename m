@@ -1,122 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab2CEQYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 11:24:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60951 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2CEQYe (ORCPT
+	id S1756639Ab2CEQYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 11:24:47 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62921 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab2CEQYf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 11:24:34 -0500
-Date: Mon, 5 Mar 2012 08:23:51 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-ff2a6617c2acd6a8dc468c90ab8708a6ad112bb0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1329986784-4916-6-git-send-email-namhyung.kim@lge.com>
-References: <1329986784-4916-6-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate:
-  Add missing newline on error message
-Git-Commit-ID: ff2a6617c2acd6a8dc468c90ab8708a6ad112bb0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 5 Mar 2012 11:24:35 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hallimanju@gmail.com designates 10.216.136.157 as permitted sender) smtp.mail=hallimanju@gmail.com; dkim=pass header.i=hallimanju@gmail.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 08:24:19 -0800 (PST)
+In-Reply-To: <201203021022.49464.hverkuil@xs4all.nl>
+References: <1330114471-26435-1-git-send-email-manjunatha_halli@ti.com>
+ <201202291225.50801.hverkuil@xs4all.nl> <CAMT6PyeaW2OwRc5So5JtTeUVJ9vFLafddLteSqoW3GJaVrFesA@mail.gmail.com>
+ <201203021022.49464.hverkuil@xs4all.nl>
+From: halli manjunatha <hallimanju@gmail.com>
+Date: Mon, 5 Mar 2012 10:24:14 -0600
+Message-ID: <CAMT6PyfS3vkQu8dZ2qFu=iMo48XL3H=_dU2C4GYxLP-sNYqtqg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] wl128x: Add sysfs based support for FM features
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manjunatha Halli <x0130808@ti.com>, shahed@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ff2a6617c2acd6a8dc468c90ab8708a6ad112bb0
-Gitweb:     http://git.kernel.org/tip/ff2a6617c2acd6a8dc468c90ab8708a6ad112bb0
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 23 Feb 2012 17:46:24 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 5 Mar 2012 10:15:50 -0300
+On Fri, Mar 2, 2012 at 3:22 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> On Wednesday, February 29, 2012 18:19:27 halli manjunatha wrote:
+>> On Wed, Feb 29, 2012 at 5:25 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>> > On Tuesday, February 28, 2012 23:52:21 halli manjunatha wrote:
+>> >> On Tue, Feb 28, 2012 at 4:05 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>> >> > On Monday, February 27, 2012 17:29:18 halli manjunatha wrote:
+>> >> >> Hi Hans,
+>> >> >>
+>> >> >> Agreed I don't mind to create new controls for below things
+>> >> >>
+>> >> >> 1) FM RX Band selection (US/Europe, Japan and Russian bands)
+>> >> >> 2) FM RX RDS AF turn ON/OFF
+>> >> >> 3) FM RX RSSI level set/get
+>> >> >> 4) FM TX Alternate Frequency set/get
+>> >> >> 5) FM RX De-Emphasis mode set/get
+>> >> >>
+>> >> >> However, previously you have suggested me to hide few controls (like
+>> >> >> band selection) from the user but few of our application wanted
+>> >> >> controls like above and that is why I have created the sysfs entries.
+>> >> >>
+>> >> >> Please suggest me how can I move forward with new controls or with sysfs?
+>> >> >
+>> >> > The first question is which of these controls are general to FM receivers or
+>> >> > transmitters, and which are specific to this chipset. The chipset specific
+>> >> > controls should be private controls (look at V4L2_CID_MPEG_CX2341X_BASE in
+>> >> > videodev2.h how those are defined). The others should be defined as new
+>> >> > controls of the FM_TX class or the FM_RX class. The FM_RX class should be
+>> >> > defined as a new class as it doesn't exist at the moment. Don't forget to
+>> >> > document these controls clearly.
+>> >> >
+>> >> > With regards to the band selection: I remember that there was a discussion,
+>> >> > but not the details. Do you have a link to that discussion? I can't find it
+>> >> > (at least not quickly :-) ).
+>> >>
+>> >> Below features are generic to all FM receivers so we can add new CID's
+>> >> for below features
+>> >> 1) FM RX RDS AF turn ON/OFF
+>> >> 2) FM TX Alternate Frequency set/get
+>> >>
+>> >> About other 3 features its different issue,
+>> >>     1) FM RX Band selection (US/Europe, Japan and Russian bands)
+>> >>     2) FM RX RSSI level set/get
+>> >>     3) FM RX De-Emphasis mode set/get
+>> >>
+>> >> All these 3 features are generic to any FM receiver, only question is
+>> >> does all FM receivers wants to expose these controls to application
+>> >> writer?
+>> >
+>> > Good question, and there is no good answer at the moment. See e.g. this
+>> > IRC discussion:
+>> >
+>> > http://www.spinics.net/lists/linux-media/msg44023.html
+>> >
+>> > In the absence of a good solution to this problem I am inclined to make
+>> > these controls driver specific but marked experimental. The experimental
+>> > tag allows us to eventually make it a generic control without too much
+>> > hassle.
+>>
+>> Agreed, I will make them driver specific and mark them as experimental.
+>>
+>> >
+>> >> Example Band selection, every FM receiver at the minimum supports both
+>> >> Europe and Japan band, now the question is should we add a CID to
+>> >> switch between these two bands?
+>> >
+>> > If we decide to add a band selection control, then that would be a menu
+>> > control (since there are up to three bands) and it would only be implemented
+>> > by drivers that need it.
+>> >
+>> > What I am still not clear on is *why* you would want this control. What
+>> > is the reason your customers want this? What does it allow you to do that
+>> > can't be done today?
+>>
+>> There are 2 reasons for this,
+>>
+>> First, our chip supports weather band, unlike other bands (Europe,
+>> Japan and Russian) user may wants to
+>> switch to weather band and wants to listen to weather report and again
+>> switches back to normal band.
+>
+> OK, that makes sense. Are the RX and TX independent with regards to
+> band selection?
 
-perf annotate: Add missing newline on error message
+Yes - RX and TX are independent of band selection
 
-If perf.data couldn't find vmlinux image for the given build-id,
-it would print error message. However it lacked a newline at the
-end, so the output looked like below:
+> Make sure that when the band is changed the rangelow and rangehigh values
+> are also changed. If the current frequency is out of that range, then the
+> frequency should be clamped to the closest value frequency. Although an
+> alternative strategy might be to remember the last used frequency for each
+> band. That might make more sense in the case of switching between a normal
+> band and the weather band. We need to define and document which strategy
+> should be used here.
 
- $ perf annotate --stdio
- No vmlinux file with build id 63b554b2e90f14a4bced200008865e757d3e8b36
- was found in the path.
+As of now when I switch to new band I just set the frequency to lowest
+of the new band.
+In this way user can seek and tune to what ever channel he wants.
 
- Please use:
+> BTW, is the receiver for the weather band implemented as a separate receiver?
+> I read that some devices can listen to the normal band and interrupt that
+> when a weather report is broadcast on the weather band. That implies two
+> receivers and it would require a rethink.
+>
+> Also, is this feature really implemented as separate frequency ranges in
+> hardware? Or is the receiver able to receive on the whole range of frequencies
+> from 65.8 (OIRT) to approx. 165 (weather band range)?
 
-   perf buildid-cache -av vmlinux
+Our chip wont have 2 receivers, it has only 1 receiver which can
+receive on whole frequency range from 65 MHz to 165 MHz.
 
- or:
+> Is the datasheet of this device available somewhere?
 
-   --vmlinux vmlinux Percent |   Source code & Disassembly of a.out
- ------------------------------------------------
-          :
-          :
-          :
-          :      Disassembly of section .text:
-          :
-          :      00000000004004f4 <foo>:
-     0.00 :        4004f4:       push   %rbp
-     0.00 :        4004f5:       mov    %rsp,%rbp
-     0.00 :        4004f8:       movl   $0x0,-0x4(%rbp)
-     0.00 :        4004ff:       jmp    400517 <foo+0x23>
-    14.70 :        400501:       mov    0x200b28(%rip),%rax        # 601030 <count>
-     0.02 :        400508:       add    $0x1,%rax
-     0.01 :        40050c:       mov    %rax,0x200b1d(%rip)        # 601030 <count>
-     0.01 :        400513:       addl   $0x1,-0x4(%rbp)
-    13.92 :        400517:       cmpl   $0x98967f,-0x4(%rbp)
-    71.33 :        40051e:       jle    400501 <foo+0xd>
-     0.00 :        400520:       leaveq
-     0.00 :        400521:       retq
+Sorry our newest chipset supports this feature so yet now we don't
+have any datasheet available on net.
 
-Fix it by adding a newline at the end of the message. It doesn't affect
-the tui output AFAICS. New output will look like this:
+>
+>> Second,  for FM TX, our chip supports band selection for FM
+>> transmitter, so if the same phone is used in different
+>> regions of world then user can switch to the actual band and start
+>> transmitting by choosing a blank frequency in that band.
+>
+> Isn't this something that can be equally easily done in userspace?
 
- ...
- or:
+you wants me to do this from driver itself without hinting the
+application about the band ?
 
-   --vmlinux vmlinux
-  Percent |   Source code & Disassembly of a.out
- ------------------------------------------------
-          :
-          :
-          :
-          :      Disassembly of section .text:
- ...
+>
+> Regards,
+>
+>        Hans
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1329986784-4916-6-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 011ed26..e5a462f 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -315,7 +315,7 @@ fallback:
- 		       "Please use:\n\n"
- 		       "  perf buildid-cache -av vmlinux\n\n"
- 		       "or:\n\n"
--		       "  --vmlinux vmlinux",
-+		       "  --vmlinux vmlinux\n",
- 		       sym->name, build_id_msg ?: "");
- 		goto out_free_filename;
- 	}
+
+-- 
+Regards
+Halli
