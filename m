@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab2CEKAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 05:00:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:30817 "EHLO mga14.intel.com"
+	id S1756676Ab2CEKBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 05:01:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12716 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756493Ab2CEKAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 05:00:53 -0500
+	id S1756577Ab2CEKBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 05:01:40 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="73616485"
-Date: Mon, 05 Mar 2012 10:00:49 +0000
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="117716292"
+Date: Mon, 05 Mar 2012 10:00:36 +0000
 From: Tadeusz Struk <tadeusz.struk@intel.com>
 To: bhelgaas@google.com, jbarnes@virtuousgeek.org
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         linux-pci@vger.kernel.org, tadeusz.struk@intel.com
-Subject: [PATCH 1/1 v3] PCI: Device specific reset function
-Message-ID: <4f548ed1.4o6PhHmCeKTSPZXU%tadeusz.struk@intel.com>
+Subject: [PATCH 0/1] PCI: Device specific reset function
+Message-ID: <4f548ec4.01v4tKU1J3lDCjP5%tadeusz.struk@intel.com>
 User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
@@ -24,97 +24,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+I have a use case where I need to cleanup resource allocated for Virtual
+Functions after a guest OS that used it crashed. This cleanup needs to
+be done before the VF is being FLRed. The only possible way to do this
+seems to be by using pci_dev_specific_reset() function. Unfortunately
+this function only works for devices defined in a static table in the
+drivers/pci/quirks.c file. This patch changes it so that specific reset
+handler is part of pci_driver struct.
 
----
+
  drivers/pci/pci.h    |    1 +
  drivers/pci/quirks.c |   33 +++++++++++++++++++++++++++------
  include/linux/pci.h  |    1 +
  3 files changed, 29 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 1009a5e..4d10479 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -315,6 +315,7 @@ struct pci_dev_reset_methods {
- 	u16 vendor;
- 	u16 device;
- 	int (*reset)(struct pci_dev *dev, int probe);
-+	struct list_head list;
- };
- 
- #ifdef CONFIG_PCI_QUIRKS
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 6476547..f423d2f 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3070,26 +3070,47 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
- }
- 
- #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
--
--static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
-+static struct pci_dev_reset_methods pci_dev_reset_methods[] = {
- 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
--		 reset_intel_82599_sfp_virtfn },
-+		reset_intel_82599_sfp_virtfn },
- 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
- 		reset_intel_generic_dev },
--	{ 0 }
- };
- 
-+static LIST_HEAD(reset_list);
-+
-+void pci_dev_specific_reset_add(struct pci_dev_reset_methods *reset_method)
-+{
-+	INIT_LIST_HEAD(&reset_method->list);
-+	list_add(&reset_method->list, &reset_list);
-+}
-+
-+static int __init pci_dev_specific_reset_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(pci_dev_reset_methods); i++) {
-+		pci_dev_specific_reset_add(&pci_dev_reset_methods[i]);
-+	}
-+	return 0;
-+}
-+
-+late_initcall(pci_dev_specific_reset_init);
-+
- int pci_dev_specific_reset(struct pci_dev *dev, int probe)
- {
- 	const struct pci_dev_reset_methods *i;
-+	struct pci_driver *drv = dev->driver;
-+
-+	if (drv && drv->reset)
-+		return drv->reset(dev, probe);
- 
--	for (i = pci_dev_reset_methods; i->reset; i++) {
-+	list_for_each_entry(i, &reset_list, list) {
- 		if ((i->vendor == dev->vendor ||
- 		     i->vendor == (u16)PCI_ANY_ID) &&
- 		    (i->device == dev->device ||
- 		     i->device == (u16)PCI_ANY_ID))
- 			return i->reset(dev, probe);
- 	}
--
- 	return -ENOTTY;
- }
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index a16b1df..a3a0bc5 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -560,6 +560,7 @@ struct pci_driver {
- 	int  (*resume_early) (struct pci_dev *dev);
- 	int  (*resume) (struct pci_dev *dev);	                /* Device woken up */
- 	void (*shutdown) (struct pci_dev *dev);
-+	int  (*reset) (struct pci_dev *dev, int probe); /* Device specific reset */
- 	struct pci_error_handlers *err_handler;
- 	struct device_driver	driver;
- 	struct pci_dynids dynids;
--- 
-1.7.7.6
 
 --------------------------------------------------------------
 Intel Shannon Limited
