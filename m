@@ -1,168 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab2CEEEE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Mar 2012 23:04:04 -0500
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:53210 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755644Ab2CEEEA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Mar 2012 23:04:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhdang@apm.com designates 10.68.222.226 as permitted sender) smtp.mail=dhdang@apm.com
-MIME-Version: 1.0
-From: Duc Dang <dhdang@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-        Josh Boyer <jwboyer@gmail.com>
-Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Duc Dang <dhdang@apm.com>
-Subject: [PATCH v2 2/2] powerpc/44x: Add more changes for APM821XX EMAC driver
-Date: Mon,  5 Mar 2012 11:03:44 +0700
-Message-Id: <1330920224-3006-1-git-send-email-dhdang@apm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1329466058-15969-1-git-send-email-dhdang@apm.com>
-References: <1329466058-15969-1-git-send-email-dhdang@apm.com>
+	id S1756101Ab2CEEm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Mar 2012 23:42:58 -0500
+Received: from mga03.intel.com ([143.182.124.21]:23067 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab2CEEm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Mar 2012 23:42:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="73525436"
+Subject: Re: [PATCH v6 0/2] patch set about the MXS-DMA
+From: Vinod Koul <vinod.koul@intel.com>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>,
+        Huang Shijie <b32955@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "LW@KARO-electronics.de" <LW@karo-electronics.de>
+In-Reply-To: <CAMiH66HmV+58w36DGCt+e=ihTrYUwXf1Cur+678YX2GKcB1-jA@mail.gmail.com>
+References: <1329373053-19494-1-git-send-email-b32955@freescale.com>
+	 <4F4D9725.3090100@freescale.com>
+	 <1330502098.3545.78.camel@sauron.fi.intel.com>
+	 <4F4DE0E5.8070808@freescale.com>
+	 <1330516974.3545.104.camel@sauron.fi.intel.com>
+	 <CAMiH66HmV+58w36DGCt+e=ihTrYUwXf1Cur+678YX2GKcB1-jA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Mar 2012 10:17:10 +0530
+Message-ID: <1330922830.24656.137.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes:
+On Wed, 2012-02-29 at 08:13 -0500, Huang Shijie wrote:
+> Hi Artem:
+> 
+> On Wed, Feb 29, 2012 at 7:00 AM, Bityutskiy, Artem
+> <artem.bityutskiy@intel.com> wrote:
+> > On Wed, 2012-02-29 at 16:25 +0800, Huang Shijie wrote:
+> >> Hi Artem:
+> >> > On Wed, 2012-02-29 at 11:10 +0800, Huang Shijie wrote:
+> >> >> Hi:
+> >> >>
+> >> >> ping.
+> >> > Is this patch-set independent or requires something like gpma patches?
+> >> >
+> >> This patch set is independent, and it does not depend upon any other
+> >> patches.
+> >
+> > Pushed both to l2-mtd.git tree, thanks. I am worried that it touches
+> > other subsystems like dma, sound, and mmc and there are no acks for
+> > those. Would be nice to get them somehow.
+> >
+> 
+> I ever thought Vinod could accept this patch set.
+> 
+> To Vinod & Chris:
+>       Could you give the ack to the first patch?
+Both,
+Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+Although the second patch overloads the dmaengine flags but for lack of
+any other suitable alternative, this looks okay...
+> 
+> Does the second patch need  extra acks beside Shawn's?
+> 
+> BR
+> Huang Shijie
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-  Configure EMAC PHY clock source (clock from PHY or internal clock).
 
-  Do not advertise PHY half duplex capability as APM821XX EMAC does not
-support half duplex mode.
-
-  Add changes to support configuring jumbo frame for APM821XX EMAC.
-
-Signed-off-by: Duc Dang <dhdang@apm.com>
----
-v2:
- Fix coding style problems.
-
- drivers/net/ethernet/ibm/emac/core.c |   26 +++++++++++++++++++++++++-
- drivers/net/ethernet/ibm/emac/core.h |   13 +++++++++++--
- drivers/net/ethernet/ibm/emac/emac.h |    5 ++++-
- 3 files changed, 40 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/ibm/emac/core.c b/drivers/net/ethernet/ibm/emac/core.c
-index 2abce96..ad671c5 100644
---- a/drivers/net/ethernet/ibm/emac/core.c
-+++ b/drivers/net/ethernet/ibm/emac/core.c
-@@ -434,6 +434,11 @@ static inline u32 emac_iff2rmr(struct net_device *ndev)
- 	else if (!netdev_mc_empty(ndev))
- 		r |= EMAC_RMR_MAE;
- 
-+	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE)) {
-+		r &= ~EMAC4_RMR_MJS_MASK;
-+		r |= EMAC4_RMR_MJS(ndev->mtu);
-+	}
-+
- 	return r;
- }
- 
-@@ -965,6 +970,7 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 	int rx_sync_size = emac_rx_sync_size(new_mtu);
- 	int rx_skb_size = emac_rx_skb_size(new_mtu);
- 	int i, ret = 0;
-+	int mr1_jumbo_bit_change = 0;
- 
- 	mutex_lock(&dev->link_lock);
- 	emac_netif_stop(dev);
-@@ -1013,7 +1019,14 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 	}
-  skip:
- 	/* Check if we need to change "Jumbo" bit in MR1 */
--	if ((new_mtu > ETH_DATA_LEN) ^ (dev->ndev->mtu > ETH_DATA_LEN)) {
-+	if (emac_has_feature(dev, EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE))
-+		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ||
-+				(dev->ndev->mtu > ETH_DATA_LEN);
-+	else
-+		mr1_jumbo_bit_change = (new_mtu > ETH_DATA_LEN) ^
-+				(dev->ndev->mtu > ETH_DATA_LEN);
-+
-+	if (mr1_jumbo_bit_change) {
- 		/* This is to prevent starting RX channel in emac_rx_enable() */
- 		set_bit(MAL_COMMAC_RX_STOPPED, &dev->commac.flags);
- 
-@@ -2471,6 +2484,7 @@ static int __devinit emac_init_phy(struct emac_instance *dev)
- 
- 	/* Disable any PHY features not supported by the platform */
- 	dev->phy.def->features &= ~dev->phy_feat_exc;
-+	dev->phy.features &= ~dev->phy_feat_exc;
- 
- 	/* Setup initial link parameters */
- 	if (dev->phy.features & SUPPORTED_Autoneg) {
-@@ -2568,6 +2582,10 @@ static int __devinit emac_init_config(struct emac_instance *dev)
- 		if (of_device_is_compatible(np, "ibm,emac-405ex") ||
- 		    of_device_is_compatible(np, "ibm,emac-405exr"))
- 			dev->features |= EMAC_FTR_440EP_PHY_CLK_FIX;
-+		if (of_device_is_compatible(np, "ibm,emac-apm821xx"))
-+			dev->features |= (EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
-+					EMAC_FTR_APM821XX_NO_HALF_DUPLEX |
-+					EMAC_FTR_460EX_PHY_CLK_FIX);
- 	} else if (of_device_is_compatible(np, "ibm,emac4")) {
- 		dev->features |= EMAC_FTR_EMAC4;
- 		if (of_device_is_compatible(np, "ibm,emac-440gx"))
-@@ -2818,6 +2836,12 @@ static int __devinit emac_probe(struct platform_device *ofdev)
- 	dev->stop_timeout = STOP_TIMEOUT_100;
- 	INIT_DELAYED_WORK(&dev->link_work, emac_link_timer);
- 
-+	/* Some SoCs like APM821xx does not support Half Duplex mode. */
-+	if (emac_has_feature(dev, EMAC_FTR_APM821XX_NO_HALF_DUPLEX))
-+		dev->phy_feat_exc = (SUPPORTED_1000baseT_Half |
-+					SUPPORTED_100baseT_Half |
-+					SUPPORTED_10baseT_Half);
-+
- 	/* Find PHY if any */
- 	err = emac_init_phy(dev);
- 	if (err != 0)
-diff --git a/drivers/net/ethernet/ibm/emac/core.h b/drivers/net/ethernet/ibm/emac/core.h
-index fa3ec57..9dea85a 100644
---- a/drivers/net/ethernet/ibm/emac/core.h
-+++ b/drivers/net/ethernet/ibm/emac/core.h
-@@ -325,7 +325,14 @@ struct emac_instance {
-  * Set if we need phy clock workaround for 460ex or 460gt
-  */
- #define EMAC_FTR_460EX_PHY_CLK_FIX	0x00000400
--
-+/*
-+ * APM821xx requires Jumbo frame size set explicitly
-+ */
-+#define EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE	0x00000800
-+/*
-+ * APM821xx does not support Half Duplex mode
-+ */
-+#define EMAC_FTR_APM821XX_NO_HALF_DUPLEX	0x00001000
- 
- /* Right now, we don't quite handle the always/possible masks on the
-  * most optimal way as we don't have a way to say something like
-@@ -353,7 +360,9 @@ enum {
- 	    EMAC_FTR_NO_FLOW_CONTROL_40x |
- #endif
- 	EMAC_FTR_460EX_PHY_CLK_FIX |
--	EMAC_FTR_440EP_PHY_CLK_FIX,
-+	EMAC_FTR_440EP_PHY_CLK_FIX |
-+	EMAC_APM821XX_REQ_JUMBO_FRAME_SIZE |
-+	EMAC_FTR_APM821XX_NO_HALF_DUPLEX,
- };
- 
- static inline int emac_has_feature(struct emac_instance *dev,
-diff --git a/drivers/net/ethernet/ibm/emac/emac.h b/drivers/net/ethernet/ibm/emac/emac.h
-index 1568278..36bcd69 100644
---- a/drivers/net/ethernet/ibm/emac/emac.h
-+++ b/drivers/net/ethernet/ibm/emac/emac.h
-@@ -212,7 +212,10 @@ struct emac_regs {
- #define EMAC4_RMR_RFAF_64_1024		0x00000006
- #define EMAC4_RMR_RFAF_128_2048		0x00000007
- #define EMAC4_RMR_BASE			EMAC4_RMR_RFAF_128_2048
--
-+#if defined(CONFIG_APM821xx)
-+#define EMAC4_RMR_MJS_MASK              0x0001fff8
-+#define EMAC4_RMR_MJS(s)                (((s) << 3) & EMAC4_RMR_MJS_MASK)
-+#endif
- /* EMACx_ISR & EMACx_ISER */
- #define EMAC4_ISR_TXPE			0x20000000
- #define EMAC4_ISR_RXPE			0x10000000
 -- 
-1.7.5.4
+~Vinod
 
