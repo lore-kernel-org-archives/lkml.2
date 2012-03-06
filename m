@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab2CFDGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:06:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:42044 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab2CFDGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:06:20 -0500
-Date: Tue, 6 Mar 2012 13:37:00 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: akpm@linux-foundation.org, abarry@cray.com, hughd@google.com,
-        mgorman@suse.de, minchan.kim@gmail.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
-Message-ID: <20120306023700.GE12818@truffala.fritz.box>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	Hillf Danton <dhillf@gmail.com>, akpm@linux-foundation.org,
-	abarry@cray.com, hughd@google.com, mgorman@suse.de,
-	minchan.kim@gmail.com, paulus@samba.org,
-	linux-kernel@vger.kernel.org
-References: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
- <1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
- <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
+	id S1755036Ab2CFDG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:06:57 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45262 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab2CFDGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 22:06:55 -0500
+Date: Tue, 6 Mar 2012 13:38:09 +1100
+From: David Gibson <dwg@au1.ibm.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        aarcange@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V2 0/9] memcg: add HugeTLB resource tracking
+Message-ID: <20120306023809.GF12818@truffala.fritz.box>
+Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+	aarcange@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org,
+	linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120301144029.545a5589.akpm@linux-foundation.org>
+ <20120302032853.GB2728@truffala.fritz.box>
+ <87fwdodyr0.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
+In-Reply-To: <87fwdodyr0.fsf@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12030517-3568-0000-0000-000001517C2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 08:33:51PM +0800, Hillf Danton wrote:
-> On Thu, Feb 16, 2012 at 12:24 PM, David Gibson
-> <david@gibson.dropbear.id.au> wrote:
-> > @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
-> >        if (!page) {
-> >                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> >                if (!page) {
-> > -                       hugetlb_put_quota(inode->i_mapping, chg);
-> > +                       hugepage_subpool_put_pages(spool, chg);
-> >                        return ERR_PTR(-VM_FAULT_SIGBUS);
-> >                }
-> >        }
-> >
-> > -       set_page_private(page, (unsigned long) mapping);
-> > +       set_page_private(page, (unsigned long)spool);
-
-Sorry for the very delayed reply.  Somehow I never spotted this when
-it first came.  I think I must have acidentally deleted it when
-cleaning out automated messages and spam.
-
-> Page mapping is used in unmap_ref_private(), and I am
-> wondering it no longer works:-(
-
-Good point.  But unmap_ref_private() does take the vma, so it should
-be able to get to the mapping from there.  I'll respin doing that,
-instead of using page_private().
-
-> > @@ -2392,7 +2471,8 @@ retry_avoidcopy:
-> >
-> >        /* Drop page_table_lock as buddy allocator may be called */
-> >        spin_unlock(&mm->page_table_lock);
-> > -       new_page = alloc_huge_page(vma, address, outside_reserve);
-> > +       new_page = alloc_huge_page(vma, address, outside_reserve,
-> > +                                  subpool_vma(vma));
+On Sun, Mar 04, 2012 at 11:39:23PM +0530, Aneesh Kumar K.V wrote:
+> On Fri, 2 Mar 2012 14:28:53 +1100, David Gibson <dwg@au1.ibm.com> wrote:
+> > On Thu, Mar 01, 2012 at 02:40:29PM -0800, Andrew Morton wrote:
+> > > On Thu,  1 Mar 2012 14:46:11 +0530
+> > > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > This patchset implements a memory controller extension to control
+> > > > HugeTLB allocations. It is similar to the existing hugetlb quota
+> > > > support in that, the limit is enforced at mmap(2) time and not at
+> > > > fault time. HugeTLB's quota mechanism limits the number of huge pages
+> > > > that can allocated per superblock.
+> > > > 
+> > > > For shared mappings we track the regions mapped by a task along with the
+> > > > memcg. We keep the memory controller charged even after the task
+> > > > that did mmap(2) exits. Uncharge happens during truncate. For Private
+> > > > mappings we charge and uncharge from the current task cgroup.
+> > > 
+> > > I haven't begin to get my head around this yet, but I'd like to draw
+> > > your attention to https://lkml.org/lkml/2012/2/15/548.  That fix has
+> > > been hanging around for a while, but I haven't done anything with it
+> > > yet because I don't like its additional blurring of the separation
+> > > between hugetlb core code and hugetlbfs.  I want to find time to sit
+> > > down and see if the fix can be better architected but haven't got
+> > > around to that yet.
+> > 
+> > So.. that version of the fix I specifically rebuilt to address your
+> > concerns about that blurring - in fact I think it reduces the current
+> > layer blurring.  I haven't had any reply - what problems do see it as
+> > still having?
 > 
-> Change in the number of parameters of alloc_huge_page()
-> looks unnecessary.
+> https://lkml.org/lkml/2012/2/16/179 ?
 
-Because alloc_huge_page() also takes vma.  Yeah, fair enough.  I'll
-change that in the respin too.
+Ah.  Missed that reply somehow.  Odd.  Replied now and I'll respin
+accordingly.
+
+> That is a serious issue isn't it ?
+
+Yes, it is.  And it's been around for a long, long time.
 
 -- 
 David Gibson			| I'll have my music baroque, and my code
 david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
 				| _way_ _around_!
 http://www.ozlabs.org/~dgibson
+
