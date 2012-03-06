@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964954Ab2CFRsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 12:48:08 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:52645 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932522Ab2CFRsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 12:48:06 -0500
-X-IronPort-AV: E=Sophos;i="4.73,540,1325491200"; 
-   d="scan'208";a="631153236"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>
-Subject: Re: [PATCH 9/9] nfs: don't open in ->d_revalidate
-Thread-Topic: [PATCH 9/9] nfs: don't open in ->d_revalidate
-Thread-Index: AQHM+7wY/8/o98YKtk2fJ0XNzaBcrJZeER+A
-Date: Tue, 6 Mar 2012 17:47:48 +0000
-Message-ID: <1331056067.10560.26.camel@lade.trondhjem.org>
-References: <1331038601-20353-1-git-send-email-miklos@szeredi.hu>
-	 <1331038601-20353-10-git-send-email-miklos@szeredi.hu>
-	 <1331043158.3260.3.camel@lade.trondhjem.org>
-	 <87boo9k861.fsf@tucsk.pomaz.szeredi.hu>
-	 <1331052079.3260.33.camel@lade.trondhjem.org>
-	 <87y5rdirj2.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <87y5rdirj2.fsf@tucsk.pomaz.szeredi.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <63A3730199B11C498119D561FBE597D9@tahoe.netapp.com>
+	id S964990Ab2CFRt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 12:49:27 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:34131 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S964866Ab2CFRt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 12:49:26 -0500
+Message-ID: <4F565C04.1030202@ru.mvista.com>
+Date: Tue, 06 Mar 2012 21:48:36 +0300
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH] pinctrl: include machine header to core.h
+References: <1331038557-1398-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1331038557-1398-1-git-send-email-linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q26HmEZR009376
 
-On Tue, 2012-03-06 at 18:10 +0100, Miklos Szeredi wrote:
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
-> 
-> > It makes a big difference to the cache miss case, since not only is the
-> > entire path looked up again, but the LOOKUP_REVAL flag gets set, which
-> > forces a full lookup of each component (as opposed to just
-> > revalidating).
-> 
-> This is not about a cache miss.  It's about a cache hit (positive cached
-> dentry) but changed inode on the server.
-> 
-> Is this a likely scenario?
+Hello.
 
-Consider something like a git pull on the server, or a distributed
-compile across many NFS clients. In both those cases, you are typically
-creating and re-creating files with the same name while bypassing the
-dcache on your client.
+On 03/06/2012 03:55 PM, Linus Walleij wrote:
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+> From: Linus Walleij<linus.walleij@linaro.org>
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+> struct pinctrl_setting contains an enum pinctrl_map_type
+> field, so we need to include machine.h. Also fix kerneldoc
+> to indicate that the pinctrl_setting is about both muxing
+> and other config.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+    I don't see where you touch kernel-doc...
+
+> Signed-off-by: Linus Walleij<linus.walleij@linaro.org>
+> ---
+>   drivers/pinctrl/core.h |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+
+> diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+> index 5b3ff13..42fb0ea 100644
+> --- a/drivers/pinctrl/core.h
+> +++ b/drivers/pinctrl/core.h
+> @@ -12,6 +12,7 @@
+>   #include<linux/mutex.h>
+>   #include<linux/radix-tree.h>
+>   #include<linux/pinctrl/pinconf.h>
+> +#include<linux/pinctrl/machine.h>
+>
+>   struct pinctrl_gpio_range;
+
+WBR, Sergei
