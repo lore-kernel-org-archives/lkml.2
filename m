@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab2CFT0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 14:26:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932459Ab2CFT0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 14:26:39 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org,
-        Matthew Garrett <mjg@redhat.com>, stable@kernel.org
-Subject: [PATCH] Ignore pre-1.1 ASPM quirking when ASPM is disabled
-Date: Tue,  6 Mar 2012 13:41:49 -0500
-Message-Id: <1331059309-4335-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.202
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1758768Ab2CFTbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 14:31:18 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:47145 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754648Ab2CFTbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 14:31:16 -0500
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] checkpatch: Warn on use of yield()
+Date: Tue,  6 Mar 2012 11:31:10 -0800
+Message-Id: <f027ae6deb2d02819f754ae9d45f54507a2d63f2.1331061916.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <1331057839.2140.12.camel@joe2Laptop>
+References: <1331057839.2140.12.camel@joe2Laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now we won't touch ASPM state if ASPM is disabled, except in the case
-where we find a device that appears to be too old to reliably support ASPM.
-Right now we'll clear it in that case, which is almost certainly the wrong
-thing to do. The easiest way around this is just to disable the blacklisting
-when ASPM is disabled.
+Using yield() is generally wrong.  Warn on its use.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: stable@kernel.org
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/pci/pcie/aspm.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ scripts/checkpatch.pl |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 1cfbf22..24f049e 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -500,6 +500,9 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
- 	int pos;
- 	u32 reg32;
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 04eb9eb..135cb8f 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3344,6 +3344,12 @@ sub process {
+ 			     "__func__ should be used instead of gcc specific __FUNCTION__\n"  . $herecurr);
+ 		}
  
-+	if (aspm_disabled)
-+		return 0;
++# check for use of yield()
++		if ($line =~ /\byield\s*\(\s*\)/ {
++			WARN("YIELD",
++			     "Using yield() is generally wrong. See yield() kernel-doc (sched/core.c)\n"  . $herecurr);
++		}
 +
- 	/*
- 	 * Some functions in a slot might not all be PCIe functions,
- 	 * very strange. Disable ASPM for the whole slot
+ # check for semaphores initialized locked
+ 		if ($line =~ /^.\s*sema_init.+,\W?0\W?\)/) {
+ 			WARN("CONSIDER_COMPLETION",
 -- 
-1.7.7.6
+1.7.8.111.gad25c.dirty
 
