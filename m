@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab2CFQsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:48:40 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:6077 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755541Ab2CFQsj (ORCPT
+	id S1757470Ab2CFQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:57:33 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33223 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab2CFQ52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:48:39 -0500
-Date: Tue, 6 Mar 2012 11:48:35 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: the maxcpus= boot parameter broke somewhere along the line
-Message-ID: <20120306164835.GA26094@elliptictech.com>
-References: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
- <CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 Mar 2012 11:57:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of benjamin.tissoires@gmail.com designates 10.180.81.37 as permitted sender) smtp.mail=benjamin.tissoires@gmail.com; dkim=pass header.i=benjamin.tissoires@gmail.com
+From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] HID: multitouch: detect serial protocol
+Date: Tue,  6 Mar 2012 17:57:06 +0100
+Message-Id: <1331053026-21272-6-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-06 17:17 +0200, Sasha Levin wrote:
-> On Tue, Mar 6, 2012 at 4:59 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> > When booting my machine with maxcpus=1, it seems to be ignored with
-> > 3.3.0-rc3.  I know that 3.1.0-rc3 works fine, but I haven't had time to
-> > track it down any further than that.  I've attached the dmesg from my
-> > machine.  Let me know if there is any other information that would help
-> > in solving this.
-> 
-> [snip]
-> 
-> > Brought up 1 CPUs
-> > Total of 1 processors activated (4256.06 BogoMIPS).
-> 
-> Looks like it indeed brings up only one CPU, what's the problem there?
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-If you scroll further down it seems that the remaining CPUs are brought
-online near the end of the boot?
+Microsoft's documentation about multitouch protocols tells that
+if a device presents one touch per report, then it should be treated
+as a serial protocol.
 
-  [...]
-  udev: starting version 147
-  SMP alternatives: switching to SMP code
-  WARNING! power/level is deprecated; use power/control instead
-  EDAC MC: Ver: 2.1.0
-  Booting Node 0 Processor 3 APIC 0x3
-  smpboot cpu 3: start_ip = 9a000
-  EDAC MC0: Giving out device to 'i3200_edac' 'i3200': DEV 0000:00:00.0
-  NMI watchdog enabled, takes one hw-pmu counter.
-  Booting Node 0 Processor 2 APIC 0x1
-  smpboot cpu 2: start_ip = 9a000
-  NMI watchdog enabled, takes one hw-pmu counter.
-  Booting Node 0 Processor 1 APIC 0x2
-  smpboot cpu 1: start_ip = 9a000
-  NMI watchdog enabled, takes one hw-pmu counter.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+---
+ drivers/hid/hid-multitouch.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Cheers,
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index a61ba42..6fb46d7 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -81,6 +81,9 @@ struct mt_device {
+ 	__u8 num_received;	/* how many contacts we received */
+ 	__u8 num_expected;	/* expected last contact index */
+ 	__u8 maxcontacts;
++	__u8 touches_by_report;	/* how many touches are present in one report:
++				* 1 means we should use a serial protocol
++				* > 1 means hybrid (multitouch) protocol */
+ 	bool curvalid;		/* is the current contact valid? */
+ 	struct mt_slot *slots;
+ };
+@@ -365,6 +368,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 			input_mt_init_slots(hi->input, td->maxcontacts);
+ 			td->last_slot_field = usage->hid;
+ 			td->last_field_index = field->index;
++			td->touches_by_report++;
+ 			return 1;
+ 		case HID_DG_WIDTH:
+ 			hid_map_usage(hi, usage, bit, max,
+@@ -670,6 +674,15 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (ret)
+ 		goto fail;
+ 
++	if (!id && td->touches_by_report == 1) {
++		/* the device has been sent by hid-generic */
++		mtclass = &td->mtclass;
++		mtclass->quirks |= MT_QUIRK_ALWAYS_VALID;
++		mtclass->quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
++		mtclass->quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
++		mtclass->quirks &= ~MT_QUIRK_VALID_IS_CONFIDENCE;
++	}
++
+ 	td->slots = kzalloc(td->maxcontacts * sizeof(struct mt_slot),
+ 				GFP_KERNEL);
+ 	if (!td->slots) {
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.7.6
 
