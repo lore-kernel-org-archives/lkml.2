@@ -1,68 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab2CFKI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 05:08:28 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36726 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758022Ab2CFKI0 (ORCPT
+	id S1030311Ab2CFKJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:09:58 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40766 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758813Ab2CFKJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 05:08:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.41.161 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <1330993336-9538-3-git-send-email-swarren@nvidia.com>
-References: <1330993336-9538-1-git-send-email-swarren@nvidia.com>
-	<1330993336-9538-3-git-send-email-swarren@nvidia.com>
-Date: Tue, 6 Mar 2012 11:08:25 +0100
-Message-ID: <CACRpkdaZ8EBBwGis4Odh1EZS=waB0nCSZ-mtUHx48ywE81T5Ng@mail.gmail.com>
-Subject: Re: [PATCH V2 3/3] gpio: tegra: Hide tegra_gpio_enable/disable()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Mar 2012 05:09:55 -0500
+Message-ID: <1331028583.15778.3.camel@ThinkPad-T61>
+Subject: Re: [PATCH v3 x86 1/2]  fix page faults by nmiaction in nmi if
+ kmemcheck is enabled
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, paulus@samba.org,
+        mingo@elte.hu, acme@ghostprotocols.net,
+        Vegard Nossum <vegardno@ifi.uio.no>, tony.luck@intel.com, bp@amd64.org,
+        robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
+        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
+        linux-watchdog@vger.kernel.org
+Date: Tue, 06 Mar 2012 18:09:43 +0800
+In-Reply-To: <20120305214545.GH3083@redhat.com>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
+	 <1329819437.2293.382.camel@twins> <1329990828.19165.36.camel@ThinkPad-T61>
+	 <1330340324.11248.60.camel@twins> <1330941917.24353.63.camel@ThinkPad-T61>
+	 <1330969747.11248.250.camel@twins> <20120305214545.GH3083@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12030601-3568-0000-0000-000001520A7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 1:22 AM, Stephen Warren <swarren@nvidia.com> wrote:
+This patch tries to fix the problem of page fault exception caused by
+accessing nmiaction structure in nmi if kmemcheck is enabled. 
 
-> Recent pinctrl discussions concluded that gpiolib APIs should in fact do
-> whatever is required to mux a GPIO onto pins, by calling pinctrl APIs if
-> required. This change implements this for the Tegra GPIO driver, and removes
-> calls to the Tegra-specific APIs from drivers and board files.
->
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: linux-mmc@vger.kernel.org
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+If kmemcheck is enabled, the memory allocated through slab are in pages
+that are marked non-present, so that some checks could be done in the
+page fault handling code ( e.g. whether the memory is read before
+written to ). 
+As nmiaction is allocated in this way, so it resides in a non-present
+page. Then there is a page fault while the nmi code accessing the
+nmiaction structure, which would then cause a warning by
+WARN_ON_ONCE(in_nmi()) in kmemcheck_fault(), called by do_page_fault().
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+v2: as Peter suggested, changed the nmiaction to use static storage.
 
-> Merging note: The first two (or at least the 2nd) patches can go through
-> the pinctrl susbsystem without issue.
+v3: as Peter suggested, use macro to shorten the codes. Also keep the
+original usage of register_nmi_handler, so users of this call doesn't
+need change. 
 
-I will give Grant a chance to comment on the GPIO interaction
-doc atleast, then I'll apply them.
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ arch/x86/include/asm/nmi.h |   19 ++++++++++++++-
+ arch/x86/kernel/nmi.c      |   52
+++++++--------------------------------------
+ 2 files changed, 24 insertions(+), 47 deletions(-)
 
-> This patch should probably be taken
-> through the Tegra tree. Once patch 2 is in pinctrl, and considered stable,
-> I can just use that as a dependency for the branch containing this Tegra
-> patch. I assume that this series will go into 3.5 not 3.4, but I'm willing
-> to be surprised:-)
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index fd3f9f1..5a2b2c6 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -35,8 +35,23 @@ enum {
+ 
+ typedef int (*nmi_handler_t)(unsigned int, struct pt_regs *);
+ 
+-int register_nmi_handler(unsigned int, nmi_handler_t, unsigned long,
+-			 const char *);
++struct nmiaction {
++	struct list_head list;
++	nmi_handler_t handler;
++	unsigned int flags;
++	const char *name;
++};
++
++#define register_nmi_handler(t, fn, fg, n)		\
++({							\
++	static struct nmiaction fn##_na = {		\
++		.handler = (fn),			\
++		.name = (n),				\
++	};						\
++	__register_nmi_handler((t), (fg), &fn##_na);	\
++})
++
++int __register_nmi_handler(unsigned int, unsigned int, struct nmiaction
+*);
+ 
+ void unregister_nmi_handler(unsigned int, const char *);
+ 
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..a097559 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -31,14 +31,6 @@
+ #include <asm/nmi.h>
+ #include <asm/x86_init.h>
+ 
+-#define NMI_MAX_NAMELEN	16
+-struct nmiaction {
+-	struct list_head list;
+-	nmi_handler_t handler;
+-	unsigned int flags;
+-	char *name;
+-};
+-
+ struct nmi_desc {
+ 	spinlock_t lock;
+ 	struct list_head head;
+@@ -160,51 +152,21 @@ static struct nmiaction *__free_nmi(unsigned int
+type, const char *name)
+ 	return (n);
+ }
+ 
+-int register_nmi_handler(unsigned int type, nmi_handler_t handler,
+-			unsigned long nmiflags, const char *devname)
++int __register_nmi_handler(unsigned int type, unsigned int nmiflags,
++						struct nmiaction *na)
+ {
+-	struct nmiaction *action;
+-	int retval = -ENOMEM;
+-
+-	if (!handler)
++	if (!na->handler)
+ 		return -EINVAL;
+ 
+-	action = kzalloc(sizeof(struct nmiaction), GFP_KERNEL);
+-	if (!action)
+-		goto fail_action;
+-
+-	action->handler = handler;
+-	action->flags = nmiflags;
+-	action->name = kstrndup(devname, NMI_MAX_NAMELEN, GFP_KERNEL);
+-	if (!action->name)
+-		goto fail_action_name;
+-
+-	retval = __setup_nmi(type, action);
+-
+-	if (retval)
+-		goto fail_setup_nmi;
++	na->flags = nmiflags;
+ 
+-	return retval;
+-
+-fail_setup_nmi:
+-	kfree(action->name);
+-fail_action_name:
+-	kfree(action);
+-fail_action:	
+-
+-	return retval;
++	return __setup_nmi(type, na);
+ }
+-EXPORT_SYMBOL_GPL(register_nmi_handler);
++EXPORT_SYMBOL_GPL(__register_nmi_handler);
+ 
+ void unregister_nmi_handler(unsigned int type, const char *name)
+ {
+-	struct nmiaction *a;
+-
+-	a = __free_nmi(type, name);
+-	if (a) {
+-		kfree(a->name);
+-		kfree(a);
+-	}
++	__free_nmi(type, name);
+ }
+ 
+ EXPORT_SYMBOL_GPL(unregister_nmi_handler);
+-- 
+1.7.1
 
-Should be possible if my pinctrl-tegra-for-next-diet branch is considered
-stable and could be pulled into the Tegra tree for further augmenting
-by this and other patches!
-
-But I guess you'd need to merge some stable development base
-for the rest of the pinctrl stuff as well, shall I freeze the for-next
-branch with tegra diet stuff merged on top now? I can promise
-to just add new patches on top of that if it helps you.
-
-Is Olof the one to ask?
-
-Yours,
-Linus Walleij
