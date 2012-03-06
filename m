@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab2CFOOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 09:14:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758264Ab2CFOOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 09:14:30 -0500
-Date: Tue, 6 Mar 2012 15:14:28 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>
-Subject: Re: linux-next: build failure after merge of the final tree
- (moduleh/trivial trees related)
-In-Reply-To: <20120306175844.9c97ac3bcc5579fba377fbd8@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1203061513530.23367@pobox.suse.cz>
-References: <20120306175844.9c97ac3bcc5579fba377fbd8@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759334Ab2CFOOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 09:14:50 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:57209 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab2CFOOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 09:14:48 -0500
+Message-ID: <4F561BA9.8020504@windriver.com>
+Date: Tue, 6 Mar 2012 09:14:01 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jesper Juhl <jj@chaosbits.net>
+Subject: Re: linux-next: build failure after merge of the final tree (moduleh/trivial
+ trees related)
+References: <20120306175844.9c97ac3bcc5579fba377fbd8@canb.auug.org.au>
+In-Reply-To: <20120306175844.9c97ac3bcc5579fba377fbd8@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, Stephen Rothwell wrote:
-
+On 12-03-06 01:58 AM, Stephen Rothwell wrote:
 > Hi all,
 > 
 > After merging the final tree, today's linux-next build (powerpc
@@ -40,6 +42,17 @@ On Tue, 6 Mar 2012, Stephen Rothwell wrote:
 > instances of module.h") from the moduleh tree interacting with commit
 > ce64b8d85de9 ("power, max8998: Include linux/module.h just once in
 > drivers/power/max8998_charger.c") from the trivial tree.
+
+Hi Jiri,
+
+Since we'll still have the global dup removal commit regardless,
+it probably makes sense to just drop the one in trivial.  But if
+that is a problem for one reason or another, let me know and I'll
+fixup my commit to at least delete the same one you delete.
+
+Thanks,
+Paul.
+
 > 
 > They both removed different includes of module.h leaving none.
 > 
@@ -66,9 +79,3 @@ On Tue, 6 Mar 2012, Stephen Rothwell wrote:
 >  #include <linux/err.h>
 >  #include <linux/slab.h>
 >  #include <linux/platform_device.h>
-
-I have dropped the patch from my tree, thanks for the report Stephen.
-
--- 
-Jiri Kosina
-SUSE Labs
