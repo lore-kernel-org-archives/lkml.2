@@ -1,80 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030444Ab2CFLyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 06:54:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35005 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030402Ab2CFLyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 06:54:10 -0500
-Date: Tue, 6 Mar 2012 11:54:07 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v5] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120306115407.GE19635@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
- <1329976011-2251-3-git-send-email-tomoya.rohm@gmail.com>
- <20120302130509.GF3230@opensource.wolfsonmicro.com>
- <CANKRQnhHo1P0cmxyfUAShTinWMv0B81d8v8f7M6Oj3Yx9807zg@mail.gmail.com>
+	id S1759193Ab2CFL6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 06:58:51 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:48742 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759078Ab2CFL6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 06:58:50 -0500
+Message-ID: <4F55FBB1.2040206@parallels.com>
+Date: Tue, 6 Mar 2012 15:57:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
-Content-Disposition: inline
-In-Reply-To: <CANKRQnhHo1P0cmxyfUAShTinWMv0B81d8v8f7M6Oj3Yx9807zg@mail.gmail.com>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
+References: <20120229090748.29236.35489.stgit@zurg> <20120229091547.29236.28230.stgit@zurg> <20120302141739.b63677ad.kamezawa.hiroyu@jp.fujitsu.com> <4F505FDF.80003@openvz.org> <20120302171708.6f206bde.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120302171708.6f206bde.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/02/2012 12:17 PM, KAMEZAWA Hiroyuki wrote:
+> On Fri, 02 Mar 2012 09:51:27 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> KAMEZAWA Hiroyuki wrote:
+>>> On Wed, 29 Feb 2012 13:15:47 +0400
+>>> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
+>>>
+>>>> This patch adds file/anon filter bits into isolate_mode_t,
+>>>> this allows to simplify checks in __isolate_lru_page().
+>>>>
+>>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>>>
+>>> Hmm.. I like idea but..
+>>>
+>>>> ---
+>>>>    include/linux/mmzone.h |    4 ++++
+>>>>    include/linux/swap.h   |    2 +-
+>>>>    mm/compaction.c        |    5 +++--
+>>>>    mm/vmscan.c            |   27 +++++++++++++--------------
+>>>>    4 files changed, 21 insertions(+), 17 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>>>> index eff4918..2fed935 100644
+>>>> --- a/include/linux/mmzone.h
+>>>> +++ b/include/linux/mmzone.h
+>>>> @@ -193,6 +193,10 @@ struct lruvec {
+>>>>    #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
+>>>>    /* Isolate for asynchronous migration */
+>>>>    #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
+>>>> +/* Isolate swap-backed pages */
+>>>> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
+>>>> +/* Isolate file-backed pages */
+>>>> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
+>>>>
+>>>>    /* LRU Isolation modes. */
+>>>>    typedef unsigned __bitwise__ isolate_mode_t;
+>>>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>>>> index ba2c8d7..dc6e6a3 100644
+>>>> --- a/include/linux/swap.h
+>>>> +++ b/include/linux/swap.h
+>>>> @@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
+>>>>    /* linux/mm/vmscan.c */
+>>>>    extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>>>>    					gfp_t gfp_mask, nodemask_t *mask);
+>>>> -extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
+>>>> +extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
+>>>>    extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+>>>>    						  gfp_t gfp_mask, bool noswap);
+>>>>    extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+>>>> diff --git a/mm/compaction.c b/mm/compaction.c
+>>>> index 74a8c82..cc054f7 100644
+>>>> --- a/mm/compaction.c
+>>>> +++ b/mm/compaction.c
+>>>> @@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>>>    	unsigned long last_pageblock_nr = 0, pageblock_nr;
+>>>>    	unsigned long nr_scanned = 0, nr_isolated = 0;
+>>>>    	struct list_head *migratelist =&cc->migratepages;
+>>>> -	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
+>>>> +	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
+>>>> +			      ISOLATE_FILE | ISOLATE_ANON;
+>>>>
+>>>>    	/* Do not scan outside zone boundaries */
+>>>>    	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
+>>>> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>>>>    			mode |= ISOLATE_ASYNC_MIGRATE;
+>>>>
+>>>>    		/* Try isolate the page */
+>>>> -		if (__isolate_lru_page(page, mode, 0) != 0)
+>>>> +		if (__isolate_lru_page(page, mode) != 0)
+>>>>    			continue;
+>>>>
+>>>>    		VM_BUG_ON(PageTransCompound(page));
+>>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>>> index af6cfe7..1b70338 100644
+>>>> --- a/mm/vmscan.c
+>>>> +++ b/mm/vmscan.c
+>>>> @@ -1029,27 +1029,18 @@ keep_lumpy:
+>>>>     *
+>>>>     * returns 0 on success, -ve errno on failure.
+>>>>     */
+>>>> -int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+>>>> +int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+>>>>    {
+>>>> -	bool all_lru_mode;
+>>>>    	int ret = -EINVAL;
+>>>>
+>>>>    	/* Only take pages on the LRU. */
+>>>>    	if (!PageLRU(page))
+>>>>    		return ret;
+>>>>
+>>>> -	all_lru_mode = (mode&   (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
+>>>> -		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
+>>>> -
+>>>> -	/*
+>>>> -	 * When checking the active state, we need to be sure we are
+>>>> -	 * dealing with comparible boolean values.  Take the logical not
+>>>> -	 * of each.
+>>>> -	 */
+>>>> -	if (!all_lru_mode&&   !PageActive(page) != !(mode&   ISOLATE_ACTIVE))
+>>>> +	if (!(mode&   (PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE)))
+>>>>    		return ret;
+>>>
+>>> Isn't this complicated ?
+>>
+>> But it doesn't blows my mind as old code does =)
+>>
+>> Maybe someone can propose more clear variant?
+>>
+>
+> switch (mode&  (ISOLATE_ACTIVE | ISOLATE_INACTIVE)) {
+> 	case ISOLATE_ACTIVE :
+> 		if (!PageActive(page))
+> 			return ret;
+> 	case ISOLATE_INACTIVE :
+> 		if (PageActive(page))
+> 			return ret;
+> 	default:
+> 		break;
+> 	}
+> }
+>
+> ?
+>
+> Thanks,
+> -Kame
+>
 
---jTMWTj4UTAEmbWeb
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The switch gets a little bit too big (vertical-wise). Maybe just 
+splitting it into two lines is enough to clarify its purpose.
+How about:
 
-On Tue, Mar 06, 2012 at 02:49:24PM +0900, Tomoya MORINAGA wrote:
-> 2012=E5=B9=B43=E6=9C=882=E6=97=A522:05 Mark Brown <broonie@opensource.wol=
-fsonmicro.com>:
-
-> > You're also missing a blank line between this and the previous stanza.
-
-> Sorry, I can't understand your saying.
-
-Your file should look like other similar files in the kernel.
-
-> > Use snd_soc_register_card() and a real device.
-> OK.
-> As a matter of interest, why do you recommend me to use
-> snd_soc_register_card() ?
-
-It's been the standard since 2.6.38.
-
---jTMWTj4UTAEmbWeb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPVfrZAAoJEBus8iNuMP3d410P/imjuxCBTavWKqO6itbwwxt6
-lJ0ia1+zV8TriR5At4vdACD5hDr1CbqTL/I/h95G7o8JWvDGlIgmC1Ha1Jlmbtcq
-xfywkJt5nggxr51Z73ArvxOsWWewAS15HyFTF2mTrQYlBFQghoj1Tf3Kmk/XDtt0
-69zq7rOOSFTjARICscxW1IwGbzIBQGLqF9Nre66QwM+83h35daJ5q+3853T1Tfb2
-/WMrpETmZzwEIHnHLj/GBMfG99ZVuepiD8YR8rKMJVYkpPLtrcrWM2+USoSL+Xri
-kvolYugnBmvcquHc9z1mqrsCOZnh4sNzqGp/Ngl8fyIcdNSn9mRgQcwx5wF7e4V/
-UFwUnIZnkKidRDkiMwr80/A3ExvIz4SH3OR1hYPRZM8S+wHAxdKb+LwsvneYEvHk
-BCVOeUJXZLrx6d39nc5wIdHNhywLnsl+lJ8+VJ49a05DtdGpfJauKdah7u3Eju2y
-nzLdMp8fqS5NDTPmtvJjtbDN5l+e8LXIO5zpOIx+sQwJSreNIGV29MVkW/IiRCKR
-ou6KPPsk/AN6zEkZ01RBeAjNvPNCYSXJxuYyRO4pYQcDRwEVeqOxSYHhIGsDS5Y8
-5H4YpDwWVRvbHNAxPq8eXYMKkcaVMuciWgOzKYCVx/MuPhRUZkzdEZHe4UT6Ju4t
-PT2KjS+pdYtY41rcrxB7
-=dHXw
------END PGP SIGNATURE-----
-
---jTMWTj4UTAEmbWeb--
+int tmp_var = PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE
+if (!(mode & tmp_var))
+    ret;
