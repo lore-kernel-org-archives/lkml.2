@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab2CFQ0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:26:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34933 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab2CFQ0W (ORCPT
+	id S932111Ab2CFQ0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:26:38 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44651 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756740Ab2CFQ0h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:26:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.14.28.199 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
-Cc: "viro\@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch\@infradead.org" <hch@infradead.org>
-Subject: Re: [PATCH 9/9] nfs: don't open in ->d_revalidate
-References: <1331038601-20353-1-git-send-email-miklos@szeredi.hu>
-	<1331038601-20353-10-git-send-email-miklos@szeredi.hu>
-	<1331043158.3260.3.camel@lade.trondhjem.org>
-Date: Tue, 06 Mar 2012 17:26:14 +0100
-In-Reply-To: <1331043158.3260.3.camel@lade.trondhjem.org> (Trond Myklebust's
-	message of "Tue, 6 Mar 2012 14:12:38 +0000")
-Message-ID: <87boo9k861.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 6 Mar 2012 11:26:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ohad@wizery.com designates 10.50.89.137 as permitted sender) smtp.mail=ohad@wizery.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Originating-IP: [93.172.188.121]
+In-Reply-To: <4F562B9E.7060302@monstr.eu>
+References: <4F1EE861.4030405@monstr.eu> <4F200F64.9060203@monstr.eu>
+ <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
+ <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com>
+ <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
+ <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu> <4F3CC899.4070302@monstr.eu>
+ <CAK=WgbaRF-L7M3VMZQdqFLUFOJuwFVkBH1hUNuJ51kSrzkaVjA@mail.gmail.com>
+ <4F3CFFAD.9030402@monstr.eu> <4F3D032B.6090700@monstr.eu> <CAK=WgbZ3oXc+NQscdShqmu2wkzv=M-qBDCH2-k=5qSRX9W=z3Q@mail.gmail.com>
+ <CAHTX3dJ4PruKO-wJLJU8W0boHFL0f6eoF+QNaoNjm5hu26YEow@mail.gmail.com>
+ <CAK=WgbZBJJbFcoeZ+hY=BgyW_4yvOJPVNMZ18_9o+zY7tEc_pQ@mail.gmail.com>
+ <4F425711.80102@monstr.eu> <CAK=WgbbNJMpndKqgW4SJjE=H-BqT7yVsB+F-kEfJWmW+ikJM+A@mail.gmail.com>
+ <4F44DB23.4010303@monstr.eu> <CAK=Wgbaa9rv1pg19sWYFVX_Dvt0J0AzbRtKhPVnhP6WGdMeT9A@mail.gmail.com>
+ <4F562B9E.7060302@monstr.eu>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 6 Mar 2012 18:26:16 +0200
+Message-ID: <CAK=WgbbZwuqmjvY13M83CPsUFv0+DXxCHvnL5S3WpmDW_Qco3A@mail.gmail.com>
+Subject: Re: remoteproc: Load coprocessor code to the specific main memory location
+To: Michal Simek <monstr@monstr.eu>, "Grosen, Mark" <mgrosen@ti.com>,
+        "Anna, Suman" <s-anna@ti.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        John Williams <john.williams@petalogix.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
+Hi Michal,
 
-> On Tue, 2012-03-06 at 13:56 +0100, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->> 
->> NFSv4 can't do reliable opens in d_revalidate, since it cannot know whether a
->> mount needs to be followed or not.  It does check d_mountpoint() on the dentry,
->> which can result in a weird error if the VFS found that the mount does not in
->> fact need to be followed, e.g.:
->> 
->>   # mount --bind /mnt/nfs /mnt/nfs-clone
->>   # echo something > /mnt/nfs/tmp/bar
->>   # echo x > /tmp/file
->>   # mount --bind /tmp/file /mnt/nfs-clone/tmp/bar
->>   # cat  /mnt/nfs/tmp/bar
->>   cat: /mnt/nfs/tmp/bar: Not a directory
->> 
->> Which should, by any sane filesystem, result in "something" being printed.
->> 
->> So instead do the open in f_op->open() and in the unlikely case that the cached
->> dentry turned out to be invalid, drop the dentry and return ESTALE to let the
->> VFS retry.
->
-> This patch would force a complete new walk of the path in cases where
-> today we just do a single lookup of the last component.
+On Tue, Mar 6, 2012 at 5:22 PM, Michal Simek <monstr@monstr.eu> wrote:
+>       3) CGT TMS470: 4.9.0
+>          Public Links:-
+>            TMS470 Compiler is not available for free publicly. Please
+> contact your TI representative.
 
-I sort of anticipated that, but I really don't know how much of an issue
-is this.
+I think you need those tools and can't build the image without them
+(Mark/Suman/Fernando, PCMIIW).
 
-Of course it is possible to redo only the last component after
-f_op->open() return ESTALE but that requires reshuffling do_last().
-
->  It really
-> doesn't seem worth taking that penalty just in order to make some insane
-> bind mount corner cases work.
-
-It's not at all insane if for example we have multiple mount namespaces.
-NFS is clearly broken and it needs to be fixed, one way or another.
-
-If you think this is a serious performance regression then lets drop
-this patch and add it to the atomic open series together with the
-do_last() reshuffling.
+Btw I was also told that it will soon be possible to build the
+firmware with gcc. Mark will know more details about this.
 
 Thanks,
-Miklos
+Ohad.
