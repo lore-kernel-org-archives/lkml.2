@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030731Ab2CFOS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 09:18:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34071 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965183Ab2CFOS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 09:18:58 -0500
-Date: Tue, 6 Mar 2012 14:17:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Roland Stigge <stigge@antcom.de>, alexander.h.duyck@intel.com,
-        baruch@tkos.co.il, ian.campbell@citrix.com, arnd@arndb.de,
-        netdev@vger.kernel.org, eilong@broadcom.com, kevin.wells@nxp.com,
-        w.sang@pengutronix.de, jeffrey.t.kirsher@intel.com, joe@perches.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver: smp_wmb()
-Message-ID: <20120306141745.GA15201@n2100.arm.linux.org.uk>
-References: <1330983641-32622-1-git-send-email-stigge@antcom.de> <1330987524.2538.61.camel@bwh-desktop> <4F55EA6D.3070602@antcom.de> <1331042608.2347.1.camel@bwh-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331042608.2347.1.camel@bwh-desktop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1030757Ab2CFOZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 09:25:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030718Ab2CFOZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 09:25:00 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120301113106.020c3ad0560425970c9de34e@canb.auug.org.au>
+References: <20120301113106.020c3ad0560425970c9de34e@canb.auug.org.au> <20120220223928.16199.29548.stgit@warthog.procyon.org.uk> <tip-d66acc39c7cee323733c8503b9de1821a56dff7e@git.kernel.org> <CAP=VYLr5id0TrsQFbaKOi6FoK7=_zW-Q9dwH+rAEbnmYunHvNQ@mail.gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: dhowells@redhat.com, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [tip:x86/asm] bitops: Optimise get_order()
+Date: Tue, 06 Mar 2012 14:24:38 +0000
+Message-ID: <2506.1331043878@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 02:03:28PM +0000, Ben Hutchings wrote:
-> On Tue, 2012-03-06 at 11:43 +0100, Roland Stigge wrote:
-> > On 03/05/2012 11:45 PM, Ben Hutchings wrote:
-> > >> +	/* Clear and enable interrupts */
-> > >> +	writel(0xFFFF, LPC_ENET_INTCLEAR(pldat->net_base));
-> > >> +	lpc_eth_enable_int(pldat->net_base);
-> > >> +
-> > >> +	/* Get the next TX buffer output index */
-> > >> +	pldat->num_used_tx_buffs = 0;
-> > >> +	pldat->last_tx_idx =
-> > >> +		readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
-> > > 
-> > > Doesn't this need to be done *before* enabling interrupts?  Also, I
-> > > think you need an smp_wmb() so that the interrupt handler is guaranteed
-> > > to see all these writes.
-> > 
-> > Do you mean _one_ smp_wmb() directly after lpc_eth_enable_int() (which
-> > I'm moving behind the above code?
-> 
-> The sequence should be
-> 
-> 	pldat->state = values...;
-> 	smp_wmb();
-> 	enable_interrupts();
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Is this correct?
+> Presumably it needs to include linux/bitops.h (and see below).
 
-"SMP BARRIER PAIRING" and "EXAMPLES OF MEMORY BARRIER SEQUENCES" in
-Documentation/memory-barriers.txt suggest that there should be some kind
-of pairing with smp_wmb() to ensure correctness.
+That won't help.  It already includes that via linux/log2.h.
 
+The error chain looks suspiciously like a circular dependency has occurred.
+
+David
