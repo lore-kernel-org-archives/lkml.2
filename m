@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2CFQhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:37:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42376 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab2CFQhX (ORCPT
+	id S1757306Ab2CFQhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:37:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:65043 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756234Ab2CFQhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:37:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.14.122.195 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] inode_only_permission: export inode level permissions checks
-References: <20120306161224.GE9978@shadowen.org>
-	<1331050686-1815-1-git-send-email-apw@canonical.com>
-Date: Tue, 06 Mar 2012 17:37:14 +0100
-In-Reply-To: <1331050686-1815-1-git-send-email-apw@canonical.com> (Andy
-	Whitcroft's message of "Tue, 6 Mar 2012 16:18:05 +0000")
-Message-ID: <874nu1k7np.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 6 Mar 2012 11:37:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc bug fixes
+Date: Tue, 6 Mar 2012 16:37:44 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203061637.45150.arnd@arndb.de>
+X-Provags-ID: V02:K0:etiUst3zZv0CkFIJ3hOpPXkRRy8jViMMAFvBNuWMQ/5
+ 0yQ8qhobtp+969DWOcpkw64pFOB4zVh9zW9RYDLMj9DTT+vYXZ
+ BhNKahem9BZNFP3lGdigGcWpGXDMr69FTMr98QDmrr1Jj9WKyd
+ HczcO4/aQyZHw/gBlVeswOapmUHjMKeIuNHSqBSikZkMplcaMM
+ 6LxDvZPEznhTluwlOWNfT/RIVJwUK3ZOq5Ox6uoakwtjGZywun
+ RUUgGUk/27c23oZDeTvkj5OceCzMWEEYgwt6LfrX+sMk774+gX
+ VcJr+r/gXP78xMfy4COTxdcQ4GJx53iD3xeMaF+bNooKvrZJxv
+ pQs3483WotNgfRELBnEE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Whitcroft <apw@canonical.com> writes:
+Hi Linus,
 
-> We need to be able to check inode permissions (but not filesystem implied
-> permissions) for stackable filesystems.  Now that permissions involve
-> checking with the security LSM, cgroups and basic inode permissions it is
-> easy to miss a key permission check and introduce a security vunerability.
-> Expose a new interface for these checks.
->
-> Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> ---
->  fs/namei.c         |   34 +++++++++++++++++++++++++---------
->  include/linux/fs.h |    1 +
->  2 files changed, 26 insertions(+), 9 deletions(-)
->
-> diff --git a/fs/namei.c b/fs/namei.c
-> index e2ba628..16c77a4 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -328,6 +328,30 @@ static inline int do_inode_permission(struct inode *inode, int mask)
->  }
->  
->  /**
-> + * inode_only_permission  -  check access rights to a given inode only
-> + * @inode:	inode to check permissions on
-> + * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
-> + *
-> + * Uses to check read/write/execute permissions on an inode directly, we do
-> + * not check filesystem permissions.
-> + */
-> +int inode_only_permission(struct inode *inode, int mask)
-> +{
-> +	int retval;
-> +
+Here are all the fixes I got after sending the last pull request.
+These fix mostly regressions on exynos, at91, pxa and ep93xx.
+They are available in the 'fixes' branch or the 'fixes-3.3-rc7'
+tag.
 
+	Arnd
 
-IS_IMMUTABLE() is per-inode.  So I think only the IS_RDONLY() check
-needs to be left out.
+The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
 
-Thanks,
-Miklos
+  Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-3.3-rc7
 
-> +	retval = do_inode_permission(inode, mask);
-> +	if (retval)
-> +		return retval;
-> +
-> +	retval = devcgroup_inode_permission(inode, mask);
-> +	if (retval)
-> +		return retval;
-> +
-> +	return security_inode_permission(inode, mask);
-> +}
-> +EXPORT_SYMBOL(inode_only_permission);
-> +
-> +/**
->   * inode_permission  -  check for access rights to a given inode
->   * @inode:	inode to check permission on
->   * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
-> @@ -360,15 +384,7 @@ int inode_permission(struct inode *inode, int mask)
->  			return -EACCES;
->  	}
->  
-> -	retval = do_inode_permission(inode, mask);
-> -	if (retval)
-> -		return retval;
-> -
-> -	retval = devcgroup_inode_permission(inode, mask);
-> -	if (retval)
-> -		return retval;
-> -
-> -	return security_inode_permission(inode, mask);
-> +	return inode_only_permission(inode, mask);
->  }
->  
->  /**
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 871c87f..b06a3b4 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2228,6 +2228,7 @@ extern sector_t bmap(struct inode *, sector_t);
->  #endif
->  extern int notify_change(struct dentry *, struct iattr *);
->  extern int inode_permission(struct inode *, int);
-> +extern int inode_only_permission(struct inode *, int);
->  extern int generic_permission(struct inode *, int);
->  
->  static inline bool execute_ok(struct inode *inode)
+Arnd Bergmann (3):
+      Merge branch 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+      Merge branch 'v3.3-samsung-fixes-4' of git://git.kernel.org/.../kgene/linux-samsung into fixes
+      Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
+
+Bartlomiej Zolnierkiewicz (1):
+      ARM: EXYNOS: fix touchscreen IRQ setup on Universal C210 board
+
+Gusakov Andrey (1):
+      ARM: S3C24XX: DMA resume regression fix
+
+H Hartley Sweeten (1):
+      ARM: ep93xx: convert vision_ep9307 to MULTI_IRQ_HANDLER
+
+Haojian Zhuang (3):
+      ARM: pxa: add dummy clock for pxa25x and pxa27x
+      ARM: pxa: remove duplicated registeration on pxa-gpio
+      ARM: pxa: fix invalid mfp pin issue
+
+Heiko Stuebner (1):
+      ARM: S3C24XX: Fix restart on S3C2442
+
+Joonyoung Shim (1):
+      ARM: SAMSUNG: Fix memory size for hsotg
+
+Nicolas Ferre (2):
+      ARM: at91/dma: remove platform data from DMA controller
+      ARM: at91/dma: DMA controller registering with DT support
+
+ arch/arm/mach-at91/at91sam9g45_devices.c   |   19 ++++++++++---------
+ arch/arm/mach-at91/at91sam9rl_devices.c    |    8 +-------
+ arch/arm/mach-ep93xx/vision_ep9307.c       |    2 ++
+ arch/arm/mach-exynos/mach-universal_c210.c |    2 ++
+ arch/arm/mach-pxa/generic.h                |    1 -
+ arch/arm/mach-pxa/mfp-pxa2xx.c             |    7 +++++++
+ arch/arm/mach-pxa/pxa25x.c                 |    2 +-
+ arch/arm/mach-pxa/pxa27x.c                 |    2 +-
+ arch/arm/mach-pxa/pxa3xx.c                 |    1 -
+ arch/arm/mach-pxa/pxa95x.c                 |    1 -
+ arch/arm/mach-s3c2440/common.h             |    2 +-
+ arch/arm/mach-s3c2440/mach-anubis.c        |    2 +-
+ arch/arm/mach-s3c2440/mach-at2440evb.c     |    2 +-
+ arch/arm/mach-s3c2440/mach-gta02.c         |    2 +-
+ arch/arm/mach-s3c2440/mach-mini2440.c      |    2 +-
+ arch/arm/mach-s3c2440/mach-nexcoder.c      |    2 +-
+ arch/arm/mach-s3c2440/mach-osiris.c        |    2 +-
+ arch/arm/mach-s3c2440/mach-rx1950.c        |    2 +-
+ arch/arm/mach-s3c2440/mach-rx3715.c        |    2 +-
+ arch/arm/mach-s3c2440/mach-smdk2440.c      |    2 +-
+ arch/arm/mach-s3c2440/s3c2440.c            |   13 -------------
+ arch/arm/mach-s3c2440/s3c244x.c            |   11 +++++++++++
+ arch/arm/plat-s3c24xx/dma.c                |    2 +-
+ arch/arm/plat-samsung/devs.c               |    2 +-
+ 24 files changed, 47 insertions(+), 46 deletions(-)
