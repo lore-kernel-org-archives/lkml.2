@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031553Ab2CFWyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:54:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42863 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377Ab2CFWyw (ORCPT
+	id S965297Ab2CFW7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:59:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35040 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965280Ab2CFW7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:54:52 -0500
-Date: Tue, 6 Mar 2012 14:54:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@linux.com>, Miao Xie <miaox@cn.fujitsu.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v2
-Message-Id: <20120306145451.8eff82a6.akpm@linux-foundation.org>
-In-Reply-To: <20120306224201.GA17697@suse.de>
-References: <20120306132735.GA2855@suse.de>
-	<20120306122657.8e5b128d.akpm@linux-foundation.org>
-	<20120306224201.GA17697@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Mar 2012 17:59:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of anton.vorontsov@linaro.org designates 10.204.152.27 as permitted sender) smtp.mail=anton.vorontsov@linaro.org
+Date: Wed, 7 Mar 2012 02:59:37 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, leonid.moiseichuk@nokia.com,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] vmevent: Use 'struct vmevent_attr' for vmevent_fd() ABI
+Message-ID: <20120306225937.GA24931@oksana.dev.rtsoft.ru>
+References: <1331067079-2163-1-git-send-email-penberg@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1331067079-2163-1-git-send-email-penberg@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012 22:42:01 +0000
-Mel Gorman <mgorman@suse.de> wrote:
-
-> /*
->  * get_mems_allowed is required when making decisions involving mems_allowed
->  * such as during page allocation. mems_allowed can be updated in parallel
->  * and depending on the new value an operation can fail potentially causing
->  * process failure. A retry loop with get_mems_allowed and put_mems_allowed
->  * prevents these artificial failures.
->  */
-> static inline unsigned int get_mems_allowed(void)
-> {
->         return read_seqcount_begin(&current->mems_allowed_seq);
-> }
+On Tue, Mar 06, 2012 at 10:51:19PM +0200, Pekka Enberg wrote:
+> This patch introduces 'struct vmevent_attr' and converts the vmevent_fd() ABI
+> to use it which makes the ABI much more flexible.
 > 
-> /*
->  * If this returns false, the operation that took place after get_mems_allowed
->  * may have failed. It is up to the caller to retry the operation if
->  * appropriate.
->  */
-> static inline bool put_mems_allowed(unsigned int seq)
-> {
->         return !read_seqcount_retry(&current->mems_allowed_seq, seq);
-> }
-> 
-> ?
+> Originally-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+> ---
 
-lgtm ;)
+Sorry for hijacking this thread, but speaking of big
+changes. Are there any plans or ideas to add other methods
+of sampling, i.e. something not timer-based?
 
-> > > -static inline void put_mems_allowed(void)
-> > > +/*
-> > > + * If this returns false, the operation that took place after get_mems_allowed
-> > > + * may have failed. It is up to the caller to retry the operation if
-> > > + * appropriate
-> > > + */
-> > > +static inline bool put_mems_allowed(unsigned int seq)
-> > >  {
-> > > -	/*
-> > > -	 * ensure that reading mems_allowed and mempolicy before reducing
-> > > -	 * mems_allowed_change_disable.
-> > > -	 *
-> > > -	 * the write-side task will know that the read-side task is still
-> > > -	 * reading mems_allowed or mempolicy, don't clears old bits in the
-> > > -	 * nodemask.
-> > > -	 */
-> > > -	smp_mb();
-> > > -	--ACCESS_ONCE(current->mems_allowed_change_disable);
-> > > +	return !read_seqcount_retry(&current->mems_allowed_seq, seq);
-> > >  }
-> > >  
-> > >  static inline void set_mems_allowed(nodemask_t nodemask)
-> > 
-> > How come set_mems_allowed() still uses task_lock()?
-> >
-> 
-> Consistency.
-> 
-> The task_lock is taken by kernel/cpuset.c when updating
-> mems_allowed so it is taken here. That said, it is unnecessary to take
-> as the two places where set_mems_allowed is used are not going to be
-> racing. In the unlikely event that set_mems_allowed() gets another user,
-> there is no harm is leaving the task_lock as it is. It's not in a hot
-> path of any description.
+I like how it's done for cgroups, i.e. via rate-limited events
+(and the events are "page alloc/free").
 
-But shouldn't set_mems_allowed() bump mems_allowed_seq?
+But doing this cgroup-way would probably dismiss the point of
+"lightweight" notifications.
+
+Though, current vmevent seems not so lightweigh in sense of
+battery usage and accuracy (i.e. how quick we're able to
+detect the crossed threshold). To get better accuracy we
+would need to run timer at higher frequencies, but then we
+would waste more battery.
+
+Sure, vmevent is still lightweight in sense that it does not
+cause much runtime overhead or memory wastage (unlike cgroups).
+
+The only idea I have for vmevent is to make some hybrid: timer
+plus shrinker API. That way we would detect "low memory" events
+fast enough via shrinker API, and thus run timer at low freq.
+
+But we would still have a running timer, which would wake up
+a system periodically, which is still quite bad. :-/
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
